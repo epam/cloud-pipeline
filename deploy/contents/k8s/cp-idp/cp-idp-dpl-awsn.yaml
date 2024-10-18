@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-idp
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-idp: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-idp: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-idp: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-idp
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:idp-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/idp/pki
+              subPath: idp/pki
+              name: cp-system
+            - mountPath: /opt/idp/pdb
+              subPath: idp/pdb
+              name: cp-system
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+            - mountPath: /opt/share-srv/pki
+              subPath: share-srv/pki
+              name: cp-system
+            - mountPath: /opt/gitlab/pki
+              subPath: gitlab/pki
+              name: cp-system
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+          readinessProbe:
+            httpGet:
+              path: /metadata
+              port: 8080
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
+  

@@ -436,13 +436,13 @@ def get_random_subnet(ec2):
 
 
 def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
-                 is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client,
+                 is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
                  availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network,
                  input_tags):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
-                                            kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                            kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
                                             run_id)
     if is_spot:
@@ -659,13 +659,15 @@ def get_certs_string():
         pipe_api = PipelineAPI(api_url, None)
         result = pipe_api.load_certificates()
         if not result:
-            return ""
+            return "", ""
         else:
+            repo_urls = []
             entries = []
             for url, cert in result.iteritems():
+                repo_urls.append(url)
                 entries.append(command_pattern.format(url=url, cert=cert))
-            return " && ".join(entries)
-    return ""
+            return ",".join(repo_urls), " && ".join(entries)
+    return "", ""
 
 def get_well_known_hosts_string(aws_region):
     pipe_log('Setting well-known hosts an instance in {} region'.format(aws_region))
@@ -800,13 +802,13 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 
 def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
-                         kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                          global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
-        certs_string = get_certs_string()
+        repo_urls_string, certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(aws_region)
         init_script.close()
         user_data_script = replace_proxies(aws_region, user_data_script)
@@ -818,11 +820,13 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                           (fs_type, DEFAULT_FS_TYPE))
             fs_type = DEFAULT_FS_TYPE
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
+                                           .replace('@DOCKER_REGISTRY_URLS@', repo_urls_string) \
                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                            .replace('@KUBE_IP@', kube_ip) \
                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                           .replace('@KUBE_CLUSTER_NAME@', kube_cluster_name) \
                                            .replace('@API_URL@', api_url) \
                                            .replace('@API_TOKEN@', api_token) \
                                            .replace('@API_USER@', api_user) \
@@ -1472,6 +1476,7 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
     parser.add_argument("--kube_node_token", type=str, required=True)
+    parser.add_argument("--kube_cluster_name", type=str, required=False)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--availability_zone", type=str, required=False)
@@ -1505,6 +1510,7 @@ def main():
     kubeadm_token = args.kubeadm_token
     kubeadm_cert_hash = args.kubeadm_cert_hash
     kube_node_token = args.kube_node_token
+    kube_cluster_name = args.kube_cluster_name
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     availability_zone = args.availability_zone
@@ -1606,7 +1612,7 @@ def main():
 
         if not ins_id:
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
-                                          num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api,
+                                          num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
                                           availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags)
 

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-search-elk
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-elk: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-elk: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-elk: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-search-elk
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          securityContext:
+            privileged: true
+          imagePullPolicy: "IfNotPresent"
+          command: ["bash"]
+          args: ["-c", "/init.sh"]
+          env:
+          - name: ES_JAVA_OPTS
+            value: "-Xmx4g -Xms4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /usr/share/elasticsearch/data
+              subPath: search-elk/data
+              name: cp-system
+            - mountPath: /var/log/curator
+              subPath: search-elk/log/curator
+              name: cp-system
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9200
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

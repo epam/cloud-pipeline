@@ -1,9 +1,14 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-edge
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-edge: "true"
+      cloud-pipeline/role: "EDGE"
+      cloud-pipeline/region: $CP_CLOUD_REGION_ID
   replicas: 1
   template:
     metadata:

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-docker-comp
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-docker-comp: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-docker-comp: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-docker-comp: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-docker-comp
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:docker-comp-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: ${CP_DOCKER_COMP_WORKING_DIR}
+              subPath: docker-comp/wd
+              name: cp-system
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

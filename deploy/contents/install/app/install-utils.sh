@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -371,8 +371,12 @@ EOF
 
     # Cloud common
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE" ]; then
-        print_err "Default cluster nodes image ID is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE=\" option"
-        return 1
+        if is_deployment_type_requested classic; then
+            print_err "Default cluster nodes image ID is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE=\" option"
+            return 1
+        else
+            print_warn "Default cluster nodes image ID is not defined, will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE=\" option"
+        fi
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
         print_warn "Default GPU cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=\" option"
@@ -565,9 +569,9 @@ function array_contains_or_empty () {
 function enable_service {
     parse_env_option "$1"
     services_count=$((services_count+1))
-    if [ -n "${CP_SERVICES_ENABLED}" ]; then 
+    if [ -n "${CP_SERVICES_ENABLED}" ]; then
         export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${1}"
-    else 
+    else
         export CP_SERVICES_ENABLED="${1}"
     fi
 }
@@ -583,19 +587,19 @@ function is_module_available_in_point_in_time_configuration {
   if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
      local pitc_metadata_file="$CP_POINT_IN_TIME_CONFIGURATION_DIR/_pitc.csv"
 
-     if [ -z $CP_POINT_IN_TIME_CONFIGURATION_MODULES ] || [[ $CP_POINT_IN_TIME_CONFIGURATION_MODULES == *"$point_in_time_configuration_module"* ]]; then 
+     if [ -z $CP_POINT_IN_TIME_CONFIGURATION_MODULES ] || [[ $CP_POINT_IN_TIME_CONFIGURATION_MODULES == *"$point_in_time_configuration_module"* ]]; then
         while IFS="," read -r data module_file exit_code; do
         if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file" ] && [ $exit_code -eq 0 ]; then
            echo $CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file
            return 0
-        fi   
+        fi
         done < "$pitc_metadata_file"
-     fi   
-  fi   
+     fi
+  fi
   return 1
 }
 
-function enable_services_from_point_in_time_configuration {   
+function enable_services_from_point_in_time_configuration {
     local point_in_time_configuration_service_file=$(is_module_available_in_point_in_time_configuration services)
     if [ "$point_in_time_configuration_service_file" ]; then
         print_info "Services from point-in-time configuration: $point_in_time_configuration_service_file will be installed."
@@ -621,11 +625,11 @@ function set_preferences_from_point_in_time_configuration {
 }
 
 function import_users_from_point_in_time_configuration {
-  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users) 
+  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users)
   if [ "$point_in_time_configuration_users_file" ]; then
       print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
       call_api "/users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file" "users"
-  fi      
+  fi
 }
 
 function parse_options {
@@ -651,6 +655,10 @@ function parse_options {
         ;;
         -m|--install-kube-master)
         export CP_INSTALL_KUBE_MASTER=1
+        shift # past argument
+        ;;
+        -jc|--join-cluseter)
+        export CP_JOIN_KUBE_CLUSTER=1
         shift # past argument
         ;;
         -e|--erase-data)
@@ -683,6 +691,12 @@ function parse_options {
         # Here we only collect list of var=value options. The will applied (exported) after the config file (CP_INSTALL_CONFIG_FILE) will be sourced
         # so command line options will have higher priority compared to the file
         EXPLICIT_ENV_OPTIONS+=("$2")
+        shift # past argument
+        shift # past value
+        ;;
+        -dt|--deployment-type)
+        # New variable for K8s deployment type for example: classic, aws-native(Amazon Elastic Kubernetes Service), etc.
+        export CP_DEPLOYMENT_TYPE="$2"
         shift # past argument
         shift # past value
         ;;
@@ -742,7 +756,7 @@ function parse_options {
             print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
             export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
             mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
-        fi   
+        fi
     fi
     load_install_config "$CP_INSTALL_CONFIG_FILE"
     if [ $? -ne 0 ]; then
@@ -839,11 +853,11 @@ function parse_options {
     fi
 
     # WARN: Note that in some cases it can be suitable to define CP_OVERWRITE_SERVICES_ENABLED as -env option during a deploy
-    # (f.i. In case of redeploy of existing deployment CP_OVERWRITE_SERVICES_ENABLED variable can be used to identify already deployed services that need to be proxied by edge service)  
+    # (f.i. In case of redeploy of existing deployment CP_OVERWRITE_SERVICES_ENABLED variable can be used to identify already deployed services that need to be proxied by edge service)
     # In this case this variable would be propagated to the current session and available here, because of function parse_env_option
     if [ -n "$CP_OVERWRITE_SERVICES_ENABLED" ]; then
         export CP_SERVICES_ENABLED=$CP_OVERWRITE_SERVICES_ENABLED
-    fi    
+    fi
     #Propagate this variable in the ConfigMap to be used by Cloud-Pipeline services (e.g. edge) during runtime
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_SERVICES_ENABLED" \
@@ -857,8 +871,59 @@ function parse_options {
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_DEPLOYMENT_ID" \
                         "$CP_DEPLOYMENT_ID"
-    
+
+
+    export CP_DEPLOYMENT_TYPE="${CP_DEPLOYMENT_TYPE:-classic}"
+    if [ "$CP_DEPLOYMENT_TYPE" != "aws-native" ] && [ "$CP_DEPLOYMENT_TYPE" != "classic" ]; then
+        print_err "-dt / --deployment-type value $CP_DEPLOYMENT_TYPE is not supported! Supported values is: 'aws-native', 'classic'"
+        return 1
+    fi
+    print_info "Deployment type: $CP_DEPLOYMENT_TYPE configured"
+    # Check if required variables were specified.
+    # Define additional variables for aws-native deployment type.
+    if is_deployment_type_requested aws-native ; then
+        if [ -z "$CP_KUBE_CLUSTER_NAME" ] || [ -z "$CP_KUBE_EXTERNAL_HOST" ] || [ -z "$CP_CSI_DRIVER_TYPE" ] || [ -z "$CP_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] || [ -z "$CP_MAIN_SERVICE_ROLE" ] ; then
+            print_err "For AWS native deployment you must set variable CP_KUBE_CLUSTER_NAME, CP_KUBE_EXTERNAL_HOST, CP_MAIN_SERVICE_ROLE, CP_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
+            return 1
+        fi
+        export CP_KUBE_DNS_DEPLOYMENT_NAME="coredns"
+        export CP_EDGE_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-elb}"
+    else
+        export CP_KUBE_DNS_DEPLOYMENT_NAME="kube-dns"
+    fi
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_DEPLOYMENT_TYPE" \
+                        "$CP_DEPLOYMENT_TYPE"
+
     return 0
+}
+
+function is_kube_node_ready {
+  local node_name=$1
+  local node_status=$(kubectl get no "$node_name" -o json 2>/dev/null \
+                            | jq '.status.conditions[] | select(.type=="Ready") | .status' -r)
+  if [ "${node_status}" != "True" ]; then
+      return 1
+  fi
+  return 0
+}
+
+function wait_kube_node_to_be_ready {
+    node_name=$1
+    threshold=${2:-30}
+    count=1
+    while [ $count -lt "$threshold" ]
+    do
+        count=$((count + 1))
+        if is_kube_node_ready "$node_name"; then
+            print_ok "Node $node_name is ready"
+            return 0
+        fi
+        print_info "Waiting $node_name to be ready..."
+        sleep 5
+    done
+    print_err "After $count attempts, $node_name still isn't ready."
+    return 1
 }
 
 function get_kube_node_ip_list {
@@ -928,7 +993,7 @@ function get_svc_preferred_external_ip {
 }
 
 function is_kube_dns_configured_for_custom_entries {
-   kubectl get deployment kube-dns -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
+   kubectl get deployment ${CP_KUBE_DNS_DEPLOYMENT_NAME} -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
    return $?
 }
 
@@ -1080,24 +1145,44 @@ function prepare_kube_dns {
 }
 
 function get_kube_resource_spec_file_by_type {
-    local original_spec_file="$1"
+    local original_spec_location="$1"
     local resource_type="$2"
 
     if [ "$resource_type" == "--svc" ]; then
-        if [ -f "$original_spec_file" ]; then
-            echo "$original_spec_file"
+        if [ -f "$original_spec_location" ]; then
+            echo "$original_spec_location"
             return 0
         fi
-        local spec_dir="$(dirname $original_spec_file)"
-        local spec_file="$(basename $original_spec_file)"
+        local spec_dir="$(dirname $original_spec_location)"
+        local spec_file="$(basename $original_spec_location)"
 
         local spec_ext="${spec_file##*.}"
         local spec_file="${spec_file%.*}"
         local spec_suffix="${CP_KUBE_SERVICES_TYPE:-"node-port"}"
         
         echo "${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
+
+    elif [ "$resource_type" == "--ktz" ]; then
+        local spec_dir="$(basename $original_spec_location)"
+        template_file="/tmp/cp_kube_res_${spec_dir}_${RANDOM}.yaml"
+        kustomize build "$original_spec_location" > "$template_file"
+        echo "$template_file"
     else
-        echo "$original_spec_file"
+        local resolved_spec_location="$original_spec_location"
+        # Here we should be dealing with dpl files
+        if is_deployment_type_requested aws-native; then
+            local spec_dir="$(dirname $original_spec_location)"
+            local spec_file="$(basename $original_spec_location)"
+
+            local spec_ext="${spec_file##*.}"
+            local spec_file="${spec_file%.*}"
+            local spec_suffix="awsn"
+            local resolved_spec_location="${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
+            if [ ! -f "${resolved_spec_location}" ]; then
+                resolved_spec_location="$original_spec_location"
+            fi
+        fi
+        echo "$resolved_spec_location"
     fi
 }
 
@@ -1130,14 +1215,16 @@ function set_kube_service_external_ip {
 }
 
 function create_kube_resource {
-    local spec_file="$1"
+    local spec_location="$1"
     local resource_type="$2"
+    local action="${3:-create}"
 
-    spec_file="$(get_kube_resource_spec_file_by_type "$spec_file" "$resource_type")"
+    spec_file="$(get_kube_resource_spec_file_by_type "$spec_location" "$resource_type")"
+    print_ok "Configured $spec_file as resource that will be applied."
 
-    local updated_spec_file="/tmp/$(basename $spec_file)"
-    envsubst < $spec_file > "$updated_spec_file"
-    kubectl create -f "$updated_spec_file"
+    local updated_spec_file="/tmp/envsubsted_$(basename "${spec_file}")"
+    envsubst < "$spec_file" > "$updated_spec_file"
+    kubectl "${action}" -f "$updated_spec_file"
     rm -f "$updated_spec_file"
 }
 
@@ -1166,39 +1253,41 @@ function register_custom_name_in_dns {
     fi
 
     print_info "Registering DNS entry $custom_name as $custom_target_value (source type: $custom_target_type)"
-    # Check config map with hosts exists
-    if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
-        # If so - add new/update existing entry
-        current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
-        if [ $? -ne 0 ]; then
-            print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_value WILL NOT be registered"
-            return 1
-        fi
-        # Delete existing entry
-        if grep -q " $custom_name" <<< "$current_custom_names"; then
-            current_custom_names="$(sed "/ $custom_name/d" <<< "$current_custom_names")"
-        fi
-        # And add an update one
-        current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
-        # Escape the newlines
-        current_custom_names="$(escape_string "$current_custom_names")"
-        # Apply changes to the configmap
-        kubectl patch cm cp-dnsmasq-hosts \
-            -n kube-system \
-            --type merge \
-            -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
-        if [ $? -ne 0 ]; then
-            print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
-            print_info "================"
-            print_info "$current_custom_names"
-            print_info "================"
-            echo
-            return 1
-        fi
+    print_info "CP_KUBE_DNS_DEPLOYMENT_NAME configured as ${CP_KUBE_DNS_DEPLOYMENT_NAME}."
+    if [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "kube-dns" ]; then
+        # Check config map with hosts exists
+        if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
+            # If so - add new/update existing entry
+            current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
+            if [ $? -ne 0 ]; then
+                print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_value WILL NOT be registered"
+                return 1
+            fi
+            # Delete existing entry
+            if grep -q " $custom_name" <<< "$current_custom_names"; then
+                current_custom_names="$(sed "/ $custom_name/d" <<< "$current_custom_names")"
+            fi
+            # And add an update one
+            current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
+            # Escape the newlines
+            current_custom_names="$(escape_string "$current_custom_names")"
+            # Apply changes to the configmap
+            kubectl patch cm cp-dnsmasq-hosts \
+                -n kube-system \
+                --type merge \
+                -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
+            if [ $? -ne 0 ]; then
+                print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
+                print_info "================"
+                print_info "$current_custom_names"
+                print_info "================"
+                echo
+                return 1
+            fi
 
-    else
-        # Else create it from scratch
-cat <<EOF | kubectl apply -f -
+        else
+            # Else create it from scratch
+    cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -1208,18 +1297,71 @@ data:
   hosts: |
     ${custom_target_value} ${custom_name}
 EOF
-         if [ $? -ne 0 ]; then
-            print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
-            return 1
+             if [ $? -ne 0 ]; then
+                print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
+                return 1
+            fi
         fi
+
+        # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
+        if ! is_kube_dns_configured_for_custom_entries; then
+            prepare_kube_dns
+        fi
+
+    elif [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "coredns" ]; then
+      #TODO: is there a better way to compile the Corefile? right now it seems to be a fuzzy solution
+      local compiled_corefile="/tmp/coredns-conf-${RANDOM}"
+      local current_custom_names_file="/tmp/coredns-custom-hosts-${RANDOM}"
+
+      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Pzo '\s+\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
+      sed -i "/ $custom_name/d" $current_custom_names_file && \
+      sed -i '/^$/d' $current_custom_names_file && \
+      sed -i -e 's/^/    /' $current_custom_names_file
+
+      cat > $compiled_corefile <<-EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+        }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+        }
+        hosts {
+EOF
+
+cat $current_custom_names_file >> $compiled_corefile
+
+cat >> $compiled_corefile <<-EOF
+            ${custom_target_value} ${custom_name}
+            fallthrough
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf
+        cache 30
+        loop
+        reload
+        loadbalance
+    }
+EOF
+      kubectl replace -f $compiled_corefile
+      rm -rf $current_custom_names_file $compiled_corefile
+    else
+      print_err "Unsupported kube dns deployment type: ${CP_KUBE_DNS_DEPLOYMENT_NAME}."
+      return 1
     fi
 
-    # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
-    if ! is_kube_dns_configured_for_custom_entries; then
-        prepare_kube_dns
-    fi
     # Trigger dns update (rollout)
-    kubectl patch deployment kube-dns \
+    kubectl patch deployment ${CP_KUBE_DNS_DEPLOYMENT_NAME} \
         -n kube-system \
         --patch "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"cp-updated\": \"$(date)\"}}}}}"
 
@@ -1229,7 +1371,7 @@ EOF
     fi
 
     # Wait for the pods restart
-    kubectl rollout status deployment/kube-dns -n kube-system -w
+    kubectl rollout status deployment/${CP_KUBE_DNS_DEPLOYMENT_NAME} -n kube-system -w
     # Just in case...
     sleep 10
 
@@ -1582,6 +1724,12 @@ function generate_rsa_key_pair {
 function is_service_requested {
     local service=${1//[^a-zA-Z_0-9]/_}
     [ "${!service}" == "1" ] || [ "$CP_INSTALL_SERVICES_ALL" == "1" ]
+    return $?
+}
+
+function is_deployment_type_requested {
+    local dt=$1
+    [ "${dt}" == "$CP_DEPLOYMENT_TYPE" ]
     return $?
 }
 

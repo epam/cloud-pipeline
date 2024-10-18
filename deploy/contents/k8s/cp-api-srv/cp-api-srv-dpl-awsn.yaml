@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-api-srv
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-api-srv: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-api-srv: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                cloud-pipeline/cp-api-srv: "true"
+            topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        cloud-pipeline/cp-api-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      terminationGracePeriodSeconds: 50
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-api-srv-leader-elector
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: [ "/elector/init" ]
+          ports:
+            - containerPort: 4040
+          env:
+            - name: HA_ELECTION_SERVICE_NAME
+              value: "cp-api-srv"
+            - name: HA_ELECTION_PERIOD_SEC
+              value: "5"
+            - name: HA_VOTE_EXPIRATION_PERIOD_SEC
+              value: "7"
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          
+        - name: cp-api-srv
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init-api"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CP_KUBE_MASTER_CHECK_URL
+              value: http://127.0.0.1:4040/
+            - name: CP_HA_DEPLOY_ENABLED
+              value: "true"
+            - name: CP_API_CURRENT_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CP_API_CURRENT_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+            - mountPath: /opt/api/sso
+              subPath: api/sso
+              name: cp-system
+            - mountPath: /var/log/cp-api
+              subPath: api/logs
+              name: cp-system
+            - mountPath: /opt/api/ext/templates/pipe-templates
+              subPath: api/templates/pipe-templates
+              name: cp-system
+            - mountPath: /opt/api/ext/templates/folder-templates
+              subPath: api/templates/folder-templates
+              name: cp-system
+            - mountPath: /opt/api/ext/templates/error-templates
+              subPath: api/templates/error-templates
+              name: cp-system
+            - mountPath: /opt/api/ext/templates/static
+              subPath: api/templates/static
+              name: cp-system
+            - mountPath: /opt/api/etc
+              subPath: api/etc
+              name: cp-system
+            - mountPath: /opt/idp/pki
+              subPath: idp/pki
+              name: cp-system
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/gitlab/pki
+              subPath: gitlab/pki
+              name: cp-system
+              readOnly: true
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
+              # Using /etc/cp_ssh instead of a "general" ~/.ssh/ because it may break some of the openssh-created files (e.g. known hosts)
+              # as this volumes is mounted "read only"
+            - name: cp-cluster-ssh-key
+              mountPath: "/etc/cp_ssh"
+              readOnly: true
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
+            initialDelaySeconds: 180
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
+            # 5 min delay to make sure API is up and running and drop pod after 60 seconds (4*15s) if API didn't respond
+            initialDelaySeconds: 180
+            periodSeconds: 15
+            failureThreshold: 4
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+        - name: cp-cluster-ssh-key
+          secret:
+            secretName: cp-cluster-ssh-key
+            # Kube accepts mode in decimal. So 384 gives 600, which is required for SSH keys
+            defaultMode: 384
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

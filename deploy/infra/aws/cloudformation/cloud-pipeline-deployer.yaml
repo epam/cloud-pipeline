@@ -1,0 +1,706 @@
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Deploys Cloud-Pipeline solution on top of AWS infrastructure. 
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - 
+        Label: 
+          default: "General configuration"
+        Parameters: 
+          - DeploymentName
+          - DeploymentEnv
+          - DeploymentAWSCredentialsSecretId
+          - JumpServerInstanceType
+          - JumpServerAmiId
+      - 
+        Label: 
+          default: "Network configuration"
+        Parameters: 
+          - VpcId
+          - CPEdgeAwsELBSchema
+          - CPEdgeAwsELBIP
+          - CPEdgeAwsELBSubnet
+          - CPSystemSubnetId
+          - SubnetIds
+          - CPExternalAccessSecurityGroupIds
+  
+      - 
+        Label: 
+          default: "Infrastructure configuration"
+        Parameters: 
+          - EKSVersion
+          - EKSAdminIAMRoleArns
+          - EKSAdminIAMUserArns
+          - IAMRolePermissionsBoundaryArn
+      - 
+        Label: 
+          default: "Application configuration"
+        Parameters:
+          - CPApplicationName
+          - CPApiSrvHost
+          - CPEdgeHost
+          - CPDockerHost
+          - CPGitlabHost
+          - CPIdpHost
+          - CPAssetsS3Url
+          - CPPipectlUrl
+          - CPDefaultAdmin
+          - CPNetworkFileSystemType  
+    ParameterLabels: 
+      DeploymentName: 
+        default: "Deployment name"
+      DeploymentEnv: 
+        default: "Environment name"
+      DeploymentAWSCredentialsSecretId: 
+        default: "Name of the AWS Secret with AWS credentials"
+      JumpServerInstanceType: 
+        default: "Jump Server EC2 instance type"
+      JumpServerAmiId: 
+        default: "Jump Server EC2 instance image"
+      VpcId: 
+        default: "ID of the deployment VPC"
+      CPEdgeAwsELBSchema: 
+        default: "Application network schema"
+      CPEdgeAwsELBIP: 
+        default: "Private IP/Elastic IP for the ELB"
+      CPEdgeAwsELBSubnet: 
+        default: "ID of the subnet for Elastic Load Balancer"
+      CPSystemSubnetId: 
+        default: "Application subnet ID"
+      SubnetIds: 
+        default: "Private application subnet IDs"
+      CPExternalAccessSecurityGroupIds: 
+        default: "List of AWS Security Groups IDs"
+      EKSVersion: 
+        default: "Version of the EKS cluster"
+      EKSAdminIAMRoleArns: 
+        default: "List of EKS admin IAM roles"
+      EKSAdminIAMUserArns: 
+        default: "List of EKS admin IAM users"
+      IAMRolePermissionsBoundaryArn: 
+        default: "IAM Role permissions boundary ARN"
+      CPApplicationName:
+        default: "Application name"
+      CPApiSrvHost: 
+        default: "Application domain name"
+      CPEdgeHost: 
+        default: "Edge service domain name"
+      CPDockerHost: 
+        default: "Internal Docker Registry service domain name"
+      CPGitlabHost: 
+        default: "Internal GitLab service domain name"
+      CPIdpHost: 
+        default: "Internal IdP service domain name"
+      CPAssetsS3Url: 
+        default: "Link to the file on S3 bucket with deployment assets"
+      CPPipectlUrl:
+        default: "Link to the pipectl binary"
+      CPDefaultAdmin:
+        default: "Application admin account"
+      CPNetworkFileSystemType: 
+        default: "Application File System type"
+
+Parameters:
+  DeploymentName:
+    Type: String
+    AllowedPattern: "^[a-z0-9-]+$"
+    ConstraintDescription: Malformed input parameter, must match pattern [a-z0-9-]+
+    MaxLength: 16
+    Description: (Required) Name of the deployment. Will be used as resources name prefix. Pattern [a-z0-9-]+
+  DeploymentEnv:
+    Type: String
+    AllowedPattern: "^[a-z0-9]+$"
+    ConstraintDescription: Malformed input parameter, must match pattern [a-z0-9]+
+    MaxLength: 8
+    Description: (Required) Environment name. Will be used as resources name prefix. Pattern [a-z0-9]+
+  DeploymentAWSCredentialsSecretId:
+    Type: String
+    Description: >
+      (Optional) Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure.
+      If not set the TFDeployRole will be created with full administrator access and assumed to Jump-Server role.
+    Default: ""
+  JumpServerInstanceType:
+    Type: String
+    Description: (Optional) Jump-server EC2 instance type.
+    Default: t3.large
+  JumpServerAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: (Optional) EKS based Image id that will be used for Jump-Server, by default will be latest version for EKS 1.31. See README.md for more information.
+    Default: /aws/service/eks/optimized-ami/1.31/amazon-linux-2/recommended/image_id
+  VpcId:
+    Type: String
+    Description: (Required) Id of the VPC where all resources will be created.
+  SubnetIds:
+    Type: String
+    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list.
+  EKSVersion:
+    Type: String
+    Description: (Optional) Version of the AWS EKS Cluster to install. See README.md for more information.
+    Default: "1.31"
+  EKSAdminIAMRoleArns:
+    Type: String
+    Description: > 
+      (Optional) List of roles ARNs which will gain cluster admin access to the EKS cluster. 
+      Could be useful if DeploymentAWSCredentialsSecretId is not provided. In this case administrator can provide ARN of his role to get admin access to the cluster.
+    Default: ""
+  EKSAdminIAMUserArns:
+    Type: String
+    Description: >
+      (Optional) Set of IAM user ARNs which will get admin access in EKS cluster.
+      Could be useful if DeploymentAWSCredentialsSecretId is not provided. In this case administrator can provide ARN of his IAM User to get admin access to the cluster.
+    Default: ""
+  IAMRolePermissionsBoundaryArn:
+    Type: String
+    Description: (Optional) Account specific role boundaries, this value will be used for all created IAM Roles during deployment.
+    Default: ""
+  CPSystemSubnetId:
+    Type: String
+    Description: >
+      (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (to host Cloud-Pipeline internal components) will be created.
+      Must be in the same Availability Zone (AZ) as the 'ID of the subnet for Elastic Load Balancer'.
+  CPNetworkFileSystemType:
+    Type: String
+    Description: (Optional) Network FileSystem type that will be created. Can be efs or fsx. Default efs.
+    Default: efs
+    AllowedValues:
+      - efs
+      - fsx
+  CPExternalAccessSecurityGroupIds:
+    Type: String
+    Description: (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services. 
+    Default: ""
+  CPEdgeAwsELBSubnet:
+    Type: String
+    Description: >
+      (Required) The ID of the public subnet for the Load Balancer to be created. 
+      Must be in the same Availability Zone (AZ) as the 'Application subnet ID'.
+  CPEdgeAwsELBIP:
+    Type: String
+    Description: >
+      (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP from private subnet CIDR allocation in case of internal ELB. 
+      See README.md for more information.
+  CPEdgeAwsELBSchema:
+    Type: String
+    Description: >
+      (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internal'.
+    Default: "internal"
+    AllowedValues:
+      - "internet-facing"
+      - "internal"
+  CPApplicationName:
+    Type: String
+    Default: "Cloud-Pipeline"
+    Description: (Required) This name will be displayed on some of the UI elements of the application.
+  CPApiSrvHost:
+    Type: String
+    Description: (Required) API Service domain name address. See README.md for more information.
+  CPDockerHost:
+    Type: String
+    Description: (Required) Internal Docker registry service domain name address. See README.md for more information.
+  CPEdgeHost:
+    Type: String
+    Description: (Required) EDGE service domain name address. See README.md for more information.
+  CPGitlabHost:
+    Type: String 
+    Description: (Required) Internal GitLab service domain name address. See README.md for more information.
+  CPIdpHost:
+    Type: String
+    Description: > 
+      (Optional) Self hosted IDP service domain name address. 
+      WARNING: Using self hosted IDP service in production environment strongly not recommended!
+      If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline. 
+      See README.md for more information.
+    Default: ""
+  CPAssetsS3Url:
+    Type: String
+    Description: >
+      (Optional) Link to zip archive with additional assets on AWS S3 bucket (SSL certificates, SSO metadata, etc.). For example s3://<bucket-name>/<filename.zip>. 
+      See README.md for more information of the archive file
+    Default: ""
+  CPPipectlUrl:
+    Type: String
+    Description: (Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline.
+  CPDefaultAdmin:
+    Type: String
+    Default: ""
+    Description: (Optional) Default administrator of the Cloud-Pipeline.
+
+Conditions:
+    IsSecretNotEntered: !Equals [!Ref DeploymentAWSCredentialsSecretId, ""]
+    IsBoundaryNotEntered: !Equals [!Ref IAMRolePermissionsBoundaryArn, ""]
+
+Resources:
+
+    TerraformS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: !Join
+        - "-"
+        - - !Ref "AWS::AccountId"
+          - !Ref "AWS::Region"
+          - !Select
+            - 0
+            - !Split
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref "AWS::StackId"
+          - "tfstate"
+        VersioningConfiguration:
+          Status: Enabled
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+    TerraformDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: !Join
+          - "-"
+          - - !Ref "AWS::AccountId"
+            - !Ref "AWS::Region"
+            - !Select
+              - 0
+              - !Split
+                - "-"
+                - !Select
+                  - 2
+                  - !Split
+                    - "/"
+                    - !Ref "AWS::StackId"
+            - "tflock"
+        AttributeDefinitions:
+        - AttributeName: LockID
+          AttributeType: S
+        KeySchema:
+        - AttributeName: LockID
+          KeyType: HASH
+        BillingMode: PAY_PER_REQUEST  
+     
+    JumpServerIAMRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        RoleName: !Sub "${DeploymentName}-${DeploymentEnv}-JumpServer-role"
+        Path: /
+        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMRolePermissionsBoundaryArn ]
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - ec2.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Policies:
+         - PolicyName: !Sub ${DeploymentName}-${DeploymentEnv}-JumpServer-read-secret
+           PolicyDocument:
+             Version: 2012-10-17
+             Statement:
+             - Effect: Allow
+               Action:
+                   - secretsmanager:GetSecretValue
+               Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+          - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+          - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+          - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+          - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+          - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+    
+    JumpServerInstanceProfile:
+      Type: 'AWS::IAM::InstanceProfile'
+      Properties:
+        Path: /
+        Roles: 
+          - !Ref JumpServerIAMRole
+
+    TFDeployRole:
+      Type: 'AWS::IAM::Role'
+      Condition: IsSecretNotEntered
+      Properties:
+        RoleName: !Sub "${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role"
+        Path: /
+        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMRolePermissionsBoundaryArn ]
+        MaxSessionDuration: 21600
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                AWS: !GetAtt [ 'JumpServerIAMRole', 'Arn' ]
+              Action:
+                - 'sts:AssumeRole'
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AdministratorAccess      
+
+    JumpboxSG:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: !Sub "${DeploymentName}-${DeploymentEnv}-jumpserver-sg"
+        VpcId: !Ref VpcId
+        SecurityGroupEgress:
+          - IpProtocol: '-1'
+            CidrIp: 0.0.0.0/0
+
+# Resource TFDeployRole created conditionally and in this case we cannot refer to this resource in 
+# UserData(stack creation will fail if TFDeployRole was not created) that why we generate role name in UserData manually 
+  
+    CloudPipelineDeployerInstance:
+      Type: AWS::EC2::Instance
+      DependsOn: TerraformS3Bucket
+      Properties:
+        IamInstanceProfile: !Ref JumpServerInstanceProfile
+        ImageId: !Ref JumpServerAmiId
+        InstanceType: !Ref JumpServerInstanceType
+        SecurityGroupIds: 
+          - !GetAtt JumpboxSG.GroupId
+        SubnetId: !Ref CPSystemSubnetId
+        BlockDeviceMappings:
+          - DeviceName: "/dev/xvda"
+            Ebs:
+              VolumeSize: 500
+        UserData: 
+          "Fn::Base64": !Sub | 
+              #!/bin/bash
+            
+              export HOME=/root
+              export CLOUD_PIPELINE_DEPLOY_DIR=$HOME/cloud-pipeline
+              export AWS_INFRA_DEPLOY_DIR=$CLOUD_PIPELINE_DEPLOY_DIR/infra
+              export PIPECTL_DEPLOY_DIR=$CLOUD_PIPELINE_DEPLOY_DIR/pipectl-deploy
+              echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
+            
+              ######################################
+              ### Installation required packages ###
+              ######################################
+              sudo yum install git jq curl vim wget unzip -y
+              sudo yum remove awscli -y
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+              unzip awscliv2.zip && \
+              sudo ./aws/install && \
+              rm -rf awscliv2.zip ./aws
+
+              sudo wget https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
+              sudo unzip terraform_1.5.0_linux_amd64.zip 
+              chmod +x terraform
+              sudo mv terraform /usr/local/bin/
+              sudo rm terraform_1.5.0_linux_amd64.zip
+
+              curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
+              sudo install -o root -g root -m 0755 kubectl /usr/bin/kubectl
+
+              sudo yum install -y docker
+              sudo systemctl enable docker
+              sudo systemctl start docker
+            
+              ##############################################
+              ### Preparation of Terraform configuration ###
+              ##############################################
+              sudo mkdir -p $AWS_INFRA_DEPLOY_DIR && \
+              cd $AWS_INFRA_DEPLOY_DIR
+
+              cat << EOF > main.tf
+              terraform {
+                backend "s3" {
+                  bucket         = "${TerraformS3Bucket}"
+                  key            = "${DeploymentEnv}/terraform.tfstate"
+                  region         = "${AWS::Region}"
+                  encrypt        = true
+                  dynamodb_table = "${TerraformDynamoDBTable}"
+                }
+                required_version = "1.5.0"
+              }
+
+              provider "aws" {
+                region = "${AWS::Region}"
+              }
+
+              provider "kubernetes" {
+                host                   = module.cluster-infra.cluster_endpoint
+                cluster_ca_certificate = base64decode(module.cluster-infra.cluster_certificate_authority_data)
+
+                exec {
+                  api_version = "client.authentication.k8s.io/v1beta1"
+                  command     = "aws"
+                  # This requires the awscli to be installed locally where Terraform is executed
+                  args = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
+                }
+              }
+
+              provider "helm" {
+                kubernetes {
+                  host                   = module.cluster-infra.cluster_endpoint
+                  cluster_ca_certificate = base64decode(module.cluster-infra.cluster_certificate_authority_data)
+
+                  exec {
+                    api_version = "client.authentication.k8s.io/v1beta1"
+                    command     = "aws"
+                    # This requires the awscli to be installed locally where Terraform is executed
+                    args = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
+                  }
+                }
+              }
+
+              provider "postgresql" {
+                host      = module.cluster-infra.rds_address
+                port      = module.cluster-infra.rds_port
+                username  = module.cluster-infra.rds_root_username
+                password  = module.cluster-infra.rds_root_pass_secret
+                superuser = false
+              }
+            
+              locals {
+                additional_role_arns_for_cluster_admin = trimspace("${EKSAdminIAMRoleArns}") != "" ? tolist(split(",", trimspace("${EKSAdminIAMRoleArns}"))) : []
+                additional_user_arns_for_cluster_admin = trimspace("${EKSAdminIAMUserArns}") != "" ? tolist(split(",", trimspace("${EKSAdminIAMUserArns}"))) : []
+              }
+
+
+              module "cluster-infra" {
+                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
+                deployment_name                    = trimspace("${DeploymentName}")
+                deployment_env                     = trimspace("${DeploymentEnv}")
+                vpc_id                             = trimspace("${VpcId}")
+                eks_cluster_version                = trimspace("${EKSVersion}")
+                external_access_security_group_ids = trimspace("${CPExternalAccessSecurityGroupIds}") != "" ?  tolist([for sgid in split(",", "${CPExternalAccessSecurityGroupIds}"): trimspace(sgid)]) : []
+                subnet_ids                         = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
+                iam_role_permissions_boundary_arn  = trimspace("${IAMRolePermissionsBoundaryArn}") != "" ? trimspace("${IAMRolePermissionsBoundaryArn}") : null
+                eks_system_node_group_subnet_ids   = [trimspace("${CPSystemSubnetId}")]
+                deploy_filesystem_type             = trimspace("${CPNetworkFileSystemType}")
+                cp_deployment_id                   = trimspace("${CPApplicationName}")
+                cp_edge_elb_schema                 = trimspace("${CPEdgeAwsELBSchema}")
+                cp_edge_elb_subnet                 = trimspace("${CPEdgeAwsELBSubnet}")
+                cp_edge_elb_ip                     = trimspace("${CPEdgeAwsELBIP}")
+                cp_api_srv_host                    = trimspace("${CPApiSrvHost}")
+                cp_idp_host                        = trimspace("${CPIdpHost}")
+                cp_docker_host                     = trimspace("${CPDockerHost}")
+                cp_edge_host                       = trimspace("${CPEdgeHost}")
+                cp_gitlab_host                     = trimspace("${CPGitlabHost}")
+                cp_default_admin_name              = trimspace("${CPDefaultAdmin}") != "" ? trimspace("${CPDefaultAdmin}") : null
+            
+                eks_additional_role_mapping        = concat(
+                  [
+                    {
+                      iam_role_arn  = "${JumpServerIAMRole.Arn}"
+                      eks_role_name = "system:node:{{EC2PrivateDNSName}}"
+                      eks_groups    = ["system:bootstrappers", "system:nodes"]
+                    }
+                  ],
+                  [
+                    for role_arn in local.additional_role_arns_for_cluster_admin : {
+                      iam_role_arn  = role_arn
+                      eks_role_name = "user-defined:cluster-admin"
+                      eks_groups    = ["system:masters"]
+                    }
+                  ]
+                )
+            
+                eks_additional_user_mapping        = [
+                  for user_arn in local.additional_user_arns_for_cluster_admin : {
+                    iam_user_arn  = user_arn
+                    eks_role_name = "user-defined:cluster-admin"
+                    eks_groups    = ["system:masters"]
+                  }
+                ]
+              }
+
+
+              output "filesystem_mount" {
+                value = module.cluster-infra.cp_filesystem_mount_point 
+              }
+
+              output "filesystem_type" {
+                value = module.cluster-infra.deploy_filesystem_type 
+              }
+
+              output "cp_pipectl_script" {
+                value = module.cluster-infra.cp_deploy_script
+              }
+
+              output "cp_cloud_network_config" {
+                value = module.cluster-infra.cp_cloud_network_config
+              }
+              EOF
+
+              cat  << EOF > versions.tf
+              terraform {
+                required_providers {
+                  postgresql = {
+                    source  = "cyrilgdn/postgresql"
+                    version = "1.22.0"
+                  }
+                }
+              }
+              EOF
+            
+              ##########################################
+              ### Assume appropriate creds to deploy ###
+              ##########################################
+              CP_SECRET=${DeploymentAWSCredentialsSecretId}
+              if [ -n "$CP_SECRET"  ]; then
+                 creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
+                 eval $creds
+              else   
+                 export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                 $(aws sts assume-role \
+                 --role-arn arn:aws:iam::${AWS::AccountId}:role/${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role \
+                 --role-session-name TFDeploy \
+                 --duration-seconds 21600 \
+                 --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+                 --output text))
+              fi   
+            
+              #########################################
+              ### Start of the terraform deployment ###
+              #########################################
+              terraform init 
+              terraform apply --auto-approve &> terraform_apply.log
+            
+              #####################################
+              ### Prepare infra deletion script ###
+              #####################################
+              cat << EOF > "$CLOUD_PIPELINE_DEPLOY_DIR/delete_all_cp_infra.sh"
+              #!/bin/bash
+              echo "-----------SET ACCESS TO AWS-----------------" 
+              export CP_SECRET=${DeploymentAWSCredentialsSecretId}
+              if [ -n "\$CP_SECRET"  ]; then
+                  creds=\$(aws secretsmanager get-secret-value --secret-id \$CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
+                  eval \$creds
+              else   
+                  export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                  \$(aws sts assume-role \
+                  --role-arn arn:aws:iam::${AWS::AccountId}:role/${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role \
+                  --role-session-name TFDeploy \
+                  --duration-seconds 21600 \
+                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+                  --output text))
+              fi
+              while true; do
+                  read -p "Are you sure you want to delete cloud pipeline and all infrastructure resources? [y/N]" yn
+                  case \$yn in
+                      Yes|yes|Y|y ) export APPROVE="TRUE"; break;;
+                      No|no|N|n ) exit;;
+                      * ) echo "Please answer Yes or No.";;
+                  esac
+              done
+              
+              if [ "\$APPROVE" == "TRUE" ]; then
+                 echo "START DESTROYING TERRAFORM RESOURCES!"
+              
+                 cd $AWS_INFRA_DEPLOY_DIR && \
+                 kubectl delete service ingress && \
+                 terraform destroy --auto-approve
+              
+                 if [ "\$?" -ne 0 ]; then
+                    echo "Something went wrong during automated resources deletion process! Manual intervention is required!"
+                    exit 1
+                 else
+                    echo "INFRASTRUCTURE RESOURCES DESTROYED! NOW YOU CAN DELETE CLOUDFORMATION STACK!"
+                 fi
+              else 
+                 echo "DELETION ABORTED!"
+              fi
+              EOF
+              
+              chmod +x "$CLOUD_PIPELINE_DEPLOY_DIR/delete_all_cp_infra.sh"
+            
+              ##########################################
+              ### Preparation for the pipectl deploy ###
+              ##########################################
+              CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
+              fs_mount=$(terraform output -raw filesystem_mount)
+              if [ "$CP_FILE_SYSTEM" == "efs" ]; then
+                 sudo yum install amazon-efs-utils -y 
+                 sudo mount -t efs -o tls $fs_mount  /opt 
+              else 
+                 sudo amazon-linux-extras install -y lustre
+                 sudo mount -t lustre -o relatime,flock $fs_mount /opt 
+              fi
+
+              sudo mkdir -p /opt/root/ssh
+              terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem
+            
+              sudo mkdir -p $PIPECTL_DEPLOY_DIR
+              terraform output -raw cp_cloud_network_config > "$PIPECTL_DEPLOY_DIR/cluster.networks.config.json" && \
+              export CP_CLUSTER_NETWORKS_CONFIG_JSON="$PIPECTL_DEPLOY_DIR/cluster.networks.config.json" && \
+              terraform output -raw cp_pipectl_script | envsubst > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
+              chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
+            
+              CP_S3Link=${CPAssetsS3Url}
+              if [ -n "$CP_S3Link"  ]; then
+                 aws s3 cp $CP_S3Link . && unzip *.zip -d /opt \
+                 # Finish configuration of PKI
+                  openssl pkcs12 -export \
+                  -in /opt/common/pki/ca-public-cert.pem \
+                  -inkey /opt/common/pki/ca-private-key.pem \
+                  -out /opt/common/pki/common-ssl.p12 \
+                  -name ssl \
+                  -password pass:changeit
+                 # Symlink SSL to API
+                  mkdir -p /opt/api/pki
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/api/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/api/pki/ssl-private-key.pem
+                  ln -s /opt/common/pki/common-ssl.p12 /opt/api/pki/cp-api-srv-ssl.p12
+                 # Symlink SSL to Docker Registry
+                  mkdir -p /opt/docker-registry/pki
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/docker-registry/pki/docker-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/docker-registry/pki/docker-private-key.pem
+                 # Symlink SSL to EDGE
+                  mkdir -p /opt/edge/pki
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/edge/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/edge/pki/ssl-private-key.pem
+                 # Symlink SSL to Git
+                  mkdir -p /opt/gitlab/pki
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/gitlab/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
+              fi
+            
+              cd $PIPECTL_DEPLOY_DIR
+              wget -c ${CPPipectlUrl} -O pipectl && chmod +x pipectl
+              ./deploy_cloud_pipeline.sh &> pipectl.log
+              
+        Tags:
+        - Key: Name
+          Value: !Sub "${DeploymentName}-${DeploymentEnv}-JumpServer"
+        - Key: Deployment
+          Value: !Sub "${DeploymentName}"
+        - Key: Environment
+          Value: !Sub "${DeploymentEnv}"
+
+Outputs:
+  InstanceID:
+    Description: "Instance ID"
+    Value: !Ref CloudPipelineDeployerInstance
+  InstanceConnect:
+    Description: "SSM connect to JumpBox command"
+    Value: !Sub "aws ssm start-session --target ${CloudPipelineDeployerInstance} --region ${AWS::Region}" 
+  TFStateS3Bucket:
+    Description: S3 Bucket name where terraform state stored
+    Value: !Ref TerraformS3Bucket
+  TFStateDynamoDBTable: 
+    Description: DynamoDB table name where terraform state lock stored     
+    Value: !Ref TerraformDynamoDBTable
+
+
+
+
+

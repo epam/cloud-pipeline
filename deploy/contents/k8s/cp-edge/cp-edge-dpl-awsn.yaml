@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-edge
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-edge: "true"
+      cloud-pipeline/role: "EDGE"
+      cloud-pipeline/region: $CP_CLOUD_REGION_ID
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-edge: "true"
+        cloud-pipeline/role: "EDGE"
+        cloud-pipeline/region: $CP_CLOUD_REGION_ID
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-edge: "true"
+        cloud-pipeline/region: $CP_CLOUD_REGION_ID
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-edge
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:edge-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          env:
+          - name: NODE_OPTIONS
+            value: "--max_old_space_size=4096"
+          - name: CP_EDGE_REGION
+            value: $CP_CLOUD_REGION_ID
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+          volumeMounts:
+            - mountPath: /var/log
+              subPath: edge/logs/$CP_CLOUD_REGION_ID
+              name: cp-system
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/gitlab/pki
+              subPath: gitlab/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/docker-registry/pki
+              subPath: docker-registry/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/idp/pki
+              subPath: idp/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/edge/pki
+              subPath: edge/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /etc/nginx/ext/external-apps
+              subPath: edge/external-apps
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/share-srv/pki
+              subPath: share-srv/pki
+              name: cp-system
+              readOnly: true
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

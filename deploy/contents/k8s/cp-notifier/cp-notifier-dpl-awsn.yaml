@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-notifier
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-notifier: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: cp-notifier
+      namespace: default
+      labels:
+        cloud-pipeline/cp-notifier: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-notifier: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-notifier
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:notifier-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+          volumeMounts:
+            - mountPath: /opt/notifier/logs
+              subPath: notifier/logs
+              name: cp-system
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
+    
