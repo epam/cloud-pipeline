@@ -237,21 +237,24 @@ fi
 
 systemctl stop docker
 
-_DOCKER_SYS_IMGS="/ebs/docker-system-images"
-rm -rf $_DOCKER_SYS_IMGS
-_KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
-if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
-  _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
-fi
-mkdir -p $_DOCKER_SYS_IMGS
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
-if [ $? -ne 0 ]; then
-  _DOCKER_SYS_IMGS="/opt/docker-system-images"
+skip_system_images_load="@SKIP_SYSTEM_IMAGES_LOAD@"
+if [ "$skip_system_images_load" != "true" ]; then
+  _DOCKER_SYS_IMGS="/ebs/docker-system-images"
+  rm -rf $_DOCKER_SYS_IMGS
+  _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
+  if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
+    _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
+  fi
+  mkdir -p $_DOCKER_SYS_IMGS
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
+  if [ $? -ne 0 ]; then
+    _DOCKER_SYS_IMGS="/opt/docker-system-images"
+  fi
 fi
 
 
@@ -262,12 +265,20 @@ fi
 
 mkdir -p /etc/docker
 
-if [[ $FS_TYPE == "ext4" ]]; then
-  DOCKER_STORAGE_DRIVER="overlay2"
-  DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
-else
-  DOCKER_STORAGE_DRIVER="btrfs"
-  DOCKER_STORAGE_OPTS=""
+docker_storage_driver="@DOCKER_STORAGE_DRIVER@"
+if [ -z "$docker_storage_driver" ] || [[ "$docker_storage_driver" == "@"*"@" ]]; then
+  if [[ $FS_TYPE == "ext4" ]]; then
+    docker_storage_driver="overlay2"
+    DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
+  else
+    docker_storage_driver="btrfs"
+    DOCKER_STORAGE_OPTS=""
+  fi
+fi
+
+docker_data_root="@DOCKER_DATA_ROOT@"
+if [ -z "$docker_data_root" ] || [[ "$docker_data_root" == "@"*"@" ]]; then
+  docker_data_root="/ebs/docker"
 fi
 
 if check_installed "nvidia-smi"; then
@@ -276,8 +287,8 @@ if check_installed "nvidia-smi"; then
 cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
-  "data-root": "/ebs/docker",
-  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  "data-root": "$docker_data_root",
+  "storage-driver": "$docker_storage_driver",
   $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
@@ -293,8 +304,8 @@ else
 cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
-  "data-root": "/ebs/docker",
-  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  "data-root": "$docker_data_root",
+  "storage-driver": "$docker_storage_driver",
   $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1
 }
@@ -471,10 +482,12 @@ systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
 
-for _KUBE_SYSTEM_POD_FILE in $_DOCKER_SYS_IMGS/*.tar; do
-  docker load -i $_KUBE_SYSTEM_POD_FILE
-done
-rm -rf $_DOCKER_SYS_IMGS
+if [ "$skip_system_images_load" != "true" ]; then
+  for _KUBE_SYSTEM_POD_FILE in $_DOCKER_SYS_IMGS/*.tar; do
+    docker load -i $_KUBE_SYSTEM_POD_FILE
+  done
+  rm -rf $_DOCKER_SYS_IMGS
+fi
 
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet

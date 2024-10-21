@@ -439,12 +439,12 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
                  availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network,
-                 input_tags):
+                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
-                                            run_id)
+                                            run_id, docker_data_root, docker_storage_driver, skip_system_images_load)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
@@ -803,7 +803,8 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
-                         global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id):
+                         global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id, docker_data_root, docker_storage_driver,
+                         skip_system_images_load):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -832,6 +833,9 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                                            .replace('@API_USER@', api_user) \
                                            .replace('@FS_TYPE@', fs_type) \
                                            .replace('@NODE_SSH_PORT@', node_ssh_port) \
+                                           .replace('@DOCKER_DATA_ROOT@', docker_data_root) \
+                                           .replace('@DOCKER_STORAGE_DRIVER@', docker_storage_driver) \
+                                           .replace('@SKIP_SYSTEM_IMAGES_LOAD@', skip_system_images_load) \
                                            .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
                                            .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
                                            .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
@@ -1486,6 +1490,9 @@ def main():
     parser.add_argument("--security_groups", type=str, required=False)
     parser.add_argument("--dedicated", type=bool, required=False)
     parser.add_argument("--node_ssh_port", type=str, default='')
+    parser.add_argument("--docker_data_root", type=str, default='/ebs/docker')
+    parser.add_argument("--docker_storage_driver", type=str, default='')
+    parser.add_argument("--skip_system_images_load", type=str, default='')
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
     parser.add_argument("--tags", type=str, default=[], required=False, action='append')
@@ -1520,6 +1527,9 @@ def main():
     subnet = args.subnet_id
     is_dedicated = args.dedicated if args.dedicated else False
     node_ssh_port = args.node_ssh_port
+    docker_data_root = args.docker_data_root
+    docker_storage_driver = args.docker_storage_driver
+    skip_system_images_load = args.skip_system_images_load
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
@@ -1547,7 +1557,9 @@ def main():
              '- IsSpot: {}\n'
              '- BidPrice: {}\n'
              '- Repeat attempts: {}\n'
-             '- Repeat timeout: {}\n-'.format(aws_region,
+             '- Repeat timeout: {}\n-'
+             '- Docker data root: {}\n-'
+             '- Docker storage driver: {}\n-'.format(aws_region,
                                         run_id,
                                         ins_type,
                                         ins_hdd,
@@ -1556,7 +1568,9 @@ def main():
                                         str(is_spot),
                                         str(bid_price),
                                         str(num_rep),
-                                        str(time_rep)))
+                                        str(time_rep),
+                                        docker_data_root,
+                                        docker_storage_driver))
 
     try:
         # Hacking max max_attempts to get rid of
@@ -1614,7 +1628,8 @@ def main():
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
-                                          availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags)
+                                          availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags,
+                                          docker_data_root, docker_storage_driver, skip_system_images_load)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 

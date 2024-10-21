@@ -21,5 +21,14 @@
     "CP_CAP_EFA_ENABLED": {
         "argumentName": "--performance_network",
         "type": "BOOLEAN"
+    },
+    "CP_CAP_NODE_DOCKER_DATA_ROOT": {
+        "argumentName": "--docker_data_root"
+    },
+    "CP_CAP_NODE_DOCKER_STORAGE_DRIVER": {
+        "argumentName": "--docker_storage_driver"
+    },
+    "CP_CAP_NODE_DOCKER_SKIP_SYSTEM_IMAGES_LOAD": {
+        "argumentName": "--skip_system_images_load"
     }
 }
