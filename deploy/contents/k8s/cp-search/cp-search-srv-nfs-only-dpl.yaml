@@ -1,9 +1,12 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-search-srv-nfs-only
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-srv: "true"
   replicas: 1
   template:
     metadata:

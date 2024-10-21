@@ -1,9 +1,12 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_NAME}
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-deployment-autoscaler: "true"
   replicas: 1
   template:
     metadata:

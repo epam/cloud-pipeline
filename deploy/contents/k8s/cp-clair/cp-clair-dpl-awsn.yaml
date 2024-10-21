@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-clair
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-clair: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-clair: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-clair: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-clair
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:clair-$CP_VERSION
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /usr/local/share/ca-certificates/cp-docker-registry
+              subPath: docker-registry/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

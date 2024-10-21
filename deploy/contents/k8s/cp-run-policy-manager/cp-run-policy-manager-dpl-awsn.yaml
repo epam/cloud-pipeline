@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-run-policy-manager
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-run-policy-manager: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-run-policy-manager: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-run-policy-manager: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-run-policy-manager
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-policy-manager-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: [ "/policy-manager/init" ]
+          env:
+            - name: CP_RUN_POLICY_MANAGER_POLL_PERIOD_SEC
+              value: "5"
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - mountPath: /policy-manager/logs
+              subPath: run-policy-manager/logs
+              name: cp-system
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc

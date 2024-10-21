@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-docker-registry
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-docker-registry: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-docker-registry: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-docker-registry: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-docker-registry
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:registry-$CP_VERSION
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 443
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          env:
+          - name: REGISTRY_HTTP_ADDR
+            value: "0.0.0.0:80"
+          volumeMounts:
+            - mountPath: /opt/docker-registry/pki
+              subPath: docker-registry/pki
+              name: cp-system
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+            - mountPath: /var/lib/registry
+              subPath: docker-registry/images
+              name: cp-system
+            - mountPath: /usr/local/share/ca-certificates/cp-api
+              subPath: api/pki
+              name: cp-system
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 4
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

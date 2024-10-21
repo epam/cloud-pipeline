@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -682,6 +682,8 @@ read -r -d '' payload <<-EOF
     "tempCredentialsRole":"$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE",
     "versioningEnabled":true,
     "backupDuration":${CP_PREF_STORAGE_BACKUP_DURATION:-20},
+    "omicsServiceRole":"$CP_PREF_AWS_OMICS_SERVICE_ROLE",
+    "omicsEcrUrl":"$CP_PREF_AWS_OMICS_ECR_REGISTRY",
     "kmsKeyId":"$encryption_key_id",
     "kmsKeyArn":"$encryption_key_arn",
     "corsRules":"$cors_rules"
@@ -894,6 +896,7 @@ function api_setup_base_preferences {
 
     ## Git
     api_set_preference "git.repository.indexing.enabled" "false" "false"
+    api_set_preference "git.gitlab.api.version" "${CP_GITLAB_API_VERSION:-"v3"}" "false"
     api_set_preference "git.fsbrowser.workdir" "${CP_FSBROWSER_VS_WD:-"/git-workdir"}" "true"
 
     ## Launch
@@ -974,7 +977,12 @@ function api_setup_base_preferences {
     api_preference_drop_array
 
     ## Set cluster.networks.config preference
-    local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
+    local cloud_config_network_file
+    if [ ! -z "$CP_CLOUD_NETWORK_CONFIG_FILE" ] && [ -f "$CP_CLOUD_NETWORK_CONFIG_FILE" ]; then
+          cloud_config_network_file="$CP_CLOUD_NETWORK_CONFIG_FILE"
+    else
+          cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
+    fi
     if [ -f "$cloud_config_network_file" ]; then
         local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
         
