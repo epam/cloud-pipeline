@@ -112,6 +112,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
@@ -157,6 +159,8 @@
                 <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
                 </li>
     </ul>
                   </li>
@@ -388,6 +392,18 @@
                 </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="#">AWS</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" href="../../../installation/deployment/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l3"><a class="reference internal" href="../../../installation/deployment/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
                 <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
@@ -509,7 +525,7 @@
 </tr>
 <tr>
 <td><code>-t</code> / <code>--type</code></td>
-<td>Type of the Cloud for the object storage. Depends on the Cloud Provider. Possible values - <code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) and <code>NFS</code> (for FS mounts)</td>
+<td>Type of the Cloud for the object storage. Depends on the Cloud Provider. Possible values - <code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) and <code>NFS</code> (for FS mounts).<br/>Additionally, for AWS HealthOmics Storages - <code>AWS_OMICS_REF</code> (for <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/#reference-store">reference store</a>) and <code>AWS_OMICS_SEQ</code> (for <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/#sequence-store">sequence store</a>).</td>
 </tr>
 <tr>
 <td><code>-f</code> / <code>--parent_folder</code></td>
@@ -563,7 +579,12 @@ As you can see - <strong>Description</strong>, <strong>Type of the Cloud</strong
 <p>The command to view the content of the datastorage:</p>
 <pre><code class="language-bash">pipe storage ls [OPTIONS] &lt;Path&gt;
 </code></pre>
-<p><strong>Path</strong> - defines a full path to the datastorage. <strong>Path</strong> value must begin from the Cloud prefix (<code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) or common <code>CP</code>(instead of described ones, regardless of Provider)).</p>
+<p><strong>Path</strong> - defines a full path to the datastorage.<br />
+<strong>Path</strong> value must begin from the Cloud prefix:</p>
+<ul>
+<li><code>s3</code> (for AWS) / <code>az</code> (for MS Azure) / <code>gs</code> (for GCP) / common <code>cp</code> (instead of described ones, regardless of Provider)</li>
+<li><em>OR</em> <code>omics</code> (for <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/">AWS HealthOmics Storages</a>)</li>
+</ul>
 <table>
 <thead>
 <tr>
@@ -829,6 +850,10 @@ By <code>mv</code> command you can move files from one datastorage to another on
 <tr>
 <td><code>-sl</code> / <code>--symlinks</code> [follow|filter|skip]</td>
 <td>Describe symlinks processing strategy for local sources. Possible values: <strong><em>follow</em></strong> - follow symlinks (default); <strong><em>skip</em></strong> - do not follow symlinks; <strong><em>filter</em></strong> - follow symlinks but check for cyclic links</td>
+</tr>
+<tr>
+<td><code>-a</code> / <code>--additional-options</code></td>
+<td><em>For <code>cp</code> command only</em>. Comma-separated list of additional arguments to be used during file copy</td>
 </tr>
 </tbody>
 </table>
