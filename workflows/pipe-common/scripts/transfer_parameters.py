@@ -35,7 +35,7 @@ import socket
 LOCALIZATION_TASK_NAME = 'InputData'
 VALUE_DELIMITERS = [',', ' ', ';']
 HTTP_FTP_SCHEMES = ['http://', 'ftp://', 'https://', 'ftps://']
-CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://', 'gs://']
+CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://', 'gs://', 'omics://']
 TRANSFER_ATTEMPTS = 3
 
 
@@ -469,11 +469,73 @@ class InputDataTask:
             remote = urlparse.urlparse(path)
             relative_path = path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
             local_dir = self.get_local_dir(input_type)
-            local_path = self.join_paths(local_dir, relative_path)
+
+            omics_parsed_path = re.search('^(omics://(.*/(\\d+/(?:reference|readSet)))/(\\d+/(source|source1|source2|index)))$', path)
+            if omics_parsed_path:
+                local_path = self.calculate_omics_file_local_path(local_dir, omics_parsed_path)
+            else:
+                local_path = self.join_paths(local_dir, relative_path)
+
         Logger.info('Found %s %s path %s. It will be localized to %s.' % (path_type.lower(), input_type, path,
                                                                           local_path),
                     task_name=self.task_name)
         return LocalizedPath(path, path, local_path, path_type, suffix=path_suffix)
+
+    def calculate_omics_file_local_path(self, local_dir, omics_parsed_path):
+
+        def __get_file_name_suffix(omics_file_name, omics_resource_type):
+            if omics_resource_type == "FASTQ":
+                return "_R1" if omics_file_name == "source1" else "_R2"
+            else:
+                return ""
+
+        def __get_file_ext(omics_file_name, omics_resource_type):
+            if omics_resource_type == "FASTQ":
+                return "fastq.gz"
+            elif omics_resource_type == "BAM" or omics_resource_type == "UBAM":
+                if omics_file_name == "index":
+                    return "bam.bai"
+                else:
+                    return "bam"
+            elif omics_resource_type == "CRAM":
+                if omics_file_name == "index":
+                    return "cram.crai"
+                else:
+                    return "cram"
+            elif omics_resource_type == "REFERENCE":
+                if omics_file_name == "index":
+                    return "fa.fai"
+                else:
+                    return "fa"
+            else:
+                raise ValueError(
+                    "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)
+                )
+
+        path = omics_parsed_path.group(1)
+        storage_path = omics_parsed_path.group(2)
+        storage_postfix = omics_parsed_path.group(3)
+        omics_file_storage_relative_path = omics_parsed_path.group(4)
+        local_relative_path = "{}/{}".format(storage_postfix, omics_file_storage_relative_path)
+        source_file_name = omics_parsed_path.group(5)
+        storage = self.api.find_datastorage(storage_path)
+        try:
+            listing = self.api.load_datastorage_items(storage.id, path=omics_file_storage_relative_path)
+            if listing and len(listing) > 0:
+                source_file = listing[0]
+                local_file_name = "{}/{}{}.{}".format(
+                    local_relative_path.replace("/{}".format(source_file_name), ''),
+                    source_file["labels"]["fileName"],
+                    __get_file_name_suffix(source_file_name, source_file["labels"]["fileType"]),
+                    __get_file_ext(source_file_name, source_file["labels"]["fileType"])
+                )
+                local_path = self.join_paths(local_dir, local_file_name)
+            else:
+                raise ValueError("Can't list datastorage in path: {}".format(path))
+        except Exception as e:
+            Logger.warn(e)
+            local_path = self.join_paths(local_dir, local_relative_path)
+        return local_path
 
     def get_local_dir(self, type):
         return self.input_dir if type == ParameterType.INPUT_PARAMETER else self.common_dir

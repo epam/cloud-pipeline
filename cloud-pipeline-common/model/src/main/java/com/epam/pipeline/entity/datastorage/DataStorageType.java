@@ -37,7 +37,9 @@ public enum DataStorageType {
     ),
     NFS("NFS", Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
     AZ("AZ", Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
-    GS("GS", Collections.singleton(Constants.STANDARD_STORAGE_CLASS));
+    GS("GS", Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
+    AWS_OMICS_REF("AWS_OMICS_REF", Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
+    AWS_OMICS_SEQ("AWS_OMICS_SEQ", Collections.singleton(Constants.STANDARD_STORAGE_CLASS));
 
     private final String id;
     private final Set<String> storageClasses;
@@ -54,6 +56,8 @@ public enum DataStorageType {
         switch (serviceType) {
             case FILE_SHARE: return NFS;
             case OBJECT_STORAGE: return getObjectStorageType(provider);
+            case AWS_OMICS_REF: return AWS_OMICS_REF;
+            case AWS_OMICS_SEQ: return AWS_OMICS_SEQ;
             default: throw new IllegalArgumentException("Unsupported service " + serviceType);
         }
     }

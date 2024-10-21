@@ -55,7 +55,7 @@
 .shared-with {
   display: flex;
   flex-direction: row;
-  justify-content: end;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
   line-height: 16px;

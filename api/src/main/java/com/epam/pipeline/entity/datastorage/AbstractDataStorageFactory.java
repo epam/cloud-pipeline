@@ -17,6 +17,8 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
@@ -54,7 +56,7 @@ public abstract class AbstractDataStorageFactory {
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
         storage.setSensitive(vo.isSensitive());
-        storage.setMountDisabled(BooleanUtils.isTrue(vo.getMountDisabled()));
+        storage.setMountDisabled(storage.isMountDisabled() || BooleanUtils.isTrue(vo.getMountDisabled()));
         storage.setToolsToMount(vo.getToolsToMount());
         return storage;
     }
@@ -113,6 +115,24 @@ public abstract class AbstractDataStorageFactory {
                             mountPoint);
                     gsBucketStorage.setRegionId(regionId);
                     resultStorage = gsBucketStorage;
+                    break;
+                case AWS_OMICS_REF:
+                    final AWSOmicsReferenceDataStorage omicsRefStore = new AWSOmicsReferenceDataStorage(id, name, path);
+                    omicsRefStore.setKmsKeyArn(kmsKey);
+                    omicsRefStore.setRegionId(regionId);
+                    omicsRefStore.setTempCredentialsRole(tempRole);
+                    omicsRefStore.setMountDisabled(true);
+                    omicsRefStore.setUseAssumedCredentials(useAssumedCreds);
+                    resultStorage = omicsRefStore;
+                    break;
+                case AWS_OMICS_SEQ:
+                    final AWSOmicsSequenceDataStorage omicsSeqStore = new AWSOmicsSequenceDataStorage(id, name, path);
+                    omicsSeqStore.setKmsKeyArn(kmsKey);
+                    omicsSeqStore.setRegionId(regionId);
+                    omicsSeqStore.setTempCredentialsRole(tempRole);
+                    omicsSeqStore.setMountDisabled(true);
+                    omicsSeqStore.setUseAssumedCredentials(useAssumedCreds);
+                    resultStorage = omicsSeqStore;
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported data storage type: " + type);

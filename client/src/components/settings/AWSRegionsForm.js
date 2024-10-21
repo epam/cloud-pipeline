@@ -774,6 +774,8 @@ class AWSRegionForm extends React.Component {
       'sshKeyName',
       'iamRole',
       'tempCredentialsRole',
+      'omicsServiceRole',
+      'omicsEcrUrl',
       {
         key: 'backupDuration',
         visible: form => form.getFieldValue('versioningEnabled'),
@@ -1075,6 +1077,8 @@ class AWSRegionForm extends React.Component {
       check('azurePolicy', checkIPRangeValue) ||
       check('iamRole', checkStringValue) ||
       check('tempCredentialsRole', checkStringValue) ||
+      check('omicsServiceRole', checkStringValue) ||
+      check('omicsEcrUrl', checkStringValue) ||
       check('backupDuration', checkIntegerValue) ||
       check('versioningEnabled', checkBOOLValue) ||
       check('sshPublicKeyPath', checkStringValue) ||
@@ -2094,6 +2098,32 @@ class AWSRegionForm extends React.Component {
               {getFieldDecorator('tempCredentialsRole', {
                 initialValue: this.props.region.tempCredentialsRole,
                 rules: [{required: this.providerSupportsField('tempCredentialsRole'), message: 'Temp Credentials Role is required'}]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="AWS HealthOmics Service role"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('omicsServiceRole', 'edit-region-omicsServiceRole-container')}
+            >
+              {getFieldDecorator('omicsServiceRole', {
+                initialValue: this.props.region.omicsServiceRole
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="AWS HealthOmics ECR Url"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('omicsEcrUrl', 'edit-region-omicsEcrUrl-container')}
+            >
+              {getFieldDecorator('omicsEcrUrl', {
+                initialValue: this.props.region.omicsEcrUrl
               })(
                 <Input
                   size="small"

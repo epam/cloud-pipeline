@@ -14,6 +14,12 @@ public class AuditConfiguration {
     }
 
     @Bean
+    public AuditClient omicsAuditClient() {
+        return new AuditClient(DataStorageType.S3);
+    }
+
+
+    @Bean
     public AuditClient azAuditClient() {
         return new AuditClient(DataStorageType.AZ);
     }
