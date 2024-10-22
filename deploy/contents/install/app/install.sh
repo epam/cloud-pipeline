@@ -1048,12 +1048,18 @@ if is_service_requested cp-git; then
             print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before getting impersonation token (while root token is retrieved - gitlab may still fail with 502)"
             sleep $CP_GITLAB_INIT_TIMEOUT
 
-            # Enable web hooks to enable repository indexing for elastic search agent
             if [ "$CP_GITLAB_VERSION" != "9" ]; then
+                # Enable web hooks to enable repository indexing for elastic search agent
                 print_info "-> Enabling allow_local_requests_from_web_hooks_and_services in GitLab settings..."
                 curl -k \
                      --request PUT --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
                      "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/application/settings?allow_local_requests_from_web_hooks_and_services=true" &> /dev/null
+
+                # Disable signup to restrict anyone with network access to the gitlab to register in the gitlab
+                print_info "-> Disable signup_enabled in GitLab settings..."
+                curl -k \
+                     --request PUT --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                     "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/application/settings?signup_enabled=false" &> /dev/null
             fi
 
             print_info "-> Getting GitLab root's impersonation token"
