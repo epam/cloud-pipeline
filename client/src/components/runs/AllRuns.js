@@ -376,16 +376,22 @@ class AllRuns extends React.Component {
   };
 
   exportRuns = () => {
+    const {
+      preferences
+    } = this.props;
     this.setState({exportPending: true}, async () => {
+      const hide = message.loading('Exporting runs...')
       try {
         const {runTableFilters = {}} = this.state;
-        const {pageSize, page, filters, userFilters, tags} = runTableFilters;
+        await preferences.fetchIfNeededOrWait();
+        const pageSize = preferences.systemRunFilterMaxPageSize;
+        const {filters, userFilters, tags} = runTableFilters;
         const request = new PipelineRunExport();
         const payload = getFiltersPayload({
           ...filters,
           ...userFilters,
           tags,
-          page: page + 1,
+          page: 1,
           pageSize
         });
         await request.send(payload);
@@ -401,6 +407,7 @@ class AllRuns extends React.Component {
       } catch (error) {
         message.error(error.message, 5);
       } finally {
+        hide();
         this.setState({
           exportPending: false
         });
