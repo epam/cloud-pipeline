@@ -90,7 +90,7 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteRoleQuery, id);
     }
 
-    public List<Role> loadAllRoles(final boolean loadUsers) {
+    public Collection<Role> loadAllRoles(final boolean loadUsers) {
         return loadUsers ?
                 new ArrayList<>(getJdbcTemplate().query(loadRolesWithUsersQuery,
                         RoleParameters.getExtendedRowExtractor(true))) :
