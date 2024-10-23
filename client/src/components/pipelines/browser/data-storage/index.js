@@ -1639,17 +1639,23 @@ export default class DataStorage extends React.Component {
     this.setState({selectedItems: []});
   };
 
-  showFilesVersionsChanged = (e) => {
-    this.navigate(this.props.storageId, this.props.path, {showVersions: e.target.checked});
+  showFilesVersionsChanged = (showVersions) => {
+    this.navigate(
+      this.props.storageId,
+      this.props.path,
+      {
+        showVersions
+      }
+    );
   };
 
-  showArchivedFilesChanged = (e) => {
+  showArchivedFilesChanged = (showArchives) => {
     this.navigate(
       this.props.storageId,
       this.props.path,
       {
         showVersions: this.props.showVersions,
-        showArchives: e.target.checked
+        showArchives
       }
     );
   };
@@ -2238,11 +2244,8 @@ export default class DataStorage extends React.Component {
       }
       switch (action.key) {
         case 'attributes': this.onToggleMetadata(); break;
-        case 'jobs':
-          this.onToggleJobs();
-          break;
-        case 'archive':
-          this.showArchivedFilesChanged(!this.showArchives); break;
+        case 'jobs': this.onToggleJobs(); break;
+        case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
         default:
           break;
