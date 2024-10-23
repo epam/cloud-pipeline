@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
@@ -44,8 +43,9 @@ public class RoleApiServiceTest extends AbstractAclTest {
 
     private final RoleVO roleVO = UserCreatorUtils.getRoleVO();
     private final ExtendedRole extendedRole = getExtendedRole();
-    private final Role role = UserCreatorUtils.getRole("Role", ID, ANOTHER_SIMPLE_USER);
-    private final List<Role> roleList = Collections.singletonList(role);
+    private final Role role = UserCreatorUtils.getRole("role", ID, ANOTHER_SIMPLE_USER);
+    private final Role anotherRole = UserCreatorUtils.getRole("anotherRole", ID_2, ANOTHER_SIMPLE_USER);
+    private final List<Role> roleList = mutableListOf(role, anotherRole);
 
     @Autowired
     private RoleApiService roleApiService;
@@ -72,10 +72,9 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadRolesWhichPermissionIsGranted() {
-        final Role anotherRole = UserCreatorUtils.getRole("anotherRole", ID_2, ANOTHER_SIMPLE_USER);
         initAclEntity(role, AclPermission.READ);
         initAclEntity(anotherRole);
-        doReturn(mutableListOf(role, anotherRole)).when(mockRoleManager).loadAllRoles(false);
+        doReturn(roleList).when(mockRoleManager).loadAllRoles(false);
 
         final List<Role> roles = roleApiService.loadRoles();
         assertThat(roles).hasSize(1).contains(role);

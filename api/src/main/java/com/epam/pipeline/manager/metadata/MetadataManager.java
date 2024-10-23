@@ -39,7 +39,6 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.utils.CommonUtils;
@@ -89,9 +88,6 @@ public class MetadataManager {
 
     @Autowired
     private FolderManager folderManager;
-
-    @Autowired
-    private RoleManager roleManager;
 
     @Autowired
     private MetadataEntryMapper metadataEntryMapper;
@@ -401,13 +397,7 @@ public class MetadataManager {
     }
 
     private Object loadEntity(final Long entityId, final AclClass entityClass) {
-        Object entity;
-        if (entityClass.equals(AclClass.ROLE)) {
-            entity = roleManager.load(entityId);
-        } else {
-            entity = entityManager.load(entityClass, entityId);
-        }
-        return entity;
+        return entityManager.load(entityClass, entityId);
     }
 
     private void checkEntityExists(final Object entity, final Long entityId, final AclClass entityClass) {

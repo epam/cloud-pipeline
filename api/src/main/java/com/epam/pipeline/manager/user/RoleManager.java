@@ -93,7 +93,7 @@ public class RoleManager implements SecuredEntityManager {
         return role;
     }
 
-    public Collection<Role> loadAllRoles(boolean loadUsers) {
+    public List<Role> loadAllRoles(boolean loadUsers) {
         return roleDao.loadAllRoles(loadUsers);
     }
 
@@ -188,7 +188,6 @@ public class RoleManager implements SecuredEntityManager {
     }
 
     public ExtendedRole loadRoleWithUsers(final Long roleId) {
-        load(roleId);
         return roleDao.loadExtendedRole(roleId);
     }
 

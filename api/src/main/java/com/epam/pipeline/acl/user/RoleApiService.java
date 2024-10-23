@@ -28,7 +28,6 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -45,13 +44,13 @@ public class RoleApiService {
     @PostFilter(USER_READ_FILTER)
     @AclMaskList
     public List<Role> loadRolesWithUsers() {
-        return new ArrayList<>(roleManager.loadAllRoles(true));
+        return roleManager.loadAllRoles(true);
     }
 
     @PostFilter(USER_READ_FILTER)
     @AclMaskList
     public List<Role> loadRoles() {
-        return new ArrayList<>(roleManager.loadAllRoles(false));
+        return roleManager.loadAllRoles(false);
     }
 
     @PostAuthorize(ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
