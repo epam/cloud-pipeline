@@ -21,11 +21,16 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.user.RoleVO;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
+import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -46,7 +51,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class RoleManager {
+@AclSync
+public class RoleManager implements SecuredEntityManager {
 
     @Autowired
     private GrantPermissionHandler permissionHandler;
@@ -63,19 +69,22 @@ public class RoleManager {
     @Autowired
     private DataStorageValidator storageValidator;
 
+    @Autowired
+    private AuthManager authManager;
+
     @Transactional(propagation = Propagation.REQUIRED)
-    public Role createRole(final String name, final boolean predefined,
-                           final boolean userDefault, final Long storageId) {
-        String formattedName = getValidName(name);
+    public Role create(final String name, final boolean predefined,
+                       final boolean userDefault, final Long storageId) {
+        final String formattedName = getValidName(name);
         Assert.isTrue(!roleDao.loadRoleByName(name).isPresent(),
                 messageHelper.getMessage(MessageConstants.ERROR_ROLE_NAME_EXISTS, name));
         storageValidator.validate(storageId);
-        return roleDao.createRole(formattedName, predefined, userDefault, storageId);
+        return roleDao.createRole(formattedName, predefined, userDefault, storageId, authManager.getAuthorizedUser());
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public Role update(final Long roleId, final RoleVO roleVO) {
-        Role role = loadRole(roleId);
+        final Role role = load(roleId);
         role.setName(getValidName(roleVO.getName()));
         role.setUserDefault(roleVO.isUserDefault());
         role.setDefaultStorageId(roleVO.getDefaultStorageId());
@@ -93,8 +102,8 @@ public class RoleManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public Role deleteRole(Long id) {
-        Role role = loadRole(id);
+    public Role delete(final Long id) {
+        final Role role = load(id);
         Assert.isTrue(!role.isPredefined(), "Predefined system roles cannot be deleted");
         permissionHandler.deleteGrantedAuthority(role.getName(), false);
         roleDao.deleteRoleReferences(id);
@@ -103,12 +112,12 @@ public class RoleManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public ExtendedRole assignRole(Long roleId, List<Long> userIds) {
-        loadRole(roleId);
+    public ExtendedRole assignRole(final Long roleId, final List<Long> userIds) {
+        load(roleId);
         Assert.isTrue(CollectionUtils.isNotEmpty(userIds),
                 messageHelper.getMessage(MessageConstants.ERROR_USER_LIST_EMPTY));
-        Collection<PipelineUser> users = userDao.loadUsersList(userIds);
-        List<Long> idsToAdd = users.stream()
+        final Collection<PipelineUser> users = userDao.loadUsersList(userIds);
+        final List<Long> idsToAdd = users.stream()
                 .filter(user -> user.getRoles().stream().noneMatch(role -> role.getId().equals(roleId)))
                 .map(PipelineUser::getId)
                 .collect(Collectors.toList());
@@ -121,12 +130,12 @@ public class RoleManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public ExtendedRole removeRole(Long roleId, List<Long> userIds) {
-        loadRole(roleId);
+    public ExtendedRole removeRole(final Long roleId, final List<Long> userIds) {
+        load(roleId);
         Assert.isTrue(CollectionUtils.isNotEmpty(userIds),
                 messageHelper.getMessage(MessageConstants.ERROR_USER_LIST_EMPTY));
-        Collection<PipelineUser> users = userDao.loadUsersList(userIds);
-        List<Long> idsToRemove = users.stream()
+        final Collection<PipelineUser> users = userDao.loadUsersList(userIds);
+        final List<Long> idsToRemove = users.stream()
                 .filter(user -> user.getRoles().stream().anyMatch(role -> role.getId().equals(roleId)))
                 .map(PipelineUser::getId)
                 .collect(Collectors.toList());
@@ -142,11 +151,12 @@ public class RoleManager {
         return roleDao.loadRolesByStorageId(storageId);
     }
 
-    public Role loadRoleByNameOrId(String identifier) {
+    @Override
+    public Role loadByNameOrId(final String identifier) {
         if (NumberUtils.isDigits(identifier)) {
-            return loadRole(Long.parseLong(identifier));
+            return load(Long.parseLong(identifier));
         }
-        return loadRole(identifier);
+        return load(identifier);
     }
 
     public List<Long> getDefaultRolesIds() {
@@ -157,16 +167,17 @@ public class RoleManager {
     }
 
     public Role loadRoleByNameWithUsers(final String name) {
-        return roleDao.loadExtendedRole(loadRole(name).getId());
+        return roleDao.loadExtendedRole(load(name).getId());
     }
 
-    public Role loadRole(Long roleId) {
+    @Override
+    public Role load(final Long roleId) {
         return roleDao.loadRole(roleId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_ROLE_ID_NOT_FOUND, roleId)));
     }
 
-    public Role loadRole(String name) {
+    public Role load(final String name) {
         return roleDao.loadRoleByName(name)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_ROLE_NAME_NOT_FOUND, name)));
@@ -176,8 +187,8 @@ public class RoleManager {
         return roleDao.loadRoleByName(name);
     }
 
-    public ExtendedRole loadRoleWithUsers(Long roleId) {
-        loadRole(roleId);
+    public ExtendedRole loadRoleWithUsers(final Long roleId) {
+        load(roleId);
         return roleDao.loadExtendedRole(roleId);
     }
 
@@ -189,5 +200,33 @@ public class RoleManager {
             formattedName = Role.ROLE_PREFIX + formattedName;
         }
         return formattedName;
+    }
+
+    @Override
+    public AbstractSecuredEntity changeOwner(final Long id, final String owner) {
+        final Role role = load(id);
+        role.setOwner(owner);
+        roleDao.updateRole(role);
+        return role;
+    }
+
+    @Override
+    public AclClass getSupportedClass() {
+        return AclClass.ROLE;
+    }
+
+    @Override
+    public Integer loadTotalCount() {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(Integer page, Integer pageSize) {
+        return null;
+    }
+
+    @Override
+    public Role loadWithParents(Long id) {
+        return load(id);
     }
 }

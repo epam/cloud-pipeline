@@ -106,7 +106,7 @@ public class UserImportManager {
             events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_CREATION_NOT_ALLOWED, role.getName()));
             return null;
         }
-        final Role createdRole = roleManager.createRole(role.getName(), role.isPredefined(), role.isUserDefault(),
+        final Role createdRole = roleManager.create(role.getName(), role.isPredefined(), role.isUserDefault(),
                 role.getDefaultStorageId());
         events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_CREATED, role.getName()));
         return createdRole;

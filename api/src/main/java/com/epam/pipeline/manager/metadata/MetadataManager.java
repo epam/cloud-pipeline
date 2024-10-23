@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,11 +223,7 @@ public class MetadataManager {
     }
 
     private Long loadEntityId(String identifier, AclClass entityClass) {
-        if (entityClass.equals(AclClass.ROLE)) {
-            return roleManager.loadRoleByNameOrId(identifier).getId();
-        } else {
-            return entityManager.loadByNameOrId(entityClass, identifier).getId();
-        }
+        return entityManager.loadByNameOrId(entityClass, identifier).getId();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -407,7 +403,7 @@ public class MetadataManager {
     private Object loadEntity(final Long entityId, final AclClass entityClass) {
         Object entity;
         if (entityClass.equals(AclClass.ROLE)) {
-            entity = roleManager.loadRole(entityId);
+            entity = roleManager.load(entityId);
         } else {
             entity = entityManager.load(entityClass, entityId);
         }
