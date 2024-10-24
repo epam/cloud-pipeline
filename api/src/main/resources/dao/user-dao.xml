@@ -116,7 +116,7 @@
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
-                      r.owner as role_owner
+                      r.owner as role_owner,
                       CASE
                         WHEN EXISTS (
                           SELECT 1 FROM pipeline.spring_session s
