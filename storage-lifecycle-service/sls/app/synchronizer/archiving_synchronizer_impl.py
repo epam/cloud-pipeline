@@ -155,7 +155,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                         .format(rule.datastorage_id, rule.rule_id, folder, transition_method))
 
         if transition_method == METHOD_ONE_BY_ONE:
-            resulted_action_items = self._build_action_items_for_files(folder, rule_subject_files, rule)
+            resulted_action_items = self._build_action_items_for_files(storage, folder, rule_subject_files, rule)
         else:
             resulted_action_items = self._build_action_items_for_folder(storage, folder, file_listing, rule_subject_files, rule)
 
@@ -164,7 +164,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
         self._apply_action_items(storage, rule, resulted_action_items)
 
-    def _build_action_items_for_files(self, folder, rule_subject_files, rule):
+    def _build_action_items_for_files(self, storage, folder, rule_subject_files, rule):
         result = StorageLifecycleRuleActionItems().with_folder(folder)\
             .with_mode(ACTIONS_MODE_FILES).with_rule_id(rule.rule_id)
 
@@ -177,12 +177,12 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 date_of_action = self._calculate_transition_date(file, transition)
                 today = datetime.datetime.now(datetime.timezone.utc).date()
 
-                storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
+                storage_object_size_for_transit_filter = self.get_minimum_object_size_for_transit_filter(storage)
                 if date_utils.is_date_after_that(date_of_action, today):
                     should_be_transferred = \
                         file.storage_class != transition.storage_class and \
                         (transition_date is None or date_utils.is_date_after_that(transition_date, date_of_action)) and \
-                        storage_class_file_filter(file)
+                        storage_object_size_for_transit_filter(file)
                     if not should_be_transferred:
                         continue
                     transition_class = transition.storage_class
@@ -221,7 +221,8 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         for execution in rule_executions:
             transition = next(filter(lambda t: t.storage_class == execution.storage_class, effective_transitions), None)
             updated_execution = self._check_rule_execution_progress(
-                rule.datastorage_id, transition, files_by_dest_storage_class, execution
+                storage.id, transition, files_by_dest_storage_class, execution,
+                self.get_minimum_object_size_for_transit_filter(storage)
             )
             if updated_execution:
                 execution.status = updated_execution.status
@@ -249,7 +250,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                                  rule.datastorage_id, rule.rule_id, path, transition_class))
                 continue
 
-            trn_subject_files = self._filter_files_to_transit(files_by_dest_storage_class, transition, transition_date)
+            trn_subject_files = self._filter_files_to_transit(
+                files_by_dest_storage_class, transition, transition_date,
+                self.get_minimum_object_size_for_transit_filter(storage)
+            )
             if not trn_subject_files:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Path: '{}'. Transition: {}. No files to transit.".format(
@@ -279,15 +283,15 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 continue
         return result
 
-    def _filter_files_to_transit(self, files_by_dest_storage_class, transition, transition_date):
+    def _filter_files_to_transit(self, files_by_dest_storage_class, transition, transition_date,
+                                 storage_object_size_for_transit_filter):
         trn_subject_files = files_by_dest_storage_class.get(transition.storage_class, None)
         if transition.transition_date is not None:
             trn_subject_files = [
                 trn_file for trn_file in trn_subject_files if trn_file.creation_date.date() < transition_date
             ]
 
-        storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
-        trn_subject_files = [trn_file for trn_file in trn_subject_files if storage_class_file_filter(trn_file)]
+        trn_subject_files = [trn_file for trn_file in trn_subject_files if storage_object_size_for_transit_filter(trn_file)]
 
         return trn_subject_files
 
@@ -337,7 +341,8 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 }
             )
 
-    def _check_rule_execution_progress(self, storage_id, transition, subject_files_by_dest_storage_class, execution):
+    def _check_rule_execution_progress(self, storage_id, transition, subject_files_by_dest_storage_class, execution,
+                                       storage_object_size_for_transit_filter):
         if not execution.status:
             raise RuntimeError("Storage: {}. Rule: {}. Path: '{}'. Transition: {}. Malformed rule execution found."
                                " Status not found!".format(storage_id, execution.rule_id,
@@ -361,13 +366,12 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         # - We found a file in source location,
         # - And creation date is before execution start date
         #   (if transition was configured with date - file should be created before that date)
-        storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
         file_in_wrong_location = next(
             filter(lambda file: file.creation_date < execution.updated and
                                 (transition.transition_date is None or file.creation_date.date() < transition.transition_date) and
-                                storage_class_file_filter(file),
+                                storage_object_size_for_transit_filter(file),
                    subject_files
-            ), None
+                   ), None
         )
 
         all_files_moved = file_in_wrong_location is None
@@ -458,6 +462,17 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                             "Will not send notification because parameters are not present, "
                             "subject: {} body: {} to_user: {}"
                             .format(storage.id, rule.rule_id, path, subject, body, to_user))
+
+    def get_minimum_object_size_for_transit_filter(self, storage):
+        object_size_for_transit = self.cloud_bridge.get_minimum_object_size_for_transit(storage) if self.cloud_bridge else None
+        if object_size_for_transit is None:
+            # Docs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html
+            # Files with size smaller that 128kb will not be moved from the S3 Standard or
+            # S3 Standard-IA storage classes by default
+            return lambda f: f.size > cloud_utils.DEFAULT_MIN_SIZE_OF_OBJECT_TO_TRANSIT
+        else:
+            return lambda f: f.size > object_size_for_transit
+
 
     @staticmethod
     def _notification_should_be_sent(notification, execution, date_of_action, today):

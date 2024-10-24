@@ -96,7 +96,18 @@ class S3StorageOperations(StorageOperations):
     def __init__(self, logger):
         self.logger = logger
 
-    def prepare_bucket_if_needed(self, region, storage_container):
+    def prepare_bucket_if_needed(self, region, storage_container, object_size_for_transit=None):
+
+        def _finetune_rule(_object_size_for_transit, _rule):
+            if _object_size_for_transit is not None and _object_size_for_transit >= 0:
+                _rule["Filter"] = {
+                    "And": {
+                        "Tags": [_rule["Filter"]["Tag"]],
+                        "ObjectSizeGreaterThan": _object_size_for_transit
+                    }
+                }
+            return _rule
+
         bucket = storage_container.bucket
         s3_client = self._build_s3_client(region, storage_container, "s3")
         try:
@@ -105,17 +116,29 @@ class S3StorageOperations(StorageOperations):
             self.logger.log("Cannot load BucketLifecycleConfiguration, seems it doesn't exist. {}".format(e))
             existing_slc = {'Rules': []}
 
-        cp_lsc_rules = [rule for rule in existing_slc['Rules'] if rule['ID'].startswith(CP_SLC_RULE_NAME_PREFIX)]
+        slc_rules_to_apply = []
+        # Copy all non SLS rules as is
+        for existing_rule in existing_slc['Rules']:
+            if not existing_rule["ID"].startswith(CP_SLC_RULE_NAME_PREFIX):
+                slc_rules_to_apply.append(existing_rule)
 
-        if not cp_lsc_rules:
+        # Identify if SLS rules need to be updated
+        s3_lsc_rules_should_be_updated = False
+        list_of_rule_to_construct = list(self.S3_STORAGE_CLASS_TO_RULE.values())
+        list_of_rule_to_construct.append(self.DELETION_RULE)
+        for rule in list_of_rule_to_construct:
+            new_rule = _finetune_rule(object_size_for_transit, dict(rule))
+            old_rule = next(filter(lambda r: r["ID"] == rule["ID"], existing_slc['Rules']), None)
+            if not old_rule or old_rule != new_rule:
+                slc_rules_to_apply.append(new_rule)
+                s3_lsc_rules_should_be_updated = True
+
+        if s3_lsc_rules_should_be_updated:
             self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(bucket))
-            slc_rules = existing_slc['Rules']
-            for rule in self.S3_STORAGE_CLASS_TO_RULE.values():
-                slc_rules.append(rule)
-            slc_rules.append(self.DELETION_RULE)
             s3_client.put_bucket_lifecycle_configuration(
                 Bucket=bucket,
-                LifecycleConfiguration={"Rules": slc_rules})
+                LifecycleConfiguration={"Rules": slc_rules_to_apply}
+            )
         else:
             self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
 
