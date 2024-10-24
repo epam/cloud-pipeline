@@ -18,6 +18,7 @@ import datetime
 import os
 import re
 from itertools import chain
+import traceback
 
 from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
@@ -100,44 +101,52 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     "Storage: {}. Rule: {}. Subject folders are: {}".format(storage.id, rule.rule_id, subject_folders))
 
                 for folder in subject_folders:
-                    self.logger.log(
-                        "Storage: {}. Rule: {}. Path: '{}'. [Applying rule]".format(storage.id, rule.rule_id, folder))
+                    try:
+                        self.logger.log(
+                            "Storage: {}. Rule: {}. Path: '{}'. [Applying rule]".format(storage.id, rule.rule_id, folder))
 
-                    self.logger.log(
-                        "Storage: {}. Rule: {}. Path: '{}'. Transition method is {}".format(
-                            storage.id, rule.rule_id, folder, rule.transition_method))
+                        self.logger.log(
+                            "Storage: {}. Rule: {}. Path: '{}'. Transition method is {}".format(
+                                storage.id, rule.rule_id, folder, rule.transition_method))
 
-                    # to match object keys with glob we need to combine it with folder path
-                    # and get 'effective' glob like '{folder-path}/{glob}'
-                    # so with glob = '*.txt' we can match files like:
-                    # {folder-path}/{filename}.txt
-                    effective_glob = os.path.join(folder, rule.object_glob) \
-                        if rule.object_glob \
-                        else os.path.join(folder, "*")
+                        # to match object keys with glob we need to combine it with folder path
+                        # and get 'effective' glob like '{folder-path}/{glob}'
+                        # so with glob = '*.txt' we can match files like:
+                        # {folder-path}/{filename}.txt
+                        effective_glob = os.path.join(folder, rule.object_glob) \
+                            if rule.object_glob \
+                            else os.path.join(folder, "*")
 
-                    self.logger.log(
-                        "Storage: {}. Rule: {}. Path: '{}'. Effective glob is '{}'".format(
-                            storage.id, rule.rule_id, folder, effective_glob)
-                    )
+                        self.logger.log(
+                            "Storage: {}. Rule: {}. Path: '{}'. Effective glob is '{}'".format(
+                                storage.id, rule.rule_id, folder, effective_glob)
+                        )
 
-                    rule_subject_files = [
-                        file for file in files
-                        if re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
-                    ]
+                        rule_subject_files = [
+                            file for file in files
+                            if re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
+                        ]
 
-                    self.logger.log(
-                        "Storage: {}. Rule: {}. Path: '{}'. Found {} subject files, "
-                        "than might be eligible to transition.".format(
-                            storage.id, rule.rule_id, folder, len(rule_subject_files))
-                    )
+                        self.logger.log(
+                            "Storage: {}. Rule: {}. Path: '{}'. Found {} subject files, "
+                            "than might be eligible to transition.".format(
+                                storage.id, rule.rule_id, folder, len(rule_subject_files))
+                        )
 
-                    self._process_files(storage, folder, files, rule_subject_files, rule)
-                    self.logger.log("Storage: {}. Rule: {}, Path: '{}'. [Rule applied]".format(storage.id, rule.rule_id, folder))
+                        self._process_files(storage, folder, files, rule_subject_files, rule)
+                        self.logger.log("Storage: {}. Rule: {}, Path: '{}'. [Rule applied]".format(storage.id, rule.rule_id, folder))
+                    except Exception as e:
+                        self.logger.log(
+                            "Storage: {}. Rule: {}. Path: '{}'. Problems to apply the rule to the folder. Cause: "
+                            "{}".format(storage.id, rule.rule_id, folder, str(e))
+                        )
+                        traceback.print_exc()
                 self.logger.log("Storage: {}. Rule: {}. [Complete]".format(storage.id, rule.rule_id))
             except Exception as e:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Problems to apply the rule. "
                     "Cause: {}".format(storage.id, rule.rule_id, str(e)))
+                traceback.print_exc()
 
     def _process_files(self, storage, folder, file_listing, rule_subject_files, rule):
         transition_method = rule.transition_method
