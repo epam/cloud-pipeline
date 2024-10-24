@@ -14,7 +14,7 @@
 
 
 class StorageOperations:
-    def prepare_bucket_if_needed(self, region, storage_container):
+    def prepare_bucket_if_needed(self, region, storage_container, object_size_for_transit=None):
         pass
 
     def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,

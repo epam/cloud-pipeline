@@ -18,6 +18,7 @@ import unittest
 
 from sls.app.synchronizer import archiving_synchronizer_impl
 from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArchivingSynchronizer
+from sls.cloud import cloud_utils
 from sls.cloud.model.cloud_object_model import CloudObject
 from sls.app.model.config_model import SynchronizerConfig
 from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRule, StorageLifecycleRuleTransition, StorageLifecycleRuleExecution
@@ -38,10 +39,10 @@ class TestSynchronizerBuildsActionsForFiles(unittest.TestCase):
             transitions=[StorageLifecycleRuleTransition("GLACIER", transition_date=now.date())]
         )
         subject_files = [
-            CloudObject(os.path.join(folder, "file1.txt"), now, None),
-            CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None),
+            CloudObject(os.path.join(folder, "file1.txt"), now, None, cloud_utils.DEFAULT_MIN_SIZE_OF_OBJECT_TO_TRANSIT + 1),
+            CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None, cloud_utils.DEFAULT_MIN_SIZE_OF_OBJECT_TO_TRANSIT + 1),
         ]
-        actions = self.synchronizer._build_action_items_for_files(folder, subject_files, rule)
+        actions = self.synchronizer._build_action_items_for_files(None, folder, subject_files, rule)
         self.assertEqual(
             len(actions.destination_transitions_queues["GLACIER"]),
             2
@@ -56,10 +57,10 @@ class TestSynchronizerBuildsActionsForFiles(unittest.TestCase):
             transitions=[StorageLifecycleRuleTransition("GLACIER", transition_after_days=1)]
         )
         subject_files = [
-            CloudObject(os.path.join(folder, "file1.txt"), now, None),
-            CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None),
+            CloudObject(os.path.join(folder, "file1.txt"), now, None, cloud_utils.DEFAULT_MIN_SIZE_OF_OBJECT_TO_TRANSIT + 1),
+            CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None, cloud_utils.DEFAULT_MIN_SIZE_OF_OBJECT_TO_TRANSIT + 1),
         ]
-        actions = self.synchronizer._build_action_items_for_files(folder, subject_files, rule)
+        actions = self.synchronizer._build_action_items_for_files(None, folder, subject_files, rule)
         self.assertEqual(
             len(actions.destination_transitions_queues["GLACIER"]),
             1
@@ -67,6 +68,8 @@ class TestSynchronizerBuildsActionsForFiles(unittest.TestCase):
 
 
 class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
+
+    MOCKED_OBJECT_SIZE_TO_TRANSIT_FILTER = lambda s, f: True
 
     folder = "/datastorage"
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -87,7 +90,10 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now
         )
-        self.assertIsNone(self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution))
+        self.assertIsNone(self.synchronizer._check_rule_execution_progress(
+            1, transition, subject_files, execution,
+            self.MOCKED_OBJECT_SIZE_TO_TRANSIT_FILTER
+        ))
 
     def test_check_rule_execution_progress_running_overdue(self):
         subject_files = {
@@ -104,26 +110,11 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=3)
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
-        self.assertEqual(archiving_synchronizer_impl.EXECUTION_FAILED_STATUS, updated_execution.status)
-
-    def test_execution_should_succeed_because_files_are_small_for_glacier_ir_to_be_transferred(self):
-        subject_files = {
-            "GLACIER_IR":
-                [
-                    CloudObject(os.path.join(self.folder, "file1.txt"), self.now - datetime.timedelta(days=4),
-                                "STANDARD", 15),
-                    CloudObject(os.path.join(self.folder, "file2.txt"), self.now - datetime.timedelta(days=4),
-                                "STANDARD", 13)
-                ]
-        }
-        transition = StorageLifecycleRuleTransition("GLACIER_IR", transition_after_days=0)
-        execution = StorageLifecycleRuleExecution(
-            1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
-            "GLACIER_IR", self.now - datetime.timedelta(days=3)
+        updated_execution = self.synchronizer._check_rule_execution_progress(
+            1, transition, subject_files, execution,
+            self.MOCKED_OBJECT_SIZE_TO_TRANSIT_FILTER
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
-        self.assertEqual(archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, updated_execution.status)
+        self.assertEqual(archiving_synchronizer_impl.EXECUTION_FAILED_STATUS, updated_execution.status)
 
     def test_check_rule_execution_progress_running_should_succeed(self):
         subject_files = {"GLACIER": []}
@@ -132,7 +123,10 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=2)
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
+        updated_execution = self.synchronizer._check_rule_execution_progress(
+            1, transition, subject_files, execution,
+            self.MOCKED_OBJECT_SIZE_TO_TRANSIT_FILTER
+        )
         self.assertEqual(archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, updated_execution.status)
 
     def test_check_rule_execution_progress_running_should_succeed_if_new_file_appear_after_execution(self):
@@ -148,7 +142,10 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=2)
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
+        updated_execution = self.synchronizer._check_rule_execution_progress(
+            1, transition, subject_files, execution,
+            self.MOCKED_OBJECT_SIZE_TO_TRANSIT_FILTER
+        )
         self.assertEqual(archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, updated_execution.status)
 
 

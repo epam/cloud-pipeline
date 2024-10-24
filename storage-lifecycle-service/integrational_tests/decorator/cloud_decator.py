@@ -28,8 +28,8 @@ class AttributesChangingStorageOperations(StorageOperations):
             for file in storage.files:
                 self.watched_files_by_storages[storage.storage][file.path if file.path.startswith("/") else "/" + file.path] = file
 
-    def prepare_bucket_if_needed(self, region, storage_container):
-        self.cloud_operations.prepare_bucket_if_needed(region, storage_container)
+    def prepare_bucket_if_needed(self, region, storage_container, object_size_for_transit=None):
+        self.cloud_operations.prepare_bucket_if_needed(region, storage_container, object_size_for_transit)
 
     def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,
                                list_versions=False, convert_paths=True):
