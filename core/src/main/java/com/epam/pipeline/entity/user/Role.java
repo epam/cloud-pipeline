@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,11 +40,12 @@ import java.util.List;
 
 @Getter
 @Setter
+@Builder
 @EqualsAndHashCode
 @AllArgsConstructor
 @Entity
 @Table(name = "role", schema = "pipeline")
-public class Role implements StorageContainer, Serializable {
+public class Role extends AbstractSecuredEntity implements StorageContainer, Serializable {
 
     public static final String ROLE_PREFIX = "ROLE_";
 
@@ -85,6 +89,16 @@ public class Role implements StorageContainer, Serializable {
     public Role(Long id, String name) {
         this(name);
         this.id = id;
+    }
+
+    @Override
+    public AbstractSecuredEntity getParent() {
+        return null;
+    }
+
+    @Override
+    public AclClass getAclClass() {
+        return AclClass.ROLE;
     }
 
     @Override

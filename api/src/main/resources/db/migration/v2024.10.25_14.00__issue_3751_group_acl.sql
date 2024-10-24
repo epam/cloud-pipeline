@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.role ADD COLUMN owner TEXT DEFAULT 'Unauthorized' NOT NULL;

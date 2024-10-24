@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.utils.CommonUtils;
@@ -89,9 +88,6 @@ public class MetadataManager {
 
     @Autowired
     private FolderManager folderManager;
-
-    @Autowired
-    private RoleManager roleManager;
 
     @Autowired
     private MetadataEntryMapper metadataEntryMapper;
@@ -223,11 +219,7 @@ public class MetadataManager {
     }
 
     private Long loadEntityId(String identifier, AclClass entityClass) {
-        if (entityClass.equals(AclClass.ROLE)) {
-            return roleManager.loadRoleByNameOrId(identifier).getId();
-        } else {
-            return entityManager.loadByNameOrId(entityClass, identifier).getId();
-        }
+        return entityManager.loadByNameOrId(entityClass, identifier).getId();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -405,13 +397,7 @@ public class MetadataManager {
     }
 
     private Object loadEntity(final Long entityId, final AclClass entityClass) {
-        Object entity;
-        if (entityClass.equals(AclClass.ROLE)) {
-            entity = roleManager.loadRole(entityId);
-        } else {
-            entity = entityManager.load(entityClass, entityId);
-        }
-        return entity;
+        return entityManager.load(entityClass, entityId);
     }
 
     private void checkEntityExists(final Object entity, final Long entityId, final AclClass entityClass) {

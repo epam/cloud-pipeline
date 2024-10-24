@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.user.RoleVO;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.user.RoleManager;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import org.junit.Test;
@@ -27,10 +28,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
@@ -39,10 +41,11 @@ import static org.mockito.Mockito.doReturn;
 
 public class RoleApiServiceTest extends AbstractAclTest {
 
-    private final Role role = UserCreatorUtils.getRole();
     private final RoleVO roleVO = UserCreatorUtils.getRoleVO();
-    private final ExtendedRole extendedRole = UserCreatorUtils.getExtendedRole();
-    private final List<Role> roleList = Collections.singletonList(role);
+    private final ExtendedRole extendedRole = getExtendedRole();
+    private final Role role = UserCreatorUtils.getRole("role", ID, ANOTHER_SIMPLE_USER);
+    private final Role anotherRole = UserCreatorUtils.getRole("anotherRole", ID_2, ANOTHER_SIMPLE_USER);
+    private final List<Role> roleList = mutableListOf(role, anotherRole);
 
     @Autowired
     private RoleApiService roleApiService;
@@ -67,18 +70,15 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldDenyLoadRolesWithUsersForNotUserReader() {
-        doReturn(roleList).when(mockRoleManager).loadAllRoles(true);
-
-        assertThrows(AccessDeniedException.class, () -> roleApiService.loadRolesWithUsers());
-    }
-
-    @Test
-    public void shouldLoadRoles() {
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadRolesWhichPermissionIsGranted() {
+        initAclEntity(role, AclPermission.READ);
+        initAclEntity(anotherRole);
         doReturn(roleList).when(mockRoleManager).loadAllRoles(false);
 
-        assertThat(roleApiService.loadRoles()).isEqualTo(roleList);
+        final List<Role> roles = roleApiService.loadRoles();
+        assertThat(roles).hasSize(1).contains(role);
+        assertThat(roles.get(0).getMask()).isEqualTo(READ_PERMISSION);
     }
 
     @Test
@@ -98,8 +98,19 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldDenyLoadRoleForNotUserReader() {
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadRoleWhenPermissionIsGranted() {
+        initAclEntity(extendedRole, AclPermission.READ);
+        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
+
+        final Role role = roleApiService.loadRole(ID);
+        assertThat(role.getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadRoleWhenPermissionIsNotGranted() {
+        initAclEntity(extendedRole);
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.loadRole(ID));
@@ -108,7 +119,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateRoleForAdmin() {
-        doReturn(role).when(mockRoleManager).createRole(TEST_STRING, false, true, ID);
+        doReturn(role).when(mockRoleManager).create(TEST_STRING, false, true, ID);
 
         assertThat(roleApiService.createRole(TEST_STRING, true, ID)).isEqualTo(role);
     }
@@ -116,7 +127,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateRoleForNotAdmin() {
-        doReturn(role).when(mockRoleManager).createRole(TEST_STRING, false, true, ID);
+        doReturn(role).when(mockRoleManager).create(TEST_STRING, false, true, ID);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.createRole(TEST_STRING, true, ID));
     }
@@ -130,8 +141,18 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldDenyUpdateRoleForNotAdmin() {
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateRoleWhenPermissionIsGranted() {
+        initAclEntity(role, AclPermission.WRITE);
+        doReturn(role).when(mockRoleManager).update(ID, roleVO);
+
+        assertThat(roleApiService.updateRole(ID, roleVO)).isEqualTo(role);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateRoleWhenPermissionIsNotGranted() {
+        initAclEntity(role, AclPermission.READ);
         doReturn(role).when(mockRoleManager).update(ID, roleVO);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.updateRole(ID, roleVO));
@@ -140,7 +161,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteRoleForAdmin() {
-        doReturn(role).when(mockRoleManager).deleteRole(ID);
+        doReturn(role).when(mockRoleManager).delete(ID);
 
         assertThat(roleApiService.deleteRole(ID)).isEqualTo(role);
     }
@@ -148,7 +169,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyDeleteRoleForNotAdmin() {
-        doReturn(role).when(mockRoleManager).deleteRole(ID);
+        doReturn(role).when(mockRoleManager).delete(ID);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.deleteRole(ID));
     }
@@ -183,5 +204,13 @@ public class RoleApiServiceTest extends AbstractAclTest {
         doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.removeRole(ID, TEST_LONG_LIST));
+    }
+
+    private static ExtendedRole getExtendedRole() {
+        final ExtendedRole extendedRole = new ExtendedRole();
+        extendedRole.setName("role");
+        extendedRole.setId(ID);
+        extendedRole.setOwner(ANOTHER_SIMPLE_USER);
+        return extendedRole;
     }
 }

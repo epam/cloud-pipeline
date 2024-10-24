@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import static com.epam.pipeline.test.creator.user.UserCreatorUtils.ROLE_OWNER;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -62,8 +63,8 @@ public class RoleDaoTest extends AbstractJdbcTest {
 
     @Test
     public void testLoadRolesWithUsers() {
-        roleDao.createRole(TEST_ROLE);
-        Collection<Role> roles = roleDao.loadAllRoles(true);
+        roleDao.createRole(TEST_ROLE, ROLE_OWNER);
+        final Collection<Role> roles = roleDao.loadAllRoles(true);
         assertEquals(EXPECTED_DEFAULT_ROLES_NUMBER + 1, roles.size());
         assertTrue(roles.stream().anyMatch(role -> role.getName().equals(TEST_ROLE)));
         roles.forEach(role -> {
@@ -80,20 +81,20 @@ public class RoleDaoTest extends AbstractJdbcTest {
 
     @Test
     public void testRoleCRUD() {
-        Role testRole = roleDao.createRole(TEST_ROLE);
+        final Role testRole = roleDao.createRole(TEST_ROLE, ROLE_OWNER);
         assertNotNull(testRole);
         assertNotNull(testRole.getId());
         assertEquals(TEST_ROLE, testRole.getName());
 
-        Role loadedRole = roleDao.loadRole(testRole.getId()).get();
+        final Role loadedRole = roleDao.loadRole(testRole.getId()).get();
         assertEquals(testRole.getName(), loadedRole.getName());
         assertEquals(testRole.getId(), loadedRole.getId());
 
-        Collection<Role> allRoles = roleDao.loadAllRoles(false);
+        final Collection<Role> allRoles = roleDao.loadAllRoles(false);
         assertFalse(allRoles.isEmpty());
         assertTrue(isRolePresent(testRole, allRoles));
 
-        List<Role> rolesByList = roleDao.loadRolesList(
+        final List<Role> rolesByList = roleDao.loadRolesList(
                 Arrays.asList(testRole.getId(), DefaultRoles.ROLE_USER.getId()));
         assertEquals(2, rolesByList.size());
         assertTrue(isRolePresent(testRole, rolesByList));
@@ -102,41 +103,52 @@ public class RoleDaoTest extends AbstractJdbcTest {
         roleDao.deleteRole(testRole.getId());
         assertTrue(!roleDao.loadRole(testRole.getId()).isPresent());
         assertTrue(roleDao.loadAllRoles(false).stream().noneMatch(r -> r.equals(testRole)));
-
     }
 
     @Test
     public void shouldReturnRoleByStorageId() {
-        S3bucketDataStorage s3bucketDataStorage = ObjectCreatorUtils
+        final S3bucketDataStorage s3bucketDataStorage = ObjectCreatorUtils
                 .createS3Bucket(null, TEST_STORAGE_PATH, TEST_STORAGE_PATH, TEST_USER1);
         dataStorageDao.createDataStorage(s3bucketDataStorage);
-        roleDao.createRole(TEST_ROLE, false, false, s3bucketDataStorage.getId());
+        roleDao.createRole(TEST_ROLE, false, false, s3bucketDataStorage.getId(), ROLE_OWNER);
         assertThat(roleDao.loadRolesByStorageId(s3bucketDataStorage.getId()), hasSize(1));
     }
 
     @Test
     public void shouldUpdateStorage() {
-        Role testRole = roleDao.createRole(TEST_ROLE);
-        S3bucketDataStorage s3bucketDataStorage = ObjectCreatorUtils
+        final Role testRole = roleDao.createRole(TEST_ROLE, ROLE_OWNER);
+        final S3bucketDataStorage s3bucketDataStorage = ObjectCreatorUtils
                 .createS3Bucket(null, TEST_STORAGE_PATH, TEST_STORAGE_PATH, TEST_USER1);
         dataStorageDao.createDataStorage(s3bucketDataStorage);
         testRole.setUserDefault(true);
         testRole.setDefaultStorageId(s3bucketDataStorage.getId());
         testRole.setName(TEST_ROLE_UPDATED);
         roleDao.updateRole(testRole);
-        Optional<Role> loaded = roleDao.loadRole(testRole.getId());
+        final Optional<Role> loaded = roleDao.loadRole(testRole.getId());
         assertThat(loaded.isPresent(), equalTo(true));
-        Role role = loaded.get();
+        final Role role = loaded.get();
         assertThat(role.getName(), equalTo(TEST_ROLE_UPDATED));
         assertThat(role.getDefaultStorageId(), equalTo(s3bucketDataStorage.getId()));
         assertThat(role.isUserDefault(), equalTo(true));
     }
 
     @Test
+    public void shouldUpdateRoleOwner() {
+        final Role testRole = roleDao.createRole(TEST_ROLE, ROLE_OWNER);
+        assertThat(testRole.getOwner(), equalTo("ROLE_OWNER"));
+        testRole.setOwner("NEW_ROLE_OWNER");
+        roleDao.updateRole(testRole);
+        final Optional<Role> loaded = roleDao.loadRole(testRole.getId());
+        assertThat(loaded.isPresent(), equalTo(true));
+        final Role role = loaded.get();
+        assertThat(role.getOwner(), equalTo("NEW_ROLE_OWNER"));
+    }
+
+    @Test
     public void shouldLoadRolesWithGroupStatus() {
-        final Role blockedRole = roleDao.createRole(TEST_ROLE);
+        final Role blockedRole = roleDao.createRole(TEST_ROLE, ROLE_OWNER);
         blockedRole.setBlocked(true);
-        final Role notBlockedRole = roleDao.createRole(TEST_ROLE_UPDATED);
+        final Role notBlockedRole = roleDao.createRole(TEST_ROLE_UPDATED, ROLE_OWNER);
         notBlockedRole.setBlocked(false);
 
         groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true, null));
@@ -174,8 +186,8 @@ public class RoleDaoTest extends AbstractJdbcTest {
         groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true, null));
         groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false, null));
 
-        roleDao.createRole(blockedRole.getName());
-        roleDao.createRole(notBlockedRole.getName());
+        roleDao.createRole(blockedRole.getName(), ROLE_OWNER);
+        roleDao.createRole(notBlockedRole.getName(), ROLE_OWNER);
 
         final String roleAdminName = DefaultRoles.ROLE_ADMIN.getName();
         groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(roleAdminName, true, null));
@@ -202,7 +214,7 @@ public class RoleDaoTest extends AbstractJdbcTest {
         });
     }
 
-    private boolean isRolePresent(Role roleToFind, Collection<Role> roles) {
+    private boolean isRolePresent(final Role roleToFind, final Collection<Role> roles) {
         return roles.stream().anyMatch(r -> r.getName().equals(roleToFind.getName()));
     }
 }

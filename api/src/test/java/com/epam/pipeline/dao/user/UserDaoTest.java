@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.epam.pipeline.test.creator.user.UserCreatorUtils.ROLE_OWNER;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -283,7 +284,7 @@ public class UserDaoTest extends AbstractJdbcTest {
 
     @Test
     public void shouldLoadUsersByGroupOrRole() {
-        final Role testRole = roleDao.createRole(TEST_ROLE);
+        final Role testRole = roleDao.createRole(TEST_ROLE, ROLE_OWNER);
         createUser(TEST_USER1,
                 Collections.singletonList(TEST_GROUP_1),
                 Collections.singletonList(testRole.getId()));

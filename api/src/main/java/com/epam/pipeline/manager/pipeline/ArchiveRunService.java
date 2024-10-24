@@ -179,7 +179,7 @@ public class ArchiveRunService {
 
     private Map<String, Date> findOwnersByRole(final String roleIdentifier, final String metadataKey,
                                                final Integer specifiedDays) {
-        final Role role = roleManager.loadRoleByNameOrId(roleIdentifier);
+        final Role role = roleManager.loadByNameOrId(roleIdentifier);
         final int days = Objects.nonNull(specifiedDays)
                 ? specifiedDays
                 : findDaysInMetadata(role.getId(), AclClass.ROLE, metadataKey);
