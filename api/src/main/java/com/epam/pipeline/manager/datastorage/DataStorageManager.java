@@ -275,7 +275,7 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadDataStorage(id) != null;
     }
 
-    public List<AbstractDataStorage> getDatastoragesByIds(final List<Long> ids) {
+    public List<AbstractDataStorage> getDatastoragesByIds(final Collection<Long> ids) {
         if(CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
         }

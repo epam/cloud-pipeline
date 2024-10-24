@@ -24,7 +24,7 @@ class StorageLifecycleSynchronizer:
     def sync(self):
         try:
             self.logger.log("Starting object lifecycle synchronization process...")
-            available_storages = [s for s in self.pipeline_api_client.load_available_storages() if s.storage_type != "NFS"]
+            available_storages = self._load_storages()
             self.logger.log("{} storages loaded.".format(len(available_storages)))
             self.cloud_bridge.initialize()
             for storage in available_storages:
@@ -44,6 +44,9 @@ class StorageLifecycleSynchronizer:
             self.logger.log("Done object lifecycle synchronization process...")
         except BaseException:
             self.logger.exception("There was a problem in process of object lifecycle synchronization.")
+
+    def _load_storages(self):
+        return []
 
     def _sync_storage(self, storage):
         pass

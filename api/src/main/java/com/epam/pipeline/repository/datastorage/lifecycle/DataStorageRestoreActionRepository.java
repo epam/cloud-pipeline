@@ -18,6 +18,7 @@ package com.epam.pipeline.repository.datastorage.lifecycle;
 
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreActionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -27,4 +28,8 @@ public interface DataStorageRestoreActionRepository extends JpaRepository<Storag
     List<StorageRestoreActionEntity> findByDatastorageId(Long datastorageId);
 
     void deleteByDatastorageId(Long datastorageId);
+
+    @Query("SELECT DISTINCT a.datastorageId FROM StorageRestoreActionEntity a")
+    Iterable<Long> loadDistinctDatastorageIds();
+
 }
