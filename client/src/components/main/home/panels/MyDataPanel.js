@@ -38,7 +38,8 @@ export default class MyDataPanel extends React.Component {
   };
 
   state = {
-    search: null
+    search: null,
+    showMax: 50
   };
 
   searchStorageFn = (item, search) => {
@@ -114,6 +115,15 @@ export default class MyDataPanel extends React.Component {
     const navigate = ({id}) => {
       this.props.router && this.props.router.push(`/storage/${id}`);
     };
+    const {
+      showMax
+    } = this.state;
+    const {storages} = this;
+    const hasMore = storages.length > showMax;
+    const filtered = storages.slice(0, showMax);
+    const onShowMore = () => {
+      this.setState({showMax: showMax + 50});
+    };
     return (
       <div key="cards" style={{flex: 1, overflow: 'auto'}}>
         <CardsPanel
@@ -130,8 +140,11 @@ export default class MyDataPanel extends React.Component {
               ? `No personal data storages found for '${search}'`
               : 'There are no personal data storages'
           }
-          childRenderer={this.renderStorage}>
-          {this.storages}
+          childRenderer={this.renderStorage}
+          hasMore={hasMore}
+          onShowMore={onShowMore}
+        >
+          {filtered}
         </CardsPanel>
       </div>
     );
