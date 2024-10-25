@@ -55,7 +55,10 @@ export default class CardsPanel extends React.Component {
     itemId: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     getFavourites: PropTypes.func,
     setFavourites: PropTypes.func,
-    hovered: PropTypes.object
+    hovered: PropTypes.object,
+    hasMore: PropTypes.bool,
+    onShowMore: PropTypes.func,
+    moreTitle: PropTypes.node
   };
 
   static defaultProps = {
@@ -385,6 +388,11 @@ export default class CardsPanel extends React.Component {
   };
 
   render () {
+    const {
+      onShowMore,
+      hasMore = onShowMore !== undefined,
+      moreTitle = 'Show more'
+    } = this.props;
     const items = this.props.search && this.props.search.searchFn
       ? (this.props.children || [])
         .filter(item => this.props.search.searchFn(item, this.state.search))
@@ -447,6 +455,13 @@ export default class CardsPanel extends React.Component {
                 this.renderCard(child, index + (favourites || []).length + (other || []).length))
             }
           </Row>
+          {
+            hasMore && onShowMore && (
+              <Row type="flex" justify="center" style={{margin: 10}}>
+                <a onClick={onShowMore}>{moreTitle}</a>
+              </Row>
+            )
+          }
         </div>
       </Row>
     );
