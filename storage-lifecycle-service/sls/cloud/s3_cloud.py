@@ -132,6 +132,8 @@ class S3StorageOperations(StorageOperations):
             if not old_rule or old_rule != new_rule:
                 slc_rules_to_apply.append(new_rule)
                 s3_lsc_rules_should_be_updated = True
+            else:
+                slc_rules_to_apply.append(old_rule)
 
         if s3_lsc_rules_should_be_updated:
             self.logger.log("S3 Lifecycle rules for storage: {}, will be updated.".format(bucket))
