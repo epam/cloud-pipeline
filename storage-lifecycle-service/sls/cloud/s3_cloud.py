@@ -134,13 +134,13 @@ class S3StorageOperations(StorageOperations):
                 s3_lsc_rules_should_be_updated = True
 
         if s3_lsc_rules_should_be_updated:
-            self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(bucket))
+            self.logger.log("S3 Lifecycle rules for storage: {}, will be updated.".format(bucket))
             s3_client.put_bucket_lifecycle_configuration(
                 Bucket=bucket,
                 LifecycleConfiguration={"Rules": slc_rules_to_apply}
             )
         else:
-            self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
+            self.logger.log("There are already defined S3 Lifecycle SLS rules for storage: {}.".format(bucket))
 
     def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,
                                list_versions=False, convert_paths=True):
