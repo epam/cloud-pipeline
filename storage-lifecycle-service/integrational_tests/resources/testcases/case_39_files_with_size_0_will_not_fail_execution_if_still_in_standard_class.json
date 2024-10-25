@@ -1,0 +1,79 @@
+{
+  "cloud": {
+    "storages": [
+      {
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "files": [
+          {"key": "data/file1.txt", "creationDateShift": 11, "storageClass": "STANDARD", "size": 0},
+          {"key": "data/file2.txt", "creationDateShift": 11, "storageClass": "GLACIER", "size": 262144}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
+        "id": 1,
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
+          {
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/data",
+            "objectGlob": "*.txt",
+            "transitionMethod": "LATEST_FILE",
+            "transitionCriterion": {
+               "type": "DEFAULT"
+            },
+            "transitions": [
+              {
+                "transitionDate": 10,
+                "storageClass": "GLACIER"
+              }
+            ]
+          }
+        ],
+        "executions": [
+          {
+            "ruleId": 1,
+            "path": "/data",
+            "status": "RUNNING",
+            "storageClass": "GLACIER"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "storageProvider": "S3",
+          "files": [
+            {"key": "data/file1.txt"},
+            {"key": "data/file2.txt"}
+          ]
+        }
+      ]
+    },
+    "platform": {
+      "storages": [
+        {
+          "id": 1,
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data",
+              "status": "SUCCESS",
+              "storageClass": "GLACIER"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
