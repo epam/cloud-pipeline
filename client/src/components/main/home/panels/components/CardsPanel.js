@@ -56,9 +56,7 @@ export default class CardsPanel extends React.Component {
     getFavourites: PropTypes.func,
     setFavourites: PropTypes.func,
     hovered: PropTypes.object,
-    hasMore: PropTypes.bool,
-    onShowMore: PropTypes.func,
-    moreTitle: PropTypes.node
+    pageSize: PropTypes.number
   };
 
   static defaultProps = {
@@ -70,7 +68,8 @@ export default class CardsPanel extends React.Component {
     actionInProgress: false,
     inProgressActionsTitle: null,
     popovers: [],
-    search: null
+    search: null,
+    showMax: undefined
   };
 
   onActionClicked = (e, action, source) => {
@@ -383,22 +382,38 @@ export default class CardsPanel extends React.Component {
 
   onSearchChange = (e) => {
     this.setState({
-      search: e.target.value
+      search: e.target.value,
+      showMax: undefined
     });
+  };
+
+  onShowMore = () => {
+    const {
+      pageSize
+    } = this.props;
+    const {
+      showMax = pageSize
+    } = this.state;
+    if (pageSize) {
+      this.setState({showMax: showMax + pageSize});
+    }
   };
 
   render () {
     const {
-      onShowMore,
-      hasMore = onShowMore !== undefined,
-      moreTitle = 'Show more'
+      pageSize = undefined
     } = this.props;
+    const {
+      showMax = pageSize
+    } = this.state;
     const items = this.props.search && this.props.search.searchFn
       ? (this.props.children || [])
         .filter(item => this.props.search.searchFn(item, this.state.search))
       : (this.props.children || []);
-    const personalItemsFiltered = items.filter(item => !item.isGlobal);
-    const globalItemsFiltered = items.filter(item => item.isGlobal);
+    const filtered = showMax && showMax > 0 ? items.slice(0, showMax) : items;
+    const hasMore = showMax && showMax < items.length;
+    const personalItemsFiltered = filtered.filter(item => !item.isGlobal);
+    const globalItemsFiltered = filtered.filter(item => item.isGlobal);
     let personalItems = [
       ...personalItemsFiltered,
       ...globalItemsFiltered.filter(this.childIsFavourite)
@@ -456,9 +471,9 @@ export default class CardsPanel extends React.Component {
             }
           </Row>
           {
-            hasMore && onShowMore && (
+            hasMore && (
               <Row type="flex" justify="center" style={{margin: 10}}>
-                <a onClick={onShowMore}>{moreTitle}</a>
+                <a onClick={this.onShowMore}>Show more</a>
               </Row>
             )
           }
