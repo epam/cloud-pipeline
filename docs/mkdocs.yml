@@ -64,6 +64,7 @@ nav:
   - 9. Manage cluster nodes:
     - 9.0. Cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
     - 9.1. Hot node pools: 'manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md'
+    - 9.2. Core services monitoring: 'manual/09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring.md'
   - 10. Manage Tools:
     - 10.0. Overview: 'manual/10_Manage_Tools/10._Manage_Tools.md'
     - 10.1. Add and edit a Docker registry: 'manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md'
