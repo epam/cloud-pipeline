@@ -33,33 +33,37 @@ import java.util.List;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.OR;
 import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
-import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_FILTER;
 
 @Service
 public class RoleApiService {
 
+    public static final String ROLE_READ_FILTER = ADMIN_ONLY + OR_USER_READER + OR +
+            "hasPermission(filterObject.id, 'com.epam.pipeline.entity.user.Role', 'READ')";
+
+    public static final String ROLE_READ_ACCESS = ADMIN_ONLY + OR_USER_READER + OR +
+            "hasPermission(returnObject.id, 'com.epam.pipeline.entity.user.Role', 'READ')";
+
     @Autowired
     private RoleManager roleManager;
 
-    @PostFilter(USER_READ_FILTER)
+    @PostFilter(ROLE_READ_FILTER)
     @AclMaskList
     public List<Role> loadRolesWithUsers() {
         return roleManager.loadAllRoles(true);
     }
 
-    @PostFilter(USER_READ_FILTER)
     @AclMaskList
     public List<Role> loadRoles() {
         return roleManager.loadAllRoles(false);
     }
 
-    @PostAuthorize(ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
+    @PostAuthorize(ROLE_READ_ACCESS)
     @AclMask
     public Role loadRole(final Long id) {
         return roleManager.loadRoleWithUsers(id);
     }
 
-    @PostAuthorize(ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
+    @PostAuthorize(ROLE_READ_ACCESS)
     @AclMask
     public Role loadRoleByName(final String name) {
         return roleManager.loadRoleByNameWithUsers(name);
@@ -71,7 +75,7 @@ public class RoleApiService {
         return roleManager.create(name, false, userDefault, storageId);
     }
 
-    @PostAuthorize(ADMIN_ONLY + OR + "hasPermission(returnObject, 'WRITE')")
+    @PreAuthorize(ADMIN_ONLY + OR + "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')")
     @AclMask
     public Role updateRole(final Long roleId, final RoleVO roleVO) {
         return roleManager.update(roleId, roleVO);
