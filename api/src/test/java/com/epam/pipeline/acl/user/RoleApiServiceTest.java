@@ -32,6 +32,7 @@ import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.NO_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -71,14 +72,15 @@ public class RoleApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldLoadRolesWhichPermissionIsGranted() {
+    public void shouldLoadRolesWithoutUsersAnyWayEvenIfPermissionIsNotGranted() {
         initAclEntity(role, AclPermission.READ);
         initAclEntity(anotherRole);
         doReturn(roleList).when(mockRoleManager).loadAllRoles(false);
 
         final List<Role> roles = roleApiService.loadRoles();
-        assertThat(roles).hasSize(1).contains(role);
+        assertThat(roles).hasSize(2).contains(role);
         assertThat(roles.get(0).getMask()).isEqualTo(READ_PERMISSION);
+        assertThat(roles.get(1).getMask()).isEqualTo(NO_PERMISSION);
     }
 
     @Test
@@ -100,7 +102,10 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadRoleWhenPermissionIsGranted() {
-        initAclEntity(extendedRole, AclPermission.READ);
+        initAclEntity(
+                UserCreatorUtils.getRole(extendedRole.getName(), extendedRole.getId(), ANOTHER_SIMPLE_USER),
+                AclPermission.READ
+        );
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
         final Role role = roleApiService.loadRole(ID);
@@ -110,7 +115,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadRoleWhenPermissionIsNotGranted() {
-        initAclEntity(extendedRole);
+        initAclEntity(UserCreatorUtils.getRole(extendedRole.getName(), extendedRole.getId(), ANOTHER_SIMPLE_USER));
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.loadRole(ID));
