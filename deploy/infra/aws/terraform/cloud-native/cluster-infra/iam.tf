@@ -698,7 +698,7 @@ resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_observability" {
 
 resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_kms_eks_access" {
   role       = aws_iam_role.eks_cp_worker_node_execution.name
-  policy_arn = aws_iam_policy.eks_node_observability.arn
+  policy_arn = aws_iam_policy.kms_eks_access.arn
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cp_worker_worker_node_node_policy" {
