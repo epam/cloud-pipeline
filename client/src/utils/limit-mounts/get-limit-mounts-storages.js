@@ -55,6 +55,16 @@ export function storageMatchesIdentifiersString (storage, identifiersString) {
   return storageMatchesIdentifiers(storage, identifiers);
 }
 
+export function getStoragesForLimitMountsString (storages, limitMountsString) {
+  const identifiers = (limitMountsString || '').split(/[,;]/);
+  const ids = new Set(identifiers.map((o) => o.trim().toLowerCase()));
+  if (ids.has('none')) {
+    return [];
+  }
+  return storages.filter((s) => !s.sourceStorageId &&
+    (ids.has(s.id.toString()) || ids.has(s.path.toLowerCase())));
+}
+
 function getStorageRuleForIdentifier (lmIdentifier, storages = []) {
   return storages
     .filter((storage) => !storage.sourceStorageId)

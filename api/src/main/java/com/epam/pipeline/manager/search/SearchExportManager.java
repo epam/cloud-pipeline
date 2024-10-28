@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.search.SearchTemplateExportInfo;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -54,6 +55,7 @@ public class SearchExportManager {
     private static final String EXPORT_DATE = "Export_Date";
     private static final String EXPORT_DATE_PLACEHOLDER = String.format("{%s}", EXPORT_DATE);
     private static final String EXPORT_DATE_REGEX = String.format("\\{%s:([^}]+)\\}", EXPORT_DATE);
+    private static final String CURRENT_USER_PLACEHOLDER = "{User}";
     private static final String S3_SCHEMA = "s3://";
     private static final String CP_SCHEMA = "cp://";
     private static final String AZ_SCHEMA = "az://";
@@ -67,6 +69,7 @@ public class SearchExportManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final SearchResultExportManager resultExportManager;
+    private final AuthManager authManager;
 
     public byte[] export(final FacetedSearchExportRequest request) {
         final FacetedSearchRequest facetedSearchRequest = request.getFacetedSearchRequest();
@@ -123,6 +126,9 @@ public class SearchExportManager {
                         String.format("{%s:%s}", EXPORT_DATE, dateTimePattern),
                         LocalDateTime.now().format(DateTimeFormatter.ofPattern(dateTimePattern)));
             }
+        }
+        if (pathToSave.contains(CURRENT_USER_PLACEHOLDER)) {
+            resolvedPath = resolvedPath.replace(CURRENT_USER_PLACEHOLDER, authManager.getAuthorizedUser());
         }
         return resolvedPath;
     }

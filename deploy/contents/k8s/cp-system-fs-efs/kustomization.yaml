@@ -1,0 +1,19 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+  - name: amazon/aws-efs-csi-driver
+    newTag: v1.7.0
+  - name: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
+    newTag: v2.10.0-eks-1-27-3
+  - name: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
+    newTag: v2.8.0-eks-1-27-3
+  - name: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+    newTag: v3.5.0-eks-1-27-3
+resources:
+  - "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/base/?ref=release-1.7"
+  - ./resources/efs-sc.yaml
+  - ./resources/efs-pv.yaml
+  - ./resources/efs-pvc.yaml
+patches:
+  - path: ./patches/deployment.yaml

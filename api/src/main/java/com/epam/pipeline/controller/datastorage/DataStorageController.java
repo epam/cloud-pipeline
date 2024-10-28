@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -96,6 +97,19 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<List<AbstractDataStorage>> getDataStorages() {
         return Result.success(dataStorageApiService.getDataStorages());
+    }
+
+    @PostMapping("/datastorage/filter")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads all data storages with specified filters.",
+            notes = "Loads all data storages with specified filters.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<AbstractDataStorage>> filterDataStorages(@RequestBody final EntityFilterVO filter) {
+        return Result.success(dataStorageApiService.getDataStorages(filter));
     }
 
     @RequestMapping(value = "/datastorage/available", method = RequestMethod.GET)

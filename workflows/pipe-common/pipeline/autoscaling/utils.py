@@ -298,7 +298,8 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                         global_distribution_url, swap_size, pre_pull_images=[]):
+                         global_distribution_url, swap_size, pre_pull_images=[], docker_data_root='/ebs/docker',
+                         docker_storage_driver='', skip_system_images_load=''):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -325,6 +326,9 @@ def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                                            .replace('@API_TOKEN@', api_token) \
                                            .replace('@API_USER@', api_user) \
                                            .replace('@FS_TYPE@', fs_type) \
+                                           .replace('@DOCKER_DATA_ROOT@', docker_data_root) \
+                                           .replace('@DOCKER_STORAGE_DRIVER@', docker_storage_driver) \
+                                           .replace('@SKIP_SYSTEM_IMAGES_LOAD@', skip_system_images_load) \
                                            .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
                                            .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
                                            .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))

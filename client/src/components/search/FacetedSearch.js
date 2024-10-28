@@ -895,6 +895,7 @@ class FacetedSearch extends React.Component {
         }}
         sorting={sortingOrder}
         facets={facets}
+        selectedItems={this.state.selectedItems}
       />
     );
   };

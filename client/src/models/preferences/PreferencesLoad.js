@@ -999,6 +999,15 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get systemRunFilterMaxPageSize() {
+    const value = this.getPreferenceValue('system.run.filter.max.page.size');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 500;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

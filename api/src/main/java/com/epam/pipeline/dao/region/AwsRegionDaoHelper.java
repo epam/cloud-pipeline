@@ -47,6 +47,8 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, AwsRegi
         params.addValue(CloudRegionParameters.VERSIONING_ENABLED.name(), region.isVersioningEnabled());
         params.addValue(CloudRegionParameters.SSH_KEY_NAME.name(), region.getSshKeyName());
         params.addValue(CloudRegionParameters.AWS_IAM_ROLE.name(), region.getIamRole());
+        params.addValue(CloudRegionParameters.AWS_OMICS_SERVICE_ROLE.name(), region.getOmicsServiceRole());
+        params.addValue(CloudRegionParameters.AWS_OMICS_ECR_URL.name(), region.getOmicsEcrUrl());
         params.addValue(CloudRegionParameters.AWS_S3_ENDPOINT.name(), region.getS3Endpoint());
         Optional.ofNullable(credentials).ifPresent(creds -> {
             params.addValue(CloudRegionParameters.AWS_KEY_ID.name(), creds.getKeyId());
@@ -74,6 +76,8 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, AwsRegi
         region.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
         region.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
         region.setIamRole(rs.getString(CloudRegionParameters.AWS_IAM_ROLE.name()));
+        region.setOmicsServiceRole(rs.getString(CloudRegionParameters.AWS_OMICS_SERVICE_ROLE.name()));
+        region.setOmicsEcrUrl(rs.getString(CloudRegionParameters.AWS_OMICS_ECR_URL.name()));
         region.setS3Endpoint(rs.getString(CloudRegionParameters.AWS_S3_ENDPOINT.name()));
         return region;
     }

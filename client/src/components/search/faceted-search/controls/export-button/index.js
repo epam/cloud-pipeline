@@ -81,7 +81,7 @@ function checkTemplatePermissions (userInfo, template) {
   });
 }
 
-function ExportMenu ({onExport, onExportTemplate, onConfigure, templates}) {
+function ExportMenu ({onExport, onExportTemplate, onConfigure, templates, selectedItems = []}) {
   const handle = ({key}) => {
     const [exportType, exportKey] = key.split('|');
     switch (exportType) {
@@ -105,11 +105,15 @@ function ExportMenu ({onExport, onExportTemplate, onConfigure, templates}) {
         break;
     }
   };
+  const selected = selectedItems.length;
   const templatesSection = templates.length ? [
     <Divider key="divider" />,
     ...templates.map(template => (
       <MenuItem key={`template|${template.key}`}>
         {template['friendly_name'] || template.key}
+        <span className="cp-text-not-important">
+          {selected ? ` - ${selected} file${selected > 1 ? 's' : ''}` : ''}
+        </span>
       </MenuItem>
     ))
   ] : [];
@@ -286,7 +290,13 @@ class ExportButton extends React.Component {
     const hide = message.loading(uploadToBucket ? 'Exporting...' : 'Downloading...', 0);
     await setStateAwaited({pending: true});
     try {
-      const payload = this.getFacetedSearchExportPayload();
+      const payload = {
+        ...this.getFacetedSearchExportPayload(),
+        files: (this.props.selectedItems || []).map(item => ({
+          path: item.path,
+          storageId: item.parentId
+        }))
+      };
       if (uploadToBucket) {
         await saveExport(template, payload);
       } else {
@@ -368,6 +378,7 @@ class ExportButton extends React.Component {
             onConfigure={this.onConfigure}
             templates={templates}
             storages={this.storages}
+            selectedItems={this.props.selectedItems}
           />
         )}
         className={className}
@@ -425,7 +436,8 @@ ExportButton.propTypes = {
   query: PropTypes.string,
   filters: PropTypes.object,
   sorting: PropTypes.array,
-  facets: PropTypes.array
+  facets: PropTypes.array,
+  selectedItems: PropTypes.array
 };
 
 export default ExportButton;

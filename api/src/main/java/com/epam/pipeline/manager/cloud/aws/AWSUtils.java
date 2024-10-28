@@ -25,7 +25,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
-import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
 import com.epam.pipeline.utils.PasswordGenerator;
@@ -70,7 +70,7 @@ public final class AWSUtils {
     /**
      * @return KMS key arn from storage if it is specified, otherwise returns key from region
      */
-    public static String getKeyArnValue(final S3bucketDataStorage storage, final AwsRegion region) {
+    public static String getKeyArnValue(final AbstractAWSDataStorage storage, final AwsRegion region) {
         if (StringUtils.isBlank(storage.getKmsKeyArn())) {
             return region.getKmsKeyArn();
         }
@@ -83,7 +83,7 @@ public final class AWSUtils {
     /**
      * @return Role from storage if it is specified, otherwise returns role from region
      */
-    public static String getRoleValue(final S3bucketDataStorage storage, final AwsRegion region) {
+    public static String getRoleValue(final AbstractAWSDataStorage storage, final AwsRegion region) {
         if (StringUtils.isBlank(storage.getTempCredentialsRole())) {
             return region.getTempCredentialsRole();
         }

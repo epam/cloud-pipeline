@@ -673,7 +673,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details, tags_detai
         else:
             click.echo('No tasks are available for the run')
         click.echo()
-    
+
     if tags_details:
         echo_title('Tags:')
         if len(run_model.tags) > 0:
@@ -1250,7 +1250,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, io_threads,
+                             symlinks, None, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=True, skip_existing=skip_existing, sync_newer=sync_newer,
                              verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
@@ -1281,6 +1281,10 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[follow] follows symlinks (default); \n'
                    '[skip] does not follow symlinks; \n'
                    '[filter] follows symlinks but checks for cyclic links.')
+@click.option('-a', '--additional-options', required=False,
+              help='Comma separated list of additional arguments to be used during file copy.'
+                   ' f.i. additional args to register file in Omics Store: '
+                   '"name=<filename>,subject_id=<subject_id>,sample_id=<sample_id>,file_type=fastq"')
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
@@ -1328,8 +1332,9 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('--checksum-skip', is_flag=True, required=False, help='Disables objects integrity checks.')
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, skip_existing, sync_newer, verify_destination, checksum_algorithm, checksum_skip):
+                      symlinks, additional_options, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      on_empty_files, on_failures, skip_existing, sync_newer, verify_destination,
+                      checksum_algorithm, checksum_skip):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1368,8 +1373,8 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
         pipe storage cp s3://storage/file.txt - | tee file.txt >/dev/null 2>&1
 
     """
-    DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
+    DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
+                             symlinks, additional_options, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=False, skip_existing=skip_existing, sync_newer=sync_newer,
                              verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
