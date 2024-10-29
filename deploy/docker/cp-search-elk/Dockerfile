@@ -14,6 +14,13 @@
 
 
 FROM elasticsearch:6.8.3
+
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
+
 RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-s3
 RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-azure
 RUN ES_JAVA_OPTS=""; echo "y" | bin/elasticsearch-plugin install repository-gcs
