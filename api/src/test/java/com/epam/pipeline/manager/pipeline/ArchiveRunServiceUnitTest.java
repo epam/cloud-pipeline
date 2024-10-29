@@ -118,7 +118,7 @@ public class ArchiveRunServiceUnitTest {
 
     @Test
     public void shouldArchiveRunsForSpecifiedGroupWithoutDays() {
-        doReturn(role()).when(roleManager).loadRoleByNameOrId(GROUP1);
+        doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(extendedRole()).when(roleManager).loadRoleWithUsers(GROUP_ID1);
         doReturn(metadataEntry(GROUP_ENTITY1)).when(metadataDao).loadMetadataItem(GROUP_ENTITY1);
 
@@ -129,7 +129,7 @@ public class ArchiveRunServiceUnitTest {
 
     @Test
     public void shouldArchiveRunsForSpecifiedGroupWithDays() {
-        doReturn(role()).when(roleManager).loadRoleByNameOrId(GROUP1);
+        doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(extendedRole()).when(roleManager).loadRoleWithUsers(GROUP_ID1);
 
         archiveRunService.archiveRuns(GROUP1, false, INPUT_DAYS);
@@ -140,7 +140,7 @@ public class ArchiveRunServiceUnitTest {
 
     @Test(expected = IllegalStateException.class)
     public void shouldFailArchiveRunsForGroupWithoutDaysAndMetadata() {
-        doReturn(role()).when(roleManager).loadRoleByNameOrId(GROUP1);
+        doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(new MetadataEntry()).when(metadataDao).loadMetadataItem(GROUP_ENTITY1);
 
         archiveRunService.archiveRuns(GROUP1, false, null);
@@ -148,7 +148,7 @@ public class ArchiveRunServiceUnitTest {
 
     @Test(expected = IllegalStateException.class)
     public void shouldFailArchiveRunsForGroupWithoutDaysAndMetadataNotNumeric() {
-        doReturn(role()).when(roleManager).loadRoleByNameOrId(GROUP1);
+        doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(invalidMetadata(GROUP_ENTITY1)).when(metadataDao).loadMetadataItem(GROUP_ENTITY1);
 
         archiveRunService.archiveRuns(GROUP1, false, null);
@@ -156,7 +156,7 @@ public class ArchiveRunServiceUnitTest {
 
     @Test
     public void shouldNotArchiveRunsForGroupIfNoOwnersFound() {
-        doReturn(role()).when(roleManager).loadRoleByNameOrId(GROUP1);
+        doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(extendedRole(null)).when(roleManager).loadRoleWithUsers(GROUP_ID1);
 
         archiveRunService.archiveRuns(GROUP1, false, INPUT_DAYS);
@@ -166,7 +166,7 @@ public class ArchiveRunServiceUnitTest {
 
     @Test
     public void shouldUseUsersDaysToArchiveRunsForGroup() {
-        doReturn(role()).when(roleManager).loadRoleByNameOrId(GROUP1);
+        doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(extendedRole()).when(roleManager).loadRoleWithUsers(GROUP_ID1);
         doReturn(metadataEntry(GROUP_ENTITY1)).when(metadataDao).loadMetadataItem(GROUP_ENTITY1);
         doReturn(Collections.singletonList(metadataEntry(USER_ENTITY1, INPUT_DAYS))).when(metadataDao)

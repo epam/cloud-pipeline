@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -63,9 +63,6 @@ public class MetadataPermissionManager {
     public boolean metadataPermission(final Long entityId, final AclClass entityClass, final String permission) {
         if (permissionHelper.isAdmin()) {
             return true;
-        }
-        if (entityClass.equals(AclClass.ROLE)) {
-            return false;
         }
         if (entityClass.equals(AclClass.PIPELINE_USER) && isSameUser(entityId)) {
             return true;
