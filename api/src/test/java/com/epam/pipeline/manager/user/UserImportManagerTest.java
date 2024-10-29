@@ -82,14 +82,14 @@ public class UserImportManagerTest {
         when(userManager.create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong()))
                 .thenReturn(getPipelineUser(USER_NAME));
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.empty());
-        when(roleManager.createRole(anyString(), anyBoolean(), anyBoolean(), anyLong())).thenReturn(role);
+        when(roleManager.create(anyString(), anyBoolean(), anyBoolean(), anyLong())).thenReturn(role);
 
         final List<PipelineUserEvent> resultEvents = userImportManager
                 .processUser(userWithMetadata, true, true,
                         Collections.singletonList(categoricalAttribute));
 
         verify(userManager).create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
-        verify(roleManager).createRole(anyString(), anyBoolean(), anyBoolean(), anyLong());
+        verify(roleManager).create(anyString(), anyBoolean(), anyBoolean(), anyLong());
         verify(roleManager).assignRole(anyLong(), anyLongList());
         verify(metadataManager).updateEntityMetadata(any(), any(), any());
         assertThat(resultEvents).hasSize(4);
@@ -113,7 +113,7 @@ public class UserImportManagerTest {
                         Collections.singletonList(categoricalAttribute));
 
         notInvoked(userManager).create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
-        notInvoked(roleManager).createRole(anyString(), anyBoolean(), anyBoolean(), anyLong());
+        notInvoked(roleManager).create(anyString(), anyBoolean(), anyBoolean(), anyLong());
         notInvoked(roleManager).assignRole(anyLong(), anyLongList());
         verify(metadataManager).updateEntityMetadata(any(), any(), any());
         assertThat(CollectionUtils.isEmpty(resultEvents)).isTrue();
@@ -132,7 +132,7 @@ public class UserImportManagerTest {
         final List<PipelineUserEvent> resultEvents = userImportManager
                 .processUser(userWithMetadata, false, false, Collections.emptyList());
 
-        notInvoked(roleManager).createRole(anyString(), anyBoolean(), anyBoolean(), anyLong());
+        notInvoked(roleManager).create(anyString(), anyBoolean(), anyBoolean(), anyLong());
         notInvoked(roleManager).assignRole(anyLong(), anyLongList());
         assertThat(resultEvents).hasSize(1);
     }

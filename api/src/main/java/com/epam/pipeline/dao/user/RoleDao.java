@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2014 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,33 +62,35 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
     private DaoHelper daoHelper;
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public Role createRole(String name) {
-        return createRole(name, false, false, null);
+    public Role createRole(final String name, final String owner) {
+        return createRole(name, false, false, null, owner);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public Role createRole(String name, boolean predefined, boolean userDefault, Long storageId) {
-        Role role = new Role();
+    public Role createRole(final String name, final boolean predefined, final boolean userDefault,
+                           final Long storageId, final String owner) {
+        final Role role = new Role();
         role.setName(name);
         role.setId(daoHelper.createId(roleSequence));
         role.setUserDefault(userDefault);
         role.setPredefined(predefined);
         role.setDefaultStorageId(storageId);
+        role.setOwner(owner);
         getNamedParameterJdbcTemplate().update(createRoleQuery, RoleParameters.getParameters(role));
         return role;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void updateRole(Role role) {
+    public void updateRole(final Role role) {
         getNamedParameterJdbcTemplate().update(updateRoleQuery, RoleParameters.getParameters(role));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRole(Long id) {
+    public void deleteRole(final Long id) {
         getJdbcTemplate().update(deleteRoleQuery, id);
     }
 
-    public Collection<Role> loadAllRoles(boolean loadUsers) {
+    public List<Role> loadAllRoles(final boolean loadUsers) {
         return loadUsers ?
                 new ArrayList<>(getJdbcTemplate().query(loadRolesWithUsersQuery,
                         RoleParameters.getExtendedRowExtractor(true))) :
@@ -99,37 +101,37 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(loadUserDefaultRolesQuery, RoleParameters.getRowMapper(false));
     }
 
-    public List<Role> loadRolesByStorageId(Long storageId) {
+    public List<Role> loadRolesByStorageId(final Long storageId) {
         return getJdbcTemplate().query(loadRolesByStorageIdQuery, RoleParameters.getRowMapper(false), storageId);
     }
 
-    public ExtendedRole loadExtendedRole(Long roleId) {
+    public ExtendedRole loadExtendedRole(final Long roleId) {
         Collection<ExtendedRole> roles = getJdbcTemplate()
                 .query(loadRoleWithUsersQuery, RoleParameters.getExtendedRowExtractor(true), roleId);
         return CollectionUtils.isEmpty(roles) ? null : roles.stream().findFirst().orElse(null);
     }
 
-    public Optional<Role> loadRole(Long id) {
+    public Optional<Role> loadRole(final Long id) {
         return loadRoleByParameter(id, loadRoleQuery);
     }
 
-    public Optional<Role> loadRoleByName(String name) {
+    public Optional<Role> loadRoleByName(final String name) {
         return loadRoleByParameter(name, loadRoleByNameQuery);
     }
 
-    private Optional<Role> loadRoleByParameter(Object parameter, String loadRoleQuery) {
-        List<Role> result =
+    private Optional<Role> loadRoleByParameter(final Object parameter, final String loadRoleQuery) {
+        final List<Role> result =
                 getJdbcTemplate().query(loadRoleQuery, RoleParameters.getRowMapper(false), parameter);
         return result.stream().findFirst();
     }
 
-    public List<Role> loadRolesList(List<Long> ids) {
+    public List<Role> loadRolesList(final List<Long> ids) {
         return getNamedParameterJdbcTemplate().query(loadRoleListQuery,
                 RoleParameters.getIdListParameters(ids), RoleParameters.getRowMapper(false));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRoleReferences(Long id) {
+    public void deleteRoleReferences(final Long id) {
         getJdbcTemplate().update(deleteRolesReferencesQuery, id);
     }
 
@@ -141,20 +143,22 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
         IDS,
         ROLE_DEFAULT_STORAGE_ID,
         ROLE_DEFAULT_PROFILE_ID,
-        GROUP_BLOCKED;
+        GROUP_BLOCKED,
+        ROLE_OWNER;
 
-        private static MapSqlParameterSource getParameters(Role role) {
+        private static MapSqlParameterSource getParameters(final Role role) {
             MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(ROLE_ID.name(), role.getId());
             params.addValue(ROLE_NAME.name(), role.getName());
             params.addValue(ROLE_PREDEFINED.name(), role.isPredefined());
             params.addValue(ROLE_USER_DEFAULT.name(), role.isUserDefault());
             params.addValue(ROLE_DEFAULT_STORAGE_ID.name(), role.getDefaultStorageId());
+            params.addValue(ROLE_OWNER.name(), role.getOwner());
             return params;
         }
 
-        public static MapSqlParameterSource getIdListParameters(List<Long> ids) {
-            MapSqlParameterSource params = new MapSqlParameterSource();
+        public static MapSqlParameterSource getIdListParameters(final List<Long> ids) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(IDS.name(), ids);
             return params;
         }
@@ -166,16 +170,16 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
-        static Role parseRole(ResultSet rs, Role role, boolean getGroupStatus) throws SQLException {
+        static Role parseRole(final ResultSet rs, final Role role, final boolean getGroupStatus) throws SQLException {
             role.setId(rs.getLong(ROLE_ID.name()));
             role.setName(rs.getString(ROLE_NAME.name()));
             role.setPredefined(rs.getBoolean(ROLE_PREDEFINED.name()));
             role.setUserDefault(rs.getBoolean(ROLE_USER_DEFAULT.name()));
-            long defaultStorageId = rs.getLong(ROLE_DEFAULT_STORAGE_ID.name());
+            final long defaultStorageId = rs.getLong(ROLE_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
                 role.setDefaultStorageId(defaultStorageId);
             }
-            long defaultProfileId = rs.getLong(ROLE_DEFAULT_PROFILE_ID.name());
+            final long defaultProfileId = rs.getLong(ROLE_DEFAULT_PROFILE_ID.name());
             if (!rs.wasNull()) {
                 role.setDefaultProfileId(defaultProfileId);
             }
@@ -183,6 +187,7 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
                 final boolean groupStatus = rs.getBoolean(GROUP_BLOCKED.name());
                 role.setBlocked(!rs.wasNull() && groupStatus);
             }
+            role.setOwner(rs.getString(ROLE_OWNER.name()));
             return role;
         }
 

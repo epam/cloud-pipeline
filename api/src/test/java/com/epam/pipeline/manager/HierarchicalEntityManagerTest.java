@@ -213,7 +213,7 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
                 ObjectCreatorUtils.createToolGroup(TEST_NAME, registry.getId()));
         Tool tool = toolManager.create(
                 ObjectCreatorUtils.createTool(TEST_NAME, toolGroup.getId()), false);
-        Role role = roleManager.createRole(TEST_ROLE, false, false, null);
+        Role role = roleManager.create(TEST_ROLE, false, false, null);
         grantPermission(tool.getId(), AclClass.TOOL, role.getName(),
                 false, AclPermission.READ.getMask());
         roleManager.assignRole(role.getId(), Collections.singletonList(userManager.loadUserByName(USER2).getId()));
