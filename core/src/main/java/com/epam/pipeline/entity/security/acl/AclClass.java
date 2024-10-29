@@ -31,7 +31,7 @@ public enum AclClass {
     ATTACHMENT,
     CLOUD_REGION,
     PIPELINE_USER,
-    ROLE(false);
+    ROLE;
 
     private final boolean supportsEntityManager;
 

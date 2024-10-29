@@ -85,7 +85,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -115,6 +116,7 @@
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner,
                       CASE
                         WHEN EXISTS (
                           SELECT 1 FROM pipeline.spring_session s
@@ -150,7 +152,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -189,6 +192,7 @@
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner,
                       ds.path as user_default_storage_path
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
@@ -219,7 +223,8 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM pipeline.user u
                         LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                         LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -255,7 +260,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -285,7 +291,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -315,7 +322,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -345,7 +353,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                         LEFT JOIN pipeline.user_roles ur
                             ON u.id = ur.user_id
@@ -378,7 +387,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -408,7 +418,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -438,7 +449,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -498,7 +510,8 @@
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
