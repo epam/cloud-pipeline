@@ -125,7 +125,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
     @TestCase(value = {"EPMCMBIBPC-345"})
     public void documentTabShouldBeValid() {
-        graphTab()
+        codeTab()
                 .documentsTab()
                 .ensure(UPLOAD, visible, enabled)
                 .ensure(byText("README.md"), visible)

@@ -15,10 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
-import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
-import static com.epam.pipeline.autotests.ao.Primitive.SHOW_TIMINGS;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
@@ -46,11 +45,15 @@ import static com.epam.pipeline.autotests.ao.LogAO.*;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.NodePage.*;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
+import static com.epam.pipeline.autotests.ao.Primitive.SHOW_TIMINGS;
+import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -239,6 +242,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .clickOnPipeline(pipeline312)
             .firstVersion()
             .runPipeline()
+            .setPriceType(ON_DEMAND)
             .launch(this)
             .showLog(getLastRunId())
             .waitForCompletion();
@@ -253,11 +257,14 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
     @TestCase({"EPMCMBIBPC-300", "EPMCMBIBPC-267"})
     public void clusterNodePageShouldBeValid() {
-        clusterMenu()
+        ClusterMenuAO clusterMenuAO = clusterMenu()
             .ensure(className("cluster__node-main-info"), visible, have(text("Cluster nodes")))
-            .ensure(button("Refresh"), visible, enabled)
-            .ensureAll(Combiners.select(not(master()), node(), "non-master node"), contains(button("TERMINATE")))
-            .ensureAll(Combiners.select(master(), node(), "master node"), not(contains(button("TERMINATE"))));
+            .ensure(button("Refresh"), visible, enabled);
+        while(clusterMenuAO.nextPageIsExist()) {
+            checkNodes();
+            clusterMenuAO.click(NEXT_PAGE);
+        }
+        checkNodes();
     }
 
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
@@ -266,6 +273,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         final By nonMasterNode = Combiners.select(
                 and("node neither master nor windows", not(master()), not(windows())),
                 node(), "any non-master node");
+        refresh();
         clusterMenu()
             .click(nonMasterNode, NodePage::new)
             .ensure(button("Refresh"), visible, enabled)
@@ -299,5 +307,20 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
 
     private static LogAO onRunPage() {
         return new LogAO();
+    }
+
+    private void checkNodes() {
+        if (!clusterMenu().context().$$(node()).stream()
+                .filter(not(master()))
+                .collect(toList()).isEmpty()) {
+            clusterMenu().ensureAll(Combiners.select(not(master()), node(), "non-master node"),
+                    contains(button("TERMINATE")));
+        }
+        if (!clusterMenu().context().$$(node()).stream()
+                .filter(master())
+                .collect(toList()).isEmpty()) {
+            clusterMenu().ensureAll(Combiners.select(master(), node(), "master node"),
+                    not(contains(button("TERMINATE"))));
+        }
     }
 }
