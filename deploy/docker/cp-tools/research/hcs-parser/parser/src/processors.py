@@ -29,6 +29,8 @@ from functools import cmp_to_key
 from pipeline.common import get_path_with_trailing_delimiter, get_path_without_trailing_delimiter
 from PIL import Image
 from tifffile import imread
+
+from .hcs_entity import FieldDetails, WellGrid
 from .utils import HcsParsingUtils, HcsFileLogger, log_run_info, get_int_run_param, get_bool_run_param
 from .tags import HcsFileTagProcessor
 from .evals import HcsFileEvalProcessor
@@ -60,87 +62,10 @@ OVERVIEW_DIR_NAME = 'overview'
 PATH_DELIMITER = '/'
 
 
-class HcsRoot:
-    def __init__(self, root_path, hcs_img_path):
-        self.root_path = root_path
-        self.hcs_img_path = hcs_img_path
-
-
-class FieldDetails:
-    def __init__(self, well_column, well_row, ome_image_id, x, y):
-        self.well_column = int(well_column)
-        self.well_row = int(well_row)
-        self.ome_image_id = ome_image_id
-        self.x = float(x)
-        self.y = float(y)
-
-
-class WellGrid:
-    def __init__(self):
-        self.__x_coords = set()
-        self.__y_coords = set()
-        self.__fields = set()
-        self.__height = None
-        self.__width = None
-        self.__field_size_y = None
-        self.__field_size_x = None
-
-    def add_x_coord(self, value):
-        self.__x_coords.add(value)
-
-    def add_y_coord(self, value):
-        self.__y_coords.add(value)
-
-    def add_field(self, field):
-        self.__fields.add(field)
-
-    def get_width(self):
-        return self.__width
-
-    def set_width(self, value):
-        self.__width = value
-
-    def calculate_width(self, size, resolution):
-        x_min = sys.maxsize
-        x_max = -sys.maxsize - 1
-        field_size = size * resolution
-        self.__field_size_x = field_size
-        for field in self.__fields:
-            if field[0] < x_min:
-                x_min = field[0]
-            if field[0] + field_size > x_max:
-                x_max = field[0] + field_size
-        return math.ceil((x_max - x_min) / field_size)
-
-    def get_height(self):
-        return self.__height
-
-    def set_height(self, value):
-        self.__height = value
-
-    def calculate_height(self, size, resolution):
-        y_min = sys.maxsize
-        y_max = -sys.maxsize - 1
-        field_size = size * resolution
-        self.__field_size_y = field_size
-        for field in self.__fields:
-            if field[1] < y_min:
-                y_min = field[1]
-            if field[1] + field_size > y_max:
-                y_max = field[1] + field_size
-        return math.ceil((y_max - y_min) / field_size)
-
-    def get_values_dict(self):
-        return dict({y_coord: set(self.__x_coords) for y_coord in self.__y_coords})
-
-    def get_field_size(self):
-        return self.__field_size_y
-
-
 class HcsFileParser:
 
-    def __init__(self, hcs_root_dir, hcs_img_path):
-        self.hcs_root_dir = get_path_without_trailing_delimiter(hcs_root_dir)
+    def __init__(self, hcs_root_path, hcs_img_path):
+        self.hcs_root_path = get_path_without_trailing_delimiter(hcs_root_path)
         self.hcs_img_path = hcs_img_path
         self.hcs_img_service_dir = HcsParsingUtils.get_service_directory(self.hcs_img_path)
         self.ome_xml_info_file_path = os.path.join(self.hcs_img_service_dir, 'info.ome.xml')
@@ -148,7 +73,7 @@ class HcsFileParser:
         self.tmp_stat_file_path = HcsParsingUtils.get_stat_active_file_name(self.hcs_img_path)
         self.tmp_local_dir = HcsParsingUtils.generate_local_service_directory(self.hcs_img_path)
         self.parsing_start_time = None
-        self._processing_logger = HcsFileLogger(self.hcs_root_dir)
+        self._processing_logger = HcsFileLogger(self.hcs_root_path)
 
     @staticmethod
     def generate_bioformats_ome_xml(input_file, output_file):
@@ -258,7 +183,7 @@ class HcsFileParser:
     def generate_ome_xml_info_file(self):
         self._processing_logger.log_info('Generating XML description')
         HcsParsingUtils.create_service_dir_if_not_exist(self.hcs_img_path)
-        hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
+        hcs_index_file_path = self.hcs_root_path + MEASUREMENT_INDEX_FILE_PATH
         if HCS_INDEX_FILE_NAME != HCS_OME_COMPATIBLE_INDEX_FILE_NAME:
             compatible_index_path = os.path.join(self.hcs_img_service_dir, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
             shutil.copy(hcs_index_file_path, compatible_index_path)
@@ -297,11 +222,11 @@ class HcsFileParser:
 
     def _write_hcs_file(self, time_series_details, plate_width, plate_height, comment=None):
         if HCS_PREVIEW_OUTPUT_USE_ABSOLUTE_PATHS:
-            source_dir = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
+            source_dir = HcsParsingUtils.extract_cloud_path(self.hcs_root_path)
             preview_dir = HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
         else:
             hcs_file_root_dir = os.path.dirname(self.hcs_img_path)
-            source_dir = os.path.relpath(self.hcs_root_dir, hcs_file_root_dir)
+            source_dir = os.path.relpath(self.hcs_root_path, hcs_file_root_dir)
             preview_dir = os.path.relpath(self.hcs_img_service_dir, hcs_file_root_dir)
         ome_data_file_name = HCS_PARSING_OME_TIFF_FILE_NAME
         ome_offsets_file_name = ome_data_file_name[:ome_data_file_name.find('.')] + '.offsets.json'
@@ -316,7 +241,7 @@ class HcsFileParser:
             'ome_offsets_file_name': ome_offsets_file_name
         }
         self._processing_logger.log_info('Saving preview info [source={}; preview={}] to [{}]'
-                                         .format(self.hcs_root_dir, self.hcs_img_service_dir, self.hcs_img_path))
+                                         .format(self.hcs_root_path, self.hcs_img_service_dir, self.hcs_img_path))
         self.write_dict_to_file(self.hcs_img_path, details)
 
     @staticmethod
@@ -331,7 +256,7 @@ class HcsFileParser:
         return True
 
     def _localize_related_files(self):
-        hcs_root_cloud_path = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
+        hcs_root_cloud_path = HcsParsingUtils.extract_cloud_path(self.hcs_root_path)
         local_tmp_dir_trailing = get_path_with_trailing_delimiter(self.tmp_local_dir)
         self._processing_logger.log_info('Localizing data files...')
         if LOCALIZE_USE_PIPE == "true":
@@ -360,7 +285,7 @@ class HcsFileParser:
             self._processing_logger.log_info('This file is processed by another parser, skipping...')
             return 2
         self.create_tmp_stat_file()
-        hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
+        hcs_index_file_path = self.hcs_root_path + MEASUREMENT_INDEX_FILE_PATH
         time_series_details = self._extract_time_series_details(hcs_index_file_path)
         self.generate_ome_xml_info_file()
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
@@ -584,8 +509,8 @@ class HcsFileParser:
         return measured_wells
 
     def extract_well_configuration(self, hcs_xml_info_root):
-        root_xml_file = '-'.join(os.path.basename(self.hcs_root_dir).split('-')[:-1]) + '.xml'
-        root_xml_file_path = os.path.join(self.hcs_root_dir, root_xml_file)
+        root_xml_file = '-'.join(os.path.basename(self.hcs_root_path).split('-')[:-1]) + '.xml'
+        root_xml_file_path = os.path.join(self.hcs_root_path, root_xml_file)
         if os.path.exists(root_xml_file_path):
             try:
                 xml_info_root = ET.parse(root_xml_file_path).getroot()
@@ -614,12 +539,12 @@ class HcsFileParser:
         return is_well_round, well_size
 
     def read_wells_tags(self):
-        return HcsFileTagProcessor.read_well_tags(self.hcs_root_dir)
+        return HcsFileTagProcessor.read_well_tags(self.hcs_root_path)
 
     def try_process_eval(self):
         result = 0
         local_eval_folder = os.path.join(self.tmp_local_dir, HCS_EVAL_DIR_NAME)
-        harmony_eval_folder = os.path.join(self.hcs_root_dir, HCS_EVAL_DIR_NAME)
+        harmony_eval_folder = os.path.join(self.hcs_root_path, HCS_EVAL_DIR_NAME)
         if not os.path.exists(harmony_eval_folder) or not os.listdir(harmony_eval_folder):
             self._processing_logger.log_info('Evaluation files not found.')
             return result
@@ -649,7 +574,7 @@ class HcsFileParser:
     def try_process_tags(self, xml_info_tree, wells_tags):
         tags_processing_result = 0
         try:
-            if HcsFileTagProcessor(self.hcs_root_dir, self.hcs_img_path, xml_info_tree).process_tags(wells_tags) != 0:
+            if HcsFileTagProcessor(self.hcs_root_path, self.hcs_img_path, xml_info_tree).process_tags(wells_tags) != 0:
                 self._processing_logger.log_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
@@ -952,3 +877,17 @@ class HcsFileParser:
                     entry.find(hcs_schema_prefix + 'ImageResolutionY').text = \
                         str(float(resolution_y) * y_scaling).upper()
         return channel_dimensions
+
+class HcsTiffFileParser(HcsFileParser):
+
+    def __init__(self, hcs_root_path, hcs_img_path):
+        HcsFileParser.__init__(self, hcs_root_path, hcs_img_path)
+
+
+class HcsCZIFileParser(HcsFileParser):
+
+    def __init__(self, hcs_root_path, hcs_img_path):
+        HcsFileParser.__init__(self, hcs_root_path, hcs_img_path)
+
+    def process_file(self):
+        self._processing_logger.log_info('Should process CZI file: [{}]'.format(self.hcs_root_path))

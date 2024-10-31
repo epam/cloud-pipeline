@@ -21,6 +21,8 @@ import xml.etree.ElementTree as ET
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
 
+from .hcs_entity import HcsRootType
+
 
 def get_int_run_param(env_var_name, default_value):
     return int(os.getenv(env_var_name, default_value))
@@ -99,18 +101,24 @@ class HcsParsingUtils:
         return os.path.join(parent_folder, preview_file_basename)
 
     @staticmethod
+    def determinate_hcs_root_type_by_path(hcs_root_path):
+        if hcs_root_path.endswith(".czi"):
+            return HcsRootType.CZI
+        return HcsRootType.TIFF
+
+    @staticmethod
     def build_preview_file_name(hcs_root_folder_path):
-        index_file_abs_path = os.path.join(HcsParsingUtils.get_file_without_extension(hcs_root_folder_path),
-                                           HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
-        hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
-        hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         file_name = HcsParsingUtils.get_file_without_extension(hcs_root_folder_path)
-        name_xml_element = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix) \
-            .find(hcs_schema_prefix + 'Name')
-        if name_xml_element is not None:
-            file_pretty_name = name_xml_element.text
-            if file_pretty_name is not None:
-                file_name = file_pretty_name
+        index_file_abs_path = os.path.join(file_name, HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+        if os.path.exists(index_file_abs_path):
+            hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
+            hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
+            name_xml_element = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix) \
+                .find(hcs_schema_prefix + 'Name')
+            if name_xml_element is not None:
+                file_pretty_name = name_xml_element.text
+                if file_pretty_name is not None:
+                    file_name = file_pretty_name
         return file_name
 
     @staticmethod

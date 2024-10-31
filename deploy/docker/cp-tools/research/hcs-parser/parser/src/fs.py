@@ -19,11 +19,11 @@ import glob
 import json
 import os
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
-from .processors import HcsRoot
+from .hcs_entity import HcsRoot, HcsRootType
 
 
-def get_processing_roots(should_force_processing, measurement_index_file):
-    paths_to_hcs_roots = get_list_run_param('HCS_TARGET_DIRECTORIES')
+def get_processing_roots(should_force_processing, hcs_root_mark_postfix):
+    paths_to_hcs_roots = get_list_run_param('HCS_TARGET_PATHS')
     if len(paths_to_hcs_roots) == 0:
         lookup_paths = get_list_run_param('HCS_LOOKUP_DIRECTORIES')
         if not lookup_paths:
@@ -31,7 +31,7 @@ def get_processing_roots(should_force_processing, measurement_index_file):
         log_run_info('Following paths are specified for processing: {}'.format(lookup_paths))
         log_run_info('Lookup for unprocessed files')
         result = HcsProcessingDirsGenerator(
-            lookup_paths, measurement_index_file, should_force_processing,
+            lookup_paths, hcs_root_mark_postfix, should_force_processing,
             skip=get_list_run_param('HCS_SKIP_FILES'),
             objmeta_file=os.getenv('HCS_OBJECT_META_FILE', None),
             hs_file=os.getenv('HCS_HARMONY_HS_FILE', '_hs.txt'),
@@ -39,21 +39,30 @@ def get_processing_roots(should_force_processing, measurement_index_file):
     else:
         result = []
         image_names = get_list_run_param('HCS_TARGET_IMG_NAMES')
+        hcs_target_types = get_list_run_param('HCS_TARGET_TYPES')
         if image_names and len(image_names) == len(paths_to_hcs_roots):
+            hcs_target_types_provided = hcs_target_types and len(hcs_target_types) == len(paths_to_hcs_roots)
             for index, root in enumerate(paths_to_hcs_roots):
-                result.append(HcsRoot(root, image_names[index]))
+                hcs_target_type = hcs_target_types[index] if hcs_target_types_provided \
+                    else HcsParsingUtils.determinate_hcs_root_type_by_path(root)
+                result.append(HcsRoot(root, image_names[index], hcs_target_type))
         else:
             for root in paths_to_hcs_roots:
-                result.append(HcsRoot(root, HcsParsingUtils.build_preview_file_path(root)))
+                result.append(
+                    HcsRoot(
+                        root, HcsParsingUtils.build_preview_file_path(root),
+                        HcsParsingUtils.determinate_hcs_root_type_by_path(root)
+                    )
+                )
     return result
 
 
 class HcsProcessingDirsGenerator:
 
-    def __init__(self, lookup_paths, measurement_index_file_path, force_processing=False, skip=[],
+    def __init__(self, lookup_paths, hcs_root_mark_postfix, force_processing=False, skip=[],
                  objmeta_file=None, hs_file=None, skip_markers=[]):
         self.lookup_paths = lookup_paths
-        self.measurement_index_file_path = measurement_index_file_path
+        self.hcs_root_mark_postfix = hcs_root_mark_postfix
         self.force_processing = force_processing
         self.skip = skip
         self.objmeta_file = objmeta_file
@@ -74,16 +83,17 @@ class HcsProcessingDirsGenerator:
 
     def generate_paths(self):
         hcs_roots = self.find_all_hcs_roots()
-        log_run_info('Found {} HCS files'.format(len(hcs_roots)))
-        roots_with_preview = self.build_roots_with_preview(hcs_roots)
         filtered = []
-        for root, preview in roots_with_preview.items():
-            full_img_name = preview[0]
-            short_img_name = preview[1]
-            matching_image = self.get_matching_file(full_img_name, short_img_name)
-            log_run_info('Expected preview image path: {}'.format(matching_image))
-            if self.is_processing_required(root, matching_image):
-                filtered.append(HcsRoot(root, matching_image))
+        if hcs_roots:
+            log_run_info('Found {} HCS files'.format(len(hcs_roots)))
+            roots_with_preview = self.build_roots_with_preview(hcs_roots)
+            for root, preview in roots_with_preview.items():
+                full_img_name = preview[0]
+                short_img_name = preview[1]
+                matching_image = self.get_matching_file(full_img_name, short_img_name)
+                log_run_info('Expected preview image path: {}'.format(matching_image))
+                if self.is_processing_required(root, matching_image):
+                    filtered.append(HcsRoot(root, matching_image, HcsParsingUtils.determinate_hcs_root_type_by_path(root)))
         return filtered
 
     def find_all_hcs_roots(self):
@@ -93,8 +103,12 @@ class HcsProcessingDirsGenerator:
             for dir_root, directories, files in dir_walk_root:
                 for file in files:
                     full_file_path = os.path.join(dir_root, file)
-                    if full_file_path.endswith(self.measurement_index_file_path):
-                        hcs_roots.add(full_file_path[:-len(self.measurement_index_file_path)])
+                    if full_file_path.endswith(self.hcs_root_mark_postfix):
+                        hcs_root_type = HcsParsingUtils.determinate_hcs_root_type_by_path(full_file_path)
+                        if hcs_root_type == HcsRootType.CZI:
+                            hcs_roots.add(full_file_path)
+                        else:
+                            hcs_roots.add(full_file_path[:-len(self.hcs_root_mark_postfix)])
         return hcs_roots
 
     def is_processing_required(self, hcs_folder_root_path, hcs_img_path):

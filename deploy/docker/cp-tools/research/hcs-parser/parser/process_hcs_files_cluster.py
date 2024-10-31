@@ -100,6 +100,8 @@ MASTER_RUN_ID = os.getenv('RUN_ID')
 HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+HCS_ROOT_SEARCH_POSTFIX = os.getenv('HCS_ROOT_SEARCH_POSTFIX', MEASUREMENT_INDEX_FILE_PATH)
+
 HCS_CLUSTER_PROCESSING_MEMORY_SIZE_SLOT_FACTOR = get_int_run_param('HCS_PARSING_CLUSTER_PROCESSING_MEMORY_FACTOR', 20)
 HCS_CLUSTER_INSTANCE_SLOT_SIZE = get_int_run_param('HCS_CLUSTER_INSTANCE_SLOT_SIZE', 0)
 HCS_CLUSTER_PROCESSING_MEMORY_CLUSTER_SLOT = \
@@ -121,9 +123,10 @@ class HcsFileSgeParser:
     PENDING_JOB_STATUSES = ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw']
     RUNNING_JOB_STATUSES = ['r', 't', 'Rr', 'Rt']
 
-    def __init__(self, hcs_file_root_path, hcs_img_path):
+    def __init__(self, hcs_file_root_path, hcs_img_path, root_type):
         self.hcs_root_path = hcs_file_root_path
         self.hcs_img_path = hcs_img_path
+        self.root_type = root_type
         self.processing_logger = HcsFileLogger(hcs_file_root_path)
 
     @staticmethod
@@ -217,13 +220,14 @@ class HcsFileSgeParser:
     def _build_env_vars_to_propagate(self, heap_limit_gb):
         jvm_parameters = COMMON_JAVA_OPTS + ' -Xmx{}G'.format(heap_limit_gb)
         env_vars_string = '''
-        export HCS_TARGET_DIRECTORIES="{}"
+        export HCS_TARGET_PATHS="{}"
         export HCS_TARGET_IMG_NAMES="{}"
+        export HCS_TARGET_TYPES="{}"
         export JAVA_OPTS="{}"
         export HCS_PARSER_PROCESSING_THREADS=1
         export PATH="{}"
         export BF_MAX_MEM="{}G"
-        '''.format(self.hcs_root_path, self.hcs_img_path, jvm_parameters, os.getenv('PATH'), str(heap_limit_gb))
+        '''.format(self.hcs_root_path, self.hcs_img_path, self.root_type, jvm_parameters, os.getenv('PATH'), str(heap_limit_gb))
         for key, value in os.environ.items():
             if key.startswith('HCS_PARSING_'):
                 if key == 'HCS_PARSING_PLATE_DETAILS_DICT':
@@ -234,8 +238,9 @@ class HcsFileSgeParser:
 
     def _get_propagated_env_vars(self, memory_limit):
         result = {
-            'HCS_TARGET_DIRECTORIES': self.hcs_root_path,
+            'HCS_TARGET_PATHS': self.hcs_root_path,
             'HCS_TARGET_IMG_NAMES': self.hcs_img_path,
+            'HCS_TARGET_TYPES': self.root_type,
             'JAVA_OPTS': COMMON_JAVA_OPTS + ' -Xmx{}G'.format(memory_limit),
             'HCS_PARSER_PROCESSING_THREADS': '1',
             'CP_CAP_LIMIT_MOUNTS': os.getenv('CP_CAP_LIMIT_MOUNTS')
@@ -340,7 +345,7 @@ class HcsFileSgeParser:
 
 
 def try_process_hcs_in_cluster(hcs_root_dir):
-    parser = HcsFileSgeParser(hcs_root_dir.root_path, hcs_root_dir.hcs_img_path)
+    parser = HcsFileSgeParser(hcs_root_dir.root_path, hcs_root_dir.hcs_img_path, hcs_root_dir.root_type)
     try:
         return parser.process_file_using_pipe() if ASYNC_MODE else parser.process_file_in_sge()
     except Exception as e:
@@ -353,7 +358,7 @@ def try_process_hcs_in_cluster(hcs_root_dir):
 
 def process_hcs_files_cluster():
     should_force_processing = TAGS_PROCESSING_ONLY or EVAL_PROCESSING_ONLY or FORCE_PROCESSING
-    paths_to_hcs_roots = get_processing_roots(should_force_processing, MEASUREMENT_INDEX_FILE_PATH)
+    paths_to_hcs_roots = get_processing_roots(should_force_processing, HCS_ROOT_SEARCH_POSTFIX)
     if not paths_to_hcs_roots or len(paths_to_hcs_roots) == 0:
         log_run_success('Found no files requires processing in the lookup directories.')
         exit(0)
