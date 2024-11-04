@@ -117,6 +117,17 @@ class HcsImage extends React.PureComponent {
     return (this.hcsInfo.sequences || []).map(s => s);
   }
 
+  @computed
+  get viewSettings () {
+    return this.hcsInfo?.viewSettings || {
+      video: true,
+      analysis: true,
+      plate: true,
+      well: true,
+      timeseries: true
+    };
+  }
+
   get selectedSequences () {
     const {selectedSequenceTimePoints = []} = this.state;
     const selectedSequencesIds = [
@@ -731,7 +742,9 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
-    const analysisAvailable = this.hcsAnalysis && this.hcsAnalysis.available;
+    const analysisAvailable = this.hcsAnalysis &&
+      this.hcsAnalysis.available &&
+      this.viewSettings.analysis;
     const selectedImage = this.selectedWellFields[0];
     if (!showConfiguration) {
       return (
@@ -749,14 +762,16 @@ class HcsImage extends React.PureComponent {
               </Button>
             )
           }
-          <VideoButton
-            className={styles.action}
-            videoSource={this.hcsVideoSource}
-            available={
-              (this.selectedSequence && this.selectedSequence.timeSeries.length > 1) ||
-              (selectedImage && selectedImage.depth > 1)
-            }
-          />
+          {this.viewSettings.video ? (
+            <VideoButton
+              className={styles.action}
+              videoSource={this.hcsVideoSource}
+              available={
+                (this.selectedSequence && this.selectedSequence.timeSeries.length > 1) ||
+                (selectedImage && selectedImage.depth > 1)
+              }
+            />
+          ) : null}
           <HCSDownloadButton
             size="small"
             className={styles.action}
@@ -1004,6 +1019,7 @@ class HcsImage extends React.PureComponent {
       selectedWells = [],
       selectedFields = []
     } = this.state;
+    const viewSettings = this.viewSettings;
     const sequenceInfo = this.selectedSequence;
     const selectedWell = this.selectedWell;
     const selectedImage = this.selectedWellFields[0];
@@ -1022,48 +1038,56 @@ class HcsImage extends React.PureComponent {
               'cp-content-panel'
             )
           }
+          style={{width: 'fit-content'}}
         >
-          <HcsCellSelector
-            className={styles.selectorContainer}
-            title="Plate"
-            cells={sequenceInfo.wells}
-            selected={selectedWells}
-            onChange={this.changeWells}
-            width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
-            height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
-            showRulers
-            searchPlaceholder="Search wells"
-            showElementHint
-          />
-          <HcsCellSelector
-            className={styles.selectorContainer}
-            title={selectedWell.id}
-            cells={selectedWell.images}
-            selected={selectedFields}
-            onChange={this.changeWellImages}
-            gridMode="CROSS"
-            width={
-              HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
-            }
-            height={
-              HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
-            }
-            scaleToROI
-            radius={selectedWell.radius}
-          />
-          <HcsSequenceSelector
-            sequences={this.sequences}
-            selection={selectedSequenceTimePoints}
-            onChange={this.onChangeSequenceTimePoints}
-            multiple
-            style={{padding: 5}}
-          />
+          {viewSettings.plate ? (
+            <HcsCellSelector
+              className={styles.selectorContainer}
+              title="Plate"
+              cells={sequenceInfo.wells}
+              selected={selectedWells}
+              onChange={this.changeWells}
+              width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
+              height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
+              showRulers
+              searchPlaceholder="Search wells"
+              showElementHint
+            />
+          ) : null}
+          {viewSettings.well ? (
+            <HcsCellSelector
+              className={styles.selectorContainer}
+              title={selectedWell.id}
+              cells={selectedWell.images}
+              selected={selectedFields}
+              onChange={this.changeWellImages}
+              gridMode="CROSS"
+              width={
+                HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
+              }
+              height={
+                HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
+              }
+              scaleToROI
+              radius={selectedWell.radius}
+            />
+          ) : null}
+          {viewSettings.timeseries ? (
+            <HcsSequenceSelector
+              sequences={this.sequences}
+              selection={selectedSequenceTimePoints}
+              onChange={this.onChangeSequenceTimePoints}
+              multiple
+              style={{padding: 5, maxWidth: 300}}
+            />
+          ) : null}
           <HcsZPositionSelector
             image={selectedImage}
             selection={selectedZCoordinates}
             mergeZPlanes={mergeZPlanes}
             onChange={this.onChangeZCoordinates}
             multiple
+            style={{maxWidth: 300}}
           />
         </div>
       );
