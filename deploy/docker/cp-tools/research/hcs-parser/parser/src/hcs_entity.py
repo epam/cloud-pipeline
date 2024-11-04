@@ -7,11 +7,18 @@ class HcsRootType(Enum):
     TIFF = 1
     CZI  = 2
 
+    @staticmethod
+    def get(name):
+        if name.lower() == HcsRootType.CZI.name.lower():
+            return HcsRootType.CZI
+        else:
+            return HcsRootType.TIFF
+
+
 class HcsRoot:
-    def __init__(self, root_path, hcs_img_path, root_type):
+    def __init__(self, root_path, hcs_img_path):
         self.root_path = root_path
         self.hcs_img_path = hcs_img_path
-        self.root_type = root_type
 
 
 class FieldDetails:
