@@ -2138,7 +2138,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <EnumerationParameter
               disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
               placeholder="Value"
-              className={styles.parameterValue}
               parameters={parameters}
               enumeration={enumeration}
               rawEdit={this.state.isRawEditEnabled}
