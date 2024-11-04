@@ -49,6 +49,7 @@ function buildZPositionsArray (max, zSize, zUnit) {
 function HcsZPositionSelector (props) {
   const {
     className,
+    style,
     image,
     selection: rawSelection = [0],
     onChange,
@@ -107,6 +108,7 @@ function HcsZPositionSelector (props) {
           className,
           styles.container
         )}
+      style={style}
     >
       <div
         className={styles.title}
