@@ -97,7 +97,7 @@ class HCSDownloadButton extends React.Component {
       .then(blob => FileSaver.saveAs(blob, hcsVideoSource.getVideoFileName(videoUrl)));
   };
 
-  renderScreenshotMenu = () => {
+  renderScreenshotMenu = (items) => {
     const handle = ({key}) => {
       switch (key) {
         case 'tiff':
@@ -116,15 +116,11 @@ class HCSDownloadButton extends React.Component {
         selectedKeys={[]}
         style={{cursor: 'pointer'}}
       >
-        <MenuItem key="default">
-          Download preview image
-        </MenuItem>
-        <MenuItem key="tiff">
-          Download original image (tiff)
-        </MenuItem>
-        <MenuItem key="png">
-          Download original image (png)
-        </MenuItem>
+        {items.map(item => (
+          <MenuItem key={item.key}>
+            {item.text}
+          </MenuItem>
+        ))}
       </Menu>
     );
   };
@@ -137,7 +133,8 @@ class HCSDownloadButton extends React.Component {
       viewer: hcsImageViewer,
       showTitle,
       hcsVideoSource,
-      hcsMergedImageSource
+      hcsMergedImageSource,
+      originalImageEnabled
     } = this.props;
     if (!hcsImageViewer) {
       return null;
@@ -197,39 +194,66 @@ class HCSDownloadButton extends React.Component {
               Download preview image
             </Button>
           </div>
-          <div>
-            <Button
-              onClick={() => this.handleHighResolutionScreenshotDownload('tiff')}
-              size={size}
-              style={{width: '100%', marginBottom: 3}}
-            >
-              Download original image (tiff)
-            </Button>
-          </div>
-          <div>
-            <Button
-              onClick={() => this.handleHighResolutionScreenshotDownload('png')}
-              size={size}
-              style={{width: '100%'}}
-            >
-              Download original image (png)
-            </Button>
-          </div>
+          {originalImageEnabled ? ([
+            <div key="tiff">
+              <Button
+                onClick={() => this.handleHighResolutionScreenshotDownload('tiff')}
+                size={size}
+                style={{width: '100%', marginBottom: 3}}
+              >
+                Download original image (tiff)
+              </Button>
+            </div>,
+            <div key="png">
+              <Button
+                onClick={() => this.handleHighResolutionScreenshotDownload('png')}
+                size={size}
+                style={{width: '100%'}}
+              >
+                Download original image (png)
+              </Button>
+            </div>
+          ]) : null}
         </div>
       );
     }
-    const screenshotMenu = this.renderScreenshotMenu();
+    const menuItems = [{
+      key: 'default',
+      text: 'Download preview image',
+      visible: () => true
+    }, {
+      key: 'tiff',
+      text: 'Download original image (tiff)',
+      visible: () => originalImageEnabled
+    }, {
+      key: 'png',
+      text: 'Download original image (png)',
+      visible: () => originalImageEnabled
+    }].filter(item => item.visible());
+    if (menuItems.length > 1) {
+      return (
+        <Dropdown.Button
+          className={className}
+          style={style}
+          disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
+          onClick={this.handleDownloadScreenshot}
+          overlay={this.renderScreenshotMenu(menuItems)}
+          size={size}
+        >
+          <Icon type="camera" className="cp-larger" />
+        </Dropdown.Button>
+      );
+    }
     return (
-      <Dropdown.Button
+      <Button
         className={className}
         style={style}
         disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
         onClick={this.handleDownloadScreenshot}
-        overlay={screenshotMenu}
         size={size}
       >
         <Icon type="camera" className="cp-larger" />
-      </Dropdown.Button>
+      </Button>
     );
   }
 }
@@ -241,7 +265,12 @@ HCSDownloadButton.propTypes = {
   viewer: PropTypes.object,
   showTitle: PropTypes.bool,
   wellView: PropTypes.bool,
-  wellId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  wellId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  originalImageEnabled: PropTypes.bool
+};
+
+HCSDownloadButton.defaultProps = {
+  originalImageEnabled: true
 };
 
 export default HCSDownloadButton;

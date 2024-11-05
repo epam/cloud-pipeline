@@ -91,7 +91,8 @@ class HCSInfo {
       analysis: `${viewSettings.analysis}` !== 'false',
       plate: `${viewSettings['plate_layout']}` !== 'false',
       well: `${viewSettings['well_layout']}` !== 'false',
-      timeseries: `${viewSettings['timeseries_layout']}` !== 'false'
+      timeseries: `${viewSettings['timeseries_layout']}` !== 'false',
+      originalImage: `${viewSettings['original_image']}` !== 'false'
     };
     /**
      * Sequences info

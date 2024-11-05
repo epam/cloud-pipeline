@@ -124,7 +124,8 @@ class HcsImage extends React.PureComponent {
       analysis: true,
       plate: true,
       well: true,
-      timeseries: true
+      timeseries: true,
+      originalImage: true
     };
   }
 
@@ -208,7 +209,8 @@ class HcsImage extends React.PureComponent {
       well &&
       well.overviewOmeTiffFileName &&
       well.overviewOffsetsJsonFileName &&
-      well.wellImageId;
+      well.wellImageId &&
+      this.viewSettings.well;
   }
 
   get showEntireWell () {
@@ -778,6 +780,7 @@ class HcsImage extends React.PureComponent {
             viewer={this.hcsImageViewer}
             wellId={this.selectedWell ? this.selectedWell.id : undefined}
             wellView={this.showEntireWell}
+            originalImageEnabled={this.viewSettings.originalImage}
           />
           <Button
             className={styles.action}
@@ -845,6 +848,7 @@ class HcsImage extends React.PureComponent {
             viewer={this.hcsImageViewer}
             wellId={this.selectedWell ? this.selectedWell.id : undefined}
             wellView={this.showEntireWell}
+            originalImageEnabled={this.viewSettings.originalImage}
           />
         </div>
       </Panel>
