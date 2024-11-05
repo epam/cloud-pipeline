@@ -23,18 +23,16 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import com.epam.pipeline.utils.StreamUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Comparator;
 import java.util.Locale;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -93,18 +91,23 @@ public class StorageFileMapper {
 
     private Map<String, ImmutablePair<Long, Integer>> calculateVersionSizes(
             final Map<String, AbstractDataStorageItem> versions) {
-        return StreamUtils.grouped(
-                versions.values().stream().map(v -> (DataStorageFile) v),
-                Comparator.comparing(v -> MapUtils.emptyIfNull(v.getLabels())
-                        .getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER)
-                )
-        ).map(tierVersions -> {
-            final String storageClass = tierVersions.stream().findFirst()
-                    .map(v -> MapUtils.emptyIfNull(v.getLabels()).get(ESConstants.STORAGE_CLASS_LABEL))
-                    .orElse(STANDARD_TIER);
-            final long totalSize = tierVersions.stream()
-                    .collect(Collectors.summarizingLong(DataStorageFile::getSize)).getSum();
-            return ImmutablePair.of(storageClass, ImmutablePair.of(totalSize, tierVersions.size()));
-        }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        final HashMap<String, ImmutablePair<Long, Integer>> result = new HashMap<>();
+        for (final AbstractDataStorageItem v : versions.values()) {
+            final DataStorageFile version = (DataStorageFile) v;
+            final String storageClass = Optional.ofNullable(
+                    MapUtils.emptyIfNull(version.getLabels()).get(ESConstants.STORAGE_CLASS_LABEL)
+            ).orElse(STANDARD_TIER);
+            result.compute(
+                storageClass,
+                (tier, tierSize) -> {
+                    if (tierSize == null) {
+                        return ImmutablePair.of(version.getSize(), 1);
+                    } else {
+                        return ImmutablePair.of(tierSize.getLeft() + version.getSize(), tierSize.getRight() + 1);
+                    }
+                }
+            );
+        }
+        return result;
     }
 }
