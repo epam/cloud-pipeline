@@ -85,6 +85,14 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO inputText(String command) {
+        sleep(300, MILLISECONDS);
+        Utils.sendKeysWithSlashes(command);
+        sleep(300, MILLISECONDS);
+        actions().sendKeys(Keys.ESCAPE).perform();
+        return this;
+    }
+
     public ShellAO assertOutputContains(String... messages) {
         Arrays.stream(messages)
                 .forEach(this::assertPageContains);
@@ -228,6 +236,13 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(20, SECONDS);
         }
         return this;
+    }
+
+    public int getRowsNumber() {
+        String str = context()
+                .text()
+                .substring(context().text().indexOf("\"/tmp/"));
+        return Integer.valueOf(str.substring(str.indexOf(" ")+1, str.indexOf("L,")));
     }
 
     @Override
