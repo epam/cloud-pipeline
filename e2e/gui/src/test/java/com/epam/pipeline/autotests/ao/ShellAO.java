@@ -239,10 +239,11 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public int getRowsNumber() {
-        String str = context()
-                .text()
-                .substring(context().text().indexOf("\"/tmp/"));
-        return Integer.valueOf(str.substring(str.indexOf(" ")+1, str.indexOf("L,")));
+        final String fileMetadata = context().text().substring(context().text().indexOf("\"/tmp/"));
+        final Pattern pattern = Pattern.compile("\"([^\"]+)\"\\s+(\\d+)L,\\s+(\\d+)C");
+        final Matcher matcher = pattern.matcher(fileMetadata);
+        assertTrue(matcher.find(), format("Could not find the number of lines in the file metadata: %s", fileMetadata));
+        return Integer.parseInt(matcher.group(2));
     }
 
     @Override
