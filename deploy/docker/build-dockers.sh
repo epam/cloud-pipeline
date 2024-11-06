@@ -136,6 +136,20 @@ docker build    $DOCKERS_SOURCES_PATH/cp-search \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_SEARCH_DIST_NAME"
 
+# Node Reporter
+CP_NODE_REPORTER_DIST_NAME=${CP_NODE_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-reporter-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-node-reporter \
+                -t "$CP_NODE_REPORTER_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_NODE_REPORTER_DIST_NAME"
+
+# Monitoring service
+CP_MONITORING_SRV_DIST_NAME=${CP_MONITORING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:monitoring-service-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-monitoring-srv \
+                -t "$CP_MONITORING_SRV_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_MONITORING_SRV_DIST_NAME"
+
 # Basic IdP
 CP_IDP_DIST_NAME=${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-idp \
@@ -212,13 +226,6 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
-# Node Reporter
-CP_NODE_REPORTER_DIST_NAME=${CP_NODE_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-reporter-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-node-reporter \
-                -t "$CP_NODE_REPORTER_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_NODE_REPORTER_DIST_NAME"
-
 # Backups manager
 CP_BKP_WORKER_DIST_NAME=${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-bkp-worker \
@@ -278,13 +285,6 @@ CP_DNS_PODS_SYNC_DIST_NAME=${CP_DNS_PODS_SYNC_DIST_NAME:-"$CP_DIST_REPO_NAME:dns
 docker build    $DOCKERS_SOURCES_PATH/cp-dns-hosts-sync \
                 -t "$CP_DNS_PODS_SYNC_DIST_NAME"
 docker push "$CP_DNS_PODS_SYNC_DIST_NAME"
-
-# Monitoring service
-CP_MONITORING_SRV_DIST_NAME=${CP_MONITORING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:monitoring-service-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-monitoring-srv \
-                -t "$CP_MONITORING_SRV_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_MONITORING_SRV_DIST_NAME"
 
 # Deployment autoscaler
 CP_DEPLOYMENT_AUTOSCALER_DIST_NAME=${CP_DEPLOYMENT_AUTOSCALER_DIST_NAME:-"$CP_DIST_REPO_NAME:deployment-autoscaler-${DOCKERS_VERSION}"}
