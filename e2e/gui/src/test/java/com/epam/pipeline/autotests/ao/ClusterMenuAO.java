@@ -209,8 +209,8 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public String getNodeName(String runId) {
         while (!$(byText(runIdLabelText(runId))).isDisplayed()
-                && $(byClassName("ant-pagination-next")).getAttribute("aria-disabled").equals("false")) {
-            $(byClassName("ant-pagination-next")).click();
+                && get(NEXT_PAGE).getAttribute("aria-disabled").equals("false")) {
+            get(NEXT_PAGE).click();
         }
         return $(byText(runIdLabelText(runId)))
                 .should(exist)
@@ -317,7 +317,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public boolean nextPageIsExist() {
-        return $(className("ant-pagination-next")).getAttribute("aria-disabled").equals("false");
+        return get(NEXT_PAGE).getAttribute("aria-disabled").equals("false");
     }
 
     private boolean hotPoolLabel(String runId, String poolName) {

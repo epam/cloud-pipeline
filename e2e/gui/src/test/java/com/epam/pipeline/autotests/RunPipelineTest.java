@@ -67,6 +67,8 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     private final String pipeline314 = resourceName("epmcmbibpc-314");
     private final String pipeline306 = resourceName("epmcmbibpc-306");
     private final String pipeline312 = resourceName("epmcmbibpc-312");
+    private String storage1 = "runPipelineTestStorage" + Utils.randomSuffix();
+    private String storage2 = "runPipelineTestStorage" + Utils.randomSuffix();
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -79,7 +81,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .removePipelineIfExists(pipeline303)
             .removePipelineIfExists(pipeline314)
             .removePipelineIfExists(pipeline306)
-            .removePipelineIfExists(pipeline312);
+            .removePipelineIfExists(pipeline312)
+            .removeStorageIfExists(storage1)
+            .removeStorageIfExists(storage2);
     }
 
     @Test
@@ -127,11 +131,19 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-100")
     public void shouldLaunchPipeline() {
         library()
+            .createStorage(storage1)
+            .createStorage(storage2)
             .createPipeline(Template.PYTHON, pipeline100)
             .clickOnPipeline(pipeline100)
             .firstVersion()
             .runPipeline()
             .setLaunchOptions("20", C.DEFAULT_INSTANCE, "")
+            .selectDataStoragesToLimitMounts()
+            .clearSelection()
+            .searchStorage(storage1)
+            .clearSelection()
+            .searchStorage(storage2)
+            .ok()
             .launch(this)
             .ensure(tabWithName("Active Runs"), visible, selectedTab)
             .ensure(runWithId(getLastRunId()), visible);

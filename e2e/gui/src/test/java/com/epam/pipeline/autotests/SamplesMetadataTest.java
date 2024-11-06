@@ -561,7 +561,7 @@ public class SamplesMetadataTest
                 .cd(metadataFolder)
                 .ensure(byText("SampleSet [2]"), visible)
                 .ensure(byText(sampleFolder), visible)
-                .cd(sampleFolder.replace(" [14]", ""))
+                .cd(sampleFolder)
                 .also(ensureSamplesCountIs(subfolder1Files.length / 2 + subfolder2Files.length / 2));
     }
 
