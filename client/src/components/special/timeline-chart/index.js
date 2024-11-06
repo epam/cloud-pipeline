@@ -46,7 +46,7 @@ class TimelineChart extends React.Component {
     }
   };
 
-  renderer = new TimelineChartRenderer();
+  renderer = new TimelineChartRenderer(this.props.options);
   hoverPosition = undefined;
   hoverContainer;
 
@@ -94,13 +94,22 @@ class TimelineChart extends React.Component {
     };
     if (datasets !== prevProps.datasets) {
       this.updateDatasets();
+      this.updateColors()
+        .then(() => {
+          this.updateDatasets();
+          this.updateColorsConfig();
+          this.updateOtherConfig();
+        });
     } else if (datasetOptions !== prevProps.datasetOptions) {
       this.updateDatasetsOptions();
     } else if (themeColorsChanged()) {
       this.updateDefaultDatasetsOptions();
     }
     this.updateOtherConfig();
-    if (from !== prevProps.from || to !== prevProps.to) {
+    if (
+      from !== prevProps.from ||
+      to !== prevProps.to
+    ) {
       this.updateRange();
     }
   }
@@ -287,16 +296,22 @@ class TimelineChart extends React.Component {
     if (typeof onRangeChanged === 'function') {
       const {
         from,
-        to
+        to,
+        fromZoom,
+        fromDrag
       } = range;
       const {
         unix: fromUnix,
         date: fromDate
       } = parseDate(from) || {};
+
       const {
         unix: toUnix,
         date: toDate
       } = parseDate(to) || {};
+      if (from === this.props.from && to === this.props.to) {
+        return;
+      }
       if (fromUnix !== undefined && toUnix !== undefined) {
         onRangeChanged({
           from: fromUnix,
@@ -304,7 +319,9 @@ class TimelineChart extends React.Component {
           fromDateString: fromDate.format('YYYY-MM-DD HH:mm:ss'),
           to: toUnix,
           toDate: toDate,
-          toDateString: toDate.format('YYYY-MM-DD HH:mm:ss')
+          toDateString: toDate.format('YYYY-MM-DD HH:mm:ss'),
+          fromZoom,
+          fromDrag
         });
       }
     }
@@ -399,7 +416,8 @@ class TimelineChart extends React.Component {
 
   renderHoveredInfo = () => {
     const {
-      hover
+      hover,
+      hoverContainerClassName
     } = this.props;
     if (!hover) {
       return null;
@@ -413,9 +431,12 @@ class TimelineChart extends React.Component {
         className={
           classNames(
             styles.hoverContainer,
-            'cp-panel',
-            'cp-dark-background',
-            'semi-transparent'
+            hoverContainerClassName,
+            {
+              'cp-panel': !hoverContainerClassName,
+              'cp-dark-background': !hoverContainerClassName,
+              'semi-transparent': !hoverContainerClassName
+            }
           )
         }
         ref={initialize}
@@ -449,7 +470,13 @@ class TimelineChart extends React.Component {
 }
 
 TimelineChart.propTypes = {
+  options: PropTypes.shape({
+    showHorizontalLines: PropTypes.bool,
+    shiftWheel: PropTypes.bool,
+    animateZoom: PropTypes.bool
+  }),
   className: PropTypes.string,
+  hoverContainerClassName: PropTypes.string,
   style: PropTypes.object,
   datasets: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   datasetOptions: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

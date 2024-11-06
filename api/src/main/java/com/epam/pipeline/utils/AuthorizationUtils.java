@@ -26,6 +26,7 @@ public interface AuthorizationUtils {
 
     String BASIC_AUTH = "Basic";
     String BEARER_AUTH = "Bearer ";
+    String AUTH_HEADER = "Authorization";
 
     static String[] parseBasicAuth(final String authorization) {
         if (authorization != null && authorization.startsWith(BASIC_AUTH)) {
@@ -41,5 +42,14 @@ public interface AuthorizationUtils {
             return values;
         }
         return null;
+    }
+
+    static String buildBasicAuth(final String username, final String password) {
+        final String credentials = username + ":" + password;
+        return BASIC_AUTH + " " + Base64.getEncoder().encodeToString(credentials.getBytes());
+    }
+
+    static String buildBearerTokenAuth(final String token) {
+        return AuthorizationUtils.BEARER_AUTH + token;
     }
 }

@@ -20,6 +20,7 @@ from sls.util import path_utils
 # If the metadata with such key is present on the storage,
 # StorageLifecycleArchivingSynchronizer will skip such storage
 SKIP_ARCHIVING_TAG = "storage_skip_archiving_tag"
+MINIMUM_OBJECT_SIZE_FOR_TRANSIT = "minimum_object_size_for_transit"
 
 
 def _verify_s3_sls_properties(sls_properties, logger):
@@ -114,18 +115,33 @@ class PlatformToCloudOperationsAdapter:
             return False
         return tag_to_skip_storage in metadata
 
+    def get_minimum_object_size_for_transit(self, storage):
+        region = self.fetch_region(storage.region_id)
+        return self._get_minimum_object_size_for_transit(region)
+
+    def _get_minimum_object_size_for_transit(self, region):
+        value = region.storage_lifecycle_service_properties.get(MINIMUM_OBJECT_SIZE_FOR_TRANSIT) if region else None
+        if isinstance(value, str) and value.isnumeric() or isinstance(value, int):
+            return int(value)
+        else:
+            self.logger.log("Bad value for {}: {}, should be non-nagative int. "
+                            "Returning None".format(MINIMUM_OBJECT_SIZE_FOR_TRANSIT, value))
+            return None
+
     def prepare_bucket_if_needed(self, storage):
         region = self.fetch_region(storage.region_id)
         storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
         storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix, storage)
-        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(region, storage_container)
+        object_size_for_transit = self._get_minimum_object_size_for_transit(region)
+        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(region, storage_container, object_size_for_transit)
 
-    def list_objects_by_prefix(self, storage, prefix):
+    def list_objects_by_prefix(self, storage, prefix, classes_to_list):
         region = self.fetch_region(storage.region_id)
         storage_is_versioned = storage.policy.versioning if storage.policy else False
         storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
         storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix + prefix, storage)
         files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(region, storage_container,
+                                                                                   classes_to_list=classes_to_list,
                                                                                    list_versions=storage_is_versioned)
         for file in files:
             if storage_path_prefix and file.path.startswith(storage_path_prefix):

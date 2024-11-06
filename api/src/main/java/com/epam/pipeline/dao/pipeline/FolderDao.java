@@ -171,6 +171,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         PIPELINE_REPOSITORY_TOKEN,
         PIPELINE_REPOSITORY_TYPE,
         PIPELINE_VISIBILITY,
+        PIPELINE_CONFIG,
         PIPELINE_CODE,
         PIPELINE_DOCS,
         PIPELINE_LOCKED,
@@ -187,6 +188,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_ALLOWED_CIDRS,
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
+        DATASTORAGE_MOUNT_EXACT_PATH,
         DATASTORAGE_SENSITIVE,
         DATASTORAGE_MOUNT_DISABLED,
         DATASTORAGE_S3_KMS_KEY_ARN,
@@ -272,6 +274,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         pipeline.setVisibility(
                                 StringUtils.isNotBlank(rawVisibility) ?
                                         RunVisibilityPolicy.valueOf(rawVisibility) : null);
+                        pipeline.setConfigurationPath(rs.getString(PIPELINE_CONFIG.name()));
                         pipeline.setCodePath(rs.getString(PIPELINE_CODE.name()));
                         pipeline.setDocsPath(rs.getString(PIPELINE_DOCS.name()));
                         folder.getPipelines().add(pipeline);
@@ -305,6 +308,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         allowedCidrs,
                                         regionId,
                                         fileShareMountId,
+                                        rs.getBoolean(DATASTORAGE_MOUNT_EXACT_PATH.name()),
                                         rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
                                         rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
                                         rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()),

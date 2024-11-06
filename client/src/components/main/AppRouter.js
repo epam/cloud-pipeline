@@ -45,7 +45,7 @@ import HotClusterUsage from '../cluster/hot-node-pool/hot-cluster-usage';
 import ClusterNode from '../cluster/ClusterNode';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
-import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
+import ClusterNodeMonitor from '../cluster/cluster-node-monitor';
 import Tool from '../tools/Tool';
 import Tools from '../tools/Tools';
 import SettingsForm from '../settings';

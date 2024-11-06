@@ -231,6 +231,14 @@
   text-decoration: underline;
 }
 
+.tasks-navigation-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+}
+
 .timing-btn {
   position: absolute;
   top: 4px;

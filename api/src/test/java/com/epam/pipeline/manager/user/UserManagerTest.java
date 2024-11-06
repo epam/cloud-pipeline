@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.user;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
+import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -40,8 +42,12 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
+import com.epam.pipeline.manager.docker.DockerClient;
+import com.epam.pipeline.manager.docker.DockerClientFactory;
+import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -71,8 +77,7 @@ import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.Pipeline
 import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.ID;
 import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.ROLES;
 import static com.epam.pipeline.entity.user.PipelineUserWithStoragePath.PipelineUserFields.USER_NAME;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -118,6 +123,18 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @Autowired
     private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private DockerRegistryManager registryManager;
+
+    @Autowired
+    private ToolGroupManager toolGroupManager;
+
+    @Autowired
+    private GrantPermissionManager grantPermissionManager;
+
+    @MockBean
+    private DockerClientFactory dockerClientFactory;
 
     @SpyBean
     private DataStorageManager dataStorageManager;
@@ -342,6 +359,38 @@ public class UserManagerTest extends AbstractSpringTest {
         final PipelineUser newUser = createDefaultPipelineUser();
         assertDefaultStorage(newUser, parentFolder.getId());
         restoreDataStorageManager();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUserAndPrivateDockerRegistryGroup() {
+        // Prepare context
+        DockerClient mockDockerClient = mock(DockerClient.class);
+        Mockito.when(dockerClientFactory.getDockerClient(any(), anyString())).thenReturn(mockDockerClient);
+
+        GrantPermissionManager grantPermissionManager = mock(GrantPermissionManager.class);
+        ReflectionTestUtils.setField(toolGroupManager, "grantPermissionManager", grantPermissionManager);
+
+        DockerRegistryVO dockerRegistryVO = new DockerRegistryVO();
+        dockerRegistryVO.setPath("docker");
+        DockerRegistry dockerRegistry = registryManager.create(dockerRegistryVO);
+
+        final Preference createUserDockerGroupPref =
+                SystemPreferences.SYSTEM_CREATE_DOCKER_REGISTRY_USER_GROUP_ON_CREATE.toPreference();
+        createUserDockerGroupPref.setValue("true");
+        preferenceManager.update(Collections.singletonList(createUserDockerGroupPref));
+
+        final Preference defaultDockerRegistryPref = SystemPreferences.SYSTEM_DEFAULT_DOCKER_REGISTRY.toPreference();
+        defaultDockerRegistryPref.setValue(Long.toString(dockerRegistry.getId()));
+        preferenceManager.update(Collections.singletonList(defaultDockerRegistryPref));
+
+        // Test
+        Assert.assertFalse(toolGroupManager.doesUserToolGroupExist(dockerRegistry.getId(), TEST_USER));
+        final PipelineUser newUser = createDefaultPipelineUser();
+        Assert.assertTrue(toolGroupManager.doesUserToolGroupExist(dockerRegistry.getId(), TEST_USER));
+
+        // Rollback context
+        ReflectionTestUtils.setField(toolGroupManager, "grantPermissionManager", this.grantPermissionManager);
     }
 
     @Test

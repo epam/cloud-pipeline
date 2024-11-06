@@ -193,7 +193,7 @@ function runIsService (run) {
     run.initialized;
 }
 
-function extractTagsFromFilter (filter = {}) {
+export function extractTagsFromFilter (filter = {}) {
   const tags = [...new Set((filter.tags || []).filter(Boolean))];
   return tags.reduce((acc, tag) => {
     const [tagName, ...rest] = tag.split('=');
@@ -292,7 +292,10 @@ class RunTable extends localization.LocalizedReactComponent {
       filtersState: {},
       runs: [],
       total: 0
-    }, this.fetchCurrentPage.bind(this));
+    }, () => {
+      this.fetchCurrentPage.bind(this)();
+      this.reportFiltersChange();
+    });
   };
 
   finishFetching = () => {
@@ -419,7 +422,9 @@ class RunTable extends localization.LocalizedReactComponent {
       };
       const after = () => {
         if (this.fetchToken === token) {
-          this.setState(state);
+          this.setState(state, () => {
+            this.reportFiltersChange();
+          });
           if (typeof autoUpdate === 'function') {
             const autoUpdateValue = autoUpdate(state);
             if (typeof this.setContinuous === 'function') {
@@ -442,6 +447,20 @@ class RunTable extends localization.LocalizedReactComponent {
       this.stopFetch = stop;
       this.reFetch = reFetch;
       this.setContinuous = setContinuous;
+    });
+  };
+
+  reportFiltersChange = () => {
+    const tags = {
+      ...(this.state.filters.tags || {}),
+      ...extractTagsFromFilter(this.state.additionalFilters)
+    };
+    this.props.onChangeFilters && this.props.onChangeFilters({
+      page: this.state.page,
+      pageSize: this.props.page || DEFAULT_PAGE_SIZE,
+      filters: this.props.filters,
+      userFilters: this.state.filters,
+      tags
     });
   };
 
@@ -485,7 +504,10 @@ class RunTable extends localization.LocalizedReactComponent {
   onPageChanged = (newPage, force = false) => {
     const corrected = Math.max(0, newPage - 1);
     if (this.state.page !== corrected || force) {
-      this.setState({page: corrected, expandedRows: []}, () => this.fetchCurrentPage());
+      this.setState({page: corrected, expandedRows: []}, () => {
+        this.fetchCurrentPage();
+        this.reportFiltersChange();
+      });
     }
   };
 
@@ -796,6 +818,7 @@ RunTable.propTypes = {
     PropTypes.bool,
     PropTypes.arrayOf(RunTableColumnPropType)
   ]),
+  onChangeFilters: PropTypes.func,
   columns: PropTypes.arrayOf(RunTableColumnPropType),
   hiddenColumns: PropTypes.arrayOf(RunTableColumnPropType),
   filters: PropTypes.shape({

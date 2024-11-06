@@ -54,3 +54,14 @@
 .owner-container input:hover {
   border: 1px solid #ccc !important;
 }
+
+.permissions-form-footer {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.permissions-form-footer .permissions-form-action {
+  margin-left: 5px;
+}

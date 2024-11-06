@@ -24,6 +24,7 @@ import urllib3
 from .region import CloudRegion
 from .datastorage import DataStorage
 from .datastorage import DataStorageWithShareMount
+from .token import StaticToken
 
 # Date format expected by Pipeline API
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -266,16 +267,19 @@ class PipelineAPI:
     RESPONSE_STATUS_OK = 'OK'
     MAX_PAGE_SIZE = 400
 
-    def __init__(self, api_url, log_dir, attempts=3, timeout=5, connection_timeout=10):
+    def __init__(self, api_url=None, log_dir=None, attempts=3, timeout=5, connection_timeout=10, token=None):
         urllib3.disable_warnings()
-        token = os.environ.get('API_TOKEN')
-        self.api_url = api_url
-        self.log_dir = log_dir
-        self.header = {'content-type': 'application/json',
-                       'Authorization': 'Bearer {}'.format(token)}
+        self.api_url = api_url or os.environ['API']
+        self.log_dir = log_dir or os.getenv('LOG_DIR', '/var/log')
         self.attempts = attempts
         self.timeout = timeout
         self.connection_timeout = connection_timeout
+        self.token = token or StaticToken()
+
+    @property
+    def header(self):
+        return {'content-type': 'application/json',
+                'Authorization': 'Bearer {}'.format(self.token.get())}
 
     def check_response(self, response, not_found_msg=None):
         if response.status_code != 200:
@@ -1104,6 +1108,17 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
 
+    def generate_user_token_efficiently(self, user_name=None, duration=None):
+        args = {}
+        if user_name:
+            args['name'] = user_name
+        if duration:
+            args['expiration'] = str(duration)
+        endpoint = '/user/token'
+        if args:
+            endpoint += '?' + '&'.join('{}={}'.format(key, value) for key, value in args.items())
+        return self._request('GET', endpoint) or {}
+
     def load_roles(self, load_users=False):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
@@ -1415,9 +1430,12 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to delete tool \n {}".format(e))
 
-    def load_datastorage_items(self, storage_id):
+    def load_datastorage_items(self, storage_id, path=None):
         try:
-            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+            endpoint = self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id)
+            if path:
+                endpoint + "?path={}".format(path)
+            return self._request(endpoint=endpoint, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
 

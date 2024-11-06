@@ -370,6 +370,16 @@ module.exports = function (webpackEnv) {
               }
             },
             {
+              test: /\.js$/,
+              include: /node_modules[\\/](@smithy|@aws-sdk)/,
+              use: {
+                loader: require.resolve('babel-loader'),
+                options: {
+                  presets: ['@babel/preset-env']
+                }
+              }
+            },
+            {
               test: cssRegex,
               use: getStyleLoaders(
                 {

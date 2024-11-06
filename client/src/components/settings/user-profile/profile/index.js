@@ -106,7 +106,7 @@ class ProfileSettings extends React.Component {
                 <tr>
                   <td className={styles.info}>Registration date:</td>
                   <td className={styles.infoValue}>
-                    {displayDate(userInfo.registrationDate, 'd MMMM YYYY')}
+                    {displayDate(userInfo.registrationDate, 'D MMMM YYYY')}
                   </td>
                 </tr>
               )

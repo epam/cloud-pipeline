@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.RunnerSid;
@@ -47,8 +48,8 @@ public class PipelineRunAsManagerTest {
     private static final String CURRENT_USER = "user";
     private static final String SERVICE_ACCOUNT = "service";
     private static final String CONFIG_SERVICE_ACCOUNT = "config_service";
+    private static final String DOCKER_IMAGE = "centos";
     private final RunnerSid userRunnerSid = RunnerSid.builder().name(CURRENT_USER).principal(true).build();
-
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final UserRunnersManager userRunnersManager = mock(UserRunnersManager.class);
     private final UserManager userManager = mock(UserManager.class);
@@ -58,9 +59,11 @@ public class PipelineRunAsManagerTest {
     private final CheckPermissionHelper permissionHelper = mock(CheckPermissionHelper.class);
     private final Executor runAsExecutor = Executors.newSingleThreadExecutor();
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final ToolManager toolManager = mock(ToolManager.class);
+
     private final PipelineRunAsManager manager = new PipelineRunAsManager(pipelineRunManager, userRunnersManager,
             userManager, authManager, configurationManager, messageHelper, permissionHelper, runAsExecutor,
-            preferenceManager);
+            preferenceManager, toolManager);
 
     @Test
     @WithMockUser
@@ -95,6 +98,85 @@ public class PipelineRunAsManagerTest {
         assertThat(resultRunVO).isNotNull();
         assertThat(resultRunVO.getRunSids()).hasSize(1).contains(userRunSid());
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    @WithMockUser
+    public void shouldNotRunPipelineIfAllDenied() {
+        final PipelineStart pipelineStart = runVO();
+        pipelineStart.setPipelineId(1L);
+        doReturn(CURRENT_USER).when(authManager).getAuthorizedUser();
+        final RunnerSid userRunnerSidPipelineDenied = RunnerSid.builder()
+                .name(CURRENT_USER)
+                .principal(true)
+                .pipelinesAllowed(false)
+                .build();
+        doReturn(userRunnerSidPipelineDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
+        doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
+        doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
+
+        manager.runPipeline(pipelineStart);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @WithMockUser
+    public void shouldNotRunPipelineIfIdIsNotAllowed() {
+        final PipelineStart pipelineStart = runVO();
+        pipelineStart.setPipelineId(1L);
+        doReturn(CURRENT_USER).when(authManager).getAuthorizedUser();
+        final RunnerSid userRunnerSidPipelineDenied = RunnerSid.builder()
+                .name(CURRENT_USER)
+                .principal(true)
+                .pipelinesAllowed(true)
+                .pipelinesList("2")
+                .build();
+        doReturn(userRunnerSidPipelineDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
+        doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
+        doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
+
+        manager.runPipeline(pipelineStart);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @WithMockUser
+    public void shouldNotRunToolIfAllDenied() {
+        final PipelineStart pipelineStart = runVO();
+        pipelineStart.setPipelineId(1L);
+        doReturn(CURRENT_USER).when(authManager).getAuthorizedUser();
+        final RunnerSid userRunnerSidToolsDenied = RunnerSid.builder()
+                .name(CURRENT_USER)
+                .principal(true)
+                .toolsAllowed(false)
+                .build();
+        doReturn(userRunnerSidToolsDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
+        doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
+        doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
+
+        manager.runPipeline(pipelineStart);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @WithMockUser
+    public void shouldNotRunToolIfIdIsNotAllowed() {
+        final PipelineStart pipelineStart = runVO();
+        pipelineStart.setDockerImage(DOCKER_IMAGE);
+        doReturn(CURRENT_USER).when(authManager).getAuthorizedUser();
+        final RunnerSid userRunnerSidToolsDenied = RunnerSid.builder()
+                .name(CURRENT_USER)
+                .principal(true)
+                .toolsAllowed(true)
+                .toolsList("2")
+                .build();
+        final Tool tool = new Tool();
+        tool.setImage(DOCKER_IMAGE);
+        tool.setId(1L);
+        doReturn(tool).when(toolManager).loadByNameOrId(DOCKER_IMAGE);
+        doReturn(userRunnerSidToolsDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
+        doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
+        doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
+
+        manager.runPipeline(pipelineStart);
+    }
+
 
     @Test
     public void shouldGetRunAsUserFromRunVO() {

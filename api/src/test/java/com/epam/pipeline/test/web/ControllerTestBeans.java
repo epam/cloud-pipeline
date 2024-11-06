@@ -22,6 +22,7 @@ import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
@@ -70,6 +71,7 @@ import com.epam.pipeline.manager.ldap.LdapApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -213,6 +215,9 @@ public class ControllerTestBeans {
     protected SearchManager searchManager;
 
     @MockBean
+    protected SearchExportManager searchExportManager;
+
+    @MockBean
     protected RoleApiService roleApiService;
 
     @MockBean
@@ -286,4 +291,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected InstanceOfferApiService instanceOfferApiService;
+
+    @MockBean
+    protected AWSOmicsStoreApiService awsOmicsStoreApiService;
 }

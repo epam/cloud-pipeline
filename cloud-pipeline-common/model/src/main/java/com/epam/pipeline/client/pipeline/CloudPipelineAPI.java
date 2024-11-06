@@ -17,6 +17,7 @@
 package com.epam.pipeline.client.pipeline;
 
 import com.epam.pipeline.entity.app.ApplicationInfo;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -285,13 +286,21 @@ public interface CloudPipelineAPI {
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 
     @GET("run/activity")
-    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
+    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to,
+                                                          @Query("archive") boolean archive);
 
     @GET("run/pools/{id}")
     Call<Result<List<PipelineRun>>> loadRunsByPool(@Path(ID) Long poolId);
 
     @GET("cluster/instance/loadAll")
     Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);
+
+    @GET("cluster/instance/loadAll")
+    Call<Result<List<InstanceType>>> loadAllInstanceTypes();
+
+    @GET("cluster/instance/allowed")
+    Call<Result<AllowedInstanceAndPriceTypes>> loadAllowedInstanceAndPriceTypesForRegion(
+            @Query(REGION_ID) Long regionId);
 
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
@@ -339,4 +348,7 @@ public interface CloudPipelineAPI {
 
     @POST("log/group")
     Call<Result<Map<String, Long>>> getSystemLogsGrouped(@Body LogRequest logRequest);
+
+    @POST("runs/archive")
+    Call<Result<Boolean>> archiveRuns();
 }

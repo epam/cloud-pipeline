@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RepositoryType {
-    GITLAB(0), GITHUB(1), BITBUCKET(2);
+    GITLAB(0), GITHUB(1), BITBUCKET(2), BITBUCKET_CLOUD(3);
 
     private long id;
     private static Map<Long, RepositoryType> idMap = new HashMap<>();
@@ -28,12 +28,14 @@ public enum RepositoryType {
         idMap.put(GITLAB.id, GITLAB);
         idMap.put(GITHUB.id, GITHUB);
         idMap.put(BITBUCKET.id, BITBUCKET);
+        idMap.put(BITBUCKET_CLOUD.id, BITBUCKET_CLOUD);
     }
     private static Map<String, RepositoryType> namesMap = new HashMap<>();
     static {
         namesMap.put(GITLAB.name(), GITLAB);
         namesMap.put(GITHUB.name(), GITHUB);
         namesMap.put(BITBUCKET.name(), BITBUCKET);
+        namesMap.put(BITBUCKET_CLOUD.name(), BITBUCKET_CLOUD);
     }
 
     RepositoryType(long id) {

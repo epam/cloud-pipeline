@@ -497,7 +497,8 @@ class GitServer(object):
                     return result
                 else:
                     print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
-                    self.synchronize_ssh_keys(pipeline_user, git_user)
+                    if self.__config__.resync_user_ssh_keys:
+                        self.synchronize_ssh_keys(pipeline_user, git_user)
                     return git_user
             if pipeline_user.friendly_name is not None:
                 print 'Creating user {} ({}).'.format(pipeline_user.friendly_name, pipeline_user.email)
@@ -634,6 +635,7 @@ class GitServer(object):
                         print 'General error removing user {} from group {}.'.format(git_user.name, group)
 
     def add_user_to_group(self, group, username, group_members_ids, group_friendly_name):
+        user_modified = False
         pipeline_user = self.__pipeline_server_.find_user_by_username(username)
         if pipeline_user is None:
             print 'Unknown user {}'.format(username)
@@ -661,6 +663,7 @@ class GitServer(object):
                 )
                 try:
                     self.__api__.append_user_to_group(group.id, git_user.id, 40)
+                    user_modified = True
                 except GitLabException as error:
                     error_occurred = True
                     print 'Error appending user {} to group {}: {}'.format(username, group.name, error.message)
@@ -685,7 +688,8 @@ class GitServer(object):
                 )
             if not error_occurred:
                 try:
-                    self.synchronize_ssh_keys(pipeline_user, git_user)
+                    if user_modified or self.__config__.resync_user_ssh_keys:
+                        self.synchronize_ssh_keys(pipeline_user, git_user)
                 except GitLabException as error:
                     print 'Error synchronizing ssh keys for user {} ({}): {}'.format(
                         git_user.name,

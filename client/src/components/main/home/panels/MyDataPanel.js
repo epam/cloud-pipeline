@@ -130,7 +130,9 @@ export default class MyDataPanel extends React.Component {
               ? `No personal data storages found for '${search}'`
               : 'There are no personal data storages'
           }
-          childRenderer={this.renderStorage}>
+          childRenderer={this.renderStorage}
+          pageSize={10}
+        >
           {this.storages}
         </CardsPanel>
       </div>

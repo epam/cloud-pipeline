@@ -1,5 +1,8 @@
 #!/bin/bash
 
+_API_URL="@API_URL@"
+_API_TOKEN="@API_TOKEN@"
+
 launch_token="/etc/user_data_launched"
 if [[ -f "$launch_token" ]]; then exit 0; fi
 
@@ -122,6 +125,44 @@ function setup_swap_device {
     fi
 }
 
+function enable_emergency_termination_service() {
+  _EMERGENCY_TERMINATOR_PRESENT=0
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  if [ -f "$_CURRENT_DIR/emergency_node_terminator" ]; then
+    cp "$_CURRENT_DIR/emergency_node_terminator" "/usr/bin/emergency_node_terminator"
+    _EMERGENCY_TERMINATOR_PRESENT=1
+  else
+    _EMERGENCY_TERMINATOR__URL="$(dirname $_API_URL)/emergency_node_terminator.sh"
+    echo "Cannot find $_CURRENT_DIR/emergency_node_terminator, downloading from ${_EMERGENCY_TERMINATOR__URL}"
+    curl -skf "${_EMERGENCY_TERMINATOR__URL}" > /usr/bin/emergency_node_terminator
+    if [ $? -ne 0 ]; then
+      echo "Error while downloading emergency_node_terminator script"
+    else
+      _EMERGENCY_TERMINATOR_PRESENT=1
+    fi
+  fi
+
+  if [ $_EMERGENCY_TERMINATOR_PRESENT -eq 1 ]; then
+    chmod +x /usr/bin/emergency_node_terminator
+  cat >/etc/systemd/system/emergency_node_terminator.service <<EOL
+[Unit]
+Description=Cloud Pipeline Emergency Node Termination Daemon
+Documentation=https://cloud-pipeline.com/
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+ExecStart=/usr/bin/emergency_node_terminator "$_API_URL" "$_API_TOKEN" "$_KUBE_NODE_NAME"
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    systemctl enable emergency_node_terminator
+    systemctl start emergency_node_terminator
+  fi
+}
+
 GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
 if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
   GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
@@ -132,6 +173,8 @@ _WO="--timeout=10 --waitretry=1 --tries=10"
 wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
 gzip -d /bin/nvme.gz && \
 chmod +x /bin/nvme
+
+@custom_script_pre@
 
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
@@ -194,31 +237,48 @@ fi
 
 systemctl stop docker
 
-_DOCKER_SYS_IMGS="/ebs/docker-system-images"
-rm -rf $_DOCKER_SYS_IMGS
-_KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
-if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
-  _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
+skip_system_images_load="@SKIP_SYSTEM_IMAGES_LOAD@"
+if [ "$skip_system_images_load" != "true" ]; then
+  _DOCKER_SYS_IMGS="/ebs/docker-system-images"
+  rm -rf $_DOCKER_SYS_IMGS
+  _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
+  if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
+    _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
+  fi
+  mkdir -p $_DOCKER_SYS_IMGS
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0.tar && \
+  wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
+  if [ $? -ne 0 ]; then
+    _DOCKER_SYS_IMGS="/opt/docker-system-images"
+  fi
 fi
-mkdir -p $_DOCKER_SYS_IMGS
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
-if [ $? -ne 0 ]; then
-  _DOCKER_SYS_IMGS="/opt/docker-system-images"
+
+
+if [ ! -x /bin/wondershaper ]; then
+  wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/wondershaper/wondershaper" -O /bin/wondershaper
+  chmod +x /bin/wondershaper
 fi
 
 mkdir -p /etc/docker
 
-if [[ $FS_TYPE == "ext4" ]]; then
-  DOCKER_STORAGE_DRIVER="overlay2"
-  DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
-else
-  DOCKER_STORAGE_DRIVER="btrfs"
-  DOCKER_STORAGE_OPTS=""
+docker_storage_driver="@DOCKER_STORAGE_DRIVER@"
+if [ -z "$docker_storage_driver" ] || [[ "$docker_storage_driver" == "@"*"@" ]]; then
+  if [[ $FS_TYPE == "ext4" ]]; then
+    docker_storage_driver="overlay2"
+    DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
+  else
+    docker_storage_driver="btrfs"
+    DOCKER_STORAGE_OPTS=""
+  fi
+fi
+
+docker_data_root="@DOCKER_DATA_ROOT@"
+if [ -z "$docker_data_root" ] || [[ "$docker_data_root" == "@"*"@" ]]; then
+  docker_data_root="/ebs/docker"
 fi
 
 if check_installed "nvidia-smi"; then
@@ -227,8 +287,8 @@ if check_installed "nvidia-smi"; then
 cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
-  "data-root": "/ebs/docker",
-  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  "data-root": "$docker_data_root",
+  "storage-driver": "$docker_storage_driver",
   $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
@@ -244,8 +304,8 @@ else
 cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
-  "data-root": "/ebs/docker",
-  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  "data-root": "$docker_data_root",
+  "storage-driver": "$docker_storage_driver",
   $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1
 }
@@ -422,19 +482,21 @@ systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
 
-for _KUBE_SYSTEM_POD_FILE in $_DOCKER_SYS_IMGS/*.tar; do
-  docker load -i $_KUBE_SYSTEM_POD_FILE
-done
-rm -rf $_DOCKER_SYS_IMGS
+if [ "$skip_system_images_load" != "true" ]; then
+  for _KUBE_SYSTEM_POD_FILE in $_DOCKER_SYS_IMGS/*.tar; do
+    docker load -i $_KUBE_SYSTEM_POD_FILE
+  done
+  rm -rf $_DOCKER_SYS_IMGS
+fi
 
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
+@custom_script_post@
+
 if [[ $FS_TYPE == "btrfs" ]]; then
-  _API_URL="@API_URL@"
-  _API_TOKEN="@API_TOKEN@"
   _MOUNT_POINT="/ebs"
   _FS_AUTOSCALE_PRESENT=0
   _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -474,6 +536,8 @@ EOL
     systemctl start fsautoscale
   fi
 fi
+
+enable_emergency_termination_service
 
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF

@@ -43,7 +43,7 @@ class LocalSyncDtsPreference extends React.Component {
       onChange(preference, {
         ...preference,
         value: [...(preference.value || []), {
-          cron: `0 0 0 1/1 * ? *`,
+          cron: `0 0 0 1/1 * ?`,
           every: EVERY_UNITS.days,
           everyValue: 1,
           scheduleType: 'every',
@@ -93,24 +93,24 @@ class LocalSyncDtsPreference extends React.Component {
         const value = schedule.everyValue > 31
           ? 31
           : schedule.everyValue;
-        cronString = `0 0 0 1/${value || 1} * ? *`;
+        cronString = `0 0 0 1/${value || 1} * ?`;
       }
       if (schedule.every === EVERY_UNITS.hours) {
         const value = schedule.everyValue > 23
           ? 23
           : schedule.everyValue;
-        cronString = `0 0 0/${value || 1} 1/1 * ? *`;
+        cronString = `0 0 0/${value || 1} ? * *`;
       }
       if (schedule.every === EVERY_UNITS.minutes) {
         const value = schedule.everyValue > 59
           ? 59
           : schedule.everyValue;
-        cronString = `0 0/${value || 1} * 1/1 * ? *`;
+        cronString = `0 0/${value || 1} * ? * *`;
       }
       if (field === 'scheduleType') {
         return {
           ...schedule,
-          cron: value === 'custom' ? '' : '0 0 0 1/1 * ? *',
+          cron: value === 'custom' ? (schedule.cron || '') : '0 0 0 1/1 * ?',
           everyValue: value === 'custom' ? undefined : 1,
           every: value === 'custom' ? undefined : EVERY_UNITS.days
         };

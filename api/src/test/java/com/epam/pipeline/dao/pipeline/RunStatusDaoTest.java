@@ -89,7 +89,7 @@ public class RunStatusDaoTest extends AbstractJdbcTest {
     @Test
     public void shouldLoadRunStatusByList() {
         createStatus();
-        List<RunStatus> result = runStatusDao.loadRunStatus(Collections.singletonList(testRun.getId()));
+        List<RunStatus> result = runStatusDao.loadRunStatus(Collections.singletonList(testRun.getId()), false);
         assertThat(result, hasSize(1));
         assertThat(result.get(0).getRunId(), equalTo(testRun.getId()));
     }

@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -529,6 +529,9 @@ function api_register_gitlab {
     api_preference_append_array "$(api_preference_get_templated "git.token"          "$gitlab_root_token"                                        "false")"
     api_preference_append_array "$(api_preference_get_templated "git.user.id"        "1"                                                         "false")"
     api_preference_append_array "$(api_preference_get_templated "git.host"           "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_INTERNAL_PORT" "true")"
+    if [ "$CP_GITLAB_VERSION" != "9" ]; then
+        api_preference_append_array "$(api_preference_get_templated "git.gitlab.api.version" "v4" "false")"
+    fi
     api_set_preference "$(api_preference_get_array)"
     api_preference_drop_array
 }
@@ -679,6 +682,8 @@ read -r -d '' payload <<-EOF
     "tempCredentialsRole":"$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE",
     "versioningEnabled":true,
     "backupDuration":${CP_PREF_STORAGE_BACKUP_DURATION:-20},
+    "omicsServiceRole":"$CP_PREF_AWS_OMICS_SERVICE_ROLE",
+    "omicsEcrUrl":"$CP_PREF_AWS_OMICS_ECR_REGISTRY",
     "kmsKeyId":"$encryption_key_id",
     "kmsKeyArn":"$encryption_key_arn",
     "corsRules":"$cors_rules"
@@ -891,6 +896,7 @@ function api_setup_base_preferences {
 
     ## Git
     api_set_preference "git.repository.indexing.enabled" "false" "false"
+    api_set_preference "git.gitlab.api.version" "${CP_GITLAB_API_VERSION:-"v3"}" "false"
     api_set_preference "git.fsbrowser.workdir" "${CP_FSBROWSER_VS_WD:-"/git-workdir"}" "true"
 
     ## Launch
@@ -971,7 +977,12 @@ function api_setup_base_preferences {
     api_preference_drop_array
 
     ## Set cluster.networks.config preference
-    local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
+    local cloud_config_network_file
+    if [ ! -z "$CP_CLOUD_NETWORK_CONFIG_FILE" ] && [ -f "$CP_CLOUD_NETWORK_CONFIG_FILE" ]; then
+          cloud_config_network_file="$CP_CLOUD_NETWORK_CONFIG_FILE"
+    else
+          cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
+    fi
     if [ -f "$cloud_config_network_file" ]; then
         local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_WIN} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
         
@@ -996,7 +1007,6 @@ function api_register_search {
     api_set_preference "search.elastic.type.field" "doc_type" "false"
     api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "true"
     api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}" "false"
-    api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}" "false"
     api_set_preference "search.elastic.search.fields" "[]" "false"
     api_set_preference "search.elastic.index.common.prefix" "cp-*" "false"
     api_set_preference "search.elastic.allowed.groups.field" "allowed_groups" "false"
@@ -1047,6 +1057,7 @@ function api_register_clair {
     api_set_preference "security.tools.grace.hours" "48" "true"
     api_set_preference "security.tools.scan.all.registries" "true" "true"
     api_set_preference "security.tools.scan.enabled" "true" "true"
+    api_set_preference "security.tools.scan.clair.version" "${CP_CLAIR_VERSION}" "true"
 }
 
 function api_register_drive_mapping {

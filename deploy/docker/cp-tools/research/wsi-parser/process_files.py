@@ -253,10 +253,11 @@ class WsiProcessingFileGenerator(object):
 
 class DirListingParams:
 
-    def __init__(self, absolute_dir_path, filter_dir_names, target_extensions):
+    def __init__(self, absolute_dir_path, filter_dir_names, target_extensions, skip_files):
         self.absolute_dir_path = absolute_dir_path
         self.filter_dir_names = filter_dir_names
         self.target_extensions = target_extensions
+        self.skip_files = skip_files
 
 
 class DirListingResult:
@@ -272,7 +273,20 @@ def search_in_directory(search_params):
     for (dir_path, nested_dir_names, file_names) in os.walk(search_params.absolute_dir_path):
         for file_name in file_names:
             if file_name.endswith(search_params.target_extensions):
-                files.add(os.path.join(dir_path, file_name))
+                full_file_path = os.path.join(dir_path, file_name)
+                shall_skip_file = False
+                for file_to_skip in search_params.skip_files:
+                    if not file_to_skip or file_to_skip == '':
+                        continue
+                    if full_file_path == file_to_skip:
+                        shall_skip_file = True
+                        break
+                if not shall_skip_file:
+                    files.add(full_file_path)
+                else:
+                    Logger.log_task_event(WSI_PROCESSING_TASK_NAME, 
+                                            '[{}] {}'.format(full_file_path, 'File is requested to be skipped'),
+                                            status=TaskStatus.RUNNING)
         for nested_dir_name in nested_dir_names:
             if nested_dir_name not in search_params.filter_dir_names:
                 nested_dirs.add(os.path.join(dir_path, nested_dir_name))
@@ -305,10 +319,11 @@ def return_none_if_processing_is_not_required(path):
 
 class ParallelWsiProcessingFileGenerator(WsiProcessingFileGenerator):
 
-    def __init__(self, lookup_paths, target_file_formats, processing_pool):
+    def __init__(self, lookup_paths, target_file_formats, processing_pool, skip_files):
         super(ParallelWsiProcessingFileGenerator, self).__init__(lookup_paths, target_file_formats)
         self.processing_pool = processing_pool
         self.filter_dir_names = self.__get_dir_names_to_ignore()
+        self.skip_files = skip_files
 
     @staticmethod
     def __get_dir_names_to_ignore():
@@ -326,7 +341,7 @@ class ParallelWsiProcessingFileGenerator(WsiProcessingFileGenerator):
             dirs_to_check = list()
             for i in range(0, min(self.processing_pool._processes, len(path_check_list))):
                 dirs_to_check.append(path_check_list.pop())
-            search_params_list = [DirListingParams(dir_path, self.filter_dir_names, self.target_file_formats)
+            search_params_list = [DirListingParams(dir_path, self.filter_dir_names, self.target_file_formats, self.skip_files)
                                   for dir_path
                                   in dirs_to_check]
             dir_search_results = self.processing_pool.map(search_in_directory, search_params_list)
@@ -1403,9 +1418,20 @@ def process_wsi_files():
     processing_pool = get_processing_pool()
     log_info('Lookup for unprocessed files')
     lookup_paths_set = set(lookup_paths.split(','))
+    
+    # WSI_SKIP_FILES shall be set relative to the WSI_TARGET_DIRECTORIES
+    skip_files = []
+    for root_dir_path in lookup_paths_set:
+        for file_to_skip in os.getenv('WSI_SKIP_FILES', '').split(','):
+            if not file_to_skip or file_to_skip == '':
+                continue
+            file_to_skip_full_path = os.path.join(root_dir_path, file_to_skip)
+            skip_files.append(file_to_skip_full_path)
+    log_info('The following files will be skipped: {}'.format(skip_files))
+
     file_generator = SingleThreadWsiProcessingFileGenerator(lookup_paths_set, target_file_formats) \
         if processing_pool is None \
-        else ParallelWsiProcessingFileGenerator(lookup_paths_set, target_file_formats, processing_pool)
+        else ParallelWsiProcessingFileGenerator(lookup_paths_set, target_file_formats, processing_pool, skip_files)
     paths_to_wsi_files = file_generator.generate_paths()
     if not paths_to_wsi_files:
         log_success('Found no files requires processing in the target directories.')

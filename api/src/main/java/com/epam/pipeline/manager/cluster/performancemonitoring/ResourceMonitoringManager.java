@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,10 +33,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
@@ -46,6 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -86,6 +91,7 @@ import javax.annotation.PostConstruct;
 public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     public static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
 
@@ -113,6 +119,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private static final double PERCENT = 100.0;
         private static final double ONE_THOUSANDTH = 0.001;
         private static final long ONE = 1L;
+        private static final String WORK_FINISHED_TAG = "WORK_FINISHED";
+        public static final String CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM =
+                "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
 
         private final PipelineRunManager pipelineRunManager;
         private final RunStatusManager runStatusManager;
@@ -123,6 +132,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final PreferenceManager preferenceManager;
         private final StopServerlessRunManager stopServerlessRunManager;
         private final InstanceOfferManager instanceOfferManager;
+        private final NodesManager nodesManager;
+
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
@@ -133,7 +144,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final PreferenceManager preferenceManager,
                                       final StopServerlessRunManager stopServerlessRunManager,
                                       final InstanceOfferManager instanceOfferManager,
-                                      final RunStatusManager runStatusManager) {
+                                      final RunStatusManager runStatusManager,
+                                      final NodesManager nodesManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
@@ -143,6 +155,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             this.stopServerlessRunManager = stopServerlessRunManager;
             this.instanceOfferManager = instanceOfferManager;
             this.runStatusManager = runStatusManager;
+            this.nodesManager = nodesManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -156,7 +169,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         public void monitorResourceUsage() {
             List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
             processIdleRuns(runs);
+            processHighNetworkConsumingRuns(runs);
             processOverloadedRuns(runs);
+            processStuckRuns(runs);
             processPausingResumingRuns();
             processServerlessRuns();
             processLongPausedRuns();
@@ -203,6 +218,70 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final List<PipelineRun> runsToUpdateTags = getRunsToUpdatePressuredTags(running, runsToNotify);
             notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
             pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private void processStuckRuns(final List<PipelineRun> runs) {
+            log.info("Start emergency runs termination cycle.");
+            final PipelineRunEmergencyTermAction termAction =
+                    preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_ACTION);
+            final Integer defaultRunEmergencyTermDelay = preferenceManager.getPreference(
+                    SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_DELAY_MIN);
+
+            if (termAction.equals(PipelineRunEmergencyTermAction.DISABLED)) {
+                log.info("Emergency run termination disabled. Will not check running runs!");
+                return;
+            }
+
+            CollectionUtils.emptyIfNull(runs).stream()
+                .filter(run -> MapUtils.emptyIfNull(run.getTags()).containsKey(WORK_FINISHED_TAG))
+                .forEach(run -> {
+                    final int emergencyTerminationDelay = Optional.ofNullable(
+                        MapUtils.emptyIfNull(run.getEnvVars()).get(CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM)
+                    ).map(v -> {
+                        try {
+                            return Integer.parseInt(v);
+                        } catch (NumberFormatException e) {
+                            log.warn("Can't parse CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN: {} for run: {}." +
+                                     " Will use default one!", v, run.getId());
+                            return null;
+                        }
+                    }).orElse(defaultRunEmergencyTermDelay);
+
+                    try {
+                        final LocalDateTime workFinishedTime =
+                                DateUtils.strToUTCDate(run.getTags().get(WORK_FINISHED_TAG));
+                        if (workFinishedTime.isBefore(DateUtils.nowUTC().minusMinutes(emergencyTerminationDelay))) {
+                            log.warn("Run: {} marked as finished on: {} and should be stopped forcefully, action: {}",
+                                    run.getId(), workFinishedTime, termAction);
+                            performEmergencyTermAction(run, termAction);
+                        } else {
+                            log.debug("Run: {} marked as finished on: {}, waiting period: {} min. Skipping.",
+                                    run.getId(), workFinishedTime, emergencyTerminationDelay);
+                        }
+                    } catch (DateTimeParseException e) {
+                        log.error("Problem to parse date while processing possibly stuck run: {}", run.getId());
+                    }
+                });
+        }
+
+        private void performEmergencyTermAction(final PipelineRun run,
+                                                final PipelineRunEmergencyTermAction termAction) {
+            switch (termAction) {
+                case STOP:
+                    pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
+                    break;
+                case TERMINATE_NODE:
+                    final String nodeName = Optional.ofNullable(run.getInstance())
+                            .map(RunInstance::getNodeName).orElse(null);
+                    if (nodeName != null) {
+                        nodesManager.terminateNode(nodeName);
+                    } else {
+                        log.error("Can't get node name for run: {}", run.getId());
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
 
         private Map<String, PipelineRun> groupedByNode(final List<PipelineRun> runs) {
@@ -287,7 +366,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
                     .filter(e -> Optional.ofNullable(e.getValue().getProlongedAtTime())
                             .map(timestamp -> DateUtils.nowUTC()
-                                    .isAfter(timestamp.plus(idleTimeout, ChronoUnit.MINUTES)))
+                                    .isAfter(timestamp.plusMinutes(idleTimeout)))
                             .orElse(Boolean.FALSE))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -417,6 +496,130 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
         }
 
+        private void processHighNetworkConsumingRuns(final List<PipelineRun> runs) {
+            final double bandwidthLimit = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT);
+            final int actionTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
+            final NetworkConsumingRunAction action = NetworkConsumingRunAction.valueOf(preferenceManager
+                    .getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION));
+
+            if (bandwidthLimit <= 0) {
+                log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_NETWORK_CONSUMING_DISABLED));
+                return;
+            }
+
+            final Map<String, PipelineRun> running = groupedByNode(runs);
+
+            final int bandwidthLimitTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES);
+
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
+                    "NETWORK", running.size(), String.join(", ", running.keySet())));
+
+            final LocalDateTime now = DateUtils.nowUTC();
+            final Map<String, Double> networkMetrics = monitoringDao.loadMetrics(ELKUsageMetric.NETWORK,
+                    running.keySet(), now.minusMinutes(bandwidthLimitTimeout + ONE), now);
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_NETWORK_RUN_METRICS_RECEIVED,
+                    networkMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+                            .collect(Collectors.joining(", ")))
+            );
+
+            processHighNetworkConsumingRuns(running, networkMetrics, bandwidthLimit, actionTimeout, action);
+        }
+
+        private void processHighNetworkConsumingRun(PipelineRun run, int actionTimeout,
+                                                    NetworkConsumingRunAction action,
+                                                    List<Pair<PipelineRun, Double>> runsToNotify,
+                                                    List<PipelineRun> runsToUpdateNotificationTime,
+                                                    Double bandwidth, List<PipelineRun> runsToUpdateTags) {
+            if (Objects.isNull(run.getLastNetworkConsumptionNotificationTime())) {
+                run.addTag(NETWORK_CONSUMING_LEVEL_HIGH, TRUE_VALUE_STRING);
+                Optional.ofNullable(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH))
+                        .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
+                runsToUpdateTags.add(run);
+
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY,
+                        run.getPodId(), bandwidth));
+
+                performHighNetworkConsumingNotify(run, bandwidth, runsToNotify, runsToUpdateNotificationTime);
+            } else if (shouldPerformActionOnNetworkConsumingRun(run, actionTimeout)) {
+                performActionOnNetworkConsumingRun(run, action, bandwidth, runsToNotify,
+                        runsToUpdateNotificationTime);
+            }
+
+        }
+
+        private void processHighNetworkConsumingRuns(Map<String, PipelineRun> running,
+                                                     Map<String, Double> networkMetrics,
+                                                     double bandwidthLimit,
+                                                     int actionTimeout, NetworkConsumingRunAction action) {
+            final List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
+            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
+            for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
+                PipelineRun run = entry.getValue();
+                Double bandwidth = networkMetrics.get(entry.getKey());
+                if (bandwidth != null) {
+                    if (bandwidth >= bandwidthLimit) {
+                        processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
+                                runsToUpdateNotificationTime, bandwidth, runsToUpdateTags);
+                    } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
+                        // No action is longer needed, clear timeout
+                        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_NETWORK_CONSUMING,
+                                run.getPodId(), bandwidth));
+                        processFormerHighNetworkConsumingRun(run, runsToUpdateNotificationTime, runsToUpdateTags);
+                    }
+                }
+            }
+            notificationManager.notifyHighNetworkConsumingRuns(runsToNotify,
+                    NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH);
+            pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdateNotificationTime);
+            pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private void processFormerHighNetworkConsumingRun(final PipelineRun run,
+                                                          final List<PipelineRun> runsToUpdateNotificationTime,
+                                                          final List<PipelineRun> runsToUpdateTags) {
+            run.setLastNetworkConsumptionNotificationTime(null);
+            run.removeTag(NETWORK_CONSUMING_LEVEL_HIGH);
+            run.removeTag(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH));
+            runsToUpdateNotificationTime.add(run);
+            runsToUpdateTags.add(run);
+        }
+
+        private boolean shouldPerformActionOnNetworkConsumingRun(final PipelineRun run, final int actionTimeout) {
+            return  actionTimeout > 0 && Objects.nonNull(run.getLastNetworkConsumptionNotificationTime()) &&
+                    run.getLastNetworkConsumptionNotificationTime()
+                            .isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
+        }
+
+        private void performActionOnNetworkConsumingRun(final PipelineRun run,
+                                                        final NetworkConsumingRunAction action,
+                                                        final double bandwidth,
+                                                        final List<Pair<PipelineRun, Double>> runsToNotify,
+                                                        final List<PipelineRun> runsToUpdateNotificationTime) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_ACTION,
+                    run.getPodId(), bandwidth, action.name()));
+            switch (action) {
+                case LIMIT_BANDWIDTH:
+//                    TODO
+                    break;
+                case NOTIFY:
+                default:
+                    performHighNetworkConsumingNotify(run, bandwidth, runsToNotify, runsToUpdateNotificationTime);
+                    break;
+            }
+        }
+
+        private void performHighNetworkConsumingNotify(final PipelineRun run, final double networkBandwidthLevel,
+                                                       final List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                                       final List<PipelineRun> runsToUpdateNotificationTime) {
+            run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
+            pipelinesToNotify.add(new ImmutablePair<>(run, networkBandwidthLevel));
+            runsToUpdateNotificationTime.add(run);
+        }
+
         private void performStop(final PipelineRun run,
                                  final double cpuUsageRate,
                                  final List<PipelineRun> runsToUpdateTags) {
@@ -482,7 +685,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final Map<Long, List<RunStatus>> statuses = runStatusManager.loadRunStatus(
                     pausedRuns.stream()
                     .map(PipelineRun::getId)
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList()), false);
 
             pausedRuns.forEach(run -> run.setRunStatuses(statuses.get(run.getId())));
             processLongPausedRuns(pausedRuns, action, actionTimeout);

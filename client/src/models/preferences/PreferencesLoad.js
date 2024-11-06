@@ -105,6 +105,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get searchExportTemplates () {
+    const value = this.getPreferenceValue('search.export.template.mapping');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "search.export.template.mapping:', e);
+      }
+    }
+    return undefined;
+  }
+
+  @computed
   get billingEnabled () {
     const value = this.getPreferenceValue('billing.reports.enabled');
     return value && `${value}`.toLowerCase() === 'true';
@@ -532,6 +545,18 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get launchToolSizeLimits () {
+    const value = this.getPreferenceValue('launch.tool.size.limits');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.tool.size.limits" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
   get toolPredefinedKubeLabels () {
     const value = this.getPreferenceValue('ui.tool.kube.labels');
     if (value) {
@@ -542,6 +567,10 @@ class PreferencesLoad extends Remote {
       }
     }
     return [];
+  }
+
+  get toolOSWarningText () {
+    return this.getPreferenceValue('ui.tools.os.with.warning');
   }
 
   @computed
@@ -968,6 +997,15 @@ class PreferencesLoad extends Remote {
   get storageManagementRestrictedAccess () {
     const value = this.getPreferenceValue('storage.management.restricted.access');
     return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get systemRunFilterMaxPageSize() {
+    const value = this.getPreferenceValue('system.run.filter.max.page.size');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 500;
   }
 
   toolScanningEnabledForRegistry (registry) {

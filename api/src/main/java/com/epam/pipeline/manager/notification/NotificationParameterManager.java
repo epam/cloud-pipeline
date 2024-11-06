@@ -90,6 +90,16 @@ public class NotificationParameterManager {
         return parameters;
     }
 
+    public Map<String, Object> buildHighNetworkConsumingRunParams(final NotificationType type, final PipelineRun run,
+                                                                  final double bandwidth, final double bandwidthLimit) {
+        final Map<String, Object> parameters = build(type);
+        parameters.putAll(buildEntities(NotificationEntityClass.RUN, run.getId()));
+        parameters.putAll(PipelineRunMapper.map(run));
+        parameters.put("bandwidth", bandwidth);
+        parameters.put("bandwidthLimit", bandwidthLimit);
+        return parameters;
+    }
+
     public Map<String, Object> build(final NotificationType type,
                                      final PipelineRun run,
                                      final Map<ELKUsageMetric, Double> metrics,

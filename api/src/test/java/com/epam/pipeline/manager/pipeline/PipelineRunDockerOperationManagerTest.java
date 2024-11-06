@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.utils.ConditionCheck;
+import com.epam.pipeline.entity.utils.TwoBoundaryLimit;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
@@ -30,6 +32,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -154,6 +157,51 @@ public class PipelineRunDockerOperationManagerTest {
         verify(dockerContainerOperationManager).pauseRun(any(), anyBoolean());
         verify(toolManager).loadByNameOrId(TEST_NAME);
         verify(dockerContainerOperationManager).resumeRun(runToResume, TEST_NAMES);
+    }
+
+    @Test
+    public void shouldCorrectlyCalculateContainerSizeAgainstLimits() {
+        TwoBoundaryLimit limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.OK,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 4, limit).getKey()
+        );
+
+        limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.WARN,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 2 + 1, limit).getKey()
+        );
+
+        limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE - 1).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.FAIL,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE, limit).getKey()
+        );
+
+        limit = TwoBoundaryLimit.builder().hard(Long.MAX_VALUE).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.OK,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE - 1, limit).getKey()
+        );
+
+        limit = TwoBoundaryLimit.builder().soft(0L).hard(Long.MAX_VALUE).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.OK,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE - 1, limit).getKey()
+        );
+
+        limit = TwoBoundaryLimit.builder().hard(Long.MAX_VALUE / 2).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.OK,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 4, limit).getKey()
+        );
+
+        limit = TwoBoundaryLimit.builder().hard(Long.MAX_VALUE / 2).build();
+        Assert.assertEquals(
+                ConditionCheck.Result.FAIL,
+                PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 2 + 1, limit).getKey()
+        );
     }
 
     private PipelineRun pipelineRun() {

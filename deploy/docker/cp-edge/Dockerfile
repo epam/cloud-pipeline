@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Building 'maintenance' page
-FROM node:14-alpine AS maintenance
+FROM node:20-alpine AS maintenance
 
 ENV CP_MAINTENANCE_PUBLIC_URL="/maintenance"
 
@@ -27,15 +27,16 @@ COPY ./maintenance/ui .
 
 RUN npm run build
 
-FROM library/centos:7
+FROM rockylinux:8
 
-ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v6.11.3-linux-x64/bin/
+ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v20.17.0-linux-x64/bin/
 
 # This shall be set during deployment
 ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
-RUN yum install -y python \
+RUN yum install -y python2 \
+                   python3 \
                    unzip \
                    git \
                    curl \
@@ -45,8 +46,19 @@ RUN yum install -y python \
                    cronie \
                    sshpass \
                    perl \
-                   netcat && \
+                   nc \
+                   gcc \
+                   make \
+                   bzip2 \
+                   bzip2-devel \
+                   xz \
+                   xz-devel \
+                   ncurses-devel \
+                   procps \
+                   patch && \
     yum group install -y "Development Tools" && \
+    yum clean all && \
+    ln -sf /usr/bin/python2 /usr/bin/python && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
                 pykube==0.15.0
@@ -115,9 +127,9 @@ ADD dav-auth /etc/nginx/dav/webdav/auth-sso
 ## Install node.js
 RUN mkdir -p /etc/ssh-proxy/  && \
     cd /etc/ssh-proxy/ && \
-    wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nodejs/node-v6.11.3-linux-x64.tar.xz && \
-    tar xfJ node-v6.11.3-linux-x64.tar.xz && \
-    rm -f node-v6.11.3-linux-x64.tar.xz
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nodejs/node-v20.17.0-linux-x64.tar.xz && \
+    tar xfJ node-v20.17.0-linux-x64.tar.xz && \
+    rm -f node-v20.17.0-linux-x64.tar.xz
 
 ## Install wetty
 ADD wetty /etc/ssh-proxy/wetty
@@ -147,3 +159,4 @@ RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/fi
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
 COPY filebeat-config/* /etc/filebeat/
+RUN chmod go-w /etc/filebeat/*

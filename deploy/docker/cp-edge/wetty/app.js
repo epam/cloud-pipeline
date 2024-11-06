@@ -2,7 +2,7 @@ var express = require('express');
 var http = require('http');
 var path = require('path');
 var server = require('socket.io');
-var pty = require('pty.js');
+var pty = require('node-pty');
 var request = require("sync-request");
 var child_process = require('child_process');
 

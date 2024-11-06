@@ -37,15 +37,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 @Service
-@RequiredArgsConstructor
 public class ContextualPreferenceManager {
 
     private final ContextualPreferenceDao contextualPreferenceDao;
@@ -53,6 +52,18 @@ public class ContextualPreferenceManager {
     private final AuthManager authManager;
     private final UserManager userManager;
     private final MessageHelper messageHelper;
+
+    public ContextualPreferenceManager(final ContextualPreferenceDao contextualPreferenceDao,
+                                       final ContextualPreferenceHandler contextualPreferenceHandler,
+                                       final AuthManager authManager,
+                                       @Lazy final UserManager userManager,
+                                       final MessageHelper messageHelper) {
+        this.contextualPreferenceDao = contextualPreferenceDao;
+        this.contextualPreferenceHandler = contextualPreferenceHandler;
+        this.authManager = authManager;
+        this.userManager = userManager;
+        this.messageHelper = messageHelper;
+    }
 
     /**
      * Loads all independent contextual preferences.

@@ -31,6 +31,8 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -46,10 +48,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_USAGE_READ;
 
 @Service
 @RequiredArgsConstructor
@@ -95,14 +97,23 @@ public class ClusterApiService {
         return nodesManager.terminateNode(name);
     }
 
-    @PreAuthorize(NODE_USAGE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to) {
         return usageMonitoringManager.getStatsForNode(name, from, to);
     }
 
-    @PreAuthorize(NODE_USAGE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public GpuMonitoringStats getGpuStatsForNode(final String name,
+                                                 final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final List<GpuMetricsGranularity> granularity,
+                                                 final boolean squashCharts) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval, final MonitoringReportType type) {
         return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);

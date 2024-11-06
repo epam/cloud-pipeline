@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -253,12 +254,14 @@ public class PipelineRunController extends AbstractRestController {
 
     @GetMapping(value = "/run/{runId}/commit/check")
     @ApiOperation(
-            value = "Checks if free disk space is available.",
-            notes = "Checks if free disk space is available.",
+            value = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.",
+            notes = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> checkFreeSpaceAvailable(@PathVariable(value = RUN_ID) Long runId) {
-        return Result.success(runApiService.checkFreeSpaceAvailable(runId));
+    public Result<CommitRunConditions> getCommitRunCheckResult(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.getCommitRunCheckResult(runId));
     }
 
     @PostMapping(value = "/run/{runId}/commitStatus")
@@ -353,6 +356,23 @@ public class PipelineRunController extends AbstractRestController {
             @RequestBody PagingRunFilterVO filterVO,
             @RequestParam(value = "loadLinks", defaultValue = "false") boolean loadStorageLinks) {
         return Result.success(runApiService.searchPipelineRuns(filterVO, loadStorageLinks));
+    }
+
+    @PostMapping(value = "/run/filter/export")
+    @ApiOperation(
+            value = "Exports pipeline runs.",
+            notes = "Exports pipeline runs, filtered by specified criteria.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public void exportRuns(
+            @RequestBody PagingRunFilterVO filterVO,
+            @RequestParam(value = "delimiter", defaultValue = ",") String delimiter,
+            @RequestParam(value = "fieldDelimiter", defaultValue = "|") String fieldDelimiter,
+            HttpServletResponse response) throws IOException {
+        writeFileToResponse(response, runApiService.exportPipelineRuns(filterVO, delimiter, fieldDelimiter),
+                "runs.csv");
     }
 
     @PostMapping(value = "/run/search")
@@ -507,8 +527,9 @@ public class PipelineRunController extends AbstractRestController {
         @RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         final LocalDateTime start,
         @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        final LocalDateTime end) {
-        return Result.success(runApiService.loadRunsActivityStats(start, end));
+        final LocalDateTime end,
+        @RequestParam(defaultValue = "false", required = false) final boolean archive) {
+        return Result.success(runApiService.loadRunsActivityStats(start, end, archive));
     }
 
     @PostMapping(value = "/run/cmd")
@@ -591,5 +612,43 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<RunChartInfo> loadActiveRunsCharts(@RequestBody final RunChartFilterVO filter) {
         return Result.success(runApiService.loadActiveRunsCharts(filter));
+    }
+
+    @PostMapping("/runs/archive")
+    @ApiOperation(
+            value = "Migrate runs to archive table according to owner's metadata configuration",
+            notes = "Migrate runs to archive table according to owner's metadata configuration",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRuns() {
+        runApiService.archiveRuns();
+        return Result.success(true);
+    }
+
+    @PostMapping("/runs/archive/owners")
+    @ApiOperation(
+            value = "Migrate runs to archive table for specified user (or group).",
+            notes = "If no 'days' specified try to find days in metadata. Otherwise, ignore metadata configuration.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRunsByOwner(@RequestParam final String ownerSid,
+                                              @RequestParam final boolean principal,
+                                              @RequestParam(required = false) final Integer days) {
+        runApiService.archiveRuns(ownerSid, principal, days);
+        return Result.success(true);
+    }
+
+    @PostMapping("/run/{runId}/network/limit")
+    @ApiOperation(
+            value = "Set limit boundary",
+            notes = "Sets a special tag for a run based on boundary param: NETWORK_LIMIT: <boundary> (Bytes/s) " +
+                    "in case of enable = true, otherwise removes the tag.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> setLimitBoundary(@PathVariable(value = RUN_ID) final Long runId,
+                                            @RequestParam(defaultValue = "true") final Boolean enable,
+                                            @RequestParam(required = false) final Integer boundary) {
+        runApiService.setLimitBoundary(runId, enable, boundary);
+        return Result.success();
     }
 }

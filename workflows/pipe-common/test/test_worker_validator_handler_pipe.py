@@ -44,18 +44,18 @@ handler = CloudPipelineWorkerValidatorHandler(api=api, common_utils=common_utils
 
 
 def test_run_status_running():
-    api.load_run = MagicMock(return_value={'status': 'RUNNING'})
+    api.load_run_efficiently = MagicMock(return_value={'status': 'RUNNING'})
 
     assert handler.is_valid(HOST)
 
 
 def test_run_status_failure():
-    api.load_run = MagicMock(return_value={'status': 'FAILURE'})
+    api.load_run_efficiently = MagicMock(return_value={'status': 'FAILURE'})
 
     assert not handler.is_valid(HOST)
 
 
 def test_run_status_stopped():
-    api.load_run = MagicMock(return_value={'status': 'STOPPED'})
+    api.load_run_efficiently = MagicMock(return_value={'status': 'STOPPED'})
 
     assert not handler.is_valid(HOST)

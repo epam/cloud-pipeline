@@ -1,9 +1,12 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-storage-lifecycle-service
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-storage-lifecycle-service: "true"
   replicas: 1
   template:
     metadata:

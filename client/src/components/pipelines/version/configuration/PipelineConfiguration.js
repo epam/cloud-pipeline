@@ -389,6 +389,9 @@ export default class PipelineConfiguration extends React.Component {
             }
           }
           const request = new PipelineConfigurationUpdate(this.props.pipelineId);
+          const runAs = configuration.configuration.run_as;
+          const shareWithUsers = configuration.configuration.share_with_users;
+          const shareWithRoles = configuration.configuration.share_with_roles;
           const mainFile = configuration.configuration.main_file;
           const mainClass = configuration.configuration.main_class;
           const language = configuration.configuration.language;
@@ -402,6 +405,9 @@ export default class PipelineConfiguration extends React.Component {
           payload.configuration.main_file = mainFile;
           payload.configuration.main_class = mainClass;
           payload.configuration.language = language;
+          payload.configuration.run_as = runAs;
+          payload.configuration.share_with_users = shareWithUsers;
+          payload.configuration.share_with_roles = shareWithRoles;
           await request.send(payload);
           if (request.error) {
             hide();

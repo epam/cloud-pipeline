@@ -443,6 +443,10 @@ class GsListingManager(GsManager, AbstractListingManager):
             storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.size)
         return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), storage_usage]
 
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None, show_archive=False):
+        return self.list_items(relative_path, recursive, page_size, show_all=False, show_archive=show_archive), None
+
     def get_summary_with_depth(self, max_depth, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
         bucket = self.client.bucket(self.bucket.path)
@@ -455,6 +459,9 @@ class GsListingManager(GsManager, AbstractListingManager):
             name = blob.name
             accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
+
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        raise NotImplementedError("List items with depth is not implemented yet")
 
     def _to_storage_file(self, blob):
         item = DataStorageItemModel()
@@ -523,7 +530,8 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         if recursive and version:
             raise RuntimeError('Recursive folder deletion with specified version is not available '
                                'for GCP cloud provider.')

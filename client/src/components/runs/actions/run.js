@@ -23,7 +23,6 @@ import {
   Button,
   Icon,
   message,
-  Modal,
   Row,
   Select,
   Tooltip
@@ -70,8 +69,10 @@ import {getSelectOptions} from '../../special/instance-type-info';
 import {
   getLimitMountsStorages,
   getLimitMountsParameterValue,
-  storageMatchesIdentifiers
+  getStoragesForLimitMountsString
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
+import RunModal from '../../main/RunModal';
+import checkToolVersionErrors from '../utilities/check-tool-version-errors';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -425,9 +426,17 @@ function runFn (
       const ref = (element) => {
         component = element;
       };
-      Modal.confirm({
+      const hide = message.loading('Checking tool size...', 0);
+      const versionErrors = await checkToolVersionErrors(
+        payload.dockerImage,
+        stores.preferences,
+        stores.dockerRegistries
+      );
+      hide();
+      RunModal.open({
         title: null,
         width: '50%',
+        okDisabled: versionErrors.size.hard,
         content: (
           <RunSpotConfirmationWithPrice
             runInfo={{
@@ -440,6 +449,7 @@ function runFn (
             ref={ref}
             platform={platform}
             warning={warning}
+            versionErrors={versionErrors}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
             isSpot={payload.isSpot}
@@ -471,6 +481,7 @@ function runFn (
         style: {
           wordWrap: 'break-word'
         },
+        closable: false,
         okText: 'Launch',
         onOk: async function () {
           if (component) {
@@ -557,12 +568,18 @@ function runFn (
   });
 }
 
-function isUniqueInArray (element, index, array) {
-  return array.filter(e => e === element).length === 1;
-}
-
-function notUniqueInArray (element, index, array) {
-  return array.filter(e => e === element).length > 1;
+function getConflictingMountPointsSet (mountPoints) {
+  const conflictingMountPoints = new Set();
+  const processedMountPoints = new Set();
+  for (const mountPoint of mountPoints) {
+    if (mountPoint) {
+      if (processedMountPoints.has(mountPoint)) {
+        conflictingMountPoints.add(mountPoint);
+      }
+      processedMountPoints.add(mountPoint);
+    }
+  }
+  return conflictingMountPoints;
 }
 
 @observer
@@ -570,11 +587,21 @@ export class RunConfirmation extends React.Component {
   state = {
     isSpot: false,
     instanceType: null,
-    limitMounts: null
+    limitMounts: null,
+    selectedDataStorages: [],
+    hasStorageConflicts: false
   };
 
   static propTypes = {
     warning: PropTypes.string,
+    versionErrors: PropTypes.shape({
+      size: PropTypes.shape({
+        soft: PropTypes.bool,
+        hard: PropTypes.bool
+      }),
+      allowedWarning: PropTypes.string
+    }),
+    allowedWarning: PropTypes.string,
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -635,11 +662,7 @@ export class RunConfirmation extends React.Component {
     return (this.props.dataStorages || []).map(d => d);
   }
 
-  get selectedDataStorages () {
-    const {limitMounts} = this.state;
-    return this.getStoragesByIdentifiersString(limitMounts);
-  }
-
+  @computed
   get initialSelectedDataStorages () {
     const {limitMounts} = this.props;
     return this.getStoragesByIdentifiersString(limitMounts);
@@ -647,49 +670,42 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get conflicting () {
-    return this.initialSelectedDataStorages
-      .filter((d, i, a) =>
-        !!d.mountPoint &&
-        notUniqueInArray(d.mountPoint, i, a.map(aa => aa.mountPoint))
-      );
+    const {initialSelectedDataStorages} = this;
+    const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
+    const conflictingMountPoints = getConflictingMountPointsSet(mountPoints);
+    return initialSelectedDataStorages
+      .filter((d) => !!d.mountPoint && conflictingMountPoints.has(d.mountPoint));
   }
 
+  @computed
   get notConflictingIndecis () {
+    const {initialSelectedDataStorages} = this;
+    const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
+    const conflictingMountPoints = getConflictingMountPointsSet(mountPoints);
     return this.initialSelectedDataStorages
-      .filter((d, i, a) =>
-        !d.mountPoint ||
-        isUniqueInArray(d.mountPoint, i, a.map(aa => aa.mountPoint))
+      .filter((d) =>
+        !d.mountPoint || !conflictingMountPoints.has(d.mountPoint)
       )
       .map(d => +d.id);
   }
 
   @computed
   get initialLimitMountsHaveConflicts () {
-    return this.initialSelectedDataStorages
-      .filter(d => !!d.mountPoint)
-      .map(d => d.mountPoint)
-      .filter(notUniqueInArray)
-      .length > 0;
+    const {initialSelectedDataStorages} = this;
+    const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
+    const conflictingMountPoints = getConflictingMountPointsSet(mountPoints);
+    return conflictingMountPoints.size > 0;
   }
 
-  @computed
-  get limitMountsHaveConflicts () {
-    return this.selectedDataStorages
-      .filter(d => !!d.mountPoint)
-      .map(d => d.mountPoint)
-      .filter(notUniqueInArray)
-      .length > 0;
-  }
-
-  getStoragesByIdentifiersString(identifiersString) {
+  getStoragesByIdentifiersString (identifiersString) {
     if (/^none$/i.test(identifiersString)) {
       return [];
     }
+    const {dataStorages} = this;
     if (identifiersString) {
-      const ids = identifiersString.split(',');
-      return this.dataStorages.filter((d) => storageMatchesIdentifiers(d, ids));
+      return getStoragesForLimitMountsString(dataStorages, identifiersString);
     }
-    return this.dataStorages.filter(d => !d.sensitive && !d.sourceStorageId);
+    return dataStorages.filter(d => !d.sensitive && !d.sourceStorageId);
   }
 
   getInstanceTypes = () => {
@@ -749,8 +765,9 @@ export class RunConfirmation extends React.Component {
 
   getSelectStructure = () => {
     const groups = [];
-    for (let i = 0; i < this.conflicting.length; i++) {
-      const dataStorage = this.conflicting[i];
+    const {conflicting} = this;
+    for (let i = 0; i < conflicting.length; i++) {
+      const dataStorage = conflicting[i];
       if (dataStorage.mountPoint) {
         let [group] = groups.filter(g => g.key === dataStorage.mountPoint);
         if (!group) {
@@ -805,15 +822,20 @@ export class RunConfirmation extends React.Component {
   onSelect = (selectedConflictingIds) => {
     const selectedIds = [...this.notConflictingIndecis, ...selectedConflictingIds];
     if (selectedIds.length > 0) {
-      this.setState({
-        limitMounts: selectedIds.join(',')
-      }, () => {
+      const limitMounts = selectedIds.join(',');
+      this.updateSelectedDataStorages(limitMounts, () => {
         this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(this.state.limitMounts);
       });
     }
   };
 
   renderLimitMountsSelector = () => {
+    const {selectedDataStorages} = this.state;
+    const {notConflictingIndecis} = this;
+    const indecis = new Set(notConflictingIndecis);
+    const value = selectedDataStorages
+      .filter(s => !indecis.has(s.id))
+      .map(s => s.id.toString());
     return (
       <Provider awsRegions={awsRegions}>
         <Select
@@ -825,11 +847,7 @@ export class RunConfirmation extends React.Component {
             (input, option) =>
               option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
               option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-          value={
-            this.selectedDataStorages
-              .filter(s => this.notConflictingIndecis.indexOf(s.id) === -1)
-              .map(s => s.id.toString())
-          }
+          value={value}
         >
           {this.getSelectStructure()}
         </Select>
@@ -859,13 +877,44 @@ export class RunConfirmation extends React.Component {
   };
 
   render () {
+    const {size, allowedWarning} = this.props.versionErrors || {};
+    const {soft, hard} = size || {};
+    const {hasStorageConflicts} = this.state;
     return (
       <div>
+        {allowedWarning ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="allowed-warning"
+            type="warning"
+            showIcon
+            message={allowedWarning}
+          />
+        ) : null}
+        {!hard && soft ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="warning"
+            type="warning"
+            showIcon
+            // eslint-disable-next-line max-len
+            message="Сontainer size is too large and may lead to unpredictable run behavior."
+          />
+        ) : null}
+        {hard ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="error"
+            type="error"
+            showIcon
+            message="Container size exceeds limit."
+          />
+        ) : null}
         {
           this.props.warning &&
           <Alert
             style={{margin: 2}}
-            key="warning"
+            key="general-warning"
             type="warning"
             showIcon
             message={this.props.warning} />
@@ -1052,7 +1101,7 @@ export class RunConfirmation extends React.Component {
           this.initialLimitMountsHaveConflicts && (
             <Alert
               style={{margin: 2}}
-              type={this.limitMountsHaveConflicts ? 'warning' : 'success'}
+              type={hasStorageConflicts ? 'warning' : 'success'}
               showIcon
               message={
                 <div>
@@ -1197,21 +1246,55 @@ export class RunConfirmation extends React.Component {
   }
 
   componentDidMount () {
-    this.updateState(this.props);
+    this.updateState();
   }
 
-  updateState = (props) => {
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.isSpot !== this.props.isSpot ||
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.limitMounts !== this.props.limitMounts ||
+      prevProps.dataStorages !== this.props.dataStorages
+    ) {
+      this.updateState();
+    }
+  }
+
+  updateState = () => {
     this.setState({
-      isSpot: props.isSpot,
-      instanceType: props.instanceType,
-      limitMounts: props.limitMounts
+      isSpot: this.props.isSpot,
+      instanceType: this.props.instanceType
     });
+    this.updateSelectedDataStorages(this.props.limitMounts);
   };
+
+  updateSelectedDataStorages = (limitMounts, callback) => {
+    const selectedDataStorages = this.getStoragesByIdentifiersString(limitMounts);
+    const mountPoints = selectedDataStorages.map((s) => s.mountPoint);
+    const conflictingMountPoints = getConflictingMountPointsSet(mountPoints);
+    const hasStorageConflicts = conflictingMountPoints.size > 0;
+    this.setState({
+      limitMounts,
+      selectedDataStorages,
+      hasStorageConflicts
+    }, () => {
+      if (callback && typeof callback === 'function') {
+        callback();
+      }
+    });
+  }
 }
 
 @observer
-export class RunSpotConfirmationWithPrice extends React.Component {
+class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
+    versionErrors: PropTypes.shape({
+      size: PropTypes.shape({
+        soft: PropTypes.bool,
+        hard: PropTypes.bool
+      }),
+      allowedWarning: PropTypes.string
+    }),
     warning: PropTypes.string,
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
@@ -1383,6 +1466,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            versionErrors={this.props.versionErrors}
             platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
@@ -1423,8 +1507,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
               this._estimatedPriceType.pending
                 ? <Row>Estimated price: <Icon type="loading" /></Row>
                 : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
-                (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
-                  .toFixed(2)
+                  (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
+                    .toFixed(2)
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
@@ -1439,6 +1523,23 @@ export class RunSpotConfirmationWithPrice extends React.Component {
   }
 
   componentDidMount () {
+    this.updateFromProps();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.runInfo !== this.props.runInfo ||
+      prevProps.isSpot !== this.props.isSpot ||
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.hddSize !== this.props.hddSize ||
+      prevProps.limitMounts !== this.props.limitMounts ||
+      prevProps.parameters !== this.props.parameters
+    ) {
+      this.updateFromProps();
+    }
+  }
+
+  updateFromProps = () => {
     this.setState({
       runNameAlias: (this.props.runInfo || {}).alias,
       isSpot: this.props.isSpot,

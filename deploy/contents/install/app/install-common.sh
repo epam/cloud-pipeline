@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,12 @@ yum install -y \
             gettext \
             iproute-tc \
             openssl
+
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -o /tmp/install_kustomize.sh && \
+    chmod +x /tmp/install_kustomize.sh && \
+    /tmp/install_kustomize.sh 5.3.0 && \
+    rm -f /tmp/install_kustomize.sh && \
+    mv kustomize /usr/bin/kustomize
 
 git config --global http.sslVerify "false"
 

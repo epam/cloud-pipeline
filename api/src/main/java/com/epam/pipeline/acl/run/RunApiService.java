@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,13 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
@@ -103,6 +105,7 @@ public class RunApiService {
     private final PipelineRunAsManager pipelineRunAsManager;
     private final RunPermissionManager runPermissionManager;
     private final EdgeServiceManager edgeServiceManager;
+    private final ArchiveRunService archiveRunService;
 
     @AclMask
     @QuotaLaunchCheck
@@ -227,14 +230,21 @@ public class RunApiService {
 
     @PreAuthorize(ADMIN_ONLY)
     @AclMask
-    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
-        return runManager.loadRunsActivityStats(start, end);
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
+                                                   final boolean archive) {
+        return runManager.loadRunsActivityStats(start, end, archive);
     }
 
     @AclFilter
     @AclMaskPage
     public PagedResult<List<PipelineRun>> searchPipelineRuns(PagingRunFilterVO filter, boolean loadStorageLinks) {
         return runManager.searchPipelineRuns(filter, loadStorageLinks);
+    }
+
+    @AclFilter
+    public byte[] exportPipelineRuns(final PagingRunFilterVO filter, final String delimiter,
+                                     final String fieldDelimiter) {
+        return runManager.exportPipelineRuns(filter, delimiter, fieldDelimiter);
     }
 
     @AclFilter
@@ -325,8 +335,11 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public Boolean checkFreeSpaceAvailable(final Long runId) {
-        return pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId);
+    public CommitRunConditions getCommitRunCheckResult(final Long runId) {
+        return CommitRunConditions.builder()
+                .containerSize(pipelineRunDockerOperationManager.checkContainerSizeForCommit(runId))
+                .enoughSpace(pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId))
+                .build();
     }
 
     @PreAuthorize(RUN_ID_OWNER)
@@ -380,5 +393,20 @@ public class RunApiService {
     @AclFilter
     public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
         return runManager.loadActiveRunsCharts(filter);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void archiveRuns() {
+        archiveRunService.archiveRuns();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void archiveRuns(final String name, final boolean principal, final Integer days) {
+        archiveRunService.archiveRuns(name, principal, days);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
+        runManager.setLimitBoundary(runId, enable, boundary);
     }
 }

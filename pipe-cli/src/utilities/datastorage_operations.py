@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import itertools
 
 import click
-import datetime
 import logging
 import multiprocessing
 import os
@@ -23,6 +23,7 @@ import sys
 from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
+import concurrent.futures
 
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
@@ -32,15 +33,20 @@ from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
 from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
+from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, StorageOperations
+from src.utilities.printing.storage import print_storage_items, init_items_table
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
+DEFAULT_BATCH_SIZE = 1000
+BATCH_SIZE = int(os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE))
+ASYNC_BATCH_ENABLE = str(os.getenv('CP_CLI_STORAGE_ASYNC_BATCH_ENABLE', 'false')).lower() == 'true'
 ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
@@ -65,10 +71,15 @@ class EmptyFilesValues(object):
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-           clean=False, skip_existing=False, sync_newer=False, verify_destination=False, checksum_algorithm='md5',
-           checksum_skip=False):
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks,
+           additional_options, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+           on_empty_files, on_failures, clean=False, skip_existing=False, sync_newer=False, verify_destination=False,
+           checksum_algorithm='md5', checksum_skip=False):
+
+        # Check if any external extension should handle this call
+        if ExtensionHandlerRegistry.accept('storage', 'cp', locals()):
+            sys.exit(0)
+
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
@@ -164,6 +175,15 @@ class DataStorageOperations(object):
         audit_ctx = auditing()
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
                                                            events=audit_ctx.container, command=command)
+
+        batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.LOCAL
+                                                                      or source_wrapper.get_type() == WrapperType.S3)
+        if batch_allowed:
+            cls._transfer_batch_items(threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet,
+                                      tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
+                                      permission_to_check, include, exclude, force, skip_existing, sync_newer,
+                                      verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+            sys.exit(0)
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -174,9 +194,95 @@ class DataStorageOperations(object):
                                              audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
                                              checksum_skip)
         else:
-            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                audit_ctx, clean, quiet, tags, io_threads, on_failures,
-                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
+            cls._transfer_items_with_audit_ctx(items, manager, source_wrapper, destination_wrapper,
+                                               audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                               checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
+
+    @classmethod
+    def _transfer_batch_items(cls, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+                              quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
+                              permission_to_check, include, exclude, force, skip_existing, sync_newer,
+                              verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
+        items_iterator = iter(source_wrapper.get_items(quiet=quiet))
+        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                       permission_to_check, include, exclude, force, quiet, skip_existing,
+                                       sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                       on_empty_files)
+        if threads:
+            cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
+                                             destination_wrapper, exclude, force, include, io_threads, items,
+                                             manager, items_iterator, on_empty_files, on_failures, on_unsafe_chars,
+                                             on_unsafe_chars_replacement, permission_to_check, quiet,
+                                             skip_existing, source_wrapper, sync_newer, tags, threads,
+                                             verify_destination)
+        else:
+            cls._transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
+                                exclude, force, include, io_threads, items, manager, items_iterator, on_empty_files,
+                                on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
+                                quiet, skip_existing, source_wrapper, sync_newer, tags, verify_destination)
+
+    @classmethod
+    def _transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper, exclude, force,
+                        include, io_threads, items, manager, items_iterator, on_empty_files, on_failures,
+                        on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check, quiet, skip_existing,
+                        source_wrapper, sync_newer, tags, verify_destination):
+        with audit_ctx:
+            while True:
+                try:
+                    if ASYNC_BATCH_ENABLE:
+                        with concurrent.futures.ThreadPoolExecutor(1) as executor:
+                            future = executor.submit(cls._fetch_batch_items, items_iterator, manager,
+                                                     source_wrapper, destination_wrapper, permission_to_check,
+                                                     include, exclude, force, quiet, skip_existing,
+                                                     sync_newer, verify_destination, on_unsafe_chars,
+                                                     on_unsafe_chars_replacement, on_empty_files)
+                            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
+                                                clean, quiet, tags, io_threads, on_failures, None,
+                                                checksum_algorithm, checksum_skip)
+                            items = future.result()
+                    else:
+                        cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet,
+                                            tags, io_threads, on_failures, None, checksum_algorithm,
+                                            checksum_skip)
+                        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper,
+                                                       destination_wrapper,
+                                                       permission_to_check, include, exclude, force, quiet,
+                                                       skip_existing,
+                                                       sync_newer, verify_destination, on_unsafe_chars,
+                                                       on_unsafe_chars_replacement, on_empty_files)
+                except StopIteration:
+                    break
+
+    @classmethod
+    def _multiprocess_transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
+                                     exclude, force, include, io_threads, items, manager, items_iterator,
+                                     on_empty_files, on_failures, on_unsafe_chars, on_unsafe_chars_replacement,
+                                     permission_to_check, quiet, skip_existing, source_wrapper, sync_newer, tags,
+                                     threads, verify_destination):
+        while True:
+            try:
+                transfer_workers = cls._start_multiprocess_transfer(items, threads, manager, source_wrapper,
+                                                                    destination_wrapper, audit_ctx, clean, quiet, tags,
+                                                                    io_threads, on_failures, checksum_algorithm,
+                                                                    checksum_skip)
+                items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                               permission_to_check, include, exclude, force, quiet, skip_existing,
+                                               sync_newer, verify_destination, on_unsafe_chars,
+                                               on_unsafe_chars_replacement, on_empty_files)
+                cls._handle_keyboard_interrupt(transfer_workers)
+            except StopIteration:
+                break
+
+    @classmethod
+    def _fetch_batch_items(cls, items_iterator, manager, source_wrapper, destination_wrapper, permission_to_check,
+                           include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
+                           on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
+        batch_items_iterator = itertools.islice(items_iterator, BATCH_SIZE)
+        items_batch = itertools.chain([next(batch_items_iterator)], batch_items_iterator)
+        items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                  include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
+                                  on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+        return items
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -290,7 +396,8 @@ class DataStorageOperations(object):
             manager.delete_items(source_wrapper.path,
                                  version=version, hard_delete=hard_delete,
                                  exclude=exclude, include=include,
-                                 recursive=recursive and not source_wrapper.is_file())
+                                 recursive=recursive and not source_wrapper.is_file(),
+                                 page_size=BATCH_SIZE)
         click.echo(' done.')
 
     @classmethod
@@ -372,6 +479,11 @@ class DataStorageOperations(object):
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
         """Lists storage contents
         """
+
+        # Check if any external extension should handle this call
+        if ExtensionHandlerRegistry.accept('storage', 'ls', locals()):
+            sys.exit(0)
+
         if path:
             root_bucket = None
             original_path = ''
@@ -449,7 +561,18 @@ class DataStorageOperations(object):
         if not du_command.validate():
             # Bad input
             sys.exit(22)
-        du_leafs = DataUsageHelper().fetch_data(du_command)
+        storage = DataStorage.fetch_storage(du_command.storage_name) if du_command.storage_name else None
+        if du_command.eagerly_allowed(storage):
+            if storage.type.lower() == 's3' or storage.type.lower() == 'nfs':
+                table = None
+                header = None
+                for _item in DataUsageHelper().fetch_data_eagerly(du_command, storage):
+                    header, table = DuOutput.print_item(du_command, _item, header, table)
+                click.echo()
+                sys.exit(0)
+            click.echo("Using --cloud, because --depth is used", err=True)
+            du_command.perform_on_cloud = True
+        du_leafs = DataUsageHelper().fetch_data(du_command, storage)
         click.echo(DuOutput.format_table(du_command, du_leafs))
         click.echo()
 
@@ -480,14 +603,20 @@ class DataStorageOperations(object):
     @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
                                       show_versions=False, show_all=False, show_extended=False, show_archive=False):
-
-        items = []
-        header = None
+        next_page_token = None
+        manager = None
+        paging_allowed = (recursive and not page_size and not show_versions and bucket_model is not None
+                          and bucket_model.type == WrapperType.S3)
         if bucket_model is not None:
             wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
             manager = wrapper.get_list_manager(show_versions=show_versions)
-            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all,
-                                       show_archive=show_archive)
+            if paging_allowed:
+                items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
+                                                                   page_size=BATCH_SIZE, start_token=None,
+                                                                   show_archive=show_archive)
+            else:
+                items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all,
+                                           show_archive=show_archive)
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
@@ -497,70 +626,36 @@ class DataStorageOperations(object):
                 click.echo("No datastorages available.")
                 sys.exit(0)
 
-        if recursive and header is not None:
-            click.echo(header)
+        fields = ["Type", "Labels", "Modified", "Size", "Name"]
+        if show_versions:
+            fields.append("Version")
+        if show_extended:
+            fields.extend(["Mount status", "Mount limits", "Metadata"])
+            cls.assign_metadata_to_items(items)
 
-        if show_details:
-            items_table = prettytable.PrettyTable()
-            fields = ["Type", "Labels", "Modified", "Size", "Name"]
-            if show_versions:
-                fields.append("Version")
-            if show_extended:
-                fields.extend(["Mount status", "Mount limits", "Metadata"])
-                cls.assign_metadata_to_items(items)
-            items_table.field_names = fields
-            items_table.align = "l"
-            items_table.border = False
-            items_table.padding_width = 2
-            items_table.align['Size'] = 'r'
-            for item in items:
-                name = item.name
-                changed = ''
-                size = ''
-                labels = ''
-                if item.type is not None and item.type in WrapperType.cloud_types():
-                    name = item.path
-                item_updated = item.deleted or item.changed
-                if item_updated is not None:
-                    if bucket_model is None:
-                        # need to wrap into datetime since bucket listing returns str
-                        item_datetime = datetime.datetime.strptime(item_updated, '%Y-%m-%d %H:%M:%S')
-                    else:
-                        item_datetime = item_updated
-                    changed = item_datetime.strftime('%Y-%m-%d %H:%M:%S')
-                if item.size is not None and not item.deleted:
-                    size = item.size
-                if item.labels is not None and len(item.labels) > 0 and not item.deleted:
-                    labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, item.labels))
-                item_type = "-File" if item.delete_marker or item.deleted else item.type
-                row = [item_type, labels, changed, size, name]
-                if show_versions:
-                    row.append('')
-                if show_extended:
-                    mount_status = item.mount_status
-                    mount_limits = STORAGE_DETAILS_SEPARATOR.join(item.tools_to_mount)
-                    item_metadata = STORAGE_DETAILS_SEPARATOR.join(['='.join(entry) for entry in item.metadata.items()])
-                    row.extend([mount_status, mount_limits, item_metadata])
-                items_table.add_row(row)
-                if show_versions and item.type == 'File':
-                    if item.deleted:
-                        # Additional synthetic delete version
-                        row = ['-File', '', item.deleted.strftime('%Y-%m-%d %H:%M:%S'), size, name, '- (latest)']
-                        items_table.add_row(row)
-                    for version in item.versions:
-                        version_type = "-File" if version.delete_marker else "+File"
-                        version_label = "{} (latest)".format(version.version) if version.latest else version.version
-                        labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, version.labels))
-                        size = '' if version.size is None else version.size
-                        row = [version_type, labels, version.changed.strftime('%Y-%m-%d %H:%M:%S'), size, name, version_label]
-                        items_table.add_row(row)
+        items_table = init_items_table(fields)
+        print_storage_items(bucket_model, items, show_details, items_table, show_extended, show_versions)
 
-            click.echo(items_table)
+        if not next_page_token:
             click.echo()
-        else:
-            for item in items:
-                click.echo('{}\t\t'.format(item.path), nl=False)
-            click.echo()
+            return
+
+        cls.__print_paging_storage_contents(manager, bucket_model, items_table, relative_path,
+                                            recursive, show_details, next_page_token, show_versions, show_archive)
+
+    @classmethod
+    def __print_paging_storage_contents(cls, manager, bucket_model, items_table, relative_path,
+                                        recursive, show_details, next_page_token, show_versions,
+                                        show_archive):
+        items_table.header = False
+        while True:
+            items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
+                                                               page_size=BATCH_SIZE, start_token=next_page_token,
+                                                               show_archive=show_archive)
+            print_storage_items(bucket_model, items, show_details, items_table, False, show_versions)
+            if not next_page_token:
+                click.echo()
+                return
 
     @classmethod
     def assign_metadata_to_items(cls, items):
@@ -637,7 +732,7 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
+    def _start_multiprocess_transfer(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
                                      audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
                                      checksum_skip):
         size_index = 3
@@ -647,7 +742,7 @@ class DataStorageOperations(object):
 
         workers = []
         for i in range(threads):
-            process = multiprocessing.Process(target=cls._transfer_items,
+            process = multiprocessing.Process(target=cls._transfer_items_with_audit_ctx,
                                               args=(splitted_items[i],
                                                     manager,
                                                     source_wrapper,
@@ -663,26 +758,42 @@ class DataStorageOperations(object):
                                                     checksum_skip))
             process.start()
             workers.append(process)
+        return workers
+
+    @classmethod
+    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                     audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
+                                     checksum_skip):
+        workers = cls._start_multiprocess_transfer(sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                                   audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                                   checksum_algorithm, checksum_skip)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
-                        io_threads, on_failures, lock=None, checksum_algorithm='md5', checksum_skip=False):
+    def _transfer_items_with_audit_ctx(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+                                       quiet, tags, io_threads, on_failures, lock=None, checksum_algorithm='md5',
+                                       checksum_skip=False):
         with audit_ctx:
-            transfer_results = []
-            fail_after_exception = None
-            for item in items:
-                transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                            source_wrapper, destination_wrapper,
-                                                                            transfer_results,
-                                                                            clean, quiet, tags, io_threads,
-                                                                            on_failures, lock, checksum_algorithm,
-                                                                            checksum_skip)
-            if not destination_wrapper.is_local():
-                cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                            transfer_results, clean=clean, flush_size=1)
-            if fail_after_exception:
-                raise fail_after_exception
+            cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                                io_threads, on_failures, lock, checksum_algorithm, checksum_skip)
+
+    @classmethod
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                        io_threads, on_failures, lock=None, checksum_algorithm='md5', checksum_skip=False):
+        transfer_results = []
+        fail_after_exception = None
+        for item in items:
+            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
+                                                                        source_wrapper, destination_wrapper,
+                                                                        transfer_results,
+                                                                        clean, quiet, tags, io_threads,
+                                                                        on_failures, lock, checksum_algorithm,
+                                                                        checksum_skip)
+        if not destination_wrapper.is_local():
+            cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                        transfer_results, clean=clean, flush_size=1)
+        if fail_after_exception:
+            raise fail_after_exception
 
     @classmethod
     def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,

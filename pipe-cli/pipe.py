@@ -292,6 +292,14 @@ def cli():
       CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
       CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
       CP_TRACE=[True|False]                  Enables verbose errors.
+      CP_CLI_STORAGE_BATCH_SIZE              The number of objects per request for pipe storage operations (Default: 1000)
+      CP_CLI_STORAGE_ASYNC_BATCH_ENABLE      Enables asynchronous batch transfer
+      CP_CLI_STORAGE_LIST_API_PAGE_SIZE      The number of storage items allowed to be loaded from the API
+                                             in one request (Default: 1000)
+      CP_CLI_API_CALL_RETRY_ATTEMPTS         The number of retries to call API (Default: 3)
+      CP_CLI_API_CALL_RETRY_TIMEOUT          The time interval in seconds between API call attempts (Default: 5)
+      CP_AWS_MAX_ATTEMPTS                    The number of maximum retries to call AWS API. If not specifies the
+                                             default boto3 provided values will be used.
     """
     pass
 
@@ -488,6 +496,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
+@click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
 @common_options
 def view_runs(run_id,
               status,
@@ -500,12 +509,13 @@ def view_runs(run_id,
               node_details,
               parameters_details,
               tasks_details,
-              user_filter):
+              user_filter,
+              tags_details):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
-        view_run(run_id, node_details, parameters_details, tasks_details)
+        view_run(run_id, node_details, parameters_details, tasks_details, tags_details)
     # If no argument is specified - list runs according to options
     else:
         view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
@@ -566,7 +576,7 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, us
         click.echo()
 
 
-def view_run(run_id, node_details, parameters_details, tasks_details):
+def view_run(run_id, node_details, parameters_details, tasks_details, tags_details):
     run_model = PipelineRun.get(run_id)
     if not run_model.pipeline and run_model.pipeline_id is not None:
         pipeline_model = Pipeline.get(run_model.pipeline_id)
@@ -609,6 +619,9 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
         run_main_info_table.add_row(['Estimated price:', '{} $'.format(round(run_model_price.total_price, 2))])
     else:
         run_main_info_table.add_row(['Estimated price:', 'N/A'])
+
+    run_main_info_table.add_row(['Tags:', run_model.tags_str])
+
     click.echo(run_main_info_table)
     click.echo()
 
@@ -660,6 +673,16 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
         else:
             click.echo('No tasks are available for the run')
         click.echo()
+
+    if tags_details:
+        echo_title('Tags:')
+        if len(run_model.tags) > 0:
+            for tag_name in run_model.tags:
+                click.echo('{}={}'.format(tag_name, run_model.tags[tag_name]))
+        else:
+            click.echo('No tags are configured')
+        click.echo()
+
 
 
 @cli.command(name='view-cluster')
@@ -1227,7 +1250,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, io_threads,
+                             symlinks, None, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=True, skip_existing=skip_existing, sync_newer=sync_newer,
                              verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
@@ -1258,6 +1281,10 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[follow] follows symlinks (default); \n'
                    '[skip] does not follow symlinks; \n'
                    '[filter] follows symlinks but checks for cyclic links.')
+@click.option('-a', '--additional-options', required=False,
+              help='Comma separated list of additional arguments to be used during file copy.'
+                   ' f.i. additional args to register file in Omics Store: '
+                   '"name=<filename>,subject_id=<subject_id>,sample_id=<sample_id>,file_type=fastq"')
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
@@ -1305,8 +1332,9 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('--checksum-skip', is_flag=True, required=False, help='Disables objects integrity checks.')
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, skip_existing, sync_newer, verify_destination, checksum_algorithm, checksum_skip):
+                      symlinks, additional_options, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      on_empty_files, on_failures, skip_existing, sync_newer, verify_destination,
+                      checksum_algorithm, checksum_skip):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1345,8 +1373,8 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
         pipe storage cp s3://storage/file.txt - | tee file.txt >/dev/null 2>&1
 
     """
-    DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
+    DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
+                             symlinks, additional_options, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=False, skip_existing=skip_existing, sync_newer=sync_newer,
                              verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,

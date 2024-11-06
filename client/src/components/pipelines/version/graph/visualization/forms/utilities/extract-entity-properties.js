@@ -159,7 +159,8 @@ export default function extractEntityProperties (entity, wdlDocument) {
           entityIssues: r.entityIssues || [],
           docker: /^docker$/i.test(r.property),
           node: /^node$/i.test(r.property),
-          removable: r.removable === undefined || r.removable
+          removable: r.removable === undefined || r.removable,
+          id: r.uuid
         }));
         commandAvailable = true;
         commandEditable = !isPipelineTask && task.document === wdlDocument;

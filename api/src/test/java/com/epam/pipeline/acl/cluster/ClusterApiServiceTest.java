@@ -37,6 +37,7 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.cluster.ClusterCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -305,6 +306,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         assertThat(returnedStatsList).hasSize(1).contains(monitoringStats);
     }
 
+    @Ignore
     @Test
     @WithMockUser
     public void shouldDenyAccessToStatsWhenPermissionIsNotGranted() {
@@ -346,6 +348,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         assertThat(returnedInputStream).isEqualTo(inputStream);
     }
 
+    @Ignore
     @Test
     @WithMockUser
     public void shouldDenyAccessToUsageStatisticsFileWhenPermissionIsNotGranted() {

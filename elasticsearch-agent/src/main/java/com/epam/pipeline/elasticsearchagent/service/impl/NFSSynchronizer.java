@@ -191,8 +191,14 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     }
 
     protected Path getMountFolder(final AbstractDataStorage dataStorage) {
-        final String storageName = getStorageName(dataStorage.getPath());
-        return Paths.get(getRootMountPoint(), getMountDirName(dataStorage.getPath()), storageName);
+        if (dataStorage.isMountExactPath()) {
+            final String flatStoragePath = dataStorage.getPath()
+                    .replace(":", "/").replace("/", "_");
+            return Paths.get(getRootMountPoint(), flatStoragePath);
+        } else {
+            final String storageName = getStorageName(dataStorage.getPath());
+            return Paths.get(getRootMountPoint(), getMountDirName(dataStorage.getPath()), storageName);
+        }
     }
 
     protected Path mountStorageToRootIfNecessary(final AbstractDataStorage dataStorage) {

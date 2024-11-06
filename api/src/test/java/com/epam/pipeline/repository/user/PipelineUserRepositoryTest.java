@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.user.UserCreatorUtils.ROLE_OWNER;
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,7 +78,7 @@ public class PipelineUserRepositoryTest extends AbstractJpaTest {
     @Test
     @Transactional
     public void shouldLoadUsersWithRoles() {
-        final Role targetRole = roleDao.createRole(ROLE_NAME);
+        final Role targetRole = roleDao.createRole(ROLE_NAME, ROLE_OWNER);
         userDao.createUser(getPipelineUser(USER_NAME), Collections.emptyList());
         userDao.createUser(getPipelineUser(USER_NAME_2), Collections.singletonList(targetRole.getId()));
 
