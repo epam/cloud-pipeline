@@ -129,6 +129,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
 docker push "$CP_API_DIST_NAME"
 
+# Search
+CP_SEARCH_DIST_NAME=${CP_SEARCH_DIST_NAME:-"$CP_DIST_REPO_NAME:search-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-search \
+                -t "$CP_SEARCH_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_SEARCH_DIST_NAME"
+
 # Basic IdP
 CP_IDP_DIST_NAME=${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-idp \
@@ -186,13 +193,6 @@ docker build    $DOCKERS_SOURCES_PATH/cp-notifier \
                 -t "$CP_NOTIFIER_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_NOTIFIER_DIST_NAME"
-
-# Search
-CP_SEARCH_DIST_NAME=${CP_SEARCH_DIST_NAME:-"$CP_DIST_REPO_NAME:search-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-search \
-                -t "$CP_SEARCH_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_SEARCH_DIST_NAME"
 
 # Search ELK
 CP_SEARCH_ELK_DIST_NAME=${CP_SEARCH_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:search-elk-${DOCKERS_VERSION}"}
