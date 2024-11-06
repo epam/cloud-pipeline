@@ -29,6 +29,8 @@ import com.epam.pipeline.autotests.utils.SupportButton;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -171,6 +173,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         }
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = {"TC-PARAMETERS-3"})
     public void checkConfigureClusterAwsEBSvolumeType() {
@@ -193,6 +196,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         checkClusterAwsEBSvolumeTypeInLog(logMess);
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = {"3404"})
     public void allowToSpecifyLustreFSTypeAndThoughput() {
@@ -237,6 +241,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         }
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = {"3676"})
     public void allowToSpecifyLustreFSmetadataIOPS() {
