@@ -77,20 +77,20 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    public ShellAO execute(String command) {
+    public ShellAO execute(String command, CharSequence key) {
         sleep(300, MILLISECONDS);
         Utils.sendKeysWithSlashes(command);
         sleep(300, MILLISECONDS);
-        actions().sendKeys(Keys.ENTER).perform();
+        actions().sendKeys(key).perform();
         return this;
     }
 
-    public ShellAO inputText(String command) {
-        sleep(300, MILLISECONDS);
-        Utils.sendKeysWithSlashes(command);
-        sleep(300, MILLISECONDS);
-        actions().sendKeys(Keys.ESCAPE).perform();
-        return this;
+    public ShellAO execute(String command) {
+        return execute(command, Keys.ENTER);
+    }
+
+    public ShellAO inputTextToTextEditor(String command) {
+        return execute(command, Keys.ESCAPE);
     }
 
     public ShellAO assertOutputContains(String... messages) {
