@@ -65,7 +65,9 @@ class HcsImage extends React.PureComponent {
     mergeZPlanes: false,
     selectedWells: [],
     selectedFields: [],
-    zSelectorMode: Z_SELECTOR_MODES.slider
+    zSelectorMode: this.viewSettings.zPlanesSliderMode
+      ? Z_SELECTOR_MODES.slider
+      : Z_SELECTOR_MODES.badge
   };
 
   @observable hcsInfo;
@@ -126,7 +128,8 @@ class HcsImage extends React.PureComponent {
       plate: true,
       well: true,
       timeseries: true,
-      originalImage: true
+      originalImage: true,
+      zPlanesSliderMode: true
     };
   }
 
@@ -260,7 +263,8 @@ class HcsImage extends React.PureComponent {
             const {
               sequences = [],
               width,
-              height
+              height,
+              viewSettings
             } = info;
             const [first] = sequences;
             const {
@@ -271,7 +275,10 @@ class HcsImage extends React.PureComponent {
               pending: false,
               error: undefined,
               plateWidth: width,
-              plateHeight: height
+              plateHeight: height,
+              zSelectorMode: viewSettings.zPlanesSliderMode
+                ? Z_SELECTOR_MODES.slider
+                : Z_SELECTOR_MODES.badge
             }, () => {
               this.hcsInfo = info;
               this.hcsInfo

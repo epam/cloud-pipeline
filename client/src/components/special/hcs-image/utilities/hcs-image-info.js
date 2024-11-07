@@ -92,7 +92,8 @@ class HCSInfo {
       plate: `${viewSettings['plate_layout']}` !== 'false',
       well: `${viewSettings['well_layout']}` !== 'false',
       timeseries: `${viewSettings['timeseries_layout']}` !== 'false',
-      originalImage: `${viewSettings['original_image']}` !== 'false'
+      originalImage: `${viewSettings['original_image']}` !== 'false',
+      zPlanesSliderMode: `${viewSettings['z_planes_slider_mode']}` === 'true'
     };
     /**
      * Sequences info
