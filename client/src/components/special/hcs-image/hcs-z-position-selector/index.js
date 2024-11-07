@@ -349,7 +349,7 @@ function HcsZPositionSelector (props) {
                 onChange={onChangeMode}
                 checked={mode === Z_SELECTOR_MODES.slider}
               >
-                Toggle view (slider / list)
+                Slider view
               </Checkbox>
             </div>
           )
