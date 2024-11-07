@@ -4,7 +4,7 @@
     - [Synthetic data experiment](#synthetic-data-experiment)
     - [Real data experiment](#real-data-experiment)
 - [Costs](#costs)
-- [Costs](#pipe-fuse-filesystem-benchmark)
+- [PIPE Fuse filesystem benchmark](#pipe-fuse-filesystem-benchmark)
 
 ## Performance comparison
 
