@@ -1525,27 +1525,42 @@ export default `
 @THEME .ant-form-item-required::before {
   color: @color-red;
 }
-@THEME .ant-slider-rail {
+@THEME .ant-slider-rail,
+@THEME .rc-slider-rail {
   background-color: @card-header-background;
 }
 @THEME .ant-progress-circle-trail {
   stroke: @card-header-background;
 }
-@THEME .ant-slider-disabled .ant-slider-track {
+@THEME .ant-slider-disabled .ant-slider-track,
+@THEME .rc-slider-disabled .rc-slider-track {
   background-color: @application-color-disabled !important;
 }
-@THEME .ant-slider-dot {
+@THEME .ant-slider-dot,
+@THEME .rc-slider-dot {
   border-color: @card-header-background;
   background-color: @card-background-color;
 }
+@THEME .rc-slider-dot-active {
+  border-color: @primary-color;
+  background-color: @card-background-color;
+}
 @THEME .ant-slider-disabled .ant-slider-handle,
-@THEME .ant-slider-disabled .ant-slider-dot {
+@THEME .ant-slider-disabled .ant-slider-dot,
+@THEME .rc-slider-disabled .rc-slider-handle,
+@THEME .rc-slider-disabled .rc-slider-dot {
   border-color: @application-color-disabled !important;
 }
-@THEME .ant-slider:hover .ant-slider-rail {
+@THEME .rc-slider:not(.rc-slider-disabled) .rc-slider-handle:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
+}
+@THEME .ant-slider:hover .ant-slider-rail,
+@THEME .rc-slider:hover .rc-slider-rail {
   background-color: @card-header-background;
 }
-@THEME .ant-slider-track {
+@THEME .ant-slider-track,
+@THEME .rc-slider-track {
   background-color: @primary-color;
 }
 @THEME .ant-progress-circle-path {
@@ -1554,26 +1569,33 @@ export default `
 @THEME .ant-progress-status-success .ant-progress-circle-path {
   stroke: @color-green !important;
 }
-@THEME .ant-slider:hover .ant-slider-track {
+@THEME .ant-slider:hover .ant-slider-track,
+@THEME .rc-slider:hover .rc-slider-track {
   background-color: @primary-hover-color;
 }
-@THEME .ant-slider-handle {
+@THEME .ant-slider-handle,
+@THEME .rc-slider-handle {
   border-color: @primary-color;
   background-color: @card-background-color;
 }
-@THEME .ant-slider:hover .ant-slider-handle {
+@THEME .ant-slider:hover .ant-slider-handle,
+@THEME .rc-slider:hover .rc-slider-handle {
   border-color: @primary-hover-color;
 }
-@THEME .ant-slider-mark-text {
+@THEME .ant-slider-mark-text,
+@THEME .rc-slider-mark-text {
   color: @application-color;
 }
-@THEME .cp-hcs-z-position-slider .ant-slider-track,
-@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
-  background-color: @color-yellow;
+@THEME .cp-hcs-z-position-slider .rc-slider-track,
+@THEME .cp-hcs-z-position-slider.rc-slider:hover .rc-slider-track {
+  background-color: @card-header-background;
 }
-@THEME .cp-hcs-z-position-slider .ant-slider-handle,
-@THEME .cp-hcs-z-position-slider .ant-slider-dot-active,
-@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+@THEME .cp-hcs-z-position-slider .rc-slider-dot-active {
+  border-color: @card-header-background !important;
+}
+@THEME .cp-hcs-z-position-slider .rc-slider-handle,
+@THEME .cp-hcs-z-position-slider .rc-slider-dot-active,
+@THEME .cp-hcs-z-position-slider.rc-slider:hover .rc-slider-handle {
   border-color: @color-yellow;
 }
 @THEME .cp-notification {

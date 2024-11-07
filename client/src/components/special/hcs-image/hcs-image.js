@@ -31,7 +31,7 @@ import {getWellMesh, getWellImageFromMesh} from './utilities/get-well-mesh';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
-import HcsZPositionSelector from './hcs-z-position-selector';
+import HcsZPositionSelector, {Z_SELECTOR_MODES} from './hcs-z-position-selector';
 import HcsImageAnalysis from './hcs-image-analysis';
 import AnalysisOutput from '../cellprofiler/components/analysis-output';
 import {Analysis} from '../cellprofiler/model/analysis';
@@ -64,7 +64,8 @@ class HcsImage extends React.PureComponent {
     selectedZCoordinates: [],
     mergeZPlanes: false,
     selectedWells: [],
-    selectedFields: []
+    selectedFields: [],
+    zSelectorMode: Z_SELECTOR_MODES.slider
   };
 
   @observable hcsInfo;
@@ -350,6 +351,13 @@ class HcsImage extends React.PureComponent {
         timePointId
       );
     });
+  };
+
+  onChangeZSelectorMode = mode => {
+    const {zSelectorMode} = this.state;
+    if (Z_SELECTOR_MODES[mode] && zSelectorMode !== mode) {
+      this.setState({zSelectorMode: mode});
+    }
   };
 
   onChangeZCoordinates = (selection = [], mergeZPlanes = false) => {
@@ -1021,7 +1029,8 @@ class HcsImage extends React.PureComponent {
       selectedZCoordinates = [],
       mergeZPlanes,
       selectedWells = [],
-      selectedFields = []
+      selectedFields = [],
+      zSelectorMode
     } = this.state;
     const viewSettings = this.viewSettings;
     const sequenceInfo = this.selectedSequence;
@@ -1090,8 +1099,11 @@ class HcsImage extends React.PureComponent {
             selection={selectedZCoordinates}
             mergeZPlanes={mergeZPlanes}
             onChange={this.onChangeZCoordinates}
+            onChangeMode={this.onChangeZSelectorMode}
             multiple
-            style={{maxWidth: 300}}
+            style={{maxWidth: 300, minWidth: 150}}
+            mode={zSelectorMode}
+            sliderMinPositionsTreshold={2}
           />
         </div>
       );
