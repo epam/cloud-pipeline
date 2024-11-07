@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
@@ -27,20 +28,26 @@ import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
+
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.exist;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
+import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
@@ -51,6 +58,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
@@ -59,12 +68,15 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.lang.Double.parseDouble;
 import static java.util.regex.Pattern.compile;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
 
 public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
@@ -91,6 +103,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String FILESYSTEM_AUTOSCALING = "FilesystemAutoscaling";
     private static final double SCALING_COEFF = 1.5;
     private static final String CHECK_SPACE_COMMAND = "df -hT";
+    private static final String PARAMETERS_FILE = "/sge_profile_configuration.txt";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
     private final String configurationDescription = "test-configuration-description";
@@ -99,10 +112,18 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String customTag = "test_tag";
+    private final String testProfile = "testprofile.q";
     private static String testInstance = "r6i.%s";
     private int[] scaling = new int[4];
     private int[] sizeDisk = new int[4];
     private String initialLaunchSystemParameters;
+    private String[] command = {
+            "sge list",
+            format("sge create %s", testProfile),
+            format("sge configure %s", testProfile),
+            "I export CP_CAP_AUTOSCALE=\"nontrue\"",
+            format("I %s", readResourceFully(PARAMETERS_FILE))
+    };
 
     @BeforeClass(alwaysRun = true)
     public void setPreferences() {
@@ -518,6 +539,82 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 );
     }
 
+    @Test
+    @TestCase(value = "TC-PARAMETERS-6")
+    public void autoscalingClusterConfiguration() {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .expandTab(ADVANCED_PANEL)
+                .setPriceType(ON_DEMAND)
+                .doNotMountStoragesSelect(true)
+                .enableClusterLaunch()
+                .clusterSettingsForm("Auto-scaled cluster")
+                .setWorkingNodesCount("1")
+                .ok()
+                .launchTool(this, nameWithoutGroup(tool));
+        final String parentRunId = getLastRunId();
+        runsMenu()
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .ssh(shell -> {
+                    int num = shell
+                            .waitUntilTextAppears(parentRunId)
+                            .execute(command[0])
+                            .assertNextStringIsVisible("Grid engine profile has been found: main.q",
+                                    format("pipeline-%s", parentRunId))
+                            .execute(format(command[1], testProfile))
+                            .assertPageContains(format("Grid engine %s profile.", testProfile))
+                            .execute(":q!")
+                            .waitUntilTextAppears(parentRunId)
+                            .assertPageAfterCommandContainsStrings(command[1],
+                                    format("Grid engine %s profile has been created.", testProfile))
+                            .execute(command[0])
+                            .assertNextStringIsVisible(format("Grid engine profile has been found: %s", testProfile),
+                                    format("pipeline-%s", parentRunId))
+                            .execute(command[2])
+                            .assertPageContains(format("Grid engine %s profile.", testProfile))
+                            .getRowsNumber();
+                    shell
+                            .execute(format("%sdd", num))
+                            .inputTextToTextEditor(command[3])
+                            .execute(":wq")
+                            .waitUntilTextAppears(parentRunId)
+                            .assertPageContainsString("Boolean parameter CP_CAP_AUTOSCALE has invalid " +
+                                    "value nontrue. Please specify true/false/yes/no/on/off.")
+                            .assertPageContainsString("Grid engine profile verification has failed. " +
+                                    "Reverting the changes...")
+                            .execute(command[2])
+                            .assertPageContains(format("Grid engine %s profile.", testProfile))
+                            .execute(format("%sdd", num))
+                            .inputTextToTextEditor(command[4])
+                            .execute(":wq")
+                            .waitUntilTextAppears(parentRunId)
+                            .execute(format("qsub -b y -q %s -pe local 4 -t 1:2 sleep 10m", testProfile))
+                            .close();
+                });
+
+        Set<String> logMessages = runsMenu()
+                .showLog(parentRunId)
+                .clickTaskWithName("SGEProfiles")
+                .logMessages()
+                .collect(toSet());
+        Arrays.stream(expectedLogMessages())
+                .forEach(t -> new LogAO().logContainsMessage(logMessages, t.trim()));
+        runsMenu()
+                .showLog(parentRunId)
+                .waitForNestedRunsLink()
+                .clickOnNestedRunLink()
+                .instanceParameters(instance ->
+                        instance
+                                .ensure(TYPE, text("c5."))
+                                .ensure(DISK, text("45"))
+                                .ensure(IMAGE, text("/library/centos:latest")))
+                .expandTab(PARAMETERS)
+                .ensure(configurationParameter("CP_CAP_SGE_HOSTLIST_NAME", format("@%s", testProfile)), exist)
+                .ensure(configurationParameter("CP_CAP_SGE_QUEUE_NAME", testProfile), exist);
+    }
+
     private String editLaunchSystemParameters() {
         final String launchSystemParameters = navigationMenu()
                 .settings()
@@ -593,5 +690,12 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .execute(CHECK_SPACE_COMMAND)
                 .assertNextStringIsVisible(CHECK_SPACE_COMMAND, rootHost)
                 .assertPageAfterCommandContainsStrings(CHECK_SPACE_COMMAND, logMessage(diskSize));
+    }
+
+    private String[] expectedLogMessages() {
+        List<String> loglist = new ArrayList<String>(asList(command[4].replace("I ", "")
+                .replaceAll("export", "> export").split("\n")));
+        loglist.add(format("Grid engine %s autoscaling has been launched.", testProfile));
+        return loglist.toArray(new String[0]);
     }
 }

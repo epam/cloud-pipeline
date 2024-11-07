@@ -77,12 +77,20 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    public ShellAO execute(String command) {
+    public ShellAO execute(String command, CharSequence key) {
         sleep(300, MILLISECONDS);
         Utils.sendKeysWithSlashes(command);
         sleep(300, MILLISECONDS);
-        actions().sendKeys(Keys.ENTER).perform();
+        actions().sendKeys(key).perform();
         return this;
+    }
+
+    public ShellAO execute(String command) {
+        return execute(command, Keys.ENTER);
+    }
+
+    public ShellAO inputTextToTextEditor(String command) {
+        return execute(command, Keys.ESCAPE);
     }
 
     public ShellAO assertOutputContains(String... messages) {
@@ -228,6 +236,14 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(20, SECONDS);
         }
         return this;
+    }
+
+    public int getRowsNumber() {
+        final String fileMetadata = context().text().substring(context().text().indexOf("\"/tmp/"));
+        final Pattern pattern = Pattern.compile("\"([^\"]+)\"\\s+(\\d+)L,\\s+(\\d+)C");
+        final Matcher matcher = pattern.matcher(fileMetadata);
+        assertTrue(matcher.find(), format("Could not find the number of lines in the file metadata: %s", fileMetadata));
+        return Integer.parseInt(matcher.group(2));
     }
 
     @Override
