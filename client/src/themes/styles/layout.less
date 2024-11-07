@@ -1731,7 +1731,8 @@ li.ant-time-picker-panel-select-option-selected {
   color: @color-red;
 }
 
-.ant-slider-rail {
+.ant-slider-rail,
+.rc-slider-rail {
   background-color: @card-header-background;
 }
 
@@ -1739,25 +1740,41 @@ li.ant-time-picker-panel-select-option-selected {
   stroke: @card-header-background;
 }
 
-.ant-slider-disabled .ant-slider-track {
+.ant-slider-disabled .ant-slider-track,
+.rc-slider-disabled .rc-slider-track {
   background-color: @application-color-disabled !important;
 }
 
-.ant-slider-dot {
+.ant-slider-dot,
+.rc-slider-dot {
   border-color: @card-header-background;
   background-color: @card-background-color;
 }
 
+.rc-slider-dot-active {
+  border-color: @primary-color;
+  background-color: @card-background-color;
+}
+
 .ant-slider-disabled .ant-slider-handle,
-.ant-slider-disabled .ant-slider-dot {
+.ant-slider-disabled .ant-slider-dot,
+.rc-slider-disabled .rc-slider-handle,
+.rc-slider-disabled .rc-slider-dot {
   border-color: @application-color-disabled !important;
 }
 
-.ant-slider:hover .ant-slider-rail {
+.rc-slider:not(.rc-slider-disabled) .rc-slider-handle:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
+}
+
+.ant-slider:hover .ant-slider-rail,
+.rc-slider:hover .rc-slider-rail {
   background-color: @card-header-background;
 }
 
-.ant-slider-track {
+.ant-slider-track,
+.rc-slider-track {
   background-color: @primary-color;
 }
 
@@ -1769,31 +1786,39 @@ li.ant-time-picker-panel-select-option-selected {
   stroke: @color-green !important;
 }
 
-.ant-slider:hover .ant-slider-track {
+.ant-slider:hover .ant-slider-track,
+.rc-slider:hover .rc-slider-track {
   background-color: @primary-hover-color;
 }
 
-.ant-slider-handle {
+.ant-slider-handle,
+.rc-slider-handle {
   border-color: @primary-color;
   background-color: @card-background-color;
 }
 
-.ant-slider:hover .ant-slider-handle {
+.ant-slider:hover .ant-slider-handle,
+.rc-slider:hover .rc-slider-handle {
   border-color: @primary-hover-color;
 }
 
-.ant-slider-mark-text {
+.ant-slider-mark-text,
+.rc-slider-mark-text {
   color: @application-color;
 }
 
-.cp-hcs-z-position-slider .ant-slider-track,
-.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
-  background-color: @color-yellow;
+.cp-hcs-z-position-slider .rc-slider-track,
+.cp-hcs-z-position-slider.rc-slider:hover .rc-slider-track {
+  background-color: @card-header-background;
 }
 
-.cp-hcs-z-position-slider .ant-slider-handle,
-.cp-hcs-z-position-slider .ant-slider-dot-active,
-.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+.cp-hcs-z-position-slider .rc-slider-dot-active {
+  border-color: @card-header-background !important;
+}
+
+.cp-hcs-z-position-slider .rc-slider-handle,
+.cp-hcs-z-position-slider .rc-slider-dot-active,
+.cp-hcs-z-position-slider.rc-slider:hover .rc-slider-handle {
   border-color: @color-yellow;
 }
 

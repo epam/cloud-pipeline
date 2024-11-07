@@ -31,7 +31,7 @@ import {getWellMesh, getWellImageFromMesh} from './utilities/get-well-mesh';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
-import HcsZPositionSelector from './hcs-z-position-selector';
+import HcsZPositionSelector, {Z_SELECTOR_MODES} from './hcs-z-position-selector';
 import HcsImageAnalysis from './hcs-image-analysis';
 import AnalysisOutput from '../cellprofiler/components/analysis-output';
 import {Analysis} from '../cellprofiler/model/analysis';
@@ -64,7 +64,8 @@ class HcsImage extends React.PureComponent {
     selectedZCoordinates: [],
     mergeZPlanes: false,
     selectedWells: [],
-    selectedFields: []
+    selectedFields: [],
+    zSelectorMode: Z_SELECTOR_MODES.badge
   };
 
   @observable hcsInfo;
@@ -125,7 +126,8 @@ class HcsImage extends React.PureComponent {
       plate: true,
       well: true,
       timeseries: true,
-      originalImage: true
+      originalImage: true,
+      zPlanesSliderMode: false
     };
   }
 
@@ -259,7 +261,8 @@ class HcsImage extends React.PureComponent {
             const {
               sequences = [],
               width,
-              height
+              height,
+              viewSettings
             } = info;
             const [first] = sequences;
             const {
@@ -270,7 +273,10 @@ class HcsImage extends React.PureComponent {
               pending: false,
               error: undefined,
               plateWidth: width,
-              plateHeight: height
+              plateHeight: height,
+              zSelectorMode: viewSettings.zPlanesSliderMode
+                ? Z_SELECTOR_MODES.slider
+                : Z_SELECTOR_MODES.badge
             }, () => {
               this.hcsInfo = info;
               this.hcsInfo
@@ -350,6 +356,13 @@ class HcsImage extends React.PureComponent {
         timePointId
       );
     });
+  };
+
+  onChangeZSelectorMode = mode => {
+    const {zSelectorMode} = this.state;
+    if (Z_SELECTOR_MODES[mode] && zSelectorMode !== mode) {
+      this.setState({zSelectorMode: mode});
+    }
   };
 
   onChangeZCoordinates = (selection = [], mergeZPlanes = false) => {
@@ -474,15 +487,17 @@ class HcsImage extends React.PureComponent {
             this.hcsMergedImageSource.urlsManager.offsetsJsonURL
           )
             .then(() => {
-              const imagePayload = {
-                imageTimePosition: 0,
-                imageZPosition: 0,
-                mesh: this.showEntireWell
-                  ? getWellMesh(well, fields)
-                  : undefined
-              };
-              this.hcsImageViewer.setImage(imagePayload);
-              this.loadImageForAnalysis();
+              if (this.hcsImageViewer) {
+                const imagePayload = {
+                  imageTimePosition: 0,
+                  imageZPosition: 0,
+                  mesh: this.showEntireWell
+                    ? getWellMesh(well, fields)
+                    : undefined
+                };
+                this.hcsImageViewer.setImage(imagePayload);
+                this.loadImageForAnalysis();
+              }
             });
         });
       return;
@@ -518,16 +533,18 @@ class HcsImage extends React.PureComponent {
             sequence.hcsURLsManager.offsetsJsonURL
           ))
           .then(() => {
-            const imagePayload = {
-              ID: id,
-              imageTimePosition: this.selectedTimePoint || 0,
-              imageZPosition: this.selectedZCoordinate,
-              mesh: this.showEntireWell
-                ? getWellMesh(well, this.selectedWellFields)
-                : undefined
-            };
-            this.hcsImageViewer.setImage(imagePayload);
-            this.loadImageForAnalysis();
+            if (this.hcsImageViewer) {
+              const imagePayload = {
+                ID: id,
+                imageTimePosition: this.selectedTimePoint || 0,
+                imageZPosition: this.selectedZCoordinate,
+                mesh: this.showEntireWell
+                  ? getWellMesh(well, this.selectedWellFields)
+                  : undefined
+              };
+              this.hcsImageViewer.setImage(imagePayload);
+              this.loadImageForAnalysis();
+            }
           });
       }
     }
@@ -1021,7 +1038,8 @@ class HcsImage extends React.PureComponent {
       selectedZCoordinates = [],
       mergeZPlanes,
       selectedWells = [],
-      selectedFields = []
+      selectedFields = [],
+      zSelectorMode
     } = this.state;
     const viewSettings = this.viewSettings;
     const sequenceInfo = this.selectedSequence;
@@ -1090,8 +1108,11 @@ class HcsImage extends React.PureComponent {
             selection={selectedZCoordinates}
             mergeZPlanes={mergeZPlanes}
             onChange={this.onChangeZCoordinates}
+            onChangeMode={this.onChangeZSelectorMode}
             multiple
-            style={{maxWidth: 300}}
+            style={{maxWidth: 300, minWidth: 150}}
+            mode={zSelectorMode}
+            sliderMinPositionsTreshold={2}
           />
         </div>
       );
