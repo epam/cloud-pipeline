@@ -29,6 +29,8 @@ import com.epam.pipeline.autotests.utils.SupportButton;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -171,6 +173,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         }
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = {"TC-PARAMETERS-3"})
     public void checkConfigureClusterAwsEBSvolumeType() {
@@ -193,6 +196,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         checkClusterAwsEBSvolumeTypeInLog(logMess);
     }
 
+    @CloudProviderOnly(values = {Cloud.AWS})
     @Test
     @TestCase(value = {"3404"})
     public void allowToSpecifyLustreFSTypeAndThoughput() {
@@ -228,6 +232,53 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
             logAO
                     .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
                             "?size=1200&type=PERSISTENT_2&throughput=500")
+                    .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
+                    .waitForTask(INITIALIZE_ENVIRONMENT)
+                    .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
+    }
+
+    @CloudProviderOnly(values = {Cloud.AWS})
+    @Test
+    @TestCase(value = {"3676"})
+    public void allowToSpecifyLustreFSmetadataIOPS() {
+        logout();
+        loginAs(user);
+        try {
+            final LogAO logAO = tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .enableClusterLaunch()
+                    .clusterSettingsForm(clusterSettingForm)
+                    .clusterEnableCheckboxSelect("Enable GridEngine")
+                    .ok()
+                    .expandTab(ADVANCED_PANEL)
+                    .clickAddSystemParameter()
+                    .selectSystemParameters("CP_CAP_SHARE_FS_TYPE",
+                            "CP_CAP_SHARE_FS_THROUGHPUT",
+                            "CP_CAP_SHARE_FS_SIZE",
+                            "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE",
+                            "CP_CAP_SHARE_FS_IOPS")
+                    .ok()
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_TYPE", "lustre")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_IOPS", "1500")
+                    .launch(this)
+                    .showLog(getLastRunId())
+                    .waitForSshLink()
+                    .waitForTask(INITIALIZE_SHARED_FS)
+                    .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
+                    .clickTaskWithName(INITIALIZE_SHARED_FS);
+
+            final Set<String> logMess = logAO.logMessages().collect(toSet());
+            logAO
+                    .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
+                            "?size=1200&type=PERSISTENT_2&throughput=500&iops=1500")
                     .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
                     .waitForTask(INITIALIZE_ENVIRONMENT)
                     .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
