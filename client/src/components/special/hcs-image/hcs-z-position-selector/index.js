@@ -121,7 +121,7 @@ class HcsZPositionSlider extends React.Component {
     const spaceBelow = window.innerHeight - top;
     const height = positions.length <= 20
       ? MIN_SLIDER_HEIGHT
-      : spaceBelow - 40;
+      : Math.max(spaceBelow - 40, MIN_SLIDER_HEIGHT);
     if (this.height === height) {
       return;
     }
