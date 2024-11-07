@@ -129,7 +129,7 @@ class HcsImage extends React.PureComponent {
       well: true,
       timeseries: true,
       originalImage: true,
-      zPlanesSliderMode: true
+      zPlanesSliderMode: false
     };
   }
 
