@@ -29,11 +29,11 @@ RUN yum install -y curl \
                    openssh-server \
                    wget \
                    unzip \
-                   python && \
-                   python-devel && \
+                   python  \
+                   python-devel \
                    gcc && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
-    pip install pillow==9.2.0 tifffile==2019.7.26.2 numpy==1.16.6 imagecodecs-lite==2019.12.3 pandas==0.24.2 openpyxl==2.6.4
+    pip install pillow==6.2.2 tifffile==2019.7.26.2 numpy==1.16.6 imagecodecs-lite==2019.12.3 pandas==0.24.2 openpyxl==2.6.4
 
 ARG ANACONDA_VERSION="3-latest"
 ENV ANACONDA_HOME=/opt/local/anaconda
@@ -48,7 +48,7 @@ RUN mkdir -p "$ANACONDA_HOME" && \
     rm -f /tmp/Anaconda_Install.sh && \
     conda init bash && \
     source $ANACONDA_HOME/etc/profile.d/conda.sh && \
-    conda create -y -n hcs && \
+    conda create -y -n hcs python=3.9 && \
     conda activate hcs && \
     yum install -y epel-release && \
     yum clean all && \
@@ -56,16 +56,16 @@ RUN mkdir -p "$ANACONDA_HOME" && \
                    ImageMagick \
                    java-1.8.0-openjdk-devel && \
     pip3 install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7 && \
-    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli
+    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli && \
     conda deactivate
 
-ARG BIOFORMATS_TO_RAW_VERSION=0.6.1
+ARG BIOFORMATS_TO_RAW_VERSION=0.4.0
 ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION.zip"
 
-ARG RAW_TO_OMETIFF_VERSION=0.4.1
+ARG RAW_TO_OMETIFF_VERSION=0.3.0
 ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION.zip"
 
-ARG BFTOOLS_VERSION=6.13.0
+ARG BFTOOLS_VERSION=6.8.0
 ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
 ENV HCS_TOOLS_HOME="/opt/local/hcs-tools"
@@ -85,8 +85,7 @@ RUN mkdir -p "$HCS_TOOLS_HOME" && \
 
 ENV PATH="$HCS_TOOLS_HOME/bftools:$HCS_TOOLS_HOME/bioformats2raw/bin:$HCS_TOOLS_HOME/raw2ometiff/bin:$PATH"
 
-COPY process_hcs_files.py "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py"
-COPY process_hcs_files_cluster.py "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files_cluster.py"
+COPY parser "$HCS_TOOLS_HOME/scripts/parser"
 COPY convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
 COPY start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
 COPY start_cluster.sh "$HCS_TOOLS_HOME/scripts/start_cluster.sh"
