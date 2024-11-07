@@ -100,7 +100,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO switchToCluster() {
-        context().find(byXpath("//a[.='Cluster']")).parent().click();
+        context().find(byXpath("//a[.='All nodes']")).parent().click();
         return new ClusterMenuAO();
     }
 
