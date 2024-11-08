@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests.mixins;
 
-import static com.codeborne.selenide.Condition.exist;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;

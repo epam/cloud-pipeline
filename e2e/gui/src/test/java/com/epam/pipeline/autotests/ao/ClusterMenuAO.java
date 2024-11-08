@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
@@ -301,7 +302,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO checkNodeNotContainsHotNodePoolsLabel(String runId, String poolName) {
-        sortingNodes("Created", "down");
+        sortByDecrease(DATE);
         waitForRunIdAppearing(runId);
         assertFalse(hotPoolLabel(runId, poolName),
                format("Node with runID=%s shouldn't have label with pool %s", runId, poolName)
@@ -310,17 +311,12 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO checkNodeContainsHotNodePoolsLabel(String runId, String poolName) {
-        sortingNodes("Created", "down");
+        sortByDecrease(DATE);
         waitForRunIdAppearing(runId);
         assertTrue(hotPoolLabel(runId, poolName),
                 format("Node with runID=%s should have label with pool %s", runId, poolName)
         );
         return this;
-    }
-
-    public ClusterMenuAO sortingNodes(String column, String sorting) {
-        $(byText(column)).$(className(format("anticon-caret-%s", sorting))).click();
-        return  this;
     }
 
     public boolean nextPageIsExist() {

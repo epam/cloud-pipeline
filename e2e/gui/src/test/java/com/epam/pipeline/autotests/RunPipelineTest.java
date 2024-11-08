@@ -322,17 +322,8 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     }
 
     private void checkNodes() {
-        if (!clusterMenu().context().$$(node()).stream()
-                .filter(not(master()))
-                .collect(toList()).isEmpty()) {
-            clusterMenu().ensureAll(Combiners.select(not(master()), node(), "non-master node"),
-                    contains(button("TERMINATE")));
-        }
-        if (!clusterMenu().context().$$(node()).stream()
-                .filter(master())
-                .collect(toList()).isEmpty()) {
-            clusterMenu().ensureAll(Combiners.select(master(), node(), "master node"),
-                    not(contains(button("TERMINATE"))));
-        }
+        clusterMenu().context().$$(node()).stream()
+                .forEach(node -> clusterMenu().ensure(node, node.is(master()) ?
+                        not(contains(button("TERMINATE"))) : contains(button("TERMINATE"))));
     }
 }
