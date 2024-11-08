@@ -12,6 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Python file with main business logic of hcs-parser.
+It contains different realization of HcsFileParser, currently supported:
+  - HcsTiffFileParser - to parse input directory with strucure:
+                        - hcs_root_folder/
+                          - Images/
+                            - Index.xml
+                            - <part-images-folder1>/
+                              - <img1>.tiff
+                              - <img1>.tiff
+                              - ...
+                            - <part-images-folder2>/
+                              - <img1>.tiff
+                              - ...
+  - HcsCZIFileParser - to parse input CZI image file
+
+Base logic is the same for all types of hcs_roots, only several internal parts, which is defined as separate functions
+and overrided in each class, are differ (see process_file function)
+"""
+
 import json
 import os
 import datetime

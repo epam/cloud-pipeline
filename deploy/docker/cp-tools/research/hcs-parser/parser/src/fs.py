@@ -21,6 +21,20 @@ import os
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
 from .hcs_entity import HcsRoot, HcsRootType
 
+"""
+Python file used to lookup for all available hcs_roots based on hcs_root_mark parameter, which is actually 
+a postfix in full path of the file in the system. 
+If file with such ending is found - code assumes that hcs_root is found, 
+then depending on type of hcs_root it will calculate hcs_root path.
+
+f.e.:
+  hcs_root_type = CZI hcs_root_mark would be ".czi"
+  So code will track all files with .czi at the end and will return such files as a result
+  
+  hcs_root_type = TIFF hcs_root_mark would be 
+                  "${HCS_PARSING_IMAGE_DIR_NAME}/${HCS_PARSING_INDEX_FILE_NAME}" (by default "Images/Index.xml") 
+  So code will track all such files and will return parent folders of these files as a result
+"""
 
 def get_processing_roots(should_force_processing, hcs_root_mark, hcs_root_type):
     paths_to_hcs_roots = get_list_run_param('HCS_TARGET_PATHS')

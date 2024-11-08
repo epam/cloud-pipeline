@@ -59,13 +59,13 @@ RUN mkdir -p "$ANACONDA_HOME" && \
     pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli && \
     conda deactivate
 
-ARG BIOFORMATS_TO_RAW_VERSION=0.4.0
+ARG BIOFORMATS_TO_RAW_VERSION=0.6.1
 ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION.zip"
 
-ARG RAW_TO_OMETIFF_VERSION=0.3.0
+ARG RAW_TO_OMETIFF_VERSION=0.4.1
 ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION.zip"
 
-ARG BFTOOLS_VERSION=6.8.0
+ARG BFTOOLS_VERSION=6.13.0
 ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
 ENV HCS_TOOLS_HOME="/opt/local/hcs-tools"
@@ -74,10 +74,14 @@ RUN mkdir -p "$HCS_TOOLS_HOME" && \
     wget -q "$BIOFORMATS_TO_RAW_DISTR_URL" -O "$HCS_TOOLS_HOME/bioformats2raw.zip" && \
     unzip "$HCS_TOOLS_HOME/bioformats2raw.zip" -d "$HCS_TOOLS_HOME/bioformats2raw" && \
     rm -f "$HCS_TOOLS_HOME/bioformats2raw.zip" && \
+    mv "$HCS_TOOLS_HOME/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION/*" "$HCS_TOOLS_HOME/bioformats2raw" && \
+    rm -rf "$HCS_TOOLS_HOME/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION" && \
     chmod +x "$HCS_TOOLS_HOME/bioformats2raw/bin/bioformats2raw" && \
     wget -q "$RAW_TO_OMETIFF_DISTR_URL" -O "$HCS_TOOLS_HOME/raw2ometiff.zip" && \
     unzip "$HCS_TOOLS_HOME/raw2ometiff.zip" -d "$HCS_TOOLS_HOME/raw2ometiff" && \
     rm -f "$HCS_TOOLS_HOME/raw2ometiff.zip" && \
+    mv "$HCS_TOOLS_HOME/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION/*" $HCS_TOOLS_HOME/raw2ometiff && \
+    rm -rf "$HCS_TOOLS_HOME/raw2ometiff-$RAW_TO_OMETIFF_VERSION" && \
     chmod +x "$HCS_TOOLS_HOME/raw2ometiff/bin/raw2ometiff" && \
     wget "$BFTOOLS_DISTR_URL" -O "$HCS_TOOLS_HOME/bftools-cli.zip" && \
     unzip "$HCS_TOOLS_HOME/bftools-cli.zip" -d "$HCS_TOOLS_HOME" && \

@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This python file is one of the entry point to the hcs-parser.
+Used when you need to run image processing in cluster to process several images in parallel.
+
+Firstly it will find all hcs_roots to process based on:
+  HCS_TARGET_PATHS - exact locations of hcs roots
+  or
+  HCS_LOOKUP_DIRECTORIES - folders to search to find all hcs_roots
+  and
+  HCS_ROOT_TYPE - Currently TIFF and CZI are supported, based on this parameter hcs-parser defines how to
+                  search hcs_roots and later how to perform some of the image generation steps
+                  (see process_hcs_files.py and processors.py)
+
+Secondly script, based on HCS_ASYNC_PROCESSING property, will run SGE job or execute pipe run command
+to run additional node which will execute process_hcs_files.py with specified HCS_TARGET_PATHS
+to run actual image generation
+"""
 import os
 import math
 from pipeline.api import PipelineAPI

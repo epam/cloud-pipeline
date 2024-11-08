@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This python file is one of the entry point to the hcs-parser.
+Used when you need to run image processing on one node,
+also used by process_hcs_files_cluster.py to run processing of particular hcs_roots.
+
+Firstly it will find all hcs_roots to process based on:
+  HCS_TARGET_PATHS - exact locations of hcs roots
+  or
+  HCS_LOOKUP_DIRECTORIES - folders to search to find all hcs_roots
+  and
+  HCS_ROOT_TYPE - Currently TIFF and CZI are supported, based on this parameter hcs-parser defines how to
+                  search hcs_roots and later how to perform some of the image generation steps
+                  (see process_hcs_files.py and processors.py)
+
+Secondly script, based on HCS_ROOT_TYPE property, will initiate one of HcsFileParser (see processors.py) to run processing
+"""
+
 import os
 import multiprocessing
 import traceback
