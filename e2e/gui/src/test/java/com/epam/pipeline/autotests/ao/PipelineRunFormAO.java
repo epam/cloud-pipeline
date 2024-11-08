@@ -158,7 +158,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setCommand(String command) {
-        if(get(START_IDLE).$x("./span").has(cssClass("ant-checkbox-checked"))) {
+        if (get(START_IDLE).$x("./span").has(cssClass("ant-checkbox-checked"))) {
             click(START_IDLE);
         }
         SelenideElement defaultCommand = get(DEFAULT_COMMAND);
@@ -405,11 +405,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
         $(byText(parameterType)).shouldBe(visible).click();
 
-        String str = $(byId("launch-pipeline-parameters-panel"))
-                .$$(byClassName("launch-pipeline-form__parameter-name-container")).last().$x(".//input").getAttribute("id");
+        final String parameterId = $(byId("launch-pipeline-parameters-panel"))
+                .$$(byClassName("launch-pipeline-form__parameter-name-container")).last().$x(".//input")
+                .getAttribute("id");
 
-        parameterIndex = Integer.valueOf(str.replaceAll("\\D+", ""));
-
+        parameterIndex = Integer.parseInt(parameterId.replaceAll("\\D+", ""));
 
         return new RunParameterAO(this, parameterIndex);
     }

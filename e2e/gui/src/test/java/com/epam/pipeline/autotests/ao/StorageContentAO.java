@@ -440,7 +440,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public MetadataSectionAO showMetadata() {
         click(ACTIONS);
-        if(get(SHOW_METADATA).$(className("anticon-check")).exists()) {
+        if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
             return new MetadataSectionAO(this);
         }
         click(SHOW_METADATA);

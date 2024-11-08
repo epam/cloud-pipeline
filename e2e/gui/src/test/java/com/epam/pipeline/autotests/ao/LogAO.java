@@ -110,11 +110,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO ssh(final Consumer<ShellAO> shell) {
-        if(SSH_CLOUD_REGION.equals("")) {
-            shell.accept(clickOnSshLink());
-        } else {
-            shell.accept(clickOnSelectedRegionLink());
-        }
+        shell.accept(SSH_CLOUD_REGION.isEmpty() ? clickOnSshLink() : clickOnSelectedRegionLink());
         return this;
     }
 
@@ -487,8 +483,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO checkMountLimitsParameter(String...storages) {
-        Arrays.stream(storages)
-                .forEach(storage -> cpCapLimitMountsParameter(storage));
+        Arrays.stream(storages).forEach(this::cpCapLimitMountsParameter);
         return this;
     }
 
@@ -517,7 +512,7 @@ public class LogAO implements AccessObject<LogAO> {
         String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
                         .asPredicate()).findFirst().toString();
         Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
-        assert matcher.find();
+        assertTrue(matcher.find(), "Available storages were not found.");
         int res = Integer.parseInt(matcher.group().replace(" ", ""));
         assertTrue(res >= count,
                format("Available storages count (actual %s) should be more or equal %s", res, count));

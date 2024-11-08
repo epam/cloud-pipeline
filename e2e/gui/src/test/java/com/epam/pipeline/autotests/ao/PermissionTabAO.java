@@ -90,7 +90,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     private void clickOnInfoTabIfItIsVisible() {
         sleep(1, SECONDS);
         SelenideElement infoTab = $$(byText("Info")).findBy(visible);
-        if(infoTab.is(visible)) {
+        if (infoTab.is(visible)) {
             infoTab.click();
         }
     }
@@ -143,8 +143,8 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
     @Override
     public void closeAll() {
-        SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
-        if(applyButton.isEnabled()) {
+        final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+        if (applyButton.isEnabled()) {
             applyButton.click();
         }
         clickOnInfoTabIfItIsVisible();
