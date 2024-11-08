@@ -301,6 +301,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO checkNodeNotContainsHotNodePoolsLabel(String runId, String poolName) {
+        sortingNodes("Created", "down");
         waitForRunIdAppearing(runId);
         assertFalse(hotPoolLabel(runId, poolName),
                format("Node with runID=%s shouldn't have label with pool %s", runId, poolName)
@@ -309,11 +310,17 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO checkNodeContainsHotNodePoolsLabel(String runId, String poolName) {
+        sortingNodes("Created", "down");
         waitForRunIdAppearing(runId);
         assertTrue(hotPoolLabel(runId, poolName),
                 format("Node with runID=%s should have label with pool %s", runId, poolName)
         );
         return this;
+    }
+
+    public ClusterMenuAO sortingNodes(String column, String sorting) {
+        $(byText(column)).$(className(format("anticon-caret-%s", sorting))).click();
+        return  this;
     }
 
     public boolean nextPageIsExist() {
