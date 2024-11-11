@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -721,6 +722,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         } else {
                             click(CANCEL);
                         }
+                        $(className("edit-user-roles-dialog__modal-container"))
+                                .waitUntil(not(visible), DEFAULT_TIMEOUT);
                         return parentAO;
                     }
 

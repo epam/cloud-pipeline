@@ -219,17 +219,6 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new ConfigureClusterPopupAO(this);
     }
 
-    public PipelineRunFormAO addOutputParameter(String name, String value) {
-        resetMouse();
-        clickAddOutputParameter().setName("parameter");
-
-        int paramIndex = $$(byClassName("launch-pipeline-form__parameter-name")).size();
-        SelenideElement parameter = $(byId(String.format("parameters.params.param_%d.value", paramIndex - 1)));
-        parameter.click();
-        setValue(parameter, value);
-        return this;
-    }
-
     public void launchAndWaitUntilFinished(AbstractSinglePipelineRunningTest test) {
         launch(test)
                 .showLogForce(test.getRunId())
@@ -346,25 +335,6 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
-        final String parameterNameClass = "launch-pipeline-form__parameter-name";
-        final SelenideElement nameElement = $(byXpath(format(
-            ".//input[contains(concat(' ', @class, ' '), ' %s ') and @value = '%s']",
-            parameterNameClass, name
-        )));
-        final String parameterNameId = nameElement.should(exist).getAttribute("id");
-        final String parameterValueId = parameterNameId.replace("name", "value");
-        final SelenideElement valueElement = $(byId(parameterValueId)).should(exist, have(attribute("value", value)));
-
-        if (type == ParameterType.STRING) {
-            valueElement.parent().shouldHave(cssClass("ant-form-item-control"));
-        } else {
-            valueElement.closest("span").find("i").shouldHave(cssClass(type.iconClass));
-        }
-
-        return this;
-    }
-
     public void validateException(String exception) {
         $(".ant-alert-message").shouldHave(text(exception));
     }
@@ -438,6 +408,36 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         String inputFieldID = $(byXpath(format("//input[@value='%s']", parameter))).attr("id")
                 .replace(".name", ".value");
         $(byXpath(format("//input[@id='%s']", inputFieldID))).shouldBe(enabled).setValue(value);
+        return this;
+    }
+
+    public PipelineRunFormAO addOutputParameter(String name, String value) {
+        resetMouse();
+        clickAddOutputParameter().setName(name);
+
+        int paramIndex = $$(byClassName("launch-pipeline-form__parameter-name")).size();
+        SelenideElement parameter = $(byId(String.format("parameters.params.param_%d.value", paramIndex - 1)));
+        parameter.click();
+        setValue(parameter, value);
+        return this;
+    }
+
+    public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
+        final String parameterNameClass = "launch-pipeline-form__parameter-name";
+        final SelenideElement nameElement = $(byXpath(format(
+                ".//input[contains(concat(' ', @class, ' '), ' %s ') and @value = '%s']",
+                parameterNameClass, name
+        )));
+        final String parameterNameId = nameElement.should(exist).getAttribute("id");
+        final String parameterValueId = parameterNameId.replace("name", "value");
+        final SelenideElement valueElement = $(byId(parameterValueId)).should(exist, have(attribute("value", value)));
+
+        if (type == ParameterType.STRING) {
+            valueElement.parent().shouldHave(cssClass("ant-form-item-control"));
+        } else {
+            valueElement.closest("span").find("i").shouldHave(cssClass(type.iconClass));
+        }
+
         return this;
     }
 

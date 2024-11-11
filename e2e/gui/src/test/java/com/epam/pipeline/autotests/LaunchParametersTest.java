@@ -177,7 +177,8 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .validateNotFoundParameters()
                                 .cancel()
                                 .clickCustomParameter()
-                                .setName(CP_FSBROWSER_ENABLED, 1)
+                                .setName(CP_FSBROWSER_ENABLED)
+                                .close()
                                 .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
                 );
         tools()
@@ -189,6 +190,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .cancel()
                                 .clickAddStringParameter()
                                 .setName(CP_FSBROWSER_ENABLED)
+                                .close()
                                 .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
                 );
     }
@@ -242,7 +244,8 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .selectSystemParameters(CP_FSBROWSER_ENABLED)
                                 .cancel()
                                 .clickCustomParameter()
-                                .setName(CP_FSBROWSER_ENABLED, 1)
+                                .setName(CP_FSBROWSER_ENABLED)
+                                .close()
                                 .messageShouldAppear(PARAMETER_IS_RESERVED)
                 );
         tools()
@@ -253,6 +256,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .cancel()
                                 .clickAddStringParameter()
                                 .setName(CP_FSBROWSER_ENABLED)
+                                .close()
                                 .messageShouldAppear(NAME_IS_RESERVED)
                 );
     }
@@ -548,7 +552,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .searchForUserEntry(user.login)
                 .edit()
                 .addAllowedLaunchOptions("Allowed instance types mask", mask)
-                .sleep(2, SECONDS)
+                .sleep(3, SECONDS)
                 .ok();
     }
 

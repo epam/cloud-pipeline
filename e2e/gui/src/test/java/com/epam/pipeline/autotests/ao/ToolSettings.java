@@ -16,14 +16,13 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import static com.codeborne.selenide.Condition.have;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -32,6 +31,10 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Selenide.$$x;
+import static com.codeborne.selenide.Selenide.$x;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -44,14 +47,18 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static java.lang.Integer.parseInt;
+import static java.lang.String.format;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
 
     private final Map<Primitive, SelenideElement> elements;
+    private int parameterIndex = 0;
 
     public ToolSettings(final ToolGroup toolGroup, final String toolName) {
         super(toolGroup, toolName);
@@ -231,21 +238,36 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return new PipelineRunFormAO.SystemParameterPopupAO<>(this);
     }
 
-    public ToolSettings clickCustomParameter() {
+    public ToolParameterAO clickCustomParameter() {
         return clickAddParameter("String parameter");
     }
 
-    private ToolSettings clickAddParameter(String parameterType) {
+    private ToolParameterAO clickAddParameter(String parameterType) {
         $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
         $(byText(parameterType)).shouldBe(visible).click();
+        parameterIndex = parseInt($$x(".//div[contains(@id,'parameters.params.param_')]")
+                .last().getAttribute("id").replaceAll("\\D+", ""));
+        return new ToolParameterAO(this, parameterIndex);
+    }
+
+    public ToolParameterAO getParameterByIndex(int parameterIndex) {
+        return new ToolParameterAO(this, parameterIndex);
+    }
+
+    public ToolParameterAO getParameterByName(final String name) {
+        parameterIndex = parseInt($x(format(".//input[contains(@id, '.name') and contains(@value, '%s')]", name))
+                .getAttribute("id").replaceAll("\\D+", ""));
+        return new ToolParameterAO(this, parameterIndex);
+    }
+
+    public ToolSettings validateDisabledParameter(final String parameter) {
+        getParameterByName(parameter).get(REMOVE_PARAMETER)
+                .has(not(exist));
         return this;
     }
 
-    public ToolSettings setName(String name, int parameterIndex) {
-        SelenideElement nameField = $(byId(String.format("parameters.params.param_%d.name", parameterIndex)));
-        nameField.click();
-        setValue(nameField, name);
-        return this;
+    public ToolSettings deleteParameter(final String parameter) {
+        return getParameterByName(parameter).deleteParameter();
     }
 
     @Override
@@ -274,20 +296,6 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 
-    public ToolSettings validateDisabledParameter(final String parameter) {
-        ensure(byValue(parameter), cssClass("ant-input-disabled"));
-        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
-                .shouldHave(Condition.not(visible));
-        return this;
-    }
-
-    public ToolSettings deleteParameter(final String parameter) {
-        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
-                .shouldBe(visible)
-                .click();
-        return this;
-    }
-
     public ToolSettings checkCustomCapability(final String capability, final boolean disable) {
         final SelenideElement capabilityElement = $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability));
@@ -312,4 +320,46 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 .shouldHave(Condition.text(text));
         return this;
     }
+
+    public static class ToolParameterAO extends ParameterFieldAO {
+
+            private final Map<Primitive, SelenideElement> elements;
+            private final ToolSettings toolSettings;
+
+            public ToolParameterAO(ToolSettings toolSettings, int parameterIndex) {
+                super(parameterByIndex(parameterIndex));
+                this.toolSettings = toolSettings;
+
+                this.elements = initialiseElements(
+                        entry(PARAMETER_NAME, $x(format(".//input[contains(@id,'.params.param_%d.name')]", parameterIndex))),
+                        entry(PARAMETER_VALUE, $x(format(".//input[contains(@id,'.params.param_%d.value')]", parameterIndex))),
+                        entry(REMOVE_PARAMETER, $x(format(".//div[contains(@id,'.params.param_%d')]", parameterIndex))
+                                .find(byId("remove-parameter-button")))
+                );
+            }
+
+        public ToolParameterAO setName(String name) {
+            get(PARAMETER_NAME).click();
+            return (ToolParameterAO) setValue(get(PARAMETER_NAME), name);
+        }
+
+        public ToolParameterAO setValue(String value) {
+            return (ToolParameterAO) setValue(this.valueInput, value);
+        }
+
+        public ToolSettings close() {
+            return toolSettings;
+        }
+
+        public ToolSettings deleteParameter() {
+            get(REMOVE_PARAMETER).click();
+            return toolSettings;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+    }
+
 }
