@@ -328,7 +328,7 @@ class HcsTiffFileParser(HcsFileParser):
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
         plate_height = 1
         plate_width = 1
-        plate_details = HcsFileParser.extract_plate_from_ome_xml(xml_info_tree)
+        plate_details = HcsTiffFileParser.extract_plate_from_ome_xml(xml_info_tree)
         if plate_details:
             plate_width = plate_details.get('Columns')
             plate_height = plate_details.get('Rows')
