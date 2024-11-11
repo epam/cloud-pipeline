@@ -426,7 +426,7 @@ class HcsTiffFileParser(HcsFileParser):
                 well_details = wells_mapping[coords_key]
                 well_details['well_overview'] = well_image_id
                 wells_mapping[coords_key] = well_details
-        return HcsFileParser.ordered_by_coords(wells_mapping)
+        return HcsTiffFileParser.ordered_by_coords(wells_mapping)
 
     def build_well_details(self, fields_list, well_size, is_well_round, well, well_tags):
         x_coords = set()
@@ -465,7 +465,7 @@ class HcsTiffFileParser(HcsFileParser):
             'width': well_view_width,
             'height': well_view_height,
             'round_radius': round(well_viewer_radius, 2) if is_well_round else None,
-            'to_ome_wells_mapping': HcsFileParser.ordered_by_coords(to_ome_mapping),
+            'to_ome_wells_mapping': HcsTiffFileParser.ordered_by_coords(to_ome_mapping),
             'field_size': well.get_field_size(),
             'coordinates': coordinates,
             'tags': well_tags
@@ -857,9 +857,9 @@ class HcsTiffFileParser(HcsFileParser):
     @staticmethod
     def calculate_wells_padding_for_ome(hcs_xml_info_root, ome_xml_info_root):
         wells_x_padding_hcs, \
-            wells_y_padding_hcs = HcsFileParser.extract_first_well_coordinates_hcs_xml(hcs_xml_info_root)
+            wells_y_padding_hcs = HcsTiffFileParser.extract_first_well_coordinates_hcs_xml(hcs_xml_info_root)
         wells_x_padding_ome, \
-            wells_y_padding_ome = HcsFileParser.extract_first_well_coordinates_ome_xml(ome_xml_info_root)
+            wells_y_padding_ome = HcsTiffFileParser.extract_first_well_coordinates_ome_xml(ome_xml_info_root)
         return wells_x_padding_hcs - wells_x_padding_ome, wells_y_padding_hcs - wells_y_padding_ome
 
     @staticmethod
@@ -881,7 +881,7 @@ class HcsTiffFileParser(HcsFileParser):
     def extract_first_well_coordinates_ome_xml(ome_xml_info_root):
         well_x = sys.maxint
         well_y = sys.maxint
-        ome_plate = HcsFileParser.extract_plate_from_ome_xml(ome_xml_info_root)
+        ome_plate = HcsTiffFileParser.extract_plate_from_ome_xml(ome_xml_info_root)
         ome_schema_prefix = HcsParsingUtils.extract_xml_schema(ome_xml_info_root)
         for well in ome_plate.findall(ome_schema_prefix + 'Well'):
             well_x_coord = int(well.get('Column'))
@@ -914,7 +914,7 @@ class HcsTiffFileParser(HcsFileParser):
     @staticmethod
     def ordered_by_coords(dictionary):
         return OrderedDict(sorted(dictionary.items(),
-                                  key=cmp_to_key(lambda c1, c2: HcsFileParser.compare_planar_2d_coords_key(c1, c2))))
+                                  key=cmp_to_key(lambda c1, c2: HcsTiffFileParser.compare_planar_2d_coords_key(c1, c2))))
 
 class HcsCZIFileParser(HcsFileParser):
 
