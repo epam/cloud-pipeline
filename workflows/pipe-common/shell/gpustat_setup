@@ -17,7 +17,50 @@
 echo "Setup gpustat"
 echo "-"
 
-_GPUSTAT_HOME="${1:-/usr/cpbin/gpustat-dist}"
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    key="$1"
+
+case $key in
+    --home-dir)
+    export _GPUSTAT_HOME="$2"
+    shift
+    shift
+    ;;
+    --port)
+    export CP_GPUSTAT_PORT="$2"
+    shift
+    shift
+    ;;
+    --data-refresh-interval-sec)
+    export CP_GPUSTAT_REFRESH_INTERVAL="$2"
+    shift
+    shift
+    ;;
+    --hosts-refresh-interval-sec)
+    export CP_GPUSTAT_TIMEOUT="$2"
+    shift
+    shift
+    ;;
+    --type)
+    export _CP_GPUSTAT_TYPE="$2" # gpu, slurm, sge, kube
+    shift
+    shift
+    ;;
+    --multi-host)
+    export _GPUSTAT_MULTI_HOST=1
+    shift
+    ;;
+    *)
+    POSITIONAL+=("$1")
+    shift
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}"
+
+
+_GPUSTAT_HOME="${_GPUSTAT_HOME:-/usr/cpbin/gpustat-dist}"
 _GPUSTAT_HOME_WEB="$_GPUSTAT_HOME/app"
 if [ ! -d "$_GPUSTAT_HOME_WEB" ]; then
     echo "[ERROR] gpustat web home directory $_GPUSTAT_HOME_WEB does not exist, probably a corrupted installation. Exiting..."
@@ -27,41 +70,60 @@ fi
 CP_GPUSTAT_PORT="${CP_GPUSTAT_PORT:-8092}"
 CP_GPUSTAT_REFRESH_INTERVAL="${CP_GPUSTAT_REFRESH_INTERVAL:-10}"
 CP_GPUSTAT_TIMEOUT="${CP_GPUSTAT_TIMEOUT:-30}"
-CP_GPUSTAT_PID_FILE="${CP_GPUSTAT_PID_FILE:-/var/run/gpustat.pid}"
+_CP_GPUSTAT_TYPE="${_CP_GPUSTAT_TYPE:-gpu}"
+CP_GPUSTAT_PID_FILE="${CP_GPUSTAT_PID_FILE:-/var/run/gpustat-${_CP_GPUSTAT_TYPE}.pid}"
+_CP_GPUSTAT_LOG_FILE="/var/log/gpustat-${_CP_GPUSTAT_TYPE}.log"
+
+if [ "$_CP_GPUSTAT_TYPE" != "gpu" ]; then
+    _CP_GPUSTAT_CMD="--exec \"gpustat-$_CP_GPUSTAT_TYPE\""
+fi
 
 # Print the startup summary
 echo "- Port:               $CP_GPUSTAT_PORT"
 echo "- Data refresh(s):    $CP_GPUSTAT_REFRESH_INTERVAL"
 echo "- Recheck timeout(s): $CP_GPUSTAT_TIMEOUT"
 echo "- Pid file:           $CP_GPUSTAT_PID_FILE"
+echo "- Type:               $_CP_GPUSTAT_TYPE"
+echo "- CMD:                $_CP_GPUSTAT_CMD"
+echo "- Multi host:         $_GPUSTAT_MULTI_HOST"
 
-_GPUSTAT_HOSTS=
-DEFAULT_HOSTFILE=${DEFAULT_HOSTFILE:-/common/hostfile}
+if [ "$_GPUSTAT_MULTI_HOST" ]; then
+    _GPUSTAT_HOSTS=
+    DEFAULT_HOSTFILE=${DEFAULT_HOSTFILE:-/common/hostfile}
+    echo "[INFO] --> Multi host mode is enabled. Will monitor ${DEFAULT_HOSTFILE} for changes."
 
-while true; do
-    if [ ! -f "$DEFAULT_HOSTFILE" ]; then
-        _GPUSTAT_HOSTS_NEW=$(hostname)
-    else
-        _GPUSTAT_HOSTS_NEW=$(echo $(cat $DEFAULT_HOSTFILE))
-    fi
+    while true; do
+        if [ ! -f "$DEFAULT_HOSTFILE" ]; then
+            _GPUSTAT_HOSTS_NEW=$(hostname)
+        else
+            _GPUSTAT_HOSTS_NEW=$(echo $(cat $DEFAULT_HOSTFILE))
+        fi
 
-    if [ "$_GPUSTAT_HOSTS" == "$_GPUSTAT_HOSTS_NEW" ]; then
-        continue
-    fi
+        if [ "$_GPUSTAT_HOSTS" == "$_GPUSTAT_HOSTS_NEW" ]; then
+            continue
+        fi
 
-    _GPUSTAT_HOSTS="$_GPUSTAT_HOSTS_NEW"
-    echo "[INFO] A list of hosts has changed, new list: $_GPUSTAT_HOSTS_NEW"
-    echo "[INFO] (re)Starting gpustat"
-    if [ -f "$CP_GPUSTAT_PID_FILE" ]; then
-        echo "[INFO] --> gpustat is already running, stopping pid $CP_GPUSTAT_PID_FILE"
-        kill $(cat $CP_GPUSTAT_PID_FILE)
-    fi
+        _GPUSTAT_HOSTS="$_GPUSTAT_HOSTS_NEW"
+        echo "[INFO] A list of hosts has changed, new list: $_GPUSTAT_HOSTS_NEW"
+        echo "[INFO] (re)Starting gpustat"
+        if [ -f "$CP_GPUSTAT_PID_FILE" ]; then
+            echo "[INFO] --> gpustat is already running, stopping pid $CP_GPUSTAT_PID_FILE"
+            kill $(cat $CP_GPUSTAT_PID_FILE)
+        fi
 
-    echo "[INFO] --> Starting a new instance of gpustat"
+        echo "[INFO] --> Starting a new instance of gpustat ($_CP_GPUSTAT_TYPE)"
+        cd "$_GPUSTAT_HOME_WEB"
+        nohup gpustat-web --port "$CP_GPUSTAT_PORT" \
+                        --interval "$CP_GPUSTAT_REFRESH_INTERVAL" $_CP_GPUSTAT_CMD $_GPUSTAT_HOSTS >> "$_CP_GPUSTAT_LOG_FILE" 2>&1 &
+        echo $! > "$CP_GPUSTAT_PID_FILE"
+
+        sleep "$CP_GPUSTAT_TIMEOUT"
+    done
+else
+    echo "[INFO] --> Single host mode is enabled."
+
+    echo "[INFO] --> Starting a new instance of gpustat ($_CP_GPUSTAT_TYPE)"
     cd "$_GPUSTAT_HOME_WEB"
     nohup gpustat-web --port "$CP_GPUSTAT_PORT" \
-                      --interval "$CP_GPUSTAT_REFRESH_INTERVAL" $_GPUSTAT_HOSTS >> /var/log/gpustat.log 2>&1 &
-    echo $! > "$CP_GPUSTAT_PID_FILE"
-
-    sleep "$CP_GPUSTAT_TIMEOUT"
-done
+                      --interval "$CP_GPUSTAT_REFRESH_INTERVAL" $_CP_GPUSTAT_CMD >> "$_CP_GPUSTAT_LOG_FILE" 2>&1 &
+fi

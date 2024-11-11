@@ -37,7 +37,7 @@ python3 ./waf all
 cd \$_BUILD_TMP
 git clone https://github.com/sidoruka/gpustat-web
 cd gpustat-web
-git checkout 4eaeeab78bb531eb38d71c3081430ac4af121c64
+git checkout 087eeca44f0678cfb05abfd69864f03567f834e9
 cat > requirements.txt <<EOF
 six==1.7
 termcolor
