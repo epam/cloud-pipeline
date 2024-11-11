@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import os
+from pipeline.common.noverify_kubernetes import NoVerify_Kube_Client
 
 try:
     from pykube.config import KubeConfig
-    from pykube.http import HTTPClient
     from pykube.http import HTTPError
     from pykube.objects import Pod
     from pykube.objects import Event
@@ -39,9 +39,7 @@ class PodModel:
 class Kubernetes:
 
     def __init__(self):
-        if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
-            os.environ['REQUESTS_CA_BUNDLE'] = ''
-        self.__kube_api = HTTPClient(KubeConfig.from_service_account())
+        self.__kube_api = NoVerify_Kube_Client.get_client(KubeConfig.from_service_account())
         self.__kube_api.session.verify = False
 
     def get_pod(self, run_id):

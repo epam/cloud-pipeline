@@ -16,6 +16,7 @@ from time import sleep
 
 import pykube
 from pipeline.autoscaling import utils
+from pipeline.common.noverify_kubernetes import NoVerify_Kube_Client
 import re
 
 RUN_ID_LABEL = 'runid'
@@ -27,9 +28,9 @@ class KubeProvider(object):
 
     def __init__(self):
         try:
-            self.api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+            self.api = NoVerify_Kube_Client.get_client(pykube.KubeConfig.from_service_account())
         except Exception:
-            self.api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
+            self.api = NoVerify_Kube_Client.get_client(pykube.KubeConfig.from_file("~/.kube/config"))
         self.api.session.verify = False
 
     def get_nodename(self, nodename):

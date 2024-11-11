@@ -29,10 +29,10 @@ import ast
 
 from . import api
 from .storage import S3Bucket
+from .common import NoVerify_Kube_Client
 
 try:
     from pykube.config import KubeConfig
-    from pykube.http import HTTPClient
     from pykube.http import HTTPError
     from pykube.objects import Pod
     from pykube.objects import Event
@@ -221,11 +221,12 @@ class KubernetesTask(PipelineApiTask):
 
     def _init_kubernetes(self):
         if self.auth_method == "kubeconfig":
-            self.__kube_api = HTTPClient(KubeConfig.from_file(self.kubeconfig_path))
+            self.__kube_api = NoVerify_Kube_Client.get_client(KubeConfig.from_file(self.kubeconfig_path))
         elif self.auth_method == "service-account":
-            self.__kube_api = HTTPClient(KubeConfig.from_service_account())
+            self.__kube_api = NoVerify_Kube_Client.get_client(KubeConfig.from_service_account())
         else:
             raise ValueError("Illegal auth_method")
+        self.__kube_api.session.verify = False
         self.create_id()
 
     @property

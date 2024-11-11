@@ -17,6 +17,8 @@ from pipeline.log import Logger
 import os
 import uuid
 
+from pipeline.common.noverify_kubernetes import NoVerify_Kube_Client
+
 try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
@@ -34,7 +36,7 @@ class PodLauncher:
     __RUNNING_STATUS = 'Running'
 
     def __init__(self, task_name=None):
-        self.kube_api = HTTPClient(KubeConfig.from_service_account())
+        self.kube_api = NoVerify_Kube_Client.get_client(KubeConfig.from_service_account())
         self.kube_api.session.verify = False
         if task_name:
             self.task_name = task_name

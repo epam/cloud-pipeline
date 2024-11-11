@@ -81,7 +81,7 @@ systemctl start kubepods-besteffort.slice
 systemctl start kubepods-burstable.slice
 
 # Removing the proxies to connect to the master directly
-unset http_proxy https_proxy no_proxy
+unset http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY
 
 kubeadm join --token $CP_CAP_KUBE_MASTER_TOKEN $_kube_master_ip:$CP_CAP_KUBE_MASTER_API_PORT --discovery-token-unsafe-skip-ca-verification --ignore-preflight-errors all
 if [ $? -ne 0 ]; then

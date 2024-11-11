@@ -186,7 +186,7 @@ bkp_http_proxy="$http_proxy"
 bkp_https_proxy="$https_proxy"
 bkp_no_proxy="$no_proxy"
 if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
-  unset http_proxy https_proxy no_proxy
+  unset http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY
 fi
 
 ######################################
@@ -421,11 +421,45 @@ fi
 # Update the /etc/resolv.conf with the Kube's DNS IP
 #############################################################
 if [ "$CP_CAP_KUBE_DNS_ADD_TO_HOST" == "true" ]; then
+    _external_dns=$(cat /etc/resolv.conf | grep -im 1 '^nameserver' | cut -d ' ' -f2)
+    if [ $? -ne 0 ] || [ -z "$_external_dns" ]; then
+        _external_dns="10.96.0.10"
+    fi
+
     \cp /etc/resolv.conf /tmp/resolv.conf
+    \cp /etc/resolv.conf /tmp/resolv.conf.orig
     sed -i "/$CP_CAP_KUBE_DNS_IP/d" /tmp/resolv.conf
-    echo "nameserver $CP_CAP_KUBE_DNS_IP" >> /tmp/resolv.conf
-    echo "options rotate" >> /tmp/resolv.conf
+    sed -i "/options rotate/d" /tmp/resolv.conf
+
+    if [ "$_dns_plugin" == "coredns" ]; then
+        # Here we fix "forward" option of CoreDNS to point to the external IP instead of a defailt /etc/resolv.conf
+        # https://coredns.io/plugins/forward/
+        kubectl get cm coredns -n kube-system -o yaml > /tmp/coredns.yaml.orig
+        sed "s|/etc/resolv.conf|$_external_dns|g" /tmp/coredns.yaml.orig > /tmp/coredns.yaml
+        kubectl replace -n kube-system -f /tmp/coredns.yaml
+        if [ $? -eq 0 ]; then
+            pipe_log_info "Core DNS is configured to use $_external_dns upstream" "$KUBE_MASTER_SETUP_TASK"
+        else
+            pipe_log_warn "[WARN] Cannot set $_external_dns upstream for Core DNS" "$KUBE_MASTER_SETUP_TASK"
+        fi
+        kubectl rollout restart -n kube-system deployment/coredns
+        pipe_log_info "Core DNS has been restarted to pickup any changes to the configuration" "$KUBE_MASTER_SETUP_TASK"
+
+        # Once done - we can use Core DNS resolver as for the whole node, as it will proxy requests
+        # to the external DNS
+        sed -i "1 i\nameserver $CP_CAP_KUBE_DNS_IP" /tmp/resolv.conf
+    else
+        echo "nameserver $CP_CAP_KUBE_DNS_IP" >> /tmp/resolv.conf
+        echo "options rotate" >> /tmp/resolv.conf
+    fi
+
     \cp /tmp/resolv.conf /etc/resolv.conf
+
+    if [ $? -eq 0 ]; then
+        pipe_log_info "$CP_CAP_KUBE_DNS_IP is set as a default DNS resolver" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_warn "[WARN] Cannot set $CP_CAP_KUBE_DNS_IP as a default DNS resolver" "$KUBE_MASTER_SETUP_TASK"
+    fi
 fi
 
 (
