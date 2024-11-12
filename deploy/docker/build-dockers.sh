@@ -150,6 +150,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-monitoring-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_MONITORING_SRV_DIST_NAME"
 
+# EDGE
+CP_EDGE_DIST_NAME=${CP_EDGE_DIST_NAME:-"$CP_DIST_REPO_NAME:edge-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-edge \
+                -t "$CP_EDGE_DIST_NAME"
+docker push "$CP_EDGE_DIST_NAME"
+
 # Basic IdP
 CP_IDP_DIST_NAME=${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-idp \
@@ -161,12 +167,6 @@ CP_IDP_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_V
 docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry \
                 -t "$CP_IDP_DIST_NAME"
 docker push "$CP_IDP_DIST_NAME"
-
-# EDGE
-CP_EDGE_DIST_NAME=${CP_EDGE_DIST_NAME:-"$CP_DIST_REPO_NAME:edge-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-edge \
-                -t "$CP_EDGE_DIST_NAME"
-docker push "$CP_EDGE_DIST_NAME"
 
 # Docker comp
 CP_DOCKER_COMP_DIST_NAME=${CP_DOCKER_COMP_DIST_NAME:-"$CP_DIST_REPO_NAME:docker-comp-${DOCKERS_VERSION}"}

@@ -56,7 +56,7 @@
     "friendly_name" : "SGEStat",
     "conflicting_param": [
       "CP_EXTERNAL_APP",
-      "parent-id"
+      "parent_id"
     ]
   },
   {
@@ -68,7 +68,7 @@
     "friendly_name" : "SLURMStat",
     "conflicting_param": [
       "CP_EXTERNAL_APP",
-      "parent-id"
+      "parent_id"
     ]
   },
   {
@@ -80,7 +80,7 @@
     "friendly_name" : "KUBEStat",
     "conflicting_param": [
       "CP_EXTERNAL_APP",
-      "parent-id"
+      "parent_id"
     ]
   }
 ]
