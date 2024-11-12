@@ -38,10 +38,49 @@
   {
     "name": "CP_GPU_COUNT",
     "value": ">0",
-    "endpoint_env": "CP_CAP_GPUSTAT_PORT",
+    "endpoint_env": "CP_GPUSTAT_PORT_GPU",
     "endpoint_default" : "8092",
-    "endpoint_num_env": "CP_CAP_GPUSTAT_ENDPOINT_ID",
+    "endpoint_num_env": "CP_GPUSTAT_ENDPOINT_ID_GPU",
     "endpoint_num_default" : "1000",
-    "friendly_name" : "GPUStat"
+    "friendly_name" : "GPUStat",
+    "conflicting_param": [
+      "CP_EXTERNAL_APP"
+    ]
+  },
+  {
+    "name": "CP_CAP_SGE",
+    "endpoint_env": "CP_GPUSTAT_PORT_SGE",
+    "endpoint_default" : "8093",
+    "endpoint_num_env": "CP_GPUSTAT_ENDPOINT_ID_SGE",
+    "endpoint_num_default" : "1001",
+    "friendly_name" : "SGEStat",
+    "conflicting_param": [
+      "CP_EXTERNAL_APP",
+      "parent-id"
+    ]
+  },
+  {
+    "name": "CP_CAP_SLURM",
+    "endpoint_env": "CP_GPUSTAT_PORT_SLURM",
+    "endpoint_default" : "8094",
+    "endpoint_num_env": "CP_GPUSTAT_ENDPOINT_ID_SLURM",
+    "endpoint_num_default" : "1002",
+    "friendly_name" : "SLURMStat",
+    "conflicting_param": [
+      "CP_EXTERNAL_APP",
+      "parent-id"
+    ]
+  },
+  {
+    "name": "CP_CAP_KUBE",
+    "endpoint_env": "CP_GPUSTAT_PORT_KUBE",
+    "endpoint_default" : "8095",
+    "endpoint_num_env": "CP_GPUSTAT_ENDPOINT_ID_KUBE",
+    "endpoint_num_default" : "1003",
+    "friendly_name" : "KUBEStat",
+    "conflicting_param": [
+      "CP_EXTERNAL_APP",
+      "parent-id"
+    ]
   }
 ]

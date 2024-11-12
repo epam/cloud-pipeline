@@ -35,15 +35,18 @@ from pipeline.hpc.engine.gridengine import GridEngine, GridEngineDemandSelector,
     GridEngineLaunchAdapter, GridEngineResourceParser
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply
+from pipeline.common.noverify_kubernetes import NoVerify_Kube_Client
 
 
 def get_kube_client():
+    client = None
     try:
-        return pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        client = NoVerify_Kube_Client.get_client(pykube.KubeConfig.from_service_account())
     except Exception:
         kube_config_path = os.path.join(os.path.expanduser('~'), '.kube', 'config')
-        return pykube.HTTPClient(pykube.KubeConfig.from_file(kube_config_path))
-
+        client =  NoVerify_Kube_Client.get_client(pykube.KubeConfig.from_file(kube_config_path))
+    client.session.verify = False
+    return client
 
 class KubeGridEngine(GridEngine):
 
