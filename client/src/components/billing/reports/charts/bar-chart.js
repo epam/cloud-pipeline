@@ -84,7 +84,8 @@ function getMaximum (...values) {
 function filterTopData (data, top, dataSample = 'value') {
   const sortedData = Object.keys(data || {})
     .map((key) => ({
-      name: key,
+      key,
+      name: data[key].name || key,
       item: data[key],
       value: getItemSampleValue(data[key], dataSample)
     }))
@@ -163,8 +164,8 @@ function BarChart (
     datasets.find((o) => !o.isPrevious) ||
     datasets[0];
   const filteredData = filterTopData(data, top, currentDataset ? currentDataset.sample : 'value');
-  const groups = filteredData.map(d => d.name);
-  const displayGroups = groups.map(itemNameFn);
+  const groupIds = filteredData.map(d => d.key);
+  const displayGroups = filteredData.map(d => itemNameFn(d.name));
   const processedDatasets = datasets.map((dataset) => {
     const {
       isPrevious = false,
@@ -323,13 +324,14 @@ function BarChart (
       [HighlightTicksPlugin.id]: {
         highlightTickFn,
         request,
+        tickValues: groupIds,
         axis: 'x-axis'
       },
       [BarchartDataLabelPlugin.id]: {
         valueFormatter
       },
       [ChartClickPlugin.id]: {
-        handler: onSelect ? index => onSelect({key: groups[index]}) : undefined,
+        handler: onSelect ? index => onSelect({key: groupIds[index]}) : undefined,
         scaleHandler: onScaleSelect,
         axis: 'x-axis'
       }
