@@ -1537,23 +1537,25 @@ if [ "$CP_GPUSTAT_ENABLED" != "false" ]; then
                                       --type gpu \
                                       --multi-host > /var/log/gpustat-gpu.log 2>&1 &
             fi
-            if check_cp_cap "CP_CAP_SGE"; then
-                  echo "Starting gpustat server for SGE as a background thread. See /var/log/gpustat-sge.log"
-                  nohup gpustat_setup --home-dir $CP_GPUSTAT_INSTALL_DIR \
-                                      --port "${CP_GPUSTAT_PORT_SGE:-8093}" \
-                                      --type sge > /var/log/gpustat-sge.log 2>&1 &
-            fi
-            if check_cp_cap "CP_CAP_SLURM"; then
-                  echo "Starting gpustat server for SLURM as a background thread. See /var/log/gpustat-slurm.log"
-                  nohup gpustat_setup --home-dir $CP_GPUSTAT_INSTALL_DIR \
-                                      --port "${CP_GPUSTAT_PORT_SLURM:-8094}" \
-                                      --type slurm > /var/log/gpustat-slurm.log 2>&1 &
-            fi
-            if check_cp_cap "CP_CAP_KUBE"; then
-                  echo "Starting gpustat server for KUBE as a background thread. See /var/log/gpustat-kube.log"
-                  nohup gpustat_setup --home-dir $CP_GPUSTAT_INSTALL_DIR \
-                                      --port "${CP_GPUSTAT_PORT_KUBE:-8095}" \
-                                      --type kube > /var/log/gpustat-kube.log 2>&1 &
+            if [ "$CP_GPUSTAT_ENABLED_SCHEDULERS" != "false" ]; then
+                  if check_cp_cap "CP_CAP_SGE"; then
+                        echo "Starting gpustat server for SGE as a background thread. See /var/log/gpustat-sge.log"
+                        nohup gpustat_setup --home-dir $CP_GPUSTAT_INSTALL_DIR \
+                                          --port "${CP_GPUSTAT_PORT_SGE:-8093}" \
+                                          --type sge > /var/log/gpustat-sge.log 2>&1 &
+                  fi
+                  if check_cp_cap "CP_CAP_SLURM"; then
+                        echo "Starting gpustat server for SLURM as a background thread. See /var/log/gpustat-slurm.log"
+                        nohup gpustat_setup --home-dir $CP_GPUSTAT_INSTALL_DIR \
+                                          --port "${CP_GPUSTAT_PORT_SLURM:-8094}" \
+                                          --type slurm > /var/log/gpustat-slurm.log 2>&1 &
+                  fi
+                  if check_cp_cap "CP_CAP_KUBE"; then
+                        echo "Starting gpustat server for KUBE as a background thread. See /var/log/gpustat-kube.log"
+                        nohup gpustat_setup --home-dir $CP_GPUSTAT_INSTALL_DIR \
+                                          --port "${CP_GPUSTAT_PORT_KUBE:-8095}" \
+                                          --type kube > /var/log/gpustat-kube.log 2>&1 &
+                  fi
             fi
       else
             echo "Will not run the gpustat server for a non-master node"
