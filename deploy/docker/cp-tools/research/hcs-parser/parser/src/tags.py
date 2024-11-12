@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Python file with business logic of tagging HCS files.
+Most of the tags are retrieved from ome.xml file and mapped based on HCS_PARSING_TAG_MAPPING property.
+Several special tags such as HCS_PARSING_MAGNIFICATION_CAT_ATTR_NAME and OWNER are additionally added to the
+metadata tags list.
+
+For Tiff hcs_root also wells tags are additionally will be added to ome.xml metadata tags.
+
+HCS_PARSING_TAG_MAPPING - Comma separate list of <XML tag name>=<Cloud-pipeline tag name>
+"""
+
 import json
 import glob
 import os

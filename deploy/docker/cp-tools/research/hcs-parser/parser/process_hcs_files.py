@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This python file is one of the entry point to the hcs-parser.
+Used when you need to run image processing on one node,
+also used by process_hcs_files_cluster.py to run processing of particular hcs_roots.
+
+Firstly it will find all hcs_roots to process based on:
+  HCS_TARGET_PATHS - exact locations of hcs roots
+  or
+  HCS_LOOKUP_DIRECTORIES - folders to search to find all hcs_roots
+  and
+  HCS_ROOT_TYPE - Currently TIFF and CZI are supported, based on this parameter hcs-parser defines how to
+                  search hcs_roots and later how to perform some of the image generation steps
+                  (see process_hcs_files.py and processors.py)
+
+Secondly script, based on HCS_ROOT_TYPE property, will initiate one of HcsFileParser (see processors.py) to run processing
+"""
+
 import os
 import multiprocessing
 import traceback
@@ -19,7 +36,8 @@ import traceback
 from src.utils import log_run_info, log_run_success
 from src.utils import get_int_run_param, get_bool_run_param
 from src.fs import get_processing_roots
-from src.processors import HcsFileParser
+from src.processors import HcsCZIFileParser, HcsTiffFileParser
+from src.hcs_entity import HcsRootType
 
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
 EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
@@ -30,15 +48,19 @@ OVERVIEW_DIR_NAME = 'overview'
 HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+HCS_ROOT_TYPE = HcsRootType.get(os.getenv('HCS_ROOT_TYPE', 'TIFF'))
 
+HCS_ROOT_SEARCH_MARK = MEASUREMENT_INDEX_FILE_PATH
+if HCS_ROOT_TYPE == HcsRootType.CZI:
+    HCS_ROOT_SEARCH_MARK = ".czi"
 
 def try_process_hcs(hcs_root):
     parser = None
     processing_result = 1
     try:
-        log_run_info('Starting processing of folder {} with image preview {}'
-                     .format(hcs_root.root_path, hcs_root.hcs_img_path))
-        parser = HcsFileParser(hcs_root.root_path, hcs_root.hcs_img_path)
+        log_run_info('Starting processing of path {} of type {} with image preview {}'
+                     .format(hcs_root.root_path, HCS_ROOT_TYPE, hcs_root.hcs_img_path))
+        parser = initialize_hcs_parser(hcs_root)
         processing_result = parser.process_file()
         return processing_result
     except Exception as e:
@@ -52,9 +74,15 @@ def try_process_hcs(hcs_root):
             parser.clear_tmp_local_dir()
 
 
+def initialize_hcs_parser(hcs_root):
+    if HCS_ROOT_TYPE == HcsRootType.CZI:
+        return HcsCZIFileParser(hcs_root.root_path, hcs_root.hcs_img_path)
+    return HcsTiffFileParser(hcs_root.root_path, hcs_root.hcs_img_path)
+
+
 def process_hcs_files():
     should_force_processing = TAGS_PROCESSING_ONLY or FORCE_PROCESSING
-    paths_to_hcs_roots = get_processing_roots(should_force_processing, MEASUREMENT_INDEX_FILE_PATH)
+    paths_to_hcs_roots = get_processing_roots(should_force_processing, HCS_ROOT_SEARCH_MARK, HCS_ROOT_TYPE)
     if not paths_to_hcs_roots or len(paths_to_hcs_roots) == 0:
         log_run_success('Found no files requires processing in the lookup directories.')
         exit(0)
