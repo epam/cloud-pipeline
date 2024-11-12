@@ -25,8 +25,9 @@ export class GetGroupedStorages extends BaseBillingRequest {
 
     (raw && raw.length ? raw : []).forEach(i => {
       let name = i.info && i.info.name ? i.info.name : i.groupingInfo.STORAGE;
+      const id = i.groupingInfo.id || '';
       if (name && name !== 'unknown') {
-        res[name] = {
+        res[`${name}-${id}`] = {
           name,
           owner: emptyIfUnknown(i.groupingInfo.owner),
           created: emptyIfUnknown(i.groupingInfo.created),
