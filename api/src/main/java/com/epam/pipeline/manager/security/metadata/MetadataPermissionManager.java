@@ -133,7 +133,7 @@ public class MetadataPermissionManager {
             return isMetadataEditAllowedForUser(metadataVO);
         }
         if (entityClass.equals(AclClass.ROLE)) {
-            return false;
+            return isMetadataEditAllowedForRole(metadataVO);
         }
         if (AclClass.TOOL.equals(entityClass) && isMetadataContainsRestrictedInstanceValues(metadataVO)) {
             return false;
@@ -143,15 +143,31 @@ public class MetadataPermissionManager {
     }
 
     private boolean isMetadataEditAllowedForUser(final MetadataVO metadataVO) {
-        final List<String> sensitiveKeys = preferenceManager.getPreference(
-                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
-        if (MapUtils.isNotEmpty(metadataVO.getData()) && ListUtils.emptyIfNull(sensitiveKeys).stream()
-                .anyMatch(key -> metadataVO.getData().containsKey(key))) {
+        if (metadataHasSensitiveKeys(metadataVO)){
             return false;
         }
         final Long entityId = metadataVO.getEntity().getEntityId();
         return isSameUser(entityId) || permissionHelper.isAllowed("WRITE",
                 entityManager.load(AclClass.PIPELINE_USER, entityId));
+    }
+
+    private boolean isMetadataEditAllowedForRole(final MetadataVO metadataVO) {
+        if (metadataHasSensitiveKeys(metadataVO)){
+            return false;
+        }
+        final Long entityId = metadataVO.getEntity().getEntityId();
+        return permissionHelper.isAllowed("WRITE",
+                entityManager.load(AclClass.ROLE, entityId));
+    }
+
+    private boolean metadataHasSensitiveKeys(MetadataVO metadataVO) {
+        final List<String> sensitiveKeys = preferenceManager.getPreference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        if (MapUtils.isNotEmpty(metadataVO.getData()) && ListUtils.emptyIfNull(sensitiveKeys).stream()
+                .anyMatch(key -> metadataVO.getData().containsKey(key))) {
+            return true;
+        }
+        return false;
     }
 
     private boolean isSameUser(final Long entityId) {
