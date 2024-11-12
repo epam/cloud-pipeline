@@ -250,7 +250,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
     applyChanges: ApplyChanges.inline,
     downloadable: true,
     showContent: true,
-    removeAllAvailable: true
+    removeAllAvailable: true,
+    showMetadata: true
   };
 
   state = {
