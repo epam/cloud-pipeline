@@ -130,8 +130,12 @@ public final class AclExpressions {
 
     public static final String METADATA_FILTER = ADMIN_ONLY + OR +
             "@metadataPermissionManager.metadataPermission(" +
-            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')" + OR +
-            "filterObject.entity.entityClass.name() == 'PIPELINE_USER'" + AND + "hasRole('USER_METADATA_READER')";
+            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')" +
+            OR + "(" +
+                "filterObject.entity.entityClass.name() == 'PIPELINE_USER'" +
+                OR + "filterObject.entity.entityClass.name() == 'ROLE'" +
+            ")" +
+            AND + "hasRole('USER_METADATA_READER')";
 
     public static final String ACL_ENTITY_OWNER =
             "hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#id, #aclClass)";
