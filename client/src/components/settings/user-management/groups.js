@@ -126,8 +126,7 @@ export default class GroupsManagement extends React.Component {
     return this.roles.filter(r => {
       const hasPermissions = this.isAdmin ||
         this.isReader ||
-        roleModel.readAllowed(r) ||
-        roleModel.writeAllowed(r);
+        roleModel.readAllowed(r);
       return hasPermissions && r.displayName
         .toLowerCase()
         .includes((groupsSearchText || '').toLowerCase());
