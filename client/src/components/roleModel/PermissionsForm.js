@@ -51,6 +51,17 @@ import {
   permissionSidsEqual
 } from './utilities/permissions';
 
+export const PERMISSION_COLUMNS = {
+  allow: 'allow',
+  deny: 'deny'
+};
+
+export const PERMISSIONS = {
+  read: 'read',
+  write: 'qwrite',
+  execute: 'execute'
+};
+
 function plural (count, noun) {
   return `${noun}${count > 1 ? 's' : ''}`;
 }
@@ -141,13 +152,17 @@ export default class PermissionsForm extends React.Component {
     })),
     subObjectsPermissionsErrorTitle: PropTypes.node,
     showOwner: PropTypes.bool,
-    refreshPermissionsAfterUpdate: PropTypes.bool
+    refreshPermissionsAfterUpdate: PropTypes.bool,
+    permissionsColumns: PropTypes.arrayOf(PropTypes.string),
+    availablePermissions: PropTypes.arrayOf(PropTypes.string)
   };
 
   static defaultProps = {
     enabledMask: ALL_ALLOWED_MASK,
     subObjectsPermissionsMaskToCheck: 0,
-    showOwner: true
+    showOwner: true,
+    permissionsColumns: [PERMISSION_COLUMNS.allow, PERMISSION_COLUMNS.deny],
+    availablePermissions: [PERMISSIONS.read, PERMISSIONS.write, PERMISSIONS.execute]
   }
 
   @computed
@@ -326,12 +341,12 @@ export default class PermissionsForm extends React.Component {
     if (idx >= 0) {
       newPermissions.splice(idx, 1, {
         sid,
-        mask,
+        mask
       });
     } else {
       newPermissions.push({
         sid,
-        mask,
+        mask
       });
     }
     const selectedPermission = newPermissions
@@ -537,6 +552,7 @@ export default class PermissionsForm extends React.Component {
       selectedPermission,
       pending
     } = this.state;
+    const {permissionsColumns, availablePermissions} = this.props;
     if (selectedPermission) {
       const {
         sid = {}
@@ -557,7 +573,7 @@ export default class PermissionsForm extends React.Component {
             return name;
           }
         },
-        {
+        permissionsColumns.includes(PERMISSION_COLUMNS.allow) ? {
           title: 'Allow',
           width: 50,
           className: styles.userAllowDenyActions,
@@ -578,8 +594,8 @@ export default class PermissionsForm extends React.Component {
               }
             />
           )
-        },
-        {
+        } : null,
+        permissionsColumns.includes(PERMISSION_COLUMNS.deny) ? {
           title: 'Deny',
           width: 50,
           className: styles.userAllowDenyActions,
@@ -596,32 +612,32 @@ export default class PermissionsForm extends React.Component {
               }
             />
           )
-        }
-      ];
+        } : null
+      ].filter(Boolean);
       const data = [
-        {
+        availablePermissions.includes(PERMISSIONS.read) ? {
           permission: 'Read',
           allowMask: 1,
           denyMask: 1 << 1,
           allowed: roleModel.readAllowed(selectedPermission, true),
           denied: roleModel.readDenied(selectedPermission, true),
           isRead: true
-        },
-        {
+        } : null,
+        availablePermissions.includes(PERMISSIONS.write) ? {
           permission: 'Write',
           allowMask: 1 << 2,
           denyMask: 1 << 3,
           allowed: roleModel.writeAllowed(selectedPermission, true),
           denied: roleModel.writeDenied(selectedPermission, true)
-        },
-        {
+        } : null,
+        availablePermissions.includes(PERMISSIONS.execute) ? {
           permission: 'Execute',
           allowMask: 1 << 4,
           denyMask: 1 << 5,
           allowed: roleModel.executeAllowed(selectedPermission, true),
           denied: roleModel.executeDenied(selectedPermission, true)
-        }
-      ];
+        } : null
+      ].filter(Boolean);
       return (
         <Table
           style={{marginTop: 10}}
