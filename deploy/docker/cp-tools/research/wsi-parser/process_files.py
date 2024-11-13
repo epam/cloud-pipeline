@@ -28,7 +28,6 @@ import traceback
 import urllib
 import xml.etree.ElementTree as ET
 import fnmatch
-from pathlib import Path
 
 from collections import OrderedDict
 from abc import ABCMeta, abstractmethod
@@ -121,7 +120,8 @@ EXCEPTION_TAGS_MAPPING = prepare_exception_tags_mapping()
 
 
 def get_file_extension(file):
-    return Path(file).suffix if file else None
+    file_and_extension = os.path.splitext(file)
+    return file_and_extension[1] if file and len(file_and_extension) == 2 else None
 
 
 def is_file_has_format(file, format):
@@ -760,6 +760,11 @@ class WsiFileTagProcessor:
 
     def add_qptiff_tags_from_filename(self, existing_tags):
         name_tags = WsiParsingUtils.get_basename_without_extension(self.file_path).split('_')
+        if len(name_tags) != 4:
+            self.log_processing_info(
+                'File name {} is not in format: <Study>_<Animal_id>_<Tissue>_<Stain>. '
+                'Skipping retrieving tas from file name.'.format(self.file_path))
+            return
         if not existing_tags.get(STUDY_NAME_CAT_ATTR_NAME):
             existing_tags[STUDY_NAME_CAT_ATTR_NAME] = {name_tags[0]}
         if not existing_tags.get(ANIMAL_ID_CAT_ATTR_NAME):
@@ -1342,6 +1347,7 @@ class WsiFileParser:
         target_tags_file = self.file_path
         is_qptiff = is_file_has_format(self.file_path, "qptiff")
         if is_qptiff:
+            self.log_processing_info('File {} is recognized as QPTIFF'.format(self.file_path))
             target_tags_file = self.create_empty_vsi()
         tags_processing_result = self.try_process_tags(target_tags_file, target_image_details, is_qptiff)
         if TAGS_PROCESSING_ONLY:
@@ -1392,8 +1398,8 @@ class WsiFileParser:
     def try_process_tags(self, target_file_path, target_image_details, is_qptiff=False):
         tags_processing_result = 0
         try:
-            if WsiFileTagProcessor(target_file_path, self.xml_info_tree,
-                                   is_qptiff).process_tags(target_image_details) != 0:
+            wsi_file_tag_processor = WsiFileTagProcessor(target_file_path, self.xml_info_tree, is_qptiff)
+            if wsi_file_tag_processor.process_tags(target_image_details) != 0:
                 self.log_processing_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
