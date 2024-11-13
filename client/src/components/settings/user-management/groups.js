@@ -84,6 +84,14 @@ export default class GroupsManagement extends React.Component {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
 
+  @computed
+  get groupsSharedPermissions () {
+    return {
+      read: this.roles.some(r => roleModel.readAllowed(r)),
+      write: this.roles.some(r => roleModel.writeAllowed(r))
+    };
+  }
+
   handleGroupsTableChange = (pagination, filter, sorter) => {
     const {current} = pagination;
     this.setState({
@@ -115,13 +123,14 @@ export default class GroupsManagement extends React.Component {
 
   get filteredRoles () {
     const {groupsSearchText} = this.state;
-    return this.roles
-      .filter(r => !groupsSearchText ||
-        !groupsSearchText.length ||
-        r.displayName
-          .toLowerCase()
-          .includes(groupsSearchText.toLowerCase())
-      );
+    return this.roles.filter(r => {
+      const hasPermissions = this.isAdmin ||
+        this.isReader ||
+        roleModel.readAllowed(r);
+      return hasPermissions && r.displayName
+        .toLowerCase()
+        .includes((groupsSearchText || '').toLowerCase());
+    });
   }
 
   reload = () => {
@@ -205,17 +214,20 @@ export default class GroupsManagement extends React.Component {
           );
         }
       },
-      this.isAdmin
+      this.isAdmin || this.groupsSharedPermissions.write
         ? {
           key: 'actions',
           render: (role) => {
+            if (!roleModel.writeAllowed(role)) {
+              return null;
+            }
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
                   <Icon type="edit" />
                 </Button>
                 {
-                  !predefined && (
+                  this.isAdmin && !predefined && (
                     <Button
                       size="small"
                       type="danger"
@@ -269,7 +281,12 @@ export default class GroupsManagement extends React.Component {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return null;
     }
-    if (!this.isReader && !this.isAdmin) {
+    if (
+      !this.isReader &&
+      !this.isAdmin &&
+      !this.groupsSharedPermissions.read &&
+      !this.groupsSharedPermissions.write
+    ) {
       return (
         <Alert type="error" message="Access is denied" />
       );
@@ -304,7 +321,7 @@ export default class GroupsManagement extends React.Component {
           visible={!!this.state.editableGroup}
           onClose={this.closeEditGroupDialog}
           role={this.state.editableGroup}
-          readOnly={!this.isAdmin}
+          readOnly={!this.isAdmin && !roleModel.writeAllowed(this.state.editableGroup)}
         />
         <CreateGroupDialog
           visible={this.state.createGroupDialogVisible}

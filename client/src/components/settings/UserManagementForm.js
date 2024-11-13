@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,17 @@ function UserManagementForm (
     return null;
   }
   const users = usersWithActivity.loaded ? usersWithActivity.value : [];
-  const userHasReadPermissions = (users || []).some((user) => roleModel.readAllowed(user));
-  if (!isReader && !isAdmin && !userHasReadPermissions) {
+  const userHasReadPermissions = (users || [])
+    .some((user) => roleModel.readAllowed(user));
+  const rolesList = roles.loaded ? roles.value : [];
+  const groupsHasSharedPermissions = (rolesList || [])
+    .some(r => roleModel.readAllowed(r));
+  if (
+    !isReader &&
+    !isAdmin &&
+    !userHasReadPermissions &&
+    !groupsHasSharedPermissions
+  ) {
     return (
       <Alert type="error" message="Access is denied" />
     );
@@ -66,7 +75,7 @@ function UserManagementForm (
         <UsersManagement />
       )
     } : false,
-    (isReader || isAdmin) ? {
+    (isReader || isAdmin || groupsHasSharedPermissions) ? {
       key: 'groups',
       title: 'Groups',
       render: () => (
