@@ -54,7 +54,7 @@ const SettingsTabs = [
       const usersHasSharedPermissions = users
         .some(user => roleModel.readAllowed(user));
       const groupsHasSharedPermissions = roles
-        .some(r => roleModel.readAllowed(r) || roleModel.writeAllowed(r));
+        .some(r => roleModel.readAllowed(r));
       return usersHasSharedPermissions || groupsHasSharedPermissions;
     }
   },

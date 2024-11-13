@@ -55,7 +55,7 @@ function UserManagementForm (
     .some((user) => roleModel.readAllowed(user));
   const rolesList = roles.loaded ? roles.value : [];
   const groupsHasSharedPermissions = (rolesList || [])
-    .some(r => roleModel.readAllowed(r) || roleModel.writeAllowed(r));
+    .some(r => roleModel.readAllowed(r));
   if (
     !isReader &&
     !isAdmin &&
