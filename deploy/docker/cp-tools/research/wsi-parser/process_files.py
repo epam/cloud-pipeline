@@ -28,6 +28,7 @@ import traceback
 import urllib
 import xml.etree.ElementTree as ET
 import fnmatch
+from pathlib import Path
 
 from collections import OrderedDict
 from abc import ABCMeta, abstractmethod
@@ -66,7 +67,27 @@ EXCEPTIONS_MAPPINGS_FILE = os.getenv('WSI_PARSING_EXCEPTIONS_MAPPINGS_FILE')
 FORCE_CATALOG_UPDATE = os.getenv('WSI_PARSING_FORCE_CATALOG_UPDATE', 'false') == 'true'
 CLOUD_STORAGE_ID = os.getenv('WSI_PARSING_STORAGE_ID', None)
 CATALOG_UPDATE_URL = os.getenv('WSI_PARSING_CATALOG_UPDATE_URL', None)
-OME_TIFF_TARGET_FORMAT_MASK = os.getenv('WSI_PARSING_OME_TIFF_TARGET_FORMAT_MASK', '*.qptiff')
+OME_TIFF_TARGET_FORMAT_MASK = os.getenv('WSI_PARSING_OME_TIFF_TARGET_FORMAT_MASK', '*.qptiff,*.tif')
+
+
+def parse_extension_mapping_property(format_to_extension_mapping_str):
+    result = {}
+    if not format_to_extension_mapping_str:
+        return result
+    for format in format_to_extension_mapping_str.split(";"):
+        try:
+            format, extensions = format.split("=")
+            for extension in extensions.split(","):
+                result[extension] = format
+        except ValueError as e:
+            # skip if problem
+            pass
+    return result
+
+
+EXTENSION_TO_FORMAT_MAPPING = parse_extension_mapping_property(
+    os.getenv('WSI_EXTENSION_TO_FORMAT_MAPPING', 'qptiff=.qptiff,.tif')
+)
 
 STAIN_METHOD_MAPPINGS = {
     'GENERAL': 'General',
@@ -97,6 +118,15 @@ def prepare_exception_tags_mapping():
 
 
 EXCEPTION_TAGS_MAPPING = prepare_exception_tags_mapping()
+
+
+def get_file_extension(file):
+    return Path(file).suffix if file else None
+
+
+def is_file_has_format(file, format):
+    file_extension = get_file_extension(file)
+    return EXTENSION_TO_FORMAT_MAPPING.get(file_extension, None) == format
 
 
 class ImageDetails(object):
@@ -1310,10 +1340,10 @@ class WsiFileParser:
         target_series = target_image_details.id
         self.create_tmp_stat_file(target_image_details)
         target_tags_file = self.file_path
-        if self.file_path.endswith('.qptiff'):
+        is_qptiff = is_file_has_format(self.file_path, "qptiff")
+        if is_qptiff:
             target_tags_file = self.create_empty_vsi()
-        tags_processing_result = self.try_process_tags(target_tags_file, target_image_details,
-                                                       self.file_path.endswith('.qptiff'))
+        tags_processing_result = self.try_process_tags(target_tags_file, target_image_details, is_qptiff)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
         elif self._is_same_series_selected(target_series):
