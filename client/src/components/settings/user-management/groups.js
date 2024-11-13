@@ -88,6 +88,14 @@ export default class GroupsManagement extends React.Component {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
   };
 
+  @computed
+  get groupsSharedPermissions () {
+    return {
+      read: this.roles.some(r => roleModel.readAllowed(r)),
+      write: this.roles.some(r => roleModel.writeAllowed(r))
+    };
+  }
+
   handleGroupsTableChange = (pagination, filter, sorter) => {
     const {current} = pagination;
     this.setState({
@@ -211,10 +219,13 @@ export default class GroupsManagement extends React.Component {
           );
         }
       },
-      this.isAdmin || this.isUsersAdmin
+      this.isAdmin || this.isUsersAdmin || this.groupsSharedPermissions.write
         ? {
           key: 'actions',
           render: (role) => {
+            if (!roleModel.writeAllowed(role)) {
+              return null;
+            }
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
@@ -278,7 +289,9 @@ export default class GroupsManagement extends React.Component {
     if (
       !this.isReader &&
       !this.isAdmin &&
-      !this.isUsersAdmin
+      !this.isUsersAdmin &&
+      !this.groupsSharedPermissions.read &&
+      !this.groupsSharedPermissions.write
     ) {
       return (
         <Alert type="error" message="Access is denied" />
