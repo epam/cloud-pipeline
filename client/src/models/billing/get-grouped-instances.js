@@ -36,12 +36,16 @@ export class GetGroupedInstances extends BaseBillingRequest {
     (raw && raw.length > 0 ? raw : []).forEach((item) => {
       let fullName;
       let name = item.groupingInfo[this.grouping];
+      let key = item.groupingInfo[this.grouping];
       if (name.includes('/')) {
         name = name.split('/').pop();
         fullName = item.groupingInfo[this.grouping];
       }
+      if (item.groupingInfo.id) {
+        key = `${key}-${item.groupingInfo.id}`;
+      }
       if (name && name !== 'unknown') {
-        res[name] = {
+        res[key] = {
           name,
           fullName,
           ...item,
