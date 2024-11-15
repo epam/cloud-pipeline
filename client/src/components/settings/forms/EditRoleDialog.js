@@ -45,7 +45,7 @@ import {CP_CAP_RUN_CAPABILITIES} from '../../pipelines/launch/form/utilities/par
 import styles from './UserManagement.css';
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
+@inject('preferences', 'dataStorages', 'metadataCache', 'cloudCredentialProfiles')
 @inject((common, params) => ({
   roleInfo: params.role ? new Role(params.role.id) : null,
   roleId: params.role ? params.role.id : null,
@@ -117,6 +117,15 @@ class EditRoleDialog extends React.Component {
       return authenticatedUserInfo.value.admin;
     }
     return false;
+  }
+
+  @computed
+  get restrictedMetadataKeys () {
+    if (this.isAdmin) {
+      return [];
+    }
+    const {preferences} = this.props;
+    return preferences.metadataSystemKeys || [];
   }
 
   get defaultStorageId () {
@@ -850,6 +859,7 @@ class EditRoleDialog extends React.Component {
             applyChanges={ApplyChanges.callback}
             onChange={this.onChangeMetadata}
             extraKeys={[CP_CAP_RUN_CAPABILITIES]}
+            restrictedKeys={this.restrictedMetadataKeys}
           />
           <div
             key="INSTANCE_MANAGEMENT"
@@ -877,7 +887,8 @@ class EditRoleDialog extends React.Component {
                 disabled={
                   this.state.operationInProgress ||
                   readOnly ||
-                  pending
+                  pending ||
+                  !this.isAdmin
                 }
                 value={this.state.profiles.map(o => `${o}`)}
                 style={{width: '100%'}}
@@ -918,7 +929,8 @@ class EditRoleDialog extends React.Component {
                   this.state.operationInProgress ||
                   readOnly ||
                   this.state.profiles.length === 0 ||
-                  pending
+                  pending ||
+                  !this.isAdmin
                 }
                 value={this.defaultProfileId}
                 style={{width: '100%'}}
