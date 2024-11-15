@@ -45,7 +45,7 @@ import {CP_CAP_RUN_CAPABILITIES} from '../../pipelines/launch/form/utilities/par
 import styles from './UserManagement.css';
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
+@inject('preferences', 'dataStorages', 'metadataCache', 'cloudCredentialProfiles')
 @inject((common, params) => ({
   roleInfo: params.role ? new Role(params.role.id) : null,
   roleId: params.role ? params.role.id : null,
@@ -122,6 +122,15 @@ class EditRoleDialog extends React.Component {
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
   };
+
+  @computed
+  get restrictedMetadataKeys () {
+    if (this.isAdmin || this.isUsersAdmin) {
+      return [];
+    }
+    const {preferences} = this.props;
+    return preferences.metadataSystemKeys || [];
+  }
 
   get defaultStorageId () {
     const {defaultStorageId} = this.state;
@@ -854,6 +863,7 @@ class EditRoleDialog extends React.Component {
             applyChanges={ApplyChanges.callback}
             onChange={this.onChangeMetadata}
             extraKeys={[CP_CAP_RUN_CAPABILITIES]}
+            restrictedKeys={this.restrictedMetadataKeys}
           />
           <div
             key="INSTANCE_MANAGEMENT"
