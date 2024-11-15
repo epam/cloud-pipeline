@@ -322,6 +322,7 @@ export default class GroupsManagement extends React.Component {
           onClose={this.closeEditGroupDialog}
           role={this.state.editableGroup}
           readOnly={!this.isAdmin && !roleModel.writeAllowed(this.state.editableGroup)}
+          predefined={predefined}
         />
         <CreateGroupDialog
           visible={this.state.createGroupDialogVisible}
