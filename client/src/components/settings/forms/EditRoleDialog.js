@@ -68,7 +68,8 @@ class EditRoleDialog extends React.Component {
       defaultProfileId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
     }),
     onClose: PropTypes.func,
-    readOnly: PropTypes.bool
+    readOnly: PropTypes.bool,
+    predefined: PropTypes.bool
   };
 
   state = {
@@ -698,7 +699,8 @@ class EditRoleDialog extends React.Component {
 
   renderContent = () => {
     const {activeTab} = this.state;
-    if (activeTab === 'permissions') {
+    const {predefined} = this.props;
+    if (!predefined && activeTab === 'permissions') {
       return (
         <PermissionsForm
           objectType={'ROLE'}
@@ -960,6 +962,7 @@ class EditRoleDialog extends React.Component {
 
   renderTabs = () => {
     const {activeTab} = this.state;
+    const {predefined} = this.props;
     const onChangeTab = (key) => this.setState({activeTab: key});
     const blocked = this.props.roleInfo.loaded
       ? this.props.roleInfo.value.blocked
@@ -991,7 +994,7 @@ class EditRoleDialog extends React.Component {
           key="group"
         />
         {
-          (this.isAdmin || this.isUsersAdmin) && (
+          !predefined && (this.isAdmin || this.isUsersAdmin) && (
             <Tabs.TabPane
               tab="PERMISSIONS"
               key="permissions"
@@ -1061,7 +1064,9 @@ class EditRoleDialog extends React.Component {
         bodyStyle={{
           height: '80vh'
         }}
-        closable={false}
+        closable={activeTab === 'permissions'}
+        maskClosable={activeTab === 'permissions'}
+        onCancel={this.onClose}
         footer={activeTab === 'permissions' ? false : this.renderFooter()}
         visible={this.props.visible}
       >
