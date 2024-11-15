@@ -296,6 +296,7 @@ export default class EditUserRolesDialog extends React.Component {
 
   onClose = () => {
     this.setState({
+      activeTab: 'user',
       search: null,
       defaultStorageId: undefined,
       defaultStorageIdInitial: undefined,
