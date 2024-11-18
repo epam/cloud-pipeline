@@ -265,11 +265,14 @@ class MountStorageTask:
                     limited_storages_list = list(set(limited_storages_list))
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
                     # append sensitive storages since they are not returned in common mounts
+                    loaded_mounts = {}
                     for storage_id in limited_storages_list:
                         storage = self.api.find_datastorage(str(storage_id))
                         if storage.sensitive:
-                            available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
-                    Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
+                            available_storages_with_mounts.append(
+                                DataStorageWithShareMount(storage, self._get_storage_mount(storage, loaded_mounts)))
+                    Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(
+                        limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex)), task_name=self.task_name)
                     traceback.print_exc()
@@ -331,6 +334,16 @@ class MountStorageTask:
             Logger.fail('Unhandled error during mount task: {}.'.format(traceback.format_exc()),
                         task_name=self.task_name)
             exit(1)
+
+    def _get_storage_mount(self, storage, loaded_mounts):
+        mount_id = int(storage.file_share_mount_id)
+        if mount_id is None:
+            return None
+        if mount_id in loaded_mounts:
+            return loaded_mounts[mount_id]
+        file_share_mount = self.api.load_file_share_mount(mount_id)
+        loaded_mounts[mount_id] = file_share_mount
+        return file_share_mount
 
     def _load_mount_options_from_environ(self):
         result = {}
@@ -846,7 +859,7 @@ class NFSMounter(StorageMounter):
         if mount_options:
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)
-        if PermissionHelper.is_storage_writable(self.storage):
+        if PermissionHelper.is_storage_writable(self.storage) and not self.storage.sensitive:
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
         return command
 

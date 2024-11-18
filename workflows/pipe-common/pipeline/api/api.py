@@ -22,8 +22,7 @@ import time
 import urllib3
 
 from .region import CloudRegion
-from .datastorage import DataStorage
-from .datastorage import DataStorageWithShareMount
+from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
 from .token import StaticToken
 
 # Date format expected by Pipeline API
@@ -258,6 +257,7 @@ class PipelineAPI:
     LOG_GROUP = "log/group"
     STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
+    DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
 
     # Pipeline API default header
 
@@ -1432,3 +1432,11 @@ class PipelineAPI:
             return response.content
         except Exception as e:
             raise RuntimeError("Failed to load billing export \n {}".format(e))
+
+    def load_file_share_mount(self, mount_id):
+        try:
+            result = self._request(endpoint=self.DATA_STORAGE_MOUNT_LOAD.format(id=mount_id), http_method="get")
+            print(str(result))
+            return {} if result is None else FileShareMount.from_json(result)
+        except Exception as e:
+            raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))
