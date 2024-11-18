@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import HcsVideoSource from './hcs-video-player/hcs-video-source';
 import HcsMergedImageSource from './utilities/hcs-merged-image-source';
 import VideoButton from './hcs-video-player/video-button';
 import HCSDownloadButton from './hcs-download-button';
+import HCS3DButton from './hcs-3d-button';
 import styles from './hcs-image.css';
 
 @observer
@@ -791,6 +792,11 @@ class HcsImage extends React.PureComponent {
               }
             />
           ) : null}
+          <HCS3DButton
+            size="small"
+            className={styles.action}
+            viewer={this.hcsImageViewer}
+          />
           <HCSDownloadButton
             size="small"
             className={styles.action}

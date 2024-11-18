@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,11 +95,13 @@ class ViewerState extends HCSBaseState {
   @observable lensChannel = 0;
   @observable pending = false;
   @observable isRGB = false;
-  @observable xSlice = [];
-  @observable ySlice = [];
-  @observable zSlice = [];
+  @observable xSlice = [1, 2];
+  @observable ySlice = [1, 2];
+  @observable zSlice = [1, 2];
   @observable selection = [];
   @observable dimensions = [];
+  @observable downsamplingMode = 1;
+  @observable renderingMode = 1;
   /**
    * Channels state
    * @type {ChannelState[]}
@@ -316,6 +318,48 @@ class ViewerState extends HCSBaseState {
     if (this.viewer && typeof this.viewer.setColorMap === 'function') {
       this.colorMap = colorMap;
       this.viewer.setColorMap(colorMap);
+    }
+  };
+
+  @action
+  change3dMode = (enabled) => {
+    if (this.viewer) {
+      this.use3D = enabled;
+    }
+  };
+
+  @action
+  changeDownsamplingMode = (mode) => {
+    if (this.viewer) {
+      this.downsamplingMode = mode;
+    }
+  };
+
+  @action
+  changeRenderingMode = (mode) => {
+    if (this.viewer) {
+      this.renderingMode = mode;
+    }
+  };
+
+  @action
+  changeXSlice = (slice) => {
+    if (this.viewer) {
+      this.xSlice = slice;
+    }
+  };
+
+  @action
+  changeYSlice = (slice) => {
+    if (this.viewer) {
+      this.ySlice = slice;
+    }
+  };
+
+  @action
+  changeZSlice = (slice) => {
+    if (this.viewer) {
+      this.zSlice = slice;
     }
   };
 
