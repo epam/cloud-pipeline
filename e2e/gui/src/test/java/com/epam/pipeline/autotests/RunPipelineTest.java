@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
@@ -141,8 +142,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .selectDataStoragesToLimitMounts()
             .clearSelection()
             .searchStorage(storage1)
-            .clearSelection()
+            .selectStorage(storage1)
             .searchStorage(storage2)
+            .selectStorage(storage2)
             .ok()
             .launch(this)
             .ensure(tabWithName("Active Runs"), visible, selectedTab)
@@ -160,6 +162,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     public void activePipelineShouldBeOpenedFromNodeInfo() {
         final String runIdLabel = String.format("RUN ID %s", getLastRunId());
         clusterMenu()
+            .sortByDecrease(DATE)
             .click(nodeLabel(runIdLabel), LogAO::new)
             .ensure(taskList(), visible);
     }

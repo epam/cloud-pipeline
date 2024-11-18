@@ -34,7 +34,7 @@
         "required" : false
       }
     },
-    "is_spot" : true
+    "is_spot" : "{{is_spot}}"
   },
-  "default" : "{{is_spot}}"
+  "default" : true
 } ]

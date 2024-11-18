@@ -398,7 +398,7 @@ public class SamplesMetadataTest
                     return Utils.readResourceFully(configJson)
                             .replace("{{docker_image}}", dockerImage)
                             .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                            .replace("{{is_spot}}", String.valueOf(isSpot));
+                            .replace("\"{{is_spot}}\"", String.valueOf(isSpot));
                 })
                 .deleteExtraBrackets(110)
                 .saveAndCommitWithMessage("test: sample metadata")

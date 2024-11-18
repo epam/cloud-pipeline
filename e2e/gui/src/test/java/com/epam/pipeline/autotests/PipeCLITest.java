@@ -75,7 +75,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY.getByName(C.PIPE_OPERATION_SYSTEM))
+                .selectOperationSystem(CliAO.OperationSystem.LINUX.getByName(C.PIPE_OPERATION_SYSTEM))
                 .checkOperationSystemInstallationContent(installationContent);
     }
 
@@ -91,7 +91,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY)
+                .selectOperationSystem(CliAO.OperationSystem.LINUX)
                 .generateAccessKey()
                 .getCLIConfigureCommand();
         final String cliConfigureCommandConfigStore = format("%s --config-store install-dir", cliConfigureCommand);

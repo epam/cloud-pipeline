@@ -55,7 +55,7 @@ public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigat
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY);
+                .selectOperationSystem(CliAO.OperationSystem.LINUX);
         final String operationSystemInstallationContent = cliAO.getOperationSystemInstallationContent();
         final String pipePath = cliAO.getPipePathFromConfigureCommand();
         final String runID = runsMenu()
