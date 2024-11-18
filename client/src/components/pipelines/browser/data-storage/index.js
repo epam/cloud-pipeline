@@ -2767,7 +2767,7 @@ export default class DataStorage extends React.Component {
       policySupported
     } = this.storage.info || {};
     let pathToCurrentFolder;
-    if (this.storage?.info && this.props.path) {
+    if (!/^nfs$/i.test(type) && this.storage?.info && this.props.path) {
       pathToCurrentFolder = this.isOmicsStore
         ? `${pathMask}/${this.props.path}`
         : `${(type || '').toLowerCase()}://${path}/${this.props.path}`;

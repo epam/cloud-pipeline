@@ -167,7 +167,11 @@ class StorageSize extends React.PureComponent {
     if (!this.pathInfo) {
       return undefined;
     }
-    return (this.pathInfo[0] || {}).size;
+    const size = (this.pathInfo[0] || {}).size;
+    if (isNaN(size) || size < 0) {
+      return undefined;
+    }
+    return size;
   }
 
   @computed
