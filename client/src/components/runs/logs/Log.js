@@ -867,7 +867,6 @@ class Logs extends localization.LocalizedReactComponent {
         ].filter(Boolean);
         const query = parts.length > 0 ? `?${parts.join('&')}` : '';
         const isWindowsRun = /^windows$/i.test(run.platform);
-        console.log('nodeIp', 'ip-'+instance.nodeIP.split('.').join('-'))
         if (instance.nodeName) {
           const url = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           details.push({
