@@ -25,6 +25,7 @@ import COLOR_PALETTE, {
   red,
   white,
 } from './default-color-palette';
+import {getLoadersDownSampleInfo} from "../utilities/volumetric";
 
 const BYTE_RANGE = [0, 255];
 
@@ -44,8 +45,10 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
     Channels = [],
   } = Pixels;
   let contrastLimits = [];
-  let colors = [];
+  let contrastLimits3D = [];
   let domains = [];
+  let domains3D = [];
+  let colors = [];
   let useLens = false;
   let useColorMap = false;
   const isRGB = guessRgb(metadata);
@@ -69,6 +72,8 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
       ];
       colors = [red, green, blue];
     }
+    domains3D = domains.slice();
+    contrastLimits3D = contrastLimits.slice();
     useLens = false;
     useColorMap = false;
   } else {
@@ -77,8 +82,17 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
       selections: currentSelections,
       use3d: false,
     });
+    let stats3D = stats;
+    try {
+      stats3D = await getMultiSelectionStats({ loader, selections: currentSelections, use3d: true });
+    } catch (error) {
+      console.warn('error fetching 3D stats');
+      console.warn(error);
+    }
     domains = stats.domains.slice();
+    domains3D = stats3D.domains.slice();
     contrastLimits = stats.contrastLimits.slice();
+    contrastLimits3D = stats3D.contrastLimits.slice();
     // If there is only one channel, use white.
     colors = [];
     for (let i = 0; i < channels.length; i += 1) {
@@ -102,15 +116,21 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
     useColorMap,
     colors,
     domains,
+    domains3D,
     contrastLimits,
+    contrastLimits3D,
     xSlice,
+    xSliceRange: xSlice.slice(),
     ySlice,
+    ySliceRange: ySlice.slice(),
     zSlice,
+    zSliceRange: zSlice.slice(),
     ready: true,
     isRGB,
     shapeIsInterleaved,
     globalDimensions,
     metadata,
     loader,
+    loadersInfo: getLoadersDownSampleInfo(loader)
   };
 }

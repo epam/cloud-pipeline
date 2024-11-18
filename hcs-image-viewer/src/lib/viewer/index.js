@@ -358,6 +358,17 @@ class Viewer {
     });
   }
 
+  set3D(options = undefined) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('set3D')(options);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
   makeSnapshot(name) {
     if (this.container) {
       const canvas = this.container.getElementsByTagName('canvas')[0];
