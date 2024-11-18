@@ -98,6 +98,9 @@ class ViewerState extends HCSBaseState {
   @observable xSlice = [1, 2];
   @observable ySlice = [1, 2];
   @observable zSlice = [1, 2];
+  @observable xSliceEnabled = true;
+  @observable ySliceEnabled = true;
+  @observable zSliceEnabled = true;
   @observable selection = [];
   @observable dimensions = [];
   @observable downsamplingMode = 1;
@@ -159,10 +162,15 @@ class ViewerState extends HCSBaseState {
       xSlice = [],
       ySlice = [],
       zSlice = [],
+      xSliceEnabled = true,
+      ySliceEnabled = true,
+      zSliceEnabled = true,
       use3D = false,
       isRGB,
       pending = false,
-      metadata
+      metadata,
+      downsamplingMode,
+      renderingMode
     } = newState || {};
     this.pending = pending;
     this.loader = loader;
@@ -179,11 +187,16 @@ class ViewerState extends HCSBaseState {
     this.xSlice = xSlice;
     this.ySlice = ySlice;
     this.zSlice = zSlice;
+    this.xSliceEnabled = xSliceEnabled;
+    this.ySliceEnabled = ySliceEnabled;
+    this.zSliceEnabled = zSliceEnabled;
     this.selection = globalSelection;
     this.dimensions = globalDimensions;
     this.imageZPosition = globalSelection && globalSelection.z
       ? globalSelection.z
       : 0;
+    this.downsamplingMode = downsamplingMode;
+    this.renderingMode = renderingMode;
     if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
       const e = /field ([\d]+)/i.exec(metadata.Name);
       if (e && e.length) {
@@ -350,6 +363,13 @@ class ViewerState extends HCSBaseState {
   };
 
   @action
+  changeXSliceEnabled = (enabled) => {
+    if (this.viewer) {
+      this.xSliceEnabled = enabled;
+    }
+  };
+
+  @action
   changeYSlice = (slice) => {
     if (this.viewer) {
       this.ySlice = slice;
@@ -357,9 +377,23 @@ class ViewerState extends HCSBaseState {
   };
 
   @action
+  changeYSliceEnabled = (enabled) => {
+    if (this.viewer) {
+      this.ySliceEnabled = enabled;
+    }
+  };
+
+  @action
   changeZSlice = (slice) => {
     if (this.viewer) {
       this.zSlice = slice;
+    }
+  };
+
+  @action
+  changeZSliceEnabled = (enabled) => {
+    if (this.viewer) {
+      this.zSliceEnabled = enabled;
     }
   };
 

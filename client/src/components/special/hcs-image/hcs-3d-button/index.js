@@ -54,15 +54,33 @@ export default class HCS3DButton extends React.Component {
   }
 
   @computed
+  get xSliceEnabled () {
+    const {hcsViewerState} = this.props;
+    return hcsViewerState?.xSliceEnabled;
+  }
+
+  @computed
   get ySlice () {
     const {hcsViewerState} = this.props;
     return hcsViewerState?.ySlice || [];
   }
 
   @computed
+  get ySliceEnabled () {
+    const {hcsViewerState} = this.props;
+    return hcsViewerState?.ySliceEnabled;
+  }
+
+  @computed
   get zSlice () {
     const {hcsViewerState} = this.props;
     return hcsViewerState?.zSlice || [];
+  }
+
+  @computed
+  get zSliceEnabled () {
+    const {hcsViewerState} = this.props;
+    return hcsViewerState?.zSliceEnabled;
   }
 
   onChangeDownsampleMode = (key) => {
@@ -108,18 +126,24 @@ export default class HCS3DButton extends React.Component {
       max: 100,
       title: 'X slice',
       onChange: hcsViewerState?.changeXSlice,
+      onChangeEnabled: hcsViewerState?.changeXSliceEnabled,
+      enabled: this.xSliceEnabled,
       value: [...this.xSlice]
     }, {
       min: 0,
       max: 100,
       title: 'Y slice',
       onChange: hcsViewerState?.changeYSlice,
+      onChangeEnabled: hcsViewerState?.changeYSliceEnabled,
+      enabled: this.ySliceEnabled,
       value: [...this.ySlice]
     }, {
       min: 0,
       max: 100,
       title: 'Z slice',
       onChange: hcsViewerState?.changeZSlice,
+      onChangeEnabled: hcsViewerState?.changeZSliceEnabled,
+      enabled: this.zSliceEnabled,
       value: [...this.zSlice]
     }];
     const TitleWrapper = ({title, children}) => (
@@ -166,9 +190,13 @@ export default class HCS3DButton extends React.Component {
             ))}
           </Select>
         </TitleWrapper>
-        {sliceControls.map(({min, max, title, value, onChange}) => (
+        {sliceControls.map(({min, max, title, value, onChange, enabled, onChangeEnabled}) => (
           <div key={title} className={styles.sliceWrapper}>
-            <Checkbox className={styles.title}>
+            <Checkbox
+              className={styles.title}
+              checked={enabled}
+              onChange={e => onChangeEnabled(e.target.checked)}
+            >
               {title}
             </Checkbox>
             <Slider
