@@ -36,7 +36,7 @@ class DataStorage:
                  owner, region_id, locked, parentId, mount_point, mount_options,
                  region_name=None, sensitive=False, mount_disabled=False,
                  tools_to_mount=None, mount_status=None, shared=False, source_storage_id=None,
-                 cloud_specific_attributes=None):
+                 cloud_specific_attributes=None, file_share_mount_id=None):
         self.id = int(id)
         self.name = str(name)
         self.description = str(description)
@@ -58,6 +58,7 @@ class DataStorage:
         self.tools_to_mount = tools_to_mount
         self.mount_status = mount_status
         self.cloud_specific_attributes = cloud_specific_attributes
+        self.file_share_mount_id = file_share_mount_id
 
     @classmethod
     def from_json(cls, data):
@@ -82,10 +83,12 @@ class DataStorage:
         policy = StoragePolicy.from_json(data['storagePolicy']) if 'storagePolicy' in data else None
         mount_status = JsonParser.get_optional_field(data, 'mountStatus', default=None)
         cloud_specific_attributes = cloud_specific_attributes_from_json(type, data)
+        file_share_mount_id = JsonParser.get_optional_field(data, 'fileShareMountId', default=None)
         return DataStorage(id, name, description, path, policy, mask, type, owner, region_id, locked, parentId,
                            mount_point, mount_options, region_name, sensitive=sensitive, mount_disabled=mount_disabled,
                            tools_to_mount=tools_to_mount, mount_status=mount_status, shared=shared,
-                           source_storage_id=source_storage_id, cloud_specific_attributes=cloud_specific_attributes)
+                           source_storage_id=source_storage_id, cloud_specific_attributes=cloud_specific_attributes,
+                           file_share_mount_id=file_share_mount_id)
 
 
 class FileShareMount:
