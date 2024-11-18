@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2762,9 +2762,16 @@ export default class DataStorage extends React.Component {
       regionId,
       mountStatus,
       mask,
+      pathMask,
+      path,
       policySupported
     } = this.storage.info || {};
-
+    let pathToCurrentFolder;
+    if (this.storage?.info && this.props.path) {
+      pathToCurrentFolder = this.isOmicsStore
+        ? `${pathMask}/${this.props.path}`
+        : `${(type || '').toLowerCase()}://${path}/${this.props.path}`;
+    }
     const restoreClassChangeDisclaimer = (item, operation) => {
       if (!item) {
         return '';
@@ -2993,7 +3000,10 @@ export default class DataStorage extends React.Component {
                     this.userLifeCyclePermissions.write
                   )}
                 />,
-                <StorageSize storage={this.storage.info} />
+                <StorageSize
+                  storage={this.storage.info}
+                  path={pathToCurrentFolder}
+                />
               ] : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,

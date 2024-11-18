@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import {
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';
+import DataStorageItemSize from '../../../models/dataStorage/DataStorageItemSize';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
 import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStoragePathUsageUpdate';
 import displaySize from '../../../utils/displaySize';
@@ -92,9 +93,11 @@ class StorageSize extends React.PureComponent {
   };
 
   @observable info;
+  @observable pathInfo;
 
   componentDidMount () {
     this.updateStorageSize();
+    this.updateStoragePathSize();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -103,6 +106,13 @@ class StorageSize extends React.PureComponent {
       prevProps.storageId !== this.props.storageId
     ) {
       this.updateStorageSize();
+    }
+    if (
+      prevProps.path !== this.props.path ||
+      prevProps.storage !== this.props.storage ||
+      prevProps.storageId !== this.props.storageId
+    ) {
+      this.updateStoragePathSize();
     }
   }
 
@@ -153,6 +163,14 @@ class StorageSize extends React.PureComponent {
   }
 
   @computed
+  get pathUsageInfo () {
+    if (!this.pathInfo) {
+      return undefined;
+    }
+    return (this.pathInfo[0] || {}).size;
+  }
+
+  @computed
   get hasArchivedData () {
     const {storage} = this.props;
     if (!storage || !this.usageInfo) {
@@ -189,6 +207,23 @@ class StorageSize extends React.PureComponent {
       } else {
         this.info = null;
       }
+    }
+  };
+
+  updateStoragePathSize = async () => {
+    const {path} = this.props;
+    if (!path) {
+      return;
+    }
+    const request = new DataStorageItemSize();
+    await request.send([path]);
+    if (request.error) {
+      console.warn(request.error);
+      this.pathInfo = null;
+    } else if (request.value) {
+      this.pathInfo = request.value;
+    } else {
+      this.pathInfo = null;
     }
   };
 
@@ -233,6 +268,15 @@ class StorageSize extends React.PureComponent {
       archiveSizeTotal,
       archivePreviousTotal
     } = this.usageInfo;
+    let currentFolderSize;
+    let folder;
+    if (this.props.path && this.pathUsageInfo !== undefined) {
+      currentFolderSize = displaySize(
+        this.pathUsageInfo,
+        this.pathUsageInfo > 1024
+      );
+      folder = (this.props.path || '').split('/').pop();
+    }
     const totalSize = displaySize(
       (effective || size) + previous,
       (effective || size) + previous > 1024
@@ -251,6 +295,19 @@ class StorageSize extends React.PureComponent {
       : ` (${previousVersionsSize})`;
     return (
       <div className={styles.detailsContainer}>
+        {folder && currentFolderSize !== undefined ? (
+          <div className={styles.standardDetailRow}>
+            <p style={{marginRight: 3}}>
+              <b className={styles.folderSizeTitle} style={{marginRight: 3}}>
+                {folder}
+              </b>
+              <span>size:</span>
+            </p>
+            <span>
+              {currentFolderSize}
+            </span>
+          </div>
+        ) : null}
         <div className={styles.standardContainer}>
           <div
             className={styles.standardDetailRow}
@@ -436,7 +493,8 @@ StorageSize.propTypes = {
   className: PropTypes.string,
   storage: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  style: PropTypes.object
+  style: PropTypes.object,
+  path: PropTypes.string
 };
 
 export default StorageSize;
