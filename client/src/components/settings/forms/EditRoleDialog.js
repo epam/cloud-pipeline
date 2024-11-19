@@ -702,7 +702,8 @@ class EditRoleDialog extends React.Component {
       usersInitialized: false,
       profiles: [],
       profilesInitial: [],
-      profilesInitialized: false
+      profilesInitialized: false,
+      activeTab: 'group'
     }, () => this.revertChanges(this.updateValues));
   };
 
