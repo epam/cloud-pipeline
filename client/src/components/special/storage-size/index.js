@@ -264,14 +264,7 @@ class StorageSize extends React.PureComponent {
     this.setState({showDetailedInfo: false});
   };
 
-  renderInfo = () => {
-    const {
-      size,
-      effective,
-      previous,
-      archiveSizeTotal,
-      archivePreviousTotal
-    } = this.usageInfo;
+  renderFolderSize = () => {
     let currentFolderSize;
     let folder;
     if (this.props.path && this.pathUsageInfo !== undefined) {
@@ -281,6 +274,32 @@ class StorageSize extends React.PureComponent {
       );
       folder = (this.props.path || '').split('/').pop();
     }
+    if (currentFolderSize !== undefined && folder) {
+      return (
+        <div className={styles.standardDetailRow}>
+          <p style={{marginRight: 3}}>
+            <b className={styles.folderSizeTitle} style={{marginRight: 3}}>
+              {folder}
+            </b>
+            <span>size:</span>
+          </p>
+          <span>
+            {currentFolderSize}
+          </span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  renderInfo = () => {
+    const {
+      size,
+      effective,
+      previous,
+      archiveSizeTotal,
+      archivePreviousTotal
+    } = this.usageInfo;
     const totalSize = displaySize(
       (effective || size) + previous,
       (effective || size) + previous > 1024
@@ -299,19 +318,7 @@ class StorageSize extends React.PureComponent {
       : ` (${previousVersionsSize})`;
     return (
       <div className={styles.detailsContainer}>
-        {folder && currentFolderSize !== undefined ? (
-          <div className={styles.standardDetailRow}>
-            <p style={{marginRight: 3}}>
-              <b className={styles.folderSizeTitle} style={{marginRight: 3}}>
-                {folder}
-              </b>
-              <span>size:</span>
-            </p>
-            <span>
-              {currentFolderSize}
-            </span>
-          </div>
-        ) : null}
+        {this.renderFolderSize()}
         <div className={styles.standardContainer}>
           <div
             className={styles.standardDetailRow}
@@ -482,6 +489,7 @@ class StorageSize extends React.PureComponent {
         }
         style={style}
       >
+        {this.renderFolderSize()}
         <a
           className={styles.refreshButton}
           onClick={this.refreshSize}
