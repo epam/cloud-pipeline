@@ -590,7 +590,7 @@ class EditRoleDialog extends React.Component {
           });
         Object.keys(data || {})
           .forEach(key => {
-            if (!metadata.hasOwnProperty(key)) {
+            if (!this.restrictedMetadataKeys.includes(key) && !metadata.hasOwnProperty(key)) {
               removed[key] = {
                 value: data[key].value,
                 type: data[key].type
