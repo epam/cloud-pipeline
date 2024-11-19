@@ -154,13 +154,13 @@ export default class HCS3DButton extends React.Component {
     );
     return (
       <div className={styles.overlayContainer}>
-        <b>3D settings:</b>
+        <b>Volume rendering settings:</b>
         <Checkbox
           checked={this.use3dMode}
           onChange={this.toggle3DMode}
           className={styles.title}
         >
-          Use 3D view
+          Use volume renderer
         </Checkbox>
         <TitleWrapper title="Downsampling mode:">
           <Select
