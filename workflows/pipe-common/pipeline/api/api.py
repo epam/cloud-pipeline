@@ -1436,7 +1436,6 @@ class PipelineAPI:
     def load_file_share_mount(self, mount_id):
         try:
             result = self._request(endpoint=self.DATA_STORAGE_MOUNT_LOAD.format(id=mount_id), http_method="get")
-            print(str(result))
             return {} if result is None else FileShareMount.from_json(result)
         except Exception as e:
             raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))
