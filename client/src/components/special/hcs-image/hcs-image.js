@@ -128,7 +128,8 @@ class HcsImage extends React.PureComponent {
       well: true,
       timeseries: true,
       originalImage: true,
-      zPlanesSliderMode: false
+      zPlanesSliderMode: false,
+      volumetricRendering: false
     };
   }
 
@@ -792,11 +793,12 @@ class HcsImage extends React.PureComponent {
               }
             />
           ) : null}
-          <HCS3DButton
-            size="small"
-            className={styles.action}
-            viewer={this.hcsImageViewer}
-          />
+          {this.viewSettings.volumetricRendering ? (
+            <HCS3DButton
+              size="small"
+              className={styles.action}
+              viewer={this.hcsImageViewer}
+            />) : null}
           <HCSDownloadButton
             size="small"
             className={styles.action}

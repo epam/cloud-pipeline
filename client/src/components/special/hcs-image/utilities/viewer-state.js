@@ -98,9 +98,9 @@ class ViewerState extends HCSBaseState {
   @observable xSlice = [1, 2];
   @observable ySlice = [1, 2];
   @observable zSlice = [1, 2];
-  @observable xSliceEnabled = true;
-  @observable ySliceEnabled = true;
-  @observable zSliceEnabled = true;
+  @observable xSliceEnabled = false;
+  @observable ySliceEnabled = false;
+  @observable zSliceEnabled = false;
   @observable selection = [];
   @observable dimensions = [];
   @observable downsamplingMode = 1;

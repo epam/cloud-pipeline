@@ -93,7 +93,8 @@ class HCSInfo {
       well: `${viewSettings['well_layout']}` !== 'false',
       timeseries: `${viewSettings['timeseries_layout']}` !== 'false',
       originalImage: `${viewSettings['original_image']}` !== 'false',
-      zPlanesSliderMode: `${viewSettings['z_planes_slider_mode']}` === 'true'
+      zPlanesSliderMode: `${viewSettings['z_planes_slider_mode']}` === 'true',
+      volumetricRendering: `${viewSettings['3d_rendering']}` === 'true'
     };
     /**
      * Sequences info
