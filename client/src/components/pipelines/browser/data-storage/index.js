@@ -2762,13 +2762,8 @@ export default class DataStorage extends React.Component {
       regionId,
       mountStatus,
       mask,
-      path,
       policySupported
     } = this.storage.info || {};
-    let pathToCurrentFolder;
-    if (!this.isOmicsStore && this.storage?.info && this.props.path) {
-      pathToCurrentFolder = `${(type || '').toLowerCase()}://${path}/${this.props.path}`;
-    }
     const restoreClassChangeDisclaimer = (item, operation) => {
       if (!item) {
         return '';
@@ -2999,7 +2994,8 @@ export default class DataStorage extends React.Component {
                 />,
                 <StorageSize
                   storage={this.storage.info}
-                  path={pathToCurrentFolder}
+                  path={this.props.path}
+                  showPathSize={!this.isOmicsStore}
                 />
               ] : []}
               specialTagsProperties={{

@@ -167,11 +167,12 @@ class StorageSize extends React.PureComponent {
     if (!this.pathInfo) {
       return undefined;
     }
-    const size = (this.pathInfo[0] || {}).size;
-    if (isNaN(size) || size < 0) {
+    const {effectiveSize, size, oldVersionsEffectiveSize, oldVersionsSize} = this.pathInfo;
+    const totalSize = (effectiveSize || size) + (oldVersionsEffectiveSize || oldVersionsSize);
+    if (isNaN(totalSize)) {
       return undefined;
     }
-    return size;
+    return totalSize;
   }
 
   @computed
@@ -215,19 +216,30 @@ class StorageSize extends React.PureComponent {
   };
 
   updateStoragePathSize = async () => {
-    const {path} = this.props;
-    if (!path) {
+    const {
+      storage,
+      storageId,
+      path
+    } = this.props;
+    let id = storageId;
+    if (!this.props.showPathSize) {
+      this.pathInfo = null;
       return;
     }
-    const request = new DataStorageItemSize();
-    await request.send([path]);
-    if (request.error) {
-      console.warn(request.error);
-      this.pathInfo = null;
-    } else if (request.value) {
-      this.pathInfo = request.value;
-    } else {
-      this.pathInfo = null;
+    if (id === undefined && typeof storage === 'object') {
+      id = storage.id;
+    }
+    if (id !== undefined && path !== undefined) {
+      const request = new DataStoragePathUsage(id, path);
+      await request.fetch();
+      if (request.error) {
+        console.warn(request.error);
+        this.pathInfo = null;
+      } else if (request.value) {
+        this.pathInfo = request.value;
+      } else {
+        this.pathInfo = null;
+      }
     }
   };
 
@@ -265,6 +277,9 @@ class StorageSize extends React.PureComponent {
   };
 
   renderFolderSize = () => {
+    if (!this.props.showPathSize) {
+      return null;
+    }
     let currentFolderSize;
     let folder;
     if (this.props.path && this.pathUsageInfo !== undefined) {
@@ -506,7 +521,8 @@ StorageSize.propTypes = {
   storage: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   style: PropTypes.object,
-  path: PropTypes.string
+  path: PropTypes.string,
+  showPathSize: PropTypes.bool
 };
 
 export default StorageSize;
