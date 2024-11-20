@@ -86,7 +86,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(ALLOW_COMMIT, context().$(byText("Allow commit of the tool"))
                         .parent().find(By.xpath("following-sibling::div//span"))),
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-dropdown-button"))),
                 entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
                         .closest(".ant-row").find(className("ant-form-item-control ")))
         );
@@ -243,31 +243,27 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     private ToolParameterAO clickAddParameter(String parameterType) {
-        $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
+        get(ADD_PARAMETER).shouldBe(visible).hover();
         $(byText(parameterType)).shouldBe(visible).click();
         parameterIndex = parseInt($$x(".//div[contains(@id,'parameters.params.param_')]")
                 .last().getAttribute("id").replaceAll("\\D+", ""));
         return new ToolParameterAO(this, parameterIndex);
     }
 
-    public ToolParameterAO getParameterByIndex(int parameterIndex) {
-        return new ToolParameterAO(this, parameterIndex);
-    }
-
-    public ToolParameterAO getParameterByName(final String name) {
-        parameterIndex = parseInt($x(format(".//input[contains(@id, '.name') and contains(@value, '%s')]", name))
-                .getAttribute("id").replaceAll("\\D+", ""));
-        return new ToolParameterAO(this, parameterIndex);
-    }
-
-    public ToolSettings validateDisabledParameter(final String parameter) {
-        getParameterByName(parameter).get(REMOVE_PARAMETER)
-                .has(not(exist));
+    public ToolSettings validateDisabledParameter(final String name) {
+        parameterByName(name).get(REMOVE_PARAMETER).has(not(exist));
         return this;
     }
 
-    public ToolSettings deleteParameter(final String parameter) {
-        return getParameterByName(parameter).deleteParameter();
+    public ToolSettings deleteParameter(final String name) {
+        parameterByName(name).deleteParameter();
+        return this;
+    }
+
+    public ToolParameterAO parameterByName(final String name) {
+        int index = parseInt($x(format(".//input[contains(@id, '.name') and contains(@value, '%s')]", name))
+                .getAttribute("id").replaceAll("\\D+", ""));
+        return new ToolParameterAO(this, index);
     }
 
     @Override
@@ -323,20 +319,20 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public static class ToolParameterAO extends ParameterFieldAO {
 
-            private final Map<Primitive, SelenideElement> elements;
-            private final ToolSettings toolSettings;
+        private final Map<Primitive, SelenideElement> elements;
+        private final ToolSettings toolSettings;
 
-            public ToolParameterAO(ToolSettings toolSettings, int parameterIndex) {
-                super(parameterByIndex(parameterIndex));
-                this.toolSettings = toolSettings;
-
-                this.elements = initialiseElements(
-                        entry(PARAMETER_NAME, $x(format(".//input[contains(@id,'.params.param_%d.name')]", parameterIndex))),
-                        entry(PARAMETER_VALUE, $x(format(".//input[contains(@id,'.params.param_%d.value')]", parameterIndex))),
-                        entry(REMOVE_PARAMETER, $x(format(".//div[contains(@id,'.params.param_%d')]", parameterIndex))
-                                .find(byId("remove-parameter-button")))
-                );
-            }
+        public ToolParameterAO(ToolSettings toolSettings, int parameterIndex) {
+            super(parameterByIndex(parameterIndex));
+            this.toolSettings = toolSettings;
+            String parameter = ".//*[contains(@id,'.params.param_%d.%s')]";
+            this.elements = initialiseElements(
+                    entry(PARAMETER_NAME, $x(format(parameter, parameterIndex, ".name"))),
+                    entry(PARAMETER_VALUE, $x(format(parameter, parameterIndex, ".value"))),
+                    entry(REMOVE_PARAMETER, $x(format(parameter, parameterIndex, ""))
+                            .find(byId("remove-parameter-button")))
+            );
+        }
 
         public ToolParameterAO setName(String name) {
             get(PARAMETER_NAME).click();
