@@ -17,6 +17,8 @@ import logging
 import requests
 import time
 
+NON_RETRY_CODES = [200, 401, 403]
+
 
 class CloudType:
 
@@ -205,7 +207,7 @@ class CloudPipelineClient:
                 response = requests.request(method=http_method, url=url, data=json.dumps(data),
                                             headers=self.__headers__, verify=False,
                                             timeout=self.__connection_timeout__)
-                if response.status_code != 200:
+                if response.status_code not in NON_RETRY_CODES:
                     error_message = 'API responded with http status %s.' % str(response.status_code)
                     if response.json() is not None and response.json().get('message'):
                         error_message = error_message + response.json().get('message')
