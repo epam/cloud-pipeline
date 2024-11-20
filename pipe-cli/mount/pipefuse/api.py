@@ -206,7 +206,10 @@ class CloudPipelineClient:
                                             headers=self.__headers__, verify=False,
                                             timeout=self.__connection_timeout__)
                 if response.status_code != 200:
-                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                    error_message = 'API responded with http status %s.' % str(response.status_code)
+                    if response.json() is not None and response.json().get('message'):
+                        error_message = error_message + response.json().get('message')
+                    raise HTTPError(error_message)
                 response_data = response.json()
                 status = response_data.get('status') or 'ERROR'
                 message = response_data.get('message') or 'No message'
