@@ -951,6 +951,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         onBlur: this.saveMetadata({index: metadataItem.index, field}),
         onPressEnter: this.saveMetadata({index: metadataItem.index, field}),
         size: 'small',
+        disabled: readOnly,
         value: this.state.editableText,
         onChange: this.onMetadataChange,
         onKeyDown: (e) => {
@@ -1050,6 +1051,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         >
           <td colSpan={6}>
             <Select
+              disabled={readOnly}
               showSearch
               style={{width: '100%'}}
               filterOption={
@@ -1370,6 +1372,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           </td>
           <td colSpan={2}>
             <AutoComplete
+              disabled={readOnly}
               allowClear
               backfill
               autoFocus
