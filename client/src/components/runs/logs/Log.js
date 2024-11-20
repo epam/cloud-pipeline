@@ -866,21 +866,24 @@ class Logs extends localization.LocalizedReactComponent {
           endDate && `to=${encodeURIComponent(endDate)}`
         ].filter(Boolean);
         const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+        const isWindowsRun = /^windows$/i.test(run.platform);
         if (instance.nodeName) {
+          const url = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           details.push({
             key: 'IP',
             value: (
-              <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
+              <Link to={url}>
                 {instance.nodeName} ({instance.nodeIP})
               </Link>
             )});
         } else {
           const parts = instance.nodeIP.split('.');
+          const url = `/cluster/ip-${parts.join('-')}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           if (parts.length === 4) {
             details.push({
               key: 'IP',
               value: (
-                <Link to={`/cluster/ip-${parts.join('-')}/monitor${query}`}>
+                <Link to={url}>
                   {instance.nodeIP}
                 </Link>
               )
