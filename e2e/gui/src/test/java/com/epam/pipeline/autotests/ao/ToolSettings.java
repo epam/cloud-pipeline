@@ -325,7 +325,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         public ToolParameterAO(ToolSettings toolSettings, int parameterIndex) {
             super(parameterByIndex(parameterIndex));
             this.toolSettings = toolSettings;
-            String parameter = ".//*[contains(@id,'.params.param_%d.%s')]";
+            String parameter = ".//*[contains(@id,'.params.param_%d%s')]";
             this.elements = initialiseElements(
                     entry(PARAMETER_NAME, $x(format(parameter, parameterIndex, ".name"))),
                     entry(PARAMETER_VALUE, $x(format(parameter, parameterIndex, ".value"))),
