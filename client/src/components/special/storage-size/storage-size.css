@@ -91,10 +91,5 @@
 }
 
 .folder-size-title {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  max-width: 150px;
-  white-space: nowrap;
-  display: inline-block;
-  vertical-align: bottom;
+  word-break: break-all;
 }
