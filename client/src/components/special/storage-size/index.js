@@ -184,7 +184,6 @@ class StorageSize extends React.PureComponent {
   }
 
   get isRoot () {
-    console.log('1', this.props.path)
     return !this.props.path;
   }
 
@@ -505,7 +504,8 @@ StorageSize.propTypes = {
   storage: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   style: PropTypes.object,
-  path: PropTypes.string
+  path: PropTypes.string,
+  onModeChange: PropTypes.func
 };
 
 export default StorageSize;
