@@ -355,9 +355,9 @@ class MountStorageTask:
             exit(1)
 
     def _get_storage_mount(self, storage, loaded_mounts):
-        mount_id = int(storage.file_share_mount_id)
-        if mount_id is None:
+        if storage.file_share_mount_id is None:
             return None
+        mount_id = int(storage.file_share_mount_id)
         if mount_id in loaded_mounts:
             return loaded_mounts[mount_id]
         file_share_mount = self.api.load_file_share_mount(mount_id)
