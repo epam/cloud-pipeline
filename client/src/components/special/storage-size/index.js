@@ -184,6 +184,7 @@ class StorageSize extends React.PureComponent {
   }
 
   get isRoot () {
+    console.log('1', this.props.path)
     return !this.props.path;
   }
 
@@ -285,13 +286,21 @@ class StorageSize extends React.PureComponent {
     const previousVersionsInfo = this.isNFS
       ? ''
       : ` (${previousVersionsSize})`;
-    let header = storage?.pathMask || storage?.path || 'Storage';
+    let header = storage?.name || storage?.path || 'Storage';
     if (mode === MODE.folder) {
       header = (path || '').split('/').pop();
     }
+    const getIcon = () => {
+      if (mode === MODE.storage) {
+        return this.isNFS ? 'hdd' : 'inbox';
+      }
+      return 'folder';
+    };
     return (
       <div className={styles.detailsContainer}>
-        <b className={styles.folderSizeTitle}>{header}</b>
+        <b className={styles.folderSizeTitle}>
+          <Icon type={getIcon()} /> {header}
+        </b>
         <div className={styles.standardContainer}>
           <div
             className={styles.standardDetailRow}
@@ -302,14 +311,13 @@ class StorageSize extends React.PureComponent {
             </span>
             <InfoTooltip isNFS={this.isNFS} sizes={{size, effective}} />
           </div>
-          {this.isNFS ? this.renderControls() : null}
         </div>
         {this.hasArchivedData ? (
           <span className={styles.detail}>
             Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
           </span>
         ) : null}
-        {this.isNFS ? null : this.renderControls()}
+        {this.renderControls()}
       </div>
     );
   };

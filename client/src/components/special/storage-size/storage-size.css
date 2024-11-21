@@ -92,4 +92,7 @@
 
 .folder-size-title {
   word-break: break-all;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
