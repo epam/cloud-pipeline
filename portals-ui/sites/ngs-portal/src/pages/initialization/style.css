@@ -1,0 +1,13 @@
+@import url('@cloud-pipeline/components/dist/style.css');
+
+.app-initialization {
+  @apply w-full h-full flex items-center justify-center overflow-auto;
+}
+
+.app-initialization .auth-pending {
+  @apply text;
+}
+
+.app-initialization .auth-error {
+  @apply text-orange-700;
+}

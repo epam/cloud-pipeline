@@ -1,0 +1,127 @@
+@tailwind components;
+
+.text {
+    @apply text-slate-700 dark:text-neutral-300;
+}
+
+.text-accent {
+    @apply text-slate-950 dark:text-neutral-50;
+}
+
+.text-faded {
+    @apply text-slate-400 dark:text-neutral-500;
+}
+
+.disabled-component-text {
+    @apply text-neutral-400 dark:text-slate-600;
+}
+
+.panel-background {
+    @apply bg-slate-50 dark:bg-neutral-800;
+}
+
+.panel-border {
+    @apply border-slate-200 dark:border-neutral-700;
+}
+
+.panel-border-accent {
+    @apply border-slate-400 dark:border-neutral-400;
+}
+
+.panel-border-primary {
+    @apply border-sky-500 dark:border-sky-600;
+}
+
+.panel-background.skeleton {
+    @apply bg-gradient-to-r from-0% via-50% to-100%;
+    @apply from-slate-50 dark:from-neutral-900;
+    @apply via-slate-200 dark:via-neutral-800;
+    @apply to-slate-50 dark:to-neutral-900;
+
+    background-size: 100vw 100vh;
+    animation: 1.5s 1s skeleton linear infinite;
+}
+
+@keyframes skeleton {
+    from {
+        background-position-x: 0;
+    }
+
+    to {
+        background-position-x: 100vw;
+    }
+}
+
+.panel-background.semi-transparent {
+    @apply bg-slate-50/50 dark:bg-neutral-800/50 backdrop-blur;
+}
+
+.panel-background.semi-transparent-no-backdrop {
+    @apply bg-slate-50/75 dark:bg-neutral-800/75;
+}
+
+.panel-background.skeleton.semi-transparent {
+    @apply from-slate-100/50 dark:from-neutral-900/50;
+    @apply via-slate-50/50 dark:via-neutral-800/50;
+    @apply to-slate-100/50 dark:to-neutral-900/50;
+}
+
+.panel {
+    @apply rounded;
+    @apply panel-background;
+}
+
+.panel-item:not([disabled], .primary, .danger) {
+    @apply hover:bg-slate-200 focus:bg-slate-200 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700;
+}
+
+.panel-item.panel-item-hovered:not(.primary, .danger) {
+    @apply bg-slate-100 dark:bg-neutral-700/25;
+}
+
+.panel-shadow {
+    @apply shadow-slate-300 dark:shadow-neutral-900;
+}
+
+.panel-shadow-dark {
+    @apply shadow-slate-500 dark:shadow-neutral-900;
+}
+
+.panel-shadow-primary {
+    @apply shadow-sky-500 dark:shadow-sky-700;
+}
+
+.panel-shadow-primary-accent {
+    @apply shadow-sky-600 dark:shadow-sky-600;
+}
+
+.panel.shadow {
+    @apply shadow-md panel-shadow;
+}
+
+.panel.shadow-dark {
+    @apply shadow-md panel-shadow-dark;
+}
+
+@layer components {
+    .drop-light-shadow {
+        filter: drop-shadow(0 0 1px rgb(255 255 255 / 75%));
+    }
+
+    .drop-dark-shadow {
+        filter: drop-shadow(0 0 1px rgb(0 0 0 / 50%));
+    }
+}
+
+.disabled-component-background {
+    @apply bg-slate-200 dark:bg-slate-800;
+}
+
+.disabled-component-border {
+    @apply border-transparent dark:border-slate-800;
+}
+
+.disabled-component {
+    @apply disabled-component-text disabled-component-background disabled-component-border;
+    @apply cursor-not-allowed select-none;
+}

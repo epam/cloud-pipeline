@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    @apply p-0 m-0 overflow-auto;
+
+    width: 100vw;
+    height: 100vh;
+}
+
+#root {
+    @apply p-0 m-0 w-full h-full overflow-auto;
+}

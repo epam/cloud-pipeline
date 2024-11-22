@@ -1,0 +1,134 @@
+@import url('./components/common.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    a .text,
+    a {
+        @apply text-sky-700 dark:text-sky-300;
+    }
+
+    a:not(.disabled, [disabled]) {
+        @apply cursor-pointer hover:underline;
+    }
+
+    a .text-accent {
+        @apply text-sky-900 dark:text-sky-200;
+    }
+
+    a .text-faded {
+        @apply text-sky-400 dark:text-sky-500;
+    }
+
+    a.disabled,
+    a[disabled] {
+        @apply text-faded;
+    }
+}
+
+.overlay-root {
+    @apply w-screen h-screen overflow-hidden m-0 p-0 fixed top-0 left-0 right-0 bottom-0 z-10;
+    @apply text;
+
+    pointer-events: none;
+}
+
+.screen {
+    @apply w-screen h-screen overflow-auto;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.75rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+h4 {
+    font-size: 1.25rem;
+}
+
+h5 {
+    font-size: 1.125rem;
+}
+
+a .text,
+a {
+    @apply text-sky-700 dark:text-sky-300;
+}
+
+a:not(.disabled, [disabled]) {
+    @apply cursor-pointer hover:underline;
+}
+
+a .text-accent {
+    @apply text-sky-900 dark:text-sky-200;
+}
+
+a .text-faded {
+    @apply text-sky-400 dark:text-sky-500;
+}
+
+a.disabled,
+a[disabled] {
+    @apply text-faded;
+}
+
+.row {
+    @apply flex items-center space-x-1;
+}
+
+.nth-children > .nth-child:nth-child(even),
+.rows > .row:nth-child(even) {
+    @apply bg-slate-200/50 dark:bg-neutral-700/50;
+}
+
+.error {
+    @apply text-rose-600 dark:text-rose-500;
+}
+
+.icon {
+    width: 1rem;
+    height: 1rem;
+    line-height: 1rem;
+}
+
+.icon.small {
+    width: 0.75rem;
+    height: 0.75rem;
+    line-height: 0.75rem;
+}
+
+.divider {
+    @apply bg-neutral-200 dark:bg-neutral-900;
+}
+
+.text-smaller {
+    font-size: smaller;
+}
+
+.overlay {
+    @apply fixed top-0 left-0 right-0 bottom-0 overflow-hidden;
+
+    pointer-events: none;
+    background: transparent;
+    transition: background-color 250ms;
+}
+
+.overlay > *,
+.overlay-root > *:not(.overlay),
+.overlay.visible {
+    pointer-events: auto;
+}
+
+.overlay.visible.shadowed {
+    @apply bg-gray-950/20;
+    @apply dark:bg-neutral-950/75;
+}
