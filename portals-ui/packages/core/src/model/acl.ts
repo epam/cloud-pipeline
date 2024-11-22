@@ -2,6 +2,7 @@ export enum AclClass {
   user = 'USER',
   role = 'ROLE',
   pipeline = 'PIPELINE',
+  folder = 'FOLDER',
 }
 
 export type AclEntry<Class extends AclClass = AclClass> = {

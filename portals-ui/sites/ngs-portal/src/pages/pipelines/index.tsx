@@ -10,11 +10,14 @@ export default function Pipelines() {
       .catch(() => {});
   }, []);
   const { pipelines, error, pending } = usePipelinesState();
-  if (error || !pipelines) {
+  if (error) {
     return <div>{error}</div>;
   }
   if (pending) {
     return <Spinner />;
+  }
+  if (!pipelines) {
+    return <div>No data</div>;
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
