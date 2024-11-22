@@ -17,6 +17,25 @@
 import {action, computed, observable} from 'mobx';
 import HCSBaseState from './base-state';
 
+class DelayedSliceValue {
+  constructor (callback, property, delay = 50) {
+    this.delay = delay;
+    this.callback = callback;
+    this.property = property;
+    this.handle = undefined;
+  }
+
+  setValue (value) {
+    this.value = value;
+    if (this.handle === undefined) {
+      this.handle = setTimeout(() => {
+        this.callback({[this.property]: this.value});
+        this.handle = undefined;
+      }, this.delay);
+    }
+  }
+}
+
 function shallowCompareArrays (array1, array2) {
   if (array1 && array2 && array1.length === array2.length) {
     for (let i = 0; i < array1.length; i++) {
@@ -88,6 +107,7 @@ class ChannelState {
 class ViewerState extends HCSBaseState {
   @observable loader;
   @observable use3D = false;
+  @observable volumetricViewerAvailable = false;
   @observable useLens = false;
   @observable useColorMap = false;
   @observable colorMap = '';
@@ -95,16 +115,21 @@ class ViewerState extends HCSBaseState {
   @observable lensChannel = 0;
   @observable pending = false;
   @observable isRGB = false;
-  @observable xSlice = [1, 2];
-  @observable ySlice = [1, 2];
-  @observable zSlice = [1, 2];
+  @observable xSlice = [0, 0];
+  @observable xSliceRange = [0, 0];
+  @observable ySlice = [0, 0];
+  @observable ySliceRange = [0, 0];
+  @observable zSlice = [0, 0];
+  @observable zSliceRange = [0, 0];
   @observable xSliceEnabled = false;
   @observable ySliceEnabled = false;
   @observable zSliceEnabled = false;
   @observable selection = [];
   @observable dimensions = [];
-  @observable downsamplingMode = 1;
-  @observable renderingMode = 1;
+  @observable downsamplingModes = [];
+  @observable downsamplingMode = 0;
+  @observable renderingModes = [];
+  @observable renderingMode = 0;
   /**
    * Channels state
    * @type {ChannelState[]}
@@ -124,6 +149,9 @@ class ViewerState extends HCSBaseState {
 
   constructor (viewer) {
     super(viewer, 'viewerStateChanged');
+    this.xSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'xSlice');
+    this.ySliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'ySlice');
+    this.zSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'zSlice');
   }
 
   addEventListener = (listener) => {
@@ -160,8 +188,11 @@ class ViewerState extends HCSBaseState {
       useColorMap = true,
       colorMap = '',
       xSlice = [],
+      xSliceRange = [],
       ySlice = [],
+      ySliceRange = [],
       zSlice = [],
+      zSliceRange = [],
       xSliceEnabled = false,
       ySliceEnabled = false,
       zSliceEnabled = false,
@@ -169,8 +200,10 @@ class ViewerState extends HCSBaseState {
       isRGB,
       pending = false,
       metadata,
-      downsamplingMode,
-      renderingMode
+      loader3DIndex: downsamplingMode,
+      loadersInfo = [],
+      renderingModeIdx: renderingMode,
+      renderingModes3D = []
     } = newState || {};
     this.pending = pending;
     this.loader = loader;
@@ -185,8 +218,11 @@ class ViewerState extends HCSBaseState {
     this.colorMap = colorMap;
     this.isRGB = isRGB;
     this.xSlice = xSlice;
+    this.xSliceRange = xSliceRange;
     this.ySlice = ySlice;
+    this.ySliceRange = ySliceRange;
     this.zSlice = zSlice;
+    this.zSliceRange = zSliceRange;
     this.xSliceEnabled = xSliceEnabled;
     this.ySliceEnabled = ySliceEnabled;
     this.zSliceEnabled = zSliceEnabled;
@@ -196,7 +232,14 @@ class ViewerState extends HCSBaseState {
       ? globalSelection.z
       : 0;
     this.downsamplingMode = downsamplingMode;
+    this.downsamplingModes = loadersInfo.filter((dm) => dm.loadable).map((dm) => ({
+      id: dm.loaderIdx,
+      name: dm.loaderIdx === 0 ? 'No downsampling' : `Downsample ${dm.loaderIdx + 1}x`,
+      bytes: dm.bytesPerChannel
+    }));
     this.renderingMode = renderingMode;
+    this.renderingModes = renderingModes3D;
+    this.volumetricViewerAvailable = this.downsamplingModes.length > 0 && this.renderingModes.length > 0;
     if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
       const e = /field ([\d]+)/i.exec(metadata.Name);
       if (e && e.length) {
@@ -335,9 +378,32 @@ class ViewerState extends HCSBaseState {
   };
 
   @action
+  set3D = (opts = {}) => {
+    if (this.use3D) {
+      const slice = (o) => [o[0], o[1]];
+      const payload = {
+        use3D: true,
+        loader3DIndex: this.downsamplingMode,
+        renderingModeIdx: this.renderingMode,
+        xSlice: this.xSlice.slice(),
+        ySlice: this.ySlice.slice(),
+        zSlice: this.zSlice.slice(),
+        ...opts
+      };
+      payload.xSlice = slice(payload.xSlice);
+      payload.ySlice = slice(payload.ySlice);
+      payload.zSlice = slice(payload.zSlice);
+      this.viewer.set3D(payload);
+    } else {
+      this.viewer.set3D(false);
+    }
+  }
+
+  @action
   change3dMode = (enabled) => {
     if (this.viewer) {
       this.use3D = enabled;
+      this.viewer.set3D(enabled);
     }
   };
 
@@ -345,6 +411,7 @@ class ViewerState extends HCSBaseState {
   changeDownsamplingMode = (mode) => {
     if (this.viewer) {
       this.downsamplingMode = mode;
+      this.set3D();
     }
   };
 
@@ -352,6 +419,7 @@ class ViewerState extends HCSBaseState {
   changeRenderingMode = (mode) => {
     if (this.viewer) {
       this.renderingMode = mode;
+      this.set3D();
     }
   };
 
@@ -359,13 +427,7 @@ class ViewerState extends HCSBaseState {
   changeXSlice = (slice) => {
     if (this.viewer) {
       this.xSlice = slice;
-    }
-  };
-
-  @action
-  changeXSliceEnabled = (enabled) => {
-    if (this.viewer) {
-      this.xSliceEnabled = enabled;
+      this.xSliceDelayed.setValue(slice);
     }
   };
 
@@ -373,13 +435,7 @@ class ViewerState extends HCSBaseState {
   changeYSlice = (slice) => {
     if (this.viewer) {
       this.ySlice = slice;
-    }
-  };
-
-  @action
-  changeYSliceEnabled = (enabled) => {
-    if (this.viewer) {
-      this.ySliceEnabled = enabled;
+      this.ySliceDelayed.setValue(slice);
     }
   };
 
@@ -387,13 +443,7 @@ class ViewerState extends HCSBaseState {
   changeZSlice = (slice) => {
     if (this.viewer) {
       this.zSlice = slice;
-    }
-  };
-
-  @action
-  changeZSliceEnabled = (enabled) => {
-    if (this.viewer) {
-      this.zSliceEnabled = enabled;
+      this.zSliceDelayed.setValue(slice);
     }
   };
 

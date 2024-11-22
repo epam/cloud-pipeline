@@ -14,17 +14,25 @@
  *  limitations under the License.
  */
 
-export default {
-  setDefault: 'set-default',
-  setLoading: 'set-loading',
-  setLoaded: 'set-loaded',
-  setError: 'set-error',
-  setChannelProperties: 'set-channel-properties',
-  setDefaultChannelsColors: 'set-default-channels-colors',
-  setColorMap: 'set-color-map',
-  setLensChannel: 'set-lens-channel',
-  setLensEnabled: 'set-lens-enabled',
-  setGlobalPosition: 'set-global-position',
-  setLockChannels: 'set-lock-channels',
-  set3D: 'set-3D',
-};
+/* eslint-disable react/prop-types */
+
+import {
+  ColorPalette3DExtensions,
+  VolumeViewer
+} from '@hms-dbmi/viv';
+
+export const defaultExtensions = [{
+  id: 0,
+  name: 'Maximum intensity projection',
+  extension: new ColorPalette3DExtensions.MaximumIntensityProjectionExtension(),
+}, {
+  id: 1,
+  name: 'Minimum intensity projection',
+  extension: new ColorPalette3DExtensions.MinimumIntensityProjectionExtension(),
+}, {
+  id: 2,
+  name: 'Additive blend',
+  extension: new ColorPalette3DExtensions.AdditiveBlendExtension(),
+}];
+
+export default VolumeViewer;

@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import { defaultExtensions } from '../../viewer/components/viv-3d-viewer';
+
 export default function init() {
   const selections = [];
   return {
@@ -25,8 +27,11 @@ export default function init() {
     globalSelection: undefined,
     colors: [],
     domains: [],
-    realDomains: [],
+    domains3D: [],
     contrastLimits: [],
+    contrastLimits3D: [],
+    realDomains: [],
+    realDomains3D: [],
     useLens: false,
     useColorMap: false,
     colorMap: '',
@@ -35,8 +40,11 @@ export default function init() {
     use3D: false,
     pixelValues: [],
     xSlice: [0, 1],
+    xSliceRange: [0, 1],
     ySlice: [0, 1],
+    ySliceRange: [0, 1],
     zSlice: [0, 1],
+    zSliceRange: [0, 1],
     ready: false,
     isRGB: false,
     shapeIsInterleaved: false,
@@ -44,6 +52,10 @@ export default function init() {
     globalDimensions: [],
     metadata: undefined,
     loader: [],
+    loader3DIndex: undefined,
+    loadersInfo: [],
+    renderingModes3D: defaultExtensions.map((o) => ({ id: o.id, name: o.name })),
+    renderingModeIdx: 0,
     error: undefined,
     lockChannels: false,
   };

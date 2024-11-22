@@ -17,10 +17,31 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, isObservableArray} from 'mobx';
 import {Slider, Select, Checkbox, Popover, Button, Icon} from 'antd';
 import displaySize from '../../../../utils/displaySize';
 import styles from './hcs-3d-button.css';
+import classNames from "classnames";
+
+
+function getSliceRangeSafe(range) {
+  if (!range || typeof range !== 'object' || !(Array.isArray(range) || isObservableArray(range))) {
+    return [0, 100];
+  }
+  const [min = 0, max = 100] = range;
+  if (min >= max) {
+    return [0, 100];
+  }
+  return [min, max];
+}
+
+function getSliceEnabled(range) {
+  if (!range || typeof range !== 'object' || !(Array.isArray(range) || isObservableArray(range)) || range.length !== 2) {
+    return false;
+  }
+  const [min = 0, max = 100] = range;
+  return min < max;
+}
 
 @inject('hcsViewerState')
 @observer
@@ -38,13 +59,15 @@ export default class HCS3DButton extends React.Component {
   @computed
   get downsamplingMode () {
     const {hcsViewerState} = this.props;
-    return '' + hcsViewerState?.downsamplingMode;
+    const {downsamplingMode} = hcsViewerState ?? {};
+    return downsamplingMode === undefined ? undefined : `${downsamplingMode}`;
   }
 
   @computed
   get renderingMode () {
     const {hcsViewerState} = this.props;
-    return hcsViewerState?.renderingMode;
+    const {renderingMode} = hcsViewerState ?? {};
+    return renderingMode === undefined ? undefined : `${renderingMode}`;
   }
 
   @computed
@@ -54,9 +77,15 @@ export default class HCS3DButton extends React.Component {
   }
 
   @computed
+  get xSliceRange () {
+    const {hcsViewerState} = this.props;
+    return getSliceRangeSafe(hcsViewerState?.xSliceRange)
+  }
+
+  @computed
   get xSliceEnabled () {
     const {hcsViewerState} = this.props;
-    return hcsViewerState?.xSliceEnabled;
+    return getSliceEnabled(hcsViewerState?.xSlice);
   }
 
   @computed
@@ -66,9 +95,15 @@ export default class HCS3DButton extends React.Component {
   }
 
   @computed
+  get ySliceRange () {
+    const {hcsViewerState} = this.props;
+    return getSliceRangeSafe(hcsViewerState?.ySliceRange)
+  }
+
+  @computed
   get ySliceEnabled () {
     const {hcsViewerState} = this.props;
-    return hcsViewerState?.ySliceEnabled;
+    return getSliceEnabled(hcsViewerState?.ySlice);
   }
 
   @computed
@@ -78,22 +113,28 @@ export default class HCS3DButton extends React.Component {
   }
 
   @computed
+  get zSliceRange () {
+    const {hcsViewerState} = this.props;
+    return getSliceRangeSafe(hcsViewerState?.zSliceRange)
+  }
+
+  @computed
   get zSliceEnabled () {
     const {hcsViewerState} = this.props;
-    return hcsViewerState?.zSliceEnabled;
+    return getSliceEnabled(hcsViewerState?.zSlice);
   }
 
   onChangeDownsampleMode = (key) => {
     const {hcsViewerState} = this.props;
     if (hcsViewerState?.changeDownsamplingMode) {
-      hcsViewerState.changeDownsamplingMode(key);
+      hcsViewerState.changeDownsamplingMode(Number.isNaN(Number(key)) ? undefined : Number(key));
     }
   };
 
   onChangeRenderingMode = (key) => {
     const {hcsViewerState} = this.props;
-    if (hcsViewerState?.changeDownsamplingMode) {
-      hcsViewerState.changeRenderingMode(key);
+    if (hcsViewerState?.changeRenderingMode) {
+      hcsViewerState.changeRenderingMode(Number.isNaN(Number(key)) ? undefined : Number(key));
     }
   };
 
@@ -110,46 +151,34 @@ export default class HCS3DButton extends React.Component {
 
   renderDropdownContent = () => {
     const {hcsViewerState} = this.props;
-    const downsamplingModesMock = [
-      {id: 1, name: 'mode 1', size_bytes: 1},
-      {id: 2, name: 'mode 2', size_bytes: 100},
-      {id: 3, name: 'mode 3', size_bytes: 1101010},
-      {id: 4, name: 'mode 4', size_bytes: 98883838}
-    ];
-    const renderingModesMock = [
-      {id: 1, name: 'Maximum intensity projection'},
-      {id: 2, name: 'Minimum intensity projection'},
-      {id: 3, name: 'Normal intensity projection'}
-    ];
+    const downsamplingModes = hcsViewerState?.downsamplingModes || [];
+    const renderingModes = hcsViewerState?.renderingModes || [];
     const sliceControls = [{
-      min: 0,
-      max: 100,
+      min: this.xSliceRange[0],
+      max: this.xSliceRange[1],
       title: 'X slice',
       onChange: hcsViewerState?.changeXSlice,
-      onChangeEnabled: hcsViewerState?.changeXSliceEnabled,
-      enabled: this.xSliceEnabled,
+      enabled: this.xSliceEnabled && this.use3dMode,
       value: [...this.xSlice]
     }, {
-      min: 0,
-      max: 100,
+      min: this.ySliceRange[0],
+      max: this.ySliceRange[1],
       title: 'Y slice',
       onChange: hcsViewerState?.changeYSlice,
-      onChangeEnabled: hcsViewerState?.changeYSliceEnabled,
-      enabled: this.ySliceEnabled,
+      enabled: this.ySliceEnabled && this.use3dMode,
       value: [...this.ySlice]
     }, {
-      min: 0,
-      max: 100,
+      min: this.zSliceRange[0],
+      max: this.zSliceRange[1],
       title: 'Z slice',
       onChange: hcsViewerState?.changeZSlice,
-      onChangeEnabled: hcsViewerState?.changeZSliceEnabled,
-      enabled: this.zSliceEnabled,
+      enabled: this.zSliceEnabled && this.use3dMode,
       value: [...this.zSlice]
     }];
     const TitleWrapper = ({title, children}) => (
       <div className={styles.selectorWrapper}>
         <span className={styles.title} style={{minWidth: 130}}>{title}</span>
-        {children}
+        <div className={styles.content}>{children}</div>
       </div>
     );
     return (
@@ -164,43 +193,38 @@ export default class HCS3DButton extends React.Component {
         </Checkbox>
         <TitleWrapper title="Downsampling mode:">
           <Select
-            value={`${this.downsamplingMode}`}
-            style={{flex: 1}}
+            style={{width: '100%'}}
+            value={this.downsamplingMode}
             onChange={this.onChangeDownsampleMode}
             getPopupContainer={triggerNode => triggerNode.parentNode}
           >
-            {downsamplingModesMock.map(mode => (
+            {downsamplingModes.map(mode => (
               <Select.Option key={mode.id} value={`${mode.id}`}>
-                {`${mode.name} (${displaySize(mode.size_bytes)})`}
+                {`${mode.name} (${displaySize(mode.bytes)} per channel)`}
               </Select.Option>
             ))}
           </Select>
         </TitleWrapper>
         <TitleWrapper title="Rendering mode:">
           <Select
-            value={`${this.renderingMode}`}
+            value={this.renderingMode}
             onChange={this.onChangeRenderingMode}
-            style={{flex: 1}}
+            style={{width: '100%'}}
             getPopupContainer={triggerNode => triggerNode.parentNode}
           >
-            {renderingModesMock.map(mode => (
+            {renderingModes.map(mode => (
               <Select.Option key={mode.id} value={`${mode.id}`}>
                 {mode.name}
               </Select.Option>
             ))}
           </Select>
         </TitleWrapper>
-        {sliceControls.map(({min, max, title, value, onChange, enabled, onChangeEnabled}) => (
+        {sliceControls.map(({min, max, title, value, onChange, enabled}) => (
           <div key={title} className={styles.sliceWrapper}>
-            <Checkbox
-              className={styles.title}
-              checked={enabled}
-              onChange={e => onChangeEnabled(e.target.checked)}
-            >
-              {title}
-            </Checkbox>
+            <span>{title}</span>
             <Slider
-              style={{margin: '2px 6px'}}
+              style={{margin: '2px 6px', flex: 1}}
+              disabled={!enabled}
               value={value}
               min={min}
               max={max}
@@ -217,11 +241,17 @@ export default class HCS3DButton extends React.Component {
     const {size, className} = this.props;
     const {modalVisible} = this.state;
     return (
-      <Button.Group className={className}>
+      <div className={classNames(className, styles.volumetricButton)}>
         <Button
           size={size}
           onClick={this.toggle3DMode}
           type={this.use3dMode ? 'primary' : 'default'}
+          style={{
+            borderBottomRightRadius: '0px',
+            borderTopRightRadius: '0px',
+            borderBottomLeftRadius: '4px',
+            borderTopLeftRadius: '4px'
+          }}
         >
           3D
         </Button>
@@ -242,12 +272,14 @@ export default class HCS3DButton extends React.Component {
         >
           <Button size={size} style={{
             borderBottomRightRadius: '4px',
-            borderTopRightRadius: '4px'
+            borderTopRightRadius: '4px',
+            borderBottomLeftRadius: '0px',
+            borderTopLeftRadius: '0px'
           }}>
             <Icon type="down" />
           </Button>
         </Popover>
-      </Button.Group>
+      </div>
     );
   }
 }

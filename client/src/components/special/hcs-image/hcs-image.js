@@ -793,7 +793,7 @@ class HcsImage extends React.PureComponent {
               }
             />
           ) : null}
-          {this.viewSettings.volumetricRendering ? (
+          {this.viewSettings.volumetricRendering && this.hcsViewerState.volumetricViewerAvailable ? (
             <HCS3DButton
               size="small"
               className={styles.action}
@@ -1053,6 +1053,10 @@ class HcsImage extends React.PureComponent {
     const sequenceInfo = this.selectedSequence;
     const selectedWell = this.selectedWell;
     const selectedImage = this.selectedWellFields[0];
+    const parts = [];
+    if (!viewSettings) {
+      return null;
+    }
     if (
       sequenceInfo &&
       !sequenceInfo.error &&
@@ -1060,58 +1064,60 @@ class HcsImage extends React.PureComponent {
       selectedWell &&
       !this.showBatchJobInfo
     ) {
-      return (
-        <div
-          className={
-            classNames(
-              styles.hcsImageControls,
-              'cp-content-panel'
-            )
-          }
-          style={{width: 'fit-content'}}
-        >
-          {viewSettings.plate ? (
-            <HcsCellSelector
-              className={styles.selectorContainer}
-              title="Plate"
-              cells={sequenceInfo.wells}
-              selected={selectedWells}
-              onChange={this.changeWells}
-              width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
-              height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
-              showRulers
-              searchPlaceholder="Search wells"
-              showElementHint
-            />
-          ) : null}
-          {viewSettings.well ? (
-            <HcsCellSelector
-              className={styles.selectorContainer}
-              title={selectedWell.id}
-              cells={selectedWell.images}
-              selected={selectedFields}
-              onChange={this.changeWellImages}
-              gridMode="CROSS"
-              width={
-                HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
-              }
-              height={
-                HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
-              }
-              scaleToROI
-              radius={selectedWell.radius}
-            />
-          ) : null}
-          {viewSettings.timeseries ? (
-            <HcsSequenceSelector
-              sequences={this.sequences}
-              selection={selectedSequenceTimePoints}
-              onChange={this.onChangeSequenceTimePoints}
-              multiple
-              style={{padding: 5, maxWidth: 300}}
-            />
-          ) : null}
+      if (viewSettings.plate) {
+        parts.push((
+          <HcsCellSelector
+            we
+            className={styles.selectorContainer}
+            title="Plate"
+            cells={sequenceInfo.wells}
+            selected={selectedWells}
+            onChange={this.changeWells}
+            width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
+            height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
+            showRulers
+            searchPlaceholder="Search wells"
+            showElementHint
+          />
+        ));
+      }
+      if (viewSettings.well) {
+        parts.push((
+          <HcsCellSelector
+            key="well-selector"
+            className={styles.selectorContainer}
+            title={selectedWell.id}
+            cells={selectedWell.images}
+            selected={selectedFields}
+            onChange={this.changeWellImages}
+            gridMode="CROSS"
+            width={
+              HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
+            }
+            height={
+              HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
+            }
+            scaleToROI
+            radius={selectedWell.radius}
+          />)
+        );
+      }
+      if (viewSettings.timeseries) {
+        parts.push((
+          <HcsSequenceSelector
+            key="timeseries"
+            sequences={this.sequences}
+            selection={selectedSequenceTimePoints}
+            onChange={this.onChangeSequenceTimePoints}
+            multiple
+            style={{padding: 5, maxWidth: 300}}
+          />
+        ));
+      }
+      if (!this.hcsViewerState.use3D) {
+        parts.push((
           <HcsZPositionSelector
+            key="z-position"
             image={selectedImage}
             selection={selectedZCoordinates}
             mergeZPlanes={mergeZPlanes}
@@ -1122,6 +1128,22 @@ class HcsImage extends React.PureComponent {
             mode={zSelectorMode}
             sliderMinPositionsTreshold={2}
           />
+        ));
+      }
+      if (parts.length === 0) {
+        return null;
+      }
+      return (
+        <div
+          className={
+            classNames(
+              styles.hcsImageControls,
+              'cp-content-panel'
+            )
+          }
+          style={{width: 'fit-content'}}
+        >
+          {parts}
         </div>
       );
     }
