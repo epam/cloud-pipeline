@@ -9,9 +9,7 @@ export type InitializeApplicationState = {
 
 export type InitializeCallback = (state: InitializeApplicationState) => void;
 
-export async function initialize(
-  callback?: InitializeCallback,
-): Promise<User> {
+export async function initialize(callback?: InitializeCallback): Promise<User> {
   cloudPipelineApi.initialize({
     base: CLOUD_PIPELINE_API,
   });

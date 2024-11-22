@@ -14,7 +14,7 @@ export async function authenticate(): Promise<User> {
     return user;
   } catch (authError) {
     error = authError instanceof Error ? authError.message : `${authError}`;
-    throw error;
+    throw new Error(error);
   } finally {
     authenticationStore
       .getState()

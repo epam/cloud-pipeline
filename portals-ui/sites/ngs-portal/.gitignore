@@ -25,5 +25,7 @@ dist-ssr
 
 *.tsbuildinfo
 
+# misc
+.DS_Store
 .env
 .env.*
