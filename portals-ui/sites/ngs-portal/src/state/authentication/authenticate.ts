@@ -6,18 +6,27 @@ import { authenticationStore } from './store.ts';
  * Returns authenticated user or throws an error
  */
 export async function authenticate(): Promise<User> {
-  let user: User | undefined;
-  let error: string | undefined;
+  const store = authenticationStore.getState();
+  store.setPending(true);
+
   try {
-    authenticationStore.getState().setPending(true);
-    user = await fetchAuthenticatedUser();
+    const user = await fetchAuthenticatedUser();
+
+    store.setAuthenticationResult({
+      authenticatedUser: user,
+      error: undefined,
+    });
+
     return user;
   } catch (authError) {
-    error = authError instanceof Error ? authError.message : `${authError}`;
-    throw new Error(error);
-  } finally {
-    authenticationStore
-      .getState()
-      .setAuthenticationResult({ authenticatedUser: user, error });
+    const errorMessage =
+      authError instanceof Error ? authError.message : String(authError);
+
+    store.setAuthenticationResult({
+      authenticatedUser: undefined,
+      error: errorMessage,
+    });
+
+    throw new Error(errorMessage);
   }
 }

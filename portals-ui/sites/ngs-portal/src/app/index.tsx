@@ -6,15 +6,15 @@ import {
 } from '@epam/uui-core';
 import '@epam/uui/styles.css';
 import '@epam/loveship/styles.css';
-import router from './router';
+import { appRouter } from './config';
 
-const adapterRouter = new Router6AdaptedRouter(router);
+const adapterRouter = new Router6AdaptedRouter(appRouter);
 
 export default function Application() {
   const { services } = useUuiServices({ router: adapterRouter });
   return (
     <UuiContext.Provider value={services}>
-      <RouterProvider router={router} />
+      <RouterProvider router={appRouter} />
     </UuiContext.Provider>
   );
 }

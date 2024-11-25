@@ -15,9 +15,11 @@ export default function Initialization(props: CommonParentProps) {
     error: initializationError,
     pending: initializePending,
   } = useInitializeApplication();
+
   if (authenticatedUser && initialized) {
     return children;
   }
+
   if (authenticationError || initializationError) {
     return (
       <div className="app-initialization">

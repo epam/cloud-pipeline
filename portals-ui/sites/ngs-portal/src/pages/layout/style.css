@@ -1,12 +1,11 @@
 .app-layout {
-    @apply w-full h-full overflow-auto flex flex-col;
+  @apply w-full h-full overflow-auto flex flex-col;
 }
 
-.app-layout header,
 .app-layout footer {
-    @apply shrink-0 p-1 flex items-center space-x-2;
+  @apply shrink-0 flex items-center space-x-2 p-1;
 }
 
 .app-layout main {
-    @apply p-1 flex-1 overflow-auto;
+  @apply p-1 flex-1 overflow-auto;
 }
