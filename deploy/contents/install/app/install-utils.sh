@@ -152,11 +152,12 @@ function init_cloud_config {
     export CP_CLOUD_PLATFORM=""
 
     local azure_meta_url="-H Metadata:true \"http://169.254.169.254/metadata/instance?api-version=2017-12-01\""
+    local aws_meta_token=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
     local aws_meta_url="http://169.254.169.254/latest/meta-data/"
     local aws_meta_url_dynamic="http://169.254.169.254/latest/dynamic/instance-identity/document"
     local gcp_meta_url="-H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/instance"
 
-    [ $(eval "curl -s $aws_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AWS
+    [ $(eval "curl -s -H \"X-aws-ec2-metadata-token: $aws_meta_token\" $aws_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AWS
     [ $(eval "curl -s $azure_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AZURE
     [ $(eval "curl -s $gcp_meta_url -o /dev/null -w \"%{http_code}\"") == "301" ] && CP_CLOUD_PLATFORM=$CP_GOOGLE
 
@@ -174,10 +175,10 @@ function init_cloud_config {
         CP_CLOUD_EXTERNAL_HOST=$(echo $metadata | cut -f4 -d' ')
     fi
     if [ "$CP_CLOUD_PLATFORM" == "$CP_AWS" ]; then
-        CP_CLOUD_REGION_ID=$(curl -s -f $aws_meta_url_dynamic | grep region | cut -d\" -f4)
-        CP_CLOUD_INSTANCE_TYPE=$(curl -s -f $aws_meta_url/instance-type)
-        CP_CLOUD_INTERNAL_HOST=$(curl -s -f $aws_meta_url/local-ipv4)
-        CP_CLOUD_EXTERNAL_HOST=$(curl -s -f $aws_meta_url/public-ipv4)
+        CP_CLOUD_REGION_ID=$(curl -s -H "X-aws-ec2-metadata-token: $aws_meta_token" -f $aws_meta_url_dynamic | grep region | cut -d\" -f4)
+        CP_CLOUD_INSTANCE_TYPE=$(curl -s -H "X-aws-ec2-metadata-token: $aws_meta_token" -f $aws_meta_url/instance-type)
+        CP_CLOUD_INTERNAL_HOST=$(curl -s -H "X-aws-ec2-metadata-token: $aws_meta_token" -f $aws_meta_url/local-ipv4)
+        CP_CLOUD_EXTERNAL_HOST=$(curl -s -H "X-aws-ec2-metadata-token: $aws_meta_token" -f $aws_meta_url/public-ipv4)
     fi
     if [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
         CP_CLOUD_REGION_ID=$(basename $(curl -s $gcp_meta_url/zone))
