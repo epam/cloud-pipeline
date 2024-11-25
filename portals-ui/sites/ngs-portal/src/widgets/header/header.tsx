@@ -1,33 +1,31 @@
-import { TabButton } from '@epam/uui';
-import { useState } from 'react';
 import { Logo } from './logo';
 import { authenticationStore } from '../../state/authentication/store';
-import { RoutePath } from '../../shared/constants/routes';
+import { AppRoutes, RoutePath } from '../../shared/constants/routes';
+import type { RouteLink } from './types.ts';
+import { HeaderRouteLink } from './header-route-link.tsx';
+import { useNavigate } from 'react-router';
+import { useCallback } from 'react';
 
-const LINKS = [
-  { pathname: RoutePath.home, caption: 'Home' },
-  { pathname: RoutePath.projects, caption: 'Projects' },
-  { pathname: RoutePath.pipelines, caption: 'Pipelines' },
-  { pathname: RoutePath.runs, caption: 'Runs' },
+const LINKS: RouteLink[] = [
+  { route: AppRoutes.HOME, caption: 'Home' },
+  { route: AppRoutes.PROJECTS, caption: 'Projects' },
+  { route: AppRoutes.PIPELINES, caption: 'Pipelines' },
+  { route: AppRoutes.RUNS, caption: 'Runs' },
 ];
 
 export const Header = () => {
   const { authenticatedUser } = authenticationStore.getState();
-  const [activeLink, setActiveLink] = useState('/');
-
+  const navigate = useNavigate();
+  const onLogoClick = useCallback(() => {
+    navigate(RoutePath[AppRoutes.HOME]);
+  }, [navigate]);
   return (
     <header className="bg-[var(--uui-secondary-70)] flex justify-between items-center gap-4 px-4">
-      <Logo />
+      <Logo onClick={onLogoClick} />
 
       <div className="flex">
-        {LINKS.map(({ pathname, caption }) => (
-          <TabButton
-            cx="text-white"
-            link={{ pathname }}
-            caption={caption}
-            isLinkActive={activeLink === pathname}
-            onClick={() => setActiveLink(pathname)}
-          />
+        {LINKS.map((route) => (
+          <HeaderRouteLink key={route.route} link={route} />
         ))}
       </div>
 
