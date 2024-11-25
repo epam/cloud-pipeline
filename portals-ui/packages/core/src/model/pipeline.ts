@@ -1,16 +1,5 @@
 import { AclClass } from './acl';
-
-enum RepositoryType {
-  gitlab = 'GITLAB',
-  github = 'GITHUB',
-  bitBucket = 'BITBUCKET',
-  bitBucketCloud = 'BITBUCKET_CLOUD',
-}
-
-enum PipelineType {
-  pipeline = 'PIPELINE',
-  versionedStorage = 'VERSIONED_STORAGE',
-}
+import { PipelineType, RepositoryType } from './enums';
 
 export type Pipeline = {
   aclClass: AclClass.pipeline;
