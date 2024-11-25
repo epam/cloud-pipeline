@@ -1,13 +1,10 @@
-import { AclClass } from './acl';
+import { AclClass, AclEntry } from './acl';
 import { PipelineType, RepositoryType } from './enums';
 
-export type Pipeline = {
-  aclClass: AclClass.pipeline;
+export type Pipeline = AclEntry<AclClass.pipeline> & {
   id: number;
   name: string;
   createdDate: string;
-  mask: number;
-  owner: string;
   locked: boolean;
   description?: string;
   repository: string;

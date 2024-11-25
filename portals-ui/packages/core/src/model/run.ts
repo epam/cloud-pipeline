@@ -1,4 +1,4 @@
-import { AclClass } from './acl';
+import { AclClass, AclEntry } from './acl';
 import { CloudProviders, CommitStatuses, RunStatuses } from './enums';
 
 export type RunsResponse = {
@@ -37,11 +37,9 @@ type RunDetailedStatus = {
   timestamp: string;
 };
 
-export type Run = {
+export type Run = AclEntry<AclClass.pipeline> & {
   id: number;
   createdDate: string;
-  mask: number;
-  owner: string;
   locked: boolean;
   originalOwner: string;
   startDate: string;

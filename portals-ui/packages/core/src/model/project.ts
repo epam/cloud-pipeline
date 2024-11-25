@@ -1,4 +1,4 @@
-import { AclClass } from './acl';
+import { AclClass, AclEntry } from './acl';
 import { Pipeline } from './pipeline';
 
 export type ProjectsResponse = {
@@ -26,17 +26,14 @@ export type Configuration = {
   entries: Record<string, any>[];
 };
 
-export type Project = {
+export type Project = AclEntry<AclClass.folder> & {
   id: number;
   name: string;
   createdDate: string;
-  mask: number;
-  owner: string;
   locked: boolean;
   parentId?: number;
   pipelines?: Pipeline[];
   configurations?: Configuration[];
-  aclClass: AclClass.folder;
   hasMetadata: boolean;
   childFolders?: Array<{
     id: number;
