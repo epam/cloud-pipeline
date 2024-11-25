@@ -346,7 +346,7 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_PROVIDER=AWS
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 
-    useradd pipelin
+    useradd pipeline
 
     cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
     chown -R pipeline. /home/pipeline/.ssh
