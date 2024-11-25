@@ -14,11 +14,76 @@
  *  limitations under the License.
  */
 
-export default function createSnapshot(canvas, name = 'image') {
-  const dataUrl = canvas.toDataURL('image/png')
-    .replace('image/png', 'image/octet-stream');
-  const link = document.createElement('a');
-  link.download = `${name}.png`;
-  link.href = dataUrl;
-  link.click();
+async function getCanvasImage(canvas) {
+  const image = new Image();
+  return new Promise((resolve) => {
+    image.onerror = (ev) => {
+      if (ev) {
+        console.warn(ev);
+      }
+      resolve(undefined);
+    };
+    if (canvas instanceof OffscreenCanvas) {
+      canvas.convertToBlob({ type: 'image/png', quality: 1 })
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          image.onload = () => {
+            resolve(image);
+            URL.revokeObjectURL(url);
+          };
+          image.src = url;
+        })
+        .catch((error) => {
+          console.warn(error);
+          resolve(undefined);
+        });
+    } else {
+      image.onload = () => {
+        resolve(image);
+      };
+      image.src = canvas.toDataURL('image/png', 1);
+    }
+  });
+}
+
+async function getCanvasBlob(canvas) {
+  if (canvas instanceof OffscreenCanvas) {
+    return canvas.convertToBlob({ quality: 1 });
+  }
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        resolve(undefined);
+      }
+    }, 'image/png', 1);
+  });
+}
+
+async function saveBlob(blob, fileName) {
+  const anchor = document.createElement('a');
+  anchor.download = fileName;
+  anchor.target = '_blank';
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        anchor.href = reader.result;
+        anchor.click();
+        resolve();
+      } else {
+        reject(new Error('unknown data format'));
+      }
+    };
+    reader.onerror = () => {
+      reject(new Error('cannot save image'));
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+export default async function createSnapshot(canvas, name = 'image') {
+  const blob = await getCanvasBlob(canvas);
+  await saveBlob(blob, `${name}.png`);
 }

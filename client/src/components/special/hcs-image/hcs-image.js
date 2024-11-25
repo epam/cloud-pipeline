@@ -799,14 +799,18 @@ class HcsImage extends React.PureComponent {
               className={styles.action}
               viewer={this.hcsImageViewer}
             />) : null}
-          <HCSDownloadButton
-            size="small"
-            className={styles.action}
-            viewer={this.hcsImageViewer}
-            wellId={this.selectedWell ? this.selectedWell.id : undefined}
-            wellView={this.showEntireWell}
-            originalImageEnabled={this.viewSettings.originalImage}
-          />
+          {
+            this.hcsViewerState.use3D ? null : (
+              <HCSDownloadButton
+                size="small"
+                className={styles.action}
+                viewer={this.hcsImageViewer}
+                wellId={this.selectedWell ? this.selectedWell.id : undefined}
+                wellView={this.showEntireWell}
+                originalImageEnabled={this.viewSettings.originalImage}
+              />
+            )
+          }
           <Button
             className={styles.action}
             size="small"
@@ -867,14 +871,18 @@ class HcsImage extends React.PureComponent {
               </Radio.Group>
             </div>
           )}
-          <HCSDownloadButton
-            showTitle
-            className={styles.action}
-            viewer={this.hcsImageViewer}
-            wellId={this.selectedWell ? this.selectedWell.id : undefined}
-            wellView={this.showEntireWell}
-            originalImageEnabled={this.viewSettings.originalImage}
-          />
+          {
+            this.hcsViewerState.use3D ? null : (
+              <HCSDownloadButton
+                showTitle
+                className={styles.action}
+                viewer={this.hcsImageViewer}
+                wellId={this.selectedWell ? this.selectedWell.id : undefined}
+                wellView={this.showEntireWell}
+                originalImageEnabled={this.viewSettings.originalImage}
+              />
+            )
+          }
         </div>
       </Panel>
     );
