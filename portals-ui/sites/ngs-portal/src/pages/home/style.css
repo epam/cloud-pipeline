@@ -1,0 +1,8 @@
+.list-container {
+  box-shadow: var(--uui-shadow-level-1);
+  border-radius: var(--uui-border-radius);
+}
+
+.list-header-container {
+  box-shadow: var(--uui-shadow-level-1);
+}
