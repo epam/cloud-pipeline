@@ -129,7 +129,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     createLinkInProgress: false,
     createLinkFormVisible: false,
     versionFilterValue: undefined,
-    pending: false
+    launchPending: undefined
   };
 
   @observable defaultVersionSettings;
@@ -1472,7 +1472,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   runToolDefault = async (version) => {
-    this.setState({pending: true}, async () => {
+    this.setState({launchPending: version}, async () => {
       const hide = message.loading('Fetching tool info...', 0);
       const {currentUserAttributes} = this.props;
       await currentUserAttributes.refresh();
@@ -1601,7 +1601,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         undefined,
         platform
       );
-      this.setState({pending: false});
+      this.setState({launchPending: undefined});
       if (runResolved) {
         SessionStorageWrapper.navigateToActiveRuns(this.props.router);
       }
@@ -1813,7 +1813,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <MenuItem
             id="run-default-button"
             key={runDefaultKey}
-            disabled={this.state.pending}
+            disabled={!!this.state.launchPending}
           >
             {
               tooltip && !notLoaded
@@ -1831,7 +1831,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <MenuItem
             id="run-custom-button"
             key={runCustomKey}
-            disabled={this.state.pending}
+            disabled={!!this.state.launchPending}
           >
             {
               tooltip && !notLoaded
@@ -1848,6 +1848,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           </MenuItem>
         </Menu>
       );
+      console.log(this.state)
       return (
         <Button.Group className={styles.runButton}>
           <Tooltip
@@ -1858,10 +1859,10 @@ export default class Tool extends localization.LocalizedReactComponent {
               id={`run-${version}-button`}
               type="primary"
               size="small"
-              disabled={this.state.pending ||
+              disabled={!!this.state.launchPending ||
                 (!allowedToExecute && !this.isAdmin())
               }
-              loading={this.state.pending}
+              loading={this.state.launchPending === version}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1878,13 +1879,13 @@ export default class Tool extends localization.LocalizedReactComponent {
             </Button>
           </Tooltip>
           <Dropdown
-            disabled={this.state.pending ||
+            disabled={!!this.state.launchPending ||
               (!allowedToExecute && !this.isAdmin())
             }
             overlay={runMenu}
             placement="bottomRight">
             <Button
-              disabled={this.state.pending}
+              disabled={!!this.state.launchPending}
               id={`run-${version}-menu-button`}
               onClick={(e) => {
                 e.preventDefault();
