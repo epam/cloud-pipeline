@@ -244,10 +244,10 @@ function validate_cloud_config {
 
         export CP_CLOUD_CREDENTIALS_FILE=${CP_CLOUD_CREDENTIALS_FILE:-$CP_CLOUD_CREDENTIALS_LOCATION}
         mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_FILE)
-
-        export CP_AWS_INSTANCE_PROFILE_STATUS=$(curl --max-time 3 --silent --fail http://169.254.169.254/latest/meta-data/iam/info | jq -r '.Code')
-        export CP_AWS_INSTANCE_PROFILE_ARN=$(curl --max-time 3 --silent --fail http://169.254.169.254/latest/meta-data/iam/info | jq -r '.InstanceProfileArn')
-        local cp_aws_auth_type_used="cred"        
+        local aws_meta_token=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+        export CP_AWS_INSTANCE_PROFILE_STATUS=$(curl -H "X-aws-ec2-metadata-token: $aws_meta_token" --max-time 3 --silent --fail http://169.254.169.254/latest/meta-data/iam/info | jq -r '.Code')
+        export CP_AWS_INSTANCE_PROFILE_ARN=$(curl -H "X-aws-ec2-metadata-token: $aws_meta_token" --max-time 3 --silent --fail http://169.254.169.254/latest/meta-data/iam/info | jq -r '.InstanceProfileArn')
+        local cp_aws_auth_type_used="cred"
         if [ "$CP_AWS_ACCESS_KEY_ID" ] && [ "$CP_AWS_SECRET_ACCESS_KEY" ]; then
             print_info "AWS access keys are defined via parameters"
 
