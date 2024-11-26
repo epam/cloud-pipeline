@@ -43,7 +43,7 @@ class StorageModel(object):
         instance.name = entity_json['name']
         instance.mask = entity_json['mask']
         instance.type = entity_json['type']
-        instance.sensitive = entity_json.get('sensitive') == 'true'
+        instance.sensitive = entity_json.get('sensitive', False)
         instance.share_mount_id = entity_json.get('fileShareMountId')
         instance.path = entity_json.get('pathMask')
         for tool_json in entity_json.get('toolsToMount', []):
