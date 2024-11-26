@@ -332,20 +332,22 @@ modprobe nfsd
 
 chmod +x /etc/rc.d/rc.local
 
-cloud=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
+_CLOUD_TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+cloud=$(curl --head -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
 gcloud_header=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Metadata-Flavor | cut -f2 -d:)
 
 if [[ $cloud == *"EC2"* ]]; then
-    _CLOUD_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
-    _CLOUD_INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep availabilityZone | cut -d\" -f4)
-    _CLOUD_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
-    _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
-    _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
-    _CI_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+    _CLOUD_REGION=$(curl -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
+    _CLOUD_INSTANCE_AZ=$(curl -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/dynamic/instance-identity/document | grep availabilityZone | cut -d\" -f4)
+    _CLOUD_INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
+    _CLOUD_INSTANCE_TYPE=$(curl -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
+    _CLOUD_INSTANCE_IMAGE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
+    _CI_IP=$(curl -s -H "X-aws-ec2-metadata-token: $_CLOUD_TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
     _CLOUD_PROVIDER=AWS
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 
     useradd pipeline
+
     cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
     chown -R pipeline. /home/pipeline/.ssh
     chmod 700 .ssh
