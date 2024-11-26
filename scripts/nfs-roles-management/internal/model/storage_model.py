@@ -30,6 +30,7 @@ class StorageModel(object):
         self.owner = None
         self.users = {}
         self.tools_to_mount = []
+        self.sensitive = False
 
     @classmethod
     def load(cls, json):
@@ -42,6 +43,7 @@ class StorageModel(object):
         instance.name = entity_json['name']
         instance.mask = entity_json['mask']
         instance.type = entity_json['type']
+        instance.sensitive = entity_json.get('sensitive') == 'true'
         instance.share_mount_id = entity_json.get('fileShareMountId')
         instance.path = entity_json.get('pathMask')
         for tool_json in entity_json.get('toolsToMount', []):

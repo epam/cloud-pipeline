@@ -48,6 +48,9 @@ class Synchronization(object):
         def validate_storage(test_storage, share_mounts):
             if not test_storage.is_nfs() and test_storage.type != 'AZ' and test_storage.type != 'S3' and test_storage.type != 'GCP':
                 return None
+            # Skip sensitive storage for mounting
+            if test_storage.sensitive == True:
+                return None
             server_name = None
             storage_path = None
             storage_link_destination = None
