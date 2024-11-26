@@ -1,26 +1,30 @@
-import { Spinner } from '@epam/uui-components';
-import { useEffect } from 'react';
-import { loadRuns } from '../../state/runs/load-runs';
-import { useRunsState } from '../../state/runs/hooks';
+import { Spinner } from '@epam/uui';
+import { useEffect, useState } from 'react';
 import { useAuthenticationState } from '../../state/authentication/hooks';
+import type { Run } from '@cloud-pipeline/core';
+import { fetchRuns } from '@cloud-pipeline/api';
 
 export default function Runs() {
-  const { runs, error: runsError, pending: runsPending } = useRunsState();
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(true);
   const { authenticatedUser } = useAuthenticationState();
   useEffect(() => {
     if (authenticatedUser?.userName) {
-      loadRuns({ owners: [authenticatedUser.userName] })
-        .then(() => {})
-        .catch(() => {});
+      setPending(true);
+      fetchRuns({ owners: [authenticatedUser.userName] })
+        .then(setRuns)
+        .catch((error: Error) => setError(error.message))
+        .finally(() => setPending(false));
     }
   }, [authenticatedUser]);
-  if (runsError) {
-    return <div>{runsError}</div>;
-  }
-  if (runsPending) {
+  if (pending) {
     return <Spinner />;
   }
-  if (!runs) {
+  if (error) {
+    return <div>{error}</div>;
+  }
+  if (!runs?.length) {
     return <div>No data</div>;
   }
   return (
