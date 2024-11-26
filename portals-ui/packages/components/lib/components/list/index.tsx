@@ -1,20 +1,12 @@
 import type { Key, ReactNode } from 'react';
 import React, { useState } from 'react';
 import type { VirtualListState } from '@epam/uui-core';
-import type { CommonProps } from '../..';
-import { VirtualList } from '@epam/uui';
 import classNames from 'classnames';
+import { VirtualList } from '@epam/uui';
+import type { ListProps } from './types';
+import ListHeader from './list-header';
 
 const MIN_VISIBLE_COUNT = 20;
-
-export type ListProps<Item> = CommonProps & {
-  data: Item[];
-  renderItem: (item: Item, index: number) => ReactNode | string;
-  header?: ReactNode;
-  footer?: ReactNode;
-  virtualized?: boolean;
-  fieldKey?: string;
-};
 
 export default function List<Item>(props: ListProps<Item>): ReactNode {
   const {
@@ -22,10 +14,10 @@ export default function List<Item>(props: ListProps<Item>): ReactNode {
     footer,
     data,
     renderItem,
-    fieldKey,
     virtualized = false,
     style,
     className,
+    itemKey,
   } = props;
   const [listState, setListState] = useState<VirtualListState>({
     topIndex: 0,
@@ -50,8 +42,8 @@ export default function List<Item>(props: ListProps<Item>): ReactNode {
     <div className="overflow-y-auto">
       {data.map((item, index) => {
         let key: Key = `key_${index}`;
-        if (item && typeof item === 'object' && fieldKey) {
-          key = (item[fieldKey as keyof typeof item] as string | number) ?? key;
+        if (itemKey && typeof itemKey !== 'symbol') {
+          key = typeof itemKey === 'function' ? itemKey(item, index) : itemKey;
         }
         return (
           <React.Fragment key={key}>{renderItem(item, index)}</React.Fragment>
@@ -69,3 +61,5 @@ export default function List<Item>(props: ListProps<Item>): ReactNode {
     </div>
   );
 }
+
+export { ListHeader };

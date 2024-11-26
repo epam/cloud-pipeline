@@ -1,0 +1,5 @@
+@tailwind components;
+
+.highlighted-text .highlighted-text-part.highlighted {
+  @apply bg-amber-200 dark:bg-amber-700/75;
+}
