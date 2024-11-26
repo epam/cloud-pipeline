@@ -26,11 +26,12 @@ if [ -z "$API_TOKEN" ]; then
     exit 1
 fi
 
-_admin_role=$(curl -sk -H "Authorization: Bearer $API_TOKEN" $API/whoami | \
-                jq '.payload.roles[] | select(.name == "ROLE_ADMIN")')
+_roles_info=$(curl -sk -H "Authorization: Bearer $API_TOKEN" $API/whoami | jq -r '.payload.roles[]')
+_admin_role=$(echo "$_roles_info" | jq -r 'select(.name == "ROLE_ADMIN")')
+_advanced_role=$(echo "$_roles_info" | jq -r 'select(.name == "ROLE_ADVANCED_USER")')
 
-if [ -z "$_admin_role" ]; then
-    echo "[ERROR] mount: only ROLE_ADMIN can do that"
+if [ -z "$_admin_role" ] || [ -z "$_advanced_role" ]; then
+    echo "[ERROR] mount: only ROLE_ADMIN or ROLE_ADVANCED_USER can do that"
     exit 1
 fi
 
