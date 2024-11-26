@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Options:
+# registry:3.0.0-rc.1⁠
+# registry:2.7.1
+
+ARG BASE_IMAGE=registry:2.7.1
 FROM registry:2.7.1
 
 ADD update_config.sh /update_config.sh
