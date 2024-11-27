@@ -1,0 +1,16 @@
+@tailwind components;
+
+.list-container {
+  box-shadow: var(--uui-shadow-level-1);
+  border-radius: var(--uui-border-radius);
+}
+
+.list-footer-container,
+.list-header-container {
+  box-shadow: var(--uui-shadow-level-1);
+}
+
+.list-footer-container {
+  box-shadow: var(--uui-shadow-level-1);
+  @apply h-12 flex justify-center items-center;
+}
