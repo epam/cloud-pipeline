@@ -1,5 +1,5 @@
-import type { Key, ReactNode } from 'react';
-import React, { useState } from 'react';
+import type { ReactNode } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import type { VirtualListState } from '@epam/uui-core';
 import classNames from 'classnames';
 import { VirtualList } from '@epam/uui';
@@ -18,18 +18,45 @@ export default function List<Item>(props: ListProps<Item>): ReactNode {
     style,
     className,
     itemKey,
+    sliced,
   } = props;
+  const itemsToDisplayCount = useMemo(() => {
+    if (typeof sliced === 'boolean') {
+      return sliced ? MIN_VISIBLE_COUNT : Infinity;
+    }
+    if (typeof sliced === 'number') {
+      return sliced;
+    }
+    return Infinity;
+  }, [sliced]);
   const [listState, setListState] = useState<VirtualListState>({
     topIndex: 0,
-    visibleCount: MIN_VISIBLE_COUNT,
+    visibleCount: itemsToDisplayCount,
   });
-  const visibleData = data.slice(
-    listState.topIndex,
-    (listState.topIndex ?? 0) + (listState.visibleCount ?? MIN_VISIBLE_COUNT),
+  const { topIndex = 0, visibleCount = itemsToDisplayCount } = listState;
+  const visibleData = useMemo(
+    () => data.slice(topIndex, topIndex + visibleCount),
+    [data, topIndex, visibleCount],
   );
-  const rows = visibleData.map((item, index) => (
-    <React.Fragment key={index}>{renderItem(item, index)}</React.Fragment>
-  ));
+  const getItemKey = useCallback(
+    (item: Item, index: number): string => {
+      if (itemKey && typeof itemKey === 'function') {
+        return String(itemKey(item, index));
+      }
+      if (itemKey && Object.hasOwnProperty.call(item, itemKey)) {
+        return String(item[itemKey]);
+      }
+      return `key_${index}`;
+    },
+    [itemKey],
+  );
+  const rows = useMemo(
+    () =>
+      visibleData.map((item, index) => (
+        <div key={getItemKey(item, index)}>{renderItem(item, index)}</div>
+      )),
+    [getItemKey, renderItem, visibleData],
+  );
   const listComponent = virtualized ? (
     <VirtualList
       cx="max-h-full"
@@ -39,17 +66,7 @@ export default function List<Item>(props: ListProps<Item>): ReactNode {
       rowsCount={data.length}
     />
   ) : (
-    <div className="overflow-y-auto">
-      {data.map((item, index) => {
-        let key: Key = `key_${index}`;
-        if (itemKey && typeof itemKey !== 'symbol') {
-          key = typeof itemKey === 'function' ? itemKey(item, index) : itemKey;
-        }
-        return (
-          <React.Fragment key={key}>{renderItem(item, index)}</React.Fragment>
-        );
-      })}
-    </div>
+    <div className="overflow-y-auto">{rows}</div>
   );
   return (
     <div

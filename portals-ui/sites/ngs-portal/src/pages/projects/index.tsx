@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
+import { List, ListHeader } from '@cloud-pipeline/components';
+import { useSearch } from '../../shared/hooks/use-search.ts';
+import HighlightedText from '../../shared/highlight-text';
 
 export default function Projects() {
   useEffect(() => {
@@ -10,6 +13,9 @@ export default function Projects() {
       .catch(() => {});
   }, []);
   const { projects, error, pending } = useProjectsState();
+  const { search, onSearchChange, filtered } = useSearch({
+    items: projects ?? [],
+  });
   if (error) {
     return <div>{error}</div>;
   }
@@ -20,10 +26,22 @@ export default function Projects() {
     return <div>No data</div>;
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      {projects.map((project) => (
-        <span key={project.id}>{project.name}</span>
-      ))}
+    <div className="flex flex-col overflow-auto">
+      <ListHeader
+        title="Projects"
+        className="shrink-0 border"
+        search={search}
+        onSearch={onSearchChange}
+      />
+      <List
+        className="overflow-auto border-b border-l border-r"
+        data={filtered}
+        renderItem={(project) => (
+          <HighlightedText search={search}>{project.name}</HighlightedText>
+        )}
+        itemKey="id"
+        sliced={20}
+      />
     </div>
   );
 }

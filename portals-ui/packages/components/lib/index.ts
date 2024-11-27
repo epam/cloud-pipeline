@@ -6,3 +6,4 @@ import './style.css';
 
 export { DummyComponent, List, ListHeader };
 export * from './components/common.types';
+export * from './components/list/types';

@@ -8,6 +8,7 @@ export type ListProps<Item> = CommonProps & {
   footer?: ReactNode;
   virtualized?: boolean;
   itemKey?: keyof Item | ((item: Item, index: number) => string | number);
+  sliced?: number | boolean;
 };
 
 export type ListHeaderProps = CommonProps & {

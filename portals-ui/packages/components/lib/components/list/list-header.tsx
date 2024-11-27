@@ -14,18 +14,21 @@ const ListHeader = (props: ListHeaderProps) => {
   } = props;
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
-      <b
-        className="flex no-wrap px-6 py-4"
+      <div
+        className="flex items-center no-wrap p-2"
         style={{ color: 'var(--uui-text-secondary)' }}>
-        {title} {controls ? <div className="ml-auto">{controls}</div> : null}
-      </b>
+        <b>{title}</b>
+        {controls ? <div className="ml-auto">{controls}</div> : null}
+      </div>
       {onSearch ? (
-        <div className="px-6 py-2">
+        <div className="p-0.5">
           <SearchInput
             value={search}
             onValueChange={onSearch}
             placeholder={searchPlaceholder ?? 'Search'}
             debounceDelay={300}
+            disableDebounce
+            mode="inline"
             size="30"
           />
         </div>

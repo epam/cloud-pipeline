@@ -1,117 +1,80 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Project } from '@cloud-pipeline/core';
-import { Button, LinkButton } from '@epam/uui';
-import { List, ListHeader } from '@cloud-pipeline/components';
+import { useEffect } from 'react';
+import type { Run } from '@cloud-pipeline/core';
+import { Button } from '@epam/uui';
 import { useProjectsState } from '../../state/projects/hooks';
 import { loadProjects } from '../../state/projects/load-projects';
 import HighlightedText from '../../shared/highlight-text';
+import { ItemsPanel } from '../../widgets/items-panel/items-panel.tsx';
+import { usePipelinesState } from '../../state/pipelines/hooks.ts';
+import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
 import './style.css';
 
 export const Home = () => {
   const { projects } = useProjectsState();
-  const [projectSearch, setProjectSearch] = useState('');
-  const [pipelinesSearch, setPipelinesSearch] = useState('');
+  const { pipelines } = usePipelinesState();
   useEffect(() => {
     loadProjects()
       .then(() => {})
       .catch(() => {});
   }, []);
-  const filteredProjects = useMemo(() => {
-    if (!projects) {
-      return [];
-    }
-    return projectSearch
-      ? projects.filter((project) =>
-          project.name.toLowerCase().includes(projectSearch.toLowerCase()),
-        )
-      : projects;
-  }, [projectSearch, projects]);
-  if (!projects) {
-    return null;
-  }
+  useEffect(() => {
+    loadPipelines()
+      .then(() => {})
+      .catch(() => {});
+  }, []);
   return (
-    <div className="flex h-full gap-5 overflow-hidden flex-nowrap justify-around p-2">
-      <List
-        className="list-container"
-        header={
-          <ListHeader
-            className="list-header-container"
-            title="Projects"
-            controls={
-              <Button caption="Add project" size="24" onClick={() => null} />
-            }
-            search={projectSearch}
-            onSearch={setProjectSearch}
-          />
-        }
-        footer={
-          <div className="list-footer-container">
-            <LinkButton
-              caption="View all projects"
-              link={{ pathname: '/projects' }}
-            />
-          </div>
-        }
-        data={filteredProjects}
-        itemKey={(item: Project) => item.id}
-        virtualized
-        renderItem={(item: Project) => (
-          <div className="p-2" style={{ height: 100 }}>
-            <HighlightedText search={projectSearch}>
-              {item.name}
-            </HighlightedText>
-          </div>
-        )}
-        style={{ flex: 1 }}
-      />
-      <List
-        className="list-container"
-        header={
-          <ListHeader
-            className="list-header-container"
-            title="Pipelines"
-            search={pipelinesSearch}
-            onSearch={setPipelinesSearch}
-          />
-        }
-        footer={
-          <div className="list-footer-container">
-            <LinkButton
-              caption="View all pipelines"
-              link={{ pathname: '/pipelines' }}
-            />
-          </div>
-        }
-        data={projects}
-        virtualized
-        itemKey={(item: Project) => item.id}
-        renderItem={(item: Project) => (
-          <div className="p-2" style={{ height: 100 }}>
-            {item.name}
-          </div>
-        )}
-        style={{ flex: 1 }}
-      />
-      <List
-        className="list-container"
-        header={
-          <ListHeader className="list-header-container" title="Run History" />
-        }
-        footer={
-          <div className="list-footer-container">
-            <LinkButton caption="View all runs" link={{ pathname: '/runs' }} />
-          </div>
-        }
-        data={projects}
-        virtualized
-        itemKey={(item: Project) => item.id}
-        renderItem={(item: Project) => (
-          <div className="p-2" style={{ height: 300 }}>
-            {item.name}
-          </div>
-        )}
-        style={{ flex: 1 }}
-      />
+    <div className="flex h-full w-full gap-1 overflow-hidden flex-nowrap p-1">
+      <div className="flex-1 h-full overflow-auto p-2">
+        <ItemsPanel
+          className="max-h-full list-container overflow-auto"
+          title="Projects"
+          actions={
+            <Button caption="Create project" size="24" onClick={() => null} />
+          }
+          items={projects}
+          renderItem={(item, search) => (
+            <div className="p-2 border-b">
+              <HighlightedText search={search}>{item.name}</HighlightedText>
+            </div>
+          )}
+          sliced
+          search
+          itemKey="id"
+          viewAll={{ title: 'View all projects', link: '/projects' }}
+        />
+      </div>
+      <div className="flex-1 h-full overflow-auto p-2">
+        <ItemsPanel
+          className="max-h-full list-container overflow-auto"
+          title="Pipelines"
+          items={pipelines}
+          renderItem={(item, search) => (
+            <div className="p-2 border-b">
+              <HighlightedText search={search}>{item.name}</HighlightedText>
+            </div>
+          )}
+          sliced
+          search
+          itemKey="id"
+          viewAll={{ title: 'View all pipelines', link: '/pipelines' }}
+        />
+      </div>
+      <div className="flex-1 h-full overflow-auto p-2">
+        <ItemsPanel
+          className="max-h-full list-container overflow-auto"
+          title="Runs history"
+          renderItem={(run: Run) => (
+            <div className="p-2 border-b">
+              <span>
+                pipeline-{run.id}, status: {run.status}
+              </span>
+            </div>
+          )}
+          sliced
+          itemKey="id"
+          viewAll={{ title: 'View all runs', link: '/runs' }}
+        />
+      </div>
     </div>
   );
 };

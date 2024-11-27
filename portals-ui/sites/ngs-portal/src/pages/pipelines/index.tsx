@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadPipelines } from '../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../state/pipelines/hooks';
+import { List, ListHeader } from '@cloud-pipeline/components';
+import HighlightedText from '../../shared/highlight-text';
+import { useSearch } from '../../shared/hooks/use-search.ts';
 
 export default function Pipelines() {
   useEffect(() => {
@@ -10,6 +13,9 @@ export default function Pipelines() {
       .catch(() => {});
   }, []);
   const { pipelines, error, pending } = usePipelinesState();
+  const { search, onSearchChange, filtered } = useSearch({
+    items: pipelines ?? [],
+  });
   if (error) {
     return <div>{error}</div>;
   }
@@ -20,10 +26,22 @@ export default function Pipelines() {
     return <div>No data</div>;
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      {pipelines.map((pipeline) => (
-        <span key={pipeline.id}>{pipeline.name}</span>
-      ))}
+    <div className="flex flex-col overflow-auto">
+      <ListHeader
+        title="Pipelines"
+        className="shrink-0 border"
+        search={search}
+        onSearch={onSearchChange}
+      />
+      <List
+        className="overflow-auto border-b border-l border-r"
+        data={filtered}
+        renderItem={(pipeline) => (
+          <HighlightedText search={search}>{pipeline.name}</HighlightedText>
+        )}
+        itemKey="id"
+        sliced={20}
+      />
     </div>
   );
 }
