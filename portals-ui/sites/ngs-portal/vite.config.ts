@@ -1,6 +1,7 @@
 import type { ConfigEnv } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
 
 // https://vitejs.dev/config/
 export default (cfg: ConfigEnv) => {
@@ -10,7 +11,7 @@ export default (cfg: ConfigEnv) => {
   const cloudPipelineApi = env.CLOUD_PIPELINE_API ?? '/restapi';
   return defineConfig({
     base,
-    plugins: [react()],
+    plugins: [react(), svgr()],
     define: {
       CLOUD_PIPELINE_API: JSON.stringify(cloudPipelineApi),
     },

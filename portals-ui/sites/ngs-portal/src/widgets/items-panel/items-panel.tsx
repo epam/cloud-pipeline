@@ -57,6 +57,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     } as SearchOptions<Item>;
   }, [items, searchConfig]);
   const { filtered, search, onSearchChange } = useSearch(searchOptions);
+
   return (
     <div
       className={classNames('flex', 'flex-col', 'overflow-auto', className)}
@@ -72,7 +73,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         <List
           className="overflow-auto flex-1 py-2"
           data={filtered}
-          renderItem={(item) => renderItem(item, search)}
+          renderItem={(item, i) => renderItem(item, search, i)}
           itemKey={itemKey}
           virtualized={virtualized}
           sliced={sliced}

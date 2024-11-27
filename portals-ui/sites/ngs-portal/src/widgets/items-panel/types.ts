@@ -14,7 +14,7 @@ export type ItemsPanelProps<Item> = Omit<
   ListProps<Item>,
   'renderItem' | 'data' | 'header'
 > & {
-  renderItem: (item: Item, search: string) => ReactNode | string;
+  renderItem: (item: Item, search: string, index: number) => ReactNode | string;
   items?: Item[];
   title?: ReactNode;
   actions?: ReactNode;
