@@ -1,9 +1,4 @@
-import {
-  executeAllowed,
-  readAllowed,
-  writeAllowed,
-  type Project,
-} from '@cloud-pipeline/core';
+import { type Project } from '@cloud-pipeline/core';
 import { Button } from '@epam/uui';
 import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
@@ -15,25 +10,14 @@ type Props = {
 };
 
 export const ProjectsList = memo(({ projects }: Props) => {
-  const renderItem = (item: Project, search: string, i: number) => {
-    const { mask, id } = item;
-
-    const accessRights = {
-      read: readAllowed(mask),
-      write: writeAllowed(mask),
-      execute: executeAllowed(mask),
-    };
-
-    return (
-      <ProjectCard
-        key={id}
-        project={item}
-        accessRights={accessRights}
-        highlightedText={search}
-        className={cn({ ['border-t-2']: i !== 0 })}
-      />
-    );
-  };
+  const renderItem = (item: Project, search: string, i: number) => (
+    <ProjectCard
+      key={String(item.id)}
+      project={item}
+      highlightedText={search}
+      className={cn({ ['border-t']: i !== 0 })}
+    />
+  );
 
   return (
     <ItemsPanel

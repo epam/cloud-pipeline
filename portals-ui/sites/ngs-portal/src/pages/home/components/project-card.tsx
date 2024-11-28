@@ -3,16 +3,16 @@ import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?re
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
 import type { Project } from '@cloud-pipeline/core';
+import {
+  executeAllowed,
+  readAllowed,
+  writeAllowed,
+} from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 
 type Props = CommonProps & {
   project: Project;
-  accessRights: {
-    read: boolean;
-    write: boolean;
-    execute: boolean;
-  };
   description?: string;
   tags?: string[];
   highlightedText?: string;
@@ -21,21 +21,23 @@ type Props = CommonProps & {
 export const ProjectCard = ({
   project,
   description,
-  accessRights,
   tags,
   highlightedText,
   className,
   style,
 }: Props) => {
-  const { id, name, owner } = project;
+  const { id, name, owner, mask } = project;
 
-  const hasSomeRights =
-    accessRights && Object.values(accessRights).some((right) => Boolean(right));
+  const read = readAllowed(mask);
+  const write = writeAllowed(mask);
+  const execute = executeAllowed(mask);
+
+  const hasSomeRights = read || write || execute;
 
   return (
     <div
       className={cn(
-        'px-4 py-2 bg-white w-full space-y-2 border-[var(--uui-neutral-30)]',
+        'px-2 py-1 bg-white w-full space-y-1',
         className,
       )}
       style={style}>
@@ -47,9 +49,9 @@ export const ProjectCard = ({
         </FlexRow>
       )}
 
-      <FlexRow columnGap="12" size="24">
+      <FlexRow columnGap="12" size="24" alignItems="center">
         <Link
-          className="text-lg text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
           to={`/project/${id}`}>
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
@@ -63,15 +65,15 @@ export const ProjectCard = ({
       </FlexRow>
 
       {hasSomeRights && (
-        <FlexRow columnGap="6" size="30">
-          {accessRights.read && (
-            <Badge size="24" fill="outline" caption="Read" color="info" />
+        <FlexRow columnGap="6" size="24">
+          {read && (
+            <Badge size="18" fill="outline" caption="Read" color="info" />
           )}
-          {accessRights.write && (
-            <Badge size="24" fill="outline" caption="Write" color="warning" />
+          {write && (
+            <Badge size="18" fill="outline" caption="Write" color="warning" />
           )}
-          {accessRights.execute && (
-            <Badge size="24" fill="outline" caption="Execute" color="success" />
+          {execute && (
+            <Badge size="18" fill="outline" caption="Execute" color="success" />
           )}
         </FlexRow>
       )}

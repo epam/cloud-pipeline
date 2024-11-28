@@ -15,7 +15,7 @@ export const PipelinesList = memo(({ pipelines }: Props) => {
         key={item.id}
         pipeline={item}
         highlightedText={search}
-        className={cn({ ['border-t-2']: i !== 0 })}
+        className={cn('border-b', { ['border-t']: i === 0 })}
       />
     );
   };

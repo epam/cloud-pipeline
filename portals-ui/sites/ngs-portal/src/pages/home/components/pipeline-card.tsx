@@ -24,21 +24,21 @@ export const PipelineCard = ({
   return (
     <div
       className={cn(
-        'px-4 py-2 bg-white w-full space-y-2 border-[var(--uui-neutral-30)]',
+        'px-2 py-1 bg-white w-full space-y-1',
         className,
       )}
       style={style}>
       {tags?.length && (
         <FlexRow columnGap="6" size="24">
           {tags.map((tag) => (
-            <Tag caption={tag} size="24" />
+            <Tag caption={tag} size="18" />
           ))}
         </FlexRow>
       )}
 
-      <FlexRow columnGap="12" size="24">
+      <FlexRow columnGap="12" size="24" alignItems="center">
         <Link
-          className="text-lg text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
           to={`/pipeline/${id}`}>
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
@@ -52,7 +52,7 @@ export const PipelineCard = ({
         />
       </FlexRow>
 
-      {description && <RichTextView>{description}</RichTextView>}
+      {description && <RichTextView cx="leading-4 text-sm">{description}</RichTextView>}
     </div>
   );
 };
