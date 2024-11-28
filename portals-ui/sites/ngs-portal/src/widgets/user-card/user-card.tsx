@@ -76,7 +76,7 @@ export const UserCard = (props: UserCardProps) => {
     );
   }
   return (
-    <FlexRow cx="whitespace-nowrap">
+    <span className="inline-flex whitespace-nowrap">
       {showIcon ? (
         <ContentPersonFillIcon
           className={classNames('fill-current h-5', iconClassName)}
@@ -90,6 +90,6 @@ export const UserCard = (props: UserCardProps) => {
           {user ? getUserDisplayName(user) : userName.toLowerCase()}
         </span>
       </Tooltip>
-    </FlexRow>
+    </span>
   );
 };
