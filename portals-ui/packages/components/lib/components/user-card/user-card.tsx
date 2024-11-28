@@ -2,15 +2,16 @@ import { useCallback, useMemo } from 'react';
 import classNames from 'classnames';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { FlexCell, FlexRow, Tooltip } from '@epam/uui';
-import { useSearchUserInfoByName } from '../../state/users-info/hooks';
-import type { User, UserInfo } from '@cloud-pipeline/core';
-import { getUserDisplayName } from '../../shared/utils/users';
+import {
+  getUserDisplayName,
+  type User,
+  type UserInfo,
+} from '@cloud-pipeline/core';
 import type { DropdownPlacement } from '@epam/uui-core';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
-import { useAuthenticationState } from '../../state/authentication/hooks';
 
 type UserCardProps = CommonProps & {
-  userName: string;
+  user: User | UserInfo;
   showTooltip?: boolean;
   tooltipPlacement?: DropdownPlacement;
   showIcon?: boolean;
@@ -20,7 +21,7 @@ type UserCardProps = CommonProps & {
 
 export const UserCard = (props: UserCardProps) => {
   const {
-    userName,
+    user,
     showTooltip = true,
     tooltipPlacement,
     color = 'neutral',
@@ -29,21 +30,22 @@ export const UserCard = (props: UserCardProps) => {
     className,
     style,
   } = props;
-  const userInfo = useSearchUserInfoByName(userName);
-  const { authenticatedUser } = useAuthenticationState();
-  const user = useMemo(() => {
-    if (authenticatedUser?.userName === userName) {
-      return authenticatedUser;
+  const userName = useMemo(() => {
+    if ('name' in user && typeof user.name === 'string') {
+      return user.name;
     }
-    return userInfo;
-  }, [authenticatedUser, userInfo, userName]);
+    if ('userName' in user && typeof user.userName === 'string') {
+      return user.userName.toLowerCase();
+    }
+    return getUserDisplayName(user);
+  }, [user]);
   const renderContent = useCallback(
     (user: User | UserInfo) => {
       if (user.attributes) {
         const attributes = Object.entries(user.attributes);
         return (
           <div className="flex flex-col gap-0.5">
-            <FlexCell width="auto">{userName.toLowerCase()}</FlexCell>
+            <FlexCell width="auto">{userName}</FlexCell>
             <table className="table-auto">
               <tbody>
                 {attributes.map(([key, value]) => (
@@ -57,10 +59,13 @@ export const UserCard = (props: UserCardProps) => {
           </div>
         );
       }
-      return userName.toLowerCase();
+      return userName;
     },
     [userName],
   );
+  if (!user) {
+    return null;
+  }
   if (!showTooltip || !user) {
     return (
       <FlexRow cx="whitespace-nowrap">
@@ -70,7 +75,7 @@ export const UserCard = (props: UserCardProps) => {
           />
         ) : null}
         <span className={className} style={style}>
-          {user ? getUserDisplayName(user) : userName.toLowerCase()}
+          {user ? getUserDisplayName(user) : userName}
         </span>
       </FlexRow>
     );
@@ -87,7 +92,7 @@ export const UserCard = (props: UserCardProps) => {
         color={color}
         content={showTooltip ? renderContent(user) : null}>
         <span className={className} style={style}>
-          {user ? getUserDisplayName(user) : userName.toLowerCase()}
+          {user ? getUserDisplayName(user) : userName}
         </span>
       </Tooltip>
     </span>

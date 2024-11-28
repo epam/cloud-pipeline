@@ -2,11 +2,12 @@ import type { UsersInfoState, UsersInfoStore } from './types.ts';
 import { useStore } from 'zustand';
 import { usersInfoStore } from './store.ts';
 import { useMemo } from 'react';
-import { noop, type UserInfo } from '@cloud-pipeline/core';
+import type { UserInfo } from '@cloud-pipeline/core';
 import {
   compareUserNames,
   compareUserNamesWithoutDomain,
-} from '../../shared/utils/users.ts';
+  noop,
+} from '@cloud-pipeline/core';
 import { loadUsersInfo } from './load-users-info.ts';
 
 function useUsersInfoStore(): UsersInfoStore {

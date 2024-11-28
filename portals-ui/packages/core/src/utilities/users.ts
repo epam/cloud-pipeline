@@ -1,4 +1,4 @@
-import type { User, UserInfo } from '@cloud-pipeline/core';
+import { User, UserInfo } from '../model';
 
 const NAME_KEY_VARIANTS = ['Name', 'userName', 'name'];
 
