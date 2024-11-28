@@ -1,5 +1,5 @@
 @tailwind components;
 
 .list-container {
-  @apply bg-slate-50 rounded shadow-md;
+  @apply bg-white rounded shadow-md;
 }
