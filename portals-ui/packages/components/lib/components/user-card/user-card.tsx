@@ -10,7 +10,7 @@ import {
 import type { DropdownPlacement } from '@epam/uui-core';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 
-type UserCardProps = CommonProps & {
+export type UserCardProps = CommonProps & {
   user: User | UserInfo;
   showTooltip?: boolean;
   tooltipPlacement?: DropdownPlacement;
