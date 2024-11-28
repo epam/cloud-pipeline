@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import classNames from 'classnames';
 import type { CommonProps } from '@cloud-pipeline/components';
-import { FlexCell, FlexRow, Tooltip } from '@epam/uui';
+import { FlexCell, Tooltip } from '@epam/uui';
 import {
   getUserDisplayName,
   type User,
@@ -68,7 +68,7 @@ export const UserCard = (props: UserCardProps) => {
   }
   if (!showTooltip || !user) {
     return (
-      <FlexRow cx="whitespace-nowrap">
+      <div className="inline-flex whitespace-nowrap items-center">
         {showIcon ? (
           <ContentPersonFillIcon
             className={classNames('fill-current h-5', iconClassName)}
@@ -77,11 +77,11 @@ export const UserCard = (props: UserCardProps) => {
         <span className={className} style={style}>
           {user ? getUserDisplayName(user) : userName}
         </span>
-      </FlexRow>
+      </div>
     );
   }
   return (
-    <span className="inline-flex whitespace-nowrap">
+    <span className="inline-flex whitespace-nowrap items-center">
       {showIcon ? (
         <ContentPersonFillIcon
           className={classNames('fill-current h-5', iconClassName)}
