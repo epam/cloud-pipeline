@@ -16,3 +16,8 @@ export type User = AclEntry<AclClass.user> & {
   groups: string[];
   roles: Role[];
 };
+
+export type UserInfo = AclEntry<AclClass.user> &
+  Omit<User, 'userName' | 'admin' | 'blocked'> & {
+    name: string;
+  };
