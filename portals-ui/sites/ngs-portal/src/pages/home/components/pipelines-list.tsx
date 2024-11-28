@@ -5,7 +5,7 @@ import { memo } from 'react';
 import cn from 'classnames';
 
 type Props = {
-  pipelines: Pipeline[];
+  pipelines: Pipeline[] | undefined;
 };
 
 export const PipelinesList = memo(({ pipelines }: Props) => {
@@ -15,7 +15,7 @@ export const PipelinesList = memo(({ pipelines }: Props) => {
         key={item.id}
         pipeline={item}
         highlightedText={search}
-        className={cn('border-b', { ['border-t']: i === 0 })}
+        className={cn({ ['border-t']: i !== 0 })}
       />
     );
   };

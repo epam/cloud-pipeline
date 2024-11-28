@@ -1,20 +1,13 @@
 import { Spinner } from '@epam/uui-components';
-import { useEffect } from 'react';
-import { loadRuns } from '../../state/runs/load-runs';
-import { useRunsState } from '../../state/runs/hooks';
-import { useAuthenticationState } from '../../state/authentication/hooks';
 import { List, ListHeader } from '@cloud-pipeline/components';
+import { useAuthenticatedUserRuns } from '../../shared/hooks/use-runs-filter.ts';
 
 export default function Runs() {
-  const { runs, error: runsError, pending: runsPending } = useRunsState();
-  const { authenticatedUser } = useAuthenticationState();
-  useEffect(() => {
-    if (authenticatedUser?.userName) {
-      loadRuns({ owners: [authenticatedUser.userName] })
-        .then(() => {})
-        .catch(() => {});
-    }
-  }, [authenticatedUser]);
+  const {
+    runs,
+    error: runsError,
+    pending: runsPending,
+  } = useAuthenticatedUserRuns({ reloadIntervalMs: 5000 });
   if (runsError) {
     return <div>{runsError}</div>;
   }

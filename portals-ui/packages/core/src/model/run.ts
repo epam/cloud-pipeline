@@ -1,11 +1,6 @@
 import { AclClass, AclEntry } from './acl';
 import { CloudProviders, CommitStatuses, RunStatuses } from './enums';
 
-export type RunsResponse = {
-  elements: Run[];
-  totalCount: number;
-};
-
 type RunParameter = {
   dataStorageLinks?: string[];
   name?: string;
@@ -91,31 +86,4 @@ export type Run = AclEntry<AclClass.pipeline> & {
   lastNotificationTime?: string;
   pipelineId?: number;
   entitiesIds?: number[];
-};
-
-export type RunFilters = {
-  page?: number;
-  pageSize?: number;
-  startDateFrom?: string;
-  endDateTo?: string;
-  roles?: string[];
-  statuses?: RunStatuses[];
-  configurationIds?: number[];
-  dockerImages?: string[];
-  tags?: Record<string, string>;
-  entitiesIds?: number[];
-  instanceTypes?: string[];
-  owners?: string[];
-  parentId?: number;
-  partialParameters?: string;
-  pipelineIds?: number[];
-  prettyUrl?: string;
-  projectIds?: number[];
-  regionIds?: number[];
-  masterRun?: boolean;
-  ownershipFilter?: string;
-  userModified?: boolean;
-  versions?: string[];
-  workerRun?: boolean;
-  eagerGrouping?: boolean;
 };

@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router';
 import Initialization from '../initialization';
-import './style.css';
 import { Header } from '../../widgets/header';
+import './style.css';
 
 export const Layout = () => {
   return (

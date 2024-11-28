@@ -6,7 +6,7 @@ import cn from 'classnames';
 import { memo } from 'react';
 
 type Props = {
-  projects: Project[];
+  projects: Project[] | undefined;
 };
 
 export const ProjectsList = memo(({ projects }: Props) => {

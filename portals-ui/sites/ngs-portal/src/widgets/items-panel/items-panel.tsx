@@ -71,7 +71,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
       />
       {filtered.length > 0 && (
         <List
-          className="overflow-auto flex-1 py-2"
+          className="overflow-auto flex-1"
           data={filtered}
           renderItem={(item, i) => renderItem(item, search, i)}
           itemKey={itemKey}

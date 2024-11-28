@@ -1,1 +1,1 @@
-export { fetchRuns } from './fetch-runs';
+export * from './fetch-runs';
