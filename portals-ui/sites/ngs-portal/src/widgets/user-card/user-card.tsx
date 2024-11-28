@@ -66,7 +66,7 @@ export const UserCard = (props: UserCardProps) => {
       <FlexRow cx="whitespace-nowrap">
         {showIcon ? (
           <ContentPersonFillIcon
-            className={classNames('fill-current mr-1', iconClassName)}
+            className={classNames('fill-current h-5', iconClassName)}
           />
         ) : null}
         <span className={className} style={style}>
@@ -79,7 +79,7 @@ export const UserCard = (props: UserCardProps) => {
     <FlexRow cx="whitespace-nowrap">
       {showIcon ? (
         <ContentPersonFillIcon
-          className={classNames('fill-current mr-1', iconClassName)}
+          className={classNames('fill-current h-5', iconClassName)}
         />
       ) : null}
       <Tooltip
