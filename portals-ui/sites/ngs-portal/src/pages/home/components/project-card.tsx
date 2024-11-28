@@ -2,39 +2,43 @@ import { Tag, Badge, FlexRow, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import type { Project } from '@cloud-pipeline/core';
+import type { CommonProps } from '@cloud-pipeline/components';
+import HighlightedText from '../../../shared/highlight-text';
 
-type Props = {
-  id: number;
-  name: ReactNode;
-  owner: string;
+type Props = CommonProps & {
+  project: Project;
   accessRights: {
     read: boolean;
     write: boolean;
     execute: boolean;
   };
-  hasDivider?: boolean;
   description?: string;
   tags?: string[];
+  highlightedText?: string;
 };
 
 export const ProjectCard = ({
-  id,
-  name,
-  owner,
+  project,
   description,
   accessRights,
   tags,
-  hasDivider = false,
+  highlightedText,
+  className,
+  style,
 }: Props) => {
+  const { id, name, owner } = project;
+
   const hasSomeRights =
     accessRights && Object.values(accessRights).some((right) => Boolean(right));
 
   return (
     <div
-      className={cn('px-4 py-4 bg-white w-full space-y-2', {
-        'border-t-2 border-[var(--uui-neutral-30)]': hasDivider,
-      })}>
+      className={cn(
+        'px-4 py-2 bg-white w-full space-y-2 border-[var(--uui-neutral-30)]',
+        className,
+      )}
+      style={style}>
       {tags?.length && (
         <FlexRow columnGap="6" size="24">
           {tags.map((tag) => (
@@ -47,7 +51,7 @@ export const ProjectCard = ({
         <Link
           className="text-lg text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
           to={`/project/${id}`}>
-          {name}
+          <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
         <Badge
           icon={ContentPersonFillIcon}

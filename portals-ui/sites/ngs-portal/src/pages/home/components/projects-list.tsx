@@ -6,16 +6,17 @@ import {
 } from '@cloud-pipeline/core';
 import { Button } from '@epam/uui';
 import { ProjectCard } from './project-card';
-import HighlightedText from '../../../shared/highlight-text';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
+import cn from 'classnames';
+import { memo } from 'react';
 
 type Props = {
   projects: Project[];
 };
 
-export const ProjectsList = ({ projects }: Props) => {
+export const ProjectsList = memo(({ projects }: Props) => {
   const renderItem = (item: Project, search: string, i: number) => {
-    const { mask, id, name, owner } = item;
+    const { mask, id } = item;
 
     const accessRights = {
       read: readAllowed(mask),
@@ -26,11 +27,10 @@ export const ProjectsList = ({ projects }: Props) => {
     return (
       <ProjectCard
         key={id}
-        id={id}
-        name={<HighlightedText search={search}>{name}</HighlightedText>}
-        owner={owner}
-        hasDivider={i !== 0}
+        project={item}
         accessRights={accessRights}
+        highlightedText={search}
+        className={cn({ ['border-t-2']: i !== 0 })}
       />
     );
   };
@@ -50,4 +50,4 @@ export const ProjectsList = ({ projects }: Props) => {
       viewAll={{ title: 'View all projects', link: '/projects' }}
     />
   );
-};
+});

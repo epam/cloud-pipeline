@@ -1,24 +1,21 @@
 import type { Pipeline } from '@cloud-pipeline/core';
-import HighlightedText from '../../../shared/highlight-text';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import { PipelineCard } from './pipeline-card';
+import { memo } from 'react';
+import cn from 'classnames';
 
 type Props = {
   pipelines: Pipeline[];
 };
 
-export const PipelinesList = ({ pipelines }: Props) => {
+export const PipelinesList = memo(({ pipelines }: Props) => {
   const renderItem = (item: Pipeline, search: string, i: number) => {
-    const { id, name, owner, description } = item;
-
     return (
       <PipelineCard
-        key={id}
-        id={id}
-        name={<HighlightedText search={search}>{name}</HighlightedText>}
-        owner={owner}
-        hasDivider={i !== 0}
-        description={description}
+        key={item.id}
+        pipeline={item}
+        highlightedText={search}
+        className={cn({ ['border-t-2']: i !== 0 })}
       />
     );
   };
@@ -35,4 +32,4 @@ export const PipelinesList = ({ pipelines }: Props) => {
       viewAll={{ title: 'View all pipelines', link: '/pipelines' }}
     />
   );
-};
+});

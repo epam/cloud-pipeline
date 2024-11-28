@@ -2,30 +2,32 @@ import { Tag, Badge, FlexRow, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import type { Pipeline } from '@cloud-pipeline/core';
+import type { CommonProps } from '@cloud-pipeline/components';
+import HighlightedText from '../../../shared/highlight-text';
 
-type Props = {
-  id: number;
-  name: ReactNode;
-  owner: string;
-  hasDivider?: boolean;
-  description?: string;
+type Props = CommonProps & {
+  pipeline: Pipeline;
+  highlightedText?: string;
   tags?: string[];
 };
 
 export const PipelineCard = ({
-  id,
-  name,
-  owner,
-  description,
+  pipeline,
   tags,
-  hasDivider = false,
+  highlightedText,
+  className,
+  style,
 }: Props) => {
+  const { id, name, owner, description } = pipeline;
+
   return (
     <div
-      className={cn('px-4 py-4 bg-white w-full space-y-2', {
-        'border-t-2 border-[var(--uui-neutral-30)]': hasDivider,
-      })}>
+      className={cn(
+        'px-4 py-2 bg-white w-full space-y-2 border-[var(--uui-neutral-30)]',
+        className,
+      )}
+      style={style}>
       {tags?.length && (
         <FlexRow columnGap="6" size="24">
           {tags.map((tag) => (
@@ -38,8 +40,9 @@ export const PipelineCard = ({
         <Link
           className="text-lg text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
           to={`/pipeline/${id}`}>
-          {name}
+          <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
+
         <Badge
           icon={ContentPersonFillIcon}
           caption={owner}
