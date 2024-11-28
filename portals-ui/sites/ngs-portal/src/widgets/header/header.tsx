@@ -30,18 +30,16 @@ export const Header = () => {
         ))}
       </div>
 
-      <div className="ml-auto">
-        <p className="text-white text-sm">
-          {authenticatedUser?.userName ? (
-            <UserCard
-              tooltipPlacement="bottom-end"
-              userName={authenticatedUser?.userName}
-              showIcon
-            />
-          ) : (
-            'Login'
-          )}
-        </p>
+      <div className="flex items-center ml-auto text-white text-sm">
+        {authenticatedUser?.userName ? (
+          <UserCard
+            tooltipPlacement="bottom-end"
+            userName={authenticatedUser?.userName}
+            showIcon
+          />
+        ) : (
+          'Login'
+        )}
       </div>
     </header>
   );
