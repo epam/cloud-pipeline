@@ -10,7 +10,7 @@ export async function loadProjects(): Promise<Project[]> {
     projects = await fetchProjects();
     return projects;
   } catch (authError) {
-    error = authError instanceof Error ? authError.message : `${authError}`;
+    error = authError instanceof Error ? authError.message : String(authError);
     throw new Error(error);
   } finally {
     projectsStore.getState().setProjects({ projects, error });
