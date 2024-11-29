@@ -33,6 +33,7 @@ RUN mkdir -p $GOPATH/src/github.com/docker && \
 RUN apk add --no-cache ca-certificates apache2-utils && \
     mkdir -p /etc/docker/registry
 COPY docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Customization
 ADD update_config.sh /update_config.sh
