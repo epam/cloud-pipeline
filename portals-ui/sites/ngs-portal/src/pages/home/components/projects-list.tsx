@@ -4,7 +4,7 @@ import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import cn from 'classnames';
 import { memo } from 'react';
-import ActionAddFillIcon from '@epam/assets/icons/action-add-outline.svg?react';
+import ActionAddFillIcon from '@epam/assets/icons/action-add-fill.svg?react';
 import ActionJobFunctionOutlineIcon from '@epam/assets/icons/action-job_function-outline.svg?react';
 
 type Props = {
