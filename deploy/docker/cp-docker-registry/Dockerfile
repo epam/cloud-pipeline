@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARG BASE_IMAGE=golang:1.15-alpine
-FROM BASE_IMAGE
+FROM $BASE_IMAGE
 
 # BUILD REGISTRY
 RUN apk add git make
