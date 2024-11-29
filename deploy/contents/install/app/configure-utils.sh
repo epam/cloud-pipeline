@@ -686,7 +686,10 @@ read -r -d '' payload <<-EOF
     "omicsEcrUrl":"$CP_PREF_AWS_OMICS_ECR_REGISTRY",
     "kmsKeyId":"$encryption_key_id",
     "kmsKeyArn":"$encryption_key_arn",
-    "corsRules":"$cors_rules"
+    "corsRules":"$cors_rules",
+    "mountCredentialsRule": "CLOUD",
+    "mountFileStorageRule": "CLOUD",
+    "mountStorageRule": "CLOUD"
 }
 EOF
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ]; then
