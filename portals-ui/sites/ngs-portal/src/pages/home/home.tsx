@@ -14,9 +14,7 @@ export const Home = () => {
     loadProjects()
       .then(() => {})
       .catch(() => {});
-  }, []);
 
-  useEffect(() => {
     loadPipelines()
       .then(() => {})
       .catch(() => {});
