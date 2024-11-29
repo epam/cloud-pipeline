@@ -1,0 +1,3 @@
+.ngs-tag .ngs-tag-content {
+    @apply whitespace-nowrap max-w-40 overflow-hidden truncate block;
+}

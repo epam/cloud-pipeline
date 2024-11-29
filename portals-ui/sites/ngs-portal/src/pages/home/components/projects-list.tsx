@@ -9,22 +9,15 @@ import ActionJobFunctionOutlineIcon from '@epam/assets/icons/action-job_function
 
 type Props = {
   projects: Project[] | undefined;
-  mode: 'standard' | 'compact';
 };
 
-const cardCx = {
-  standard: 'px-3 py-2',
-  compact: 'px-2 py-1',
-};
-
-export const ProjectsList = memo(({ projects, mode }: Props) => {
-  console.log(mode)
+export const ProjectsList = memo(({ projects }: Props) => {
   const renderItem = (item: Project, search: string, i: number) => (
     <ProjectCard
       key={String(item.id)}
       project={item}
       highlightedText={search}
-      className={cn(cardCx[mode], { ['border-t']: i !== 0 })}
+      className={cn({ ['border-t']: i !== 0 })}
     />
   );
 
@@ -50,7 +43,6 @@ export const ProjectsList = memo(({ projects, mode }: Props) => {
       sliced
       search
       itemKey="id"
-      mode={mode}
       viewAll={{ title: 'View all projects', link: '/projects' }}
     />
   );

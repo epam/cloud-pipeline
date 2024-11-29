@@ -47,6 +47,6 @@ export type Project = AclEntry<AclClass.folder> & {
     hasMetadata: boolean;
   }>;
   metadata?: Record<string, any>;
-  data: Record<string, any>;
+  data?: Record<string, any>;
   storages?: Record<string, any>[];
 };

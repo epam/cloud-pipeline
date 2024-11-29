@@ -8,7 +8,7 @@ export const Logo = (props: { onClick?: () => void }) => {
         'cursor-pointer': Boolean(onClick),
       })}
       onClick={onClick}>
-      Magellan NGS
+      NGS Platform
     </h1>
   );
 };

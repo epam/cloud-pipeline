@@ -1,16 +1,7 @@
 import classNames from 'classnames';
 import { SearchInput } from '@epam/uui';
 import type { ListHeaderProps } from './types';
-
-const controlsCx = {
-  standard: 'px-3 py-3',
-  compact: 'p-2',
-} as Record<string, string>;
-
-const searchCx = {
-  standard: 'py-0.5 px-1',
-  compact: 'p-0.5',
-} as Record<string, string>;
+import './style.css';
 
 const ListHeader = (props: ListHeaderProps) => {
   const {
@@ -21,25 +12,20 @@ const ListHeader = (props: ListHeaderProps) => {
     search,
     onSearch,
     searchPlaceholder,
-    mode = 'compact',
   } = props;
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
-      <div
-        className={classNames(
-          'flex text items-center no-wrap',
-          controlsCx[mode],
-        )}>
+      <div className={classNames('flex text items-center no-wrap list-header')}>
         <b>{title}</b>
         {controls ? <div className="ml-auto">{controls}</div> : null}
       </div>
       {onSearch ? (
-        <div className={searchCx[mode]}>
+        <div
+          className={classNames('list-header-search-container')}>
           <SearchInput
             value={search}
             onValueChange={onSearch}
             placeholder={searchPlaceholder ?? 'Search'}
-            debounceDelay={300}
             disableDebounce
             mode="inline"
             size="30"

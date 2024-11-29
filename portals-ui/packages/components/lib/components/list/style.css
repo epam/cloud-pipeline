@@ -1,0 +1,7 @@
+.list-header {
+    @apply px-3 py-3;
+}
+
+.list-header-search-container {
+    @apply px-1 py-0;
+}

@@ -22,5 +22,4 @@ export type ItemsPanelProps<Item> = Omit<
     ? boolean | Omit<SearchOptions<Item>, 'items'>
     : Omit<SearchOptions<Item>, 'items'>;
   viewAll?: ViewAllItemsConfiguration;
-  mode: 'standard' | 'compact';
 };
