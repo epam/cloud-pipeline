@@ -37,7 +37,7 @@ export const ProjectCard = ({
 
   return (
     <div
-      className={cn('px-2 py-1 bg-white w-full space-y-1', className)}
+      className={cn('px-3 py-2 bg-white w-full space-y-1', className)}
       style={style}>
       {tags?.length && (
         <FlexRow columnGap="6" size="24">

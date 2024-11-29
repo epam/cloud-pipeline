@@ -20,6 +20,7 @@ export const Header = () => {
   const onLogoClick = useCallback(() => {
     navigate(RoutePath[AppRoutes.HOME]);
   }, [navigate]);
+
   return (
     <header className="bg-[var(--uui-secondary-70)] flex justify-between items-center gap-4 px-4">
       <Logo onClick={onLogoClick} />
