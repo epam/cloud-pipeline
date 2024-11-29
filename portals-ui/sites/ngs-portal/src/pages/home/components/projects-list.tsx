@@ -4,6 +4,8 @@ import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import cn from 'classnames';
 import { memo } from 'react';
+import ActionAddFillIcon from '@epam/assets/icons/action-add-outline.svg?react';
+import ActionJobFunctionOutlineIcon from '@epam/assets/icons/action-job_function-outline.svg?react';
 
 type Props = {
   projects: Project[] | undefined;
@@ -22,9 +24,19 @@ export const ProjectsList = memo(({ projects }: Props) => {
   return (
     <ItemsPanel
       className="max-h-full list-container overflow-auto"
-      title="Projects"
+      title={
+        <div className="fill-current flex flex-nowrap gap-1">
+          <ActionJobFunctionOutlineIcon />
+          <span>Projects</span>
+        </div>
+      }
       actions={
-        <Button caption="Create project" size="24" onClick={() => null} />
+        <Button
+          icon={ActionAddFillIcon}
+          caption="Create project"
+          size="24"
+          onClick={() => null}
+        />
       }
       items={projects}
       renderItem={renderItem}

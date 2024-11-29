@@ -3,6 +3,7 @@ import { ItemsPanel } from '../../../widgets/items-panel/items-panel.tsx';
 import { useAuthenticatedUserRuns } from '../../../shared/hooks/use-runs-filter.ts';
 import { RunCard } from './run-card.tsx';
 import cn from 'classnames';
+import MediaPlayOutlineOptIcon from '@epam/assets/icons/media-play-outline-opt.2.svg?react';
 
 export const RunsList = () => {
   const { runs } = useAuthenticatedUserRuns({ reloadIntervalMs: 5000 });
@@ -20,8 +21,13 @@ export const RunsList = () => {
   return (
     <ItemsPanel
       className="max-h-full list-container overflow-auto"
-      title="Runs history"
       renderItem={renderItem}
+      title={
+        <div className="fill-current flex flex-nowrap gap-1">
+          <MediaPlayOutlineOptIcon />
+          <span>Runs history</span>
+        </div>
+      }
       items={runs}
       sliced
       itemKey="id"
