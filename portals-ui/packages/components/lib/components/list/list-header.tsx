@@ -14,9 +14,7 @@ const ListHeader = (props: ListHeaderProps) => {
   } = props;
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
-      <div
-        className="flex items-center no-wrap p-2"
-        style={{ color: 'var(--uui-text-secondary)' }}>
+      <div className="flex text items-center no-wrap p-2">
         <b>{title}</b>
         {controls ? <div className="ml-auto">{controls}</div> : null}
       </div>
