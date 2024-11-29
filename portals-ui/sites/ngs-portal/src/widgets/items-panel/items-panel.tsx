@@ -43,6 +43,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     virtualized,
     sliced,
     viewAll,
+    mode = 'compact',
   } = props;
   const searchEnabled = Boolean(searchConfig);
   const searchOptions = useMemo<SearchOptions<Item>>(() => {
@@ -68,6 +69,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         search={search}
         onSearch={searchEnabled ? onSearchChange : undefined}
         controls={actions}
+        mode={mode}
       />
       {filtered.length > 0 && (
         <List

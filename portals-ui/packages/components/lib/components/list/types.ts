@@ -18,4 +18,5 @@ export type ListHeaderProps = CommonProps & {
   searchPlaceholder?: string;
   onSearch?: (search: string) => void;
   controls?: ReactNode;
+  mode: 'standard' | 'compact';
 };
