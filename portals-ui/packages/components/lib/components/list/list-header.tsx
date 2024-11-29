@@ -3,12 +3,12 @@ import { SearchInput } from '@epam/uui';
 import type { ListHeaderProps } from './types';
 
 const controlsCx = {
-  standard: 'px-2 py-3',
+  standard: 'px-3 py-3',
   compact: 'p-2',
 } as Record<string, string>;
 
 const searchCx = {
-  standard: 'p-0.5',
+  standard: 'py-0.5 px-1',
   compact: 'p-0.5',
 } as Record<string, string>;
 
