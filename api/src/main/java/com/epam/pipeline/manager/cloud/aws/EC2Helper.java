@@ -64,6 +64,7 @@ import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.ClusterStateRegionProperties;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -111,6 +112,7 @@ public class EC2Helper implements EC2GpuHelper {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
     private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
+    private static final int SECONDS_TO_MILLIS = 1000;
 
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
@@ -335,6 +337,19 @@ public class EC2Helper implements EC2GpuHelper {
                 .findFirst();
     }
 
+    public Optional<Instance> findCloudNode(final String instanceId, final AwsRegion awsRegion) {
+        final Integer preference = preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_LOAD_TIMEOUT);
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final List<Filter> filters = buildCloudNodeFilters(awsRegion);
+        return findReservations(client, filters, preference,
+                new DescribeInstancesRequest().withInstanceIds(instanceId)).stream()
+                .findFirst()
+                .map(Reservation::getInstances)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .findFirst();
+    }
+
     public InstanceImage getInstanceImageDescription(final AwsRegion awsRegion, final String instanceImage) {
         return getEC2Client(awsRegion)
             .describeImages(new DescribeImagesRequest().withImageIds(Collections.singletonList(instanceImage)))
@@ -469,6 +484,15 @@ public class EC2Helper implements EC2GpuHelper {
         return attachedVolumes(client, instance).map(this::toDisk).collect(Collectors.toList());
     }
 
+    public List<Instance> findCloudNodes(final AwsRegion awsRegion) {
+        final Integer preference = preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_LOAD_TIMEOUT);
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final List<Filter> filters = buildCloudNodeFilters(awsRegion);
+        return findReservations(client, filters, preference, new DescribeInstancesRequest()).stream()
+                .flatMap(reservation -> reservation.getInstances().stream())
+                .collect(Collectors.toList());
+    }
+
     private Stream<Volume> attachedVolumes(final AmazonEC2 client, final Instance instance) {
         return volumes(client, getVolumeIds(instance));
     }
@@ -540,5 +564,33 @@ public class EC2Helper implements EC2GpuHelper {
                 .withTags(tags.stream()
                         .map(Tag::new)
                         .collect(Collectors.toList())));
+    }
+
+    private List<Reservation> findReservations(final AmazonEC2 client, final List<Filter> filters,
+                                               final int timeoutSeconds, final DescribeInstancesRequest request) {
+        if (timeoutSeconds != 0) {
+            request.withSdkClientExecutionTimeout(timeoutSeconds * SECONDS_TO_MILLIS);
+        }
+
+        if (CollectionUtils.isNotEmpty(filters)) {
+            request.withFilters(filters);
+        }
+
+        return ListUtils.emptyIfNull(client.describeInstances(request).getReservations());
+    }
+
+    private List<Filter> buildTagsFilters(final AwsRegion region) {
+        return Optional.ofNullable(region.getClusterStateRegionProperties())
+                .map(ClusterStateRegionProperties::getTagsFilter)
+                .map(tags -> MapUtils.emptyIfNull(tags).entrySet().stream()
+                        .map(entry -> new Filter().withName("tag:" + entry.getKey()).withValues(entry.getValue()))
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
+    }
+
+    private List<Filter> buildCloudNodeFilters(final AwsRegion region) {
+        final List<Filter> filters = buildTagsFilters(region);
+        filters.add(new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE));
+        return filters;
     }
 }

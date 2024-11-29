@@ -20,9 +20,10 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
-import com.epam.pipeline.entity.cluster.FilterPodsRequest;
-import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
+import com.epam.pipeline.entity.cluster.FilterPodsRequest;
+import com.epam.pipeline.entity.cluster.MachineType;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.PodInstance;
@@ -40,6 +41,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
@@ -60,6 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -74,6 +77,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NodesManager {
 
     private static final String MASTER_LABEL = "node-role.kubernetes.io/master";
@@ -106,6 +110,9 @@ public class NodesManager {
     @Autowired
     private PipelineRunCRUDService runCRUDService;
 
+    @Autowired
+    private AuthManager authManager;
+
     @Value("${kube.protected.node.labels:}")
     private String protectedNodesString;
 
@@ -134,17 +141,6 @@ public class NodesManager {
             }
         });
 
-    }
-
-    public List<NodeInstance> getNodes() {
-        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-            final List<NodeInstance> result = ListUtils.emptyIfNull(client.nodes().list().getItems())
-                    .stream()
-                    .map(NodeInstance::new)
-                    .collect(Collectors.toList());
-            attachRunsInfo(result);
-            return result;
-        }
     }
 
     public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
@@ -184,6 +180,39 @@ public class NodesManager {
         return this.getNode(name, null);
     }
 
+    /**
+     * Loads node by instance ID according to specified type:
+     *  - KUBE - loads node from kubernetes cluster. regionId parameter will be ignored in this case.
+     *  - CLOUD - loads node directly from cloud provider. If no regionId provided all regions
+     *            with {@link AbstractCloudRegion#isClusterInclude()} flag shall be scanned
+     *            for instance with specified ID.
+     *  Other types not supported yet.
+     * @param name - instance ID
+     * @param machineType - type
+     * @param regionId - region ID
+     * @return node description or error
+     */
+    public NodeInstance getKubeOrCloudNode(final String name, final MachineType machineType, final Long regionId) {
+        switch (machineType) {
+            case KUBE:
+                return getNode(name, null);
+            case CLOUD:
+                final Optional<NodeInstance> nodeInstance = Objects.nonNull(regionId)
+                        ? findCloudNodeInRegion(regionManager.load(regionId), name)
+                        : ListUtils.emptyIfNull(regionManager.loadAll()).stream()
+                        .filter(AbstractCloudRegion::isClusterInclude)
+                        .collect(Collectors.toList()).stream()
+                        .map(region -> findCloudNodeInRegion(region, name))
+                        .filter(Optional::isPresent)
+                        .findFirst()
+                        .flatMap(Function.identity());
+                return nodeInstance.orElseThrow(() -> new NodeNotFoundException(
+                        messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
+            default:
+                throw new UnsupportedOperationException("Exact machine type KUBE or CLOUD shall be specified!");
+        }
+    }
+
     public NodeInstance getNode(String name, FilterPodsRequest request) {
         return findNode(name, request).orElseThrow(() -> new NodeNotFoundException(
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
@@ -221,6 +250,35 @@ public class NodesManager {
         final NodeInstance nodeInstance = getNode(name);
         terminateNode(nodeInstance);
         return nodeInstance;
+    }
+
+    /**
+     * Terminates node by instance ID. Supports multiple regimes:
+     *  - KUBE - node shall be removed from kubernetes cluster and cloud instance shall be stopped.
+     *           regionId parameter will be ignored in this case.
+     *  - CLOUD - cloud instance shall be stopped. If no regionId provided all regions
+     *            with {@link AbstractCloudRegion#isClusterInclude()} flag shall be scanned
+     *            for instance with specified ID.
+     *  Other types not supported yet.
+     * @param name - instance ID
+     * @param machineType - type
+     * @param regionId - region ID
+     * @return terminated node description or error
+     */
+    public NodeInstance terminateKubeOrCloudNode(final String name, final MachineType machineType,
+                                                 final Long regionId) {
+        switch (machineType) {
+            case KUBE:
+                return terminateNode(name);
+            case CLOUD:
+                final Optional<NodeInstance> nodeInstance = Objects.nonNull(regionId)
+                        ? findAndTerminateCloudNodeInRegion(regionManager.load(regionId), name)
+                        : findAndTerminateCloudNode(name);
+                return nodeInstance.orElseThrow(() -> new NodeNotFoundException(
+                        messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
+            default:
+                throw new UnsupportedOperationException("Exact machine type KUBE or CLOUD shall be specified!");
+        }
     }
 
     public NodeInstance terminateNode(final String name, final boolean updateRunStatus) {
@@ -297,6 +355,34 @@ public class NodesManager {
                 log.debug("Cloud instance for run {} wasn't found in region {} and its termination will be skipped.",
                         run.getId(), region.getRegionCode());
             }
+        }
+    }
+
+    /**
+     * Loads all available nodes. Supports multiple regimes:
+     *  - KUBE - loads nodes from kubernetes only
+     *  - CLOUD - loads nodes from cloud provider only
+     *  - ALL - loads nodes from both kubernetes and cloud providers
+     * @param machineType - the type of regime described above
+     * @return load nodes
+     */
+    public List<NodeInstance> getNodes(final MachineType machineType) {
+        if (!authManager.isAdmin() && !MachineType.KUBE.equals(machineType)) {
+            log.debug("Requested type '{}' is not available non-admin users. Only kube nodes will be loaded.",
+                    machineType);
+            return getKubeNodes();
+        }
+        switch (machineType) {
+            case KUBE:
+                return getKubeNodes();
+            case CLOUD:
+                return getCloudNodes();
+            case ALL:
+                final List<NodeInstance> kubeNodes = getKubeNodes();
+                final List<NodeInstance> cloudNodes = getCloudNodes();
+                return mergeNodesByMachineType(kubeNodes, cloudNodes);
+            default:
+                throw new UnsupportedOperationException(String.format("Unsupported type '%s'", machineType));
         }
     }
 
@@ -409,4 +495,73 @@ public class NodesManager {
         return clusterDao.createNextFreeNodeId();
     }
 
+    private List<NodeInstance> getKubeNodes() {
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            final List<NodeInstance> result = ListUtils.emptyIfNull(client.nodes().list().getItems())
+                    .stream()
+                    .map(NodeInstance::new)
+                    .collect(Collectors.toList());
+            attachRunsInfo(result);
+            return result;
+        }
+    }
+
+    private List<NodeInstance> getCloudNodes() {
+        return ListUtils.emptyIfNull(regionManager.loadAll()).stream()
+                .filter(AbstractCloudRegion::isClusterInclude)
+                .flatMap(region -> getCloudNodesInRegion(region).stream())
+                .collect(Collectors.toList());
+    }
+
+    private List<NodeInstance> getCloudNodesInRegion(final AbstractCloudRegion region) {
+        try {
+            return cloudFacade.getCloudNodes(region.getId());
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<NodeInstance> mergeNodesByMachineType(final List<NodeInstance> kubeNodes,
+                                                       final List<NodeInstance> cloudNodes) {
+        if (CollectionUtils.isEmpty(cloudNodes)) {
+            return kubeNodes;
+        }
+        final Map<String, NodeInstance> kubeNodesByInstanceId = kubeNodes.stream()
+                .collect(Collectors.toMap(NodeInstance::getName, Function.identity()));
+        cloudNodes.forEach(cloudNode -> kubeNodesByInstanceId.putIfAbsent(cloudNode.getName(), cloudNode));
+        return new ArrayList<>(kubeNodesByInstanceId.values());
+    }
+
+    private Optional<NodeInstance> findAndTerminateCloudNode(final String instanceId) {
+        return ListUtils.emptyIfNull(regionManager.loadAll()).stream()
+                .filter(AbstractCloudRegion::isClusterInclude)
+                .collect(Collectors.toList()).stream()
+                .map(region -> findAndTerminateCloudNodeInRegion(region, instanceId))
+                .filter(Optional::isPresent)
+                .findFirst()
+                .flatMap(Function.identity());
+    }
+
+    private Optional<NodeInstance> findAndTerminateCloudNodeInRegion(final AbstractCloudRegion region,
+                                                                     final String instanceId) {
+        final Optional<NodeInstance> cloudNodeInRegion = findCloudNodeInRegion(region, instanceId);
+        if (cloudNodeInRegion.isPresent()) {
+            final NodeInstance nodeInstance = cloudNodeInRegion.get();
+            Assert.isTrue(!isNodeProtected(nodeInstance),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, nodeInstance.getName()));
+            cloudFacade.terminateInstance(region.getId(), instanceId);
+            return cloudNodeInRegion;
+        }
+        return Optional.empty();
+    }
+
+    private Optional<NodeInstance> findCloudNodeInRegion(final AbstractCloudRegion region, final String instanceId) {
+        try {
+            return cloudFacade.findCloudNode(region.getId(), instanceId);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return Optional.empty();
+        }
+    }
 }

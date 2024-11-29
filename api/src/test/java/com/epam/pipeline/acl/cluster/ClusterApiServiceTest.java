@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -100,9 +101,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnListWithNodeInstancesForAdmin() {
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes();
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes(MachineType.KUBE);
 
-        assertThat(clusterApiService.getNodes()).hasSize(1).contains(nodeInstance);
+        assertThat(clusterApiService.getNodes(MachineType.KUBE)).hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -110,9 +111,9 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnListWithNodeInstancesWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
         mockUser();
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes();
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes(MachineType.KUBE);
 
-        assertThat(clusterApiService.getNodes()).hasSize(1).contains(nodeInstance);
+        assertThat(clusterApiService.getNodes(MachineType.KUBE)).hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -122,18 +123,18 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockUser();
         initAclEntity(nodeInstance, AclPermission.READ);
         initAclEntity(anotherNodeInstance, AclPermission.NO_READ);
-        doReturn(mutableListOf(nodeInstance, anotherNodeInstance)).when(mockNodesManager).getNodes();
+        doReturn(mutableListOf(nodeInstance, anotherNodeInstance)).when(mockNodesManager).getNodes(MachineType.KUBE);
 
-        assertThat(clusterApiService.getNodes()).hasSize(1).contains(nodeInstance);
+        assertThat(clusterApiService.getNodes(MachineType.KUBE)).hasSize(1).contains(nodeInstance);
     }
 
     @Test
     @WithMockUser
     public void shouldReturnEmptyNodeInstanceListWhenPermissionIsNotGranted() {
         initAclEntity(anotherNodeInstance);
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes();
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes(MachineType.KUBE);
 
-        assertThat(clusterApiService.getNodes()).isEmpty();
+        assertThat(clusterApiService.getNodes(MachineType.KUBE)).isEmpty();
     }
 
     @Test
@@ -178,9 +179,11 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnNodeInstanceForAdmin() {
-        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
+        doReturn(nodeInstance).when(mockNodesManager)
+                .getKubeOrCloudNode(nodeInstance.getName(), MachineType.KUBE, null);
 
-        assertThat(clusterApiService.getNode(nodeInstance.getName())).isEqualTo(nodeInstance);
+        assertThat(clusterApiService.getNode(nodeInstance.getName(), MachineType.KUBE, null))
+                .isEqualTo(nodeInstance);
     }
 
     @Test
@@ -190,9 +193,12 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         mockRun(pipelineRun);
+        doReturn(nodeInstance).when(mockNodesManager)
+                .getKubeOrCloudNode(nodeInstance.getName(), MachineType.KUBE, null);
         mockUser();
 
-        final NodeInstance returnedNodeInstance = clusterApiService.getNode(nodeInstance.getName());
+        final NodeInstance returnedNodeInstance = clusterApiService
+                .getNode(nodeInstance.getName(), MachineType.KUBE, null);
 
         assertThat(returnedNodeInstance).isEqualTo(nodeInstance);
         assertThat(returnedNodeInstance.getMask()).isEqualTo(AclPermission.READ.getMask());
@@ -205,7 +211,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         mockRun(pipelineRun);
 
-        assertThrows(AccessDeniedException.class, () -> clusterApiService.getNode(nodeInstance.getName()));
+        assertThrows(AccessDeniedException.class, () -> clusterApiService
+                .getNode(nodeInstance.getName(), MachineType.KUBE, null));
     }
 
     @Test
@@ -245,9 +252,11 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldTerminateNodeForAdmin() {
-        doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
+        doReturn(nodeInstance).when(mockNodesManager)
+                .terminateKubeOrCloudNode(nodeInstance.getName(), MachineType.KUBE, null);
 
-        assertThat(clusterApiService.terminateNode(nodeInstance.getName())).isEqualTo(nodeInstance);
+        assertThat(clusterApiService.terminateNode(nodeInstance.getName(), MachineType.KUBE, null))
+                .isEqualTo(nodeInstance);
     }
 
     @Test
@@ -259,7 +268,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockRun(pipelineRun);
         mockUser();
 
-        final NodeInstance returnedNodeInstance = clusterApiService.terminateNode(nodeInstance.getName());
+        final NodeInstance returnedNodeInstance = clusterApiService
+                .terminateNode(nodeInstance.getName(), MachineType.KUBE, null);
 
         assertThat(returnedNodeInstance).isEqualTo(nodeInstance);
         assertThat(returnedNodeInstance.getMask()).isEqualTo(AclPermission.READ.getMask());
@@ -273,7 +283,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
-            () -> clusterApiService.terminateNode(nodeInstance.getName()));
+            () -> clusterApiService.terminateNode(nodeInstance.getName(), MachineType.KUBE, null));
     }
 
     @Test
@@ -434,7 +444,8 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     private void mockNode(final NodeInstance nodeInstance) {
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName(), filterPodsRequest);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
-        doReturn(nodeInstance).when(mockNodesManager).terminateNode(nodeInstance.getName());
+        doReturn(nodeInstance).when(mockNodesManager)
+                .terminateKubeOrCloudNode(nodeInstance.getName(), MachineType.KUBE, null);
     }
 
     private void mockRun(final PipelineRun pipelineRun) {

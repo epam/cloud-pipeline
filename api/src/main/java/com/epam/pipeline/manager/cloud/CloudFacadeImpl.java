@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -321,6 +322,18 @@ public class CloudFacadeImpl implements CloudFacade {
     public boolean instanceScalingSupported(final Long regionId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return region.getProvider() != CloudProvider.LOCAL;
+    }
+
+    @Override
+    public List<NodeInstance> getCloudNodes(final Long regionId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).getCloudNodes(region);
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final Long regionId, final String instanceId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).findCloudNode(region, instanceId);
     }
 
     public void deleteInstanceTags(final Long regionId, final String runId, final Set<String> tagNames) {
