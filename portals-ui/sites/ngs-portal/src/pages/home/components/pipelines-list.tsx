@@ -7,16 +7,22 @@ import NavigationDependencyOutlineIcon from '@epam/assets/icons/navigation-depen
 
 type Props = {
   pipelines: Pipeline[] | undefined;
+  mode: 'standard' | 'compact';
 };
 
-export const PipelinesList = memo(({ pipelines }: Props) => {
+const cardCx = {
+  standard: 'px-3 py-2',
+  compact: 'px-2 py-1',
+};
+
+export const PipelinesList = memo(({ pipelines, mode }: Props) => {
   const renderItem = (item: Pipeline, search: string, i: number) => {
     return (
       <PipelineCard
         key={item.id}
         pipeline={item}
         highlightedText={search}
-        className={cn({ ['border-t']: i !== 0 })}
+        className={cn(cardCx[mode], { ['border-t']: i !== 0 })}
       />
     );
   };
@@ -37,6 +43,7 @@ export const PipelinesList = memo(({ pipelines }: Props) => {
       sliced
       search
       itemKey="id"
+      mode={mode}
       viewAll={{ title: 'View all pipelines', link: '/pipelines' }}
     />
   );

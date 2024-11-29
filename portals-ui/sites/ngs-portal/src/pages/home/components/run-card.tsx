@@ -18,10 +18,7 @@ export const RunCard = ({ run, className, style }: Props) => {
 
   return (
     <div
-      className={cn(
-        'px-3 py-2 bg-white w-full space-y-1 flex flex-col gap-2',
-        className,
-      )}
+      className={cn('bg-white w-full space-y-1 flex flex-col gap-2', className)}
       style={style}>
       <FlexRow
         columnGap="12"

@@ -2,6 +2,16 @@ import classNames from 'classnames';
 import { SearchInput } from '@epam/uui';
 import type { ListHeaderProps } from './types';
 
+const controlsCx = {
+  standard: 'px-2 py-3',
+  compact: 'p-2',
+} as Record<string, string>;
+
+const searchCx = {
+  standard: 'p-0.5',
+  compact: 'p-0.5',
+} as Record<string, string>;
+
 const ListHeader = (props: ListHeaderProps) => {
   const {
     className,
@@ -11,15 +21,20 @@ const ListHeader = (props: ListHeaderProps) => {
     search,
     onSearch,
     searchPlaceholder,
+    mode = 'compact',
   } = props;
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
-      <div className="flex text items-center no-wrap p-2">
+      <div
+        className={classNames(
+          'flex text items-center no-wrap',
+          controlsCx[mode],
+        )}>
         <b>{title}</b>
         {controls ? <div className="ml-auto">{controls}</div> : null}
       </div>
       {onSearch ? (
-        <div className="p-0.5">
+        <div className={searchCx[mode]}>
           <SearchInput
             value={search}
             onValueChange={onSearch}
