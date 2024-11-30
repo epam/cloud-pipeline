@@ -499,6 +499,15 @@ function configure_package_manager {
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
             if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+                  if [ "$CP_REPO_ACCESS_TIMEOUT_SEC" ]; then
+                        if [ -f /etc/yum.conf ]; then
+                              sed -i "/^timeout=/d" /etc/yum.conf
+                              sed -i "/\[main\]/a timeout=$CP_REPO_ACCESS_TIMEOUT_SEC" /etc/yum.conf
+                        else
+                              echo "[main]" > /etc/yum.conf
+                              echo "timeout=$CP_REPO_ACCESS_TIMEOUT_SEC" >> /etc/yum.conf
+                        fi
+                  fi
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/yum.repos.d/cuda.repo
@@ -529,6 +538,11 @@ function configure_package_manager {
                                           sed -i 's/^mirrorlist=/#mirrorlist=/g' "$repo_file"
                                     fi
                               done
+
+                              if [ "$CP_REPO_FORCE_INTERNAL" == "true" ]; then
+                                    yum-config-manager --disable \*  >> /var/log/yum.cp.log 2>&1
+                                    yum-config-manager --enable "cloud-pipeline"  >> /var/log/yum.cp.log 2>&1
+                              fi
 
                               break
                         fi
