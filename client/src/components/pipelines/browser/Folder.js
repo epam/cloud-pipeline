@@ -765,7 +765,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
   createStorage = async (storage) => {
-    const request = new CreateDataStorage(this.state.createNewStorageFlag);
+    const request = new CreateDataStorage(this.state.createNewStorageFlag, storage.skipPolicy);
     const hide = message.loading('Creating storage...', 0);
     let path = storage.path;
     let name = storage.name;
