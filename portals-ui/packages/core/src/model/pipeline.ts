@@ -18,4 +18,5 @@ export type Pipeline = AclEntry<AclClass.pipeline> & {
   docsPath?: string;
   branch?: string;
   visibility?: 'INHERIT' | 'OWNER';
+  data?: Record<string, any>;
 };

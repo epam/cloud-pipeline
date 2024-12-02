@@ -18,4 +18,6 @@ export type ListHeaderProps = CommonProps & {
   searchPlaceholder?: string;
   onSearch?: (search: string) => void;
   controls?: ReactNode;
+  beforeSearch?: ReactNode;
+  searchClassName?: string;
 };

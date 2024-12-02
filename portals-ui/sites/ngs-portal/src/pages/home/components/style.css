@@ -1,3 +1,7 @@
 .ngs-container {
-    @apply px-3 py-2 bg-white space-y-1;
+  @apply px-3 py-2 bg-white space-y-1;
+}
+
+.ngs-container-extended {
+  @apply px-3 py-2 bg-white flex gap-2 flex-nowrap;
 }

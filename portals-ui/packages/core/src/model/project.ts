@@ -26,6 +26,13 @@ export type Configuration = {
   entries: Record<string, any>[];
 };
 
+type ProjectData = {
+  type?: string;
+  value: string;
+};
+
+type ProjectTags = Record<string, ProjectData>;
+
 export type Project = AclEntry<AclClass.folder> & {
   id: number;
   name: string;
@@ -47,6 +54,6 @@ export type Project = AclEntry<AclClass.folder> & {
     hasMetadata: boolean;
   }>;
   metadata?: Record<string, any>;
-  data?: Record<string, any>;
+  data?: ProjectTags;
   storages?: Record<string, any>[];
 };
