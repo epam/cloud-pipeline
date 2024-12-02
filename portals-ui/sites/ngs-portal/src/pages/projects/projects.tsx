@@ -12,19 +12,24 @@ export function ProjectsPage() {
       .then(() => {})
       .catch(() => {});
   }, []);
+
   const { projects, error, pending } = useProjectsState();
   const { search, onSearchChange, filtered } = useSearch({
     items: projects ?? [],
   });
+
   if (error) {
     return <div>{error}</div>;
   }
+
   if (pending) {
     return <Spinner />;
   }
+
   if (!projects) {
     return <div>No data</div>;
   }
+
   return (
     <div className="flex flex-col overflow-auto">
       <ListHeader

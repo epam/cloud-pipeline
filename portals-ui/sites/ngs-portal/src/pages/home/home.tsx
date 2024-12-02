@@ -6,7 +6,7 @@ import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
 import { ProjectsList, PipelinesList, RunsList } from './components';
 import './style.css';
 
-export const Home = () => {
+export const HomePage = () => {
   const { projects } = useProjectsState();
   const { pipelines } = usePipelinesState();
 
