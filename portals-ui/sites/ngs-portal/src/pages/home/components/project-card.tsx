@@ -102,7 +102,7 @@ export const ProjectCard = ({
   return (
     <div className={cn('ngs-container', className)} style={style}>
       {filteredTag.length > 0 && (
-        <FlexRow columnGap="6" size="24">
+        <div className="flex flex-wrap gap-1">
           {filteredTag.map((tag) => (
             <NgsTag
               key={tag.key}
@@ -112,7 +112,7 @@ export const ProjectCard = ({
               className="shrink-0"
             />
           ))}
-        </FlexRow>
+        </div>
       )}
 
       <FlexRow columnGap="12" size="24" alignItems="center">

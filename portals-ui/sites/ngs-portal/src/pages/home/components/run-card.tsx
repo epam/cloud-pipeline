@@ -17,9 +17,7 @@ export const RunCard = ({ run, className, style }: Props) => {
   const formattedStartDate = dayjs(startDate).format('YYYY-MM-DD, HH:mm:ss');
 
   return (
-    <div
-      className={cn('ngs-container flex flex-col', className)}
-      style={style}>
+    <div className={cn('ngs-container flex flex-col', className)} style={style}>
       <FlexRow
         columnGap="12"
         size="24"
@@ -48,7 +46,7 @@ export const RunCard = ({ run, className, style }: Props) => {
         />
       </div>
 
-      <div>
+      <div className="flex flex-wrap gap-x-4">
         <RichTextView>
           <span className="text-[var(--uui-secondary-50)]">Started on:</span>{' '}
           {formattedStartDate}
