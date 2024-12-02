@@ -24,15 +24,13 @@ export const PipelineCard = ({
   const { id, name, owner, description } = pipeline;
 
   return (
-    <div
-      className={cn('ngs-container', className)}
-      style={style}>
+    <div className={cn('ngs-container', className)} style={style}>
       {tags?.length && (
-        <FlexRow columnGap="6" size="24">
+        <div className="flex flex-wrap gap-1">
           {tags.map((tag) => (
             <Tag caption={tag} size="18" />
           ))}
-        </FlexRow>
+        </div>
       )}
 
       <FlexRow columnGap="12" size="24" alignItems="center">
