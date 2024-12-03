@@ -1,0 +1,11 @@
+.modal-container {
+  @apply max-w-screen-md;
+}
+
+.item-label {
+  @apply min-w-[125px] text-right;
+}
+
+.picker-item {
+  max-width: calc(100% - 40px);
+}

@@ -4,5 +4,6 @@ export * from './users';
 export * from './pipelines';
 export * from './projects';
 export * from './runs';
+export * from './data-storages';
 
 export { cloudPipelineApi };
