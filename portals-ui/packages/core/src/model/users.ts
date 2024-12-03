@@ -15,6 +15,7 @@ export type User = AclEntry<AclClass.user> & {
   blocked: boolean;
   groups: string[];
   roles: Role[];
+  defaultStorageId?: number;
 };
 
 export type UserInfo = Omit<User, 'userName' | 'admin' | 'blocked'> & {

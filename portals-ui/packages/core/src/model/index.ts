@@ -4,3 +4,4 @@ export * from './users';
 export * from './pipeline';
 export * from './project';
 export * from './run';
+export * from './data-storage';
