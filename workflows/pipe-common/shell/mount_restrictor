@@ -44,7 +44,7 @@ else
     _custom_mount_role="true"
 fi
 
-if [ -z "$_admin_role" ] && [ -z "$_advanced_role" ] && [ "$_custom_mount_role" == "false"]; then
+if [ -z "$_admin_role" ] && [ -z "$_advanced_role" ] && [ "$_custom_mount_role" == "false" ]; then
     echo "[ERROR] mount: only ROLE_ADMIN or ROLE_ADVANCED_USER can do that"
     exit 1
 fi
