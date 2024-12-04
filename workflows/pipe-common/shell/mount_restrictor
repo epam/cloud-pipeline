@@ -30,7 +30,21 @@ _roles_info=$(curl -sk -H "Authorization: Bearer $API_TOKEN" $API/whoami | jq -r
 _admin_role=$(echo "$_roles_info" | jq -r 'select(.name == "ROLE_ADMIN")')
 _advanced_role=$(echo "$_roles_info" | jq -r 'select(.name == "ROLE_ADVANCED_USER")')
 
-if [ -z "$_admin_role" ] && [ -z "$_advanced_role" ]; then
+if [ "$CP_MOUNT_ALLOWED_ROLES" ]; then
+    _custom_mount_role="false"
+    IFS=',' read -ra _mount_allowed_roles_arr <<< "$CP_MOUNT_ALLOWED_ROLES"
+    for _mount_allowed_role in "${_mount_allowed_roles_arr[@]}"; do
+        _mount_role=$(echo "$_roles_info" | jq -r "select(.name == \"$_mount_allowed_role\")")
+        if [ "$_mount_role" ]; then
+            _custom_mount_role="true"
+            break
+        fi
+    done
+else
+    _custom_mount_role="true"
+fi
+
+if [ -z "$_admin_role" ] && [ -z "$_advanced_role" ] && [ "$_custom_mount_role" == "false"]; then
     echo "[ERROR] mount: only ROLE_ADMIN or ROLE_ADVANCED_USER can do that"
     exit 1
 fi
