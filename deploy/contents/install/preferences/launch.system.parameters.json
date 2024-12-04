@@ -142,7 +142,7 @@
         "defaultValue": ""
     },
     {
-        "name": "CP_CAP_SGE_MASTER_CORES",
+        "name": "",
         "type": "string",
         "description": "Allow to limit Grid Engine master cores usage (0 - do not use)",
         "defaultValue": ""
@@ -197,6 +197,13 @@
         "name": "INPUT_DIR",
         "type": "string",
         "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "SCRIPTS_DIR",
+        "type": "string",
+        "description": "Defines a folder within a compute node, which is typically used for cloning pipeline code",
         "defaultValue": "",
         "passToWorkers": true
     },
