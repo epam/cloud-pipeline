@@ -5,6 +5,7 @@ import { memo, useCallback } from 'react';
 type Option = {
   id: string;
   name: string;
+  disabled?: boolean;
 };
 
 type Props = {
@@ -36,17 +37,27 @@ export const SelectFilter = memo(
     );
 
     return (
-      <PickerInput
-        dataSource={dataSource}
-        value={selectedValues}
-        onValueChange={handleValueChange}
-        selectionMode="multi"
-        placeholder={label}
-        valueType="id"
-        maxItems={1}
-        onFocus={onFocus}
-        isSingleLine
-      />
+      <div className="flex items-center space-x-1">
+        <p>{label}:</p>
+        <PickerInput
+          dataSource={dataSource}
+          value={selectedValues}
+          onValueChange={handleValueChange}
+          selectionMode="multi"
+          getRowOptions={(item) => ({
+            isDisabled: item?.disabled,
+            checkbox: {
+              isDisabled: item?.disabled,
+              isVisible: true,
+            },
+          })}
+          placeholder={`Select ${label}`}
+          valueType="id"
+          maxItems={1}
+          onFocus={onFocus}
+          isSingleLine
+        />
+      </div>
     );
   },
 );
