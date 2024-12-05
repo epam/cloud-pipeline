@@ -9,15 +9,20 @@ export const NgsUserCard = (
 ) => {
   const { userName, ...restProps } = props;
   const userInfo = useSearchUserInfoByName(userName);
+
   const { authenticatedUser } = useAuthenticationState();
+
   const user = useMemo(() => {
     if (authenticatedUser?.userName === userName) {
       return authenticatedUser;
     }
+
     return userInfo;
   }, [authenticatedUser, userInfo, userName]);
+
   if (!user) {
     return null;
   }
+
   return <UserCard user={user} {...restProps} />;
 };

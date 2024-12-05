@@ -1,7 +1,7 @@
 import type { UsersInfoState, UsersInfoStore } from './types.ts';
 import { useStore } from 'zustand';
 import { usersInfoStore } from './store.ts';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { UserInfo } from '@cloud-pipeline/core';
 import {
   compareUserNames,
@@ -31,20 +31,21 @@ export function useSearchUserInfoByName(
   userName: string,
 ): UserInfo | undefined {
   const { usersInfo, pending, loaded } = useUsersInfoStore();
-  if (!usersInfo && !pending && !loaded) {
-    loadUsersInfo().then(noop).catch(noop);
-  }
-  const user = useMemo(() => {
-    if (!usersInfo || userName === undefined || userName.length === 0) {
+
+  useEffect(() => {
+    if (!usersInfo && !pending && !loaded) {
+      loadUsersInfo().then(noop).catch(noop);
+    }
+  }, [loaded, pending, usersInfo]);
+
+  return useMemo(() => {
+    if (!usersInfo || !userName) {
       return undefined;
     }
-    let candidate = usersInfo.find((u) => compareUserNames(u.name, userName));
-    if (!candidate) {
-      candidate = usersInfo.find((u) =>
-        compareUserNamesWithoutDomain(u.name, userName),
-      );
-    }
-    return candidate;
+
+    return (
+      usersInfo.find((u) => compareUserNames(u.name, userName)) ??
+      usersInfo.find((u) => compareUserNamesWithoutDomain(u.name, userName))
+    );
   }, [usersInfo, userName]);
-  return useMemo(() => user, [user]);
 }
