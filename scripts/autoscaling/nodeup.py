@@ -39,6 +39,7 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
     parser.add_argument("--kube_node_token", type=str, required=True)
+    parser.add_argument("--kube_cluster_name", type=str, required=False)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--cloud", type=str, default=None)
@@ -66,6 +67,7 @@ def main():
     kubeadm_token = args.kubeadm_token
     kubeadm_cert_hash = args.kubeadm_cert_hash
     kube_node_token = args.kube_node_token
+    kube_cluster_name = args.kube_cluster_name
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     cloud = args.cloud
@@ -131,6 +133,9 @@ def main():
             utils.pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
+
+        if kube_cluster_name:
+            utils.pipe_log('kube_cluster_name is specified ({kube_cluster_name}) but ignored in this version of nodeup'.format(kube_cluster_name=kube_cluster_name))
 
         if not ins_id:
             ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id,
