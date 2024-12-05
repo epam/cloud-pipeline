@@ -16,18 +16,37 @@
 
 package com.epam.pipeline.dao;
 
+import com.epam.pipeline.controller.vo.EntityFilterVO;
+import joptsimple.internal.Strings;
+import org.apache.commons.collections4.MapUtils;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public interface MetadataTagsUtils {
     Pattern FILTER_PATTERN = Pattern.compile("@FILTER@");
+    Pattern LOAD_METADATA_PATTERN = Pattern.compile("@WITH_METADATA@");
+    String AND = " AND ";
+    String WHERE = " WHERE ";
+
+    static String buildTagsFilterWhereClause(final EntityFilterVO filter, final String query) {
+        final String replacement = !Objects.isNull(filter) && MapUtils.isNotEmpty(filter.getTags())
+                ? WHERE + buildTagsFilterClause(filter.getTags())
+                : Strings.EMPTY;
+        return FILTER_PATTERN.matcher(query).replaceFirst(replacement);
+    }
 
     static String buildTagsFilterClause(final String query, final Map<String, List<String>> tags) {
-        return FILTER_PATTERN.matcher(query).replaceFirst(tags.entrySet().stream()
+        return FILTER_PATTERN.matcher(query).replaceFirst(buildTagsFilterClause(tags));
+    }
+
+    static String buildTagsFilterClause(final Map<String, List<String>> tags) {
+        return tags.entrySet().stream()
                 .map(entry -> tagFilterQuery(entry.getKey(), entry.getValue()))
-                .collect(Collectors.joining(" AND ")));
+                .collect(Collectors.joining(AND));
     }
 
     static String tagFilterQuery(final String key, final List<String> values) {
@@ -35,5 +54,9 @@ public interface MetadataTagsUtils {
                 values.stream()
                         .map(value -> String.format("'%s'", value))
                         .collect(Collectors.joining(",")));
+    }
+
+    static String buildWithMetadataQuery(final String query, final boolean loadMetadata) {
+        return LOAD_METADATA_PATTERN.matcher(query).replaceFirst(loadMetadata ? ", m.data" : Strings.EMPTY);
     }
 }

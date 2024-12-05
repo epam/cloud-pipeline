@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
@@ -183,7 +184,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
 
-        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        final List<PipelineWithMetadata> actual = pipelineDao.loadPipelinesWithMetadata(false, filter);
         assertThat(actual).hasSize(2);
     }
 
@@ -197,7 +198,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
 
-        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        final List<PipelineWithMetadata> actual = pipelineDao.loadPipelinesWithMetadata(false, filter);
         assertThat(actual).hasSize(2);
         assertThat(actual.stream().map(Pipeline::getId).collect(Collectors.toList()))
                 .containsOnly(pipeline1.getId(), pipeline2.getId());
@@ -213,7 +214,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
 
-        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        final List<PipelineWithMetadata> actual = pipelineDao.loadPipelinesWithMetadata(false, filter);
         assertThat(actual).hasSize(2);
         assertThat(actual.stream().map(Pipeline::getId).collect(Collectors.toList()))
                 .containsOnly(pipeline1.getId(), pipeline3.getId());
@@ -229,7 +230,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_2, Collections.singletonList(VALUE_1)));
 
-        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        final List<PipelineWithMetadata> actual = pipelineDao.loadPipelinesWithMetadata(false, filter);
         assertThat(actual).hasSize(0);
     }
 
@@ -243,8 +244,19 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_2)));
 
-        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        final List<PipelineWithMetadata> actual = pipelineDao.loadPipelinesWithMetadata(false, filter);
         assertThat(actual).hasSize(0);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadPipelinesWithMetadata() {
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
+        pipelineDao.createPipeline(getPipeline(TEST_NAME));
+
+        final List<PipelineWithMetadata> actual = pipelineDao.loadPipelinesWithMetadata(true, null);
+        assertThat(actual).hasSize(3);
     }
 
     private void assertPipelineWithParameters(List<Pipeline> expected, Integer pageNum, Integer pageSize) {

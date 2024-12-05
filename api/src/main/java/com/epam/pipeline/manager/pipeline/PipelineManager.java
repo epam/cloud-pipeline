@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @AclSync
@@ -290,10 +292,14 @@ public class PipelineManager implements SecuredEntityManager {
         return result;
     }
 
-    public List<Pipeline> loadAllPipelines(final boolean loadVersions, final EntityFilterVO filter) {
-        final List<Pipeline> result = Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags())
-                ? pipelineDao.loadAllPipelines()
-                : pipelineDao.loadAllPipelines(filter);
+    public List<PipelineWithMetadata> loadAllPipelines(final boolean loadVersions, final boolean loadMetadata,
+                                                       final EntityFilterVO filter) {
+        final List<PipelineWithMetadata> result =
+                Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags()) || loadMetadata
+                ? pipelineDao.loadPipelinesWithMetadata(loadMetadata, filter)
+                : pipelineDao.loadAllPipelines().stream()
+                        .map(pipeline -> (PipelineWithMetadata) pipeline)
+                        .collect(Collectors.toList());
         if (loadVersions) {
             result.forEach(this::setCurrentVersion);
         }
