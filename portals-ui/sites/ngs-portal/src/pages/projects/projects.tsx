@@ -6,7 +6,7 @@ import { List, ListHeader } from '@cloud-pipeline/components';
 import { useSearch } from '../../shared/hooks/use-search.ts';
 import HighlightedText from '../../shared/highlight-text';
 import { ProjectFilters } from './components/project-filters.tsx';
-import { useProjectFilters } from './hooks';
+import { useProjectFilters, useProjectTags } from './hooks';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -23,6 +23,7 @@ export function ProjectsPage() {
     items: projects ?? [],
     matchesFilter: doesProjectMatchFilters,
   });
+  const projectTags = useProjectTags(projects);
 
   if (error) {
     return <div>{error}</div>;
@@ -39,7 +40,8 @@ export function ProjectsPage() {
   return (
     <div className="flex flex-col overflow-auto">
       <ProjectFilters
-        projects={projects}
+        filteredProjects={filtered}
+        projectTags={projectTags}
         onFilterValueChange={handleFilterValueChange}
         tagsToFilter={tagsToFilter}
       />

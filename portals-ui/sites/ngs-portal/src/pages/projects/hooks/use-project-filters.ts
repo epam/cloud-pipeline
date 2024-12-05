@@ -1,11 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ProjectFilter } from '../constants';
 import type { Project } from '@cloud-pipeline/core';
+import type { TagFilters } from '../types';
 
 export const useProjectFilters = () => {
-  const [tagsToFilter, setTagsToFilter] = useState<Record<string, string[]>>(
-    {},
-  );
+  const [tagsToFilter, setTagsToFilter] = useState<TagFilters>({});
 
   const doesProjectMatchFilters = useCallback(
     (project: Project) => {

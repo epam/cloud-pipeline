@@ -1,25 +1,23 @@
 import type { Project } from '@cloud-pipeline/core';
 import { SelectFilter } from './select-filter';
 import { ProjectFilter, projectTagsToDisplay } from '../constants';
-import { useOwnersFilter, useProjectTags } from '../hooks';
-
-type Tags = {
-  [key: string]: string[];
-};
+import { useOwnersFilter } from '../hooks';
+import type { Tag, TagFilters } from '../types';
 
 type Props = {
-  projects: Project[];
+  filteredProjects: Project[];
   onFilterValueChange: (tagName: string, selectedTags?: string[]) => void;
-  tagsToFilter: Tags;
+  tagsToFilter: TagFilters;
+  projectTags: Record<string, Tag[]>;
 };
 
 export const ProjectFilters = ({
-  projects,
+  filteredProjects,
   tagsToFilter,
   onFilterValueChange,
+  projectTags,
 }: Props) => {
-  const projectTags = useProjectTags(projects);
-  const { handleFocus, users = [] } = useOwnersFilter();
+  const { handleFocus, users = [] } = useOwnersFilter(filteredProjects);
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -27,9 +25,10 @@ export const ProjectFilters = ({
         <div>
           <SelectFilter
             key={id}
-            options={projectTags[id]?.map((type) => ({
-              id: type,
-              name: type,
+            options={projectTags[id]?.map((tag) => ({
+              id: tag.id,
+              name: tag.count ? `${tag.id} (${tag.count})` : tag.id,
+              disabled: false,
             }))}
             selectedValues={tagsToFilter[id] ?? []}
             onChange={(selectedItems) => {
