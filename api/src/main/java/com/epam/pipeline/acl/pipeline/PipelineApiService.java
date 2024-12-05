@@ -46,6 +46,7 @@ import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -134,8 +135,9 @@ public class PipelineApiService {
 
     @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
-    public List<Pipeline> filterPipelines(final boolean loadVersions, final EntityFilterVO filter) {
-        return pipelineManager.loadAllPipelines(loadVersions, filter);
+    public List<PipelineWithMetadata> filterPipelines(final boolean loadVersions, final boolean loadMetadata,
+                                                      final EntityFilterVO filter) {
+        return pipelineManager.loadAllPipelines(loadVersions, loadMetadata, filter);
     }
 
     @PreAuthorize(ADMIN_ONLY)
