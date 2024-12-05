@@ -5,6 +5,8 @@ import { useProjectsState } from '../../state/projects/hooks';
 import { List, ListHeader } from '@cloud-pipeline/components';
 import { useSearch } from '../../shared/hooks/use-search.ts';
 import HighlightedText from '../../shared/highlight-text';
+import { ProjectFilters } from './components/project-filters.tsx';
+import { useProjectFilters } from './hooks';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -13,9 +15,13 @@ export function ProjectsPage() {
       .catch(() => {});
   }, []);
 
+  const { doesProjectMatchFilters, handleFilterValueChange, tagsToFilter } =
+    useProjectFilters();
+
   const { projects, error, pending } = useProjectsState();
   const { search, onSearchChange, filtered } = useSearch({
     items: projects ?? [],
+    matchesFilter: doesProjectMatchFilters,
   });
 
   if (error) {
@@ -32,6 +38,11 @@ export function ProjectsPage() {
 
   return (
     <div className="flex flex-col overflow-auto">
+      <ProjectFilters
+        projects={projects}
+        onFilterValueChange={handleFilterValueChange}
+        tagsToFilter={tagsToFilter}
+      />
       <ListHeader
         title="Projects"
         className="shrink-0 border"

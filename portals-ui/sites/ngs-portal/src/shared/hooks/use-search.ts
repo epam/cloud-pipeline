@@ -22,7 +22,6 @@ export type SearchNamedItemOptions<Item extends SearchNamedItem> =
 export type SearchOptions<Item> = Item extends SearchNamedItem
   ? SearchNamedItemOptions<Item>
   : SearchGeneralOptions<Item>;
-
 function isSearchNamedItem(item: unknown): item is SearchNamedItem {
   return (
     item !== undefined &&
@@ -43,24 +42,31 @@ function defaultSearchCallback<Item>(item: Item, search: string): boolean {
 export type SearchResult<Item> = {
   filtered: Item[];
   search: string;
-  onSearchChange: (search: string | undefined) => void;
+  onSearchChange: (search: string) => void;
 };
 
 export function useSearch<Item>(
-  options: SearchOptions<Item>,
+  options: SearchOptions<Item> & {
+    matchesFilter: (item: Item) => boolean;
+  },
 ): SearchResult<Item> {
-  const { items, searchCallback = defaultSearchCallback } = options;
-  const [search, setSearch] = useState<string | undefined>();
+  const {
+    items,
+    matchesFilter,
+    searchCallback = defaultSearchCallback,
+  } = options;
+  const [search, setSearch] = useState('');
+
   const filtered = useMemo(() => {
-    if (search === undefined || search.length === 0) {
-      return items;
-    }
-    return items.filter((item) => searchCallback(item, search));
-  }, [search, items, searchCallback]);
+    return items.filter(
+      (item) => searchCallback(item, search) && matchesFilter(item),
+    );
+  }, [items, searchCallback, search, matchesFilter]);
+
   return useMemo(
     () => ({
       filtered,
-      search: search ?? '',
+      search,
       onSearchChange: setSearch,
     }),
     [filtered, search, setSearch],
