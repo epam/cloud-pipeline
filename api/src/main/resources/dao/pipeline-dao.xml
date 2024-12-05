@@ -131,10 +131,12 @@
                         p.visibility,
                         p.code_path,
                         p.docs_path
+                        @WITH_METADATA@
                     FROM
                         pipeline.pipeline p
-                    LEFT JOIN pipeline.metadata m ON p.pipeline_id = m.entity_id
-                    WHERE m.entity_class = 'PIPELINE' AND @FILTER@
+                    LEFT JOIN pipeline.metadata m ON
+                        p.pipeline_id = m.entity_id AND m.entity_class = 'PIPELINE'
+                    @FILTER@
                     ORDER BY pipeline_id
                 ]]>
             </value>

@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -177,10 +178,11 @@ public class PipelineController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<Pipeline>> filterPipelines(
+    public Result<List<PipelineWithMetadata>> filterPipelines(
             @RequestBody final EntityFilterVO filter,
-            @RequestParam(defaultValue = "false") final Boolean loadVersion) {
-        return Result.success(pipelineApiService.filterPipelines(loadVersion, filter));
+            @RequestParam(defaultValue = "false") final Boolean loadVersion,
+            @RequestParam(defaultValue = "false") final boolean loadMetadata) {
+        return Result.success(pipelineApiService.filterPipelines(loadVersion, loadMetadata, filter));
     }
 
     @GetMapping(value = "/pipeline/permissions")
