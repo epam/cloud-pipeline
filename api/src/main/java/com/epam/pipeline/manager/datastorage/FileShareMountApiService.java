@@ -38,7 +38,7 @@ public class FileShareMountApiService {
         fileShareMountManager.delete(id);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public FileShareMount load(final Long id) {
         return fileShareMountManager.load(id);
     }
