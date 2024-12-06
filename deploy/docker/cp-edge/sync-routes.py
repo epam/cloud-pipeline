@@ -56,6 +56,10 @@ EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_COOKIE_NO_REPLACE = 'CP_EDGE_COOKIE_NO_REPLACE'
 EDGE_JWT_NO_AUTH = 'CP_EDGE_JWT_NO_AUTH'
 EDGE_PASS_BEARER = 'CP_EDGE_PASS_BEARER'
+# This can be used to add any extra option to the bearer cookie generated
+# e.g. Secure;SameSite=None;Partitioned;
+# Which allows external services to use the cookie (used for SSO integration with EDGE)
+EDGE_BEARER_COOKIE_EXTRA = os.getenv('CP_EDGE_BEARER_COOKIE_EXTRA', '')
 EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
 EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
@@ -660,6 +664,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         if EDGE_PASS_BEARER in additional:
                                                 additional = additional.replace(EDGE_PASS_BEARER, "")
                                                 edge_pass_bearer = True
+
                                         #######################################################
 
                                         is_external_app = False
@@ -805,6 +810,7 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                 .replace('{additional}', service_spec["additional"]) \
                 .replace('{edge_jwt_auth}', str(service_spec["edge_jwt_auth"])) \
                 .replace('{edge_pass_bearer}', str(service_spec["edge_pass_bearer"])) \
+                .replace('{bearer_cookie_extra}', EDGE_BEARER_COOKIE_EXTRA) \
                 .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location)
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:

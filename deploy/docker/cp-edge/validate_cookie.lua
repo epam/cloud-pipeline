@@ -195,7 +195,11 @@ if token == nil then
     return
 else
     -- If "bearer" param is found - set it as cookie and redirect to initial uri
-        ngx.header['Set-Cookie'] = 'bearer=' .. token  .. '; path=/'
-        ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
-        return
+    local bearer_cookie_extra = ''
+    if ngx.var.bearer_cookie_extra ~= nil then
+        bearer_cookie_extra = ngx.var.bearer_cookie_extra
+    end
+    ngx.header['Set-Cookie'] = 'bearer=' .. token  .. '; path=/;' .. bearer_cookie_extra
+    ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
+    return
 end
