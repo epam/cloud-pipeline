@@ -142,7 +142,7 @@
         "defaultValue": ""
     },
     {
-        "name": "",
+        "name": "CP_CAP_SGE_MASTER_CORES",
         "type": "string",
         "description": "Allow to limit Grid Engine master cores usage (0 - do not use)",
         "defaultValue": ""
