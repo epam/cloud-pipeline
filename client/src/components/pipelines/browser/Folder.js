@@ -247,7 +247,8 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (!metadata) {
       return null;
     }
-    const {value} = metadata;
+    const {value, type} = metadata;
+    const isSecret = (type || '').toLowerCase() === 'secret';
     const ignoredKey = () => {
       return Object.values(METADATA_KEYS).includes(key);
     };
@@ -286,13 +287,35 @@ export default class Folder extends localization.LocalizedReactComponent {
     };
     let metadataValue;
     let wrapValue;
-    if (SpecialTags.hasOwnProperty(key)) {
+    if (isSecret) {
+      metadataValue = '*****';
+    } else if (SpecialTags.hasOwnProperty(key)) {
       metadataValue = renderSpecialMetadataComponent();
       wrapValue = true;
     } else if (isJson(value)) {
       metadataValue = renderJSONComponent();
     } else {
       metadataValue = value;
+    }
+    const metadataComponent = (
+      <div key={key} className={styles.metadataItemContainer}>
+        <Row className={classNames(
+          styles.metadataItemKey,
+          'cp-library-metadata-item-key'
+        )}>
+          {key}
+        </Row>
+        <Row className={classNames(
+          styles.metadataItemValue,
+          {[styles.wrap]: wrapValue},
+          'cp-library-metadata-item-value'
+        )}>
+          {metadataValue}
+        </Row>
+      </div>
+    );
+    if (isSecret) {
+      return metadataComponent;
     }
     return (
       <Tooltip key={key} overlay={
@@ -303,21 +326,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           </Row>
         </Row>
       }>
-        <div key={key} className={styles.metadataItemContainer}>
-          <Row className={classNames(
-            styles.metadataItemKey,
-            'cp-library-metadata-item-key'
-          )}>
-            {key}
-          </Row>
-          <Row className={classNames(
-            styles.metadataItemValue,
-            {[styles.wrap]: wrapValue},
-            'cp-library-metadata-item-value'
-          )}>
-            {metadataValue}
-          </Row>
-        </div>
+        {metadataComponent}
       </Tooltip>
     );
   };

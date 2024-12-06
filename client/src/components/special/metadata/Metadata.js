@@ -944,6 +944,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     let keyElement;
     let valueElement;
     const readOnly = this.props.readOnly || this.isReadOnlyTag(metadataItem.key);
+    const isSecret = (metadataItem.type || '').toLowerCase() === 'secret';
     const inputOptions = (field) => {
       return {
         id: `${field}-input-${metadataItem.key}`,
@@ -1039,7 +1040,27 @@ export default class Metadata extends localization.LocalizedReactComponent {
       ? (this.state.editableText || metadataItem.key)
       : metadataItem.key;
     const dictionary = systemDictionaries.getDictionary(key);
-    if (dictionary) {
+    if (isSecret) {
+      valueElement = (
+        <tr
+          key={`${metadataItem.key}_value`}
+          className={
+            classNames(
+              'cp-metadata-item-row'
+            )
+          }
+        >
+          <td
+            id={`value-column-${metadataItem.key}`}
+            colSpan={6}
+          >
+            <span style={{display: 'inline-block'}}>
+              *****
+            </span>
+          </td>
+        </tr>
+      );
+    } else if (dictionary) {
       valueElement = (
         <tr
           key={`${metadataItem.key}_value`}
