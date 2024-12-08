@@ -23,7 +23,7 @@ export function ProjectsPage() {
     items: projects ?? [],
     matchesFilter: doesProjectMatchFilters,
   });
-  const projectTags = useProjectTags(projects);
+  const projectTags = useProjectTags(tagsToFilter, projects);
 
   if (error) {
     return <div>{error}</div>;

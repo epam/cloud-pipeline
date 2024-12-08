@@ -12,27 +12,18 @@ export const useProjectFilters = () => {
         return true;
       }
 
-      const hasOwnerFilter = ProjectFilter.OWNER in tagsToFilter;
-      const hasOtherFilters = Object.keys(tagsToFilter).some(
-        (key) => key !== (ProjectFilter.OWNER as string),
+      const matchesTags = Object.entries(tagsToFilter).every(
+        ([filterName, values]) => {
+          if (filterName === (ProjectFilter.OWNER as string)) {
+            return values.includes(project.owner);
+          }
+
+          const projectTagValue = project.data?.[filterName]?.value;
+          return projectTagValue && values.includes(projectTagValue);
+        },
       );
 
-      // Check if project matches owner filter (if present)
-      const matchesOwner =
-        !hasOwnerFilter ||
-        tagsToFilter[ProjectFilter.OWNER]?.includes(project.owner);
-
-      // Check if project matches tag filters (if present)
-      const matchesTags =
-        !hasOtherFilters ||
-        Object.entries(tagsToFilter)
-          .filter(([key]) => key !== (ProjectFilter.OWNER as string))
-          .some(([filterName, values]) => {
-            const projectTagValue = project.data?.[filterName]?.value;
-            return projectTagValue && values.includes(projectTagValue);
-          });
-
-      return matchesOwner && matchesTags;
+      return matchesTags;
     },
     [tagsToFilter],
   );

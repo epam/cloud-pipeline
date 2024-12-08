@@ -27,8 +27,9 @@ export const ProjectFilters = ({
             key={id}
             options={projectTags[id]?.map((tag) => ({
               id: tag.id,
-              name: tag.count ? `${tag.id} (${tag.count})` : tag.id,
-              disabled: false,
+              name:
+                tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
+              disabled: !tag.count,
             }))}
             selectedValues={tagsToFilter[id] ?? []}
             onChange={(selectedItems) => {
