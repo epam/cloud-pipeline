@@ -1,1 +1,1 @@
-export { doesProjectMatchFilters } from './does-project-match-filters';
+export { collectProjectTags } from './collect-project-tags';

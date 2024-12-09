@@ -1,116 +1,54 @@
-import type { Project } from '@cloud-pipeline/core';
+import type { Project, UserInfo } from '@cloud-pipeline/core';
 import { useMemo } from 'react';
-import type { Tag, TagFilters } from '../types';
-import { ProjectFilter } from '../constants';
+import type { ProjectTags, TagFilters } from '../types';
+import { collectProjectTags } from '../helpers';
 
 type Props = {
-  project: Project;
   tagsToFilter: TagFilters;
-  tagToExclude?: string;
-  tagToReplace?: TagFilters;
+  isProjectMatchingFilters: (
+    project: Project,
+    overrideFilters?: TagFilters,
+  ) => boolean;
+  users?: UserInfo[];
+  projects?: Project[];
 };
 
-export const doesProjectMatchFilters = ({
-  project,
+export const useProjectTags = ({
+  isProjectMatchingFilters,
   tagsToFilter,
-  tagToReplace = {},
+  users = [],
+  projects = [],
 }: Props) => {
-  if (!Object.keys(tagsToFilter).length) {
-    return true;
-  }
-
-  const effectiveFilters = Object.entries({
-    ...tagsToFilter,
-    ...tagToReplace,
-  });
-
-  return effectiveFilters.every(([filterName, values]) => {
-    if (filterName === (ProjectFilter.OWNER as string)) {
-      return values.includes(project.owner);
-    }
-
-    const projectTagValue = project.data?.[filterName]?.value;
-    return projectTagValue && values.includes(projectTagValue);
-  });
-};
-
-const buildTagsMap = (projects?: Project[]) => {
-  if (!projects?.length) {
-    return {};
-  }
-
-  // Map for faster lookup
-  const tagsMap: Record<string, Map<string, Tag>> = {};
-
-  for (const project of projects) {
-    if (!project.data) {
-      continue;
-    }
-
-    for (const [key, { value }] of Object.entries(project.data)) {
-      if (!tagsMap[key]) {
-        tagsMap[key] = new Map();
-      }
-
-      const currentTagMap = tagsMap[key];
-      const tag = currentTagMap.get(value);
-
-      if (tag) {
-        tag.count++;
-      } else {
-        currentTagMap.set(value, { id: value, count: 1 });
-      }
-    }
-  }
-
-  // Convert maps to arrays
-  const tags: Record<string, Tag[]> = {};
-  for (const [key, tagMap] of Object.entries(tagsMap)) {
-    tags[key] = Array.from(tagMap.values());
-  }
-
-  return tags;
-};
-
-export const useProjectTags = (
-  tagsToFilter: TagFilters,
-  projects?: Project[],
-) => {
   const projectTags = useMemo(() => {
-    return buildTagsMap(projects);
-  }, [projects]);
-  console.log('🚀 ~ projectTags ~ projectTags:', projectTags);
+    if (!projects.length) {
+      return {};
+    }
+
+    return collectProjectTags(projects, users);
+  }, [projects, users]);
 
   const dynamicTags = useMemo(() => {
-    if (!Object.keys(tagsToFilter).length) {
+    if (!Object.keys(tagsToFilter).length || !projects.length) {
       return projectTags;
     }
 
-    const updatedTags: Record<string, Tag[]> = {};
+    const updatedTags: ProjectTags = {};
 
     Object.entries(projectTags).forEach(([tagName, tagValues]) => {
       updatedTags[tagName] = tagValues.map((tag) => {
-        const matchingProjects = projects?.filter((project) =>
-          doesProjectMatchFilters({
-            project,
-            tagsToFilter,
-            tagToReplace: { [tagName]: [tag.id] },
-          }),
-        );
-
-        const testProjects = matchingProjects?.filter(
-          (project) => project?.data?.[tagName]?.value === tag.id,
+        const matchingProjects = projects.filter((project) =>
+          isProjectMatchingFilters(project, { [tagName]: [tag.id] }),
         );
 
         return {
           ...tag,
-          count: testProjects?.length ?? 0,
+          count: matchingProjects.length,
         };
       });
     });
 
     return updatedTags;
-  }, [projectTags, projects, tagsToFilter]);
+  }, [isProjectMatchingFilters, projectTags, projects, tagsToFilter]);
 
   return dynamicTags;
 };

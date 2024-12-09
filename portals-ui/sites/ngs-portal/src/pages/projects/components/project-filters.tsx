@@ -1,56 +1,54 @@
-import type { Project } from '@cloud-pipeline/core';
-import { SelectFilter } from './select-filter';
-import { ProjectFilter, projectTagsToDisplay } from '../constants';
-import { useOwnersFilter } from '../hooks';
-import type { Tag, TagFilters } from '../types';
+import { SelectFilter } from '../../../shared/ui';
+import { ProjectFilter, projectFiltersToDisplay } from '../constants';
+import type { ProjectTags, TagFilters } from '../types';
 
 type Props = {
-  filteredProjects: Project[];
   onFilterValueChange: (tagName: string, selectedTags?: string[]) => void;
   tagsToFilter: TagFilters;
-  projectTags: Record<string, Tag[]>;
+  projectTags: ProjectTags;
+  onOwnersFilterFocus: () => void;
 };
 
 export const ProjectFilters = ({
-  filteredProjects,
   tagsToFilter,
   onFilterValueChange,
   projectTags,
+  onOwnersFilterFocus,
 }: Props) => {
-  const { handleFocus, users = [] } = useOwnersFilter(filteredProjects);
+  const handleFilterChange = (id: string) => (selectedItems?: string[]) => {
+    onFilterValueChange(id, selectedItems);
+  };
+
+  const handleFocus = (id: string) => {
+    if (id === (ProjectFilter.OWNER as string)) {
+      onOwnersFilterFocus();
+    }
+  };
 
   return (
     <div className="flex flex-wrap gap-2">
-      {projectTagsToDisplay.map(({ id, label }) => (
-        <div>
-          <SelectFilter
-            key={id}
-            options={projectTags[id]?.map((tag) => ({
-              id: tag.id,
-              name:
-                tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
-              disabled: !tag.count,
-            }))}
-            selectedValues={tagsToFilter[id] ?? []}
-            onChange={(selectedItems) => {
-              onFilterValueChange(id, selectedItems);
-            }}
-            label={label}
-          />
-        </div>
-      ))}
+      {projectFiltersToDisplay.map(({ id, label }) => {
+        const options =
+          projectTags[id]?.map((tag) => ({
+            id: tag.id,
+            name: tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
+            disabled: !tag.count,
+          })) || [];
 
-      <div>
-        <SelectFilter
-          selectedValues={tagsToFilter[ProjectFilter.OWNER]}
-          onChange={(selectedItems) => {
-            onFilterValueChange(ProjectFilter.OWNER, selectedItems);
-          }}
-          label="Owner"
-          options={users}
-          onFocus={handleFocus}
-        />
-      </div>
+        return (
+          // div is needed not to let the filter take 100% width
+          // re-check if filter is not from uui library
+          <div key={id}>
+            <SelectFilter
+              options={options}
+              selectedValues={tagsToFilter[id] ?? []}
+              onChange={handleFilterChange(id)}
+              label={label}
+              onFocus={() => handleFocus(id)}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };
