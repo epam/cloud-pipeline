@@ -6,24 +6,25 @@ import type { TagFilters } from '../types';
 export const useProjectFilters = () => {
   const [tagsToFilter, setTagsToFilter] = useState<TagFilters>({});
 
-  const doesProjectMatchFilters = useCallback(
-    (project: Project) => {
-      if (Object.keys(tagsToFilter).length === 0) {
+  const isProjectMatchingFilters = useCallback(
+    (project: Project, overrideFilters: TagFilters = {}) => {
+      if (!Object.keys(tagsToFilter).length) {
         return true;
       }
 
-      const matchesTags = Object.entries(tagsToFilter).every(
-        ([filterName, values]) => {
-          if (filterName === (ProjectFilter.OWNER as string)) {
-            return values.includes(project.owner);
-          }
+      const effectiveFilters = Object.entries({
+        ...tagsToFilter,
+        ...overrideFilters,
+      });
 
-          const projectTagValue = project.data?.[filterName]?.value;
-          return projectTagValue && values.includes(projectTagValue);
-        },
-      );
+      return effectiveFilters.every(([filterName, values]) => {
+        if (filterName === (ProjectFilter.OWNER as string)) {
+          return values.includes(project.owner);
+        }
 
-      return matchesTags;
+        const projectTagValue = project.data?.[filterName]?.value;
+        return projectTagValue && values.includes(projectTagValue);
+      });
     },
     [tagsToFilter],
   );
@@ -46,9 +47,9 @@ export const useProjectFilters = () => {
   return useMemo(
     () => ({
       handleFilterValueChange,
-      doesProjectMatchFilters,
+      isProjectMatchingFilters,
       tagsToFilter,
     }),
-    [doesProjectMatchFilters, handleFilterValueChange, tagsToFilter],
+    [isProjectMatchingFilters, handleFilterValueChange, tagsToFilter],
   );
 };

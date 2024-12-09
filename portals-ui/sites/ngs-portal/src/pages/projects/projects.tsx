@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
@@ -7,6 +7,9 @@ import { useSearch } from '../../shared/hooks/use-search.ts';
 import HighlightedText from '../../shared/highlight-text';
 import { ProjectFilters } from './components/project-filters.tsx';
 import { useProjectFilters, useProjectTags } from './hooks';
+import { noop } from '@cloud-pipeline/core';
+import { useUsersInfoState } from '../../state/users-info/hooks.ts';
+import { loadUsersInfo } from '../../state/users-info/load-users-info.ts';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -15,15 +18,29 @@ export function ProjectsPage() {
       .catch(() => {});
   }, []);
 
-  const { doesProjectMatchFilters, handleFilterValueChange, tagsToFilter } =
+  const { usersInfo, pending: isUserInfoPending, loaded } = useUsersInfoState();
+
+  const handleOwnersFilterFocus = useCallback(() => {
+    if (!usersInfo?.length && !isUserInfoPending && !loaded) {
+      loadUsersInfo().then(noop).catch(noop);
+    }
+  }, [isUserInfoPending, loaded, usersInfo?.length]);
+
+  const { isProjectMatchingFilters, handleFilterValueChange, tagsToFilter } =
     useProjectFilters();
 
   const { projects, error, pending } = useProjectsState();
   const { search, onSearchChange, filtered } = useSearch({
     items: projects ?? [],
-    matchesFilter: doesProjectMatchFilters,
+    isMatchingFilters: isProjectMatchingFilters,
   });
-  const projectTags = useProjectTags(tagsToFilter, projects);
+
+  const projectTags = useProjectTags({
+    tagsToFilter,
+    isProjectMatchingFilters,
+    projects,
+    users: usersInfo,
+  });
 
   if (error) {
     return <div>{error}</div>;
@@ -40,10 +57,10 @@ export function ProjectsPage() {
   return (
     <div className="flex flex-col overflow-auto">
       <ProjectFilters
-        filteredProjects={filtered}
         projectTags={projectTags}
         onFilterValueChange={handleFilterValueChange}
         tagsToFilter={tagsToFilter}
+        onOwnersFilterFocus={handleOwnersFilterFocus}
       />
       <ListHeader
         title="Projects"

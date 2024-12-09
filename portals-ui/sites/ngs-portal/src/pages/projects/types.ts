@@ -4,3 +4,5 @@ export type Tag = {
 };
 
 export type TagFilters = Record<string, string[]>;
+
+export type ProjectTags = Record<string, Tag[]>;

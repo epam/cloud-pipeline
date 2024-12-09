@@ -2,13 +2,15 @@ export enum ProjectFilter {
   OWNER = 'owner',
 }
 
-const allowedTags: { id: string; label: string }[] = [
+const allowedFilters: { id: string; label: string }[] = [
   { id: 'project-type', label: 'Type' },
   { id: 'ProjectID', label: 'ID' },
   { id: 'ngs-data-location', label: 'Data Location' },
+  { id: ProjectFilter.OWNER, label: 'Owner' },
 ];
-const deniedTags: string[] = ['ngs-data-location'];
 
-export const projectTagsToDisplay = allowedTags.filter(
-  (tag) => !deniedTags.includes(tag.id),
+const deniedFilters: string[] = ['ngs-data-location'];
+
+export const projectFiltersToDisplay = allowedFilters.filter(
+  (tag) => !deniedFilters.includes(tag.id),
 );
