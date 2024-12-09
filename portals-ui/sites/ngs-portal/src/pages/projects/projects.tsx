@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
@@ -30,9 +30,12 @@ export function ProjectsPage() {
     useProjectFilters();
 
   const { projects, error, pending } = useProjectsState();
-  const { search, onSearchChange, filtered } = useSearch({
+  const {
+    search,
+    onSearchChange,
+    filtered: searchedProjects,
+  } = useSearch({
     items: projects ?? [],
-    isMatchingFilters: isProjectMatchingFilters,
   });
 
   const projectTags = useProjectTags({
@@ -40,7 +43,14 @@ export function ProjectsPage() {
     isProjectMatchingFilters,
     projects,
     users: usersInfo,
+    searchedProjects,
   });
+
+  const filteredProjects = useMemo(
+    () =>
+      searchedProjects.filter((project) => isProjectMatchingFilters(project)),
+    [isProjectMatchingFilters, searchedProjects],
+  );
 
   if (error) {
     return <div>{error}</div>;
@@ -70,7 +80,7 @@ export function ProjectsPage() {
       />
       <List
         className="overflow-auto border-b border-l border-r"
-        data={filtered}
+        data={filteredProjects}
         renderItem={(project) => (
           <HighlightedText search={search}>{project.name}</HighlightedText>
         )}
