@@ -61,6 +61,7 @@ import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -265,13 +266,16 @@ public class PipelineExecutor {
         final boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         final boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+        final boolean isEBSVolumesEnabled = BooleanUtils.isNotTrue(
+                isParameterEnabled(envVars, KubernetesConstants.CP_CAP_EBS_VOLUMES_MOUNT_DISABLED)
+        );
 
         spec.setServiceAccountName(kubeServiceAccount);
         final List<DockerMount> commonMounts = getMountPreference(run);
         if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             spec.setVolumes(getWindowsVolumes());
         } else {
-            spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
+            spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts));
         }
 
         Optional.of(PodSpecMapperHelper.buildTolerations(nodeTolerances))
@@ -282,9 +286,12 @@ public class PipelineExecutor {
             spec.setHostNetwork(true);
         }
 
-        spec.setContainers(Collections.singletonList(getContainer(run,
-                envVars, dockerImage, command, imagePullPolicy,
-                isDockerInDockerEnabled, isSystemdEnabled, isParentPod, template, commonMounts)));
+        spec.setContainers(Collections.singletonList(
+                getContainer(
+                        run, envVars, dockerImage, command, imagePullPolicy, isDockerInDockerEnabled,
+                        isSystemdEnabled, isEBSVolumesEnabled, isParentPod, template, commonMounts
+                )
+        ));
         return spec;
     }
 
@@ -348,6 +355,7 @@ public class PipelineExecutor {
                                    final ImagePullPolicy imagePullPolicy,
                                    final boolean isDockerInDockerEnabled,
                                    final boolean isSystemdEnabled,
+                                   final boolean isEBSVolumesEnabled,
                                    final boolean isParentPod,
                                    final OSSpecificLaunchCommandTemplate template,
                                    final List<DockerMount> commonMounts) {
@@ -375,7 +383,9 @@ public class PipelineExecutor {
                 mergedArgs.add(command);
                 container.setArgs(mergedArgs);
             }
-            container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
+            container.setVolumeMounts(
+                    getMounts(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts)
+            );
             container.setTerminationMessagePath("/dev/termination-log");
         }
         container.setImagePullPolicy(imagePullPolicy.getName());
@@ -444,10 +454,13 @@ public class PipelineExecutor {
 
     private List<Volume> getVolumes(final boolean isDockerInDockerEnabled,
                                     final boolean isSystemdEnabled,
+                                    final boolean isEBSVolumesEnabled,
                                     final List<DockerMount> commonMounts) {
         final List<Volume> volumes = new ArrayList<>();
-        volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
-        volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
+        if (isEBSVolumesEnabled) {
+            volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
+            volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
+        }
         volumes.add(createEmptyVolume(EMPTY_MOUNT, "Memory"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
@@ -471,10 +484,13 @@ public class PipelineExecutor {
 
     private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled,
                                         final boolean isSystemdEnabled,
+                                        final boolean isEBSVolumesEnabled,
                                         final List<DockerMount> commonMounts) {
         final List<VolumeMount> mounts = new ArrayList<>();
-        mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
-        mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
+        if (isEBSVolumesEnabled) {
+            mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
+            mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
+        }
         mounts.add(getVolumeMount(EMPTY_MOUNT, "/dev/shm"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);

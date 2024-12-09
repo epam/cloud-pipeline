@@ -660,5 +660,12 @@
         "description": "Keeps job running even if storages mounting has failed.",
         "defaultValue": "true",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_EBS_VOLUMES_MOUNT_DISABLED",
+        "type": "boolean",
+        "description": "Disable mount of /ebs/runs and /ebs/reference folders to the run file system.",
+        "defaultValue": "false",
+        "passToWorkers": false
     }
 ]
