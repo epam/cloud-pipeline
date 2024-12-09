@@ -1,6 +1,7 @@
 node_modules/
 .nx/cache
 .nx
+.vite
 
 #misc
 .DS_Store
