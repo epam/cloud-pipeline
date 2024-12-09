@@ -1,14 +1,17 @@
 import { Badge, FlexRow, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
+import ActionCalendarFillIcon from '@epam/assets/icons/action-calendar-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
 import type { Project } from '@cloud-pipeline/core';
+import { RunStatuses } from '@cloud-pipeline/core';
 import {
+  displayDate,
   executeAllowed,
   readAllowed,
   writeAllowed,
 } from '@cloud-pipeline/core';
-import type { CommonProps } from '@cloud-pipeline/components';
+import { StatusIcon, type CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
 import { useMemo } from 'react';
@@ -101,52 +104,98 @@ export const ProjectCard = ({
 
   const hasSomeRights = read || write || execute;
 
+  const { showPermissionTags, showExtraInfo, showDescription, showStatusInfo } =
+    useMemo(
+      () => ({
+        showPermissionTags: mode === 'standard' && hasSomeRights,
+        showExtraInfo: mode === 'extended',
+        showDescription: !!description,
+        showStatusInfo: mode === 'extended',
+      }),
+      [description, hasSomeRights, mode],
+    );
+
   return (
-    <div className={cn('ngs-container', className)} style={style}>
-      {filteredTag.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {filteredTag.map((tag) => (
-            <NgsTag
-              key={tag.key}
-              tag={tag.key}
-              value={tag.value}
-              size="18"
-              className="shrink-0"
-            />
-          ))}
-        </div>
+    <div
+      className={cn(
+        mode === 'standard' ? 'ngs-container' : 'ngs-container-extended',
+        className,
       )}
-
-      <FlexRow columnGap="12" size="24" alignItems="center">
-        <Link
-          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
-          to={`/project/${id}`}>
-          <HighlightedText search={highlightedText}>{name}</HighlightedText>
-        </Link>
-        <Badge
-          icon={ContentPersonFillIcon}
-          caption={<NgsUserCard userName={owner} showTooltip={false} />}
-          color="neutral"
-          size="18"
-          cx="shrink-0"
-        />
-      </FlexRow>
-
-      {hasSomeRights && (
-        <FlexRow columnGap="6" size="24">
-          {read && (
-            <Badge size="18" fill="outline" caption="Read" color="info" />
-          )}
-          {write && (
-            <Badge size="18" fill="outline" caption="Write" color="warning" />
-          )}
-          {execute && (
-            <Badge size="18" fill="outline" caption="Execute" color="success" />
+      style={style}>
+      <div className="flex flex-col">
+        {filteredTag.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {filteredTag.map((tag) => (
+              <NgsTag
+                key={tag.key}
+                tag={tag.key}
+                value={tag.value}
+                size="18"
+                className="shrink-0"
+              />
+            ))}
+          </div>
+        )}
+        <FlexRow columnGap="12" size="24" alignItems="center">
+          <Link
+            className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+            to={`/project/${id}`}>
+            <HighlightedText search={highlightedText}>{name}</HighlightedText>
+          </Link>
+          <Badge
+            icon={ContentPersonFillIcon}
+            caption={<NgsUserCard userName={owner} showTooltip={false} />}
+            color="neutral"
+            size="18"
+            cx="shrink-0"
+          />
+          {showExtraInfo && (
+            <div className="text text-xs flex flex-nowrap gap-3">
+              <div className="flex flex-nowrap items-center gap-1">
+                <ActionCalendarFillIcon className="h-3 w-3 fill-current" />
+                {displayDate(project.createdDate)}
+              </div>
+              <div className="flex flex-nowrap items-center gap-1">
+                <ContentPersonFillIcon className="h-3 w-3 fill-current" />
+                {Math.floor(Math.random() * 10 + 1)} users
+              </div>
+            </div>
           )}
         </FlexRow>
+        {showPermissionTags && (
+          <FlexRow columnGap="6" size="24">
+            {read && (
+              <Badge size="18" fill="outline" caption="Read" color="info" />
+            )}
+            {write && (
+              <Badge size="18" fill="outline" caption="Write" color="warning" />
+            )}
+            {execute && (
+              <Badge
+                size="18"
+                fill="outline"
+                caption="Execute"
+                color="success"
+              />
+            )}
+          </FlexRow>
+        )}
+        {showDescription && <RichTextView>{description}</RichTextView>}
+      </div>
+      {showStatusInfo && (
+        <div className="text text-sm ml-auto mt-0">
+          <div className="flex flex-nowrap items-baseline gap-2">
+            <StatusIcon status={RunStatuses.success} className="shrink-0" />
+            {Math.floor(Math.random() * 10 + 1)} running
+          </div>
+          <div className="flex flex-nowrap gap-2 max-w-80 items-baseline">
+            <StatusIcon status={RunStatuses.resuming} className="shrink-0" />
+            <span className="whitespace-break-spaces">
+              Last finished: RNA Sequence pipeline with a long name (version: 3)
+            </span>
+          </div>
+        </div>
       )}
-
-      {description && <RichTextView>{description}</RichTextView>}
     </div>
   );
 };

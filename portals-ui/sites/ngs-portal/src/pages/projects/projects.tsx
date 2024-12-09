@@ -66,7 +66,7 @@ export function ProjectsPage() {
   //todo: search refactoring needed (see <ItemsPanel /> search)
   return (
     <ProjectsList
-      projects={projects}
+      projects={filteredProjects}
       mode="extended"
       filters={
         <ProjectFilters

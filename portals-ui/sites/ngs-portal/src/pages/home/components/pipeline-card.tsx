@@ -1,4 +1,4 @@
-import { Tag, Badge, FlexRow, RichTextView } from '@epam/uui';
+import { Tag, Badge, FlexRow, Button, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
@@ -89,46 +89,54 @@ export const PipelineCard = ({
 
   const filteredTag = useMemo(() => tags.filter(filterTag), [tags]);
   return (
-    <div className={cn('ngs-container', className)} style={style}>
-      {/* {tags?.length && (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <Tag caption={tag} size="18" />
-          ))}
-        </div>
-      )} */}
-      {filteredTag.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {filteredTag.map((tag) => (
-            <NgsTag
-              key={tag.key}
-              tag={tag.key}
-              value={tag.value}
-              size="18"
-              className="shrink-0"
-            />
-          ))}
-        </div>
+    <div
+      className={cn(
+        mode === 'standard' ? 'ngs-container' : 'ngs-container-extended',
+        className,
       )}
-
-      <FlexRow columnGap="12" size="24" alignItems="center">
-        <Link
-          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
-          to={`/pipeline/${id}`}>
-          <HighlightedText search={highlightedText}>{name}</HighlightedText>
-        </Link>
-
-        <Badge
-          icon={ContentPersonFillIcon}
-          caption={<NgsUserCard userName={owner} showTooltip={false} />}
-          color="neutral"
-          size="18"
-          cx="shrink-0"
-        />
-      </FlexRow>
-
-      {description && (
-        <RichTextView cx="leading-4 text-sm">{description}</RichTextView>
+      style={style}>
+      <div className="flex flex-col">
+        {filteredTag.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {filteredTag.map((tag) => (
+              <NgsTag
+                key={tag.key}
+                tag={tag.key}
+                value={tag.value}
+                size="18"
+                className="shrink-0"
+              />
+            ))}
+          </div>
+        )}
+        <FlexRow columnGap="12" size="24" alignItems="center">
+          <Link
+            className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+            to={`/pipeline/${id}`}>
+            <HighlightedText search={highlightedText}>{name}</HighlightedText>
+          </Link>
+          <Badge
+            icon={ContentPersonFillIcon}
+            caption={<NgsUserCard userName={owner} showTooltip={false} />}
+            color="neutral"
+            size="18"
+            cx="shrink-0"
+          />
+        </FlexRow>
+        {description && (
+          <RichTextView cx="leading-4 text-sm">{description}</RichTextView>
+        )}
+      </div>
+      {mode === 'extended' && (
+        <div className="ml-auto flex items-center">
+          <Button
+            caption="Add to project"
+            fill="none"
+            color="secondary"
+            size="24"
+            onClick={() => null}
+          />
+        </div>
       )}
     </div>
   );
