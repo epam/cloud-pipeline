@@ -11,6 +11,7 @@ type Props = {
   ) => boolean;
   users?: UserInfo[];
   projects?: Project[];
+  searchedProjects?: Project[];
 };
 
 export const useProjectTags = ({
@@ -18,6 +19,7 @@ export const useProjectTags = ({
   tagsToFilter,
   users = [],
   projects = [],
+  searchedProjects = [],
 }: Props) => {
   const projectTags = useMemo(() => {
     if (!projects.length) {
@@ -28,15 +30,15 @@ export const useProjectTags = ({
   }, [projects, users]);
 
   const dynamicTags = useMemo(() => {
-    if (!Object.keys(tagsToFilter).length || !projects.length) {
+    if (!Object.keys(tagsToFilter).length) {
       return projectTags;
     }
 
-    const updatedTags: ProjectTags = {};
+    const updatedTags: ProjectTags = { ...projectTags };
 
     Object.entries(projectTags).forEach(([tagName, tagValues]) => {
       updatedTags[tagName] = tagValues.map((tag) => {
-        const matchingProjects = projects.filter((project) =>
+        const matchingProjects = searchedProjects.filter((project) =>
           isProjectMatchingFilters(project, { [tagName]: [tag.id] }),
         );
 
@@ -48,7 +50,7 @@ export const useProjectTags = ({
     });
 
     return updatedTags;
-  }, [isProjectMatchingFilters, projectTags, projects, tagsToFilter]);
+  }, [searchedProjects, isProjectMatchingFilters, projectTags, tagsToFilter]);
 
   return dynamicTags;
 };

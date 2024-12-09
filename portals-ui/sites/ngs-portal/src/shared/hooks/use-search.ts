@@ -46,24 +46,14 @@ export type SearchResult<Item> = {
 };
 
 export function useSearch<Item>(
-  options: SearchOptions<Item> & {
-    isMatchingFilters?: (item: Item) => boolean;
-  },
+  options: SearchOptions<Item>,
 ): SearchResult<Item> {
-  const {
-    items,
-    isMatchingFilters,
-    searchCallback = defaultSearchCallback,
-  } = options;
+  const { items, searchCallback = defaultSearchCallback } = options;
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    return items.filter(
-      (item) =>
-        searchCallback(item, search) &&
-        (!isMatchingFilters || isMatchingFilters(item)),
-    );
-  }, [items, searchCallback, search, isMatchingFilters]);
+    return items.filter((item) => searchCallback(item, search));
+  }, [items, searchCallback, search]);
 
   return useMemo(
     () => ({
