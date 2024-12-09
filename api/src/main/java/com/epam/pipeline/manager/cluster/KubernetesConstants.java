@@ -51,6 +51,7 @@ public final class KubernetesConstants {
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
+    public static final String CP_CAP_EBS_VOLUMES_MOUNT_DISABLED = "CP_CAP_EBS_VOLUMES_MOUNT_DISABLED";
 
     public static final String KUBE_NAME_REGEXP = "[^a-z0-9\\-]+";
     public static final String KUBE_NAME_FULL_REGEXP = "[^a-zA-Z0-9\\-._]+";
