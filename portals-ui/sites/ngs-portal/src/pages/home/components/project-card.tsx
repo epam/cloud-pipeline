@@ -20,6 +20,7 @@ type Props = CommonProps & {
   description?: string;
   tags?: string[];
   highlightedText?: string;
+  mode?: 'standard' | 'extended';
 };
 
 type MappedTag = {
@@ -80,6 +81,7 @@ export const ProjectCard = ({
   highlightedText,
   className,
   style,
+  mode = 'standard',
 }: Props) => {
   const { id, name, owner, mask, data } = project;
 

@@ -56,6 +56,7 @@ export const SelectFilter = memo(
           maxItems={1}
           onFocus={onFocus}
           isSingleLine
+          size="30"
         />
       </div>
     );

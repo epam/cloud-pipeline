@@ -43,6 +43,8 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     virtualized,
     sliced,
     viewAll,
+    beforeSearch,
+    searchClassName,
   } = props;
   const searchEnabled = Boolean(searchConfig);
   const searchOptions = useMemo<SearchOptions<Item>>(() => {
@@ -68,6 +70,8 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         search={search}
         onSearch={searchEnabled ? onSearchChange : undefined}
         controls={actions}
+        beforeSearch={beforeSearch}
+        searchClassName={searchClassName}
       />
       {filtered.length > 0 && (
         <List

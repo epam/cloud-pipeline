@@ -26,7 +26,7 @@ export const ProjectFilters = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 min-w-[75%]">
       {projectFiltersToDisplay.map(({ id, label }) => {
         const options =
           projectTags[id]?.map((tag) => ({

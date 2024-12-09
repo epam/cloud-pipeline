@@ -2,14 +2,13 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
-import { List, ListHeader } from '@cloud-pipeline/components';
 import { useSearch } from '../../shared/hooks/use-search.ts';
-import HighlightedText from '../../shared/highlight-text';
 import { ProjectFilters } from './components/project-filters.tsx';
 import { useProjectFilters, useProjectTags } from './hooks';
 import { noop } from '@cloud-pipeline/core';
 import { useUsersInfoState } from '../../state/users-info/hooks.ts';
 import { loadUsersInfo } from '../../state/users-info/load-users-info.ts';
+import { ProjectsList } from '../home/components/projects-list.tsx';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -64,29 +63,19 @@ export function ProjectsPage() {
     return <div>No data</div>;
   }
 
+  //todo: search refactoring needed (see <ItemsPanel /> search)
   return (
-    <div className="flex flex-col overflow-auto">
-      <ProjectFilters
-        projectTags={projectTags}
-        onFilterValueChange={handleFilterValueChange}
-        tagsToFilter={tagsToFilter}
-        onOwnersFilterFocus={handleOwnersFilterFocus}
-      />
-      <ListHeader
-        title="Projects"
-        className="shrink-0 border"
-        search={search}
-        onSearch={onSearchChange}
-      />
-      <List
-        className="overflow-auto border-b border-l border-r"
-        data={filteredProjects}
-        renderItem={(project) => (
-          <HighlightedText search={search}>{project.name}</HighlightedText>
-        )}
-        itemKey="id"
-        sliced={20}
-      />
-    </div>
+    <ProjectsList
+      projects={projects}
+      mode="extended"
+      filters={
+        <ProjectFilters
+          projectTags={projectTags}
+          onFilterValueChange={handleFilterValueChange}
+          tagsToFilter={tagsToFilter}
+          onOwnersFilterFocus={handleOwnersFilterFocus}
+        />
+      }
+    />
   );
 }

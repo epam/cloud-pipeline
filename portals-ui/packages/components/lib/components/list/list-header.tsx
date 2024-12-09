@@ -6,12 +6,14 @@ import './style.css';
 const ListHeader = (props: ListHeaderProps) => {
   const {
     className,
+    searchClassName,
     style,
     title,
     controls,
     search,
     onSearch,
     searchPlaceholder,
+    beforeSearch,
   } = props;
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
@@ -21,7 +23,11 @@ const ListHeader = (props: ListHeaderProps) => {
       </div>
       {onSearch ? (
         <div
-          className={classNames('list-header-search-container')}>
+          className={classNames(
+            'list-header-search-container',
+            searchClassName,
+          )}>
+          {beforeSearch ?? null}
           <SearchInput
             value={search}
             onValueChange={onSearch}

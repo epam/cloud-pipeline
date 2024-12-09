@@ -3,5 +3,5 @@
 }
 
 .list-header-search-container {
-    @apply px-1 py-0;
+    @apply flex flex-nowrap gap-2 px-1 py-0;
 }

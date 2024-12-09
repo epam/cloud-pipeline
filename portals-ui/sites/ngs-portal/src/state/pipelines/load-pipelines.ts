@@ -10,7 +10,7 @@ export async function loadPipelines(): Promise<Pipeline[]> {
     pipelines = await fetchPipelines();
     return pipelines;
   } catch (authError) {
-    error = authError instanceof Error ? authError.message : `${authError}`;
+    error = authError instanceof Error ? authError.message : String(authError);
     throw new Error(error);
   } finally {
     pipelinesStore.getState().setPipelines({ pipelines, error });
