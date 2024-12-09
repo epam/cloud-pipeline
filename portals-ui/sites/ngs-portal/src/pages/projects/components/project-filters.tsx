@@ -32,7 +32,7 @@ export const ProjectFilters = ({
           projectTags[id]?.map((tag) => ({
             id: tag.id,
             name: tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
-            disabled: !tag.count,
+            disabled: !tag.count && !tagsToFilter[id]?.includes(tag.id),
           })) || [];
 
         return (
