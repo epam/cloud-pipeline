@@ -23,7 +23,7 @@ export const HomePage = () => {
   return (
     <div className="relative flex h-full w-full gap-1 overflow-hidden flex-nowrap p-1">
       <div className="flex-1 h-full overflow-auto p-2">
-        <ProjectsList projects={projects} />
+        <ProjectsList showDescription projects={projects} />
       </div>
 
       <div className="flex-1 h-full overflow-auto p-2">

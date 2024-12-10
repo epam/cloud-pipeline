@@ -65,17 +65,20 @@ export function ProjectsPage() {
 
   //todo: search refactoring needed (see <ItemsPanel /> search)
   return (
-    <ProjectsList
-      projects={filteredProjects}
-      mode="extended"
-      filters={
-        <ProjectFilters
-          projectTags={projectTags}
-          onFilterValueChange={handleFilterValueChange}
-          tagsToFilter={tagsToFilter}
-          onOwnersFilterFocus={handleOwnersFilterFocus}
-        />
-      }
-    />
+    <div className="p-3 overflow-hidden h-full w-full">
+      <ProjectsList
+        projects={filteredProjects}
+        mode="extended"
+        showDescription
+        filters={
+          <ProjectFilters
+            projectTags={projectTags}
+            onFilterValueChange={handleFilterValueChange}
+            tagsToFilter={tagsToFilter}
+            onOwnersFilterFocus={handleOwnersFilterFocus}
+          />
+        }
+      />
+    </div>
   );
 }

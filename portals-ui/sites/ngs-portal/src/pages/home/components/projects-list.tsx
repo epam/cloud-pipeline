@@ -16,10 +16,16 @@ type Props = {
   projects: Project[] | undefined;
   mode?: 'standard' | 'extended';
   filters?: ReactNode;
+  showDescription?: boolean;
 };
 
 export const ProjectsList = memo(
-  ({ projects, mode = 'standard', filters }: Props) => {
+  ({
+    projects,
+    mode = 'standard',
+    filters,
+    showDescription = false,
+  }: Props) => {
     const { uuiModals } = useUuiContext();
     const { pipelines } = usePipelinesState();
     const getRandomPipeline = () =>
@@ -35,6 +41,7 @@ export const ProjectsList = memo(
         className={cn({ ['border-t']: i !== 0 })}
         mode={mode}
         lastRun={getRandomPipeline()}
+        showDescription={showDescription}
       />
     );
     const openCreateProjectModal = () => {
