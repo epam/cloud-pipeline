@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Badge, FlexRow, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import ActionCalendarFillIcon from '@epam/assets/icons/action-calendar-fill.svg?react';
@@ -6,12 +6,7 @@ import cn from 'classnames';
 import { Link } from 'react-router-dom';
 import type { Pipeline, Project } from '@cloud-pipeline/core';
 import { RunStatuses } from '@cloud-pipeline/core';
-import {
-  displayDate,
-  executeAllowed,
-  readAllowed,
-  writeAllowed,
-} from '@cloud-pipeline/core';
+import { displayDate } from '@cloud-pipeline/core';
 import { StatusIcon, type CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
@@ -25,6 +20,7 @@ type Props = CommonProps & {
   highlightedText?: string;
   mode?: 'standard' | 'extended';
   lastRun?: Pipeline;
+  showDescription?: boolean;
 };
 
 type MappedTag = {
@@ -91,8 +87,9 @@ export const ProjectCard = ({
   style,
   mode = 'standard',
   lastRun,
+  showDescription: showDescriptionProp = false,
 }: Props) => {
-  const { id, name, owner, mask, data } = project;
+  const { id, name, data, owner } = project;
   const randomRunningCount = getRandomInt(0, 4);
   const tags = useMemo(
     () =>
@@ -104,22 +101,48 @@ export const ProjectCard = ({
 
   const filteredTag = useMemo(() => tags.filter(filterTag), [tags]);
 
-  const read = readAllowed(mask);
-  const write = writeAllowed(mask);
-  const execute = executeAllowed(mask);
+  const { showExtraInfo, showDescription, showStatusInfo } = useMemo(
+    () => ({
+      showExtraInfo: mode === 'extended',
+      showDescription: showDescriptionProp && !!description,
+      showStatusInfo: mode === 'extended',
+    }),
+    [description, mode, showDescriptionProp],
+  );
 
-  const hasSomeRights = read || write || execute;
+  const renderTags = useCallback(
+    () =>
+      filteredTag.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {filteredTag.map((tag) => (
+            <NgsTag
+              key={tag.key}
+              tag={tag.key}
+              value={tag.value}
+              size="18"
+              className="shrink-0"
+            />
+          ))}
+        </div>
+      ),
+    [filteredTag],
+  );
 
-  const { showPermissionTags, showExtraInfo, showDescription, showStatusInfo } =
-    useMemo(
-      () => ({
-        showPermissionTags: mode === 'standard' && hasSomeRights,
-        showExtraInfo: mode === 'extended',
-        showDescription: !!description,
-        showStatusInfo: mode === 'extended',
-      }),
-      [description, hasSomeRights, mode],
-    );
+  const renderExtraInfo = useCallback(
+    () => (
+      <div className="text text-xs flex flex-nowrap gap-2">
+        <div className="flex flex-nowrap items-center gap-1">
+          <ActionCalendarFillIcon className="h-3 w-3 fill-current" />
+          {displayDate(project.createdDate)}
+        </div>
+        <div className="flex flex-nowrap items-center gap-1">
+          <ContentPersonFillIcon className="h-3 w-3 fill-current" />
+          {Math.floor(Math.random() * 10 + 1)} users
+        </div>
+      </div>
+    ),
+    [project.createdDate],
+  );
 
   return (
     <div
@@ -128,26 +151,15 @@ export const ProjectCard = ({
         className,
       )}
       style={style}>
-      <div className="flex flex-col">
-        {filteredTag.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {filteredTag.map((tag) => (
-              <NgsTag
-                key={tag.key}
-                tag={tag.key}
-                value={tag.value}
-                size="18"
-                className="shrink-0"
-              />
-            ))}
-          </div>
-        )}
+      <div className="flex flex-col gap-1">
         <FlexRow columnGap="12" size="24" alignItems="center">
           <Link
             className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
             to={`/project/${id}`}>
             <HighlightedText search={highlightedText}>{name}</HighlightedText>
           </Link>
+        </FlexRow>
+        <div className="flex flex-nowrap gap-2">
           <Badge
             icon={ContentPersonFillIcon}
             caption={<NgsUserCard userName={owner} showTooltip={false} />}
@@ -155,38 +167,10 @@ export const ProjectCard = ({
             size="18"
             cx="shrink-0"
           />
-          {showExtraInfo && (
-            <div className="text text-xs flex flex-nowrap gap-3">
-              <div className="flex flex-nowrap items-center gap-1">
-                <ActionCalendarFillIcon className="h-3 w-3 fill-current" />
-                {displayDate(project.createdDate)}
-              </div>
-              <div className="flex flex-nowrap items-center gap-1">
-                <ContentPersonFillIcon className="h-3 w-3 fill-current" />
-                {Math.floor(Math.random() * 10 + 1)} users
-              </div>
-            </div>
-          )}
-        </FlexRow>
-        {showPermissionTags && (
-          <FlexRow columnGap="6" size="24">
-            {read && (
-              <Badge size="18" fill="outline" caption="Read" color="info" />
-            )}
-            {write && (
-              <Badge size="18" fill="outline" caption="Write" color="warning" />
-            )}
-            {execute && (
-              <Badge
-                size="18"
-                fill="outline"
-                caption="Execute"
-                color="success"
-              />
-            )}
-          </FlexRow>
-        )}
+          {showExtraInfo && renderExtraInfo()}
+        </div>
         {showDescription && <RichTextView>{description}</RichTextView>}
+        {renderTags()}
       </div>
       {showStatusInfo && (
         <div className="text text-sm ml-auto mt-0">
