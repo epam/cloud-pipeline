@@ -20,23 +20,19 @@ type Props = {
 
 export const ProjectsList = memo(
   ({ projects, mode = 'standard', filters }: Props) => {
-    const { uuiModals} = useUuiContext();
-    const {pipelines} = usePipelinesState();
+    const { uuiModals } = useUuiContext();
+    const { pipelines } = usePipelinesState();
     const getRandomPipeline = () =>
       pipelines?.[Math.floor(Math.random() * pipelines.length)];
     useEffect(() => {
-      loadPipelines()
-        .then(() => {
-        })
-        .catch(() => {
-        });
+      loadPipelines().then(noop).catch(noop);
     }, []);
     const renderItem = (item: Project, search: string, i: number) => (
       <ProjectCard
         key={String(item.id)}
         project={item}
         highlightedText={search}
-        className={cn({['border-t']: i !== 0})}
+        className={cn({ ['border-t']: i !== 0 })}
         mode={mode}
         lastRun={getRandomPipeline()}
       />
@@ -53,7 +49,7 @@ export const ProjectsList = memo(
         className="max-h-full list-container overflow-auto"
         title={
           <div className="fill-current flex flex-nowrap gap-1">
-            <ActionJobFunctionOutlineIcon/>
+            <ActionJobFunctionOutlineIcon />
             <span>Projects</span>
           </div>
         }
