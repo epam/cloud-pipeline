@@ -79,7 +79,7 @@ export const PipelineToProjectModal = (props: Props) => {
   };
   return (
     <ModalBlocker {...props}>
-      <ModalWindow width={'70vw'} style={{ maxWidth: 740 }}>
+      <ModalWindow width={600} style={{ maxWidth: 740 }}>
         <ModalHeader
           title={`Add ${pipeline.name} to project`}
           onClose={() => props.abort()}
