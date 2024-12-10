@@ -15,6 +15,7 @@ const ListHeader = (props: ListHeaderProps) => {
     search,
     onSearch,
     searchPlaceholder,
+    afterSearch,
     beforeSearch,
   } = props;
   const onChange = useInputChange(onSearch);
@@ -39,6 +40,7 @@ const ListHeader = (props: ListHeaderProps) => {
             size="middle"
             variant="borderless"
           />
+          {afterSearch ?? null}
         </div>
       ) : null}
     </div>

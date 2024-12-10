@@ -1,11 +1,12 @@
 import type { RouteObject } from 'react-router-dom';
 import { createHashRouter } from 'react-router-dom';
 import { Layout } from '../../../pages/layout/index.tsx';
-import { HomePage } from '../../../pages/home/home.tsx';
-import PipelinesPage from '../../../pages/pipelines';
+import { HomePage } from '../../../pages/home';
 import { ProjectsPage } from '../../../pages/projects';
+import { PipelinesPage } from '../../../pages/pipelines';
 import Runs from '../../../pages/runs/index.tsx';
 import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
+
 const routerConfig: Record<AppRoutes, RouteObject> = {
   [AppRoutes.HOME]: { path: RoutePath[AppRoutes.HOME], element: <HomePage /> },
   [AppRoutes.PROJECTS]: {

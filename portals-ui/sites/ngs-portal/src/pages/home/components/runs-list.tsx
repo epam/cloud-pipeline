@@ -19,7 +19,7 @@ export const RunsList = () => {
   const { runs } = useAuthenticatedUserRuns({ reloadIntervalMs: 5000 });
 
   return (
-    <ItemsPanel
+    <ItemsPanel<Run>
       className="max-h-full list-container overflow-auto"
       render={runCardRenderer}
       title={

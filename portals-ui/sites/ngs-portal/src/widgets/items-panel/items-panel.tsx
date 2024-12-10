@@ -1,7 +1,4 @@
 import type { ItemsPanelProps, ViewAllItemsConfiguration } from './types.ts';
-import type { SearchOptions } from '../../shared/hooks/use-search.ts';
-import { useSearch } from '../../shared/hooks/use-search.ts';
-import { useMemo } from 'react';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { List, ListHeader } from '@cloud-pipeline/components';
 import classNames from 'classnames';
@@ -12,28 +9,30 @@ function ItemsPanelFooter(
 ) {
   const { className, style, viewAll } = props;
   const { title: viewAllTitle = 'View all', link } = viewAll ?? {};
-  if (link) {
-    return (
-      <div
-        className={classNames(
-          'p-1',
-          'flex',
-          'items-center',
-          'justify-around',
-          className,
-        )}
-        style={style}>
-        <LinkButton caption={viewAllTitle} link={{ pathname: link }} />
-      </div>
-    );
+
+  if (!link) {
+    return null;
   }
-  return null;
+
+  return (
+    <div
+      className={classNames(
+        'p-1',
+        'flex',
+        'items-center',
+        'justify-around',
+        className,
+      )}
+      style={style}>
+      <LinkButton caption={viewAllTitle} link={{ pathname: link }} />
+    </div>
+  );
 }
 
 export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
   const {
     items,
-    search: searchConfig,
+    search,
     className,
     style,
     title,
@@ -43,22 +42,12 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     virtualized,
     sliced,
     viewAll,
+    afterSearch,
     beforeSearch,
+    extraHeader,
     searchClassName,
+    onSearchChange,
   } = props;
-  const searchEnabled = Boolean(searchConfig);
-  const searchOptions = useMemo<SearchOptions<Item>>(() => {
-    if (searchConfig) {
-      return {
-        ...(typeof searchConfig === 'object' ? searchConfig : {}),
-        items: items ?? [],
-      } as SearchOptions<Item>;
-    }
-    return {
-      items: items ?? [],
-    } as SearchOptions<Item>;
-  }, [items, searchConfig]);
-  const { filtered, search, onSearchChange } = useSearch(searchOptions);
 
   return (
     <div
@@ -68,22 +57,24 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         title={title}
         className="shrink-0 border-b"
         search={search}
-        onSearch={searchEnabled ? onSearchChange : undefined}
+        onSearch={onSearchChange}
         controls={actions}
         beforeSearch={beforeSearch}
+        afterSearch={afterSearch}
         searchClassName={searchClassName}
       />
-      {filtered.length > 0 && (
+      {extraHeader}
+      {items.length > 0 && (
         <List
           className="overflow-auto flex-1"
-          items={filtered}
-          render={(item, i) => render(item, search, i)}
+          items={items}
+          render={(item, i) => render(item, search ?? '', i)}
           itemKey={itemKey}
           virtualized={virtualized}
           sliced={sliced}
         />
       )}
-      {filtered.length == 0 && (
+      {items.length == 0 && (
         <div className="p-2 text-faded text-xs">Nothing found</div>
       )}
       <ItemsPanelFooter className="border-t" viewAll={viewAll} />

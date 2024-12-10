@@ -23,11 +23,19 @@ export const HomePage = () => {
   return (
     <div className="relative flex h-full w-full gap-1 overflow-hidden flex-nowrap p-1">
       <div className="flex-1 h-full overflow-auto p-2">
-        <ProjectsList showDescription projects={projects} />
+        {projects?.length ? (
+          <ProjectsList showDescription projects={projects} />
+        ) : (
+          <div>No data</div>
+        )}
       </div>
 
       <div className="flex-1 h-full overflow-auto p-2">
-        <PipelinesList showDescription pipelines={pipelines} />
+        {pipelines?.length ? (
+          <PipelinesList showDescription pipelines={pipelines} />
+        ) : (
+          <div>No data</div>
+        )}
       </div>
 
       <div className="flex-1 h-full overflow-auto p-2">

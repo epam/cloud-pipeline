@@ -1,13 +1,7 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
-import { useSearch } from '../../shared/hooks/use-search.ts';
-import { ProjectFilters } from './components/project-filters.tsx';
-import { useProjectFilters, useProjectTags } from './hooks';
-import { noop } from '@cloud-pipeline/core';
-import { useUsersInfoState } from '../../state/users-info/hooks.ts';
-import { loadUsersInfo } from '../../state/users-info/load-users-info.ts';
 import { ProjectsList } from '../home/components/projects-list.tsx';
 
 export function ProjectsPage() {
@@ -17,39 +11,7 @@ export function ProjectsPage() {
       .catch(() => {});
   }, []);
 
-  const { usersInfo, pending: isUserInfoPending, loaded } = useUsersInfoState();
-
-  const handleOwnersFilterFocus = useCallback(() => {
-    if (!usersInfo?.length && !isUserInfoPending && !loaded) {
-      loadUsersInfo().then(noop).catch(noop);
-    }
-  }, [isUserInfoPending, loaded, usersInfo?.length]);
-
-  const { isProjectMatchingFilters, handleFilterValueChange, tagsToFilter } =
-    useProjectFilters();
-
   const { projects, error, pending } = useProjectsState();
-  const {
-    search,
-    onSearchChange,
-    filtered: searchedProjects,
-  } = useSearch({
-    items: projects ?? [],
-  });
-
-  const projectTags = useProjectTags({
-    tagsToFilter,
-    isProjectMatchingFilters,
-    projects,
-    users: usersInfo,
-    searchedProjects,
-  });
-
-  const filteredProjects = useMemo(
-    () =>
-      searchedProjects.filter((project) => isProjectMatchingFilters(project)),
-    [isProjectMatchingFilters, searchedProjects],
-  );
 
   if (error) {
     return <div>{error}</div>;
@@ -67,17 +29,10 @@ export function ProjectsPage() {
   return (
     <div className="p-3 overflow-hidden h-full w-full">
       <ProjectsList
-        projects={filteredProjects}
+        projects={projects}
         mode="extended"
         showDescription
-        filters={
-          <ProjectFilters
-            projectTags={projectTags}
-            onFilterValueChange={handleFilterValueChange}
-            tagsToFilter={tagsToFilter}
-            onOwnersFilterFocus={handleOwnersFilterFocus}
-          />
-        }
+        withFilters
       />
     </div>
   );

@@ -2,17 +2,18 @@ import { noop, type Project } from '@cloud-pipeline/core';
 import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import cn from 'classnames';
-import type { ReactNode } from 'react';
 import { memo, useEffect } from 'react';
 import { loadPipelines } from '../../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../../state/pipelines/hooks';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { CreateProjectButton } from '../../../widgets/modals';
+import { projectFiltersToDisplay } from '../../projects/constants';
+import { NgsFilters, useNgsFilters } from '../../../features/ngs-filters';
 
 type Props = {
-  projects: Project[] | undefined;
+  projects: Project[];
   mode?: 'standard' | 'extended';
-  filters?: ReactNode;
+  withFilters?: boolean;
   showDescription?: boolean;
 };
 
@@ -20,15 +21,25 @@ export const ProjectsList = memo(
   ({
     projects,
     mode = 'standard',
-    filters,
+    withFilters,
     showDescription = false,
   }: Props) => {
     const { pipelines } = usePipelinesState();
+
     const getRandomPipeline = () =>
       pipelines?.[Math.floor(Math.random() * pipelines.length)];
+
     useEffect(() => {
       loadPipelines().then(noop).catch(noop);
     }, []);
+
+    const { filteredItems, onSearchChange, filtersProps, search } =
+      useNgsFilters({
+        items: projects,
+        withFilters,
+        filtersToDisplay: projectFiltersToDisplay,
+      });
+
     const renderItem = (item: Project, search: string, i: number) => (
       <ProjectCard
         key={String(item.id)}
@@ -51,12 +62,17 @@ export const ProjectsList = memo(
           </div>
         }
         actions={<CreateProjectButton />}
-        items={projects}
+        items={filteredItems}
         render={renderItem}
         sliced
         virtualized={mode === 'extended'}
-        search
-        beforeSearch={filters}
+        search={search}
+        onSearchChange={onSearchChange}
+        beforeSearch={
+          filtersProps && (
+            <NgsFilters className="min-w-[75%]" {...filtersProps} />
+          )
+        }
         itemKey="id"
         searchClassName={mode === 'extended' ? 'py-1' : undefined}
         viewAll={

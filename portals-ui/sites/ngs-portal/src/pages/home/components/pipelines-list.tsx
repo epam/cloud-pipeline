@@ -4,15 +4,25 @@ import { PipelineCard } from './pipeline-card';
 import { memo } from 'react';
 import cn from 'classnames';
 import { ShareIcon } from '@heroicons/react/24/outline';
+import { pipelinesFiltersToDisplay } from '../../pipelines/constants';
+import { NgsFilters, useNgsFilters } from '../../../features/ngs-filters';
 
 type Props = {
-  pipelines: Pipeline[] | undefined;
+  pipelines: Pipeline[];
   mode?: 'standard' | 'extended';
   showDescription?: boolean;
+  withFilters?: boolean;
 };
 
 export const PipelinesList = memo(
-  ({ pipelines, mode = 'standard', showDescription }: Props) => {
+  ({ pipelines, mode = 'standard', showDescription, withFilters }: Props) => {
+    const { filteredItems, onSearchChange, filtersProps, search } =
+      useNgsFilters({
+        items: pipelines,
+        withFilters,
+        filtersToDisplay: pipelinesFiltersToDisplay,
+      });
+
     const renderItem = (item: Pipeline, search: string, i: number) => {
       return (
         <PipelineCard
@@ -35,11 +45,13 @@ export const PipelinesList = memo(
             <span>Pipelines</span>
           </div>
         }
-        items={pipelines}
+        items={filteredItems}
         render={renderItem}
         sliced
         virtualized
-        search
+        search={search}
+        beforeSearch={filtersProps && <NgsFilters className="min-w-[75%]" {...filtersProps} />}
+        onSearchChange={onSearchChange}
         itemKey="id"
         searchClassName={mode === 'extended' ? 'py-1' : undefined}
         viewAll={

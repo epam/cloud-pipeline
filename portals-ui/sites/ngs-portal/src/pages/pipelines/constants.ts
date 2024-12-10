@@ -2,14 +2,13 @@ import { NgsFilter } from '../../shared/constants/filters';
 import type { FilterToDisplay } from '../../features/ngs-filters/types';
 
 const allowedFilters: FilterToDisplay[] = [
-  { id: 'project-type', label: 'Type' },
-  { id: 'ProjectID', label: 'ID' },
-  { id: 'ngs-data-location', label: 'Data Location' },
+  { id: 'somekey', label: 'Some' },
+  { id: 'SECRET1', label: 'Secret' },
   { id: NgsFilter.OWNER, label: 'Owner' },
 ];
 
-const deniedFilters: string[] = ['ngs-data-location'];
+const deniedFilters: string[] = [];
 
-export const projectFiltersToDisplay = allowedFilters.filter(
+export const pipelinesFiltersToDisplay = allowedFilters.filter(
   (tag) => !deniedFilters.includes(tag.id),
 );
