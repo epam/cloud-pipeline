@@ -1,1 +1,1 @@
-export { ProjectFilters } from './project-filters';
+export { NgsFilters } from './ngs-filters';

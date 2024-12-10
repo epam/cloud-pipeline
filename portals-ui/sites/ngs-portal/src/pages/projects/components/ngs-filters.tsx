@@ -1,35 +1,37 @@
+import { NgsFilter } from '../../../shared/constants/filters';
 import { SelectFilter } from '../../../shared/ui';
-import { ProjectFilter, projectFiltersToDisplay } from '../constants';
-import type { ProjectTags, TagFilters } from '../types';
+import type { FilterToDisplay, NgsTags, TagFilters } from '../types';
 
 type Props = {
   onFilterValueChange: (tagName: string, selectedTags?: string[]) => void;
   tagsToFilter: TagFilters;
-  projectTags: ProjectTags;
+  tags: NgsTags;
   onOwnersFilterFocus: () => void;
+  filtersToDisplay: FilterToDisplay[];
 };
 
-export const ProjectFilters = ({
+export const NgsFilters = ({
   tagsToFilter,
   onFilterValueChange,
-  projectTags,
+  tags,
   onOwnersFilterFocus,
+  filtersToDisplay,
 }: Props) => {
   const handleFilterChange = (id: string) => (selectedItems?: string[]) => {
     onFilterValueChange(id, selectedItems);
   };
 
   const handleFocus = (id: string) => {
-    if (id === (ProjectFilter.OWNER as string)) {
+    if (id === (NgsFilter.OWNER as string)) {
       onOwnersFilterFocus();
     }
   };
 
   return (
     <div className="flex flex-wrap gap-2 min-w-[75%]">
-      {projectFiltersToDisplay.map(({ id, label }) => {
+      {filtersToDisplay.map(({ id, label }) => {
         const options =
-          projectTags[id]?.map((tag) => ({
+          tags[id]?.map((tag) => ({
             id: tag.id,
             name: tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
             disabled: !tag.count && !tagsToFilter[id]?.includes(tag.id),

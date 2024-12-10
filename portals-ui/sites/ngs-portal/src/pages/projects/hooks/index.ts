@@ -1,2 +1,2 @@
-export { useProjectFilters } from './use-project-filters';
-export { useProjectTags } from './use-project-tags';
+export { useNgsFilters } from './use-ngs-filters';
+export { useNgsTags } from './use-ngs-tags';

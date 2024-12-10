@@ -1,21 +1,27 @@
-import type { Project, UserInfo } from '@cloud-pipeline/core';
-import { ProjectFilter, projectFiltersToDisplay } from '../constants';
-import type { ProjectTags, Tag } from '../types';
+import type { Pipeline, Project, UserInfo } from '@cloud-pipeline/core';
+import type { FilterToDisplay, NgsTags, Tag } from '../types';
+import { NgsFilter } from '../../../shared/constants/filters';
 
-export const collectProjectTags = (
-  projects: Project[],
-  users: UserInfo[],
-): ProjectTags => {
+type Props = {
+  items: (Project | Pipeline)[];
+  users: UserInfo[];
+  filtersToDisplay: FilterToDisplay[];
+};
+
+export const collectNgsTags = ({
+  filtersToDisplay,
+  items,
+  users,
+}: Props): NgsTags => {
   // Map for faster lookup
   const tagsMap: Record<string, Map<string, Tag>> = {};
 
   const isOwnerFilterAllowed =
-    projectFiltersToDisplay.find(
-      (tag) => tag.id === (ProjectFilter.OWNER as string),
-    ) && users.length > 0;
+    filtersToDisplay.find((tag) => tag.id === (NgsFilter.OWNER as string)) &&
+    users.length > 0;
 
   if (isOwnerFilterAllowed) {
-    tagsMap[ProjectFilter.OWNER] = new Map(
+    tagsMap[NgsFilter.OWNER] = new Map(
       users.map((user) => [user.name, { id: user.name, count: 0 }]),
     );
   }
@@ -35,10 +41,10 @@ export const collectProjectTags = (
     }
   };
 
-  for (const { data, owner } of projects) {
+  for (const { data, owner } of items) {
     // setup owner tags
     if (isOwnerFilterAllowed) {
-      incrementTagCount(ProjectFilter.OWNER, owner);
+      incrementTagCount(NgsFilter.OWNER, owner);
     }
 
     // setup the rest of tags
@@ -47,9 +53,7 @@ export const collectProjectTags = (
     }
 
     for (const [key, { value }] of Object.entries(data)) {
-      const isTagAllowed = projectFiltersToDisplay.find(
-        (tag) => tag.id === key,
-      );
+      const isTagAllowed = filtersToDisplay.find((tag) => tag.id === key);
 
       if (!isTagAllowed) {
         continue;
@@ -60,7 +64,7 @@ export const collectProjectTags = (
   }
 
   // Convert maps to arrays
-  const tags: ProjectTags = {};
+  const tags: NgsTags = {};
   for (const [key, tagMap] of Object.entries(tagsMap)) {
     tags[key] = Array.from(tagMap.values());
   }

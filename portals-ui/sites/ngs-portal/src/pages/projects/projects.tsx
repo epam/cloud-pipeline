@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
 import { useSearch } from '../../shared/hooks/use-search.ts';
-import { ProjectFilters } from './components/project-filters.tsx';
-import { useProjectFilters, useProjectTags } from './hooks';
-import { noop } from '@cloud-pipeline/core';
-import { useUsersInfoState } from '../../state/users-info/hooks.ts';
-import { loadUsersInfo } from '../../state/users-info/load-users-info.ts';
+import { useNgsFilters, useNgsTags } from './hooks';
 import { ProjectsList } from '../home/components/projects-list.tsx';
+import { projectFiltersToDisplay } from './constants.ts';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -17,18 +14,8 @@ export function ProjectsPage() {
       .catch(() => {});
   }, []);
 
-  const { usersInfo, pending: isUserInfoPending, loaded } = useUsersInfoState();
-
-  const handleOwnersFilterFocus = useCallback(() => {
-    if (!usersInfo?.length && !isUserInfoPending && !loaded) {
-      loadUsersInfo().then(noop).catch(noop);
-    }
-  }, [isUserInfoPending, loaded, usersInfo?.length]);
-
-  const { isProjectMatchingFilters, handleFilterValueChange, tagsToFilter } =
-    useProjectFilters();
-
   const { projects, error, pending } = useProjectsState();
+
   const {
     search,
     onSearchChange,
@@ -37,18 +24,26 @@ export function ProjectsPage() {
     items: projects ?? [],
   });
 
-  const projectTags = useProjectTags({
+  const {
     tagsToFilter,
-    isProjectMatchingFilters,
-    projects,
+    usersInfo,
+    isMatchingFilters,
+    handleFilterValueChange,
+    handleOwnersFilterFocus,
+  } = useNgsFilters();
+
+  const projectTags = useNgsTags({
+    tagsToFilter,
+    isMatchingFilters,
+    items: projects,
     users: usersInfo,
-    searchedProjects,
+    searchedItems: searchedProjects,
+    filtersToDisplay: projectFiltersToDisplay,
   });
 
   const filteredProjects = useMemo(
-    () =>
-      searchedProjects.filter((project) => isProjectMatchingFilters(project)),
-    [isProjectMatchingFilters, searchedProjects],
+    () => searchedProjects.filter((project) => isMatchingFilters(project)),
+    [isMatchingFilters, searchedProjects],
   );
 
   if (error) {

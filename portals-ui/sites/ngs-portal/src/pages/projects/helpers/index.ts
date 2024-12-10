@@ -1,1 +1,1 @@
-export { collectProjectTags } from './collect-project-tags';
+export { collectNgsTags } from './collect-ngs-tags';

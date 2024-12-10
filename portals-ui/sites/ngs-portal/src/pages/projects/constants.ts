@@ -1,12 +1,11 @@
-export enum ProjectFilter {
-  OWNER = 'owner',
-}
+import { NgsFilter } from '../../shared/constants/filters';
+import type { FilterToDisplay } from './types';
 
-const allowedFilters: { id: string; label: string }[] = [
+const allowedFilters: FilterToDisplay[] = [
   { id: 'project-type', label: 'Type' },
   { id: 'ProjectID', label: 'ID' },
   { id: 'ngs-data-location', label: 'Data Location' },
-  { id: ProjectFilter.OWNER, label: 'Owner' },
+  { id: NgsFilter.OWNER, label: 'Owner' },
 ];
 
 const deniedFilters: string[] = ['ngs-data-location'];
