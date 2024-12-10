@@ -113,7 +113,14 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
+@inject(
+  'preferences',
+  'dtsList',
+  'multiZoneManager',
+  'dockerRegistries',
+  'preferences',
+  'uiNavigation'
+)
 @VSActions.check
 @inject(({routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -143,6 +150,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 class Logs extends localization.LocalizedReactComponent {
   state = {
     run: undefined,
+    runDataLoaded: false,
     pending: false,
     error: undefined,
     showActiveWorkersOnly: false,
@@ -162,7 +170,8 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    nestedRunsModalVisible: false
+    nestedRunsModalVisible: false,
+    tasksCollapsed: false
   };
 
   @observable runScheduleRequest;
@@ -190,7 +199,9 @@ class Logs extends localization.LocalizedReactComponent {
     const {
       runId,
       preferences,
-      dockerRegistries
+      dockerRegistries,
+      uiNavigation,
+      task
     } = this.props;
     if (runId) {
       this.fetchToken += 1;
@@ -205,7 +216,9 @@ class Logs extends localization.LocalizedReactComponent {
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
-        language: undefined
+        language: undefined,
+        tasksCollapsed: true,
+        runDataLoaded: false
       }, async () => {
         const commit = (data = {}) => {
           if (token === this.fetchToken) {
@@ -213,20 +226,68 @@ class Logs extends localization.LocalizedReactComponent {
           }
         };
         try {
+          let tasksCollapsed = false;
+          await uiNavigation.fetch();
           this.runScheduleRequest = new RunSchedules(runId);
           (this.runScheduleRequest.fetch)();
           const {
             stop,
-            fetch: reFetch
+            fetch: reFetch,
+            data
           } = await fetchRunInfo(runId, commit, {
             preferences,
             dockerRegistries,
             maxNestedRunsToDisplay: MAX_NESTED_RUNS_TO_DISPLAY
           });
+          const {
+            run,
+            runTasks = []
+          } = data || {};
+          let taskToNavigate;
+          if (!task && runTasks.length > 0) {
+            taskToNavigate = runTasks[0];
+          }
+          const {
+            pipelineName,
+            podId
+          } = run;
+          if (
+            token === this.fetchToken &&
+            uiNavigation.runLogsMainTask &&
+            run
+          ) {
+            const pipelineTaskName = pipelineName || podId || '';
+            const pipelineTask = runTasks
+              .find((t) => (t.name || '').toLowerCase() === pipelineTaskName.toLowerCase());
+            const consoleTask = runTasks
+              .find((t) => (t.name || '').toLowerCase() === 'console');
+            const runningStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+            if (
+              pipelineTask &&
+              pipelineTask.status &&
+              !runningStatuses.includes(pipelineTask.status.toUpperCase())
+            ) {
+              taskToNavigate = pipelineTask;
+              tasksCollapsed = true;
+            } else if (consoleTask) {
+              taskToNavigate = consoleTask;
+              tasksCollapsed = true;
+            }
+          }
+          commit({tasksCollapsed});
           this.stop = stop;
           this.reFetchRunInfo = reFetch;
+          if (
+            taskToNavigate &&
+            (!task || task.name.toLowerCase() !== taskToNavigate.name.toLowerCase())
+          ) {
+            const taskUrl = this.getTaskUrl(taskToNavigate);
+            const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+            this.props.router.push(url);
+          }
+          commit({runDataLoaded: true});
         } catch (error) {
-          commit({error: error.message});
+          commit({error: error.message, runDataLoaded: true});
         }
       });
     } else {
@@ -241,7 +302,9 @@ class Logs extends localization.LocalizedReactComponent {
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
-        language: undefined
+        language: undefined,
+        tasksCollapsed: false,
+        runDataLoaded: false
       });
     }
   }
@@ -1024,11 +1087,13 @@ class Logs extends localization.LocalizedReactComponent {
           timeout = null;
         }, 100);
       };
+      const {tasksCollapsed} = this.state;
       return (
         <Row type="flex" style={{flex: 1}}>
           <SplitPane
             style={{display: 'flex', flex: 1, minHeight: 500}}
-            defaultSize={300}
+            defaultSize={tasksCollapsed ? 0 : 300}
+            minSize={tasksCollapsed ? 0 : 100}
             onChange={resizeGraph}
             pane1Style={{display: 'flex', flexDirection: 'column'}}
             pane2Style={{display: 'flex', flexDirection: 'column'}}
@@ -1139,11 +1204,14 @@ class Logs extends localization.LocalizedReactComponent {
       </div>
     );
 
+    const {tasksCollapsed} = this.state;
+
     return (
       <Row type="flex" style={{flex: 1}}>
         <SplitPane
           style={{display: 'flex', flex: 1, minHeight: 500}}
-          defaultSize={300}
+          defaultSize={tasksCollapsed ? 0 : 300}
+          minSize={tasksCollapsed ? 0 : 100}
           pane1Style={{display: 'flex', flexDirection: 'column'}}
           pane2Style={{display: 'flex', flexDirection: 'column'}}
           resizerClassName="cp-split-panel-resizer"
@@ -2430,7 +2498,7 @@ class Logs extends localization.LocalizedReactComponent {
     if (!pending && this.graph) {
       this.graph.updateData();
     }
-    if (!this.props.task && runTasks && runTasks.length > 0) {
+    if (!this.props.task && runTasks && runTasks.length > 0 && this.state.runDataLoaded) {
       // navigate to first task
       const taskUrl = this.getTaskUrl(runTasks[0]);
       const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
