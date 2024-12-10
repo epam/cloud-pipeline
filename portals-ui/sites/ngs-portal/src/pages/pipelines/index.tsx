@@ -14,7 +14,7 @@ export default function PipelinesPage() {
   if (error) {
     return <div>{error}</div>;
   }
-  if (pending) {
+  if (pending && (!pipelines || pipelines.length === 0)) {
     return <Spinner />;
   }
   if (!pipelines) {

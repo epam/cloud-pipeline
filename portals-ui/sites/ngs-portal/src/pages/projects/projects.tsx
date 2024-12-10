@@ -55,7 +55,7 @@ export function ProjectsPage() {
     return <div>{error}</div>;
   }
 
-  if (pending) {
+  if (pending && (!projects || projects.length === 0)) {
     return <Spinner />;
   }
 
