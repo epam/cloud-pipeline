@@ -103,6 +103,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStoragesByRootIdsQuery;
     private String loadDataStoragesFilterQuery;
     private String loadDataStorageByTypeQuery;
+    private String loadDataStoragesByMountIdQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -351,6 +352,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByMountId(final Long fsMountId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.FILE_SHARE_MOUNT_ID.name(), fsMountId);
+        return getNamedParameterJdbcTemplate().query(loadDataStoragesByMountIdQuery,
+                params, DataStorageParameters.getRowMapper());
+    }
+
     @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
@@ -481,6 +489,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public void setLoadDataStorageByTypeQuery(final String loadDataStorageBySericeTypeQuery) {
         this.loadDataStorageByTypeQuery = loadDataStorageBySericeTypeQuery;
+    }
+
+    public void setLoadDataStoragesByMountIdQuery(String loadDataStoragesByMountIdQuery) {
+        this.loadDataStoragesByMountIdQuery = loadDataStoragesByMountIdQuery;
     }
 
     public enum DataStorageParameters {
