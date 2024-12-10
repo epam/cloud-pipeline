@@ -31,7 +31,7 @@ export const PipelineToProjectModal = (props: IModal<string>) => {
     {
       items: projects,
     },
-    [],
+    [projects],
   );
   const onOk = () => {
     if (pending || !selectedProjectId) {
