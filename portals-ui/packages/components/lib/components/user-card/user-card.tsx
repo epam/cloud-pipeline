@@ -1,19 +1,16 @@
 import { useCallback, useMemo } from 'react';
 import classNames from 'classnames';
 import type { CommonProps } from '@cloud-pipeline/components';
-import { FlexCell, Tooltip } from '@epam/uui';
-import {
-  getUserDisplayName,
-  type User,
-  type UserInfo,
-} from '@cloud-pipeline/core';
-import type { DropdownPlacement } from '@epam/uui-core';
-import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
+import { Popover } from 'antd';
+import { getUserDisplayName } from '@cloud-pipeline/core';
+import type { User, UserInfo } from '@cloud-pipeline/core';
+import { TooltipPlacement } from 'antd/es/tooltip';
+import { UserIcon } from '@heroicons/react/24/solid';
 
 export type UserCardProps = CommonProps & {
   user: User | UserInfo;
   showTooltip?: boolean;
-  tooltipPlacement?: DropdownPlacement;
+  tooltipPlacement?: TooltipPlacement;
   showIcon?: boolean;
   color?: 'neutral' | 'inverted' | 'critical';
   iconClassName?: string;
@@ -45,7 +42,7 @@ export const UserCard = (props: UserCardProps) => {
         const attributes = Object.entries(user.attributes);
         return (
           <div className="flex flex-col gap-0.5">
-            <FlexCell width="auto">{userName}</FlexCell>
+            <div className="w-auto">{userName}</div>
             <table className="table-auto">
               <tbody>
                 {attributes.map(([key, value]) => (
@@ -66,35 +63,31 @@ export const UserCard = (props: UserCardProps) => {
   if (!user) {
     return null;
   }
+  const icon = showIcon ? (
+    <UserIcon className={classNames('w-3 h-3 mr-0.5', iconClassName)} />
+  ) : null;
+  const userComponent = (
+    <span className={className} style={style}>
+      {user ? getUserDisplayName(user) : userName}
+    </span>
+  );
   if (!showTooltip || !user) {
     return (
       <div className="inline-flex whitespace-nowrap items-center">
-        {showIcon ? (
-          <ContentPersonFillIcon
-            className={classNames('fill-current h-5', iconClassName)}
-          />
-        ) : null}
-        <span className={className} style={style}>
-          {user ? getUserDisplayName(user) : userName}
-        </span>
+        {icon}
+        {userComponent}
       </div>
     );
   }
   return (
     <span className="inline-flex whitespace-nowrap items-center">
-      {showIcon ? (
-        <ContentPersonFillIcon
-          className={classNames('fill-current h-5', iconClassName)}
-        />
-      ) : null}
-      <Tooltip
+      {icon}
+      <Popover
         placement={tooltipPlacement}
         color={color}
-        content={showTooltip ? renderContent(user) : null}>
-        <span className={className} style={style}>
-          {user ? getUserDisplayName(user) : userName}
-        </span>
-      </Tooltip>
+        title={showTooltip ? renderContent(user) : null}>
+        {userComponent}
+      </Popover>
     </span>
   );
 };

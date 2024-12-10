@@ -1,16 +1,16 @@
 import { useCallback, useMemo } from 'react';
-import { Badge, FlexRow, RichTextView } from '@epam/uui';
-import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
-import ActionCalendarFillIcon from '@epam/assets/icons/action-calendar-fill.svg?react';
+import { FlexRow, RichTextView } from '@epam/uui';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
 import type { Pipeline, Project } from '@cloud-pipeline/core';
 import { RunStatuses } from '@cloud-pipeline/core';
 import { displayDate } from '@cloud-pipeline/core';
-import { StatusIcon, type CommonProps } from '@cloud-pipeline/components';
+import { StatusIcon, Tag, type CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
 import { NgsTag } from '../../../widgets/ngs-tag';
+import { UserIcon } from '@heroicons/react/24/solid';
+import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import './style.css';
 
 type Props = CommonProps & {
@@ -113,14 +113,13 @@ export const ProjectCard = ({
   const renderTags = useCallback(
     () =>
       filteredTag.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-0">
           {filteredTag.map((tag) => (
             <NgsTag
               key={tag.key}
               tag={tag.key}
               value={tag.value}
-              size="18"
-              className="shrink-0"
+              className="shrink-0 mb-0.5"
             />
           ))}
         </div>
@@ -132,11 +131,11 @@ export const ProjectCard = ({
     () => (
       <div className="text text-xs flex flex-nowrap gap-2">
         <div className="flex flex-nowrap items-center gap-1">
-          <ActionCalendarFillIcon className="h-3 w-3 fill-current" />
+          <CalendarDaysIcon className="h-3 w-3" />
           {displayDate(project.createdDate)}
         </div>
         <div className="flex flex-nowrap items-center gap-1">
-          <ContentPersonFillIcon className="h-3 w-3 fill-current" />
+          <UserIcon className="h-3 w-3" />
           {Math.floor(Math.random() * 10 + 1)} users
         </div>
       </div>
@@ -159,14 +158,15 @@ export const ProjectCard = ({
             <HighlightedText search={highlightedText}>{name}</HighlightedText>
           </Link>
         </FlexRow>
-        <div className="flex flex-nowrap gap-2">
-          <Badge
-            icon={ContentPersonFillIcon}
-            caption={<NgsUserCard userName={owner} showTooltip={false} />}
-            color="neutral"
-            size="18"
-            cx="shrink-0"
-          />
+        <div className="flex flex-nowrap">
+          <Tag className="shrink-0">
+            <NgsUserCard
+              userName={owner}
+              showTooltip={false}
+              showIcon
+              className="h-4"
+            />
+          </Tag>
           {showExtraInfo && renderExtraInfo()}
         </div>
         {showDescription && <RichTextView>{description}</RichTextView>}

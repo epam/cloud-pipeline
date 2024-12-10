@@ -6,11 +6,11 @@ import cn from 'classnames';
 import type { ReactNode } from 'react';
 import { memo, useEffect } from 'react';
 import ActionAddFillIcon from '@epam/assets/icons/action-add-outline.svg?react';
-import ActionJobFunctionOutlineIcon from '@epam/assets/icons/action-job_function-outline.svg?react';
 import { loadPipelines } from '../../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../../state/pipelines/hooks';
 import { useUuiContext } from '@epam/uui-core';
 import { CreateProjectModal } from '../../../widgets/modals';
+import { CubeIcon } from '@heroicons/react/24/outline';
 
 type Props = {
   projects: Project[] | undefined;
@@ -55,8 +55,8 @@ export const ProjectsList = memo(
       <ItemsPanel
         className="max-h-full list-container overflow-auto"
         title={
-          <div className="fill-current flex flex-nowrap gap-1">
-            <ActionJobFunctionOutlineIcon />
+          <div className="fill-current flex items-center flex-nowrap gap-1">
+            <CubeIcon className="w-5 h-5" />
             <span>Projects</span>
           </div>
         }
@@ -69,7 +69,7 @@ export const ProjectsList = memo(
           />
         }
         items={projects}
-        renderItem={renderItem}
+        render={renderItem}
         sliced
         virtualized={mode === 'extended'}
         search

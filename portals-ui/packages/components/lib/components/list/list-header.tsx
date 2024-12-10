@@ -1,7 +1,9 @@
 import classNames from 'classnames';
-import { SearchInput } from '@epam/uui';
+import { Input } from 'antd';
 import type { ListHeaderProps } from './types';
 import './style.css';
+import { useInputChange } from '../../hooks/use-input-change.ts';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 const ListHeader = (props: ListHeaderProps) => {
   const {
@@ -15,6 +17,7 @@ const ListHeader = (props: ListHeaderProps) => {
     searchPlaceholder,
     beforeSearch,
   } = props;
+  const onChange = useInputChange(onSearch);
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
       <div className={classNames('flex text items-center no-wrap list-header')}>
@@ -28,13 +31,13 @@ const ListHeader = (props: ListHeaderProps) => {
             searchClassName,
           )}>
           {beforeSearch ?? null}
-          <SearchInput
+          <Input
+            prefix={<MagnifyingGlassIcon className="w-4 h-4" />}
             value={search}
-            onValueChange={onSearch}
+            onChange={onChange}
             placeholder={searchPlaceholder ?? 'Search'}
-            disableDebounce
-            mode="inline"
-            size="30"
+            size="middle"
+            variant="borderless"
           />
         </div>
       ) : null}

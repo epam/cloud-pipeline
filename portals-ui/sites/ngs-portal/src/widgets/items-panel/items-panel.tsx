@@ -38,7 +38,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     style,
     title,
     actions,
-    renderItem,
+    render,
     itemKey,
     virtualized,
     sliced,
@@ -76,8 +76,8 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
       {filtered.length > 0 && (
         <List
           className="overflow-auto flex-1"
-          data={filtered}
-          renderItem={(item, i) => renderItem(item, search, i)}
+          items={filtered}
+          render={(item, i) => render(item, search, i)}
           itemKey={itemKey}
           virtualized={virtualized}
           sliced={sliced}

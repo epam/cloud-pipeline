@@ -1,6 +1,5 @@
-import type { CommonProps } from '@cloud-pipeline/components';
-import type { TagProps } from '@epam/uui';
-import { Tag } from '@epam/uui';
+import type { TagProps } from '@cloud-pipeline/components';
+import { Tag } from '@cloud-pipeline/components';
 import { useMemo } from 'react';
 import classNames from 'classnames';
 import './style.css';
@@ -12,55 +11,38 @@ export type TagValue =
   | Record<any, any>
   | Array<unknown>;
 
-export type NgsTagProps<Value extends TagValue> = CommonProps &
-  Pick<TagProps, 'color' | 'size'> & {
-    tag: string;
-    value: Value;
-    /**
-     * if `true`, display "tag:value"
-     */
-    showTagName?: boolean;
-  };
+export type NgsTagProps<Value extends TagValue> = TagProps & {
+  tag: string;
+  value: Value;
+  /**
+   * if `true`, display "tag:value"
+   */
+  showTagName?: boolean;
+};
 
 function NgsGeneralTag(props: NgsTagProps<string | number | boolean>) {
-  const {
-    className,
-    tag,
-    value,
-    showTagName = false,
-    color,
-    size = '18',
-  } = props;
+  const { className, tag, value, showTagName = false, color } = props;
   return (
-    <Tag
-      cx={classNames('ngs-tag', className)}
-      color={color}
-      size={size}
-      caption={<span className="ngs-tag-content">{showTagName ? `${tag}:${String(value)}` : String(value)}</span>}
-    />
+    <Tag className={classNames('ngs-tag', className)} color={color}>
+      <span className="ngs-tag-content">
+        {showTagName ? `${tag}:${String(value)}` : String(value)}
+      </span>
+    </Tag>
   );
 }
 
 function NgsObjectTag(props: NgsTagProps<Record<any, any> | Array<unknown>>) {
-  const {
-    className,
-    tag,
-    value,
-    showTagName = false,
-    color,
-    size = '18',
-  } = props;
+  const { className, tag, value, showTagName = false, color } = props;
   const objType = Array.isArray(value)
     ? `${value.length} item${value.length === 1 ? '' : 's'}`
     : 'object';
   // todo: display as a link; an object / array content should be displayed on hover (as popup)
   return (
-    <Tag
-      cx={classNames('ngs-tag', className)}
-      color={color}
-      size={size}
-      caption={<span className="ngs-tag-content">{showTagName ? `${tag}:${String(objType)}` : String(objType)}</span>}
-    />
+    <Tag className={classNames('ngs-tag', className)} color={color}>
+      <span className="ngs-tag-content">
+        {showTagName ? `${tag}:${String(objType)}` : String(objType)}
+      </span>
+    </Tag>
   );
 }
 

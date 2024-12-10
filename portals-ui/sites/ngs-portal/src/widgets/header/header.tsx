@@ -5,7 +5,7 @@ import type { RouteLink } from './types.ts';
 import { HeaderRouteLink } from './header-route-link.tsx';
 import { useNavigate } from 'react-router';
 import { useCallback } from 'react';
-import { NgsUserCard } from '../ngs-user-card/ngs-user-card.tsx';
+import { NgsUserCard } from '../ngs-user-card';
 
 const LINKS: RouteLink[] = [
   { route: AppRoutes.HOME, caption: 'Home' },
@@ -34,7 +34,6 @@ export const Header = () => {
       <div className="flex items-center ml-auto text-white text-sm">
         {authenticatedUser?.userName ? (
           <NgsUserCard
-            tooltipPlacement="bottom-end"
             userName={authenticatedUser?.userName}
             showIcon
           />

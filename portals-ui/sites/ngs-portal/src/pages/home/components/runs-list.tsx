@@ -3,7 +3,7 @@ import { ItemsPanel } from '../../../widgets/items-panel/items-panel.tsx';
 import { useAuthenticatedUserRuns } from '../../../shared/hooks/use-runs-filter.ts';
 import { RunCard } from './run-card.tsx';
 import cn from 'classnames';
-import MediaPlayOutlineOptIcon from '@epam/assets/icons/media-play-outline-opt.2.svg?react';
+import { PlayCircleIcon } from '@heroicons/react/24/outline';
 
 function runCardRenderer(item: Run, _: string, i: number) {
   return (
@@ -21,10 +21,10 @@ export const RunsList = () => {
   return (
     <ItemsPanel
       className="max-h-full list-container overflow-auto"
-      renderItem={runCardRenderer}
+      render={runCardRenderer}
       title={
-        <div className="fill-current flex flex-nowrap gap-1">
-          <MediaPlayOutlineOptIcon />
+        <div className="fill-current flex items-center flex-nowrap gap-1">
+          <PlayCircleIcon className="w-5 h-5" />
           <span>Runs history</span>
         </div>
       }

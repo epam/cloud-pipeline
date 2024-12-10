@@ -1,5 +1,4 @@
 import type { Preview } from '@storybook/react';
-import { withApplication } from './with-application';
 
 const preview: Preview = {
   parameters: {
@@ -10,7 +9,6 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [withApplication],
 };
 
 export default preview;

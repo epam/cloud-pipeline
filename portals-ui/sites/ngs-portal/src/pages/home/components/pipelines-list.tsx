@@ -3,7 +3,7 @@ import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import { PipelineCard } from './pipeline-card';
 import { memo } from 'react';
 import cn from 'classnames';
-import NavigationDependencyOutlineIcon from '@epam/assets/icons/navigation-dependency-outline.svg?react';
+import { ShareIcon } from '@heroicons/react/24/outline';
 
 type Props = {
   pipelines: Pipeline[] | undefined;
@@ -30,16 +30,13 @@ export const PipelinesList = memo(
       <ItemsPanel
         className="max-h-full list-container overflow-auto"
         title={
-          <div className="fill-current flex flex-nowrap gap-1">
-            <span className="rotate-90">
-              <NavigationDependencyOutlineIcon />
-            </span>
+          <div className="fill-current flex items-center flex-nowrap gap-1">
+            <ShareIcon className="w-5 h-5 -rotate-90" />
             <span>Pipelines</span>
           </div>
         }
         items={pipelines}
-        renderItem={renderItem}
-        sliced
+        render={renderItem}
         virtualized
         search
         itemKey="id"

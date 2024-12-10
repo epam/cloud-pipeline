@@ -22,8 +22,8 @@ export default function Runs() {
       <ListHeader title="Runs history" className="shrink-0 border" />
       <List
         className="overflow-auto border-b border-l border-r"
-        data={runs}
-        renderItem={(run) => (
+        items={runs}
+        render={(run) => (
           <span>
             pipeline-{run.id}, status: {run.status}
           </span>

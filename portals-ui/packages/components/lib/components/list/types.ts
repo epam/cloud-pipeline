@@ -1,13 +1,11 @@
 import type { ReactNode } from 'react';
 import type { CommonProps } from '../common.types';
+import { VirtualListProps } from '../virtual-list/types.ts';
 
-export type ListProps<Item> = CommonProps & {
-  data: Item[];
-  renderItem: (item: Item, index: number) => ReactNode | string;
+export type ListProps<Item> = VirtualListProps<Item> & {
   header?: ReactNode;
   footer?: ReactNode;
   virtualized?: boolean;
-  itemKey?: keyof Item | ((item: Item, index: number) => string | number);
   sliced?: number | boolean;
 };
 

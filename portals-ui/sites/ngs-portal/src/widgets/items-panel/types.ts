@@ -12,9 +12,9 @@ export type ViewAllItemsConfiguration = {
 
 export type ItemsPanelProps<Item> = Omit<
   ListProps<Item>,
-  'renderItem' | 'data' | 'header'
+  'render' | 'items' | 'header'
 > & {
-  renderItem: (item: Item, search: string, index: number) => ReactNode | string;
+  render: (item: Item, search: string, index: number) => ReactNode | string;
   items?: Item[];
   title?: ReactNode;
   actions?: ReactNode;
