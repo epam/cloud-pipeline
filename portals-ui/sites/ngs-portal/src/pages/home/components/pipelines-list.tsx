@@ -37,6 +37,7 @@ export const PipelinesList = memo(
         }
         items={pipelines}
         render={renderItem}
+        sliced
         virtualized
         search
         itemKey="id"
