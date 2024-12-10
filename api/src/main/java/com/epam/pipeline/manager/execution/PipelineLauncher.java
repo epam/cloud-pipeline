@@ -30,7 +30,9 @@ import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
@@ -214,6 +216,11 @@ public class PipelineLauncher {
     private void validateConfigurationOnKubernetesServiceAccount(final PipelineConfiguration configuration,
                                                                  final PipelineUser user) {
         if (!user.isAdmin() && configuration.getKubeServiceAccount() != null) {
+            final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
+                    .map(Role::getName).collect(Collectors.toList());
+            if (userRoles.contains(DefaultRoles.ROLE_ADVANCED_RUN_POLICY_MANAGER.getName())) {
+                return;
+            }
             throw new IllegalStateException(
                     messageHelper.getMessage(
                             MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName())
@@ -230,6 +237,11 @@ public class PipelineLauncher {
                 .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
         if (isAdvancedRunAssignPolicy) {
+            final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
+                    .map(Role::getName).collect(Collectors.toList());
+            if (userRoles.contains(DefaultRoles.ROLE_ADVANCED_RUN_POLICY_MANAGER.getName())) {
+                return;
+            }
             throw new IllegalStateException(
                     messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
         }
