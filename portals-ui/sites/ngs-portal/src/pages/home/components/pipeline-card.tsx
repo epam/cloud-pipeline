@@ -1,4 +1,4 @@
-import { Badge, FlexRow, Button, RichTextView } from '@epam/uui';
+import { Badge, Button, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
@@ -94,7 +94,9 @@ export const PipelineCard = ({
 
   const openAddPipelineModal = () => {
     uuiModals
-      .show((props) => <PipelineToProjectModal {...props} />)
+      .show((props) => (
+        <PipelineToProjectModal pipeline={pipeline} {...props} />
+      ))
       .then(noop)
       .catch(noop);
   };
