@@ -70,7 +70,10 @@ export const PipelineToProjectModal = (props: IModal<string>) => {
   return (
     <ModalBlocker {...props}>
       <ModalWindow width={'70vw'} style={{ maxWidth: 740 }}>
-        <ModalHeader title="Create project" onClose={() => props.abort()} />
+        <ModalHeader
+          title="Add project to pipeline"
+          onClose={() => props.abort()}
+        />
         <div className="flex flex-col gap-2 p-4">
           <LabeledInput
             htmlFor="datastorage"
