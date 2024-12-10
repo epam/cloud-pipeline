@@ -1,3 +1,4 @@
+import type { Pipeline } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
 import {
   ModalHeader,
@@ -16,13 +17,16 @@ import CircleLoaderIcon from '@epam/assets/icons/loaders/circle-loader.svg?react
 import { loadProjects } from '../../../state/projects/load-projects';
 import { useProjectsState } from '../../../state/projects/hooks';
 
-export const PipelineToProjectModal = (props: IModal<string>) => {
+type Props = IModal<string> & {
+  pipeline: Pipeline;
+};
+
+export const PipelineToProjectModal = (props: Props) => {
+  const { pipeline } = props;
   const { projects } = useProjectsState();
   const [selectedProjectId, setSelectedProjectId] = useState<number>();
   useEffect(() => {
-    loadProjects()
-      .then(() => {})
-      .catch(() => {});
+    loadProjects().then(noop).catch(noop);
   }, []);
   const { uuiNotifications } = useUuiContext();
   const [pending, setPending] = useState(false);
@@ -44,7 +48,10 @@ export const PipelineToProjectModal = (props: IModal<string>) => {
       uuiNotifications
         .show((props) => (
           <SuccessNotification {...props}>
-            <b>Successfully added to {selected?.name ?? 'project'}.</b>
+            <b>
+              Successfully added {pipeline?.name ?? 'pipeline'} to{' '}
+              {selected?.name ?? 'project'}.
+            </b>
           </SuccessNotification>
         ))
         .then(noop)
@@ -54,7 +61,10 @@ export const PipelineToProjectModal = (props: IModal<string>) => {
       uuiNotifications
         .show((props) => (
           <ErrorNotification {...props}>
-            <b>Failed to add to {selected?.name ?? 'project'}.</b>
+            <b>
+              Failed to add {pipeline?.name ?? 'pipeline'} to{' '}
+              {selected?.name ?? 'project'}.
+            </b>
             <span>
               {error instanceof Error ? error.message : String(error)}
             </span>
@@ -69,15 +79,14 @@ export const PipelineToProjectModal = (props: IModal<string>) => {
   };
   return (
     <ModalBlocker {...props}>
-      <ModalWindow width={'70vw'} style={{ maxWidth: 740 }}>
+      <ModalWindow width={600} style={{ maxWidth: 740 }}>
         <ModalHeader
-          title="Add project to pipeline"
+          title={`Add ${pipeline.name} to project`}
           onClose={() => props.abort()}
         />
         <div className="flex flex-col gap-2 p-4">
           <LabeledInput
-            htmlFor="datastorage"
-            label={<span>Select datastorage:</span>}
+            label={<span>Select project:</span>}
             labelPosition="left">
             <PickerInput
               dataSource={dataSource}
@@ -85,6 +94,7 @@ export const PipelineToProjectModal = (props: IModal<string>) => {
               onValueChange={setSelectedProjectId}
               selectionMode="single"
               valueType="id"
+              placeholder="Select project"
             />
           </LabeledInput>
         </div>
