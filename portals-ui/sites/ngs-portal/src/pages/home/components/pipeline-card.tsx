@@ -2,13 +2,15 @@ import { Badge, FlexRow, Button, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
-import type { Pipeline } from '@cloud-pipeline/core';
+import { noop, type Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
 import './style.css';
 import { useMemo } from 'react';
 import { NgsTag } from '../../../widgets/ngs-tag';
+import { useUuiContext } from '@epam/uui-core';
+import { PipelineToProjectModal } from '../../../widgets/modals';
 
 type Props = CommonProps & {
   pipeline: Pipeline;
@@ -78,6 +80,7 @@ export const PipelineCard = ({
   style,
   mode = 'standard',
 }: Props) => {
+  const { uuiModals } = useUuiContext();
   const { id, name, owner, data = {}, description } = pipeline;
   const tags = useMemo(
     () =>
@@ -86,6 +89,13 @@ export const PipelineCard = ({
         .filter(Boolean) as MappedTag[],
     [data],
   );
+
+  const openAddPipelineModal = () => {
+    uuiModals
+      .show((props) => <PipelineToProjectModal {...props} />)
+      .then(noop)
+      .catch(noop);
+  };
 
   const filteredTag = useMemo(() => tags.filter(filterTag), [tags]);
   return (
@@ -134,7 +144,7 @@ export const PipelineCard = ({
             fill="none"
             color="secondary"
             size="24"
-            onClick={() => null}
+            onClick={openAddPipelineModal}
           />
         </div>
       )}
