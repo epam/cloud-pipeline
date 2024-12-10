@@ -1,4 +1,4 @@
-import { Tag, Badge, FlexRow, Button, RichTextView } from '@epam/uui';
+import { Badge, FlexRow, Button, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';

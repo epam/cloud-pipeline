@@ -4,9 +4,11 @@ import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import cn from 'classnames';
 import type { ReactNode } from 'react';
-import { memo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import ActionAddFillIcon from '@epam/assets/icons/action-add-outline.svg?react';
 import ActionJobFunctionOutlineIcon from '@epam/assets/icons/action-job_function-outline.svg?react';
+import { loadPipelines } from '../../../state/pipelines/load-pipelines';
+import { usePipelinesState } from '../../../state/pipelines/hooks';
 
 type Props = {
   projects: Project[] | undefined;
@@ -16,6 +18,14 @@ type Props = {
 
 export const ProjectsList = memo(
   ({ projects, mode = 'standard', filters }: Props) => {
+    const { pipelines } = usePipelinesState();
+    const getRandomPipeline = () =>
+      pipelines?.[Math.floor(Math.random() * pipelines.length)];
+    useEffect(() => {
+      loadPipelines()
+        .then(() => {})
+        .catch(() => {});
+    }, []);
     const renderItem = (item: Project, search: string, i: number) => (
       <ProjectCard
         key={String(item.id)}
@@ -23,6 +33,7 @@ export const ProjectsList = memo(
         highlightedText={search}
         className={cn({ ['border-t']: i !== 0 })}
         mode={mode}
+        lastRun={getRandomPipeline()}
       />
     );
 

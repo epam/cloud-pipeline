@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { Badge, FlexRow, RichTextView } from '@epam/uui';
 import ContentPersonFillIcon from '@epam/assets/icons/content-person-fill.svg?react';
 import ActionCalendarFillIcon from '@epam/assets/icons/action-calendar-fill.svg?react';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
-import type { Project } from '@cloud-pipeline/core';
+import type { Pipeline, Project } from '@cloud-pipeline/core';
 import { RunStatuses } from '@cloud-pipeline/core';
 import {
   displayDate,
@@ -14,7 +15,6 @@ import {
 import { StatusIcon, type CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
-import { useMemo } from 'react';
 import { NgsTag } from '../../../widgets/ngs-tag';
 import './style.css';
 
@@ -24,6 +24,7 @@ type Props = CommonProps & {
   tags?: string[];
   highlightedText?: string;
   mode?: 'standard' | 'extended';
+  lastRun?: Pipeline;
 };
 
 type MappedTag = {
@@ -56,6 +57,10 @@ function mapTag(key: string, value: unknown): MappedTag | undefined {
 const __UNSAFE__will_be_removed_tagsToDisplay: string[] | undefined = undefined;
 const __UNSAFE__will_be_removed_tagsToHide: string[] | undefined = undefined;
 
+function getRandomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 function filterTag(tag: MappedTag): boolean {
   let allow = true;
   if (
@@ -85,9 +90,10 @@ export const ProjectCard = ({
   className,
   style,
   mode = 'standard',
+  lastRun,
 }: Props) => {
   const { id, name, owner, mask, data } = project;
-
+  const randomRunningCount = getRandomInt(0, 4);
   const tags = useMemo(
     () =>
       Object.entries(data ?? {})
@@ -185,15 +191,24 @@ export const ProjectCard = ({
       {showStatusInfo && (
         <div className="text text-sm ml-auto mt-0">
           <div className="flex flex-nowrap items-baseline gap-2">
-            <StatusIcon status={RunStatuses.success} className="shrink-0" />
-            {Math.floor(Math.random() * 10 + 1)} running
+            <StatusIcon
+              status={
+                randomRunningCount > 0
+                  ? RunStatuses.success
+                  : RunStatuses.paused
+              }
+              className="shrink-0"
+            />
+            {randomRunningCount} running
           </div>
-          <div className="flex flex-nowrap gap-2 max-w-80 items-baseline">
-            <StatusIcon status={RunStatuses.resuming} className="shrink-0" />
-            <span className="whitespace-break-spaces">
-              Last finished: RNA Sequence pipeline with a long name (version: 3)
-            </span>
-          </div>
+          {lastRun ? (
+            <div className="flex flex-nowrap gap-2 w-80 items-baseline">
+              <StatusIcon status={RunStatuses.resuming} className="shrink-0" />
+              <span className="break-all">
+                Last finished: {lastRun.name} (latest)
+              </span>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
