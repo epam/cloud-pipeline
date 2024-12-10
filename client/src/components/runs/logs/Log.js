@@ -171,7 +171,8 @@ class Logs extends localization.LocalizedReactComponent {
     showLaunchCommands: false,
     commitAllowed: false,
     nestedRunsModalVisible: false,
-    tasksCollapsed: false
+    tasksCollapsed: false,
+    runPreviousStatus: undefined
   };
 
   @observable runScheduleRequest;
@@ -192,6 +193,82 @@ class Logs extends localization.LocalizedReactComponent {
     }
     this.stop = undefined;
     this.reFetchRunInfo = undefined;
+  };
+
+  /**
+   * Checks if the form should be navigated to a specific task
+   */
+  checkTaskNavigation = () => {
+    const {
+      uiNavigation
+    } = this.props;
+    // `task` holds current selected run task
+    let {
+      task
+    } = this.props;
+    const {
+      runTasks = [],
+      run,
+      tasksCollapsed: currentTaskCollapsed,
+      runPreviousStatus
+    } = this.state;
+    let taskToNavigate;
+    if (!task && runTasks.length > 0) {
+      // If no task is selected and there are some tasks in run -
+      // we need to navigate to any of it
+      taskToNavigate = runTasks[0];
+    }
+    const {
+      pipelineName,
+      podId,
+      status
+    } = run;
+    let tasksCollapsed = currentTaskCollapsed;
+    const runningStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+    if (runPreviousStatus !== status && !runningStatuses.includes(status)) {
+      // Run status changed to "FAILURE", "STOPPED" or "SUCCESS".
+      // We should switch to the "main" task in that case
+      task = undefined; // that will force task navigation
+    }
+    if (uiNavigation.runLogsMainTask && !task) {
+      // user has "ui-run-logs-main-task" set to true ("display main task by default").
+      // we need to navigate to "pipeline" task (if it is finished) or "console" task,
+      // if there isn't selected task
+      const pipelineTaskName = pipelineName || podId || '';
+      const pipelineTask = runTasks
+        .find((t) => (t.name || '').toLowerCase() === pipelineTaskName.toLowerCase());
+      const consoleTask = runTasks
+        .find((t) => (t.name || '').toLowerCase() === 'console');
+      if (
+        pipelineTask &&
+        pipelineTask.status &&
+        !runningStatuses.includes(pipelineTask.status.toUpperCase())
+      ) {
+        // run has finished "pipeline" task - we should navigate to it
+        taskToNavigate = pipelineTask;
+        tasksCollapsed = true;
+      } else if (consoleTask) {
+        // run doesn't have finished "pipeline" task - we should navigate to console task
+        taskToNavigate = consoleTask;
+        tasksCollapsed = true;
+      }
+    }
+    if (runPreviousStatus !== status || currentTaskCollapsed !== tasksCollapsed) {
+      this.setState({
+        tasksCollapsed,
+        runPreviousStatus: status
+      });
+    }
+    if (
+      taskToNavigate &&
+      (!task || task.name.toLowerCase() !== taskToNavigate.name.toLowerCase())
+    ) {
+      // there is a task to be navigated to (`taskToNavigate`)
+      // and current selected task either is missing or differs from the `taskToNavigate`
+      const taskUrl = this.getTaskUrl(taskToNavigate);
+      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      this.props.router.push(url);
+    }
   };
 
   updateFromProps = () => {
@@ -218,73 +295,30 @@ class Logs extends localization.LocalizedReactComponent {
         runTasks: [],
         language: undefined,
         tasksCollapsed: true,
-        runDataLoaded: false
+        runDataLoaded: false,
+        runPreviousStatus: undefined
       }, async () => {
         const commit = (data = {}) => {
           if (token === this.fetchToken) {
-            this.setState({pending: false, ...data});
+            this.setState({pending: false, ...data}, () => {
+              this.checkTaskNavigation();
+            });
           }
         };
         try {
-          let tasksCollapsed = false;
           await uiNavigation.fetch();
           this.runScheduleRequest = new RunSchedules(runId);
           (this.runScheduleRequest.fetch)();
           const {
             stop,
             fetch: reFetch,
-            data
           } = await fetchRunInfo(runId, commit, {
             preferences,
             dockerRegistries,
             maxNestedRunsToDisplay: MAX_NESTED_RUNS_TO_DISPLAY
           });
-          const {
-            run,
-            runTasks = []
-          } = data || {};
-          let taskToNavigate;
-          if (!task && runTasks.length > 0) {
-            taskToNavigate = runTasks[0];
-          }
-          const {
-            pipelineName,
-            podId
-          } = run;
-          if (
-            token === this.fetchToken &&
-            uiNavigation.runLogsMainTask &&
-            run
-          ) {
-            const pipelineTaskName = pipelineName || podId || '';
-            const pipelineTask = runTasks
-              .find((t) => (t.name || '').toLowerCase() === pipelineTaskName.toLowerCase());
-            const consoleTask = runTasks
-              .find((t) => (t.name || '').toLowerCase() === 'console');
-            const runningStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
-            if (
-              pipelineTask &&
-              pipelineTask.status &&
-              !runningStatuses.includes(pipelineTask.status.toUpperCase())
-            ) {
-              taskToNavigate = pipelineTask;
-              tasksCollapsed = true;
-            } else if (consoleTask) {
-              taskToNavigate = consoleTask;
-              tasksCollapsed = true;
-            }
-          }
-          commit({tasksCollapsed});
           this.stop = stop;
           this.reFetchRunInfo = reFetch;
-          if (
-            taskToNavigate &&
-            (!task || task.name.toLowerCase() !== taskToNavigate.name.toLowerCase())
-          ) {
-            const taskUrl = this.getTaskUrl(taskToNavigate);
-            const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
-            this.props.router.push(url);
-          }
           commit({runDataLoaded: true});
         } catch (error) {
           commit({error: error.message, runDataLoaded: true});
@@ -304,7 +338,8 @@ class Logs extends localization.LocalizedReactComponent {
         runTasks: [],
         language: undefined,
         tasksCollapsed: false,
-        runDataLoaded: false
+        runDataLoaded: false,
+        runPreviousStatus: undefined
       });
     }
   }
@@ -2493,16 +2528,9 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const {
       pending,
-      runTasks
     } = this.state;
     if (!pending && this.graph) {
       this.graph.updateData();
-    }
-    if (!this.props.task && runTasks && runTasks.length > 0 && this.state.runDataLoaded) {
-      // navigate to first task
-      const taskUrl = this.getTaskUrl(runTasks[0]);
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
-      this.props.router.push(url);
     }
   }
 }
