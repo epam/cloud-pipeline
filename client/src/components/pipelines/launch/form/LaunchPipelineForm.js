@@ -172,7 +172,8 @@ function getFormItemClassName (rootClass, key) {
   'dtsList',
   'preferences',
   'dockerRegistries',
-  'dataStorageAvailable'
+  'dataStorageAvailable',
+  'uiNavigation'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -772,6 +773,50 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return this.currentCloudRegion.provider;
     }
     return null;
+  }
+
+  get launchFormUserPreferences () {
+    const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
+    if (editConfigurationMode || isDetachedConfiguration) {
+      return undefined;
+    }
+    const {pipeline} = this.state;
+    const config = uiNavigation.launchForm || {};
+    if (pipeline) {
+      return config.pipelines;
+    }
+    return config.tools;
+  }
+
+  get executionEnvironmentSectionVisible () {
+    const {
+      'exec-visible': execVisible = true,
+      'execution-environment-visible': executionEnvironmentVisible = execVisible
+    } = this.launchFormUserPreferences || {};
+    return `${executionEnvironmentVisible}`.toLowerCase() === 'true';
+  }
+
+  get advancedSectionVisible () {
+    const {
+      'advanced-visible': advancedVisible = true
+    } = this.launchFormUserPreferences || {};
+    return `${advancedVisible}`.toLowerCase() === 'true';
+  }
+
+  get parametersSectionVisible () {
+    const {
+      'params-visible': paramsVisible = true,
+      'parameters-visible': parameterVisible = paramsVisible
+    } = this.launchFormUserPreferences || {};
+    return `${parameterVisible}`.toLowerCase() === 'true';
+  }
+
+  get estimatedPriceSectionVisible () {
+    const {
+      'estimates-visible': estimatesVisible = true,
+      'estimated-price-visible': estimatedPriceSectionVisible = estimatesVisible
+    } = this.launchFormUserPreferences || {};
+    return `${estimatedPriceSectionVisible}`.toLowerCase() === 'true';
   }
 
   handleSubmit = (e) => {
@@ -1869,7 +1914,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       averagePrice,
       pending
     } = this.state.estimatedPrice;
-    if (pending) {
+    if (pending || !this.estimatedPriceSectionVisible) {
       return undefined;
     }
     let priceContent;
@@ -5963,7 +6008,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-exec-environment-panel"
               key={EXEC_ENVIRONMENT}
-              className={styles.section}
+              className={
+                classNames(styles.section, {[styles.hidden]: !this.executionEnvironmentSectionVisible})
+              }
               header={this.getPanelHeader(EXEC_ENVIRONMENT)}>
               <Row type="flex" justify="space-between">
                 <div
@@ -6072,7 +6119,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-advanced-panel"
               key={ADVANCED}
-              className={styles.section}
+              className={
+                classNames(styles.section, {[styles.hidden]: !this.advancedSectionVisible})
+              }
               header={this.getPanelHeader(ADVANCED)}>
               {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
@@ -6090,7 +6139,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-parameters-panel"
               key={PARAMETERS}
-              className={styles.section}
+              className={
+                classNames(styles.section, {[styles.hidden]: !this.parametersSectionVisible})
+              }
               header={this.getPanelHeader(PARAMETERS)}
             >
               {this.renderParameters(false)}

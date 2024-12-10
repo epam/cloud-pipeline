@@ -46,6 +46,10 @@
   margin-bottom: 5px;
 }
 
+.section.hidden {
+  display: none;
+}
+
 .form-item-row {
   margin: 2px 0 !important;
   flex: 1;
