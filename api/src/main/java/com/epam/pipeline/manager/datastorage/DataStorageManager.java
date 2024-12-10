@@ -977,6 +977,10 @@ public class DataStorageManager implements SecuredEntityManager {
         metadataManager.deleteMetadataItemKey(new EntityVO(storage.getId(), AclClass.DATA_STORAGE), DAV_MOUNT_TAG);
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByMountId(final Long fsMountId) {
+        return dataStorageDao.loadDataStoragesByMountId(fsMountId);
+    }
+
     private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,
                                                         final Map<Long, FileShareMount> fsMounts) {
         return Optional.ofNullable(storage.getFileShareMountId()).map(fsMounts::get);
