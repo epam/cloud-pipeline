@@ -90,6 +90,7 @@ import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
 
 const MAX_INLINE_METADATA_KEYS = 10;
+const SHOW_SECRET_TAGS_IN_LISTING = false;
 
 function splitFolderPaths (foldersStructure) {
   const uniquePaths = [...new Set(foldersStructure
@@ -249,6 +250,9 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
     const {value, type} = metadata;
     const isSecret = (type || '').toLowerCase() === 'secret';
+    if (isSecret && !SHOW_SECRET_TAGS_IN_LISTING) {
+      return null;
+    }
     const ignoredKey = () => {
       return Object.values(METADATA_KEYS).includes(key);
     };
