@@ -36,7 +36,7 @@ function defaultSearchCallback<Item>(item: Item, search: string): boolean {
   if (isSearchNamedItem(item)) {
     return item.name.toLowerCase().includes(search.toLowerCase());
   }
-  return false;
+  return true;
 }
 
 export type SearchResult<Item> = {
