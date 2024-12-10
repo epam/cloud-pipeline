@@ -953,6 +953,7 @@
                         allowed_cidrs,
                         region_id as region_id,
                         file_share_mount_id,
+                        mount_exact_path,
                         sensitive,
                         mount_disabled,
                         s3_kms_key_arn,
