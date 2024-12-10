@@ -209,14 +209,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   friendlyUrlAvailable = () => {
-    if (!this.props.authenticatedUserInfo.loaded) {
-      return false;
-    }
-    const {
-      admin,
-      roles = []
-    } = this.props.authenticatedUserInfo.value;
-    return admin || roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+    return this.isAdmin || this.isAdvancedUser;
   };
 
   static propTypes = {
@@ -2947,6 +2940,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return admin;
   }
 
+  @computed
+  get isAdvancedUser () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+  }
+
   isSystemParameterRestrictedByRole = (parameter) => {
     if (
       parameter &&
@@ -4699,7 +4703,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster,
         launchCluster
       } = this.state;
-      if (!isSpot && !autoScaledCluster && !launchCluster) {
+      if (
+        !isSpot &&
+        !autoScaledCluster &&
+        !launchCluster &&
+        (this.isAdmin || this.isAdvancedUser)
+      ) {
         const onChange = (e) => {
           this.setState({
             autoPause: e.target.checked
