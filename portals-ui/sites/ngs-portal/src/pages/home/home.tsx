@@ -27,7 +27,7 @@ export const HomePage = () => {
       </div>
 
       <div className="flex-1 h-full overflow-auto p-2">
-        <PipelinesList pipelines={pipelines} />
+        <PipelinesList showDescription pipelines={pipelines} />
       </div>
 
       <div className="flex-1 h-full overflow-auto p-2">

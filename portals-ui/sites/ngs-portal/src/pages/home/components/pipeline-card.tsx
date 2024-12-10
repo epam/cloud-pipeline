@@ -16,6 +16,7 @@ type Props = CommonProps & {
   pipeline: Pipeline;
   highlightedText?: string;
   mode?: 'standard' | 'extended';
+  showDescription?: boolean;
 };
 
 type MappedTag = {
@@ -79,6 +80,7 @@ export const PipelineCard = ({
   className,
   style,
   mode = 'standard',
+  showDescription = false,
 }: Props) => {
   const { uuiModals } = useUuiContext();
   const { id, name, owner, data = {}, description } = pipeline;
@@ -105,7 +107,22 @@ export const PipelineCard = ({
         className,
       )}
       style={style}>
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-1">
+        <Link
+          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+          to={`/pipeline/${id}`}>
+          <HighlightedText search={highlightedText}>{name}</HighlightedText>
+        </Link>
+        {showDescription && !!description && (
+          <RichTextView cx="leading-4 text-sm">{description}</RichTextView>
+        )}
+        <Badge
+          icon={ContentPersonFillIcon}
+          caption={<NgsUserCard userName={owner} showTooltip={false} />}
+          color="neutral"
+          size="18"
+          cx="w-fit"
+        />
         {filteredTag.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {filteredTag.map((tag) => (
@@ -118,23 +135,6 @@ export const PipelineCard = ({
               />
             ))}
           </div>
-        )}
-        <FlexRow columnGap="12" size="24" alignItems="center">
-          <Link
-            className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
-            to={`/pipeline/${id}`}>
-            <HighlightedText search={highlightedText}>{name}</HighlightedText>
-          </Link>
-          <Badge
-            icon={ContentPersonFillIcon}
-            caption={<NgsUserCard userName={owner} showTooltip={false} />}
-            color="neutral"
-            size="18"
-            cx="shrink-0"
-          />
-        </FlexRow>
-        {description && (
-          <RichTextView cx="leading-4 text-sm">{description}</RichTextView>
         )}
       </div>
       {mode === 'extended' && (

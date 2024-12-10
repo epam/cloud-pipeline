@@ -20,5 +20,9 @@ export default function PipelinesPage() {
   if (!pipelines) {
     return <div>No data</div>;
   }
-  return <PipelinesList pipelines={pipelines} mode="extended" />;
+  return (
+    <div className="p-3 overflow-hidden h-full w-full">
+      <PipelinesList showDescription pipelines={pipelines} mode="extended" />
+    </div>
+  );
 }

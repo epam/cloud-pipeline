@@ -8,43 +8,48 @@ import NavigationDependencyOutlineIcon from '@epam/assets/icons/navigation-depen
 type Props = {
   pipelines: Pipeline[] | undefined;
   mode?: 'standard' | 'extended';
+  showDescription?: boolean;
 };
 
-export const PipelinesList = memo(({ pipelines, mode = 'standard' }: Props) => {
-  const renderItem = (item: Pipeline, search: string, i: number) => {
+export const PipelinesList = memo(
+  ({ pipelines, mode = 'standard', showDescription }: Props) => {
+    const renderItem = (item: Pipeline, search: string, i: number) => {
+      return (
+        <PipelineCard
+          key={item.id}
+          pipeline={item}
+          highlightedText={search}
+          className={cn({ ['border-t']: i !== 0 })}
+          mode={mode}
+          showDescription={showDescription}
+        />
+      );
+    };
+
     return (
-      <PipelineCard
-        key={item.id}
-        pipeline={item}
-        highlightedText={search}
-        className={cn({ ['border-t']: i !== 0 })}
-        mode={mode}
+      <ItemsPanel
+        className="max-h-full list-container overflow-auto"
+        title={
+          <div className="fill-current flex flex-nowrap gap-1">
+            <span className="rotate-90">
+              <NavigationDependencyOutlineIcon />
+            </span>
+            <span>Pipelines</span>
+          </div>
+        }
+        items={pipelines}
+        renderItem={renderItem}
+        sliced
+        virtualized
+        search
+        itemKey="id"
+        searchClassName={mode === 'extended' ? 'py-1' : undefined}
+        viewAll={
+          mode === 'extended'
+            ? undefined
+            : { title: 'View all pipelines', link: '/pipelines' }
+        }
       />
     );
-  };
-
-  return (
-    <ItemsPanel
-      className="max-h-full list-container overflow-auto"
-      title={
-        <div className="fill-current flex flex-nowrap gap-1">
-          <span className="rotate-90">
-            <NavigationDependencyOutlineIcon />
-          </span>
-          <span>Pipelines</span>
-        </div>
-      }
-      items={pipelines}
-      renderItem={renderItem}
-      sliced
-      virtualized
-      search
-      itemKey="id"
-      viewAll={
-        mode === 'extended'
-          ? undefined
-          : { title: 'View all pipelines', link: '/pipelines' }
-      }
-    />
-  );
-});
+  },
+);
