@@ -31,12 +31,13 @@ from autoscaler.instance.provider import InstanceProvider
 from autoscaler.limit import ScaleIntervalLimit, AutoscalingLimit, TriggerDurationLimit, ScaleNodesLimit, \
     ScaleDeploymentsLimit
 from autoscaler.model import NodesContainer, InstancesContainer, DeploymentsContainer
-from autoscaler.rule import AutoscalingRule, LostTransientInstancesRule, LostTransientNodesRule
+from autoscaler.rule import AutoscalingRule, LostTransientInstancesRule, LostTransientNodesRule, NoRunningPodsOnNodeRule
 from autoscaler.scaler import NodeScaler, DeploymentScaler
 from autoscaler.timer import AutoscalingTimer
 from autoscaler.trigger import AutoscalingTrigger, ClusterNodesPerTargetReplicasCoefficientTrigger, \
     TargetReplicasPerTargetNodesCoefficientTrigger, \
-    NodeDiskPressureTrigger, NodeMemoryPressureTrigger, NodePidPressureTrigger, NodeHeapsterElasticMetricTrigger
+    NodeDiskPressureTrigger, NodeMemoryPressureTrigger, NodePidPressureTrigger, NodeHeapsterElasticMetricTrigger, \
+    PodsUtilizationTrigger
 
 
 class AutoscalingDaemon:
@@ -246,7 +247,8 @@ if __name__ == '__main__':
 
         rules = [
             LostTransientInstancesRule(configuration=configuration, instance_provider=instance_provider),
-            LostTransientNodesRule(configuration=configuration, node_provider=node_provider)
+            LostTransientNodesRule(configuration=configuration, node_provider=node_provider),
+            NoRunningPodsOnNodeRule(configuration=configuration, node_provider=node_provider, node_scaler=node_scaler)
         ]
 
         triggers = [
@@ -255,7 +257,8 @@ if __name__ == '__main__':
             NodeDiskPressureTrigger(configuration, node_provider),
             NodeMemoryPressureTrigger(configuration, node_provider),
             NodePidPressureTrigger(configuration, node_provider),
-            NodeHeapsterElasticMetricTrigger(configuration, elastic_client)
+            NodeHeapsterElasticMetricTrigger(configuration, elastic_client),
+            PodsUtilizationTrigger(configuration, pod_provider)
         ]
 
         limits = [

@@ -31,7 +31,8 @@ Node = NamedTuple('Node',
                   [('name', str),
                    ('persistence', Persistence),
                    ('reserved', bool),
-                   ('used', bool)])
+                   ('used', bool),
+                   ('allocatable_pods', int)])
 Condition = Enum('Condition', 'MEMORY_PRESSURE, DISK_PRESSURE, PID_PRESSURE, READY')
 
 

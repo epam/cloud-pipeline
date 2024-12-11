@@ -20,6 +20,7 @@ import logging
 import sys
 from abc import ABC, abstractmethod
 
+from autoscaler.cluster.kube import KubeProvider
 from autoscaler.cluster.provider import NodeProvider
 from autoscaler.config import AutoscalingConfiguration
 from autoscaler.model import Condition
@@ -263,4 +264,32 @@ class NodeHeapsterElasticMetricTrigger(AutoscalingTrigger):
                      + _scaling_msg('nodes', nodes_number, required_nodes_number)
                      + _scaling_msg('replicas', replicas_number, required_replicas_number),
                      trigger_name, current_utilization, target_utilization)
+        return required_nodes_number, required_replicas_number
+
+
+class PodsUtilizationTrigger(AutoscalingTrigger):
+    """
+    Scales up node if pods utilization is greater than threshold (configuration.trigger.pods_utilization) where
+    pods utilization = current running pods count / sum(node.allocatable_pods)
+    """
+
+    def __init__(self, configuration, pod_provider):
+        self._configuration: AutoscalingConfiguration = configuration
+        self._pod_provider: KubeProvider = pod_provider
+
+    def apply(self, deployments_container, nodes_container, instances_container,
+              nodes_number, required_nodes_number,
+              replicas_number, required_replicas_number) -> Tuple[int, int]:
+        logging.info('Resolving pods utilization...')
+        non_terminated_pods_number = self._pod_provider.get_non_terminated_pods_number(
+            nodes_container.target_node_names)
+        allocatable_pods_number = sum([node.allocatable_pods for node in nodes_container.target_nodes])
+        target_utilization = self._configuration.trigger.pods_utilization
+        current_utilization = 100 * (non_terminated_pods_number / allocatable_pods_number)
+        if current_utilization >= target_utilization:
+            required_nodes_number = _at_least(nodes_number, required_nodes_number,
+                                              self._configuration.rules.on_threshold_trigger.extra_nodes)
+            logging.info('[TRIGGER] %s (%s%%) >= target (%s%%). '
+                         + _scaling_msg('nodes', nodes_number, required_nodes_number),
+                         'pods utilization', current_utilization, target_utilization)
         return required_nodes_number, required_replicas_number

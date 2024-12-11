@@ -37,14 +37,16 @@ UtilizationTriggerConfiguration = collections.namedtuple('UtilizationTriggerConf
 TriggerConfiguration = collections.namedtuple('TriggerConfiguration',
                                               'cluster_nodes_per_target_replicas, target_replicas_per_target_nodes, '
                                               'memory_pressured_nodes, disk_pressured_nodes, pid_pressured_nodes, '
-                                              'cpu_utilization, memory_utilization')
+                                              'cpu_utilization, memory_utilization, pods_utilization')
 OnLostInstancesStrategy = Enum('OnLostInstancesStrategy', 'SKIP, STOP')
 OnLostNodesStrategy = Enum('OnLostNodesStrategy', 'SKIP, STOP')
+OnNotRunningPodsStrategy = Enum('OnNotRunningPodsStrategy', 'SKIP, STOP')
 ThresholdTriggerRuleConfiguration = NamedTuple('ThresholdTrigger', [('extra_replicas', int), ('extra_nodes', int)])
 RulesConfiguration = NamedTuple('RulesConfiguration',
                                 [('on_lost_instances', OnLostInstancesStrategy),
                                  ('on_lost_nodes', OnLostNodesStrategy),
-                                 ('on_threshold_trigger', ThresholdTriggerRuleConfiguration)])
+                                 ('on_threshold_trigger', ThresholdTriggerRuleConfiguration),
+                                 ('on_not_running_pods', OnNotRunningPodsStrategy)])
 LimitConfiguration = collections.namedtuple('LimitConfiguration',
                                             'min_nodes_number, max_nodes_number, '
                                             'min_replicas_number, max_replicas_number, '
@@ -182,7 +184,8 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
                 monitoring_period=self._get_number(configuration, 'trigger.cpu_utilization.monitoring_period', 600)),
             memory_utilization=UtilizationTriggerConfiguration(
                 max=self._get_number(configuration, 'trigger.memory_utilization.max', 90),
-                monitoring_period=self._get_number(configuration, 'trigger.memory_utilization.monitoring_period', 600)))
+                monitoring_period=self._get_number(configuration, 'trigger.memory_utilization.monitoring_period', 600)),
+            pods_utilization=self._get_number(configuration, 'trigger.allocatable_pods', 70))
         self._rules = RulesConfiguration(
             on_lost_instances=OnLostInstancesStrategy[self._get_string(configuration, 'rules.on_lost_instances',
                                                                        OnLostInstancesStrategy.SKIP.name)],
@@ -190,7 +193,10 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
                                                                OnLostInstancesStrategy.SKIP.name)],
             on_threshold_trigger=ThresholdTriggerRuleConfiguration(
                 extra_replicas=self._get_number(configuration, 'rules.on_threshold_trigger.extra_replicas', 1),
-                extra_nodes=self._get_number(configuration, 'rules.on_threshold_trigger.extra_nodes', 1)))
+                extra_nodes=self._get_number(configuration, 'rules.on_threshold_trigger.extra_nodes', 1)),
+            on_not_running_pods=OnNotRunningPodsStrategy[self._get_string(configuration,
+                                                                          'rules.on_not_running_pods',
+                                                                          OnNotRunningPodsStrategy.SKIP.name)])
         self._limit = LimitConfiguration(
             min_nodes_number=self._get_number(configuration, 'limit.min_nodes_number', 1),
             max_nodes_number=self._get_number(configuration, 'limit.max_nodes_number', 10),

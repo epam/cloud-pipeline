@@ -45,6 +45,10 @@ class NodeProvider(ABC):
     def delete_node(self, node: Node):
         pass
 
+    @abstractmethod
+    def has_running_pods(self, node_name: str) -> bool:
+        pass
+
 
 class PodProvider(ABC):
 
@@ -58,6 +62,14 @@ class PodProvider(ABC):
 
     @abstractmethod
     def get_pod_conditions(self, pod: Pod) -> Iterator[Condition]:
+        pass
+
+    @abstractmethod
+    def get_non_terminated_pods_number(self, nodes: [Node]) -> int:
+        """
+        Iterates over all pods belonging to the specified nodes and returns non-terminated pods count.
+        Collects pods from all namespaces
+        """
         pass
 
 
