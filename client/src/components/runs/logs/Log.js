@@ -277,8 +277,7 @@ class Logs extends localization.LocalizedReactComponent {
       runId,
       preferences,
       dockerRegistries,
-      uiNavigation,
-      task
+      uiNavigation
     } = this.props;
     if (runId) {
       this.fetchToken += 1;
@@ -294,7 +293,7 @@ class Logs extends localization.LocalizedReactComponent {
         showActiveWorkersOnly: false,
         runTasks: [],
         language: undefined,
-        tasksCollapsed: true,
+        tasksCollapsed: false,
         runDataLoaded: false,
         runPreviousStatus: undefined
       }, async () => {
@@ -311,7 +310,7 @@ class Logs extends localization.LocalizedReactComponent {
           (this.runScheduleRequest.fetch)();
           const {
             stop,
-            fetch: reFetch,
+            fetch: reFetch
           } = await fetchRunInfo(runId, commit, {
             preferences,
             dockerRegistries,
@@ -1122,13 +1121,14 @@ class Logs extends localization.LocalizedReactComponent {
           timeout = null;
         }, 100);
       };
-      const {tasksCollapsed} = this.state;
+      const {tasksCollapsed, runDataLoaded} = this.state;
+      const collapse = tasksCollapsed || !runDataLoaded;
       return (
         <Row type="flex" style={{flex: 1}}>
           <SplitPane
             style={{display: 'flex', flex: 1, minHeight: 500}}
-            defaultSize={tasksCollapsed ? 0 : 300}
-            minSize={tasksCollapsed ? 0 : 100}
+            defaultSize={collapse ? 0 : 300}
+            minSize={collapse ? 0 : 100}
             onChange={resizeGraph}
             pane1Style={{display: 'flex', flexDirection: 'column'}}
             pane2Style={{display: 'flex', flexDirection: 'column'}}
@@ -1239,14 +1239,15 @@ class Logs extends localization.LocalizedReactComponent {
       </div>
     );
 
-    const {tasksCollapsed} = this.state;
+    const {tasksCollapsed, runDataLoaded} = this.state;
+    const collapse = tasksCollapsed || !runDataLoaded;
 
     return (
       <Row type="flex" style={{flex: 1}}>
         <SplitPane
           style={{display: 'flex', flex: 1, minHeight: 500}}
-          defaultSize={tasksCollapsed ? 0 : 300}
-          minSize={tasksCollapsed ? 0 : 100}
+          defaultSize={collapse ? 0 : 300}
+          minSize={collapse ? 0 : 100}
           pane1Style={{display: 'flex', flexDirection: 'column'}}
           pane2Style={{display: 'flex', flexDirection: 'column'}}
           resizerClassName="cp-split-panel-resizer"
