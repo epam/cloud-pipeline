@@ -1,4 +1,4 @@
-import { AclClass, AclEntry, NgsTags } from './acl';
+import { AclClass, AclEntry, NgsData } from './acl';
 import { PipelineType, RepositoryType } from './enums';
 
 export type Pipeline = AclEntry<AclClass.pipeline> & {
@@ -18,5 +18,5 @@ export type Pipeline = AclEntry<AclClass.pipeline> & {
   docsPath?: string;
   branch?: string;
   visibility?: 'INHERIT' | 'OWNER';
-  data?: NgsTags;
+  data?: NgsData;
 };

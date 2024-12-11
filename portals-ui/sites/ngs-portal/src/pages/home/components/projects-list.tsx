@@ -26,9 +26,11 @@ export const ProjectsList = memo(
     const { pipelines } = usePipelinesState();
     const getRandomPipeline = () =>
       pipelines?.[Math.floor(Math.random() * pipelines.length)];
+
     useEffect(() => {
       loadPipelines().then(noop).catch(noop);
     }, []);
+
     const renderItem = (item: Project, search: string, i: number) => (
       <ProjectCard
         key={String(item.id)}

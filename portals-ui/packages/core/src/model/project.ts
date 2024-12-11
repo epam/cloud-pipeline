@@ -1,4 +1,4 @@
-import { AclClass, AclEntry, NgsTags } from './acl';
+import { AclClass, AclEntry, NgsData } from './acl';
 import { Pipeline } from './pipeline';
 
 export type ProjectsResponse = {
@@ -47,6 +47,6 @@ export type Project = AclEntry<AclClass.folder> & {
     hasMetadata: boolean;
   }>;
   metadata?: Record<string, any>;
-  data?: NgsTags;
+  data?: NgsData;
   storages?: Record<string, any>[];
 };

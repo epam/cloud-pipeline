@@ -1,11 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
 import { useSearch } from '../../shared/hooks/use-search.ts';
-import { useNgsFilters, useNgsTags } from './hooks';
 import { ProjectsList } from '../home/components/projects-list.tsx';
-import { projectFiltersToDisplay } from './constants.ts';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -16,35 +14,11 @@ export function ProjectsPage() {
 
   const { projects, error, pending } = useProjectsState();
 
-  const {
-    search,
-    onSearchChange,
-    filtered: searchedProjects,
-  } = useSearch({
+  const { filtered: searchedProjects } = useSearch({
     items: projects ?? [],
   });
 
-  const {
-    tagsToFilter,
-    usersInfo,
-    isMatchingFilters,
-    handleFilterValueChange,
-    handleOwnersFilterFocus,
-  } = useNgsFilters();
-
-  const projectTags = useNgsTags({
-    tagsToFilter,
-    isMatchingFilters,
-    items: projects,
-    users: usersInfo,
-    searchedItems: searchedProjects,
-    filtersToDisplay: projectFiltersToDisplay,
-  });
-
-  const filteredProjects = useMemo(
-    () => searchedProjects.filter((project) => isMatchingFilters(project)),
-    [isMatchingFilters, searchedProjects],
-  );
+  const [filteredProjects, setFilteredProjects] = useState(searchedProjects);
 
   if (error) {
     return <div>{error}</div>;

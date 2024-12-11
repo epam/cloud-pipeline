@@ -1,5 +1,5 @@
 import { NgsFilter } from '../../shared/constants/filters';
-import type { FilterToDisplay } from '../projects/types';
+import type { FilterToDisplay } from '../../features/ngs-filters/types';
 
 const allowedFilters: FilterToDisplay[] = [
   { id: 'somekey', label: 'Some' },

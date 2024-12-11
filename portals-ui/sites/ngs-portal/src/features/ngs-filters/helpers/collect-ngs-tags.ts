@@ -1,24 +1,25 @@
-import type { Pipeline, Project, UserInfo } from '@cloud-pipeline/core';
-import type { FilterToDisplay, NgsTags, Tag } from '../types';
+import type { UserInfo } from '@cloud-pipeline/core';
+import type { FilterToDisplay, NgsItem, NgsTags, Tag } from '../types';
 import { NgsFilter } from '../../../shared/constants/filters';
 
-type Props = {
-  items: (Project | Pipeline)[];
+type Props<T extends NgsItem> = {
+  items: T[];
   users: UserInfo[];
   filtersToDisplay: FilterToDisplay[];
 };
 
-export const collectNgsTags = ({
+export const collectNgsTags = <T extends NgsItem>({
   filtersToDisplay,
   items,
   users,
-}: Props): NgsTags => {
+}: Props<T>): NgsTags => {
   // Map for faster lookup
   const tagsMap: Record<string, Map<string, Tag>> = {};
 
   const isOwnerFilterAllowed =
-    filtersToDisplay.find((tag) => tag.id === (NgsFilter.OWNER as string)) &&
-    users.length > 0;
+    filtersToDisplay.find(
+      (filter) => filter.id === (NgsFilter.OWNER as string),
+    ) && users.length > 0;
 
   if (isOwnerFilterAllowed) {
     tagsMap[NgsFilter.OWNER] = new Map(
@@ -63,10 +64,16 @@ export const collectNgsTags = ({
     }
   }
 
-  // Convert maps to arrays
   const tags: NgsTags = {};
+
+  // update tag labels and transform maps
   for (const [key, tagMap] of Object.entries(tagsMap)) {
-    tags[key] = Array.from(tagMap.values());
+    const filterToDisplay = filtersToDisplay.find(
+      (filter) => filter.id === key,
+    );
+    const label = filterToDisplay?.label ?? key;
+
+    tags[key] = { label, values: Array.from(tagMap.values()) };
   }
 
   return tags;
