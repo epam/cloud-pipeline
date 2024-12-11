@@ -119,7 +119,7 @@ export const CreateProjectModal = (props: Props) => {
       afterClose={resetState}
       centered>
       {contextHolder}
-      <div className="flex flex-col gap-2 p-4">
+      <div className="flex flex-col gap-2 py-4">
         <div className="form-item">
           <span className="item-label">Name:</span>
           <Input

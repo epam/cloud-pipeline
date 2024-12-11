@@ -89,7 +89,7 @@ export const PipelineToProjectModal = (props: Props) => {
       afterClose={resetState}
       centered>
       {contextHolder}
-      <div className="flex flex-nowrap gap-1 items-center">
+      <div className="flex flex-nowrap gap-1 items-center py-4">
         <span className="whitespace-nowrap">Select project:</span>
         <Select
           showSearch
