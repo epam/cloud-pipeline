@@ -133,7 +133,7 @@ export const CreateProjectModal = (props: Props) => {
           <Select
             showSearch
             className="w-full overflow-hidden"
-            value={defaultDataStorageId}
+            value={dataStorages?.length ? defaultDataStorageId : undefined}
             onChange={setDefaultDataStorageId}
             placeholder="Select datastorage"
             filterOption={(searchInput, option) => {
