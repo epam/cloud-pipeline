@@ -185,7 +185,7 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
             memory_utilization=UtilizationTriggerConfiguration(
                 max=self._get_number(configuration, 'trigger.memory_utilization.max', 90),
                 monitoring_period=self._get_number(configuration, 'trigger.memory_utilization.monitoring_period', 600)),
-            pods_utilization=self._get_number(configuration, 'trigger.allocatable_pods', 70))
+            pods_utilization=self._get_number(configuration, 'trigger.pods_utilization', 70))
         self._rules = RulesConfiguration(
             on_lost_instances=OnLostInstancesStrategy[self._get_string(configuration, 'rules.on_lost_instances',
                                                                        OnLostInstancesStrategy.SKIP.name)],
