@@ -1,2 +1,8 @@
-export { CreateProjectModal } from './create-project-modal';
-export { PipelineToProjectModal } from './pipeline-to-project-modal';
+export {
+  CreateProjectModal,
+  CreateProjectButton,
+} from './create-project-modal';
+export {
+  PipelineToProjectModal,
+  PipelineToProjectButton,
+} from './pipeline-to-project-modal';

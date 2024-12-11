@@ -1,15 +1,14 @@
-import { Button, RichTextView } from '@epam/uui';
+import { RichTextView } from '@epam/uui';
 import cn from 'classnames';
 import { Link } from 'react-router-dom';
-import { noop, type Pipeline } from '@cloud-pipeline/core';
+import { type Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
-import { Tag } from '@cloud-pipeline/components'
+import { Tag } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
 import { useMemo } from 'react';
 import { NgsTag } from '../../../widgets/ngs-tag';
-import { useUuiContext } from '@epam/uui-core';
-import { PipelineToProjectModal } from '../../../widgets/modals';
+import { PipelineToProjectButton } from '../../../widgets/modals';
 import './style.css';
 
 type Props = CommonProps & {
@@ -82,7 +81,6 @@ export const PipelineCard = ({
   mode = 'standard',
   showDescription = false,
 }: Props) => {
-  const { uuiModals } = useUuiContext();
   const { id, name, owner, data = {}, description } = pipeline;
   const tags = useMemo(
     () =>
@@ -91,15 +89,6 @@ export const PipelineCard = ({
         .filter(Boolean) as MappedTag[],
     [data],
   );
-
-  const openAddPipelineModal = () => {
-    uuiModals
-      .show((props) => (
-        <PipelineToProjectModal pipeline={pipeline} {...props} />
-      ))
-      .then(noop)
-      .catch(noop);
-  };
 
   const filteredTag = useMemo(() => tags.filter(filterTag), [tags]);
   return (
@@ -120,11 +109,7 @@ export const PipelineCard = ({
         )}
         <div>
           <Tag>
-            <NgsUserCard
-              userName={owner}
-              showTooltip={false}
-              showIcon
-            />
+            <NgsUserCard userName={owner} showTooltip={false} showIcon />
           </Tag>
         </div>
         {filteredTag.length > 0 && (
@@ -142,13 +127,7 @@ export const PipelineCard = ({
       </div>
       {mode === 'extended' && (
         <div className="ml-auto flex items-center">
-          <Button
-            caption="Add to project"
-            fill="none"
-            color="secondary"
-            size="24"
-            onClick={openAddPipelineModal}
-          />
+          <PipelineToProjectButton pipeline={pipeline} />
         </div>
       )}
     </div>
