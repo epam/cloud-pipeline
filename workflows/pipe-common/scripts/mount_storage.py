@@ -860,7 +860,7 @@ class NFSMounter(StorageMounter):
             command += ' -o {}'.format(mount_options)
         command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage) and not self.storage.sensitive:
-            command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
+            command += ' && ( chmod {permission} {mount} || true )'.format(permission=permission, **params)
         return command
 
     def append_timeout_options(self, mount_options):
