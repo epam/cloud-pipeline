@@ -18,7 +18,7 @@ import time
 
 from autoscaler.cluster.provider import NodeProvider
 from autoscaler.config import OnLostInstancesStrategy, AutoscalingConfiguration, OnLostNodesStrategy, \
-    OnNotRunningPodsStrategy
+    OnNotRunningTargetPodsStrategy
 from autoscaler.exception import AbortScalingError
 from autoscaler.instance.provider import InstanceProvider
 from autoscaler.model import DeploymentsContainer, NodesContainer, InstancesContainer, Node
@@ -95,7 +95,7 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
 
     def apply(self, deployments_container: DeploymentsContainer, nodes_container: NodesContainer,
               instances_container: InstancesContainer):
-        logging.info('Searching for nodes without running target pods')
+        logging.info('Searching for nodes without running target pods...')
         empty_nodes = []
         for node in nodes_container.transient_nodes:
             if self._node_provider.has_running_target_pods(node.name, deployments_container.pods):
@@ -123,8 +123,10 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
                 return
             available_to_scale_down_count = min(available_to_scale_down_count, len(empty_nodes))
             empty_nodes = empty_nodes[:available_to_scale_down_count]
-            if self._configuration.rules.on_not_running_pods == OnNotRunningPodsStrategy.STOP:
+            if self._configuration.rules.on_not_running_target_pods == OnNotRunningTargetPodsStrategy.STOP:
                 self._node_scaler.scale_down(empty_nodes)
                 raise AbortScalingError()
+            else:
+                logging.info("Skipping scaling nodes ↓")
         else:
             logging.debug('No nodes without running target pods found.')

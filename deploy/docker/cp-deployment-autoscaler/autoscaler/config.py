@@ -40,13 +40,13 @@ TriggerConfiguration = collections.namedtuple('TriggerConfiguration',
                                               'cpu_utilization, memory_utilization, pods_utilization')
 OnLostInstancesStrategy = Enum('OnLostInstancesStrategy', 'SKIP, STOP')
 OnLostNodesStrategy = Enum('OnLostNodesStrategy', 'SKIP, STOP')
-OnNotRunningPodsStrategy = Enum('OnNotRunningPodsStrategy', 'SKIP, STOP')
+OnNotRunningTargetPodsStrategy = Enum('OnNotRunningTargetPodsStrategy', 'SKIP, STOP')
 ThresholdTriggerRuleConfiguration = NamedTuple('ThresholdTrigger', [('extra_replicas', int), ('extra_nodes', int)])
 RulesConfiguration = NamedTuple('RulesConfiguration',
                                 [('on_lost_instances', OnLostInstancesStrategy),
                                  ('on_lost_nodes', OnLostNodesStrategy),
                                  ('on_threshold_trigger', ThresholdTriggerRuleConfiguration),
-                                 ('on_not_running_pods', OnNotRunningPodsStrategy)])
+                                 ('on_not_running_target_pods', OnNotRunningTargetPodsStrategy)])
 LimitConfiguration = collections.namedtuple('LimitConfiguration',
                                             'min_nodes_number, max_nodes_number, '
                                             'min_replicas_number, max_replicas_number, '
@@ -194,9 +194,9 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
             on_threshold_trigger=ThresholdTriggerRuleConfiguration(
                 extra_replicas=self._get_number(configuration, 'rules.on_threshold_trigger.extra_replicas', 1),
                 extra_nodes=self._get_number(configuration, 'rules.on_threshold_trigger.extra_nodes', 1)),
-            on_not_running_pods=OnNotRunningPodsStrategy[self._get_string(configuration,
+            on_not_running_pods=OnNotRunningTargetPodsStrategy[self._get_string(configuration,
                                                                           'rules.on_not_running_pods',
-                                                                          OnNotRunningPodsStrategy.SKIP.name)])
+                                                                                OnNotRunningTargetPodsStrategy.SKIP.name)])
         self._limit = LimitConfiguration(
             min_nodes_number=self._get_number(configuration, 'limit.min_nodes_number', 1),
             max_nodes_number=self._get_number(configuration, 'limit.max_nodes_number', 10),

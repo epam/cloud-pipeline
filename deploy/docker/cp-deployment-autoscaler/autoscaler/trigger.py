@@ -289,7 +289,10 @@ class PodsUtilizationTrigger(AutoscalingTrigger):
         if current_utilization >= target_utilization:
             required_nodes_number = _at_least(nodes_number, required_nodes_number,
                                               self._configuration.rules.on_threshold_trigger.extra_nodes)
-            logging.info('[TRIGGER] %s (%s%%) >= target (%s%%). '
-                         + _scaling_msg('nodes', nodes_number, required_nodes_number),
+            required_replicas_number = _at_least(replicas_number, required_replicas_number,
+                                                 self._configuration.rules.on_threshold_trigger.extra_replicas)
+            logging.info('[TRIGGER] %s (%.1f%%) >= target (%s%%). '
+                         + _scaling_msg('nodes', nodes_number, required_nodes_number)
+                         + _scaling_msg('replicas', replicas_number, required_replicas_number),
                          'pods utilization', current_utilization, target_utilization)
         return required_nodes_number, required_replicas_number
