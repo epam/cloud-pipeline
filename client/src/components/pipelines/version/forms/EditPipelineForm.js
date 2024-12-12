@@ -374,6 +374,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           })(
             <Input
               onPressEnter={this.handleSubmit}
+              type="password"
               disabled={this.props.pending || readOnly} />
           )}
         </Form.Item>
