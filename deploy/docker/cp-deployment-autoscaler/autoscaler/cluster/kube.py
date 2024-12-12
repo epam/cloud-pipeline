@@ -72,15 +72,6 @@ class KubeProvider(NodeProvider, PodProvider, DeploymentProvider):
         for node in nodes:
             yield self._get_node(node, used_node_names, reserved_node_names)
 
-    def has_running_target_pods(self, node_name: str, target_pods: [Pod]):
-        for pod in target_pods:
-            if pod.node_name != node_name:
-                continue
-            if pod.state in ['Succeeded', 'Failed']:
-                continue
-            return True
-        return False
-
     @staticmethod
     def _is_pod_terminated(kube_pod: pykube.Pod) -> bool:
         return kube_pod.obj.get('status', {}).get('phase', '') in ['Succeeded', 'Failed']

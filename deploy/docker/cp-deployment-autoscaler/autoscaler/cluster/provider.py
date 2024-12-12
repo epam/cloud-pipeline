@@ -45,10 +45,6 @@ class NodeProvider(ABC):
     def delete_node(self, node: Node):
         pass
 
-    @abstractmethod
-    def has_running_target_pods(self, node_name: str, target_pods: [Pod]) -> bool:
-        pass
-
 
 class PodProvider(ABC):
 

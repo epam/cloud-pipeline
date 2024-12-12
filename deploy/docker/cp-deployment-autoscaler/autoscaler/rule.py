@@ -21,7 +21,7 @@ from autoscaler.config import OnLostInstancesStrategy, AutoscalingConfiguration,
     OnNotRunningTargetPodsStrategy
 from autoscaler.exception import AbortScalingError
 from autoscaler.instance.provider import InstanceProvider
-from autoscaler.model import DeploymentsContainer, NodesContainer, InstancesContainer, Node
+from autoscaler.model import DeploymentsContainer, NodesContainer, InstancesContainer, Node, Pod
 from autoscaler.scaler import NodeScaler
 from autoscaler.timer import AutoscalingTimer
 
@@ -98,7 +98,7 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
         logging.info('Searching for nodes without running target pods...')
         empty_nodes = []
         for node in nodes_container.transient_nodes:
-            if self._node_provider.has_running_target_pods(node.name, deployments_container.pods):
+            if self._has_running_target_pods(node.name, deployments_container.pods):
                 continue
             if node.name in self._configuration.target.forbidden_nodes:
                 logging.warning(f"Node '{node.name}' hasn't running target pods but forbidden to scale down. "
@@ -106,7 +106,7 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
                 continue
             empty_nodes.append(node)
         if empty_nodes:
-            logging.info(f"Found '{len(empty_nodes)}'/'{nodes_container.nodes_number}' nodes without running "
+            logging.info(f"Found {len(empty_nodes)}/{nodes_container.nodes_number} nodes without running "
                          "target pods: %s", empty_nodes)
             if self._timer.last_scale_operation_time:
                 current_scale_operation = time.time()
@@ -130,3 +130,13 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
                 logging.info("Skipping scaling nodes ↓")
         else:
             logging.debug('No nodes without running target pods found.')
+
+    @staticmethod
+    def _has_running_target_pods(node_name: str, target_pods: [Pod]):
+        for pod in target_pods:
+            if pod.node_name != node_name:
+                continue
+            if pod.state in ['Succeeded', 'Failed']:
+                continue
+            return True
+        return False
