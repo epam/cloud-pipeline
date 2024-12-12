@@ -107,7 +107,7 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
             empty_nodes.append(node)
         if empty_nodes:
             logging.info(f"Found '{len(empty_nodes)}'/'{nodes_container.nodes_number}' nodes without running "
-                         f"target pods.")
+                         "target pods: %s", empty_nodes)
             if self._timer.last_scale_operation_time:
                 current_scale_operation = time.time()
                 scale_interval = current_scale_operation - self._timer.last_scale_operation_time
