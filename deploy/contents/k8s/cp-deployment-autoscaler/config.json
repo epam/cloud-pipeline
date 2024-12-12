@@ -45,7 +45,7 @@
   "rules": {
     "on_lost_instances" : "SKIP",
     "on_lost_nodes": "SKIP",
-    "on_not_running_pods": "SKIP",
+    "on_not_running_target_pods": "SKIP",
     "on_threshold_trigger": {
       "extra_replicas": 2,
       "extra_nodes": 2
