@@ -15,13 +15,15 @@ type Props = CommonProps & {
 export const PipelineToProjectModal = (props: Props) => {
   const { pipeline, visible, onCancel } = props;
   const [messageApi, contextHolder] = message.useMessage();
-  const { projects } = useProjectsState();
+  const { projects, pending: projectsPending } = useProjectsState();
   const [pending, setPending] = useState(false);
   const [spin, setSpin] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number>();
   useEffect(() => {
-    loadProjects().then(noop).catch(noop);
-  }, []);
+    if (!projects && !projectsPending) {
+      loadProjects().then(noop).catch(noop);
+    }
+  }, [projectsPending, projects]);
   const onOk = () => {
     if (pending || !selectedProjectId) {
       return;
