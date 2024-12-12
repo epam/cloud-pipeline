@@ -408,6 +408,7 @@ public class PipelineRunManager {
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, instanceDisk));
         }
 
+        calculateDynamicParameterValues(configuration);
         adjustInstanceDisk(configuration);
         checkGPUInstance(configuration, region.getId());
 
@@ -452,6 +453,19 @@ public class PipelineRunManager {
         run.parseParameters();
         updateMetadataEntities(run);
         return run;
+    }
+
+    private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
+        final Map<String, PipeConfValueVO> parameters = configuration.getParameters();
+        for (final PipeConfValueVO parameter : parameters.values()) {
+            if (!parameter.getType().equals(PipeConfValueVO.DEFAULT_TYPE)) {
+                continue;
+            }
+            final String resolvedValue = DynamicPipelineRunParameterUtils.applyDynamicValue(parameter.getValue());
+            if (resolvedValue != null) {
+                parameter.setValue(resolvedValue);
+            }
+        }
     }
 
     private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
