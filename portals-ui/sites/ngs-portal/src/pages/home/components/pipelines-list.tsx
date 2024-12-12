@@ -6,7 +6,7 @@ import cn from 'classnames';
 import { ShareIcon } from '@heroicons/react/24/outline';
 
 type Props = {
-  pipelines: Pipeline[] | undefined;
+  pipelines: Pipeline[];
   mode?: 'standard' | 'extended';
   showDescription?: boolean;
 };
@@ -39,7 +39,8 @@ export const PipelinesList = memo(
         render={renderItem}
         sliced
         virtualized
-        search
+        search={search}
+        onSearchChange={onSearchChange}
         itemKey="id"
         searchClassName={mode === 'extended' ? 'py-1' : undefined}
         viewAll={

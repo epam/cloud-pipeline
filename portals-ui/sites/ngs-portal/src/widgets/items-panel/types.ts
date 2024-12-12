@@ -1,9 +1,5 @@
 import type { ListProps } from '@cloud-pipeline/components';
 import type { ReactNode } from 'react';
-import type {
-  SearchNamedItem,
-  SearchOptions,
-} from '../../shared/hooks/use-search.ts';
 
 export type ViewAllItemsConfiguration = {
   title?: ReactNode;
@@ -18,10 +14,9 @@ export type ItemsPanelProps<Item> = Omit<
   items?: Item[];
   title?: ReactNode;
   actions?: ReactNode;
-  search?: Item extends SearchNamedItem
-    ? boolean | Omit<SearchOptions<Item>, 'items'>
-    : Omit<SearchOptions<Item>, 'items'>;
   viewAll?: ViewAllItemsConfiguration;
   beforeSearch?: ReactNode;
   searchClassName?: string;
+  onSearchChange?: (search: string) => void;
+  search?: string;
 };

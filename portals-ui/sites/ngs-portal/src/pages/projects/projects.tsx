@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Spinner } from '@epam/uui';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
-import { useSearch } from '../../shared/hooks/use-search.ts';
 import { ProjectsList } from '../home/components/projects-list.tsx';
 
 export function ProjectsPage() {
@@ -13,12 +12,6 @@ export function ProjectsPage() {
   }, []);
 
   const { projects, error, pending } = useProjectsState();
-
-  const { filtered: searchedProjects } = useSearch({
-    items: projects ?? [],
-  });
-
-  const [filteredProjects, setFilteredProjects] = useState(searchedProjects);
 
   if (error) {
     return <div>{error}</div>;

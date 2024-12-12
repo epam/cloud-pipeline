@@ -13,5 +13,6 @@ export type NgsTags = Record<string, { label: string; values: Tag[] }>;
 
 export type NgsItem = {
   owner: string;
+  name: string;
   data?: NgsData;
 };
