@@ -11,7 +11,7 @@ export type ItemsPanelProps<Item> = Omit<
   'render' | 'items' | 'header'
 > & {
   render: (item: Item, search: string, index: number) => ReactNode | string;
-  items?: Item[];
+  items: Item[];
   title?: ReactNode;
   actions?: ReactNode;
   viewAll?: ViewAllItemsConfiguration;

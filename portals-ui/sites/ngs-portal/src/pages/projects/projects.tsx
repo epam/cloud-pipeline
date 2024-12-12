@@ -29,17 +29,10 @@ export function ProjectsPage() {
   return (
     <div className="p-3 overflow-hidden h-full w-full">
       <ProjectsList
-        projects={filteredProjects}
+        projects={projects}
         mode="extended"
         showDescription
-        filters={
-          <ProjectFilters
-            projectTags={projectTags}
-            onFilterValueChange={handleFilterValueChange}
-            tagsToFilter={tagsToFilter}
-            onOwnersFilterFocus={handleOwnersFilterFocus}
-          />
-        }
+        withFilters
       />
     </div>
   );

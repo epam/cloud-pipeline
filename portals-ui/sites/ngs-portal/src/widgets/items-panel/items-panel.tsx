@@ -63,8 +63,8 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
       {items.length > 0 && (
         <List
           className="overflow-auto flex-1"
-          items={filtered}
-          render={(item, i) => render(item, search, i)}
+          items={items}
+          render={(item, i) => render(item, search ?? '', i)}
           itemKey={itemKey}
           virtualized={virtualized}
           sliced={sliced}

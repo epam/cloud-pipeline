@@ -17,7 +17,7 @@ export function PipelinesPage() {
     return <div>{error}</div>;
   }
 
-  if (pending) {
+  if (pending && (!pipelines || pipelines.length === 0)) {
     return <Spinner />;
   }
 
@@ -25,5 +25,14 @@ export function PipelinesPage() {
     return <div>No data</div>;
   }
 
-  return <PipelinesList pipelines={pipelines} mode="extended" withFilters />;
+  return (
+    <div className="p-3 overflow-hidden h-full w-full">
+      <PipelinesList
+        showDescription
+        pipelines={pipelines}
+        mode="extended"
+        withFilters
+      />
+    </div>
+  );
 }

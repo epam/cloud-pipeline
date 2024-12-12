@@ -22,7 +22,7 @@ export const ProjectsList = memo(
   ({
     projects,
     mode = 'standard',
-    filters,
+    withFilters,
     showDescription = false,
   }: Props) => {
     const { pipelines } = usePipelinesState();
@@ -79,7 +79,7 @@ export const ProjectsList = memo(
           </div>
         }
         actions={<CreateProjectButton />}
-        items={projects}
+        items={withFilters ? filteredProjects : searchedProjects}
         render={renderItem}
         sliced
         virtualized={mode === 'extended'}
