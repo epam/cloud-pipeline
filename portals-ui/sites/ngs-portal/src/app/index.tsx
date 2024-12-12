@@ -4,7 +4,6 @@ import {
   useUuiServices,
   Router6AdaptedRouter,
 } from '@epam/uui-core';
-import { Modals, Snackbar } from '@epam/uui-components';
 import '@epam/uui/styles.css';
 import '@epam/loveship/styles.css';
 import { appRouter } from './config';
@@ -16,8 +15,6 @@ export default function Application() {
   return (
     <UuiContext.Provider value={services}>
       <RouterProvider router={appRouter} />
-      <Snackbar />
-      <Modals />
     </UuiContext.Provider>
   );
 }

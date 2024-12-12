@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { FlexRow, RichTextView } from '@epam/uui';
 import cn from 'classnames';
+import { Typography } from 'antd';
 import { Link } from 'react-router-dom';
 import type { Pipeline, Project } from '@cloud-pipeline/core';
 import { RunStatuses } from '@cloud-pipeline/core';
@@ -9,8 +9,8 @@ import { StatusIcon, Tag, type CommonProps } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
 import { NgsTag } from '../../../widgets/ngs-tag';
-import { UserIcon } from '@heroicons/react/24/solid';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { UserIcon } from '@heroicons/react/24/solid';
 import './style.css';
 
 type Props = CommonProps & {
@@ -151,13 +151,11 @@ export const ProjectCard = ({
       )}
       style={style}>
       <div className="flex flex-col gap-1">
-        <FlexRow columnGap="12" size="24" alignItems="center">
-          <Link
-            className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
-            to={`/project/${id}`}>
-            <HighlightedText search={highlightedText}>{name}</HighlightedText>
-          </Link>
-        </FlexRow>
+        <Link
+          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+          to={`/project/${id}`}>
+          <HighlightedText search={highlightedText}>{name}</HighlightedText>
+        </Link>
         <div className="flex flex-nowrap">
           <Tag className="shrink-0">
             <NgsUserCard
@@ -169,7 +167,7 @@ export const ProjectCard = ({
           </Tag>
           {showExtraInfo && renderExtraInfo()}
         </div>
-        {showDescription && <RichTextView>{description}</RichTextView>}
+        {showDescription && <Typography>{description}</Typography>}
         {renderTags()}
       </div>
       {showStatusInfo && (
