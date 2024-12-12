@@ -1,12 +1,12 @@
-import { RichTextView } from '@epam/uui';
+import { useMemo } from 'react';
 import cn from 'classnames';
+import { Typography } from 'antd';
 import { Link } from 'react-router-dom';
 import { type Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { Tag } from '@cloud-pipeline/components';
 import HighlightedText from '../../../shared/highlight-text';
 import { NgsUserCard } from '../../../widgets/ngs-user-card';
-import { useMemo } from 'react';
 import { NgsTag } from '../../../widgets/ngs-tag';
 import { PipelineToProjectButton } from '../../../widgets/modals';
 import './style.css';
@@ -105,7 +105,7 @@ export const PipelineCard = ({
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
         {showDescription && !!description && (
-          <RichTextView cx="leading-4 text-sm">{description}</RichTextView>
+          <Typography className="leading-4 text-sm">{description}</Typography>
         )}
         <div>
           <Tag>
