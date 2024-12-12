@@ -46,7 +46,7 @@ class NodeProvider(ABC):
         pass
 
     @abstractmethod
-    def has_running_pods(self, node_name: str) -> bool:
+    def has_running_target_pods(self, node_name: str, target_pods: [Pod]) -> bool:
         pass
 
 

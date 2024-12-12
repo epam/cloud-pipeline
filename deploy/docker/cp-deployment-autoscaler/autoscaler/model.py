@@ -24,7 +24,8 @@ Deployment = NamedTuple('Deployment', [('name', str),
 Pod = NamedTuple('Pod', [('name', str),
                          ('namespace', str),
                          ('node_name', str),
-                         ('reserved', bool)])
+                         ('reserved', bool),
+                         ('state', str)])
 Instance = NamedTuple('Instance', [('name', str),
                                    ('persistence', Persistence)])
 Node = NamedTuple('Node',

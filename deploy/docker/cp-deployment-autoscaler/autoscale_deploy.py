@@ -31,7 +31,8 @@ from autoscaler.instance.provider import InstanceProvider
 from autoscaler.limit import ScaleIntervalLimit, AutoscalingLimit, TriggerDurationLimit, ScaleNodesLimit, \
     ScaleDeploymentsLimit
 from autoscaler.model import NodesContainer, InstancesContainer, DeploymentsContainer
-from autoscaler.rule import AutoscalingRule, LostTransientInstancesRule, LostTransientNodesRule, NoRunningPodsOnNodeRule
+from autoscaler.rule import AutoscalingRule, LostTransientInstancesRule, LostTransientNodesRule, \
+    NoRunningTargetPodsOnNodeRule
 from autoscaler.scaler import NodeScaler, DeploymentScaler
 from autoscaler.timer import AutoscalingTimer
 from autoscaler.trigger import AutoscalingTrigger, ClusterNodesPerTargetReplicasCoefficientTrigger, \
@@ -248,7 +249,8 @@ if __name__ == '__main__':
         rules = [
             LostTransientInstancesRule(configuration=configuration, instance_provider=instance_provider),
             LostTransientNodesRule(configuration=configuration, node_provider=node_provider),
-            NoRunningPodsOnNodeRule(configuration=configuration, node_provider=node_provider, node_scaler=node_scaler)
+            NoRunningTargetPodsOnNodeRule(configuration=configuration, node_provider=node_provider,
+                                          node_scaler=node_scaler, timer=timer)
         ]
 
         triggers = [
