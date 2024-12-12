@@ -194,9 +194,9 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
             on_threshold_trigger=ThresholdTriggerRuleConfiguration(
                 extra_replicas=self._get_number(configuration, 'rules.on_threshold_trigger.extra_replicas', 1),
                 extra_nodes=self._get_number(configuration, 'rules.on_threshold_trigger.extra_nodes', 1)),
-            on_not_running_pods=OnNotRunningTargetPodsStrategy[self._get_string(configuration,
-                                                                          'rules.on_not_running_pods',
-                                                                                OnNotRunningTargetPodsStrategy.SKIP.name)])
+            on_not_running_target_pods=OnNotRunningTargetPodsStrategy[
+                self._get_string(configuration, 'rules.on_not_running_target_pods',
+                                 OnNotRunningTargetPodsStrategy.SKIP.name)])
         self._limit = LimitConfiguration(
             min_nodes_number=self._get_number(configuration, 'limit.min_nodes_number', 1),
             max_nodes_number=self._get_number(configuration, 'limit.max_nodes_number', 10),
