@@ -1,16 +1,13 @@
 import { noop, type Project } from '@cloud-pipeline/core';
-import { Button } from '@epam/uui';
 import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import cn from 'classnames';
 import type { ReactNode } from 'react';
 import { memo, useEffect } from 'react';
-import ActionAddFillIcon from '@epam/assets/icons/action-add-outline.svg?react';
 import { loadPipelines } from '../../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../../state/pipelines/hooks';
-import { useUuiContext } from '@epam/uui-core';
-import { CreateProjectModal } from '../../../widgets/modals';
 import { CubeIcon } from '@heroicons/react/24/outline';
+import { CreateProjectButton } from '../../../widgets/modals';
 
 type Props = {
   projects: Project[] | undefined;
@@ -26,7 +23,6 @@ export const ProjectsList = memo(
     filters,
     showDescription = false,
   }: Props) => {
-    const { uuiModals } = useUuiContext();
     const { pipelines } = usePipelinesState();
     const getRandomPipeline = () =>
       pipelines?.[Math.floor(Math.random() * pipelines.length)];
@@ -44,12 +40,6 @@ export const ProjectsList = memo(
         showDescription={showDescription}
       />
     );
-    const openCreateProjectModal = () => {
-      uuiModals
-        .show((props) => <CreateProjectModal {...props} />)
-        .then(noop)
-        .catch(noop);
-    };
 
     return (
       <ItemsPanel
@@ -60,14 +50,7 @@ export const ProjectsList = memo(
             <span>Projects</span>
           </div>
         }
-        actions={
-          <Button
-            icon={ActionAddFillIcon}
-            caption="Create project"
-            size="24"
-            onClick={openCreateProjectModal}
-          />
-        }
+        actions={<CreateProjectButton />}
         items={projects}
         render={renderItem}
         sliced
