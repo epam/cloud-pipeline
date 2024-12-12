@@ -80,7 +80,7 @@ configure_scheduler() {
     queue_sort_method                 load
     job_load_adjustments              np_load_avg=0.50
     load_adjustment_decay_time        0:7:30
-    load_formula                      np_load_avg
+    load_formula                      $CP_CAP_SGE_DEFAULT_LOAD_FORMULA
     schedd_job_info                   true
     flush_submit_sec                  0
     flush_finish_sec                  0
@@ -266,6 +266,9 @@ export CP_CAP_SGE_PE_SLOTS="${CP_CAP_SGE_PE_SLOTS:-999999}"
 export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
 export CP_CAP_SGE_PE_MPI_SLOTS="${CP_CAP_SGE_PE_MPI_SLOTS:-999999}"
 export CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
+# See https://github.com/epam/cloud-pipeline/issues/825
+# Set it to "slots" to have all nodes filled up
+export CP_CAP_SGE_DEFAULT_LOAD_FORMULA="${CP_CAP_SGE_DEFAULT_LOAD_FORMULA:-np_load_avg}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     export SGE_ROOT="/var/lib/gridengine"
