@@ -2,14 +2,13 @@ import { noop, type Project } from '@cloud-pipeline/core';
 import { ProjectCard } from './project-card';
 import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import cn from 'classnames';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect } from 'react';
 import { loadPipelines } from '../../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../../state/pipelines/hooks';
-import { useSearch } from '../../../shared/hooks/use-search';
-import { NgsFilters } from '../../../features/ngs-filters';
-import { projectFiltersToDisplay } from '../../projects/constants';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { CreateProjectButton } from '../../../widgets/modals';
+import { projectFiltersToDisplay } from '../../projects/constants';
+import { NgsFilters, useNgsFilters } from '../../../features/ngs-filters';
 
 type Props = {
   projects: Project[];
@@ -34,28 +33,12 @@ export const ProjectsList = memo(
       loadPipelines().then(noop).catch(noop);
     }, []);
 
-    const {
-      filtered: searchedProjects,
-      search,
-      onSearchChange,
-    } = useSearch({ items: projects });
-
-    const [filteredProjects, setFilteredProjects] = useState(searchedProjects);
-
-    const beforeSearch = useMemo(() => {
-      if (!withFilters) {
-        return null;
-      }
-
-      return (
-        <NgsFilters
-          filtersToDisplay={projectFiltersToDisplay}
-          items={projects}
-          searchedItems={searchedProjects}
-          onFilteredItemsChange={setFilteredProjects}
-        />
-      );
-    }, [projects, searchedProjects, withFilters]);
+    const { filteredItems, onSearchChange, filtersProps, search } =
+      useNgsFilters({
+        items: projects,
+        withFilters,
+        filtersToDisplay: projectFiltersToDisplay,
+      });
 
     const renderItem = (item: Project, search: string, i: number) => (
       <ProjectCard
@@ -79,13 +62,13 @@ export const ProjectsList = memo(
           </div>
         }
         actions={<CreateProjectButton />}
-        items={withFilters ? filteredProjects : searchedProjects}
+        items={filteredItems}
         render={renderItem}
         sliced
         virtualized={mode === 'extended'}
         search={search}
         onSearchChange={onSearchChange}
-        beforeSearch={beforeSearch}
+        beforeSearch={filtersProps && <NgsFilters {...filtersProps} />}
         itemKey="id"
         searchClassName={mode === 'extended' ? 'py-1' : undefined}
         viewAll={

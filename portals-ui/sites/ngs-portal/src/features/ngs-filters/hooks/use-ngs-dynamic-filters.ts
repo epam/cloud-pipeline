@@ -12,7 +12,7 @@ type Props<T extends NgsItem> = {
   filtersToDisplay: FilterToDisplay[];
 };
 
-export const useNgsFilters = <T extends NgsItem>({
+export const useNgsDynamicFilters = <T extends NgsItem>({
   filtersToDisplay,
   items,
   searchedItems,

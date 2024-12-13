@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { NgsFilter } from '../../../shared/constants/filters';
 import { SelectFilter } from '../../../shared/ui';
 import type { FilterToDisplay, NgsItem } from '../types';
-import { useNgsFilters } from '../hooks';
+import { useNgsDynamicFilters } from '../hooks';
 
 type Props<T extends NgsItem> = {
   onFilteredItemsChange: (items: T[]) => void;
@@ -23,7 +23,7 @@ export const NgsFilters = <T extends NgsItem>({
     tags,
     handleFilterValueChange,
     handleOwnersFilterFocus,
-  } = useNgsFilters({
+  } = useNgsDynamicFilters({
     items,
     filtersToDisplay,
     searchedItems,
