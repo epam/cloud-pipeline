@@ -6,12 +6,6 @@ export type RouteLink = {
   caption: ReactNode;
 };
 
-export type RouteLink2 = {
-  key: AppRoutes;
-  label: ReactNode;
-};
-
-
 export type HeaderRouteLinkProps = {
   link: RouteLink;
 };
