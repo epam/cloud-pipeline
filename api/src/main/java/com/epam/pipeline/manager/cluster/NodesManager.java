@@ -56,6 +56,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -367,17 +368,19 @@ public class NodesManager {
      * @return load nodes
      */
     public List<NodeInstance> getNodes(final MachineType machineType) {
-        if (!authManager.isAdmin() && !MachineType.KUBE.equals(machineType)) {
-            log.debug("Requested type '{}' is not available non-admin users. Only kube nodes will be loaded.",
-                    machineType);
-            return getKubeNodes();
-        }
         switch (machineType) {
             case KUBE:
                 return getKubeNodes();
             case CLOUD:
+                if (!authManager.isAdmin()) {
+                    throw new AccessDeniedException("Cloud nodes is not available for non-admin users");
+                }
                 return getCloudNodes();
             case ALL:
+                if (!authManager.isAdmin()) {
+                    log.debug("Cloud nodes is not available for non-admin users. Only kube nodes will be loaded.");
+                    return getKubeNodes();
+                }
                 final List<NodeInstance> kubeNodes = getKubeNodes();
                 final List<NodeInstance> cloudNodes = getCloudNodes();
                 return mergeNodesByMachineType(kubeNodes, cloudNodes);
