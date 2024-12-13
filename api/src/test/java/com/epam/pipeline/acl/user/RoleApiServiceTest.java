@@ -190,6 +190,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyAssignRoleForNotAdmin() {
+        initAclEntity(UserCreatorUtils.getRole(extendedRole.getName(), extendedRole.getId(), ANOTHER_SIMPLE_USER));
         doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.assignRole(ID, TEST_LONG_LIST));
@@ -206,6 +207,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyRemoveRoleForNotAdmin() {
+        initAclEntity(UserCreatorUtils.getRole(extendedRole.getName(), extendedRole.getId(), ANOTHER_SIMPLE_USER));
         doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.removeRole(ID, TEST_LONG_LIST));
