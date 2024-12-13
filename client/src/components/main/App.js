@@ -27,6 +27,7 @@ import searchStyles from '../search/search.css';
 import {SearchDialog} from '../search';
 import roleModel from '../../utils/roleModel';
 import {Pages} from '../../utils/ui-navigation';
+import {RunContinuationConfirmation} from '../runs/actions/continue-run';
 
 @inject('preferences', 'uiNavigation')
 @roleModel.authenticationInfo
@@ -142,6 +143,7 @@ export default class App extends Component {
             router={this.props.router}
           />
           <RunModal />
+          <RunContinuationConfirmation />
         </div>
       </LocaleProvider>
     );

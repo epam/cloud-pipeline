@@ -27,6 +27,7 @@ import {
 import localization from '../../../../utils/localization';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import {inject, observer} from 'mobx-react';
+import {confirmRunContinuation, continueRun, runSupportsContinue} from '../../actions/continue-run';
 
 const getColumnFilter = () => {};
 
@@ -72,6 +73,26 @@ class StopReRunButtonComponent extends localization.LocalizedReactComponent {
     openReRunForm(run, this.props);
   };
 
+  onContinueRun = async (event) => {
+    const {
+      run
+    } = this.props;
+    if (run) {
+      if (event) {
+        event.stopPropagation();
+      }
+      try {
+        const confirmed = await confirmRunContinuation(run);
+        if (confirmed) {
+          await continueRun(run);
+          this.props.refresh && await this.props.refresh();
+        }
+      } catch (e) {
+        // noop
+      }
+    }
+  }
+
   render () {
     const {
       run
@@ -80,67 +101,95 @@ class StopReRunButtonComponent extends localization.LocalizedReactComponent {
       return null;
     }
     const isPipeline = !!run.version && !run.pipelineId;
-    switch ((run.status || '').toLowerCase()) {
-      case 'paused':
-        if (roleModel.executeAllowed(run) && roleModel.isOwner(run)) {
-          return (
-            <a
-              id={`run-${run.id}-terminate-button`}
-              className="cp-danger"
-              onClick={this.showTerminateConfirmDialog}
-            >
-              TERMINATE
-            </a>
-          );
-        }
-        break;
-      case 'running':
-      case 'pausing':
-      case 'resuming':
-        if (
-          (
-            roleModel.executeAllowed(run) ||
-            run.sshPassword
-          ) &&
-          (
-            roleModel.isOwner(run) ||
-            run.sshPassword
-          ) &&
-          canStopRun(run)
-        ) {
-          return (
-            <a
-              id={`run-${run.id}-stop-button`}
-              className="cp-danger"
-              onClick={this.showStopConfirmDialog}
-            >
-              STOP
-            </a>
-          );
-        }
-        if (run.commitStatus && run.commitStatus.toLowerCase() === 'committing') {
-          return (
-            <span
-              style={{fontStyle: 'italic'}}
-            >
-              COMMITTING
-            </span>
-          );
-        }
-        break;
-      case 'stopped':
-      case 'failure':
-      case 'success':
-        if (roleModel.executeAllowed(run) && !isPipeline) {
-          return (
-            <a
-              id={`run-${run.id}-rerun-button`}
-              onClick={this.reRunPipeline}
-            >
-              RERUN
-            </a>
-          );
-        }
+    const actions = [];
+    const stopReRunAction = (() => {
+      switch ((run.status || '').toLowerCase()) {
+        case 'paused':
+          if (roleModel.executeAllowed(run) && roleModel.isOwner(run)) {
+            return (
+              <a
+                id={`run-${run.id}-terminate-button`}
+                key="terminate"
+                className="cp-danger"
+                onClick={this.showTerminateConfirmDialog}
+              >
+                TERMINATE
+              </a>
+            );
+          }
+          break;
+        case 'running':
+        case 'pausing':
+        case 'resuming':
+          if (
+            (
+              roleModel.executeAllowed(run) ||
+              run.sshPassword
+            ) &&
+            (
+              roleModel.isOwner(run) ||
+              run.sshPassword
+            ) &&
+            canStopRun(run)
+          ) {
+            return (
+              <a
+                key="stop"
+                id={`run-${run.id}-stop-button`}
+                className="cp-danger"
+                onClick={this.showStopConfirmDialog}
+              >
+                STOP
+              </a>
+            );
+          }
+          if (run.commitStatus && run.commitStatus.toLowerCase() === 'committing') {
+            return (
+              <span
+                key="committing"
+                style={{fontStyle: 'italic'}}
+              >
+                COMMITTING
+              </span>
+            );
+          }
+          break;
+        case 'stopped':
+        case 'failure':
+        case 'success':
+          if (roleModel.executeAllowed(run) && !isPipeline) {
+            return (
+              <a
+                key="rerun"
+                id={`run-${run.id}-rerun-button`}
+                onClick={this.reRunPipeline}
+              >
+                RERUN
+              </a>
+            );
+          }
+      }
+    })();
+    if (stopReRunAction) {
+      actions.push(stopReRunAction);
+    }
+    if (runSupportsContinue(run)) {
+      actions.push(
+        <a
+          key="continue"
+          id={`run-${run.id}-continue-button`}
+          onClick={this.onContinueRun}
+        >
+          CONTINUE
+        </a>
+      );
+    }
+    if (actions.length > 0) {
+      return (
+        <div style={{display: 'flex', flexDirection: 'column', flexGap: 2}}>
+          {actions}
+        </div>
+      );
     }
     return (<div />);
   }

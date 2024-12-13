@@ -101,6 +101,7 @@ import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
+import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -518,6 +519,25 @@ class Logs extends localization.LocalizedReactComponent {
     const {run} = this.state;
     if (run) {
       return openReRunForm(run, this.props);
+    }
+  };
+
+  onContinueRunClick = () => {
+    const {run} = this.state;
+    if (run) {
+      (async () => {
+        try {
+          const confirmed = await confirmRunContinuation(run);
+          if (confirmed) {
+            const runId = await continueRun(run);
+            if (runId) {
+              this.closeNestedRunsModalAndNavigateToRun(runId);
+            }
+          }
+        } catch (e) {
+          // noop
+        }
+      })();
     }
   };
 
@@ -1669,6 +1689,7 @@ class Logs extends localization.LocalizedReactComponent {
     let Title;
     let PauseResumeButton;
     let ActionButton;
+    let ContinueButton;
     let SSHButton;
     let FSBrowserButton;
     let ExportLogsButton;
@@ -2188,6 +2209,19 @@ class Logs extends localization.LocalizedReactComponent {
               </a>
             );
           }
+          if (
+            roleModel.executeAllowed(run) &&
+            !isRemovedPipeline &&
+            runSupportsContinue(run)
+          ) {
+            ContinueButton = (
+              <a
+                onClick={() => this.onContinueRunClick()}
+              >
+                CONTINUE
+              </a>
+            );
+          }
           break;
       }
       if (
@@ -2448,6 +2482,7 @@ class Logs extends localization.LocalizedReactComponent {
                 )
               }
               {this.buttonsWrapper(ActionButton)}
+              {this.buttonsWrapper(ContinueButton)}
               {this.buttonsWrapper(SSHButton)}
               {this.buttonsWrapper(FSBrowserButton)}
               {this.buttonsWrapper(ExportLogsButton)}
@@ -2528,7 +2563,7 @@ class Logs extends localization.LocalizedReactComponent {
       this.updateFromProps();
     }
     const {
-      pending,
+      pending
     } = this.state;
     if (!pending && this.graph) {
       this.graph.updateData();

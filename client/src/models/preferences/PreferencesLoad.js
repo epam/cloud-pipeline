@@ -994,6 +994,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiContinueRunConfirmation () {
+    return this.getPreferenceValue('ui.continue.run.confirmation');
+  }
+
+  @computed
   get storageManagementRestrictedAccess () {
     const value = this.getPreferenceValue('storage.management.restricted.access');
     return value && `${value}`.toLowerCase() === 'true';

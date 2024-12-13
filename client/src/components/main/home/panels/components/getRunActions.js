@@ -22,6 +22,7 @@ import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 import DataStorageLink from '../../../../special/data-storage-link';
 import roleModel from '../../../../../utils/roleModel';
+import {runSupportsContinue} from '../../../../runs/actions/continue-run';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -45,6 +46,13 @@ export default function (
           icon: 'play-circle-o',
           action: callbacks ? callbacks.run : undefined
         });
+        if (runSupportsContinue(run) && callbacks && callbacks.continue) {
+          actions.push({
+            title: 'CONTINUE',
+            icon: 'forward',
+            action: callbacks ? callbacks.continue : undefined
+          });
+        }
         break;
       case 'RUNNING':
         if (run.initialized && run.serviceUrl) {

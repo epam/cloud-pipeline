@@ -32,6 +32,7 @@ import {openReRunForm} from '../../../runs/actions';
 import roleModel from '../../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Panel.css';
+import {confirmRunContinuation, continueRun} from "../../../runs/actions/continue-run";
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
@@ -107,6 +108,20 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     }
   };
 
+  onContinueRun = async (run) => {
+    if (run) {
+      try {
+        const confirmed = await confirmRunContinuation(run);
+        if (confirmed) {
+          await continueRun(run);
+          this.props.refresh && await this.props.refresh();
+        }
+      } catch (e) {
+        // noop
+      }
+    }
+  };
+
   reRun = (run) => {
     return openReRunForm(run, this.props);
   };
@@ -145,7 +160,8 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
                     'STOP',
                     () => this.stopRun(run)
                   ),
-                  run: this.reRun
+                  run: this.reRun,
+                  continue: this.onContinueRun
                 })
             }
             childRenderer={renderRunCard}>
