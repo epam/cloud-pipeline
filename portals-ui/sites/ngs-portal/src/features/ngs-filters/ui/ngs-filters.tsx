@@ -54,8 +54,9 @@ export const NgsFilters = <T extends NgsItem>({
       {Object.entries(tags).map(([key, { label, values }]) => {
         const options =
           values?.map((tag) => ({
-            id: tag.id,
-            name: tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
+            value: tag.id,
+            label:
+              tag.count !== undefined ? `${tag.id} (${tag.count})` : tag.id,
             disabled: !tag.count && !tagsToFilter[key]?.includes(tag.id),
           })) || [];
 

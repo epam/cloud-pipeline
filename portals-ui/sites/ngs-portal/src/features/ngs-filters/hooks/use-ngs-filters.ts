@@ -52,7 +52,7 @@ export const useNgsFilters = <T extends NgsItem>({
   const handleFilterValueChange = useCallback(
     (tagName: string, selectedItems?: string[]) => {
       setTagsToFilter((prevTags) => {
-        if (!selectedItems) {
+        if (!selectedItems?.length) {
           const newTags = { ...prevTags };
           delete newTags[tagName];
           return newTags;

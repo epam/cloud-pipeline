@@ -1,10 +1,9 @@
-import { PickerInput } from '@epam/uui';
-import { useArrayDataSource } from '@epam/uui-core';
+import { Select, Tooltip } from 'antd';
 import { memo, useCallback } from 'react';
 
 type Option = {
-  id: string;
-  name: string;
+  value: string;
+  label: string;
   disabled?: boolean;
 };
 
@@ -25,38 +24,25 @@ export const SelectFilter = memo(
       [onChange],
     );
 
-    const dataSource = useArrayDataSource<
-      Option | undefined,
-      string | undefined,
-      unknown
-    >(
-      {
-        items: options,
-      },
-      [],
-    );
-
     return (
       <div className="flex items-center space-x-1">
-        <p>{label}:</p>
-        <PickerInput
-          dataSource={dataSource}
+        <Select
+          mode="multiple"
+          style={{ width: '100%', minWidth: '200px' }}
+          options={options}
+          placeholder="Select..."
+          maxTagCount={1}
+          prefix={label}
           value={selectedValues}
-          onValueChange={handleValueChange}
-          selectionMode="multi"
-          getRowOptions={(item) => ({
-            isDisabled: item?.disabled,
-            checkbox: {
-              isDisabled: item?.disabled,
-              isVisible: true,
-            },
-          })}
-          placeholder={`Select ${label}`}
-          valueType="id"
-          maxItems={1}
           onFocus={onFocus}
-          isSingleLine
-          size="30"
+          onChange={handleValueChange}
+          maxTagPlaceholder={(omittedValues) => (
+            <Tooltip
+              overlayStyle={{ pointerEvents: 'none' }}
+              title={omittedValues.map(({ label }) => label).join(', ')}>
+              <span>+{selectedValues.length - 1}</span>
+            </Tooltip>
+          )}
         />
       </div>
     );
