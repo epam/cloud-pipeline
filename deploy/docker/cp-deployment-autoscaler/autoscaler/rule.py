@@ -97,7 +97,7 @@ class NoRunningTargetPodsOnNodeRule(AutoscalingRule):
               instances_container: InstancesContainer):
         logging.info('Searching for nodes without running target pods...')
         empty_nodes = []
-        for node in nodes_container.transient_nodes:
+        for node in nodes_container.manageable_nodes:
             if self._has_running_target_pods(node.name, deployments_container.pods):
                 continue
             if node.name in self._configuration.target.forbidden_nodes:
