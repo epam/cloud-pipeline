@@ -967,6 +967,8 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
     public static final StringPreference UI_TOOLS_OS_WITH_WARNING = new StringPreference("ui.tools.os.with.warning",
             "", UI_GROUP, pass, true);
+    public static final StringPreference UI_CONTINUE_RUN_CONFIRMATION = new StringPreference(
+            "ui.continue.run.confirmation", "", UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
