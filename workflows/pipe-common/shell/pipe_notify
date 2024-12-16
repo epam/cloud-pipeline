@@ -27,11 +27,11 @@
 #             custom_template_parameter2 value2
 
 # Required args
-NOTIFICATION_SUBJECT=$1
-NOTIFICATION_BODY=$2
-NOTIFICATION_RECEIVER=$3
+NOTIFICATION_SUBJECT="$1"
+NOTIFICATION_BODY="$2"
+NOTIFICATION_RECEIVER="$3"
 # Optional args
-NOTIFICATION_COPY_USERS=$4
+NOTIFICATION_COPY_USERS="$4"
 
 # Check global variables
 if [ -z "$LOG_DIR" ]
@@ -64,7 +64,7 @@ if [ -z "$NOTIFICATION_COPY_USERS" ]
     echo "[WARN] Notification copy users are not set, using no copy users"
     export NOTIFICATION_COPY_USERS="[]"
   else
-    export NOTIFICATION_COPY_USERS="\"${NOTIFICATION_COPY_USERS}\".split(',')"
+    export NOTIFICATION_COPY_USERS="'${NOTIFICATION_COPY_USERS}'.split(',')"
 fi
 
 if [ "$#" -lt 4 ]
@@ -98,10 +98,10 @@ fi
 # Call notification API
 # subject, body, to_user, copy_users=None, parameters=None
 CMD="import pipeline.api;"
-CMD="${CMD} pipe=pipeline.api.PipelineAPI(\"${API}\", \"${LOG_DIR}\");"
-CMD="${CMD} subject=\"${NOTIFICATION_SUBJECT}\";"
-CMD="${CMD} body=\"${NOTIFICATION_BODY}\";"
-CMD="${CMD} receiver=\"${NOTIFICATION_RECEIVER}\";"
+CMD="${CMD} pipe=pipeline.api.PipelineAPI('${API}', '${LOG_DIR}');"
+CMD="${CMD} subject='${NOTIFICATION_SUBJECT}';"
+CMD="${CMD} body='${NOTIFICATION_BODY}';"
+CMD="${CMD} receiver='${NOTIFICATION_RECEIVER}';"
 CMD="${CMD} copy_users=${NOTIFICATION_COPY_USERS};"
 CMD="${CMD} parameters=${NOTIFICATION_PARAMETERS};"
 CMD="${CMD} pipe.create_notification(subject, body, receiver, copy_users, parameters);"

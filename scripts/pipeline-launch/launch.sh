@@ -2760,6 +2760,9 @@ if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
    ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \
    [ $CP_OUTPUTS_RESULT -ne 0 ]); then
       echo "Script execution has failed or the outputs were not tansferred. The job will keep running for $CP_CAP_KEEP_FAILED_RUN"
+      if [ "$CP_CAP_KEEP_FAILED_RUN_NOTIFICATION" == "true" ]; then
+            pipe_notify_condition "CP_CAP_KEEP_FAILED_RUN_NOTIFICATION" "$CP_CAP_KEEP_FAILED_RUN_NOTIFICATION_RECIPIENTS"
+      fi
       sleep $CP_CAP_KEEP_FAILED_RUN
       echo "Failure waiting timeout has been reached, proceeding with the cleanup and termination"
 fi

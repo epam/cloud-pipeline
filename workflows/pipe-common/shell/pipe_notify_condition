@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+_CONDITION_NAME="$1"
+_CONDITION_RECIPIENTS="$2"
+
+function is_jq_null() {
+    _VAL="$1"
+    if [ -z "$_VAL" ] || [ "$_VAL" == "null" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+if [ -z "$_CONDITION_NAME" ]; then
+  echo "[ERROR] Cannot notify users on condition as condition name is not specified"
+  exit 1
+fi
+
+if [ -z "$DISTRIBUTION_URL" ]; then
+  echo "[ERROR] DISTRIBUTION_URL is not set, cannot get condition notification information"
+  exit 1
+fi
+
+if [ -z "$_CONDITION_RECIPIENTS" ]; then
+  echo "[ERROR] Cannot notify users on condition as recipients list is not set"
+  exit 1
+fi
+
+_CONDITION_SPEC_URL="$DISTRIBUTION_URL/$_CONDITION_NAME.json"
+
+echo "[INFO] Getting condition notification spec from $_CONDITION_SPEC_URL"
+_CONDITION_SPEC_JSON=$(curl -sk "$DISTRIBUTION_URL/$_CONDITION_NAME.json")
+_CONDITION_SUBJECT=$(echo "$_CONDITION_SPEC_JSON" | jq -r '.subject')
+_CONDITION_SUBJECT=$(eval "echo \"$_CONDITION_SUBJECT\"")
+_CONDITION_BODY=$(echo "$_CONDITION_SPEC_JSON" | jq -r '.body')
+_CONDITION_BODY=$(eval "echo \"$_CONDITION_BODY\"")
+
+if is_jq_null "$_CONDITION_SUBJECT"; then
+  echo "[ERROR] Cannot get subject from the spec"
+  exit 1
+fi
+
+if is_jq_null "$_CONDITION_BODY"; then
+  echo "[ERROR] Cannot get body from the spec"
+  exit 1
+fi
+
+echo "[INFO] Sending $_CONDITION_NAME notification:
+- To: $_CONDITION_RECIPIENTS
+- Subject: $_CONDITION_SUBJECT"
+
+pipe_notify "$_CONDITION_SUBJECT" \
+             "$_CONDITION_BODY" \
+             "$OWNER_CP_ACCOUNT" \
+             "$_CONDITION_RECIPIENTS"
+
+
+
