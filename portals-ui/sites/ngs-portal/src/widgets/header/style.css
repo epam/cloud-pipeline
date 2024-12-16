@@ -1,0 +1,19 @@
+.main-menu.ant-menu-dark .ant-menu-item-selected {
+  @apply border-sky-500 border-b-2 bg-white bg-opacity-10;
+}
+
+.main-menu.ant-menu-dark .ant-menu-item-selected:hover {
+  @apply border-sky-500 border-b-2 bg-white bg-opacity-10;
+}
+
+.main-menu.ant-menu-dark .ant-menu-item {
+  @apply text-white;
+}
+
+.main-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected):hover {
+  @apply text-gray-300;
+}
+
+.main-menu.ant-menu-dark {
+  background: transparent;
+}

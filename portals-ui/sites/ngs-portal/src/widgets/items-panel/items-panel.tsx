@@ -2,7 +2,8 @@ import type { ItemsPanelProps, ViewAllItemsConfiguration } from './types.ts';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { List, ListHeader } from '@cloud-pipeline/components';
 import classNames from 'classnames';
-import { LinkButton } from '@epam/uui';
+import { Typography } from 'antd';
+import { Link } from 'react-router-dom';
 
 function ItemsPanelFooter(
   props: CommonProps & { viewAll?: ViewAllItemsConfiguration },
@@ -24,7 +25,11 @@ function ItemsPanelFooter(
         className,
       )}
       style={style}>
-      <LinkButton caption={viewAllTitle} link={{ pathname: link }} />
+      <Link to={link} className="flex">
+        <Typography.Text className="cursor-pointer text-blue-400 hover:text-blue-500  font-semibold">
+          {viewAllTitle}
+        </Typography.Text>
+      </Link>
     </div>
   );
 }

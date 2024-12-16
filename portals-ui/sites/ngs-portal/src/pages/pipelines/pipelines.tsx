@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { Spinner } from '@epam/uui';
 import { loadPipelines } from '../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../state/pipelines/hooks';
 import { PipelinesList } from '../home/components/pipelines-list.tsx';
+import { Spin } from 'antd';
 
 export function PipelinesPage() {
   const { pipelines, error, pending } = usePipelinesState();
@@ -18,7 +18,11 @@ export function PipelinesPage() {
   }
 
   if (pending && (!pipelines || pipelines.length === 0)) {
-    return <Spinner />;
+    return (
+      <div className="size-full flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
   }
 
   if (!pipelines) {
