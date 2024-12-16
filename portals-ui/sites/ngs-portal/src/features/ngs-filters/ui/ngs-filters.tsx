@@ -3,7 +3,7 @@ import { NgsFilter } from '../../../shared/constants/filters';
 import { SelectFilter } from '../../../shared/ui';
 import type { FilterToDisplay, NgsItem } from '../types';
 import { useNgsDynamicFilters } from '../hooks';
-import { CommonProps } from '@cloud-pipeline/components';
+import type { CommonProps } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 
 type Props<T extends NgsItem> = CommonProps & {

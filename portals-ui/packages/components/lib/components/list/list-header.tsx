@@ -39,6 +39,7 @@ const ListHeader = (props: ListHeaderProps) => {
             placeholder={searchPlaceholder ?? 'Search'}
             size="middle"
             variant="borderless"
+            className="w-full max-w-[300px]"
           />
           {afterSearch ?? null}
         </div>
