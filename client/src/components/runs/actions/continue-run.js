@@ -227,11 +227,12 @@ export async function continueRun (run) {
       version,
       configurationName: configName
     };
-    await PipelineRunner.send({...payload, force: true});
-    if (PipelineRunner.error) {
-      throw new Error(PipelineRunner.error);
+    const request = new PipelineRunner();
+    await request.send({...payload, force: true});
+    if (request.error) {
+      throw new Error(request.error);
     }
-    const {value} = PipelineRunner;
+    const {value} = request;
     return value ? value.id : undefined;
   } catch (error) {
     message.error(
