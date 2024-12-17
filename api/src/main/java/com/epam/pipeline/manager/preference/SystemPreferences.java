@@ -877,6 +877,9 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
     public static final StringPreference UI_TOOLS_OS_WITH_WARNING = new StringPreference("ui.tools.os.with.warning",
             "", UI_GROUP, pass, true);
+    public static final BooleanPreference UI_QUICK_SEARCH_DISABLED = new BooleanPreference(
+            "ui.quick.search.disabled", false, UI_GROUP, pass, true);
+
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
