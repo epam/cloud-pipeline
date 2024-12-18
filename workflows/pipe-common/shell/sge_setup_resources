@@ -160,6 +160,22 @@ if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_WORKER_TYPE_ENABLED" == "true" ]; then
         _NODE_WORKER_TYPE_WEIGHT="$CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_ADD"
     fi
     configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_WORKER_TYPE" "INT" "0" "$_NODE_WORKER_TYPE_WEIGHT" "JOB" "<="
+    
+    if [ "$CP_CAP_SGE_DEFAULT_LOAD_FORMULA" ]; then
+        pipe_log_info "CP_CAP_SGE_DEFAULT_LOAD_FORMULA is set to ${CP_CAP_SGE_DEFAULT_LOAD_FORMULA}. Configuring scheduler." "$_SGE_RESOURCES_SETUP_TASK"
+        
+        qconf -ssconf > /tmp/sge_scheduler.conf
+        sed -i '/^load_formula/d' /tmp/sge_scheduler.conf
+        echo "load_formula $CP_CAP_SGE_DEFAULT_LOAD_FORMULA" >> /tmp/sge_scheduler.conf
+        qconf -Msconf /tmp/sge_scheduler.conf
+        
+        if [ $? -ne 0 ]; then
+            pipe_log_warn "Failed configuring load_formula in SGE scheduler" "$_SGE_RESOURCES_SETUP_TASK"  
+        else
+            pipe_log_info "SGE scheduler load_formula is set to $CP_CAP_SGE_DEFAULT_LOAD_FORMULA" "$_SGE_RESOURCES_SETUP_TASK"  
+        fi
+        rm -f /tmp/sge_scheduler.conf
+    fi
 fi
 
 pipe_log_success "Finished GridEngine resources configuration" "$_SGE_RESOURCES_SETUP_TASK"
