@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  a .text,
+  a {
+    @apply text-sky-700 dark:text-sky-300;
+  }
+
+  a:not(.disabled, [disabled]) {
+    @apply cursor-pointer;
+  }
+
+  a .text-accent {
+    @apply text-sky-900 dark:text-sky-200;
+  }
+
+  a .text-faded {
+    @apply text-sky-400 dark:text-sky-500;
+  }
+
+  a.disabled,
+  a[disabled] {
+    @apply text-faded;
+  }
+}
+
 body {
     @apply p-0 m-0 overflow-auto;
 
