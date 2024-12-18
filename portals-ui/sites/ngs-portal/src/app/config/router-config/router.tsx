@@ -7,6 +7,7 @@ import { PipelinesPage } from '../../../pages/pipelines';
 import { ProjectPage } from '../../../pages/project/index.tsx';
 import Runs from '../../../pages/runs/index.tsx';
 import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
+import { RunsPage } from '../../../pages/runs/runs.tsx';
 
 const routerConfig: Record<AppRoutes, RouteObject> = {
   [AppRoutes.HOME]: { path: RoutePath[AppRoutes.HOME], element: <HomePage /> },
@@ -22,7 +23,7 @@ const routerConfig: Record<AppRoutes, RouteObject> = {
     path: RoutePath[AppRoutes.PIPELINES],
     element: <PipelinesPage />,
   },
-  [AppRoutes.RUNS]: { path: RoutePath[AppRoutes.RUNS], element: <Runs /> },
+  [AppRoutes.RUNS]: { path: RoutePath[AppRoutes.RUNS], element: <RunsPage /> },
   // TODO: creat not-found page
   [AppRoutes.NOT_FOUND]: {
     path: RoutePath[AppRoutes.NOT_FOUND],

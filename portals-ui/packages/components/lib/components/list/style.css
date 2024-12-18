@@ -1,7 +1,7 @@
 .list-header {
-    @apply px-3 py-3;
+  @apply px-3 py-3;
 }
 
 .list-header-search-container {
-    @apply flex flex-nowrap gap-2 px-1 py-0;
+  @apply flex flex-wrap justify-between gap-2 px-1 py-0;
 }

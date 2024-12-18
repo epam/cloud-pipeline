@@ -50,7 +50,11 @@ export const PipelinesList = memo(
         sliced
         virtualized
         search={search}
-        beforeSearch={filtersProps && <NgsFilters className="min-w-[75%]" {...filtersProps} />}
+        afterSearch={
+          filtersProps && (
+            <NgsFilters className="flex-shrink-0 flex-wrap" {...filtersProps} />
+          )
+        }
         onSearchChange={onSearchChange}
         itemKey="id"
         searchClassName={mode === 'extended' ? 'py-1' : undefined}
