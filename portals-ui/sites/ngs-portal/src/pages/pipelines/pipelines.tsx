@@ -30,7 +30,7 @@ export function PipelinesPage() {
   }
 
   return (
-    <div className="p-3 overflow-hidden h-full w-full">
+    <div className="overflow-hidden h-full w-full">
       <PipelinesList
         showDescription
         pipelines={pipelines}

@@ -10,6 +10,7 @@ export type PipelinesActions = {
   setError: (error: string | undefined) => void;
   setPending: (pending: boolean) => void;
   setPipelines: (result: Pick<PipelinesState, 'pipelines' | 'error'>) => void;
+  getPipelineById: (pipelineId: number) => Pipeline | undefined;
 };
 
 export type PipelinesStore = PipelinesState & PipelinesActions;

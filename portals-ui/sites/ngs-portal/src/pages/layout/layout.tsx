@@ -9,9 +9,9 @@ export const Layout = () => {
     <Initialization>
       <AntApp className="app-layout">
         <Header />
-        <main>
+        <div className="layout-content">
           <Outlet />
-        </main>
+        </div>
       </AntApp>
     </Initialization>
   );

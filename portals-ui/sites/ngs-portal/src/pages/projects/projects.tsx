@@ -31,7 +31,7 @@ export function ProjectsPage() {
 
   //todo: search refactoring needed (see <ItemsPanel /> search)
   return (
-    <div className="p-3 overflow-hidden h-full w-full">
+    <div className="overflow-hidden h-full w-full">
       <ProjectsList
         projects={projects}
         mode="extended"

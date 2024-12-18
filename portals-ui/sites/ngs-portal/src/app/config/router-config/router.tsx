@@ -2,12 +2,12 @@ import type { RouteObject } from 'react-router-dom';
 import { createHashRouter } from 'react-router-dom';
 import { Layout } from '../../../pages/layout/index.tsx';
 import { HomePage } from '../../../pages/home';
-import { ProjectsPage } from '../../../pages/projects';
 import { PipelinesPage } from '../../../pages/pipelines';
 import { ProjectPage } from '../../../pages/project/index.tsx';
-import Runs from '../../../pages/runs/index.tsx';
 import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
-import { RunsPage } from '../../../pages/runs/runs.tsx';
+import { RunsPage } from '../../../pages/runs';
+import { ProjectsPage } from '../../../pages/projects';
+import { PipelinePage } from '../../../pages/pipeline';
 
 const routerConfig: Record<AppRoutes, RouteObject> = {
   [AppRoutes.HOME]: { path: RoutePath[AppRoutes.HOME], element: <HomePage /> },
@@ -16,15 +16,19 @@ const routerConfig: Record<AppRoutes, RouteObject> = {
     element: <ProjectsPage />,
   },
   [AppRoutes.PROJECT]: {
-    path: `${RoutePath[AppRoutes.PROJECT]}/:id`,
+    path: RoutePath[AppRoutes.PROJECT],
     element: <ProjectPage />,
   },
   [AppRoutes.PIPELINES]: {
     path: RoutePath[AppRoutes.PIPELINES],
     element: <PipelinesPage />,
   },
+  [AppRoutes.PIPELINE]: {
+    path: RoutePath[AppRoutes.PIPELINE],
+    element: <PipelinePage />,
+  },
   [AppRoutes.RUNS]: { path: RoutePath[AppRoutes.RUNS], element: <RunsPage /> },
-  // TODO: creat not-found page
+  // TODO: create not-found page
   [AppRoutes.NOT_FOUND]: {
     path: RoutePath[AppRoutes.NOT_FOUND],
     element: <HomePage />,

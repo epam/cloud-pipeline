@@ -4,7 +4,7 @@ import { projectsStore } from './store.ts';
 import { useMemo } from 'react';
 import type { Project } from '@cloud-pipeline/core';
 
-function useProjectsStore(): ProjectsStore {
+export function useProjectsStore(): ProjectsStore {
   return useStore(projectsStore);
 }
 
