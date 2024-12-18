@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -201,4 +203,20 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     InstanceDNSRecord deleteInstanceDNSRecord(T region, InstanceDNSRecord record);
 
     void deleteInstanceTags(T region, String runId, Set<String> tagNames);
+
+    /**
+     * Loads all cloud instances available for specified region. Filter by tags can be applied.
+     *
+     * @param region region to load
+     * @return loaded instances
+     */
+    List<NodeInstance> getCloudNodes(T region);
+
+    /**
+     * Finds cloud instance with specified instance ID in requested region. Empty if no instance found.
+     * @param region - requested region
+     * @param instanceId - cloud instance identifier
+     * @return instance if exists
+     */
+    Optional<NodeInstance> findCloudNode(T region, String instanceId);
 }

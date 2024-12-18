@@ -66,5 +66,7 @@ enum CloudRegionParameters {
     AWS_KEY_ID,
     AWS_ACCESS_KEY,
     USER_NAME,
-    USER_PASSWORD
+    USER_PASSWORD,
+    CLUSTER_INCLUDE,
+    CLUSTER_STATE_PROPERTIES
 }

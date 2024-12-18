@@ -121,6 +121,8 @@ public class AwsRegionHelper implements CloudRegionHelper<AwsRegion, AbstractClo
         originalRegion.setDnsHostedZoneId(updatedRegion.getDnsHostedZoneId());
         originalRegion.setDnsHostedZoneBase(updatedRegion.getDnsHostedZoneBase());
         originalRegion.setRunShiftPolicy(updatedRegion.getRunShiftPolicy());
+        originalRegion.setClusterInclude(updatedRegion.isClusterInclude());
+        originalRegion.setClusterStateRegionProperties(updatedRegion.getClusterStateRegionProperties());
         return originalRegion;
     }
 

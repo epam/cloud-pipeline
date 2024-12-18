@@ -57,6 +57,8 @@ public class LocalRegionHelperImpl implements CloudRegionHelper<LocalRegion, Loc
         originalRegion.setDnsHostedZoneBase(updatedRegion.getDnsHostedZoneBase());
         originalRegion.setRunShiftPolicy(updatedRegion.getRunShiftPolicy());
         originalRegion.setCustomInstanceTypes(updatedRegion.getCustomInstanceTypes());
+        originalRegion.setClusterInclude(updatedRegion.isClusterInclude());
+        originalRegion.setClusterStateRegionProperties(updatedRegion.getClusterStateRegionProperties());
         return originalRegion;
     }
 }

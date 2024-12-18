@@ -20,12 +20,19 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.amazonaws.services.ec2.model.Placement;
+import com.amazonaws.services.ec2.model.Tag;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.MachineType;
+import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -45,13 +52,16 @@ import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +70,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -67,6 +78,9 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
+    private static final String INTERNAL_IP = "InternalIP";
+    private static final String HOSTNAME = "Hostname";
+    private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
@@ -355,6 +369,19 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         ec2Helper.deleteInstanceTags(region, runId, tagNames);
     }
 
+    @Override
+    public List<NodeInstance> getCloudNodes(final AwsRegion region) {
+        return ec2Helper.findCloudNodes(region).stream()
+                .map(instance -> cloudInstanceToNodeInstance(instance, region))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final AwsRegion region, final String instanceId) {
+        return ec2Helper.findCloudNode(instanceId, region)
+                .map(instance -> cloudInstanceToNodeInstance(instance, region));
+    }
+
     private String buildNodeUpCommand(final AwsRegion region,
                                       final String nodeLabel,
                                       final RunInstance instance,
@@ -431,5 +458,46 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
         return Optional.ofNullable(region.getGlobalDistributionUrl())
                 .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
+    }
+
+    private NodeInstance cloudInstanceToNodeInstance(final Instance cloudInstance, final AwsRegion region) {
+        final NodeInstance nodeInstance = new NodeInstance();
+        nodeInstance.setCreationTimestamp(TIME_FORMAT.format(cloudInstance.getLaunchTime()));
+        nodeInstance.setMachineType(MachineType.CLOUD);
+        nodeInstance.setName(cloudInstance.getInstanceId());
+        nodeInstance.setProvider(CloudProvider.AWS);
+        nodeInstance.setLabels(buildNodeLabels(cloudInstance, region));
+        nodeInstance.setAddresses(buildKubeStyleAddresses(cloudInstance));
+        nodeInstance.setRegion(region.getRegionCode());
+        return nodeInstance;
+    }
+
+    private Map<String, String> buildNodeLabels(final Instance cloudInstance, final AwsRegion region) {
+        final Map<String, String> labels = ListUtils.emptyIfNull(cloudInstance.getTags()).stream()
+                .collect(Collectors.toMap(Tag::getKey, Tag::getValue));
+        labels.put(KubernetesConstants.CLOUD_REGION_LABEL, region.getRegionCode());
+        labels.put(KubernetesConstants.CLOUD_PROVIDER_LABEL, CloudProvider.AWS.name());
+        labels.put(KubernetesConstants.CLOUD_INSTANCE_TYPE_LABEL, cloudInstance.getInstanceType());
+        labels.put(KubernetesConstants.CLOUD_INSTANCE_ID_LABEL, cloudInstance.getInstanceId());
+        labels.put(KubernetesConstants.CLOUD_IMAGE_LABEL, cloudInstance.getImageId());
+        Optional.ofNullable(cloudInstance.getPlacement())
+                .map(Placement::getAvailabilityZone)
+                .filter(StringUtils::isNotBlank)
+                .ifPresent(az -> labels.put(KubernetesConstants.CLOUD_REGION_AZ_LABEL, az));
+        labels.put(KubernetesConstants.CLOUD_REGION_ID_LABEL, String.valueOf(region.getId()));
+        return labels;
+    }
+
+    private List<NodeInstanceAddress> buildKubeStyleAddresses(final Instance cloudInstance) {
+        // internal kube parameters to support the same interface for NodeInstance object
+        final NodeInstanceAddress privateIpAddress = new NodeInstanceAddress();
+        privateIpAddress.setAddress(cloudInstance.getPrivateIpAddress());
+        privateIpAddress.setType(INTERNAL_IP);
+
+        final NodeInstanceAddress hostnameAddress = new NodeInstanceAddress();
+        hostnameAddress.setAddress(cloudInstance.getInstanceId());
+        hostnameAddress.setType(HOSTNAME);
+
+        return Arrays.asList(privateIpAddress, hostnameAddress);
     }
 }

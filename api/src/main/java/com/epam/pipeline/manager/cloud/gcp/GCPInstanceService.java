@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -242,6 +244,17 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public void deleteInstanceTags(final GCPRegion region, final String runId, final Set<String> tagNames) {
 
+    }
+
+    @Override
+    public List<NodeInstance> getCloudNodes(final GCPRegion region) {
+        throw new UnsupportedOperationException("Loading instances doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final GCPRegion region, final String instanceId) {
+        // not supported yet
+        return Optional.empty();
     }
 
     @Override

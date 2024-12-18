@@ -44,6 +44,7 @@ public final class KubernetesConstants {
     public static final String CLOUD_INSTANCE_DISK_LABEL = "cloud_ins_disk";
     public static final String CLOUD_INSTANCE_TYPE_LABEL = "cloud_ins_type";
     public static final String CLOUD_IMAGE_LABEL = "cloud_image";
+    public static final String CLOUD_REGION_AZ_LABEL = "cloud_az";
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";
     public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
