@@ -4,6 +4,8 @@ import { Layout } from '../../../pages/layout/index.tsx';
 import { HomePage } from '../../../pages/home';
 import { ProjectsPage } from '../../../pages/projects';
 import { PipelinesPage } from '../../../pages/pipelines';
+import { ProjectPage } from '../../../pages/project/index.tsx';
+import Runs from '../../../pages/runs/index.tsx';
 import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
 import { RunsPage } from '../../../pages/runs/runs.tsx';
 
@@ -12,6 +14,10 @@ const routerConfig: Record<AppRoutes, RouteObject> = {
   [AppRoutes.PROJECTS]: {
     path: RoutePath[AppRoutes.PROJECTS],
     element: <ProjectsPage />,
+  },
+  [AppRoutes.PROJECT]: {
+    path: `${RoutePath[AppRoutes.PROJECT]}/:id`,
+    element: <ProjectPage />,
   },
   [AppRoutes.PIPELINES]: {
     path: RoutePath[AppRoutes.PIPELINES],

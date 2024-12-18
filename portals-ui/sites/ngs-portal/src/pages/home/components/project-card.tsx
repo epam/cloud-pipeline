@@ -12,6 +12,7 @@ import { NgsTag } from '../../../widgets/ngs-tag';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { UserIcon } from '@heroicons/react/24/solid';
 import './style.css';
+import { extractTags } from '../../../shared/tags';
 
 type Props = CommonProps & {
   project: Project;
@@ -23,60 +24,8 @@ type Props = CommonProps & {
   showDescription?: boolean;
 };
 
-type MappedTag = {
-  key: string;
-  type: 'string';
-  value: string;
-};
-
-function mapTag(key: string, value: unknown): MappedTag | undefined {
-  if (typeof value === 'string') {
-    return {
-      key,
-      type: 'string',
-      value,
-    };
-  }
-  if (typeof value === 'object') {
-    const { type = 'string', value: tagValue } = value as Record<any, any>;
-    if (type === 'string' && typeof tagValue === 'string') {
-      return {
-        key,
-        type,
-        value: tagValue,
-      };
-    }
-  }
-  return undefined;
-}
-
-const __UNSAFE__will_be_removed_tagsToDisplay: string[] | undefined = undefined;
-const __UNSAFE__will_be_removed_tagsToHide: string[] | undefined = undefined;
-
 function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function filterTag(tag: MappedTag): boolean {
-  let allow = true;
-  if (
-    __UNSAFE__will_be_removed_tagsToDisplay !== undefined &&
-    __UNSAFE__will_be_removed_tagsToDisplay.length > 0
-  ) {
-    allow = __UNSAFE__will_be_removed_tagsToDisplay
-      .map((t) => t.toLowerCase())
-      .includes(tag.key.toLowerCase());
-  }
-  if (
-    allow &&
-    __UNSAFE__will_be_removed_tagsToHide &&
-    __UNSAFE__will_be_removed_tagsToHide.length > 0
-  ) {
-    allow = !__UNSAFE__will_be_removed_tagsToHide
-      .map((t) => t.toLowerCase())
-      .includes(tag.key.toLowerCase());
-  }
-  return allow;
 }
 
 export const ProjectCard = ({
@@ -91,16 +40,7 @@ export const ProjectCard = ({
 }: Props) => {
   const { id, name, data, owner } = project;
   const randomRunningCount = getRandomInt(0, 4);
-  const tags = useMemo(
-    () =>
-      Object.entries(data ?? {})
-        .map(([key, value]) => mapTag(key, value))
-        .filter(Boolean) as MappedTag[],
-    [data],
-  );
-
-  const filteredTag = useMemo(() => tags.filter(filterTag), [tags]);
-
+  const tags = useMemo(() => extractTags(data), [data]);
   const { showExtraInfo, showDescription, showStatusInfo } = useMemo(
     () => ({
       showExtraInfo: mode === 'extended',
@@ -112,9 +52,9 @@ export const ProjectCard = ({
 
   const renderTags = useCallback(
     () =>
-      filteredTag.length > 0 && (
+      tags.length > 0 && (
         <div className="flex flex-wrap gap-0">
-          {filteredTag.map((tag) => (
+          {tags.map((tag) => (
             <NgsTag
               key={tag.key}
               tag={tag.key}
@@ -124,7 +64,7 @@ export const ProjectCard = ({
           ))}
         </div>
       ),
-    [filteredTag],
+    [tags],
   );
 
   const renderExtraInfo = useCallback(
