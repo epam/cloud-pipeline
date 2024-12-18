@@ -1,5 +1,6 @@
-import { AclClass, AclEntry, NgsData } from './acl';
+import { AclClass, AclEntry } from './acl';
 import { PipelineType, RepositoryType } from './enums';
+import { NgsData } from './misc';
 
 export type Pipeline = AclEntry<AclClass.pipeline> & {
   id: number;

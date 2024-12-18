@@ -12,14 +12,6 @@ export type AclEntry<Class extends AclClass = AclClass> = {
   owner: string;
 };
 
-export type NgsData = Record<
-  string,
-  {
-    type?: string;
-    value: string;
-  }
->;
-
 export enum PermissionsScope {
   read = 0,
   write = 1,

@@ -1,4 +1,5 @@
-import { AclClass, AclEntry, NgsData } from './acl';
+import { AclClass, AclEntry } from './acl';
+import { NgsData } from './misc';
 import { Pipeline } from './pipeline';
 
 export type ProjectsResponse = {

@@ -1,5 +1,6 @@
 import { AclClass, AclEntry } from './acl';
 import { CloudProviders, CommitStatuses, RunStatuses } from './enums';
+import { Dayjs } from 'dayjs';
 
 type RunParameter = {
   dataStorageLinks?: string[];
@@ -86,4 +87,22 @@ export type Run = AclEntry<AclClass.pipeline> & {
   lastNotificationTime?: string;
   pipelineId?: number;
   entitiesIds?: number[];
+};
+
+export type RunTaskInfo = {
+  name?: string;
+  started?: string;
+};
+
+export enum RunHistoryPhase {
+  scheduled = 0,
+  running = 1,
+  paused = 2,
+  stopped = 3,
+}
+
+export type RunInterval = {
+  phase: RunHistoryPhase;
+  start: Dayjs;
+  end?: Dayjs;
 };
