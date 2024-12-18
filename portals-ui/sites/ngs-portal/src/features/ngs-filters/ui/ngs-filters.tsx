@@ -3,7 +3,7 @@ import { NgsFilter } from '../../../shared/constants/filters';
 import { SelectFilter } from '../../../shared/ui';
 import type { FilterToDisplay, NgsItem } from '../types';
 import { useNgsDynamicFilters } from '../hooks';
-import { CommonProps } from '@cloud-pipeline/components';
+import type { CommonProps } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 
 type Props<T extends NgsItem> = CommonProps & {
@@ -67,17 +67,14 @@ export const NgsFilters = <T extends NgsItem>({
           })) || [];
 
         return (
-          // div is needed not to let the filter take 100% width
-          // re-check if filter is not from uui library
-          <div key={key}>
-            <SelectFilter
-              options={options}
-              selectedValues={tagsToFilter[key] ?? []}
-              onChange={handleFilterChange(key)}
-              label={label}
-              onFocus={() => handleFocus(key)}
-            />
-          </div>
+          <SelectFilter
+            key={key}
+            options={options}
+            selectedValues={tagsToFilter[key] ?? []}
+            onChange={handleFilterChange(key)}
+            label={label}
+            onFocus={() => handleFocus(key)}
+          />
         );
       })}
     </div>

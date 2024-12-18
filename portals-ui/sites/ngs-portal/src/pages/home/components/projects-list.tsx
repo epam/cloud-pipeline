@@ -68,9 +68,9 @@ export const ProjectsList = memo(
         virtualized={mode === 'extended'}
         search={search}
         onSearchChange={onSearchChange}
-        beforeSearch={
+        afterSearch={
           filtersProps && (
-            <NgsFilters className="min-w-[75%]" {...filtersProps} />
+            <NgsFilters className="flex-shrink-0 flex-wrap" {...filtersProps} />
           )
         }
         itemKey="id"
