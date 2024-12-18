@@ -5,7 +5,7 @@ import { loadProjects } from '../../state/projects/load-projects';
 import { Breadcrumb, Spin } from 'antd';
 import { Link } from 'react-router-dom';
 import { HomeIcon } from '@heroicons/react/24/solid';
-import { ItemLayout } from '../../shared/ui/item-layout';
+import { ItemLayout } from '../../shared/ui';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
 
 export function ProjectPage() {

@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import { Breadcrumb, Spin } from 'antd';
 import { Link } from 'react-router-dom';
 import { HomeIcon } from '@heroicons/react/24/solid';
-import { ItemLayout } from '../../shared/ui/item-layout';
+import { ItemLayout } from '../../shared/ui';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
 import { usePipelinesStore } from '../../state/pipelines/hooks';
 import { loadPipelines } from '../../state/pipelines/load-pipelines';
