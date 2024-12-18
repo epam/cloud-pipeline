@@ -37,8 +37,14 @@
 
 .item-header {
   font-size: medium;
-  margin-left: 5px;
   vertical-align: middle;
+}
+
+.item-header-configuration-control {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin: 1px 5px 1px 0;
 }
 
 .section {
@@ -177,6 +183,12 @@
 
 .hint {
   cursor: pointer;
+}
+
+.actions {
+  text-align: right;
+  line-height: 32px;
+  padding: 1px 0;
 }
 
 .actions button {

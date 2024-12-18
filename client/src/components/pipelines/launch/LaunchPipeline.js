@@ -278,6 +278,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
             const required = parameterInfo && parameterInfo.required
               ? parameterInfo.required : false;
             parameters.parameters[param.name] = {
+              ...(parameterInfo || {}),
               value: param.value,
               resolvedValue: param.resolvedValue,
               type,
@@ -289,8 +290,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       }
       return parameters;
     }
-    if (this.getConfigurationParameters()) {
-      return this.getConfigurationParameters();
+    const configurationParameters = this.getConfigurationParameters();
+    if (configurationParameters) {
+      return configurationParameters;
     }
     if (
       this.props.isVersionedStorage &&
@@ -511,6 +513,11 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     this.setState({configName: name});
   };
 
+  onPipelineChanged = (pipelineId, pipelineVersion) => {
+    const {router} = this.props;
+    router.push(`/launch/${pipelineId}/${pipelineVersion}`);
+  };
+
   loadTool = async (image) => {
     if (!image) {
       return;
@@ -704,6 +711,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           configurations={this.getConfigurations()}
           alerts={alerts}
           onConfigurationChanged={this.onConfigurationChanged}
+          onPipelineChanged={this.onPipelineChanged}
           onLaunch={this.launch}
           runConfiguration={this.prepareRunPayload}
           runConfigurationId={this.configurationId}

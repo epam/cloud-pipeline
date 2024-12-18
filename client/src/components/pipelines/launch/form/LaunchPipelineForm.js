@@ -147,6 +147,7 @@ import {getSelectOptions} from '../../../special/instance-type-info';
 import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
+import PipelineVersionPicker from './pipeline-version-picker';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -230,6 +231,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     })),
     editConfigurationMode: PropTypes.bool,
     onConfigurationChanged: PropTypes.func,
+    onPipelineChanged: PropTypes.func,
     currentConfigurationName: PropTypes.string,
     currentConfigurationIsDefault: PropTypes.bool,
     onSetConfigurationAsDefault: PropTypes.func,
@@ -1930,7 +1932,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       );
     }
     return (
-      <span style={{marginLeft: 5}}>
+      <span>
         Estimated price per hour:
         <span className={classNames(
           styles.price,
@@ -5707,11 +5709,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  onChangePipelineVersion = (version) => {
+    const {
+      pipeline,
+      onPipelineChanged
+    } = this.props;
+    if (onPipelineChanged && pipeline) {
+      this.props.onPipelineChanged(pipeline.id, version);
+    }
+  };
+
   render () {
     const renderSubmitButton = () => {
       if (this.props.editConfigurationMode) {
         return (
-          <td style={{textAlign: 'right'}} className={styles.actions}>
+          <div className={styles.actions}>
             <FormItem style={{margin: 0}}>
               {
                 this.renderRunButton()
@@ -5771,7 +5783,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   ) : undefined
               }
             </FormItem>
-          </td>
+          </div>
         );
       } else if (!this.props.pipeline || roleModel.executeAllowed(this.props.pipeline)) {
         const KEYS = {
@@ -5790,7 +5802,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </Menu>
         );
         return (
-          <td style={{textAlign: 'right'}}>
+          <div className={styles.actions}>
             <FormItem style={{margin: 0, marginRight: 10}}>
               {
                 !this.props.detached && !this.props.editConfigurationMode && (
@@ -5824,7 +5836,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 Launch
               </SubmitButton>
             </FormItem>
-          </td>
+          </div>
         );
       }
       return undefined;
@@ -5833,12 +5845,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (this.props.editConfigurationMode) {
         const nameError =
           'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
-        return [
-          <td key="name" style={{width: 40, whiteSpace: 'nowrap'}}>
-            Name:
-          </td>,
-          <td key="input" style={{width: '30%'}}>
+        return (
+          <div
+            key="header"
+            className={styles.itemHeader}
+            style={{
+              display: 'flex',
+              flexWrap: 'nowrap',
+              alignItems: 'center',
+              lineHeight: '32px',
+              minWidth: 200,
+              marginRight: 5
+            }}
+          >
+            <div key="name" style={{whiteSpace: 'nowrap', marginRight: 5}}>
+              Name:
+            </div>
             <FormItem
+              key="input"
               className={styles.formItemRow}
               hasFeedback>
               {this.getSectionFieldDecorator('configuration')('name',
@@ -5856,32 +5880,90 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   initialValue: this.props.currentConfigurationName
                 }
               )(
-                <Input disabled={this.props.readOnly && !this.props.canExecute} />
+                <Input disabled={this.props.readOnly && !this.props.canExecute}/>
               )}
             </FormItem>
-          </td>,
-          <td key="estimated price">
-            {this.renderEstimatedPriceInfo()}
-          </td>
-        ];
+          </div>
+        );
+      }
+
+      let pipelineName, pipelineVersion;
+      if (this.props.pipeline) {
+        pipelineName = this.props.pipeline.name;
       } else {
-        let configuration = [];
-        if (this.props.configurations.length > 0 && this.props.currentConfigurationName) {
-          const configurationChange = (configurationName) => {
-            if (this.props.onConfigurationChanged) {
-              this.props.onConfigurationChanged(configurationName);
+        const dockerImageParts = (
+          this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) || ''
+        ).split('/');
+        if (dockerImageParts.length > 0) {
+          pipelineName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
+          pipelineVersion = dockerImageParts[dockerImageParts.length - 1].split(':')[1];
+        } else {
+          pipelineName = this.localizedString('pipeline');
+        }
+      }
+
+      return (
+        <div
+          key="header"
+          className={styles.itemHeader}
+          style={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            lineHeight: '32px',
+            minWidth: 200,
+            marginRight: 5
+          }}
+        >
+          <Icon
+            type="play-circle-o"
+            className="cp-primary"
+          />
+          <span style={{whiteSpace: 'pre'}}>Launch </span>
+          <RunName
+            style={{fontWeight: 'bold'}}
+            alias={this.state.runNameAlias}
+            editable
+            onChange={this.runNameAliasChange}
+            ignoreOffset
+          >
+            <span
+              id="launch-form-pipeline-name"
+            >
+              {pipelineName}
+            </span>
+            {
+              pipelineVersion && (
+                <span
+                  id="launch-form-pipeline-version"
+                  style={{fontWeight: 'normal'}}
+                >
+                  :{pipelineVersion}
+                </span>
+              )
             }
-          };
-          configuration = [
-            <td
-              style={{
-                width: 1,
-                whiteSpace: 'nowrap',
-                paddingLeft: '3px'
-              }}
-              key="configuration title"
-              className={styles.itemHeader}>configuration: </td>,
-            <td key="configuration selector" style={{width: 200, paddingLeft: 5}}>
+          </RunName>
+        </div>
+      );
+    };
+    const titleConfigurationSection = (() => {
+      if (this.props.editConfigurationMode) {
+        return null;
+      }
+      let configuration;
+      if (this.props.configurations.length > 0 && this.props.currentConfigurationName) {
+        const configurationChange = (configurationName) => {
+          if (this.props.onConfigurationChanged) {
+            this.props.onConfigurationChanged(configurationName);
+          }
+        };
+        configuration = (
+          <div
+            key="configuration"
+            className={styles.itemHeaderConfigurationControl}
+          >
+            <span style={{marginRight: 5}}>Configuration:</span>
+            <div style={{width: 200}}>
               <Select
                 disabled={this.props.readOnly && !this.props.canExecute}
                 defaultValue={this.props.currentConfigurationName}
@@ -5892,7 +5974,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 onChange={configurationChange}
                 filterOption={
                   (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0} >
+                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
                 {
                   this.props.configurations.map(c => {
                     return (
@@ -5905,79 +5987,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   })
                 }
               </Select>
-            </td>
-          ];
-        }
-
-        let pipelineName, pipelineVersion;
-        if (this.props.pipeline) {
-          pipelineName = this.props.pipeline.name;
-          if (this.props.version) {
-            pipelineVersion = this.props.version;
-          }
-        } else {
-          const dockerImageParts = (
-            this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) || ''
-          ).split('/');
-          if (dockerImageParts.length > 0) {
-            pipelineName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
-            pipelineVersion = dockerImageParts[dockerImageParts.length - 1].split(':')[1];
-          } else {
-            pipelineName = this.localizedString('pipeline');
-          }
-        }
-
-        return [
-          <td key="header" className={styles.itemHeader} style={{width: 1, whiteSpace: 'nowrap'}}>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'nowrap',
-                alignItems: 'baseline',
-                lineHeight: '32px'
-              }}
-            >
-              <Icon
-                type="play-circle-o"
-                className="cp-primary"
-              />
-              <span style={{whiteSpace: 'pre'}}>Launch </span>
-              <RunName
-                style={{fontWeight: 'bold'}}
-                alias={this.state.runNameAlias}
-                editable
-                onChange={this.runNameAliasChange}
-                ignoreOffset
-              >
-                <span
-                  id="launch-form-pipeline-name"
-                >
-                  {pipelineName}
-                </span>
-                {
-                  pipelineVersion && (
-                    <span
-                      id="launch-form-pipeline-version"
-                      style={{fontWeight: 'normal'}}
-                    >
-                      :{pipelineVersion}
-                    </span>
-                  )
-                }
-              </RunName>
-              <span>.</span>
             </div>
-          </td>,
-          ...configuration,
-          <td
-            key="estimated price"
-            className={styles.itemHeader}
-            style={{width: 1, whiteSpace: 'nowrap'}}>
-            {this.renderEstimatedPriceInfo()}
-          </td>
-        ];
+          </div>
+        );
       }
-    };
+
+      let pipelineVersionPicker
+      if (this.props.pipeline) {
+        if (!this.props.editConfigurationMode && !this.props.detached) {
+          pipelineVersionPicker = (
+            <div key="pipeline version" className={styles.itemHeaderConfigurationControl}>
+              <span style={{marginRight: 5}}>Version:</span>
+              <div style={{width: 200}}>
+                <PipelineVersionPicker
+                  pipelineId={this.props.pipeline.id}
+                  pipelineVersion={this.props.version}
+                  onPipelineVersionChange={this.onChangePipelineVersion}
+                  disabled={this.props.readOnly && !this.props.canExecute}
+                />
+              </div>
+            </div>
+          );
+        }
+      }
+
+      return [
+        pipelineVersionPicker,
+        configuration
+      ];
+    })();
     const bucketTypes = ['AZ', 'S3', 'GS', 'DTS', 'NFS'];
     if (this.state.parameterType === 'path' || this.state.parameterType === 'input') {
       bucketTypes.push('AWS_OMICS_SEQ', 'AWS_OMICS_REF');
@@ -5985,17 +6023,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
-          <table
-            style={{width: '100%'}}
-            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
-          >
-            <tbody>
-              <tr>
+          <div className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}>
+            <div
+              id="launch-pipeline-form-header-container"
+              style={{width: '100%', display: 'flex', alignItems: 'flex-start', margin: 5}}
+            >
+              <div
+                id="launch-pipeline-form-header"
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  display: 'inline-flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  marginRight: 5,
+                  padding: '1px 0'
+                }}
+              >
                 {renderFormTitle()}
-                {renderSubmitButton()}
-              </tr>
-            </tbody>
-          </table>
+                <div style={{display: 'inline-flex', lineHeight: '32px'}}>
+                  {titleConfigurationSection}
+                </div>
+              </div>
+              {renderSubmitButton()}
+            </div>
+            <div
+              style={{width: '100%', display: 'flex', alignItems: 'center', margin: 5, flexWrap: 'wrap'}}>
+              {this.renderEstimatedPriceInfo()}
+            </div>
+          </div>
           {this.renderAlerts()}
           {
             this.props.pipeline &&
@@ -6003,7 +6059,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             !this.props.detached
               ? (
                 <Row>
-                  <Alert
+                <Alert
                     type="warning"
                     message={`You have no permissions to launch ${this.props.pipeline.name}`} />
                   <br />

@@ -25,7 +25,7 @@ import Markdown from '../../special/markdown';
 function createRunContinuationConfirmationDialog () {
   let instance;
 
-  @inject('preferences')
+  @inject('preferences', 'routing')
   @observer
   class _RunContinuationConfirmation extends React.Component {
     state = {run: undefined};
@@ -49,6 +49,28 @@ function createRunContinuationConfirmationDialog () {
       });
       this.setState({run});
       return this.promise;
+    };
+
+    onRunCustom = () => {
+      if (this.resolve) {
+        this.resolve(false);
+        this.resolve = undefined;
+      }
+      const {run} = this.state;
+      this.setState({run: undefined});
+      const {routing} = this.props;
+      if (run && routing) {
+        const {
+          pipelineId,
+          version,
+          id
+        } = run;
+        if (pipelineId && version) {
+          routing.push(`/launch/${pipelineId}/${version}/default/${id}`);
+        } else {
+          routing.push(`/launch/${id}`);
+        }
+      }
     };
 
     onConfirm = () => {
@@ -109,19 +131,32 @@ function createRunContinuationConfirmationDialog () {
                     display: 'flex',
                     flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'flex-end'
+                    justifyContent: 'space-between',
+                    float: 'unset',
+                    paddingLeft: 40
                   }}
                 >
-                  <Button size="large" onClick={this.close}>
-                    Cancel
+                  <Button size="large" onClick={this.onRunCustom}>
+                    Customize
                   </Button>
-                  <Button
-                    size="large"
-                    onClick={this.onConfirm}
-                    type="primary"
-                  >
-                    CONTINUE
-                  </Button>
+                  <div style={{
+                    display: 'inline-flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexGap: 5
+                  }}>
+                    <Button size="large" onClick={this.close}>
+                      Cancel
+                    </Button>
+                    <Button
+                      size="large"
+                      onClick={this.onConfirm}
+                      type="primary"
+                    >
+                      Continue
+                    </Button>
+                  </div>
                 </div>
               </div>
             )
