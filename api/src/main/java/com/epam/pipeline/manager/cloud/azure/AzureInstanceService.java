@@ -24,13 +24,11 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.entity.region.AzureRegion;
-import com.epam.pipeline.entity.region.AzureRegionCredentials;
-import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.*;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
@@ -51,12 +49,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -293,6 +286,17 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public void deleteInstanceTags(final AzureRegion region, final String runId, final Set<String> tagNames) {
 
+    }
+
+    @Override
+    public List<NodeInstance> getCloudNodes(final AzureRegion region) {
+        throw new UnsupportedOperationException("Loading instances doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final AzureRegion region, final String instanceId) {
+        // not supported yet
+        return Optional.empty();
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {

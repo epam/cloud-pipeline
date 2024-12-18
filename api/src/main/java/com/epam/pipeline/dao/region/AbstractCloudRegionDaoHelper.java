@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.region;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
+import com.epam.pipeline.entity.region.ClusterStateRegionProperties;
 import com.epam.pipeline.entity.region.MountStorageRule;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
@@ -56,6 +57,18 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
                 Optional.ofNullable(region.getRunShiftPolicy())
                         .map(RunRegionShiftPolicy::isShiftEnabled)
                         .orElse(Boolean.FALSE));
+        params.addValue(CloudRegionParameters.CLUSTER_INCLUDE.name(), region.isClusterInclude());
+
+        final String clusterSateRegionProperties = Optional.ofNullable(region.getClusterStateRegionProperties())
+                .map(clusterStateProperties -> {
+                    if (MapUtils.isNotEmpty(clusterStateProperties.getTagsFilter())) {
+                        return JsonMapper.convertDataToJsonStringForQuery(
+                                region.getClusterStateRegionProperties());
+                    } else {
+                        return null;
+                    }
+                }).orElse(null);
+        params.addValue(CloudRegionParameters.CLUSTER_STATE_PROPERTIES.name(), clusterSateRegionProperties);
 
         final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
                 .map(props -> {
@@ -108,6 +121,14 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         if (!rs.wasNull()) {
             region.setStorageLifecycleServiceProperties(
                     JsonMapper.parseData(slsJsonString, new TypeReference<StorageLifecycleServiceProperties>() {})
+            );
+        }
+
+        region.setClusterInclude(rs.getBoolean(CloudRegionParameters.CLUSTER_INCLUDE.name()));
+        final String clusterStateProperties = rs.getString(CloudRegionParameters.CLUSTER_STATE_PROPERTIES.name());
+        if (!rs.wasNull()) {
+            region.setClusterStateRegionProperties(
+                    JsonMapper.parseData(clusterStateProperties, new TypeReference<ClusterStateRegionProperties>() {})
             );
         }
     }

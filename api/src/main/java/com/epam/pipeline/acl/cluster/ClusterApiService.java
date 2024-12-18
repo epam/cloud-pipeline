@@ -25,6 +25,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -49,6 +50,7 @@ import org.springframework.stereotype.Service;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+import static com.epam.pipeline.security.acl.AclExpressions.CLOUD_NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
@@ -65,8 +67,8 @@ public class ClusterApiService {
     private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
-    public List<NodeInstance> getNodes() {
-        return nodesManager.getNodes();
+    public List<NodeInstance> getNodes(final MachineType machineType) {
+        return nodesManager.getNodes(machineType);
     }
 
     @PostFilter(NODE_READ_FILTER)
@@ -74,10 +76,10 @@ public class ClusterApiService {
         return nodesManager.filterNodes(filterNodesVO);
     }
 
-    @PreAuthorize(NODE_READ)
+    @PreAuthorize(CLOUD_NODE_READ)
     @AclMask
-    public NodeInstance getNode(final String name) {
-        return nodesManager.getNode(name);
+    public NodeInstance getNode(final String name, final MachineType machineType, final Long regionId) {
+        return nodesManager.getKubeOrCloudNode(name, machineType, regionId);
     }
 
     @PreAuthorize(NODE_READ)
@@ -93,8 +95,8 @@ public class ClusterApiService {
 
     @PreAuthorize(NODE_STOP)
     @AclMask
-    public NodeInstance terminateNode(final String name) {
-        return nodesManager.terminateNode(name);
+    public NodeInstance terminateNode(final String name, final MachineType machineType, final Long regionId) {
+        return nodesManager.terminateKubeOrCloudNode(name, machineType, regionId);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)

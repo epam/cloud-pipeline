@@ -67,7 +67,9 @@
                         dns_hosted_zone_base,
                         run_shift_enabled,
                         user_name,
-                        user_password)
+                        user_password,
+                        cluster_include,
+                        cluster_state_properties)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -113,7 +115,9 @@
                         :DNS_HOSTED_ZONE_BASE,
                         :RUN_SHIFT_ENABLED,
                         :USER_NAME,
-                        :USER_PASSWORD)
+                        :USER_PASSWORD,
+                        :CLUSTER_INCLUDE,
+                        :CLUSTER_STATE_PROPERTIES)
                 ]]>
             </value>
         </constructor-arg>
@@ -167,6 +171,8 @@
                         r.run_shift_enabled,
                         r.user_name,
                         r.user_password,
+                        r.cluster_include,
+                        r.cluster_state_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -228,6 +234,8 @@
                         r.run_shift_enabled,
                         r.user_name,
                         r.user_password,
+                        r.cluster_include,
+                        r.cluster_state_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -289,6 +297,8 @@
                         r.run_shift_enabled,
                         r.user_name,
                         r.user_password,
+                        r.cluster_include,
+                        r.cluster_state_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -350,6 +360,8 @@
                         r.run_shift_enabled,
                         r.user_name,
                         r.user_password,
+                        r.cluster_include,
+                        r.cluster_state_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -411,6 +423,8 @@
                         r.run_shift_enabled,
                         r.user_name,
                         r.user_password,
+                        r.cluster_include,
+                        r.cluster_state_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -471,7 +485,9 @@
                         dns_hosted_zone_base = :DNS_HOSTED_ZONE_BASE,
                         run_shift_enabled = :RUN_SHIFT_ENABLED,
                         user_name = :USER_NAME,
-                        user_password = :USER_PASSWORD
+                        user_password = :USER_PASSWORD,
+                        cluster_include = :CLUSTER_INCLUDE,
+                        cluster_state_properties = :CLUSTER_STATE_PROPERTIES
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -537,6 +553,8 @@
                         r.run_shift_enabled,
                         r.user_name,
                         r.user_password,
+                        r.cluster_include,
+                        r.cluster_state_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
