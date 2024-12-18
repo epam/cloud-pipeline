@@ -23,7 +23,7 @@ CURRENT_DATE=$(date +"%Y-%m-%d")
 STAND_NAME=$(grep -i "e2e.ui.root.address=https://" /$USER_HOME_DIR/e2e/gui/default.conf | sed -n 's/.*https:\x2F\x2F*//p' | awk -F. '{print $1}')
 
 if [ "$_RECORDING" == "true" ]; then
-    /usr/local/bin/flvrec.py -d -o "${STAND_NAME}_${CURRENT_DATE}.flv" -P "${PASSWORD_FILE}" localhost:1 & \
+    /tmp/vnc2flv-20100207/tools/flvrec.py -d -o "${STAND_NAME}_${CURRENT_DATE}.flv" -P "${PASSWORD_FILE}" localhost:1 & \
     ./gradlew clean test
 else
     ./gradlew clean test
