@@ -1,6 +1,7 @@
 import type { CommonProps } from '@cloud-pipeline/components';
 import type { ReactNode } from 'react';
 import { LayoutCard } from './layout-card';
+import cn from 'classnames';
 
 type Props = CommonProps & {
   header: ReactNode;
@@ -18,7 +19,7 @@ export const ItemLayout = ({
   style,
 }: Props) => {
   return (
-    <div className={`flex flex-col space-y-4 ${className}`} style={style}>
+    <div className={cn('flex flex-col space-y-4', className)} style={style}>
       <LayoutCard>{header}</LayoutCard>
 
       <div className="flex flex-1 space-x-4 flex-grow">

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
 import { ProjectsList } from '../home/components/projects-list.tsx';
-import { Spin } from 'antd';
+import { PageSpinner } from '../../shared/ui';
 
 export function ProjectsPage() {
   useEffect(() => {
@@ -18,11 +18,7 @@ export function ProjectsPage() {
   }
 
   if (pending && (!projects || projects.length === 0)) {
-    return (
-      <div className="size-full flex items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (!projects) {

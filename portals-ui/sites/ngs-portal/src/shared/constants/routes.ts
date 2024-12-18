@@ -2,7 +2,6 @@ export enum AppRoutes {
   HOME = 'home',
   PROJECTS = 'projects',
   PROJECT = 'project',
-  PROJECT = 'project',
   PIPELINES = 'pipelines',
   PIPELINE = 'pipeline',
   RUNS = 'runs',

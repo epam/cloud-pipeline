@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router';
-import { Breadcrumb, Spin } from 'antd';
+import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { HomeIcon } from '@heroicons/react/24/solid';
-import { ItemLayout } from '../../shared/ui';
+import { ItemLayout, PageSpinner } from '../../shared/ui';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
 import { usePipelinesStore } from '../../state/pipelines/hooks';
 import { loadPipelines } from '../../state/pipelines/load-pipelines';
@@ -27,11 +27,7 @@ export function PipelinePage() {
   }
 
   if (pending && !pipelines?.length) {
-    return (
-      <div className="size-full flex items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (!pipeline) {
