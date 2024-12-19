@@ -37,7 +37,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toSet;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 
@@ -64,6 +67,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
+import static org.testng.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
 public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
@@ -79,7 +83,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default SelenideElement get(Primitive primitive) {
         return Optional.ofNullable(elements().get(primitive))
                 .orElseThrow(() ->
-                        new NoSuchElementException(String.format(
+                        new NoSuchElementException(format(
                                 "Primitive %s is not defined in %s.", primitive, this.getClass().getSimpleName())));
     }
 
@@ -401,7 +405,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         while (element.has(condition)) {
             times += 1;
             if (times > threshold) {
-                throw new RuntimeException(String.format(
+                throw new RuntimeException(format(
                         "%s matches the condition %s over than %d times.", element, condition, threshold
                 ));
             }
@@ -453,13 +457,13 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         final WebDriver driver = WebDriverRunner.getWebDriver();
         final ELEMENT_TYPE itself = (ELEMENT_TYPE) this;
         final String mainWindow = driver.getWindowHandle();
-        final String duplicatingTab = String.format("window.open('%s', '_blank')", driver.getCurrentUrl());
+        final String duplicatingTab = format("window.open('%s', '_blank')", driver.getCurrentUrl());
         final Set<String> oldWindowHandles = new HashSet<>(driver.getWindowHandles());
         Selenide.executeJavaScript(duplicatingTab);
         final String openedWindow = driver.getWindowHandles().stream()
                                           .filter(handle -> !oldWindowHandles.contains(handle))
                                           .findFirst()
-                                          .orElseThrow(() -> new NoSuchWindowException(String.format(
+                                          .orElseThrow(() -> new NoSuchWindowException(format(
                                               "No new window opened {%s}.", Arrays.toString(oldWindowHandles.toArray())
                                           )));
         driver.switchTo().window(openedWindow);
@@ -536,6 +540,16 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         get(combobox).shouldBe(visible).click();
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         Arrays.stream(options).forEach(option -> listDropDown.forEach(row -> row.shouldNotHave(text(option))));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkDropDownContainsValue(final Primitive combobox, final String option) {
+        sleep(1, SECONDS);
+        get(combobox).shouldBe(visible).click();
+        List<SelenideElement> lines = Selenide.$$(byClassName("ant-select-dropdown-menu-item")).stream()
+                .filter(row -> row.getAttribute("title").contains("m6i")).collect(Collectors.toList());
+        assertTrue(lines.size() > 0,
+                format("Option '%s' isn't contained in drop-down list", option));
         return (ELEMENT_TYPE) this;
     }
 
