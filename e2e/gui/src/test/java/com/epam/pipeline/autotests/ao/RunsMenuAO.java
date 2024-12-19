@@ -336,7 +336,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(withText("Currently viewing")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        $(withText("Currently viewing")).waitUntil(visible, DEFAULT_TIMEOUT);
         if ($(elementWithText(tagName("b"), "other available ")).isDisplayed()) {
             $(withText("Currently viewing")).click();
             $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
@@ -352,7 +352,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        $(byClassName("ant-modal-body")).shouldBe(visible);
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
         ensure(byClassName("ause-confirmation__title"),
                matchText(format("Do you want to pause%s", pipelineName)))
             .sleep(1, SECONDS)

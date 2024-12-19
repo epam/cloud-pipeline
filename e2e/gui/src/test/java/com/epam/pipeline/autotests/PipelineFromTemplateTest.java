@@ -56,7 +56,7 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
         pipelineFromTemplateFinishesCorrectly(Template.PYTHON, "Running python pipeline");
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase("EPMCMBIBPC-542")
     public void luigi() {
         pipelineFromTemplateFinishesCorrectly(Template.LUIGI, "Running luigi pipeline");

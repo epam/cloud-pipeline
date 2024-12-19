@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -328,6 +328,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return new FileAO(fileName, 0);
     }
 
+    public FileAO selectFileVersion(String fileName, String version) {
+        int index = $$(byText(fileName)).indexOf($(byText(version)));
+        return new FileAO(fileName, index);
+    }
+
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
         $$(byClassName("browser__name-cell")).findBy(text(filename)).click();
@@ -435,7 +440,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public MetadataSectionAO showMetadata() {
         click(ACTIONS);
-        if(get(SHOW_METADATA).$(className("anticon-check")).exists()) {
+        if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
             return new MetadataSectionAO(this);
         }
         click(SHOW_METADATA);
@@ -585,7 +590,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         public SelenideElement context() {
             return Optional.ofNullable(fileName)
                     .map(fileName -> $(byClassName("ant-table-body"))
-                            .findAll(byText(fileName))
+                            .findAll(byXpath(format(".//td[contains(., '%s')]", fileName)))
                             .get(index)
                             .closest("tr")
                             .shouldHave(cssClass("browser__file")))
