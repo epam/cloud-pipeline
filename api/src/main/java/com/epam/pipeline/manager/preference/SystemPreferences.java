@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
+import com.epam.pipeline.entity.pipeline.run.RunSyncDataConfig;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -882,6 +883,11 @@ public class SystemPreferences {
     public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
             "launch.insufficient.capacity.message", "Insufficient instance capacity.",
             LAUNCH_GROUP, pass);
+
+    public static final ObjectPreference<RunSyncDataConfig> LAUNCH_RUN_SYNC_DATA =
+            new ObjectPreference<>("launch.run.sync.data", null,
+                    new TypeReference<RunSyncDataConfig>() {},
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<RunSyncDataConfig>() {}));
 
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",

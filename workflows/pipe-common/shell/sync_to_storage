@@ -28,12 +28,18 @@ function echo_debug() {
 
 function add_to_spec() {
     local _location_to_add="$(echo ${1%/})"
+    local _destination_to_add="$(echo ${2%/})"
     touch "$CP_SYNC_TO_STORAGE_SPEC"
     # Spec already contains a requested location
     if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
         return
     fi
-    echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
+
+    if [ -n "$_destination_to_add" ]; then
+        echo "$_location_to_add" "$_destination_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
+    else
+        echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
+    fi
 }
 
 function start_sync_daemon() {
@@ -44,12 +50,26 @@ function start_sync_daemon() {
             continue
         fi
 
-        while read _source_path; do
-            echo_debug "Processing entry $_source_path"
-            
+        while read -a _sync_config_entry; do
+            echo_debug "Processing entry ${_sync_config_entry[*]}"
+
+            local _source_path=${_sync_config_entry[0]}
             _source_path_trim=${_source_path#/}
             _source_path_trim=${_source_path_trim%/}
-            echo_debug "Trimmed entry $_source_path"
+
+            local _dest_path
+            if [ -n "${_sync_config_entry[1]}" ]; then
+              _dest_path=${_sync_config_entry[1]}
+            else
+              if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
+                echo "[WARN] CP_SYNC_TO_STORAGE_DESTINATION is not defined and destination is not provided for entry '${_sync_config_entry[*]}', skipping..."
+                continue
+              fi
+              _dest_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/$_source_path_trim"
+              echo_debug "Destination path wasn't provided in configuration, will use default one: $_dest_path"
+            fi
+
+            echo_debug "Source path: $_source_path Destination path: $_dest_path"
 
             local _pipe_extra_args="${CP_SYNC_TO_STORAGE_PIPE_EXTRA_ARGS}"
 
@@ -66,7 +86,6 @@ function start_sync_daemon() {
             fi
             echo_debug "pipe extra args: $_pipe_extra_args"
 
-            local _dest_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/$_source_path_trim"
             echo_debug "destination path: $_dest_path"
 
             local _pipe_command="pipe storage cp -f \"$_source_path\" \"$_dest_path\" $_pipe_extra_args"
@@ -95,11 +114,14 @@ if [ "$_cmd" == "add" ]; then
         echo "[ERROR] Source file for syncing is not specified, nothing will be added to the sync spec"
         exit 1
     fi
-    add_to_spec "$2"
+    if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ] && [ -z "$3" ]; then
+        echo "[ERROR] Sync destination location is not defined with CP_SYNC_TO_STORAGE_DESTINATION, can't register sync entry without destination provided"
+        exit 1
+    fi
+    add_to_spec "$2" "$3"
 elif [ "$_cmd" == "start" ]; then
     if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
-        echo "[ERROR] Sync destination location is not defined, cannot start sync process"
-        exit 1
+        echo "[WARN] Sync destination location is not defined, only config entries with both source and destination will be processed"
     fi
     CP_SYNC_TO_STORAGE_DESTINATION="${CP_SYNC_TO_STORAGE_DESTINATION%/}"
 
