@@ -3,7 +3,7 @@ import { useStore } from 'zustand';
 import { pipelinesStore } from './store.ts';
 import { useMemo } from 'react';
 
-function usePipelinesStore(): PipelinesStore {
+export function usePipelinesStore(): PipelinesStore {
   return useStore(pipelinesStore);
 }
 

@@ -1,7 +1,7 @@
 import { createStore } from 'zustand';
 import type { PipelinesState, PipelinesStore } from './types.ts';
 
-const pipelinesStore = createStore<PipelinesStore>((set) => ({
+const pipelinesStore = createStore<PipelinesStore>((set, get) => ({
   pipelines: undefined,
   error: undefined,
   pending: false,
@@ -14,6 +14,10 @@ const pipelinesStore = createStore<PipelinesStore>((set) => ({
   },
   setPending(pending: boolean) {
     set({ pending });
+  },
+  getPipelineById(pipelineId: number) {
+    const { pipelines } = get();
+    return pipelines?.find((pipeline) => pipeline.id === pipelineId);
   },
 }));
 

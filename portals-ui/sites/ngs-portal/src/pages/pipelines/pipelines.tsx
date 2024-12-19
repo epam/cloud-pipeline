@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { loadPipelines } from '../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../state/pipelines/hooks';
 import { PipelinesList } from '../home/components/pipelines-list.tsx';
-import { Spin } from 'antd';
+import { PageSpinner } from '../../shared/ui';
 
 export function PipelinesPage() {
   const { pipelines, error, pending } = usePipelinesState();
@@ -18,11 +18,7 @@ export function PipelinesPage() {
   }
 
   if (pending && (!pipelines || pipelines.length === 0)) {
-    return (
-      <div className="size-full flex items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (!pipelines) {
@@ -30,7 +26,7 @@ export function PipelinesPage() {
   }
 
   return (
-    <div className="p-3 overflow-hidden h-full w-full">
+    <div className="overflow-hidden h-full w-full">
       <PipelinesList
         showDescription
         pipelines={pipelines}

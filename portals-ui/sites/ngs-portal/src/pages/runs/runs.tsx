@@ -1,6 +1,6 @@
 import { List, ListHeader } from '@cloud-pipeline/components';
 import { useAuthenticatedUserRuns } from '../../shared/hooks/use-runs-filter.ts';
-import { Spin } from 'antd';
+import { PageSpinner } from '../../shared/ui';
 
 export function RunsPage() {
   const {
@@ -14,11 +14,7 @@ export function RunsPage() {
   }
 
   if (runsPending) {
-    return (
-      <div className="size-full flex items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (!runs) {
