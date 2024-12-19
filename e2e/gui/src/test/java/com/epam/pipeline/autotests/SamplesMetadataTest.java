@@ -649,7 +649,10 @@ public class SamplesMetadataTest
                                                 byText(sampleNameAutocomplete))
                                 )
                                 .click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
-                                .click(save())
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE)
+                                .ensureDisable(SAVE)
                 );
     }
 
@@ -664,7 +667,6 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .ensure(byText(project), visible)
-                .cd(project)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
                 .ensure(MetadataSelection.folders, text(metadataFolder))
