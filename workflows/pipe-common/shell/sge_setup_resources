@@ -161,7 +161,7 @@ if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_WORKER_TYPE_ENABLED" == "true" ]; then
     fi
     configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_WORKER_TYPE" "INT" "0" "$_NODE_WORKER_TYPE_WEIGHT" "JOB" "<="
     
-    if [ "$CP_CAP_SGE_DEFAULT_LOAD_FORMULA" ]; then
+    if [ "$CP_CAP_SGE_DEFAULT_LOAD_FORMULA" ] && [ "$cluster_role" == master ]; then
         pipe_log_info "CP_CAP_SGE_DEFAULT_LOAD_FORMULA is set to ${CP_CAP_SGE_DEFAULT_LOAD_FORMULA}. Configuring scheduler." "$_SGE_RESOURCES_SETUP_TASK"
         
         qconf -ssconf > /tmp/sge_scheduler.conf
