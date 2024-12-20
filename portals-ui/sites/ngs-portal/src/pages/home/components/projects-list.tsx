@@ -56,7 +56,7 @@ export const ProjectsList = memo(
       <ItemsPanel
         className="max-h-full list-container overflow-auto"
         title={
-          <div className="fill-current flex items-center flex-nowrap gap-1">
+          <div className="min-h-6 fill-current flex items-center flex-nowrap gap-1">
             <CubeIcon className="w-5 h-5" />
             <span>Projects</span>
           </div>

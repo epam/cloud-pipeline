@@ -40,7 +40,7 @@ export const PipelinesList = memo(
       <ItemsPanel
         className="max-h-full list-container overflow-auto"
         title={
-          <div className="fill-current flex items-center flex-nowrap gap-1">
+          <div className="min-h-6 fill-current flex items-center flex-nowrap gap-1">
             <ShareIcon className="w-5 h-5 -rotate-90" />
             <span>Pipelines</span>
           </div>
