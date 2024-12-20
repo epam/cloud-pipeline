@@ -22,6 +22,7 @@ import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Tag;
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -383,8 +384,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public List<NodeInstance> getCloudNodes(final AwsRegion region) {
-        return ec2Helper.findCloudNodes(region).stream()
+    public List<NodeInstance> getCloudNodes(final AwsRegion region, final FilterNodesVO filter) {
+        return ec2Helper.findCloudNodes(region, filter).stream()
                 .map(instance -> cloudInstanceToNodeInstance(instance, region))
                 .collect(Collectors.toList());
     }

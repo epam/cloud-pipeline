@@ -144,11 +144,13 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldFilterNodes() throws Exception {
         final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
         final String content = getObjectMapper().writeValueAsString(filterNodesVO);
-        Mockito.doReturn(nodeInstances).when(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
+        Mockito.doReturn(nodeInstances).when(mockClusterApiService)
+                .filterNodes(Mockito.refEq(filterNodesVO), Mockito.refEq(MachineType.KUBE));
 
         final MvcResult mvcResult = performRequest(post(FILTER_NODES_URL).content(content));
 
-        Mockito.verify(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
+        Mockito.verify(mockClusterApiService)
+                .filterNodes(Mockito.refEq(filterNodesVO), Mockito.refEq(MachineType.KUBE));
         assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
