@@ -82,6 +82,7 @@ public class NodesManager {
 
     private static final String MASTER_LABEL = "node-role.kubernetes.io/master";
     private static final int NODE_DOWN_ATTEMPTS = 10;
+    private static final String ACCESS_DENIED_MSG = "Access is denied.";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -103,7 +104,7 @@ public class NodesManager {
 
     @Autowired
     private KubernetesManager kubernetesManager;
-    
+
     @Autowired
     private NodeDiskManager nodeDiskManager;
 
@@ -143,34 +144,26 @@ public class NodesManager {
 
     }
 
-    public List<NodeInstance> filterNodes(FilterNodesVO filterNodesVO) {
-        List<NodeInstance> result;
-        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-            Map<String, String> labelsMap = new HashedMap<>();
-            if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
-                labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
-            }
-            Predicate<NodeInstance> addressFilter = node -> true;
-            if (StringUtils.isNotBlank(filterNodesVO.getAddress())) {
-                Predicate<NodeInstanceAddress> addressEqualsPredicate =
-                    address -> StringUtils.isNotBlank(address.getAddress()) &&
-                        address.getAddress().equalsIgnoreCase(filterNodesVO.getAddress());
-                addressFilter = node ->
-                        node.getAddresses() != null && node.getAddresses()
-                                .stream()
-                                .filter(addressEqualsPredicate).count() > 0;
-            }
-            result = client.nodes()
-                    .withLabels(labelsMap)
-                    .list()
-                    .getItems()
-                    .stream()
-                    .map(NodeInstance::new)
-                    .filter(addressFilter)
-                    .collect(Collectors.toList());
-            this.attachRunsInfo(result);
+    public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
+        switch (machineType) {
+            case KUBE:
+                return filterKubeNodes(filterNodesVO);
+            case CLOUD:
+                if (!authManager.isAdmin()) {
+                    throw new AccessDeniedException(ACCESS_DENIED_MSG);
+                }
+                return filterCloudNodes(filterNodesVO);
+            case ALL:
+                if (!authManager.isAdmin()) {
+                    log.debug("Cloud nodes is not available for non-admin users. Only kube nodes will be filtered.");
+                    return filterKubeNodes(filterNodesVO);
+                }
+                final List<NodeInstance> kubeNodes = filterKubeNodes(filterNodesVO);
+                final List<NodeInstance> cloudNodes = filterCloudNodes(filterNodesVO);
+                return mergeNodesByMachineType(kubeNodes, cloudNodes);
+            default:
+                throw new UnsupportedOperationException(String.format("Unsupported type '%s'", machineType));
         }
-        return result;
     }
 
     public NodeInstance getNode(String name) {
@@ -369,7 +362,7 @@ public class NodesManager {
                 return getKubeNodes();
             case CLOUD:
                 if (!authManager.isAdmin()) {
-                    throw new AccessDeniedException("Cloud nodes is not available for non-admin users");
+                    throw new AccessDeniedException(ACCESS_DENIED_MSG);
                 }
                 return getCloudNodes();
             case ALL:
@@ -506,15 +499,20 @@ public class NodesManager {
     }
 
     private List<NodeInstance> getCloudNodes() {
+        return getCloudNodes(null);
+    }
+
+    private List<NodeInstance> getCloudNodes(final FilterNodesVO filterNodesVO) {
         return ListUtils.emptyIfNull(regionManager.loadAll()).stream()
                 .filter(AbstractCloudRegion::isClusterInclude)
-                .flatMap(region -> getCloudNodesInRegion(region).stream())
+                .flatMap(region -> getCloudNodesInRegion(region, filterNodesVO).stream())
                 .collect(Collectors.toList());
     }
 
-    private List<NodeInstance> getCloudNodesInRegion(final AbstractCloudRegion region) {
+    private List<NodeInstance> getCloudNodesInRegion(final AbstractCloudRegion region,
+                                                     final FilterNodesVO filterNodesVO) {
         try {
-            return cloudFacade.getCloudNodes(region.getId());
+            return cloudFacade.getCloudNodes(region.getId(), filterNodesVO);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
@@ -562,5 +560,43 @@ public class NodesManager {
             log.error(e.getMessage());
             return Optional.empty();
         }
+    }
+
+    private List<NodeInstance> filterCloudNodes(final FilterNodesVO filterNodesVO) {
+        if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
+            // filters by runid are not applicable for cloud nodes
+            return new ArrayList<>();
+        }
+        return StringUtils.isBlank(filterNodesVO.getAddress()) ? getCloudNodes() : getCloudNodes(filterNodesVO);
+    }
+
+    private List<NodeInstance> filterKubeNodes(final FilterNodesVO filterNodesVO) {
+        List<NodeInstance> result;
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            Map<String, String> labelsMap = new HashedMap<>();
+            if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
+                labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
+            }
+            Predicate<NodeInstance> addressFilter = node -> true;
+            if (StringUtils.isNotBlank(filterNodesVO.getAddress())) {
+                Predicate<NodeInstanceAddress> addressEqualsPredicate = address ->
+                        StringUtils.isNotBlank(address.getAddress()) &&
+                                address.getAddress().equalsIgnoreCase(filterNodesVO.getAddress());
+                addressFilter = node ->
+                        node.getAddresses() != null && node.getAddresses()
+                                .stream()
+                                .filter(addressEqualsPredicate).count() > 0;
+            }
+            result = client.nodes()
+                    .withLabels(labelsMap)
+                    .list()
+                    .getItems()
+                    .stream()
+                    .map(NodeInstance::new)
+                    .filter(addressFilter)
+                    .collect(Collectors.toList());
+            this.attachRunsInfo(result);
+        }
+        return result;
     }
 }

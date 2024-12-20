@@ -121,18 +121,20 @@ public class ClusterController extends AbstractRestController {
         return Result.success(clusterApiService.getNodes(machineType));
     }
 
-    @RequestMapping(value = "/cluster/node/filter", method = RequestMethod.POST)
+    @PostMapping("/cluster/node/filter")
     @ResponseBody
     @ApiOperation(
-            value = "Returns all ec2 nodes used in cluster, filtered by runId or address",
-            notes = "Returns all ec2 nodes used in cluster, filtered by runId or address",
+            value = "Returns all nodes used in cluster, filtered by runId or address",
+            notes = "Returns all nodes used in cluster, filtered by runId or address",
             produces = MediaType.APPLICATION_JSON_VALUE
         )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )
-    public Result<List<NodeInstance>> filterNodes(@RequestBody FilterNodesVO filterNodesVO) {
-        return Result.success(clusterApiService.filterNodes(filterNodesVO));
+    public Result<List<NodeInstance>> filterNodes(@RequestBody final FilterNodesVO filterNodesVO,
+                                                  @RequestParam(required = false, defaultValue = KUBE)
+                                                  final MachineType machineType) {
+        return Result.success(clusterApiService.filterNodes(filterNodesVO, machineType));
     }
 
     @GetMapping(value = "/cluster/node/{name}/load")

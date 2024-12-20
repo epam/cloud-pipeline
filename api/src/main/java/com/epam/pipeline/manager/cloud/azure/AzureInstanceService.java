@@ -16,18 +16,21 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
-import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.region.*;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AzureRegion;
+import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
@@ -281,7 +284,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public List<NodeInstance> getCloudNodes(final AzureRegion region) {
+    public List<NodeInstance> getCloudNodes(final AzureRegion region, final FilterNodesVO filter) {
         throw new UnsupportedOperationException("Loading instances doesn't work with Azure provider yet.");
     }
 
