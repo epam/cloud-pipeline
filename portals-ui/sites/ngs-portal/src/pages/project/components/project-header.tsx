@@ -28,7 +28,7 @@ export const ProjectHeader = (props: Props) => {
           <NgsUserCard userName={project.owner} showIcon />
         </Tag>
         <Divider
-          className="h-full mx-2 border-slate-200 dark:border-neutral-700"
+          className="h-6 mx-2 border-slate-200 dark:border-neutral-700"
           type="vertical"
         />
         <div className="flex flex-wrap gap-1 items-center">

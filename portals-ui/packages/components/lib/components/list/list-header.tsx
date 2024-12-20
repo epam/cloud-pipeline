@@ -41,7 +41,7 @@ const ListHeader = (props: ListHeaderProps) => {
             onChange={onChange}
             placeholder={searchPlaceholder ?? 'Search'}
             size="middle"
-            variant="borderless"
+            style={{ boxShadow: 'none', borderColor: 'transparent' }}
             className="flex-1"
           />
           {afterSearch ?? null}
