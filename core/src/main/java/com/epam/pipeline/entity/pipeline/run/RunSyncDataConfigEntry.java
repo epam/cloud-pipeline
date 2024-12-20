@@ -20,5 +20,11 @@ import lombok.Data;
 
 @Data
 public class RunSyncDataConfigEntry {
-    private final String storagePathPrefix;
+    // Storage path where folder for the particular run will be located.
+    // Each run folder will have its own name equal to run id.
+    private final String runFolderPathPrefix;
+    // (Optional) Path where data for this config entry will be located.
+    // This path is relative to run folder.
+    // If not present, data should be located in the run folder itself.
+    private final String dataPathPrefix;
 }

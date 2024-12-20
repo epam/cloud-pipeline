@@ -16,13 +16,6 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import lombok.Data;
-
-import java.util.Map;
-
-@Data
-public class RunSyncDataConfig {
-    // timeout in sec to be used for the sync_to_storage script
-    private final Integer syncTimeout;
-    private final Map<RunSyncDataType, RunSyncDataConfigEntry> data;
+public enum RunSyncDataType {
+    NF_TRACE
 }
