@@ -18,13 +18,16 @@
     "@epam/uui-components": "^5.11.0",
     "@epam/uui-core": "^5.11.0",
     "@heroicons/react": "^2.2.0",
+    "@types/showdown": "^2.0.6",
     "antd": "^5.22.4",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.13",
+    "html-react-parser": "^5.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^6.28.0",
     "react-router-dom": "^6.28.0",
+    "showdown": "^2.1.0",
     "zustand": "^5.0.1"
   },
   "devDependencies": {

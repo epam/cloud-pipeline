@@ -1,0 +1,88 @@
+@tailwind components;
+
+.markdown a {
+  @apply text-sky-700;
+  text-decoration: underline;
+}
+
+.markdown h1,
+.markdown h2 {
+  font-size: larger;
+  font-weight: bold;
+}
+.markdown h3,
+.markdown h4 {
+  font-weight: bold;
+}
+.markdown h5,
+.markdown h6 {
+  font-size: smaller;
+  font-weight: bold;
+}
+
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown ul {
+  list-style-type: circle;
+}
+
+.markdown ul,
+.markdown ol {
+  display: block;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  padding-inline-start: 30px;
+}
+
+.markdown code {
+  @apply bg-pink-100 dark:bg-pink-500/25;
+
+  padding: 5px;
+  margin: 5px;
+  font-size: smaller;
+  border-radius: 5px;
+}
+
+.markdown .sequence code {
+  @apply bg-transparent;
+
+  padding: 2px;
+  margin: 2px;
+  font-size: inherit;
+  font-family: monospace;
+  border-radius: 0;
+}
+
+.markdown > p {
+  @apply my-1.5;
+}
+
+.markdown p code {
+  display: inline;
+}
+
+.markdown pre code {
+  display: block;
+  overflow: auto;
+  word-break: break-word;
+  white-space: pre;
+}
+
+.markdown pre {
+  white-space: normal;
+  text-align: left;
+}
+
+.markdown table {
+  @apply my-1;
+  border-collapse: collapse;
+}
+
+.markdown table tr th,
+.markdown table tr td {
+  @apply border p-1 border-neutral-300 dark:border-neutral-800;
+}

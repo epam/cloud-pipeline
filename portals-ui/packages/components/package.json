@@ -30,12 +30,15 @@
   "dependencies": {
     "@cloud-pipeline/core": "*",
     "@heroicons/react": "^2.2.0",
+    "@types/showdown": "^2.0.6",
     "antd": "^5.22.4",
     "classnames": "^2.5.1",
+    "html-react-parser": "^5.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^6.28.0",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "showdown": "^2.1.0"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3.2.2",

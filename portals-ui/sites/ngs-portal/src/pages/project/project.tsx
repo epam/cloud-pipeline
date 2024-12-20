@@ -4,11 +4,34 @@ import { useProjectsStore } from '../../state/projects/hooks';
 import { loadProjects } from '../../state/projects/load-projects';
 import { noop } from '@cloud-pipeline/core';
 import { ProjectHeader } from './components';
+import { Markdown } from '@cloud-pipeline/components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { RoutePath, AppRoutes } from '../../shared/constants/routes';
 import { ItemLayout, PageSpinner } from '../../shared/ui';
+
+const mark = `
+## Project example description
+
+| Table 1 | Table 2 |
+|---|---|
+| a | b |
+|---|---|
+
+\`\`\`bash
+mkdir -p test
+\`\`\`
+
+List example:
+- List example 1
+- List example 2
+- List example 3
+
+List example:
+* List example 1
+* List example 2
+`;
 
 export const ProjectPage = () => {
   const { projectId } = useParams();
@@ -33,7 +56,12 @@ export const ProjectPage = () => {
       {
         key: 'info',
         label: <span className="px-4">Info</span>,
-        content: <div>Info</div>,
+        content: (
+          <div>
+            <div>Info</div>
+            <Markdown>{mark}</Markdown>
+          </div>
+        ),
       },
       {
         key: 'storage',
