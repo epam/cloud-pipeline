@@ -672,9 +672,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         onCellClick: this.onNodeInstanceSelect,
         render: (item, record) => {
           return (
-            <span className={classNames({
-              // 'cp-primary': highlightCloudNodes && record.isCloudNode
-            })}>
+            <span>
               {item}
               {highlightCloudNodes && record.isCloudNode ? (
                 <Icon style={{marginLeft: 5, fontSize: 14}} type="cloud-o" />
@@ -733,7 +731,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         addresses: node.addresses,
         created: node.creationTimestamp,
         labels: node.labels,
-        uid: node.uid || `${node.region}_${node.name}`,
+        uid: node.uid || `${node.region}_${node.name}_${node.createdDate}`,
         pipelineRun: node.pipelineRun,
         runId: node.runId,
         mask: node.mask,

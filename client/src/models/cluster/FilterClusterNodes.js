@@ -17,10 +17,9 @@
 import RemotePost from '../basic/RemotePost';
 
 class FilterClusterNodes extends RemotePost {
-
   constructor () {
     super();
-    this.url = '/cluster/node/filter';
+    this.url = '/cluster/node/filter?machineType=ALL';
   };
 
   postprocess (value) {
