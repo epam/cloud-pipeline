@@ -500,9 +500,13 @@ public class NodesManager {
     }
 
     private List<NodeInstance> getCloudNodes() {
+        return getCloudNodes(null);
+    }
+
+    private List<NodeInstance> getCloudNodes(final FilterNodesVO filterNodesVO) {
         return ListUtils.emptyIfNull(regionManager.loadAll()).stream()
                 .filter(AbstractCloudRegion::isClusterInclude)
-                .flatMap(region -> getCloudNodesInRegion(region, null).stream())
+                .flatMap(region -> getCloudNodesInRegion(region, filterNodesVO).stream())
                 .collect(Collectors.toList());
     }
 
@@ -564,13 +568,7 @@ public class NodesManager {
             // filters by kube-labels or runid are not applicable for cloud nodes
             return new ArrayList<>();
         }
-        if (StringUtils.isBlank(filterNodesVO.getAddress())) {
-            return getCloudNodes();
-        }
-        return ListUtils.emptyIfNull(regionManager.loadAll()).stream()
-                .filter(AbstractCloudRegion::isClusterInclude)
-                .flatMap(region -> getCloudNodesInRegion(region, filterNodesVO).stream())
-                .collect(Collectors.toList());
+        return StringUtils.isBlank(filterNodesVO.getAddress()) ? getCloudNodes() : getCloudNodes(filterNodesVO);
     }
 
     private List<NodeInstance> filterKubeNodes(final FilterNodesVO filterNodesVO) {
