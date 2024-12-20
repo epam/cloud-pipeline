@@ -673,11 +673,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
         render: (item, record) => {
           return (
             <span className={classNames({
-              'cp-primary': highlightCloudNodes && record.isCloudNode
+              // 'cp-primary': highlightCloudNodes && record.isCloudNode
             })}>
               {item}
               {highlightCloudNodes && record.isCloudNode ? (
-                <Icon style={{marginLeft: 5, fontSize: 14}} type="global" />
+                <Icon style={{marginLeft: 5, fontSize: 14}} type="cloud-o" />
               ) : null}
             </span>
           );
@@ -749,7 +749,9 @@ export default class Cluster extends localization.LocalizedReactComponent {
         rowKey="uid"
         loading={isLoading}
         pagination={{pageSize: 25}}
-        rowClassName={(item) => classNames(`cluster-row-${item.name}`)}
+        rowClassName={(item) => classNames({
+          'cp-background-not-important': item.isCloudNode
+        }, `cluster-row-${item.name}`)}
         size="small"
       />
     );

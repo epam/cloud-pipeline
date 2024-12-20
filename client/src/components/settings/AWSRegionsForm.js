@@ -2158,45 +2158,6 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
-              className={this.getFieldClassName(
-                'clusterInclude',
-                'edit-region-clusterInclude-container'
-              )}
-              {...this.defaultCheckBoxFormItemLayout}>
-              {getFieldDecorator('clusterInclude', {
-                valuePropName: 'checked',
-                initialValue: this.props.region.clusterInclude
-              })(
-                <Checkbox>
-                  Cluster include
-                </Checkbox>
-              )}
-            </Form.Item>
-            <Form.Item
-              label="Cluster state region properties"
-              hasFeedback
-              {...this.formItemLayout}
-              className={
-                this.getFieldClassName(
-                  'clusterStateRegionProperties',
-                  'edit-clusterStateRegionProperties-container'
-                )
-              }
-            >
-              {getFieldDecorator('clusterStateRegionProperties', {
-                initialValue: this.props.region.clusterStateRegionProperties,
-                rules: [{
-                  validator: this.jsonValidation
-                }]
-              })(
-                <CodeEditorFormItem
-                  ref={this.initializeClusterStateRegionPropertiesEditor}
-                  editorClassName={styles.codeEditor}
-                  editorLanguage="application/json"
-                  disabled={this.props.pending} />
-              )}
-            </Form.Item>
-            <Form.Item
               label="Backup Duration"
               required={this.providerSupportsField('backupDuration')}
               {...this.formItemLayout}
@@ -2395,6 +2356,45 @@ class AWSRegionForm extends React.Component {
               })(
                 <Input
                   size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              className={this.getFieldClassName(
+                'clusterInclude',
+                'edit-region-clusterInclude-container'
+              )}
+              {...this.defaultCheckBoxFormItemLayout}>
+              {getFieldDecorator('clusterInclude', {
+                valuePropName: 'checked',
+                initialValue: this.props.region.clusterInclude
+              })(
+                <Checkbox>
+                  Show standalone nodes in Cluster State
+                </Checkbox>
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Standalone nodes filter"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'clusterStateRegionProperties',
+                  'edit-clusterStateRegionProperties-container'
+                )
+              }
+            >
+              {getFieldDecorator('clusterStateRegionProperties', {
+                initialValue: this.props.region.clusterStateRegionProperties,
+                rules: [{
+                  validator: this.jsonValidation
+                }]
+              })(
+                <CodeEditorFormItem
+                  ref={this.initializeClusterStateRegionPropertiesEditor}
+                  editorClassName={styles.codeEditor}
+                  editorLanguage="application/json"
                   disabled={this.props.pending} />
               )}
             </Form.Item>
