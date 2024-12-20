@@ -6,7 +6,7 @@ import type { Project } from '@cloud-pipeline/core';
 import { NgsUserCard, NgsTag } from '../../../widgets';
 import { useMemo } from 'react';
 import { extractTags } from '../../../shared/tags';
-import { PencilIcon } from '@heroicons/react/24/solid';
+import { EditProjectTagsButton } from './edit-project-tags';
 
 type Props = CommonProps & {
   project: Project;
@@ -40,10 +40,7 @@ export const ProjectHeader = (props: Props) => {
               className="shrink-0 m-0"
             />
           ))}
-          <span className="ml-1 cursor-pointer flex flex-nowrap items-center gap-1 text-xs text-link">
-            <PencilIcon className="w-4 h-4" />
-            <span>Edit Tags</span>
-          </span>
+          <EditProjectTagsButton project={project} />
         </div>
       </div>
 

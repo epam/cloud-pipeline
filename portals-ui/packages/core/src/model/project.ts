@@ -9,6 +9,14 @@ export type ProjectsResponse = {
   locked: boolean;
 };
 
+export type UpdateProjectMetadataResponse = {
+  entity: {
+    entityId: number;
+    entityClass: AclClass.folder;
+  };
+  data: NgsData;
+};
+
 export type Configuration = {
   id: number;
   name: string;

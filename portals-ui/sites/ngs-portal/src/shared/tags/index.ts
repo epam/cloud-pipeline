@@ -64,3 +64,4 @@ function extractTags(tagsObject: NgsData | undefined): MappedTag[] {
 }
 
 export { extractTags };
+export type { MappedTag };
