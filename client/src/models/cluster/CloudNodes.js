@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
 
 import Remote from '../basic/Remote';
 
-class NodeInstance extends Remote {
-  url;
-
-  constructor (name, type = 'KUBE') {
+class CloudNodes extends Remote {
+  constructor () {
     super();
-    this.url = `/cluster/node/${name}/load?machineType=${type}`;
+    this.url = `/cluster/node/loadAll?machineType=CLOUD`;
   };
 }
 
-export default NodeInstance;
+export default new CloudNodes();

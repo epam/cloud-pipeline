@@ -81,6 +81,7 @@ import NotificationBrowser from './notification/NotificationBrowser';
 import TicketsBrowser from '../special/tickets/tickets-list';
 import TicketPage from '../special/tickets/ticket';
 import NewTicketPage from '../special/tickets/new-ticket-page';
+import CloudNodes from '../cluster/cloud-nodes';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -134,6 +135,7 @@ function AppRouterComponent ({history, uiNavigation}) {
         <Route path="/cluster" component={ClusterRoot}>
           <IndexRoute component={Cluster} />
           <Route path="core-nodes" component={CoreNodes} />
+          <Route path="cloud-nodes" component={CloudNodes} />
           <Route path="hot" component={HotCluster} />
           <Route path="usage" component={HotClusterUsage} />
         </Route>
