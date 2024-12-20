@@ -51,7 +51,6 @@ export function PipelinePage() {
       />
 
       <ItemLayout
-        className="flex-grow"
         header={<div>{pipeline.name}</div>}
         main={<div>Main</div>}
         asideTop={<div>Recent Runs</div>}
