@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -257,7 +258,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public List<NodeInstance> getCloudNodes(final GCPRegion region) {
+    public List<NodeInstance> getCloudNodes(final GCPRegion region, final FilterNodesVO filter) {
         throw new UnsupportedOperationException("Loading instances doesn't work with GCP provider yet.");
     }
 

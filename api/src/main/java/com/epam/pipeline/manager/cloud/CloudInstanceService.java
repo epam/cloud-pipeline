@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -216,12 +217,14 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     void deleteInstanceTags(T region, String runId, Set<String> tagNames);
 
     /**
-     * Loads all cloud instances available for specified region. Filter by tags can be applied.
+     * Loads all cloud instances available for specified region.
+     * If specified {@link AbstractCloudRegion#getClusterStateRegionProperties()} region tags filter shall be applied.
      *
      * @param region region to load
+     * @param filter if not specified all nodes shall be loaded
      * @return loaded instances
      */
-    List<NodeInstance> getCloudNodes(T region);
+    List<NodeInstance> getCloudNodes(T region, FilterNodesVO filter);
 
     /**
      * Finds cloud instance with specified instance ID in requested region. Empty if no instance found.
