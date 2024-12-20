@@ -25,7 +25,6 @@ export function ProjectsPage() {
     return <div>No data</div>;
   }
 
-  //todo: search refactoring needed (see <ItemsPanel /> search)
   return (
     <div className="overflow-hidden h-full w-full">
       <ProjectsList

@@ -23,7 +23,7 @@ export const RunsList = () => {
       className="max-h-full list-container overflow-auto"
       render={runCardRenderer}
       title={
-        <div className="fill-current flex items-center flex-nowrap gap-1">
+        <div className="min-h-6 fill-current flex items-center flex-nowrap gap-1">
           <PlayCircleIcon className="w-5 h-5" />
           <span>Runs history</span>
         </div>
