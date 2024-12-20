@@ -3,7 +3,9 @@ import { useProjectsState } from '../../state/projects/hooks';
 import { loadProjects } from '../../state/projects/load-projects';
 import { usePipelinesState } from '../../state/pipelines/hooks.ts';
 import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
-import { ProjectsList, PipelinesList, RunsList } from './components';
+import { ProjectsList } from '../../widgets/projects-list';
+import { PipelinesList } from '../../widgets/pipelines-list';
+import { RunsList } from '../../widgets/runs-list';
 import './style.css';
 
 export const HomePage = () => {

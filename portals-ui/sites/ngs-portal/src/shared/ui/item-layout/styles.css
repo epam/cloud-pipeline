@@ -1,0 +1,7 @@
+.item-layout-aside {
+  @apply w-1/3 flex flex-col space-y-4;
+}
+
+.item-layout-aside > * {
+  @apply flex-1 overflow-auto;
+}

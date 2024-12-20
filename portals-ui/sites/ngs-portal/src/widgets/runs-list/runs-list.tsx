@@ -1,7 +1,7 @@
 import type { Run } from '@cloud-pipeline/core';
-import { ItemsPanel } from '../../../widgets/items-panel/items-panel.tsx';
-import { useAuthenticatedUserRuns } from '../../../shared/hooks/use-runs-filter.ts';
-import { RunCard } from './run-card.tsx';
+import { ItemsPanel } from '../items-panel/items-panel.tsx';
+import { useAuthenticatedUserRuns } from '../../shared/hooks/use-runs-filter.ts';
+import { RunCard } from '../cards';
 import cn from 'classnames';
 import { PlayCircleIcon } from '@heroicons/react/24/outline';
 

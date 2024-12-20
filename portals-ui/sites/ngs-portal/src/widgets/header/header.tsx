@@ -3,8 +3,8 @@ import { authenticationStore } from '../../state/authentication/store';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
 import { useNavigate } from 'react-router';
 import { useCallback } from 'react';
-import { NgsUserCard } from '../ngs-user-card';
-import { MainMenu } from './main-menu';
+import { NgsUserCard } from '../cards';
+import { MainMenu } from './main-menu/main-menu.tsx';
 
 export const Header = () => {
   const { authenticatedUser } = authenticationStore.getState();
@@ -15,7 +15,7 @@ export const Header = () => {
   }, [navigate]);
 
   return (
-    <header className="bg-[var(--uui-secondary-70)] flex justify-between items-center gap-4 px-4">
+    <header className="bg-slate-800 flex justify-between items-center gap-4 px-4">
       <Logo onClick={onLogoClick} />
 
       <div className="flex-grow">

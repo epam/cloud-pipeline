@@ -60,7 +60,10 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
       style={style}>
       <ListHeader
         title={title}
-        className="shrink-0 border-b"
+        className={classNames('shrink-0', {
+          'border-b':
+            title || beforeSearch || afterSearch || Boolean(onSearchChange),
+        })}
         search={search}
         onSearch={onSearchChange}
         controls={actions}

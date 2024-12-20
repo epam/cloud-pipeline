@@ -1,14 +1,14 @@
 import { noop, type Project } from '@cloud-pipeline/core';
-import { ProjectCard } from './project-card';
-import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
+import { ProjectCard } from '../cards';
+import { ItemsPanel } from '../items-panel/items-panel.tsx';
 import cn from 'classnames';
 import { memo, useEffect } from 'react';
-import { loadPipelines } from '../../../state/pipelines/load-pipelines';
-import { usePipelinesState } from '../../../state/pipelines/hooks';
+import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
+import { usePipelinesState } from '../../state/pipelines/hooks.ts';
 import { CubeIcon } from '@heroicons/react/24/outline';
-import { CreateProjectButton } from '../../../widgets/modals';
-import { projectFiltersToDisplay } from '../../projects/constants';
-import { NgsFilters, useNgsFilters } from '../../../features/ngs-filters';
+import { CreateProjectButton } from '../modals';
+import { projectFiltersToDisplay } from '../../pages/projects/constants.ts';
+import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
 
 type Props = {
   projects: Project[];

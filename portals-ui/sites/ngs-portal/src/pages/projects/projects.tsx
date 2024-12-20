@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { loadProjects } from '../../state/projects/load-projects';
 import { useProjectsState } from '../../state/projects/hooks';
-import { ProjectsList } from '../home/components/projects-list.tsx';
+import { ProjectsList } from '../../widgets/projects-list';
 import { PageSpinner } from '../../shared/ui';
 
 export function ProjectsPage() {

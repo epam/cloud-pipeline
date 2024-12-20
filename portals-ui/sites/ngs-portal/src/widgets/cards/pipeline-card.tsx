@@ -5,12 +5,13 @@ import { Link } from 'react-router-dom';
 import { type Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { Tag } from '@cloud-pipeline/components';
-import HighlightedText from '../../../shared/highlight-text';
-import { NgsUserCard } from '../../../widgets/ngs-user-card';
-import { NgsTag } from '../../../widgets/ngs-tag';
-import { PipelineToProjectButton } from '../../../widgets/modals';
+import HighlightedText from '../../shared/highlight-text';
+import { NgsUserCard } from './ngs-user-card';
+import { NgsTag } from '../ngs-tag';
+import { PipelineToProjectButton } from '../modals';
+import { extractTags } from '../../shared/tags';
 import './style.css';
-import { extractTags } from '../../../shared/tags';
+import { generatePipelineRoutePath } from '../../shared/constants/routes.ts';
 
 type Props = CommonProps & {
   pipeline: Pipeline;
@@ -39,7 +40,7 @@ export const PipelineCard = ({
       <div className="flex flex-col gap-1">
         <Link
           className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
-          to={`/pipeline/${id}`}>
+          to={generatePipelineRoutePath(id)}>
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
         {showDescription && !!description && (

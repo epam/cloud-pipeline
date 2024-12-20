@@ -6,13 +6,14 @@ import type { Pipeline, Project } from '@cloud-pipeline/core';
 import { RunStatuses } from '@cloud-pipeline/core';
 import { displayDate } from '@cloud-pipeline/core';
 import { StatusIcon, Tag, type CommonProps } from '@cloud-pipeline/components';
-import HighlightedText from '../../../shared/highlight-text';
-import { NgsUserCard } from '../../../widgets/ngs-user-card';
-import { NgsTag } from '../../../widgets/ngs-tag';
+import HighlightedText from '../../shared/highlight-text';
+import { NgsUserCard } from './ngs-user-card';
+import { NgsTag } from '../ngs-tag';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { UserIcon } from '@heroicons/react/24/solid';
+import { extractTags } from '../../shared/tags';
 import './style.css';
-import { extractTags } from '../../../shared/tags';
+import {generateProjectRoutePath} from "../../shared/constants/routes.ts";
 
 type Props = CommonProps & {
   project: Project;
@@ -93,7 +94,7 @@ export const ProjectCard = ({
       <div className="flex flex-col gap-1">
         <Link
           className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
-          to={`/project/${id}`}>
+          to={generateProjectRoutePath(id)}>
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
         <div className="flex flex-nowrap">

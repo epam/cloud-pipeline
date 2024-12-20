@@ -1,11 +1,11 @@
 import type { Pipeline } from '@cloud-pipeline/core';
-import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
-import { PipelineCard } from './pipeline-card';
+import { ItemsPanel } from '../items-panel/items-panel.tsx';
+import { PipelineCard } from '../cards';
 import { memo } from 'react';
 import cn from 'classnames';
 import { ShareIcon } from '@heroicons/react/24/outline';
-import { pipelinesFiltersToDisplay } from '../../pipelines/constants';
-import { NgsFilters, useNgsFilters } from '../../../features/ngs-filters';
+import { pipelinesFiltersToDisplay } from '../../pages/pipelines/constants.ts';
+import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
 
 type Props = {
   pipelines: Pipeline[];

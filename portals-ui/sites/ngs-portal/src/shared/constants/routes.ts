@@ -11,9 +11,17 @@ export enum AppRoutes {
 export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.HOME]: '/',
   [AppRoutes.PROJECTS]: '/projects',
-  [AppRoutes.PROJECT]: '/project/:projectId',
+  [AppRoutes.PROJECT]: '/projects/:projectId',
   [AppRoutes.PIPELINES]: '/pipelines',
-  [AppRoutes.PIPELINE]: '/pipeline/:pipelineId',
+  [AppRoutes.PIPELINE]: '/pipelines/:pipelineId',
   [AppRoutes.RUNS]: '/runs',
   [AppRoutes.NOT_FOUND]: '*',
 };
+
+export function generateProjectRoutePath(projectId: string | number): string {
+  return `/projects/${projectId}`;
+}
+
+export function generatePipelineRoutePath(pipelineId: string | number): string {
+  return `/pipelines/${pipelineId}`;
+}

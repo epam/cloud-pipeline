@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import type { UserCardProps } from '@cloud-pipeline/components';
 import { UserCard } from '@cloud-pipeline/components';
-import { useSearchUserInfoByName } from '../../state/users-info/hooks';
-import { useAuthenticationState } from '../../state/authentication/hooks';
+import { useSearchUserInfoByName } from '../../state/users-info/hooks.ts';
+import { useAuthenticationState } from '../../state/authentication/hooks.ts';
 
 export const NgsUserCard = (
   props: Omit<UserCardProps, 'user'> & { userName: string },

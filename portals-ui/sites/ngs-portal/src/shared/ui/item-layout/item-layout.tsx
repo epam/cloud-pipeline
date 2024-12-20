@@ -1,13 +1,14 @@
 import type { CommonProps } from '@cloud-pipeline/components';
-import type { ReactNode } from 'react';
+import { Children, ReactNode } from 'react';
 import { LayoutCard } from './layout-card';
 import cn from 'classnames';
+import classNames from 'classnames';
+import './styles.css';
 
 type Props = CommonProps & {
   header: ReactNode;
   main: ReactNode;
-  asideTop?: ReactNode;
-  asideBottom?: ReactNode;
+  aside?: ReactNode;
   classes?: {
     container?: string;
     content?: string;
@@ -15,13 +16,14 @@ type Props = CommonProps & {
 };
 
 export const ItemLayout = ({
-  asideTop,
-  asideBottom,
+  aside,
   header,
   main,
   style,
   classes = {},
 }: Props) => {
+  const asidePanels = Children.toArray(aside);
+  const hasAsidePanels = asidePanels.length > 0;
   return (
     <div
       className={cn(
@@ -31,16 +33,15 @@ export const ItemLayout = ({
       style={style}>
       <LayoutCard>{header}</LayoutCard>
       <div className={cn('flex flex-1 space-x-4 flex-grow', classes.content)}>
-        <LayoutCard className={asideTop ? 'w-2/3' : 'w-full'}>
+        <LayoutCard
+          className={classNames(
+            'overflow-auto',
+            hasAsidePanels ? 'w-2/3' : 'w-full',
+          )}>
           {main}
         </LayoutCard>
-        {asideTop && (
-          <div className="w-1/3 flex flex-col space-y-4">
-            <LayoutCard className="flex-grow">{asideTop}</LayoutCard>
-            {asideBottom && (
-              <LayoutCard className="flex-grow">{asideBottom}</LayoutCard>
-            )}
-          </div>
+        {asidePanels.length > 0 && (
+          <div className="item-layout-aside">{asidePanels}</div>
         )}
       </div>
     </div>

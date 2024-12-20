@@ -4,8 +4,8 @@ import { Typography } from 'antd';
 import { displayDate, type Run } from '@cloud-pipeline/core';
 import { Tag, RunPrice } from '@cloud-pipeline/components';
 import type { CommonProps } from '@cloud-pipeline/components';
-import { getStatusBadgeStyle } from '../helpers';
 import { CubeIcon } from '@heroicons/react/24/outline';
+import { getStatusBadgeStyle } from './getStatusBadgeStyles';
 
 type Props = CommonProps & {
   run: Run;

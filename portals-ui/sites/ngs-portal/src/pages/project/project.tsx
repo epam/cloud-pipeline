@@ -10,28 +10,9 @@ import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { RoutePath, AppRoutes } from '../../shared/constants/routes';
 import { ItemLayout, PageSpinner } from '../../shared/ui';
-
-const mark = `
-## Project example description
-
-| Table 1 | Table 2 |
-|---|---|
-| a | b |
-|---|---|
-
-\`\`\`bash
-mkdir -p test
-\`\`\`
-
-List example:
-- List example 1
-- List example 2
-- List example 3
-
-List example:
-* List example 1
-* List example 2
-`;
+import { dummyDescription } from './dummy.description.ts';
+import { LayoutCard } from '../../shared/ui/item-layout/layout-card.tsx';
+import { ProjectRunsList } from './components/project-runs-list.tsx';
 
 export const ProjectPage = () => {
   const { projectId } = useParams();
@@ -56,12 +37,13 @@ export const ProjectPage = () => {
       {
         key: 'info',
         label: <span className="px-4">Info</span>,
-        content: (
-          <div>
-            <div>Info</div>
-            <Markdown>{mark}</Markdown>
-          </div>
-        ),
+        content: <Markdown>{dummyDescription}</Markdown>,
+        aside: [
+          <LayoutCard key="runs">
+            <ProjectRunsList />
+          </LayoutCard>,
+          <LayoutCard key="bottom">Permissions</LayoutCard>,
+        ],
       },
       {
         key: 'storage',
@@ -126,6 +108,7 @@ export const ProjectPage = () => {
           />
         }
         main={activeTab.content}
+        aside={activeTab.aside}
       />
     </div>
   );

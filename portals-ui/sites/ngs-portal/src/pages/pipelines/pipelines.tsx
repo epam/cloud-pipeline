@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { loadPipelines } from '../../state/pipelines/load-pipelines';
 import { usePipelinesState } from '../../state/pipelines/hooks';
-import { PipelinesList } from '../home/components/pipelines-list.tsx';
+import { PipelinesList } from '../../widgets/pipelines-list';
 import { PageSpinner } from '../../shared/ui';
 
 export function PipelinesPage() {
