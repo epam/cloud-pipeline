@@ -8,6 +8,10 @@ type Props = CommonProps & {
   main: ReactNode;
   asideTop?: ReactNode;
   asideBottom?: ReactNode;
+  classes?: {
+    container?: string;
+    content?: string;
+  };
 };
 
 export const ItemLayout = ({
@@ -15,22 +19,24 @@ export const ItemLayout = ({
   asideBottom,
   header,
   main,
-  className,
   style,
+  classes = {},
 }: Props) => {
   return (
-    <div className={cn('flex flex-col space-y-4', className)} style={style}>
+    <div
+      className={cn(
+        'flex flex-col space-y-4 h-full overflow-hidden',
+        classes.container,
+      )}
+      style={style}>
       <LayoutCard>{header}</LayoutCard>
-
-      <div className="flex flex-1 space-x-4 flex-grow">
+      <div className={cn('flex flex-1 space-x-4 flex-grow', classes.content)}>
         <LayoutCard className={asideTop ? 'w-2/3' : 'w-full'}>
           {main}
         </LayoutCard>
-
         {asideTop && (
           <div className="w-1/3 flex flex-col space-y-4">
             <LayoutCard className="flex-grow">{asideTop}</LayoutCard>
-
             {asideBottom && (
               <LayoutCard className="flex-grow">{asideBottom}</LayoutCard>
             )}

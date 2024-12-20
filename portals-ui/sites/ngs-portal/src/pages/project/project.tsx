@@ -3,8 +3,8 @@ import { useParams } from 'react-router';
 import { useProjectsStore } from '../../state/projects/hooks';
 import { loadProjects } from '../../state/projects/load-projects';
 import { noop } from '@cloud-pipeline/core';
-import { ProjectHeader } from './components';
 import { Markdown } from '@cloud-pipeline/components';
+import { ProjectHeader, ProjectPipelines } from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
@@ -71,7 +71,7 @@ export const ProjectPage = () => {
       {
         key: 'pipelines',
         label: <span className="px-4">Pipelines</span>,
-        content: <div>Pipelines</div>,
+        content: <ProjectPipelines project={project} />,
       },
       {
         key: 'history',
@@ -79,7 +79,7 @@ export const ProjectPage = () => {
         content: <div>History</div>,
       },
     ],
-    [],
+    [project],
   );
 
   const activeTab = useMemo(
@@ -116,7 +116,7 @@ export const ProjectPage = () => {
       />
 
       <ItemLayout
-        className="flex-grow"
+        classes={{ content: 'overflow-hidden' }}
         header={
           <ProjectHeader
             project={project}
@@ -125,7 +125,7 @@ export const ProjectPage = () => {
             activeKey={activeTabKey}
           />
         }
-        main={<div>{activeTab.content}</div>}
+        main={activeTab.content}
       />
     </div>
   );

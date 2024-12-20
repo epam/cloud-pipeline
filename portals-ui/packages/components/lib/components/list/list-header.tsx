@@ -21,10 +21,13 @@ const ListHeader = (props: ListHeaderProps) => {
   const onChange = useInputChange(onSearch);
   return (
     <div className={classNames(className, 'divide-y')} style={style}>
-      <div className={classNames('flex text items-center no-wrap list-header')}>
-        <b>{title}</b>
-        {controls ? <div className="ml-auto">{controls}</div> : null}
-      </div>
+      {title || controls ? (
+        <div
+          className={classNames('flex text items-center no-wrap list-header')}>
+          <b>{title}</b>
+          {controls ? <div className="ml-auto">{controls}</div> : null}
+        </div>
+      ) : null}
       {onSearch ? (
         <div
           className={classNames(
