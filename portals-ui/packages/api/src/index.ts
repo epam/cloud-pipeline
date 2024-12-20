@@ -3,6 +3,7 @@ import cloudPipelineApi from './cloud-pipeline-api';
 export * from './users';
 export * from './pipelines';
 export * from './projects';
+export * from './metadata';
 export * from './runs';
 export * from './data-storages';
 
