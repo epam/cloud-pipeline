@@ -18,6 +18,7 @@ export const MainMenu = () => {
   return (
     <Menu
       mode="horizontal"
+      style={{ flexGrow: 1 }}
       selectedKeys={selectedKeys}
       theme="dark"
       className="main-menu text-gray">

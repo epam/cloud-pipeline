@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import { useCallback } from 'react';
 import { NgsUserCard } from '../cards';
 import { MainMenu } from './main-menu/main-menu.tsx';
+import './style.css';
 
 export const Header = () => {
   const { authenticatedUser } = authenticationStore.getState();
@@ -15,14 +16,10 @@ export const Header = () => {
   }, [navigate]);
 
   return (
-    <header className="bg-slate-800 flex justify-between items-center gap-4 px-4">
+    <header className="min-h-[46px] bg-slate-800 flex justify-between items-center gap-4 px-4">
       <Logo onClick={onLogoClick} />
-
-      <div className="flex-grow">
-        <MainMenu />
-      </div>
-
-      <div className="flex items-center ml-auto text-white text-sm">
+      <MainMenu />
+      <div className="text-white text-sm">
         {authenticatedUser?.userName ? (
           <NgsUserCard userName={authenticatedUser?.userName} showIcon />
         ) : (

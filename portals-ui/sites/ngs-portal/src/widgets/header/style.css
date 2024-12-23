@@ -1,16 +1,21 @@
-.main-menu.ant-menu-dark .ant-menu-item-selected {
-  @apply border-sky-500 border-b-2 bg-white bg-opacity-10;
-}
-
-.main-menu.ant-menu-dark .ant-menu-item-selected:hover {
-  @apply border-sky-500 border-b-2 bg-white bg-opacity-10;
-}
-
 .main-menu.ant-menu-dark .ant-menu-item {
+  @apply h-full transition-shadow text-sky-500;
+}
+
+.main-menu.ant-menu-dark .ant-menu-item * {
   @apply text-white;
 }
 
-.main-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected):hover {
+.main-menu.ant-menu-dark .ant-menu-item-selected {
+  box-shadow: inset 0 -2px 0 0;
+  @apply bg-white bg-opacity-10;
+}
+
+.main-menu.ant-menu-dark .ant-menu-item-selected:hover {
+  @apply bg-white bg-opacity-10;
+}
+
+.main-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected):hover * {
   @apply text-gray-300;
 }
 
