@@ -27,7 +27,6 @@ import {
   Tooltip
 } from 'antd';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
-import nodesFilter from '../../../models/cluster/FilterClusterNodes';
 import pools from '../../../models/cluster/HotNodePools';
 import connect from '../../../utils/connect';
 import localization from '../../../utils/localization';
@@ -38,11 +37,10 @@ import {renderNodeLabels} from '../renderers';
 import styles from '../Cluster.css';
 
 @connect({
-  clusterNodes,
-  nodesFilter
+  clusterNodes
 })
 @localization.localizedComponent
-@inject('clusterNodes', 'nodesFilter')
+@inject('clusterNodes')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -483,7 +481,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
   }
 
   get pending () {
-    return this.props.nodesFilter.pending || this.props.clusterNodes.pending;
+    return this.props.clusterNodes.pending;
   }
 
   render () {
