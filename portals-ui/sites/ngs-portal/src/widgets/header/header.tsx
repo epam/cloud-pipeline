@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router';
 import { useCallback } from 'react';
 import { NgsUserCard } from '../cards';
 import { MainMenu } from './main-menu/main-menu.tsx';
-import './style.css';
 
 export const Header = () => {
   const { authenticatedUser } = authenticationStore.getState();
