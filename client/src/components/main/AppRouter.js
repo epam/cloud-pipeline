@@ -73,6 +73,8 @@ import ToolPackages from '../tools/tool-version/packages';
 import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import NotificationBrowser from './notification/NotificationBrowser';
+import CloudNodes from '../cluster/cloud-nodes';
+
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -114,6 +116,7 @@ function AppRouterComponent ({history, uiNavigation}) {
         <Route path="/cluster" component={ClusterRoot}>
           <IndexRoute component={Cluster} />
           <Route path="core-nodes" component={CoreNodes} />
+          <Route path="cloud-nodes" component={CloudNodes} />
           <Route path="hot" component={HotCluster} />
           <Route path="usage" component={HotClusterUsage} />
         </Route>

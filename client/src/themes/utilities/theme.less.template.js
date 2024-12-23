@@ -490,6 +490,9 @@ export default `
 @THEME .has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
+@THEME .cp-background-not-important {
+  background-color: @color-grey-semi-transparent;
+}
 @THEME .cp-text-not-important {
   color: @application-color-faded;
 }

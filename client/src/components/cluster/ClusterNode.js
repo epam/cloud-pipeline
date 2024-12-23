@@ -20,7 +20,7 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
-import clusterNodes from '../../models/cluster/ClusterNodes';
+import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
@@ -30,16 +30,19 @@ import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
+import {checkTerminateNodeErrors} from './constants';
 
 @inject((stores, {params, location}) => {
-  const {from, to} = location?.query;
+  const {from, to, type} = location?.query;
   return {
     pools,
     name: params.nodeName,
-    node: clusterNodes.getNode(params.nodeName),
-    chartsData: new ChartsData(params.nodeName, from, to)
+    node: clusterNodes.getNode(params.nodeName, type),
+    chartsData: new ChartsData(params.nodeName, from, to),
+    machineType: type
   };
 })
+@inject('authenticatedUserInfo', 'preferences')
 @observer
 class ClusterNode extends Component {
   state = {
@@ -78,6 +81,26 @@ class ClusterNode extends Component {
     return false;
   }
 
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
+  };
+
+  get isCloudNode () {
+    return this.props.machineType === MACHINE_TYPES.cloud;
+  }
+
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const {preferences} = this.props;
+    if (preferences) {
+      return preferences.uiStandaloneNodesAllowTerminate;
+    }
+    return true;
+  }
+
   refreshNodeInstance = () => {
     if (!this.props.node.pending) {
       this.props.node.fetch();
@@ -110,7 +133,7 @@ class ClusterNode extends Component {
   };
 
   renderMenu = () => {
-    if (this.props.node.pending || this.props.node.error) {
+    if (this.isCloudNode || this.props.node.pending || this.props.node.error) {
       return null;
     }
     const activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
@@ -179,7 +202,7 @@ class ClusterNode extends Component {
     const request = new TerminateNodeRequest(this.props.name);
     await request.fetch();
     hide();
-    if (request.error) {
+    if (request.error && checkTerminateNodeErrors) {
       message.error(request.error, 5);
     } else {
       this.props.router.push('/cluster');
@@ -235,16 +258,20 @@ class ClusterNode extends Component {
           {
             node: this.props.node,
             chartsData: {...(this.props.chartsData || {})},
-            nodeName: this.props.name
+            nodeName: this.props.name,
+            isCloudNode: this.isCloudNode
           }
         )
       )
     ];
     const nodeLabels = this.renderNodeLabels().filter(label => label !== ' ');
-    const allowToTerminate = this.props.node.loaded &&
+    let allowToTerminate = this.props.node.loaded &&
       roleModel.executeAllowed(this.props.node.value) &&
       roleModel.isOwner(this.props.node.value) &&
       this.nodeIsSlave(this.props.node.value);
+    if (this.isCloudNode) {
+      allowToTerminate = this.isAdmin && this.uiStandaloneNodesAllowTerminate;
+    }
     return (
       <div
         style={{display: 'flex', flexDirection: 'column'}}

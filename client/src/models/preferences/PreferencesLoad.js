@@ -717,6 +717,12 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const value = this.getPreferenceValue('ui.standalone.nodes.allow.terminate');
+    return !value || `${value}`.toLowerCase() !== 'false';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

@@ -16,21 +16,11 @@
 
 import Remote from '../basic/Remote';
 
-export default class TerminateNode extends Remote {
-  constructor (name, machineType) {
+class CloudNodes extends Remote {
+  constructor () {
     super();
-    this.constructor.fetchOptions = {
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8'
-      },
-      mode: 'cors',
-      credentials: 'include',
-      method: 'DELETE'
-    };
-    const queryParameters = [
-      machineType ? `machineType=${machineType}` : undefined
-    ].filter(Boolean).join('&');
-    const query = queryParameters.length > 0 ? `?${queryParameters}` : '';
-    this.url = `/cluster/node/${name}${query}`;
-  }
+    this.url = `/cluster/node/loadAll?machineType=CLOUD`;
+  };
 }
+
+export default new CloudNodes();
