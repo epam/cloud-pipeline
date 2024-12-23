@@ -25,10 +25,8 @@ function ItemsPanelFooter(
         className,
       )}
       style={style}>
-      <Link to={link} className="flex">
-        <Typography.Text className="cursor-pointer text-blue-400 hover:text-blue-500  font-semibold">
-          {viewAllTitle}
-        </Typography.Text>
+      <Link to={link} className="font-semibold">
+        {viewAllTitle}
       </Link>
     </div>
   );

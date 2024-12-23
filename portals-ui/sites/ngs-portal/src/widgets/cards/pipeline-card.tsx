@@ -39,7 +39,7 @@ export const PipelineCard = ({
       style={style}>
       <div className="flex flex-col gap-1">
         <Link
-          className="text-[var(--uui-link)] hover:text-[var(--uui-link-hover)] no-underline"
+          className="font-semibold truncate"
           to={generatePipelineRoutePath(id)}>
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>

@@ -1,15 +1,20 @@
-const primary = '#009ecc';
+import colors from './colors';
+
+const primary = colors.sky500;
+const primaryHover = colors.sky400;
 const bg = '#F5F6FA';
-const success = '#22c55e'; // green-500
-const error = '#e00444'; // red-500
-const info = '#0ea5e9'; // sky-500
-const warning = '#f97316'; // orange-500
+const success = colors.green500;
+const error = colors.red500;
+const info = colors.sky500;
+const warning = colors.orange500;
 
 const theme = {
   cssVar: true,
   token: {
     colorPrimary: primary,
+    colorPrimaryHover: primaryHover,
     colorLink: primary,
+    colorLinkHover: primaryHover,
     colorInfoText: primary,
     colorPrimaryText: primary,
     borderRadius: 3,
