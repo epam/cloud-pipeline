@@ -4,13 +4,14 @@ import { useSelectedMenuItemKeys } from './use-selected-menu-item-keys.ts';
 import { mainMenuItems } from './items.ts';
 import '../style.css';
 
-const menuItems = mainMenuItems.map((m) => (
-  <Menu.Item key={m.key}>
-    <Link className="text-white" to={m.uri}>
+const menuItems = mainMenuItems.map((m) => ({
+  key: m.key,
+  label: (
+    <Link key={m.key} className="text-white" to={m.uri}>
       {m.caption}
     </Link>
-  </Menu.Item>
-));
+  ),
+}));
 
 export const MainMenu = () => {
   const selectedKeys = useSelectedMenuItemKeys();
@@ -20,8 +21,8 @@ export const MainMenu = () => {
       mode="horizontal"
       selectedKeys={selectedKeys}
       theme="dark"
-      className="main-menu text-gray">
-      {menuItems}
-    </Menu>
+      items={menuItems}
+      className="main-menu text-gray"
+    />
   );
 };
