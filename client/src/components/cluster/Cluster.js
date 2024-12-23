@@ -674,7 +674,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
           return (
             <span>
               {item}
-              {highlightCloudNodes && record.isCloudNode ? (
+              {record.isCloudNode ? (
                 <Icon style={{marginLeft: 5, fontSize: 14}} type="cloud-o" />
               ) : null}
             </span>
@@ -748,7 +748,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         loading={isLoading}
         pagination={{pageSize: 25}}
         rowClassName={(item) => classNames({
-          'cp-background-not-important': item.isCloudNode
+          'cp-background-not-important': highlightCloudNodes && item.isCloudNode
         }, `cluster-row-${item.name}`)}
         size="small"
       />
