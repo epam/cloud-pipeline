@@ -67,6 +67,20 @@ function isVisible (parameter, normalizedParameters) {
   return buildVisibilityFn(parameter)(normalizedParameters);
 }
 
+/**
+ * Returns `true` if parameter's 'visible' field is a function
+ * (i.e., parameter visibility is defined based on other parameters values)
+ * @param parameter
+ * @returns {boolean}
+ */
+function isVisibleFieldFn (parameter) {
+  return parameter &&
+    parameter.hasOwnProperty('visible') &&
+    parameter.visible !== undefined &&
+    parameter.visible !== null &&
+    ['true', 'false'].includes(parameter.visible.toString().trim().toLowerCase());
+}
+
 function validate (parameter, normalizedParameters) {
   const validations = buildValidationFn(parameter);
   const [firstError] = validations.map(f => f(normalizedParameters)).filter(Boolean);
@@ -242,7 +256,9 @@ function correctFormFieldValues (parameters, rawEdit = false) {
       const [param] = Object.values(params).filter(p => p.name === key);
       if (param) {
         const visible = isVisible(param, normalizedParameters);
-        if (!visible && param.value !== undefined) {
+        if (!visible && param.value !== undefined && !isVisibleFieldFn(param)) {
+          // parameter is hidden because of the values of other parameters -
+          // we need to clear it value
           modified = true;
           param.value = undefined;
         }
