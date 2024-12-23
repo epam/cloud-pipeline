@@ -10,6 +10,7 @@ import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
 import { useNgsFilters } from '../../../features/ngs-filters';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import HighlightedText from '../../../shared/highlight-text';
+import { Link } from 'react-router-dom';
 
 type Props = CommonProps & {
   project: Project | undefined;
@@ -35,9 +36,9 @@ export const ProjectPipelines = (props: Props) => {
             'flex flex-nowrap gap-3 px-3 py-2 bg-white space-y-1 items-center',
           )}>
           <div className="flex flex-col gap-1 grow">
-            <b className="text-link">
+            <Link className="font-semibold" to="#">
               <HighlightedText search={search}>{item.name}</HighlightedText>
-            </b>
+            </Link>
             {item.description ? <span>{item.description}</span> : null}
             <div className="flex gap-3 items-center text-xs">
               <span>
