@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -27,9 +28,11 @@ import {
   Modal,
   Row,
   Table,
-  Tooltip
+  Tooltip,
+  Icon
 } from 'antd';
-import clusterNodes from '../../models/cluster/ClusterNodes';
+import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
+import cloudNodes from '../../models/cluster/CloudNodes';
 import nodesFilter from '../../models/cluster/FilterClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
@@ -50,10 +53,11 @@ import {
 
 @connect({
   clusterNodes,
+  cloudNodes,
   nodesFilter
 })
 @localization.localizedComponent
-@inject('clusterNodes', 'nodesFilter')
+@inject('authenticatedUserInfo', 'nodesFilter')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -65,6 +69,17 @@ import {
 })
 @observer
 export default class Cluster extends localization.LocalizedReactComponent {
+  static propTypes = {
+    machineType: PropTypes.string,
+    highlightCloudNodes: PropTypes.bool,
+    title: PropTypes.string
+  };
+
+  static defaultProps = {
+    machineType: MACHINE_TYPES.all,
+    highlightCloudNodes: true
+  };
+
   state = {
     appliedFilter: {
       haveRunId: null,
@@ -101,6 +116,13 @@ export default class Cluster extends localization.LocalizedReactComponent {
     selection: []
   };
 
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
+  };
+
   @computed
   get currentNodePool () {
     const {filter, pools} = this.props;
@@ -111,22 +133,38 @@ export default class Cluster extends localization.LocalizedReactComponent {
   }
 
   get nodes () {
-    const {clusterNodes, nodesFilter, filter} = this.props;
-    if (filter && Object.keys(filter).length > 0) {
-      if (clusterNodes.loaded) {
-        const nodes = this.props.clusterNodes.value || [];
-        const nodeMatchesLabel = (label) => (node) => node.labels &&
-          node.labels.hasOwnProperty(label) &&
-          `${node.labels[label] || ''}` === `${filter[label]}`;
-        const nodeMatchesLabels = (node) => !Object.keys(filter)
-          .find(label => !nodeMatchesLabel(label)(node));
-        return (nodes || [])
-          .filter(nodeMatchesLabels);
-      }
-    } else if (nodesFilter.loaded) {
-      return nodesFilter.value || [];
+    const {
+      clusterNodes,
+      cloudNodes,
+      nodesFilter,
+      filter,
+      machineType
+    } = this.props;
+    const nodeMatchesLabel = (label) => (node) => node.labels &&
+      node.labels.hasOwnProperty(label) &&
+      `${node.labels[label] || ''}` === `${filter[label]}`;
+    const nodeMatchesLabels = (node) => !Object.keys(filter)
+      .find(label => !nodeMatchesLabel(label)(node));
+    let nodes = [];
+    if (machineType === MACHINE_TYPES.cloud) {
+      nodes = cloudNodes.loaded
+        ? (cloudNodes.value || []).filter(nodeMatchesLabels)
+        : [];
+    } else if (filter && Object.keys(filter).length > 0) {
+      nodes = clusterNodes.loaded
+        ? (clusterNodes.value || []).filter(nodeMatchesLabels)
+        : [];
+    } else {
+      nodes = nodesFilter.loaded
+        ? (nodesFilter.value || [])
+        : [];
     }
-    return [];
+    return nodes.filter(node => {
+      if (this.isAdmin) {
+        return true;
+      }
+      return node.machineType !== MACHINE_TYPES.all && node.machineType !== MACHINE_TYPES.cloud;
+    });
   }
 
   get filteredNodes () {
@@ -153,7 +191,17 @@ export default class Cluster extends localization.LocalizedReactComponent {
   }
 
   refreshCluster = () => {
-    if (!this.props.clusterNodes.pending) {
+    if (
+      this.props.machineType === MACHINE_TYPES.cloud &&
+      !this.props.cloudNodes.pending
+    ) {
+      this.props.cloudNodes.fetch();
+    }
+    if ((
+      this.props.machineType === MACHINE_TYPES.all ||
+      this.props.machineType === MACHINE_TYPES.kube) &&
+        !this.props.clusterNodes.pending
+    ) {
       this.props.clusterNodes.fetch();
     }
     if (!this.props.nodesFilter.pending) {
@@ -335,10 +383,16 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   canTerminateNode = (node) => {
+    if (node.isCloudNode && !this.isAdmin) {
+      return false;
+    }
     return roleModel.executeAllowed(node) && roleModel.isOwner(node) && this.nodeIsSlave(node);
   }
 
   renderTerminateButton = (item) => {
+    if (item.isCloudNode && !this.isAdmin) {
+      return <span />;
+    }
     if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
       return <Button
         id="terminate-node-button"
@@ -528,6 +582,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   generateNodeInstancesTable = (nodes, isLoading, pools) => {
     const {selection = []} = this.state;
+    const {highlightCloudNodes} = this.props;
     const nodesAllowedToTerminate = nodes
       .filter(node => this.canTerminateNode(node));
     const nodeIsSelected = node => selection.indexOf(node.name) >= 0;
@@ -614,7 +669,17 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Name',
         sorter: this.alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect
+        onCellClick: this.onNodeInstanceSelect,
+        render: (item, record) => {
+          return (
+            <span>
+              {item}
+              {record.isCloudNode ? (
+                <Icon style={{marginLeft: 5, fontSize: 14}} type="cloud-o" />
+              ) : null}
+            </span>
+          );
+        }
       },
       {
         dataIndex: 'pipelineRun',
@@ -666,10 +731,12 @@ export default class Cluster extends localization.LocalizedReactComponent {
         addresses: node.addresses,
         created: node.creationTimestamp,
         labels: node.labels,
-        uid: node.uid,
+        uid: node.uid || `${node.region}_${node.name}_${node.createdDate}`,
         pipelineRun: node.pipelineRun,
         runId: node.runId,
-        mask: node.mask
+        mask: node.mask,
+        isCloudNode: node.machineType === MACHINE_TYPES.all ||
+          node.machineType === MACHINE_TYPES.cloud
       });
     }
     return (
@@ -680,15 +747,18 @@ export default class Cluster extends localization.LocalizedReactComponent {
         rowKey="uid"
         loading={isLoading}
         pagination={{pageSize: 25}}
-        rowClassName={(item) => `cluster-row-${item.name}`}
+        rowClassName={(item) => classNames({
+          'cp-background-not-important': highlightCloudNodes && item.isCloudNode
+        }, `cluster-row-${item.name}`)}
         size="small"
       />
     );
   }
 
   onNodeInstanceSelect = (node) => {
+    const type = node.isCloudNode ? MACHINE_TYPES.cloud : MACHINE_TYPES.kube;
     this.props.clusterNodes.clearCachedNode(node.name);
-    this.props.router.push(`/cluster/${node.name}`);
+    this.props.router.push(`/cluster/${node.name}?type=${type}`);
   };
 
   nodeIsSlave = (node) => {
@@ -728,17 +798,21 @@ export default class Cluster extends localization.LocalizedReactComponent {
     let description = this.getDescription();
     const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
     const selectionLength = (this.state.selection || []).length;
+    let title = this.currentNodePool
+      ? `${this.currentNodePool.name} nodes`
+      : `Cluster nodes`;
+    if (this.props.title) {
+      title = this.props.title;
+    }
     return (
       <div>
         <Row type="flex" align="middle">
           <Col span={19}>
             <span className={styles.nodeMainInfo}>
-              {
-                this.currentNodePool
-                  ? `${this.currentNodePool.name} nodes `
-                  : 'Cluster nodes '
-              }
-              {description}
+              {title}
+              <span style={{marginLeft: 5}}>
+                {description}
+              </span>
             </span>
           </Col>
           <Col span={5} className={styles.refreshButtonContainer}>

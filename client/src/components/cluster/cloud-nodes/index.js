@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-import RemotePost from '../basic/RemotePost';
+import React from 'react';
+import Cluster from '../Cluster';
+import {MACHINE_TYPES} from '../../../models/cluster/ClusterNodes';
 
-class FilterClusterNodes extends RemotePost {
-  constructor () {
-    super();
-    this.url = '/cluster/node/filter?machineType=ALL';
-  };
-
-  postprocess (value) {
-    return value.payload || [];
+export default class CloudNodes extends React.Component {
+  render () {
+    return (
+      <Cluster
+        {...this.props}
+        machineType={MACHINE_TYPES.cloud}
+        highlightCloudNodes={false}
+        title="Cloud nodes"
+      />
+    );
   }
-}
-
-export default new FilterClusterNodes();
+};

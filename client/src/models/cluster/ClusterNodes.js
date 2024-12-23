@@ -17,17 +17,23 @@
 import Remote from '../basic/Remote';
 import NodeInstance from './NodeInstance';
 
+export const MACHINE_TYPES = {
+  all: 'ALL',
+  cloud: 'CLOUD',
+  kube: 'KUBE'
+};
+
 class ClusterNodes extends Remote {
   constructor () {
     super();
-    this.url = '/cluster/node/loadAll';
+    this.url = `/cluster/node/loadAll?machineType=ALL`;
   };
 
   _nodesCache = new Map();
 
-  getNode (name) {
+  getNode (name, type = MACHINE_TYPES.kube) {
     if (!this._nodesCache.has(name)) {
-      const instance = new NodeInstance(name);
+      const instance = new NodeInstance(name, type);
       this._nodesCache.set(name, instance);
       return instance;
     }
