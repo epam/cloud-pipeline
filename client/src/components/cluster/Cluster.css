@@ -66,6 +66,10 @@
   white-space: pre-line;
 }
 
+.cluster-node-row-name {
+  min-width: 160px;
+}
+
 .cluster-node-selection {
   width: 30px;
 }
