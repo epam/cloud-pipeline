@@ -1,5 +1,6 @@
 import type { CommonProps } from '@cloud-pipeline/components';
-import { Children, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { Children } from 'react';
 import { LayoutCard } from './layout-card';
 import cn from 'classnames';
 import classNames from 'classnames';
@@ -24,6 +25,7 @@ export const ItemLayout = ({
 }: Props) => {
   const asidePanels = Children.toArray(aside);
   const hasAsidePanels = asidePanels.length > 0;
+
   return (
     <div
       className={cn(

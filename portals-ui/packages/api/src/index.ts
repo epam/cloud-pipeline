@@ -6,5 +6,6 @@ export * from './projects';
 export * from './metadata';
 export * from './runs';
 export * from './data-storages';
+export * from './permissions';
 
 export { cloudPipelineApi };
