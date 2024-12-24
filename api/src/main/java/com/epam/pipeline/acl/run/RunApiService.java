@@ -48,19 +48,15 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.manager.pipeline.ArchiveRunService;
-import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
-import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.*;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -93,6 +89,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
 public class RunApiService {
 
     private final PipelineRunManager runManager;
+    private final PipelineRunRuntimeDataManager runRuntimeDataManager;
     private final PipelineRunCRUDService runCRUDService;
     private final FilterManager filterManager;
     private final RunLogManager logManager;
@@ -408,5 +405,11 @@ public class RunApiService {
     @PreAuthorize(ADMIN_ONLY)
     public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
         runManager.setLimitBoundary(runId, enable, boundary);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public RunRuntimeData getPipelineRunRuntimeData(final Long runId, final RunSyncRuntimeDataType type,
+                                                    final Map<String, String> parameters) {
+        return runRuntimeDataManager.getPipelineRunRuntimeData(runId, type, parameters);
     }
 }

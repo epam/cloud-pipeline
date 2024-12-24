@@ -48,6 +48,8 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
@@ -650,5 +652,18 @@ public class PipelineRunController extends AbstractRestController {
                                             @RequestParam(required = false) final Integer boundary) {
         runApiService.setLimitBoundary(runId, enable, boundary);
         return Result.success();
+    }
+
+    @PostMapping("/run/{runId}/runtime/data")
+    @ApiOperation(
+            value = "Get run data for the specific run by ID and data type",
+            notes = "Get run data for the specific run by ID and data type",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<RunRuntimeData> getPipelineRunData(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @RequestParam final RunSyncRuntimeDataType type,
+            @RequestBody(required = false) final Map<String, String> parameters) {
+        return Result.success(runApiService.getPipelineRunRuntimeData(runId, type, parameters));
     }
 }

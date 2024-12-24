@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.pipeline.run.runtime;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
-public class RunSyncDataConfigEntry {
-    // Storage path where folder for the particular run will be located.
-    // Each run folder will have its own name equal to run id.
-    private final String runFolderPathPrefix;
-    // (Optional) Path where data for this config entry will be located.
-    // This path is relative to run folder.
-    // If not present, data should be located in the run folder itself.
-    private final String dataPathPrefix;
+public class RunSyncRuntimeDataConfig {
+    // timeout in sec to be used for the sync_to_storage script
+    private final Integer syncTimeout;
+    private final Map<RunSyncRuntimeDataType, RunSyncRuntimeDataConfigEntry> data;
 }
