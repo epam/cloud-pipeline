@@ -29,8 +29,12 @@ if [ "$_RECORDING" == "true" ]; then
         echo "Starting recording: $OUTPUT_FILE"
         /tmp/vnc2flv-20100207/tools/flvrec.py -d -o "${OUTPUT_FILE}" -P "${PASSWORD_FILE}" localhost:1 &
         RECORD_PID=$!
+        while kill -0 $RECORD_PID 2>/dev/null; do
+            sleep 5
+        done
         wait $RECORD_PID
-        if [ $? -eq 0 ]; then
+        RECORD_EXIT_STATUS=$?
+        if [ $RECORD_EXIT_STATUS -eq 0 ]; then
             echo "Recording $OUTPUT_FILE completed successfully."
             break
         else
