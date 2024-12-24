@@ -26,7 +26,6 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.pipeline.runtime.PipelineRunRuntimeDataExtractor;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -46,6 +45,7 @@ import java.util.stream.Stream;
 @AllArgsConstructor
 public class PipelineRunRuntimeDataManager {
 
+
     private static final String PATH_DELIMITER = "/";
 
     @Autowired
@@ -59,9 +59,10 @@ public class PipelineRunRuntimeDataManager {
 
     public RunRuntimeData getPipelineRunRuntimeData(final Long runId, final RunSyncRuntimeDataType type,
                                                     final Map<String, String> parameters) {
-        final RunSyncRuntimeDataConfig runSyncRuntimeDataConfig = preferenceManager.getObjectPreferenceAs(
-                SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA, new TypeReference<RunSyncRuntimeDataConfig>() {}
-        );
+        log.debug("For the run {} runtime data {} was requested, with parameters {}.", runId, type, parameters);
+
+        final RunSyncRuntimeDataConfig runSyncRuntimeDataConfig = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA);
         final RunSyncRuntimeDataConfigEntry dataSyncEntry = MapUtils.emptyIfNull(
                 runSyncRuntimeDataConfig.getData()).get(type);
 
@@ -80,16 +81,33 @@ public class PipelineRunRuntimeDataManager {
         final String runFolderStoragePathPrefix = dataSyncEntry.getRunFolderPathPrefix();
         final AbstractDataStorage dataStorage = dataStorageManager.loadByPathOrId(runFolderStoragePathPrefix);
 
-        final String runFolderPathPrefix = runFolderStoragePathPrefix.replace(dataStorage.getPath(), StringUtils.EMPTY);
+        final String runFolderPathPrefix = runFolderStoragePathPrefix
+                .replace(dataStorage.getPathMask(), StringUtils.EMPTY);
         final String dataPathPrefix = dataSyncEntry.getDataPathPrefix();
         final String dataFileName = dataExtractor.getDataFilePath(parameters);
 
         final String dataFilePath = Stream.of(runFolderPathPrefix, String.valueOf(runId), dataPathPrefix, dataFileName)
+                .map(this::cleanupPath)
                 .filter(Objects::nonNull).collect(Collectors.joining(PATH_DELIMITER));
 
+        log.debug("Constructed file path '{}' in storage {}, to get runtime data for the run {}.",
+                dataFileName, dataStorage.getId(), runId);
+
+        dataStorageManager.checkDataStorageObjectExists(dataStorage, dataFilePath, null);
         final DataStorageStreamingContent fileContent = dataStorageManager
                 .getStreamingContent(dataStorage.getId(), dataFilePath, null);
 
         return dataExtractor.parseData(fileContent.getContent());
+    }
+
+    private String cleanupPath(final String path) {
+        String result = path;
+        if (path.startsWith(PATH_DELIMITER)) {
+            result = result.substring(1);
+        }
+        if (path.endsWith(PATH_DELIMITER)) {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
     }
 }
