@@ -5,7 +5,7 @@ export const Logo = (props: { onClick?: () => void }) => {
 
   return (
     <h1
-      className={classNames('text-white', 'text-xl', {
+      className={classNames('text-white text-xl pb-0.5', {
         'cursor-pointer': Boolean(onClick),
       })}
       onClick={onClick}>
