@@ -31,17 +31,17 @@ import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
 
+@inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
   const {from, to, type} = location?.query;
   return {
     pools,
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName, type),
-    chartsData: new ChartsData(params.nodeName, from, to),
+    chartsData: new ChartsData(params.nodeName, from, to, stores),
     machineType: type
   };
 })
-@inject('authenticatedUserInfo', 'preferences')
 @observer
 class ClusterNode extends Component {
   state = {
@@ -263,7 +263,7 @@ class ClusterNode extends Component {
           child,
           {
             node: this.props.node,
-            chartsData: {...(this.props.chartsData || {})},
+            chartsData: this.props.chartsData,
             nodeName: this.props.name,
             isCloudNode: this.isCloudNode
           }
