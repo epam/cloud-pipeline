@@ -41,7 +41,7 @@ import roleModel from '../../utils/roleModel';
     machineType: type
   };
 })
-@inject('authenticatedUserInfo')
+@inject('authenticatedUserInfo', 'preferences')
 @observer
 class ClusterNode extends Component {
   state = {
@@ -89,6 +89,15 @@ class ClusterNode extends Component {
 
   get isCloudNode () {
     return this.props.machineType === MACHINE_TYPES.cloud;
+  }
+
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const {preferences} = this.props;
+    if (preferences) {
+      return preferences.uiStandaloneNodesAllowTerminate;
+    }
+    return true;
   }
 
   refreshNodeInstance = () => {
@@ -267,7 +276,7 @@ class ClusterNode extends Component {
       roleModel.isOwner(this.props.node.value) &&
       this.nodeIsSlave(this.props.node.value);
     if (this.isCloudNode) {
-      allowToTerminate = this.isAdmin;
+      allowToTerminate = this.isAdmin && this.uiStandaloneNodesAllowTerminate;
     }
     return (
       <div

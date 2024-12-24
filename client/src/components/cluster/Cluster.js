@@ -57,7 +57,7 @@ import {
   nodesFilter
 })
 @localization.localizedComponent
-@inject('authenticatedUserInfo', 'nodesFilter')
+@inject('authenticatedUserInfo', 'nodesFilter', 'preferences')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -130,6 +130,15 @@ export default class Cluster extends localization.LocalizedReactComponent {
       return (pools.value || []).find(p => `${p.id}` === `${filter.pool_id}`);
     }
     return undefined;
+  }
+
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const {preferences} = this.props;
+    if (preferences) {
+      return preferences.uiStandaloneNodesAllowTerminate;
+    }
+    return true;
   }
 
   get nodes () {
@@ -393,7 +402,12 @@ export default class Cluster extends localization.LocalizedReactComponent {
     if (item.isCloudNode && !this.isAdmin) {
       return <span />;
     }
-    if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
+    if (
+      roleModel.executeAllowed(item) &&
+      roleModel.isOwner(item) &&
+      this.nodeIsSlave(item) &&
+      (!item.isCloudNode || this.uiStandaloneNodesAllowTerminate)
+    ) {
       return <Button
         id="terminate-node-button"
         type="danger"
