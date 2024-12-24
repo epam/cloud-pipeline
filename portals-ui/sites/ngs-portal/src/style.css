@@ -5,7 +5,7 @@
 @layer base {
   a .text,
   a {
-    @apply text-sky-700 dark:text-sky-300;
+    @apply text-sky-500 dark:text-sky-300;
   }
 
   a:not(.disabled, [disabled]) {
