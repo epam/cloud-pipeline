@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.pipeline.run.runtime;
 
+import lombok.Builder;
 import lombok.Data;
 
-import java.util.Map;
-
 @Data
-public class RunSyncDataConfig {
-    // timeout in sec to be used for the sync_to_storage script
-    private final Integer syncTimeout;
-    private final Map<RunSyncDataType, RunSyncDataConfigEntry> data;
+@Builder
+public class RunRuntimeData {
+    private final RunSyncRuntimeDataType type;
+    private final String data;
 }

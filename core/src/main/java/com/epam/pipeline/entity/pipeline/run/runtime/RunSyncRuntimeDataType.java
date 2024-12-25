@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.pipeline.run.runtime;
 
-public enum RunSyncDataType {
+public enum RunSyncRuntimeDataType {
     NF_TRACE
 }
