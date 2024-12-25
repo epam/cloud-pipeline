@@ -51,6 +51,10 @@ import {
   testRole
 } from './node-roles';
 
+const isCloudNode = (node = {}) => node.machineType === MACHINE_TYPES.all ||
+  node.machineType === MACHINE_TYPES.cloud ||
+  node.isCloudNode;
+
 @connect({
   clusterNodes,
   cloudNodes,
@@ -392,8 +396,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   canTerminateNode = (node) => {
-    if (node.isCloudNode && !this.isAdmin) {
-      return false;
+    if (isCloudNode(node)) {
+      return this.isAdmin && this.uiStandaloneNodesAllowTerminate;
     }
     return roleModel.executeAllowed(node) && roleModel.isOwner(node) && this.nodeIsSlave(node);
   }
@@ -749,8 +753,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         pipelineRun: node.pipelineRun,
         runId: node.runId,
         mask: node.mask,
-        isCloudNode: node.machineType === MACHINE_TYPES.all ||
-          node.machineType === MACHINE_TYPES.cloud
+        isCloudNode: isCloudNode(node)
       });
     }
     return (
