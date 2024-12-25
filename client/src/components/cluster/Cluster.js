@@ -761,7 +761,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         runId: node.runId,
         mask: node.mask,
         isCloudNode: isCloudNode(node),
-        machinetype: node.machineType
+        machineType: node.machineType
       });
     }
     return (
