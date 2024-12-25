@@ -18,29 +18,8 @@ set -e
 
 _RECORDING="$1"
 
-PASSWORD_FILE=$USER_HOME_DIR/e2e/gui/password.txt
-CURRENT_DATE=$(date +"%Y-%m-%d")
-STAND_NAME=$(grep -i "e2e.ui.root.address=https://" /$USER_HOME_DIR/e2e/gui/default.conf | sed -n 's/.*https:\x2F\x2F*//p' | awk -F. '{print $1}')
-
 if [ "$_RECORDING" == "true" ]; then
-    iteration=1
-    while true; do
-        OUTPUT_FILE="${STAND_NAME}_${CURRENT_DATE}_${iteration}.flv"
-        echo "Starting recording: $OUTPUT_FILE"
-        /tmp/vnc2flv-20100207/tools/flvrec.py -d -o "${OUTPUT_FILE}" -P "${PASSWORD_FILE}" localhost:1 &
-        RECORD_PID=$!
-        while kill -0 $RECORD_PID 2>/dev/null; do
-            sleep 5
-        done
-        wait $RECORD_PID
-        RECORD_EXIT_STATUS=$?
-        if [ $RECORD_EXIT_STATUS -eq 0 ]; then
-            echo "Recording $OUTPUT_FILE completed successfully."
-            break
-        else
-            iteration=$((iteration + 1))
-        fi
-    done &
+    chmod +x recording.sh && bash recording.sh &
     ./gradlew clean test
 else
     ./gradlew clean test
