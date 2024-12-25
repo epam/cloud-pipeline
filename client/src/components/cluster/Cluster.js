@@ -159,7 +159,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
       filter,
       machineType
     } = this.props;
-    const {appliedFilter} = this.state;
     const nodeMatchesLabel = (label) => (node) => node.labels &&
       node.labels.hasOwnProperty(label) &&
       `${node.labels[label] || ''}` === `${filter[label]}`;

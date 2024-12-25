@@ -31,7 +31,6 @@ export default class TerminateNode extends Remote {
       machineType ? `machineType=${machineType}` : undefined
     ].filter(Boolean).join('&');
     const query = queryParameters.length > 0 ? `?${queryParameters}` : '';
-    console.log(111, `/cluster/node/${name}${query}`)
-    // this.url = `/cluster/node/${name}${query}`;
+    this.url = `/cluster/node/${name}${query}`;
   }
 }
