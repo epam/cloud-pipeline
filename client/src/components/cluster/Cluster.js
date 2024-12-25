@@ -33,12 +33,12 @@ import {
 } from 'antd';
 import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import cloudNodes from '../../models/cluster/CloudNodes';
-import nodesFilter from '../../models/cluster/FilterClusterNodes';
+import NodesFilter from '../../models/cluster/FilterClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
@@ -57,11 +57,10 @@ const isCloudNode = (node = {}) => node.machineType === MACHINE_TYPES.all ||
 
 @connect({
   clusterNodes,
-  cloudNodes,
-  nodesFilter
+  cloudNodes
 })
 @localization.localizedComponent
-@inject('authenticatedUserInfo', 'nodesFilter', 'preferences')
+@inject('authenticatedUserInfo', 'preferences')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -120,6 +119,14 @@ export default class Cluster extends localization.LocalizedReactComponent {
     selection: []
   };
 
+  @observable
+  nodesFilterRequest = new NodesFilter(this.props.machineType);
+
+  @computed
+  get nodesFilter () {
+    return this.nodesFilterRequest;
+  }
+
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
@@ -149,27 +156,26 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const {
       clusterNodes,
       cloudNodes,
-      nodesFilter,
       filter,
       machineType
     } = this.props;
+    const {appliedFilter} = this.state;
     const nodeMatchesLabel = (label) => (node) => node.labels &&
       node.labels.hasOwnProperty(label) &&
       `${node.labels[label] || ''}` === `${filter[label]}`;
     const nodeMatchesLabels = (node) => !Object.keys(filter)
       .find(label => !nodeMatchesLabel(label)(node));
     let nodes = [];
-    if (machineType === MACHINE_TYPES.cloud) {
-      nodes = cloudNodes.loaded
-        ? (cloudNodes.value || []).filter(nodeMatchesLabels)
-        : [];
-    } else if (filter && Object.keys(filter).length > 0) {
-      nodes = clusterNodes.loaded
-        ? (clusterNodes.value || []).filter(nodeMatchesLabels)
+    if (filter && Object.keys(filter).length > 0) {
+      const nodeRequest = machineType === MACHINE_TYPES.cloud
+        ? cloudNodes
+        : clusterNodes;
+      nodes = nodeRequest?.loaded
+        ? (nodeRequest.value || []).filter(nodeMatchesLabels)
         : [];
     } else {
-      nodes = nodesFilter.loaded
-        ? (nodesFilter.value || [])
+      nodes = this.nodesFilter.loaded
+        ? (this.nodesFilter.value || [])
         : [];
     }
     return nodes.filter(node => {
@@ -217,8 +223,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
     ) {
       this.props.clusterNodes.fetch();
     }
-    if (!this.props.nodesFilter.pending) {
-      this.props.nodesFilter.send({
+    if (!this.nodesFilter.pending) {
+      this.nodesFilter.send({
         runId: this.state.appliedFilter.runId,
         address: this.state.appliedFilter.address
       });
@@ -269,7 +275,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   terminateNode = async (item) => {
     const hide = message.loading('Processing...', 0);
-    const request = new TerminateNodeRequest(item.name);
+    const request = new TerminateNodeRequest(item.name, item.machineType);
     await request.fetch();
     if (request.error) {
       message.error(request.error, 5);
@@ -283,7 +289,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   terminateNodes = async () => {
     const hide = message.loading('Terminating...', 0);
-    const requests = this.state.selection.map(name => new TerminateNodeRequest(name));
+    const requests = this.state.selection
+      .map(node => new TerminateNodeRequest(node.name, node.machineType));
     const promises = requests.map(r => new Promise((resolve) => {
       r.fetch()
         .then(() => {
@@ -601,22 +608,23 @@ export default class Cluster extends localization.LocalizedReactComponent {
   generateNodeInstancesTable = (nodes, isLoading, pools) => {
     const {selection = []} = this.state;
     const {highlightCloudNodes} = this.props;
+    const onlyCloudNodes = this.props.machineType === MACHINE_TYPES.cloud;
     const nodesAllowedToTerminate = nodes
       .filter(node => this.canTerminateNode(node));
-    const nodeIsSelected = node => selection.indexOf(node.name) >= 0;
+    const nodeIsSelected = node => selection.findIndex(({name}) => name === node.name) >= 0;
     const toggleNode = node => {
-      const index = selection.indexOf(node.name);
+      const index = selection.findIndex(({name}) => name === node.name);
       if (index >= 0) {
         selection.splice(index, 1);
       } else {
-        selection.push(node.name);
+        selection.push(node);
       }
       this.setState({selection});
     };
     const selectAll = (select = true) => {
       if (select) {
         this.setState({
-          selection: nodesAllowedToTerminate.map(node => node.name)
+          selection: nodesAllowedToTerminate
         });
       } else {
         this.setState({selection: []});
@@ -661,12 +669,12 @@ export default class Cluster extends localization.LocalizedReactComponent {
         className: styles.clusterNodeSelection,
         title: (
           <span>
-            <Checkbox
-              disabled={nodesAllowedToTerminate.length === 0}
-              checked={allSelected}
-              indeterminate={indeterminate}
-              onChange={e => selectAll(e.target.checked)}
-            />
+            {nodesAllowedToTerminate.length > 0 ? (
+              <Checkbox
+                checked={allSelected}
+                indeterminate={indeterminate}
+                onChange={e => selectAll(e.target.checked)}
+              />) : null}
           </span>
         ),
         render: (item) => {
@@ -712,8 +720,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('runId', 'Run Id'),
-        sorter: this.runSorter,
+        ...(onlyCloudNodes ? {} : this.getInputFilter('runId', 'Run Id')),
+        sorter: onlyCloudNodes ? undefined : this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect
       },
@@ -753,7 +761,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         pipelineRun: node.pipelineRun,
         runId: node.runId,
         mask: node.mask,
-        isCloudNode: isCloudNode(node)
+        isCloudNode: isCloudNode(node),
+        machinetype: node.machineType
       });
     }
     return (
@@ -813,7 +822,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   render () {
     let description = this.getDescription();
-    const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
+    const error = this.nodesFilter.error || this.props.clusterNodes.error;
     const selectionLength = (this.state.selection || []).length;
     let title = this.currentNodePool
       ? `${this.currentNodePool.name} nodes`
@@ -838,7 +847,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
                 <Button
                   id="cluster-batch-terminate-button"
                   type="danger"
-                  disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
+                  disabled={this.nodesFilter.pending || this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}
                 >
@@ -849,7 +858,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
-              disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}>
+              disabled={this.nodesFilter.pending || this.props.clusterNodes.pending}>
               Refresh
             </Button>
           </Col>
@@ -868,7 +877,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         {
           this.generateNodeInstancesTable(
             this.filteredNodes,
-            this.props.nodesFilter.pending || this.props.clusterNodes.pending,
+            this.nodesFilter.pending || this.props.clusterNodes.pending,
             this.props.pools.loaded ? (this.props.pools.value || []) : []
           )
         }
