@@ -45,11 +45,12 @@ public class PipelineRunRuntimeDataManagerUnitTest {
     public static final long STORAGE_ID = 1L;
     public static final long RUN_ID = STORAGE_ID;
     public static final int SYNC_TIMEOUT = 60;
-    public static final String S3_TRACE_FILE_FULL_PATH = "s3://storage/runfolder/1/prefix/trace.txt";
+    public static final String S3_TRACE_FILE_FULL_PATH = "runfolder/1/prefix/trace.txt";
     public static final String TRACE_TXT = "trace.txt";
     public static final String S3_STORAGE_PATH = "s3://storage";
+    public static final String STORAGE_PATH = "storage";
     public static final String DATA_PATH_PREFIX = "prefix";
-    public static final String FOLER_STORAGE_PREFIX = "/runfolder";
+    public static final String FOLDER_STORAGE_PREFIX = "/runfolder";
 
     @Mock
     private PreferenceManager preferenceManager;
@@ -84,7 +85,7 @@ public class PipelineRunRuntimeDataManagerUnitTest {
             .thenReturn(new RunSyncRuntimeDataConfig(SYNC_TIMEOUT,
                 Collections.singletonMap(
                     RunSyncRuntimeDataType.NF_TRACE,
-                    new RunSyncRuntimeDataConfigEntry(S3_STORAGE_PATH + FOLER_STORAGE_PREFIX, DATA_PATH_PREFIX)))
+                    new RunSyncRuntimeDataConfigEntry(S3_STORAGE_PATH + FOLDER_STORAGE_PREFIX, DATA_PATH_PREFIX)))
             );
         runRuntimeDataManager.getPipelineRunRuntimeData(RUN_ID, RunSyncRuntimeDataType.NF_TRACE, null);
     }
@@ -95,14 +96,14 @@ public class PipelineRunRuntimeDataManagerUnitTest {
             .thenReturn(new RunSyncRuntimeDataConfig(SYNC_TIMEOUT,
                 Collections.singletonMap(
                     RunSyncRuntimeDataType.NF_TRACE,
-                    new RunSyncRuntimeDataConfigEntry(S3_STORAGE_PATH + FOLER_STORAGE_PREFIX, DATA_PATH_PREFIX)))
+                    new RunSyncRuntimeDataConfigEntry(S3_STORAGE_PATH + FOLDER_STORAGE_PREFIX, DATA_PATH_PREFIX)))
             );
         DataStorageManager dataStorageManagerMock = Mockito.mock(DataStorageManager.class);
         S3bucketDataStorage storage = new S3bucketDataStorage();
         storage.setId(STORAGE_ID);
-        storage.setPath(S3_STORAGE_PATH);
+        storage.setPath(STORAGE_PATH);
 
-        Mockito.when(dataStorageManagerMock.loadByPathOrId(Mockito.eq(S3_STORAGE_PATH + FOLER_STORAGE_PREFIX)))
+        Mockito.when(dataStorageManagerMock.loadByPathOrId(Mockito.eq(STORAGE_PATH + FOLDER_STORAGE_PREFIX)))
                 .thenReturn(storage);
         Mockito.when(dataStorageManagerMock.getStreamingContent(
             Mockito.eq(STORAGE_ID), Mockito.eq(S3_TRACE_FILE_FULL_PATH), Mockito.eq(null))
@@ -122,7 +123,7 @@ public class PipelineRunRuntimeDataManagerUnitTest {
 
         Mockito.verify(extractorMock, Mockito.times(1)).getDataType();
         Mockito.verify(dataStorageManagerMock, Mockito.times(1))
-                .loadByPathOrId(Mockito.eq(S3_STORAGE_PATH + FOLER_STORAGE_PREFIX));
+                .loadByPathOrId(Mockito.eq(STORAGE_PATH + FOLDER_STORAGE_PREFIX));
 
         Mockito.verify(dataStorageManagerMock, Mockito.times(1))
                 .getStreamingContent(Mockito.eq(STORAGE_ID),
