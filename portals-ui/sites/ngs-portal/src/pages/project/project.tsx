@@ -1,18 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useProjectsStore } from '../../state/projects/hooks';
 import { loadProjects } from '../../state/projects/load-projects';
 import { noop } from '@cloud-pipeline/core';
-import { Markdown } from '@cloud-pipeline/components';
-import { ProjectHeader, ProjectPipelines } from './components';
+import { ProjectHeader } from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { RoutePath, AppRoutes } from '../../shared/constants/routes';
 import { ItemLayout, PageSpinner } from '../../shared/ui';
-import { dummyDescription } from './dummy.description.ts';
-import { LayoutCard } from '../../shared/ui/item-layout/layout-card.tsx';
-import { ProjectRunsList } from './components/project-runs-list.tsx';
+import { useProjectTabs } from './hooks';
 
 export const ProjectPage = () => {
   const { projectId } = useParams();
@@ -24,50 +21,13 @@ export const ProjectPage = () => {
   } = useProjectsStore();
   const project = getProjectById(Number(projectId));
 
-  const [activeTabKey, setActiveTabKey] = useState('info');
-
   useEffect(() => {
     if (!projects && !isProjectsPending) {
       loadProjects().then(noop).catch(noop);
     }
   }, [projects, isProjectsPending]);
 
-  const tabs = useMemo(
-    () => [
-      {
-        key: 'info',
-        label: <span className="px-4">Info</span>,
-        content: <Markdown>{dummyDescription}</Markdown>,
-        aside: [
-          <LayoutCard key="runs">
-            <ProjectRunsList />
-          </LayoutCard>,
-          <LayoutCard key="bottom">Permissions</LayoutCard>,
-        ],
-      },
-      {
-        key: 'storage',
-        label: <span className="px-4">Storage</span>,
-        content: <div>Storage</div>,
-      },
-      {
-        key: 'pipelines',
-        label: <span className="px-4">Pipelines</span>,
-        content: <ProjectPipelines project={project} />,
-      },
-      {
-        key: 'history',
-        label: <span className="px-4">History</span>,
-        content: <div>History</div>,
-      },
-    ],
-    [project],
-  );
-
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.key === activeTabKey)!,
-    [activeTabKey, tabs],
-  );
+  const { activeTab, tabs, handleChangeTab } = useProjectTabs(project);
 
   if (error) {
     return <div>{error}</div>;
@@ -103,8 +63,8 @@ export const ProjectPage = () => {
           <ProjectHeader
             project={project}
             tabs={tabs}
-            onChangeTab={setActiveTabKey}
-            activeKey={activeTabKey}
+            onChangeTab={handleChangeTab}
+            activeKey={activeTab.key}
           />
         }
         main={activeTab.content}

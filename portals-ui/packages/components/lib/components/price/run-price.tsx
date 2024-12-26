@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { evaluateRunPrice } from '@cloud-pipeline/core';
-import { RunPriceProps } from './types';
+import type { RunPriceProps } from './types';
 import { Price } from './price';
 
 export function RunPrice(props: RunPriceProps) {
