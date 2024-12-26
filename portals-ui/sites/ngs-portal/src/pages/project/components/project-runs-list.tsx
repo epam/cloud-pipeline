@@ -70,23 +70,23 @@ export function ProjectRunsList({ projectId, extended }: Props) {
     }
   }, [pending, runs.length]);
 
-  if (isRunsLoading) {
-    return <PageSpinner />;
-  }
-
   if (error) {
     return <div>Error: {error}</div>;
   }
 
   return (
-    <div className="max-h-full flex flex-col">
-      <ItemsPanel<Run>
-        className="flex-grow bg-white overflow-auto"
-        render={runCardRenderer}
-        items={runs}
-        itemKey="id"
-        viewAll={viewAllProps}
-      />
+    <div className="h-full flex flex-col">
+      {isRunsLoading ? (
+        <PageSpinner />
+      ) : (
+        <ItemsPanel<Run>
+          className="flex-grow bg-white overflow-auto"
+          render={runCardRenderer}
+          items={runs}
+          itemKey="id"
+          viewAll={viewAllProps}
+        />
+      )}
       {extended && (
         <Pagination
           align="end"
