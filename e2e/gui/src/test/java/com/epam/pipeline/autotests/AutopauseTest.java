@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
@@ -47,11 +48,13 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String diskSize = "15";
     private final String onDemand = ON_DEMAND;
+    private final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
 
     private String maxIdleTimeout;
     private String idleActionTimeout;
     private String idleCpuThreshold;
     private String idleAction;
+    private boolean userIsAdvancedUser;
 
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
@@ -60,12 +63,33 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
             idleActionTimeout = getSystemValue(SystemTabAO::getIdleActionTimeout);
             idleCpuThreshold = getSystemValue(SystemTabAO::getIdleCpuThreshold);
             idleAction = getSystemValue(SystemTabAO::getIdleAction);
+            EditUserPopup editUserPopup = navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(userWithoutCompletedRuns.login)
+                    .edit();
+            userIsAdvancedUser = editUserPopup
+                    .isUserHasRoleOrGroup(ROLE_ADVANCED_USER);
+            editUserPopup
+                    .addRoleOrGroupIfNonExist(ROLE_ADVANCED_USER)
+                    .ok();
         });
     }
 
     @AfterClass(alwaysRun = true)
     public void fallBackPreferences() {
         setSystemPreferences(maxIdleTimeout, idleActionTimeout, idleCpuThreshold, idleAction);
+        if(!userIsAdvancedUser) {
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(userWithoutCompletedRuns.login)
+                    .edit()
+                    .deleteRoleOrGroupIfExist(ROLE_ADVANCED_USER)
+                    .ok();
+        }
     }
 
     @Test

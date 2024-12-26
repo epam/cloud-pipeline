@@ -16,6 +16,9 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.NAME;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
@@ -50,48 +53,48 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
     @TestCase(value = {"EPMCMBIBPC-269"})
     public void nodesSortingIncreaseByDateShouldBeValid() {
         clusterMenu()
-            .sortByIncrease(ClusterMenuAO.HeaderColumn.DATE)
-            .validateSortedByIncrease(ClusterMenuAO.HeaderColumn.DATE);
+            .sortByIncrease(DATE)
+            .validateSortedByIncrease(DATE);
     }
 
     @Test(priority = 2, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-271"})
     public void nodesSortingDecreaseByDateShouldBeValid() {
         clusterMenu()
-            .sortByDecrease(ClusterMenuAO.HeaderColumn.DATE)
-            .validateSortedByDecrease(ClusterMenuAO.HeaderColumn.DATE);
+            .sortByDecrease(DATE)
+            .validateSortedByDecrease(DATE);
     }
 
     @Test(priority = 3, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-274"})
     public void nodesSortingIncreaseByLabelShouldBeValid() {
         clusterMenu()
-            .sortByIncrease(ClusterMenuAO.HeaderColumn.LABEL)
-            .validateSortedByIncrease(ClusterMenuAO.HeaderColumn.LABEL);
+            .sortByIncrease(LABEL)
+            .validateSortedByIncrease(LABEL);
     }
 
     @Test(priority = 4, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-275"})
     public void nodesSortingDecreaseByLabelShouldBeValid() {
         clusterMenu()
-            .sortByDecrease(ClusterMenuAO.HeaderColumn.LABEL)
-            .validateSortedByDecrease(ClusterMenuAO.HeaderColumn.LABEL);
+            .sortByDecrease(LABEL)
+            .validateSortedByDecrease(LABEL);
     }
 
     @Test(priority = 5, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-272"})
     public void nodesSortingIncreaseByNameShouldBeValid() {
         clusterMenu()
-            .sortByIncrease(ClusterMenuAO.HeaderColumn.NAME)
-            .validateSortedByIncrease(ClusterMenuAO.HeaderColumn.NAME);
+            .sortByIncrease(NAME)
+            .validateSortedByIncrease(NAME);
     }
 
     @Test(priority = 6, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-273"})
     public void nodesSortingDecreaseByNameShouldBeValid() {
         clusterMenu()
-            .sortByDecrease(ClusterMenuAO.HeaderColumn.NAME)
-            .validateSortedByDecrease(ClusterMenuAO.HeaderColumn.NAME);
+            .sortByDecrease(NAME)
+            .validateSortedByDecrease(NAME);
     }
 
     @Test(priority = 7, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
@@ -120,14 +123,14 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
         final ClusterMenuAO clusterMenuAO = clusterMenu();
         final int nodesCountBeforeFiltering = clusterMenuAO.getNodesCount();
 
-        clusterMenuAO.filerBy(ClusterMenuAO.HeaderColumn.LABEL, getRunId());
+        clusterMenuAO.filerBy(LABEL, getRunId());
         Thread.sleep(2000);
         assertEquals(clusterMenuAO.getNodesCount(), 1);
 
         final String filteredRunId = clusterMenu().getNodeRunId(0);
         assertEquals(filteredRunId, "RUN ID " + getRunId());
 
-        clusterMenuAO.resetFiltering(ClusterMenuAO.HeaderColumn.LABEL);
+        clusterMenuAO.resetFiltering(LABEL);
         Thread.sleep(2000);
         assertEquals(clusterMenuAO.getNodesCount(), nodesCountBeforeFiltering);
     }

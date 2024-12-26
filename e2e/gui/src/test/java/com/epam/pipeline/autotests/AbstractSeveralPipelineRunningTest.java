@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import org.testng.annotations.AfterClass;
@@ -51,6 +52,7 @@ public abstract class AbstractSeveralPipelineRunningTest
         runIds.forEach(runId ->
             navigationMenu()
                     .clusterNodes()
+                    .sortByDecrease(DATE)
                     .removeNodeIfPresent(runId)
         );
     }

@@ -776,6 +776,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return deleteRoleOrGroup(value);
                     }
 
+                    public boolean isUserHasRoleOrGroup(final String value) {
+                        $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                        return  $(By.className(format("role-%s", value))).exists();
+                    }
+
                     public EditUserPopup blockUser(final String user) {
                         click(BLOCK);
                         new ConfirmationPopupAO(this)
