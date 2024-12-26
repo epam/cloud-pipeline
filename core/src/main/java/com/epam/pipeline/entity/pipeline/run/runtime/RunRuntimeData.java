@@ -23,5 +23,5 @@ import lombok.Data;
 @Builder
 public class RunRuntimeData {
     private final RunSyncRuntimeDataType type;
-    private final String data;
+    private final Object data;
 }

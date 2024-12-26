@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.pipeline.run.runtime.nextflow.NextflowTask;
 import com.epam.pipeline.entity.pipeline.run.runtime.nextflow.NextflowTraceFile;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,9 +63,8 @@ public class PipelineRunNextflowTraceDataExtractorTest {
                 new ByteArrayInputStream(VALID_TRACE_FILE.getBytes(StandardCharsets.UTF_8)));
 
         Assert.assertEquals(RunSyncRuntimeDataType.NF_TRACE, result.getType());
-        final NextflowTraceFile nfTraceFile = jsonMapper.parseData(
-                result.getData(), new TypeReference<NextflowTraceFile>() {}
-        );
+        final NextflowTraceFile nfTraceFile = (NextflowTraceFile) result.getData();
+
         Assert.assertEquals(NF_TRACE_FILE_N_TASKS, nfTraceFile.getTasks().size());
         final NextflowTask task = nfTraceFile.getTasks().values().stream().findFirst().orElse(null);
         Assert.assertEquals(NF_TASK_ID, task.getId());

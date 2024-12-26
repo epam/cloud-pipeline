@@ -70,7 +70,7 @@ public class PipelineRunNextflowTraceDataExtractor implements  PipelineRunRuntim
 
             return RunRuntimeData.builder()
                     .type(getDataType())
-                    .data(jsonMapper.writeValueAsString(nextflowTraceFile))
+                    .data(nextflowTraceFile)
                     .build();
         } catch (IOException e) {
             throw new IllegalStateException("Can't read nextflow trace file!", e);
