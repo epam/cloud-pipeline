@@ -647,6 +647,8 @@ public class SystemPreferences {
             "cluster.instances.allowed.tags", null, CLUSTER_GROUP, isValidInstanceTags);
     public static final StringPreference CLUSTER_KUBE_CORE_COMPONENT_LABEL = new StringPreference(
             "cluster.kube.core.component.label", "cloud-pipeline/core-component", CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_LOAD_TIMEOUT = new IntPreference(
+            "cluster.instance.load.timeout.seconds", 15, CLUSTER_GROUP, isGreaterThan(0));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

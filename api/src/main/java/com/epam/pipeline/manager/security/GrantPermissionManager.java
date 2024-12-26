@@ -30,6 +30,7 @@ import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -661,7 +662,20 @@ public class GrantPermissionManager {
         return runPermissionManager.runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
     }
 
-    public boolean nodeStopPermission(String nodeName, String permissionName) {
+    public boolean nodePermission(final String nodeName, final MachineType machineType, final String permissionName) {
+        if (!MachineType.KUBE.equals(machineType)) {
+            // cloud nodes are available only for admins
+            return false;
+        }
+        return nodePermission(nodeName, permissionName);
+    }
+
+    public boolean nodeStopPermission(final String nodeName, final MachineType machineType,
+                                      final String permissionName) {
+        if (!MachineType.KUBE.equals(machineType)) {
+            // cloud nodes are available only for admins
+            return false;
+        }
         NodeInstance nodeInstance = nodesManager.getNode(nodeName);
         // not labeled nodes are available only for admins
         if (nodeInstance.getPipelineRun() == null) {
