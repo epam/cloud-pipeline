@@ -110,6 +110,8 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         originalRegion.setDnsHostedZoneId(updatedRegion.getDnsHostedZoneId());
         originalRegion.setDnsHostedZoneBase(updatedRegion.getDnsHostedZoneBase());
         originalRegion.setRunShiftPolicy(updatedRegion.getRunShiftPolicy());
+        originalRegion.setClusterInclude(updatedRegion.isClusterInclude());
+        originalRegion.setClusterStateRegionProperties(updatedRegion.getClusterStateRegionProperties());
         return originalRegion;
     }
 

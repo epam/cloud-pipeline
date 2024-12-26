@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -43,6 +44,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,6 +76,7 @@ public class ClusterController extends AbstractRestController {
     private static final String REPORT_NAME_TEMPLATE = "%s_%s-%s-%s.%s";
     private static final char TIME_SEPARATION_CHAR = ':';
     private static final char UNDERSCORE = '_';
+    private static final String KUBE = "KUBE";
 
     private final ClusterApiService clusterApiService;
     private final InfrastructureApiService infrastructureApiService;
@@ -103,46 +106,52 @@ public class ClusterController extends AbstractRestController {
         return Result.success(clusterApiService.buildEdgeExternalUrl(region));
     }
 
-    @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)
+    @GetMapping(value = "/cluster/node/loadAll")
     @ResponseBody
     @ApiOperation(
-            value = "Returns all ec2 nodes used in cluster",
-            notes = "Returns all ec2 nodes used in cluster",
+            value = "Returns all nodes used in cluster",
+            notes = "Returns all nodes used in cluster",
             produces = MediaType.APPLICATION_JSON_VALUE
         )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )
-    public Result<List<NodeInstance>> loadNodes() {
-        return Result.success(clusterApiService.getNodes());
+    public Result<List<NodeInstance>> loadNodes(
+            @RequestParam(required = false, defaultValue = KUBE) final MachineType machineType) {
+        return Result.success(clusterApiService.getNodes(machineType));
     }
 
-    @RequestMapping(value = "/cluster/node/filter", method = RequestMethod.POST)
+    @PostMapping("/cluster/node/filter")
     @ResponseBody
     @ApiOperation(
-            value = "Returns all ec2 nodes used in cluster, filtered by runId or address",
-            notes = "Returns all ec2 nodes used in cluster, filtered by runId or address",
+            value = "Returns all nodes used in cluster, filtered by runId or address",
+            notes = "Returns all nodes used in cluster, filtered by runId or address",
             produces = MediaType.APPLICATION_JSON_VALUE
         )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )
-    public Result<List<NodeInstance>> filterNodes(@RequestBody FilterNodesVO filterNodesVO) {
-        return Result.success(clusterApiService.filterNodes(filterNodesVO));
+    public Result<List<NodeInstance>> filterNodes(@RequestBody final FilterNodesVO filterNodesVO,
+                                                  @RequestParam(required = false, defaultValue = KUBE)
+                                                  final MachineType machineType) {
+        return Result.success(clusterApiService.filterNodes(filterNodesVO, machineType));
     }
 
-    @RequestMapping(value = "/cluster/node/{name}/load", method = RequestMethod.GET)
+    @GetMapping(value = "/cluster/node/{name}/load")
     @ResponseBody
     @ApiOperation(
-            value = "Returns an ec2 node, specified by name.",
-            notes = "Returns an ec2 node, specified by name.",
+            value = "Returns a node, specified by name.",
+            notes = "Returns a node, specified by name.",
             produces = MediaType.APPLICATION_JSON_VALUE
         )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<NodeInstance> loadNode(@PathVariable(value = NAME) final String name) {
-        return Result.success(clusterApiService.getNode(name));
+    public Result<NodeInstance> loadNode(@PathVariable(value = NAME) final String name,
+                                         @RequestParam(required = false, defaultValue = KUBE)
+                                         final MachineType machineType,
+                                         @RequestParam(required = false) final Long regionId) {
+        return Result.success(clusterApiService.getNode(name, machineType, regionId));
     }
 
     @RequestMapping(value = "/cluster/node/{name}/run", method = RequestMethod.GET)
@@ -174,18 +183,21 @@ public class ClusterController extends AbstractRestController {
         return Result.success(clusterApiService.getNode(name, request));
     }
 
-    @RequestMapping(value = "/cluster/node/{name}", method = RequestMethod.DELETE)
+    @DeleteMapping(value = "/cluster/node/{name}")
     @ResponseBody
     @ApiOperation(
-            value = "Terminates an ec2 node, specified by name.",
-            notes = "Terminates an ec2 node, specified by name.",
+            value = "Terminates a node, specified by name.",
+            notes = "Terminates a node, specified by name.",
             produces = MediaType.APPLICATION_JSON_VALUE
         )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<NodeInstance> terminateNode(@PathVariable(value = NAME) final String name) {
-        return Result.success(clusterApiService.terminateNode(name));
+    public Result<NodeInstance> terminateNode(@PathVariable(value = NAME) final String name,
+                                              @RequestParam(required = false, defaultValue = KUBE)
+                                              final MachineType machineType,
+                                              @RequestParam(required = false) final Long regionId) {
+        return Result.success(clusterApiService.terminateNode(name, machineType, regionId));
     }
 
     @RequestMapping(value = "/cluster/instance/loadAll", method = RequestMethod.GET)

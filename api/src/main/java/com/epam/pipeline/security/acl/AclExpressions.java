@@ -156,6 +156,9 @@ public final class AclExpressions {
     public static final String NODE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";
 
+    public static final String CLOUD_NODE_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(#name, #machineType, 'READ')";
+
     public static final String NODE_USAGE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodeUsagePermission(#name, 'READ')";
 
@@ -163,7 +166,7 @@ public final class AclExpressions {
             "@grantPermissionManager.nodePermission(filterObject, 'READ')";
     
     public static final String NODE_STOP = ADMIN_ONLY + OR +
-            "@grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')";
+            "@grantPermissionManager.nodeStopPermission(#name, #machineType, 'EXECUTE')";
 
     public static final String TOOL_READ = ADMIN_ONLY + OR +
             "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";

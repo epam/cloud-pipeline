@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -23,6 +24,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -107,4 +109,8 @@ public interface CloudFacade {
     boolean instanceScalingSupported(Long cloudRegionId);
 
     void deleteInstanceTags(Long regionId, String runId, Set<String> tagNames);
+
+    List<NodeInstance> getCloudNodes(Long regionId, FilterNodesVO filterNodesVO);
+
+    Optional<NodeInstance> findCloudNode(Long regionId, String instanceId);
 }

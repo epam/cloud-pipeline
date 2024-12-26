@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.ClusterStateRegionProperties;
 import com.epam.pipeline.entity.region.MountStorageRule;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
@@ -58,6 +59,11 @@ public abstract class AbstractCloudRegionDTO {
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
     private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
     private RunRegionShiftPolicy runShiftPolicy;
+    /**
+     * Indicates that region instances shall be included into cluster state panel
+     */
+    private boolean clusterInclude;
+    private ClusterStateRegionProperties clusterStateRegionProperties;
 
     public abstract CloudProvider getProvider();
     public abstract void setProvider(CloudProvider provider);

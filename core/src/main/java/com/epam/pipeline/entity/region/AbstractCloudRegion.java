@@ -52,5 +52,11 @@ public abstract class AbstractCloudRegion extends AbstractSecuredEntity {
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
     private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
     private RunRegionShiftPolicy runShiftPolicy;
+    /**
+     * Indicates that region instances shall be included into cluster state panel
+     */
+    private boolean clusterInclude;
+    private ClusterStateRegionProperties clusterStateRegionProperties;
+
     public abstract CloudProvider getProvider();
 }
