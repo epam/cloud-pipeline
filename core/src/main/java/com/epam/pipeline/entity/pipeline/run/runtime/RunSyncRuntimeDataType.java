@@ -17,5 +17,5 @@
 package com.epam.pipeline.entity.pipeline.run.runtime;
 
 public enum RunSyncRuntimeDataType {
-    NF_TRACE
+    NF_TRACE, NF_TASK
 }
