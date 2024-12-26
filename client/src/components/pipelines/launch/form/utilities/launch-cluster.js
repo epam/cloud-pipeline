@@ -46,7 +46,12 @@ import {
   CP_CAP_LIMIT_MOUNTS,
   CP_CAP_RESCHEDULE_RUN,
   CP_CAP_AUTOSCALE_HYBRID_FAMILY,
-  CP_CAP_AUTOSCALE_INSTANCE_TYPE
+  CP_CAP_AUTOSCALE_INSTANCE_TYPE,
+  CP_CAP_SHARE_FS_TYPE,
+  CP_CAP_SHARE_FS_DEPLOYMENT_TYPE,
+  CP_CAP_SHARE_FS_SIZE,
+  CP_CAP_SHARE_FS_THROUGHPUT,
+  CP_CAP_SHARE_FS_IOPS
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 import {
@@ -59,6 +64,14 @@ import {
 } from './enable-gpu-scaling';
 import {getInstanceFamilyByName} from '../../../../../utils/instance-family';
 import {instanceInfoString} from '../../../../special/instance-type-info';
+import ConfigureFileSystem from './configure-fs/configure-file-system';
+import classNames from 'classnames';
+import {
+  CP_CAP_FS_PARAMETERS,
+  getDefaultConfig,
+  ShareFsType,
+  ShareFsTypeName
+} from './configure-fs/utilities';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -138,6 +151,7 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_AUTOSCALE_HYBRID,
       CP_CAP_AUTOSCALE_PRICE_TYPE,
       CP_CAP_RESCHEDULE_RUN,
+      ...CP_CAP_FS_PARAMETERS,
       ...getRunCapabilitiesSkippedParameters(),
       ...getGPUScalingSkippedParameters(controller.props.preferences)
     ];
@@ -161,6 +175,7 @@ export function getAllSkippedSystemParametersList (preferences) {
     CP_CAP_AUTOSCALE_WORKERS,
     CP_CAP_AUTOSCALE_HYBRID,
     CP_CAP_AUTOSCALE_PRICE_TYPE,
+    ...CP_CAP_FS_PARAMETERS,
     ...getRunCapabilitiesSkippedParameters(),
     ...getGPUScalingSkippedParameters(preferences)
   ];
@@ -180,7 +195,8 @@ export function setClusterParameterValue (form, sectionName, configuration) {
     slurmEnabled,
     kubeEnabled,
     hybridAutoScaledClusterEnabled,
-    autoScaledPriceType
+    autoScaledPriceType,
+    fsConfig = {}
   } = configuration;
   const formValue = form.getFieldValue(sectionName);
   if (!formValue || !formValue.hasOwnProperty('params')) {
@@ -218,6 +234,35 @@ export function setClusterParameterValue (form, sectionName, configuration) {
     if (value.name === CP_CAP_AUTOSCALE_HYBRID) {
       value.value = `${hybridAutoScaledClusterEnabled}`;
       modified = true;
+    }
+    if (value.name === CP_CAP_SHARE_FS_TYPE) {
+      value.value = fsConfig.fsType;
+      modified = true;
+    }
+    if (value.name === CP_CAP_SHARE_FS_DEPLOYMENT_TYPE) {
+      value.value = fsConfig.deploymentType;
+      modified = true;
+    }
+    if (value.name === CP_CAP_SHARE_FS_SIZE) {
+      const v = Number(fsConfig.volume);
+      if (fsConfig.volume !== undefined && !Number.isNaN(v)) {
+        value.value = v;
+        modified = true;
+      }
+    }
+    if (value.name === CP_CAP_SHARE_FS_THROUGHPUT) {
+      const v = Number(fsConfig.throughput);
+      if (fsConfig.volume !== undefined && !Number.isNaN(v)) {
+        value.value = v;
+        modified = true;
+      }
+    }
+    if (value.name === CP_CAP_SHARE_FS_IOPS) {
+      const v = Number(fsConfig.iops);
+      if (fsConfig.volume !== undefined && !Number.isNaN(v)) {
+        value.value = v;
+        modified = true;
+      }
     }
   }
   if (modified) {
@@ -302,6 +347,13 @@ export function applyChildNodeInstanceParametersAsArray (parameters, value, hybr
 @observer
 class ConfigureClusterDialog extends React.Component {
   static getClusterName = (ctrl, lowerCased) => {
+    let fs = '';
+    if (ctrl.state.fsConfig) {
+      const {
+        fsType = ShareFsType.lfs,
+      } = ctrl.state.fsConfig;
+      fs = ShareFsTypeName[fsType] || fsType;
+    }
     if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
       const details = [
         ctrl.state.gridEngineEnabled ? 'GridEngine' : false,
@@ -315,9 +367,9 @@ class ConfigureClusterDialog extends React.Component {
         lowerCased
       );
       if (!isNaN(ctrl.state.nodesCount) && !isNaN(ctrl.state.maxNodesCount)) {
-        return `${name} (${range(ctrl.state)} child nodes)`;
+        return `${name} (${range(ctrl.state)} child nodes), ${fs}`;
       }
-      return name;
+      return `${name}, ${fs}`;
     } else if (ctrl.state.launchCluster) {
       let clusterName = lowerCasedString('Cluster', lowerCased);
       if (ctrl.state.gridEngineEnabled) {
@@ -333,7 +385,7 @@ class ConfigureClusterDialog extends React.Component {
         clusterName = `Kubernetes ${lowerCasedString('Cluster', lowerCased)}`;
       }
       if (!isNaN(ctrl.state.nodesCount)) {
-        return `${clusterName} (${plural(ctrl.state.nodesCount, 'child node')})`;
+        return `${clusterName} (${plural(ctrl.state.nodesCount, 'child node')}), ${fs}`;
       }
       return clusterName;
     }
@@ -361,6 +413,7 @@ class ConfigureClusterDialog extends React.Component {
     slurmEnabled: PropTypes.bool,
     kubeEnabled: PropTypes.bool,
     autoScaledPriceType: PropTypes.string,
+    fsConfig: PropTypes.object,
     hybridAutoScaledClusterEnabled: PropTypes.bool,
     gpuScalingConfiguration: PropTypes.object,
     childNodeInstanceConfiguration: PropTypes.string,
@@ -384,6 +437,7 @@ class ConfigureClusterDialog extends React.Component {
     gpuScalingConfiguration: undefined,
     childNodeInstanceConfiguration: undefined,
     autoScaledPriceType: undefined,
+    fsConfig: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -418,6 +472,7 @@ class ConfigureClusterDialog extends React.Component {
           slurmEnabled: false,
           kubeEnabled: false,
           autoScaledPriceType: undefined,
+          fsConfig: this.state.fsConfig || getDefaultConfig(),
           hybridAutoScaledClusterEnabled: false,
           gpuScalingConfiguration: undefined,
           childNodeInstanceConfiguration: undefined,
@@ -439,6 +494,7 @@ class ConfigureClusterDialog extends React.Component {
           slurmEnabled: false,
           kubeEnabled: false,
           autoScaledPriceType: undefined,
+          fsConfig: this.state.fsConfig || getDefaultConfig(),
           hybridAutoScaledClusterEnabled: false,
           gpuScalingConfiguration: undefined,
           childNodeInstanceConfiguration: undefined,
@@ -460,6 +516,7 @@ class ConfigureClusterDialog extends React.Component {
           slurmEnabled: false,
           kubeEnabled: false,
           autoScaledPriceType: undefined,
+          fsConfig: undefined,
           hybridAutoScaledClusterEnabled: false,
           gpuScalingConfiguration: undefined,
           childNodeInstanceConfiguration: undefined
@@ -617,6 +674,10 @@ class ConfigureClusterDialog extends React.Component {
     });
   };
 
+  onChangeFsConfig = (fsConfig) => {
+    this.setState({fsConfig});
+  };
+
   renderFixedClusterConfiguration = () => {
     return [
       <Row key="nodes count" type="flex" align="middle" style={{marginTop: 5}}>
@@ -770,7 +831,7 @@ class ConfigureClusterDialog extends React.Component {
       if (hybrid) {
         const family = getInstanceFamilyByName(instanceName, cloudRegionProvider);
         if (family) {
-          return getEmptyConfigFromString(`Master's config - ${family}`)
+          return getEmptyConfigFromString(`Master's config - ${family}`);
         }
         return getEmptyConfigFromString('Master\'s config');
       }
@@ -1092,7 +1153,8 @@ class ConfigureClusterDialog extends React.Component {
         sparkEnabled: this.state.sparkEnabled,
         slurmEnabled: this.state.slurmEnabled,
         kubeEnabled: this.state.kubeEnabled,
-        autoScaledPriceType: this.state.autoScaledPriceType
+        autoScaledPriceType: this.state.autoScaledPriceType,
+        fsConfig: this.state.launchCluster ? this.state.fsConfig : undefined
       });
     }
   };
@@ -1147,6 +1209,13 @@ class ConfigureClusterDialog extends React.Component {
             this.state.launchCluster && this.state.autoScaledCluster &&
             this.renderAutoScaledClusterConfiguration()
           }
+          <ConfigureFileSystem
+            style={{marginTop: 10, paddingTop: 10}}
+            className={classNames('cp-divider', 'top')}
+            fsConfig={this.state.fsConfig}
+            onChange={this.onChangeFsConfig}
+            notSupported={this.selectedClusterType === CLUSTER_TYPE.singleNode}
+          />
         </div>
       </Modal>
     );
@@ -1242,6 +1311,7 @@ class ConfigureClusterDialog extends React.Component {
       slurmEnabled: this.props.slurmEnabled,
       kubeEnabled: this.props.kubeEnabled,
       autoScaledPriceType: this.props.autoScaledPriceType,
+      fsConfig: this.props.fsConfig,
       hybridAutoScaledClusterEnabled: this.props.hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration: isGPUScalingAvailable
         ? this.props.gpuScalingConfiguration
