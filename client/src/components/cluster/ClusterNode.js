@@ -30,6 +30,7 @@ import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
+import {checkTerminateNodeErrors} from './constants';
 
 @inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
@@ -208,7 +209,7 @@ class ClusterNode extends Component {
     const request = new TerminateNodeRequest(this.props.name);
     await request.fetch();
     hide();
-    if (request.error) {
+    if (request.error && checkTerminateNodeErrors) {
       message.error(request.error, 5);
     } else {
       this.props.router.push('/cluster');

@@ -50,6 +50,7 @@ import {
   nodeRoles,
   testRole
 } from './node-roles';
+import {checkTerminateNodeErrors} from './constants';
 
 const isCloudNode = (node = {}) => node.machineType === MACHINE_TYPES.all ||
   node.machineType === MACHINE_TYPES.cloud ||
@@ -273,10 +274,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   terminateNode = async (item) => {
-    const hide = message.loading('Processing...', 0);
+    const hide = message.loading('Terminating...', 0);
     const request = new TerminateNodeRequest(item.name, item.machineType);
     await request.fetch();
-    if (request.error) {
+    if (request.error && checkTerminateNodeErrors) {
       message.error(request.error, 5);
       hide();
     } else {
@@ -301,7 +302,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       .then(results => {
         hide();
         const errors = results.filter(Boolean);
-        if (errors.length > 0) {
+        if (errors.length > 0 && checkTerminateNodeErrors) {
           message.error(
             (
               <div>
@@ -662,6 +663,17 @@ export default class Cluster extends localization.LocalizedReactComponent {
         )}
       </div>
     );
+    const pipelineColumns = [];
+    if (!onlyCloudNodes) {
+      pipelineColumns.push({
+        dataIndex: 'pipelineRun',
+        key: 'pipelineRun',
+        title: this.localizedString('Pipeline'),
+        render: pipelineRun => this.renderPipelineName(pipelineRun),
+        className: styles.clusterNodeRowPipeline,
+        onCellClick: this.onNodeInstanceSelect
+      });
+    }
     const columns = [
       {
         key: 'selection',
@@ -706,14 +718,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
           );
         }
       },
-      {
-        dataIndex: 'pipelineRun',
-        key: 'pipelineRun',
-        title: this.localizedString('Pipeline'),
-        render: pipelineRun => this.renderPipelineName(pipelineRun),
-        className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
-      },
+      ...pipelineColumns,
       {
         dataIndex: 'labels',
         key: 'labels',
