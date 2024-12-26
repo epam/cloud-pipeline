@@ -60,6 +60,7 @@ const DTS_ENVIRONMENT = 'DTS';
         : undefined
     };
   }
+  const continueRun = `${components.continue || 'false'}`.trim().toLowerCase() === 'true';
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
@@ -75,7 +76,8 @@ const DTS_ENVIRONMENT = 'DTS';
       ? new PipelineConfigurations(params.id, params.version)
       : undefined,
     isVersionedStorage,
-    versionedStorageLaunchInfo
+    versionedStorageLaunchInfo,
+    continueRun: continueRun && params.runId ? params.runId : undefined
   };
 })
 @observer
@@ -514,8 +516,12 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   onPipelineChanged = (pipelineId, pipelineVersion) => {
-    const {router} = this.props;
-    router.push(`/launch/${pipelineId}/${pipelineVersion}`);
+    const {router, continueRun, configurationName = 'default'} = this.props;
+    if (continueRun) {
+      router.push(`/launch/${pipelineId}/${pipelineVersion}/${configurationName}/${continueRun}?continue=true`);
+    } else {
+      router.push(`/launch/${pipelineId}/${pipelineVersion}`);
+    }
   };
 
   loadTool = async (image) => {
@@ -716,6 +722,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           runConfiguration={this.prepareRunPayload}
           runConfigurationId={this.configurationId}
           isDetachedConfiguration={false}
+          continueRun={this.props.continueRun}
         />
         <MetadataBrowser
           multiple={false}

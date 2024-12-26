@@ -140,9 +140,10 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnFilteredListWithNodeInstancesForAdmin() {
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO, MachineType.KUBE);
 
-        assertThat(clusterApiService.filterNodes(filterNodesVO)).hasSize(1).contains(nodeInstance);
+        assertThat(clusterApiService.filterNodes(filterNodesVO, MachineType.KUBE))
+                .hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -150,9 +151,10 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnFilteredNodeInstanceListWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
         mockUser();
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO, MachineType.KUBE);
 
-        assertThat(clusterApiService.filterNodes(filterNodesVO)).hasSize(1).contains(nodeInstance);
+        assertThat(clusterApiService.filterNodes(filterNodesVO, MachineType.KUBE))
+                .hasSize(1).contains(nodeInstance);
     }
 
     @Test
@@ -162,18 +164,19 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         mockUser();
         initAclEntity(nodeInstance, AclPermission.READ);
         initAclEntity(anotherNodeInstance, AclPermission.NO_READ);
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO, MachineType.KUBE);
 
-        assertThat(clusterApiService.filterNodes(filterNodesVO)).hasSize(1).contains(nodeInstance);
+        assertThat(clusterApiService.filterNodes(filterNodesVO, MachineType.KUBE))
+                .hasSize(1).contains(nodeInstance);
     }
 
     @Test
     @WithMockUser
     public void shouldReturnEmptyFilteredNodeInstanceListWhenPermissionIsNotGranted() {
         initAclEntity(anotherNodeInstance);
-        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO);
+        doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO, MachineType.KUBE);
 
-        assertThat(clusterApiService.filterNodes(filterNodesVO)).isEmpty();
+        assertThat(clusterApiService.filterNodes(filterNodesVO, MachineType.KUBE)).isEmpty();
     }
 
     @Test

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -116,7 +117,7 @@ public interface CloudFacade {
 
     void deleteInstanceTags(Long regionId, String runId, Set<String> tagNames);
 
-    List<NodeInstance> getCloudNodes(Long regionId);
+    List<NodeInstance> getCloudNodes(Long regionId, FilterNodesVO filterNodesVO);
 
     Optional<NodeInstance> findCloudNode(Long regionId, String instanceId);
 }

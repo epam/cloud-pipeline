@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.pipeline.run.runtime;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class RunSyncDataConfigEntry {
-    private final String storagePathPrefix;
+@Builder
+public class RunRuntimeData {
+    private final RunSyncRuntimeDataType type;
+    private final Object data;
 }

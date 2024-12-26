@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+package com.epam.pipeline.entity.pipeline.run.runtime.nextflow;
 
-class NodeInstance extends Remote {
-  url;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-  constructor (name, type = 'KUBE') {
-    super();
-    this.url = `/cluster/node/${name}/load?machineType=${type}`;
-  };
+import java.util.Map;
+
+@Getter
+@AllArgsConstructor
+public class NextflowTraceFile {
+    private final Map<String, NextflowTask> tasks;
 }
-
-export default NodeInstance;

@@ -494,6 +494,9 @@ export default `
 @THEME .launch-form-pipeline-name-form-item .ant-form-item-title {
   line-height: 24px;
 }
+@THEME .cp-background-not-important {
+  background-color: @color-grey-semi-transparent;
+}
 @THEME .cp-text-not-important {
   color: @application-color-faded;
 }

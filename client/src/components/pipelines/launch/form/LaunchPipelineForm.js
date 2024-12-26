@@ -148,6 +148,7 @@ import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import PipelineVersionPicker from './pipeline-version-picker';
+import {generateContinueRunParameters} from '../../../runs/actions/continue-run';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -258,7 +259,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       configurationSnapshot: PropTypes.string
     }),
     onInitialized: PropTypes.func,
-    onModified: PropTypes.func
+    onModified: PropTypes.func,
+    continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
   };
 
   static defaultProps = {
@@ -1550,6 +1552,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.props.preferences,
       this.toolPlatform
     );
+    if (this.props.continueRun) {
+      payload.params = generateContinueRunParameters(this.props.continueRun, payload.params);
+    }
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&

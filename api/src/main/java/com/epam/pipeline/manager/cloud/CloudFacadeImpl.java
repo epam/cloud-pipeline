@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -325,9 +326,9 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public List<NodeInstance> getCloudNodes(final Long regionId) {
+    public List<NodeInstance> getCloudNodes(final Long regionId, final FilterNodesVO filterNodesVO) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        return getInstanceService(region).getCloudNodes(region);
+        return getInstanceService(region).getCloudNodes(region, filterNodesVO);
     }
 
     @Override

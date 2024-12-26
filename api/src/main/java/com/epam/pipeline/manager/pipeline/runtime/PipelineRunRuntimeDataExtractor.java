@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+package com.epam.pipeline.manager.pipeline.runtime;
 
-class NodeInstance extends Remote {
-  url;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 
-  constructor (name, type = 'KUBE') {
-    super();
-    this.url = `/cluster/node/${name}/load?machineType=${type}`;
-  };
+import java.io.InputStream;
+import java.util.Map;
+
+public interface PipelineRunRuntimeDataExtractor {
+    String getDataFilePath(Map<String, String> parameters);
+    RunRuntimeData parseData(InputStream data);
+    RunSyncRuntimeDataType getDataType();
 }
-
-export default NodeInstance;
