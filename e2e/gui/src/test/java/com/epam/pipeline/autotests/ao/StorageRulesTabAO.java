@@ -54,8 +54,10 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
     }
 
     public StorageRulesTabAO deleteStorageRule(String fileMaskString) {
-        $(byText(fileMaskString)).closest("tr").findAll(tagName("td")).get(3).find(tagName("a")).shouldHave(text("Delete")).click();
-        $(className("ant-confirm-title")).shouldHave(text("Do you want to delete rule \"" + fileMaskString + "\"?"));
+        $(byText(fileMaskString)).closest("tr").findAll(tagName("td"))
+                .get(3).find(tagName("a")).shouldHave(text("Delete")).click();
+        $$(className("ant-confirm-title")).filter(text("Do you want to delete rule")).first()
+                .shouldHave(text("Do you want to delete rule \"" + fileMaskString + "\"?"));
         $(button("OK")).shouldBe(visible).click();
         return this;
     }

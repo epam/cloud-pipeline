@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static java.lang.String.format;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -40,6 +41,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     public final By nameInput;
     public final By valueInput;
     public final By removeButton;
+    public static final String idTemplate = "parameters.params.param_%d.%s";
 
     protected ParameterFieldAO(final By qualifier) {
         this(
@@ -73,9 +75,9 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
 
     public static ParameterFieldAO parameter(final String name, final String value) {
         final String controlClass = "ant-form-item-control";
-        final String nameAsAChild = String.format(".//input[@placeholder = 'Name' and @value = '%s']", name);
-        final String valueAsAChild = String.format(".//input[@value = '%s']", value);
-        final By parameterField = byXpath(String.format(
+        final String nameAsAChild = format(".//input[@placeholder = 'Name' and @value = '%s']", name);
+        final String valueAsAChild = format(".//input[@value = '%s']", value);
+        final By parameterField = byXpath(format(
                 ".//*[contains(concat(' ', @class, ' '), ' %s ') and %s and %s]",
                 controlClass, nameAsAChild, valueAsAChild
         ));
@@ -88,7 +90,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     public static ParameterFieldAO parameterByIndex(final int index) {
         final String controlClass = "ant-form-item-control";
         final String templateId = parameterId("key", index);
-        final By parameterField = byXpath(String.format(
+        final By parameterField = byXpath(format(
                 ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//@id = '%s']",
                 controlClass, templateId
         ));
@@ -96,21 +98,11 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     /**
-     * @param number The order number of the parameter field you search.
-     */
-    public static ParameterFieldAO parameterByOrder(final int number) {
-        return parameters()
-                .skip(number - 1)
-                .findFirst()
-                .orElse(nonExistentParameter);
-    }
-
-    /**
      * @param name Value of the parameter's name.
      */
     public static ParameterFieldAO parameterByName(final String name) {
         final String controlClass = "ant-form-item-control";
-        final By parameterField = byXpath(String.format(
+        final By parameterField = byXpath(format(
                 ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//input[@placeholder = 'Name' and @value = '%s']]",
                 controlClass, name
         ));
@@ -122,7 +114,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      */
     public static ParameterFieldAO parameterByValue(final String value) {
         final String controlClass = "ant-form-item-control";
-        final By parameterField = byXpath(String.format(
+        final By parameterField = byXpath(format(
                 ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//input[@value = '%s']]",
                 controlClass, value
         ));
@@ -165,8 +157,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @param index Index is a digit part of
      */
     private static String parameterId(final String entry, final int index) {
-        final String idTemplate = "parameters.params.param_%d.%s";
-        return String.format(idTemplate, index, entry);
+        return format(idTemplate, index, entry);
     }
 
     /**
@@ -176,7 +167,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @return Qualifier of input which id ends with given {@code suffix}.
      */
     private static By inputByIdSuffix(final String suffix) {
-        final String inputThatHasIdWithSuffix = String.format(
+        final String inputThatHasIdWithSuffix = format(
                 ".//input[substring(@id, string-length(@id) - string-length('%s') + 1) = '%s']",
                 suffix, suffix
         );

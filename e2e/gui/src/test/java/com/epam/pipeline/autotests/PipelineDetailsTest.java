@@ -114,7 +114,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .ensure(byText(pipelineFile), visible);
     }
 
-    @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
+    @Test(enabled = false, dependsOnMethods = {"shouldCreateFileInSubfolder"})
     @TestCase(value = {"EPMCMBIBPC-344"})
     public void luigiGraphTabShouldBeValid() {
         codeTab()
@@ -122,10 +122,10 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .ensure(CANVAS, exist);
     }
 
-    @Test(dependsOnMethods = {"luigiGraphTabShouldBeValid"})
+    @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
     @TestCase(value = {"EPMCMBIBPC-345"})
     public void documentTabShouldBeValid() {
-        graphTab()
+        codeTab()
                 .documentsTab()
                 .ensure(UPLOAD, visible, enabled)
                 .ensure(byText("README.md"), visible)

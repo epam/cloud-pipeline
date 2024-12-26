@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,15 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
+import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,11 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
+
+    private final Map<Primitive, SelenideElement> elements = initialiseElements(
+            entry(NEXT_PAGE, $(className("ant-pagination-next")))
+    );
+
     public static By node() {
         return byXpath(".//*[contains(@class, 'cluster__table')]//tr[contains(@class, 'cluster-row')]");
     }
@@ -72,6 +79,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                         .or(contains(nodeLabel("HEAPSTER")))
                         .or(contains(nodeLabel("DNS")))
                         .or(contains(nodeLabel("TMP")))
+                        .or(contains(nodeLabel("CP-API-SRV")))
                         .test(element);
             }
         };
@@ -201,6 +209,10 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public String getNodeName(String runId) {
+        while (!$(byText(runIdLabelText(runId))).isDisplayed()
+                && get(NEXT_PAGE).getAttribute("aria-disabled").equals("false")) {
+            get(NEXT_PAGE).click();
+        }
         return $(byText(runIdLabelText(runId)))
                 .should(exist)
                 .closest("tr")
@@ -290,6 +302,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO checkNodeNotContainsHotNodePoolsLabel(String runId, String poolName) {
+        sortByDecrease(DATE);
         waitForRunIdAppearing(runId);
         assertFalse(hotPoolLabel(runId, poolName),
                format("Node with runID=%s shouldn't have label with pool %s", runId, poolName)
@@ -298,11 +311,16 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO checkNodeContainsHotNodePoolsLabel(String runId, String poolName) {
+        sortByDecrease(DATE);
         waitForRunIdAppearing(runId);
         assertTrue(hotPoolLabel(runId, poolName),
                 format("Node with runID=%s should have label with pool %s", runId, poolName)
         );
         return this;
+    }
+
+    public boolean nextPageIsExist() {
+        return get(NEXT_PAGE).getAttribute("aria-disabled").equals("false");
     }
 
     private boolean hotPoolLabel(String runId, String poolName) {
@@ -316,6 +334,6 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     @Override
     public Map<Primitive, SelenideElement> elements() {
-        return Collections.emptyMap();
+        return elements;
     }
 }

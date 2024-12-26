@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import com.epam.pipeline.autotests.ao.ToolDescription;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -25,6 +26,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
 
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -211,6 +213,8 @@ public class RunToolsInSandBoxTest
         tools()
                 .perform(registry, group, tool, runTool())
                 .selectRunCapability("DinD")
+                .click(START_IDLE)
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
@@ -239,6 +243,8 @@ public class RunToolsInSandBoxTest
         tools()
                 .perform(registry, group, tool, runTool())
                 .selectRunCapability("Singularity")
+                .click(START_IDLE)
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)

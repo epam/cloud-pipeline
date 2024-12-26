@@ -65,7 +65,10 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
         new PipelineCodeTabAO(getPipelineName())
             .sleep(2, SECONDS)
             .runPipeline()
-            .addOutputParameter("output", pathToFile)
+            .clickAddOutputParameter()
+            .setName("output")
+            .setValue(pathToFile)
+            .close()
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);
     }

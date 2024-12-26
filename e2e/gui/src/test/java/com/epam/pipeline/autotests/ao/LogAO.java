@@ -20,6 +20,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.SSH_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -97,12 +98,19 @@ public class LogAO implements AccessObject<LogAO> {
                 .text().replace("(best)", "");
     }
 
+    public ShellAO clickOnSelectedRegionLink() {
+        openRegionSelector();
+        String link = $$(className("ultizone-url__menu-link"))
+                .filter(text(SSH_CLOUD_REGION)).first().attr("href");
+        return ShellAO.open(link);
+    }
+
     public ShellAO clickOnSshLink() {
         return ShellAO.open(getSshLink());
     }
 
     public LogAO ssh(final Consumer<ShellAO> shell) {
-        shell.accept(clickOnSshLink());
+        shell.accept(SSH_CLOUD_REGION.isEmpty() ? clickOnSshLink() : clickOnSelectedRegionLink());
         return this;
     }
 
@@ -426,7 +434,8 @@ public class LogAO implements AccessObject<LogAO> {
 
     public SelenideElement waitForMountBuckets() {
         return $(byXpath("//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
-                .waitUntil(cssClass("cp-runs-table-icon-green"), BUCKETS_MOUNTING_TIMEOUT);
+                .waitUntil(visible, BUCKETS_MOUNTING_TIMEOUT)
+                .waitUntil(not(cssClass("cp-runs-table-icon-blue")), BUCKETS_MOUNTING_TIMEOUT);
     }
 
     public static By runId() {
@@ -474,8 +483,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO checkMountLimitsParameter(String...storages) {
-        Arrays.stream(storages)
-                .forEach(storage -> cpCapLimitMountsParameter(storage));
+        Arrays.stream(storages).forEach(this::cpCapLimitMountsParameter);
         return this;
     }
 
@@ -504,7 +512,7 @@ public class LogAO implements AccessObject<LogAO> {
         String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
                         .asPredicate()).findFirst().toString();
         Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
-        assert matcher.find();
+        assertTrue(matcher.find(), "Available storages were not found.");
         int res = Integer.parseInt(matcher.group().replace(" ", ""));
         assertTrue(res >= count,
                format("Available storages count (actual %s) should be more or equal %s", res, count));

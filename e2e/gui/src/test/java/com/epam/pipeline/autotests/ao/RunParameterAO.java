@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static java.lang.String.format;
 
 public class RunParameterAO
         extends ParameterFieldAO
@@ -32,22 +33,21 @@ public class RunParameterAO
     private final PipelineRunFormAO pipelineRunFormAO;
 
     public RunParameterAO(PipelineRunFormAO pipelineRunFormAO, int parameterIndex) {
-        super(parameterByOrder(parameterIndex));
+        super(parameterByIndex(parameterIndex));
+        final SelenideElement parameter = $(byClassName(format("param_%d", parameterIndex)));
         this.pipelineRunFormAO = pipelineRunFormAO;
 
         this.elements = initialiseElements(
-                entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(PARAMETER_PATH, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byClassName("launch-pipeline-form__path-type"))),
-                entry(REMOVE_PARAMETER, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.value", parameterIndex))))
+                entry(PARAMETER_FIELD, parameter.$(byClassName("cp-text-not-important"))),
+                entry(PARAMETER_NAME, $(byId(format(idTemplate, parameterIndex, "name")))),
+                entry(PARAMETER_VALUE, $(byId(format(idTemplate, parameterIndex, "value")))),
+                entry(PARAMETER_PATH, parameter.$(byClassName("launch-pipeline-form__path-type"))),
+                entry(REMOVE_PARAMETER, parameter.$(byId("remove-parameter-button")))
         );
     }
 
     public RunParameterAO setName(String name) {
+        get(PARAMETER_FIELD).click();
         return (RunParameterAO) setValue(get(PARAMETER_NAME), name);
     }
 
