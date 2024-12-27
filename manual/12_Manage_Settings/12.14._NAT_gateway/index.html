@@ -172,6 +172,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
@@ -415,13 +417,14 @@ Each route record contains:</p>
 <li>icon with the route status</li>
 <li>server name</li>
 <li>IP</li>
-<li>port</li>
+<li>port(s)</li>
+<li>transfer protocol</li>
 </ul>
 </li>
 <li>info about corresponding internal config (mapping details):<ul>
 <li>service name</li>
 <li>service IP</li>
-<li>port</li>
+<li>port(s)</li>
 <li>comment field</li>
 </ul>
 </li>
@@ -448,6 +451,9 @@ Each route record contains:</p>
 <img alt="CP_NATgateway" src="../attachments/NatGateway_06.png" /><br />
     Repeat if necessary.<br />
     To remove extra-added port from the list, click the button <img alt="CP_NATgateway" src="../attachments/NatGateway_07.png" /> near the port.</li>
+<li>Select the protocol for the data transfer from the dropdown list:<br />
+<img alt="CP_NATgateway" src="../attachments/NatGateway_23.png" /><br />
+<strong><em>Note</em></strong>: TCP is selected by default.</li>
 <li>Optionally, you can add a comment/description for the created route, e.g.:<br />
 <img alt="CP_NATgateway" src="../attachments/NatGateway_08.png" /></li>
 <li>Once all details are specified, click the <strong>ADD</strong> button:<br />

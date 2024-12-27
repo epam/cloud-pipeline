@@ -172,7 +172,21 @@
                 </li>
                 <li class="toctree-l2 current"><a class="reference internal current" href="./">9.2. Core services monitoring</a>
     <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#core-nodes">Core nodes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#core-services">Core services</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#service-details">Service details</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#service-status">Service status</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#filters">Filters</a>
+    </li>
+        </ul>
+    </li>
     </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../9.3._Cloud_nodes/">9.3. Cloud nodes</a>
                 </li>
     </ul>
                   </li>
@@ -394,7 +408,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="monitoring-core-components"><strong>Monitoring: core components</strong></h1>
+                <h1 id="monitoring-core-components">Monitoring: core components</h1>
 <ul>
 <li><a href="#core-nodes">Core nodes</a></li>
 <li><a href="#core-services">Core services</a><ul>
@@ -404,28 +418,30 @@
 </ul>
 </li>
 </ul>
-<p>For the quick access to core nodes and services, a new tab was added to the <strong>Cluster State</strong> section - <strong>CORE NODES</strong> tab:</p>
-<p><img alt="" src="../attachments/core_services_001.png" /></p>
+<p>For the quick access to core nodes and services, a new tab was added to the <strong>Cluster State</strong> section - <strong>CORE NODES</strong> tab:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_01.png" /></p>
+<blockquote>
+<p>To view <strong>CORE NODES</strong> tab you need to have the <strong>ROLE_ADMIN</strong> role. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
 <p>This tab includes two subtabs:</p>
 <ul>
 <li><strong>Core nodes</strong> - to view the list of all core nodes of the current platform deployment</li>
 <li><strong>Core services</strong> - to view the list of all services on the core nodes and their state</li>
 </ul>
-<p>Please note, <strong>CORE NODES</strong> tab is available and may be viewed only by admins.</p>
-<h1 id="core-nodes"><strong>Core nodes</strong></h1>
+<h2 id="core-nodes">Core nodes</h2>
 <p>To view the list of platform core nodes:</p>
-<ul>
-<li>open the <strong>Cluster State</strong> section</li>
-<li>navigate to the <strong>CORE NODES</strong> tab → <strong>Core nodes</strong> subtab</li>
-</ul>
-<p><img alt="" src="../attachments/core_services_002.png" /></p>
+<ol>
+<li>Open the <strong>Cluster State</strong> section.</li>
+<li>Navigate to the <strong>CORE NODES</strong> tab → <strong>Core nodes</strong> subtab:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_02.png" /></li>
+</ol>
 <p>This subtab shows the table similar to the one for general active nodes (<strong>ALL NODES</strong> tab of the <strong>Cluster State</strong> section), but only for core nodes.</p>
 <p>Displaying details:</p>
 <ul>
 <li><strong>Name</strong> - name of the node</li>
 <li><strong>Pipeline</strong> - currently assigned run on the node (usually not applicable)</li>
-<li><strong>Labels</strong> - characteristics extracted from the parameters of the node. 
-  There are common labels:<ul>
+<li><strong>Labels</strong> - characteristics extracted from the parameters of the node.<br />
+    There are common labels:  <ul>
 <li>node name</li>
 <li>labels with details of compute instances used for nodes</li>
 <li>labels of core services used by nodes</li>
@@ -434,7 +450,7 @@
 <li><strong>Addresses</strong> - node addresses</li>
 <li><strong>Created</strong> - date of the node creation</li>
 </ul>
-<p>To get currently active nodes list, use the !button in the right-upper corner of the nodes list.</p>
+<p>To get currently active nodes list, use the <img alt="CP_CloudNodes" src="../attachments/CoreServices_03.png" /> button in the right-upper corner of the nodes list.</p>
 <p>To navigate to the detailed node information page, click its row in the table.</p>
 <p><strong>Core nodes</strong> table supports sorting by any of columns:</p>
 <ul>
@@ -449,33 +465,30 @@
 <li><em>Addresses</em></li>
 </ul>
 <p>To filter the table:</p>
-<ul>
-<li>click the filter control near the column header:</li>
-</ul>
-<p><img alt="" src="../attachments/core_services_004.png" /></p>
-<ul>
-<li>in the appeared filter, specify desired value and click the <strong>OK</strong> button, e.g.:</li>
-</ul>
-<p><img alt="" src="../attachments/core_services_005.png" /></p>
-<ul>
-<li>table will be filtered:</li>
-</ul>
-<p><img alt="" src="../attachments/core_services_006.png" /></p>
-<h1 id="core-services"><strong>Core services</strong></h1>
+<ol>
+<li>Click the filter control near the column header:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_04.png" /></li>
+<li>In the appeared filter, specify desired value and click the <strong>OK</strong> button, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_05.png" /></li>
+<li>Table will be filtered:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_06.png" /></li>
+</ol>
+<h2 id="core-services">Core services</h2>
 <p>To inspect the list of services of platform core nodes:</p>
-<ul>
-<li>open the <strong>Cluster State</strong> section</li>
-<li>navigate to the <strong>CORE NODES</strong> tab → <strong>Core services</strong> subtab</li>
-</ul>
-<p><img alt="" src="../attachments/core_services_007.png" /></p>
-<p>This subtab shows the list of services for core nodes.</p>
-<p>Each service presents an entity that can be expanded - via the plus button (!) near the service name.</p>
-<p>Inside the service entity, there is a list of service pods. Each pod entity can be expanded as well - via the plus button (!) near the pod name.</p>
+<ol>
+<li>Open the <strong>Cluster State</strong> section.</li>
+<li>Navigate to the <strong>CORE NODES</strong> tab → <strong>Core services</strong> subtab:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_07.png" /></li>
+</ol>
+<p>This subtab shows the list of services for core nodes.<br />
+Each service presents an entity that can be expanded - via the plus button (<img alt="CP_CloudNodes" src="../attachments/CoreServices_08.png" />) near the service name.  </p>
+<p>Inside the service entity, there is a list of service pods.<br />
+Each pod entity can be expanded as well - via the plus button (<img alt="CP_CloudNodes" src="../attachments/CoreServices_08.png" />) near the pod name.</p>
 <p>Inside the pod entity, there is a list of pod containers.</p>
-<p><img alt="" src="../attachments/core_services_009.png" /></p>
-<p>To collapse the entity, use the minus button (<img alt="" src="../attachments/core_services_010.png" />) near the entity name.</p>
-<p>To collapse all expanded entities, use the corresponding button <img alt="" src="../attachments/core_services_011.png" />  in the right-upper corner of the table.</p>
-<p>To get the current services list, use the !button in the right-upper corner of the table.</p>
+<p><img alt="CP_CloudNodes" src="../attachments/CoreServices_09.png" /></p>
+<p>To collapse the entity, use the minus button (<img alt="CP_CloudNodes" src="../attachments/CoreServices_10.png" />) near the entity name.<br />
+To collapse all expanded entities, use the corresponding button <img alt="CP_CloudNodes" src="../attachments/CoreServices_11.png" /> in the right-upper corner of the table.<br />
+To get the current services list, use the <img alt="CP_CloudNodes" src="../attachments/CoreServices_03.png" /> in the right-upper corner of the table.</p>
 <p>Displaying details in the table:</p>
 <ul>
 <li><strong>Name</strong> - name of the service/pod/container</li>
@@ -485,34 +498,34 @@
 <li><strong>Restarts</strong> - number of pod restarts</li>
 <li><strong>Uptime</strong> - duration of the pod uptime</li>
 </ul>
-<h2 id="service-details"><strong>Service details</strong></h2>
+<h3 id="service-details">Service details</h3>
 <p>You may view detailed info of a pod:</p>
 <ol>
 <li>Expand the desired service.</li>
-<li>Click the info icon near the pod name, e.g.:
-   <img alt="" src="../attachments/core_services_012.png" /></li>
-<li>Pop-up with the pod info in JSON format will appear:
-   <img alt="" src="../attachments/core_services_013.png" /></li>
-<li>For some pods, that pop-up can include additional tab - <strong>Events</strong>, e.g.:
-   <img alt="" src="../attachments/core_services_014.png" /></li>
-<li>This tab includes pod events list, e.g.:
-   <img alt="" src="../attachments/core_services_015.png" /></li>
+<li>Click the info icon near the pod name, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_12.png" /></li>
+<li>Pop-up with the pod info in JSON format will appear:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_13.png" /></li>
+<li>For some pods, that pop-up can include additional tab - <strong>Events</strong>, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_14.png" /></li>
+<li>This tab includes pod events list, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_15.png" /></li>
 </ol>
 <p>You may view logs of a container:</p>
 <ol>
 <li>Expand the desired service.</li>
 <li>Expand the pod.</li>
-<li>Click the info icon near the container name, e.g.:
-   <img alt="" src="../attachments/core_services_016.png" /></li>
-<li>Pop-up with the container running logs will appear:
-   <img alt="" src="../attachments/core_services_017.png" /></li>
+<li>Click the info icon near the container name, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_16.png" /></li>
+<li>Pop-up with the container running logs will appear:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_17.png" /></li>
 <li>You may view/refresh such logs in the pop-up or download them to the local workstation via the corresponding buttons.</li>
 </ol>
-<h2 id="service-status"><strong>Service status</strong></h2>
-<p>Status shown in the <strong>Pod status</strong> column varies by the entity type.</p>
-<p>For <em>services</em>, status has the format <strong><code>[X]/[Y]</code></strong>, where:</p>
+<h3 id="service-status">Service status</h3>
+<p>Status shown in the <strong>Pod status</strong> column varies by the entity type.<br />
+For <em>services</em>, status has the format <strong><code>[X]/[Y]</code></strong>, where:</p>
 <ul>
-<li><code>[X]</code> - number of not failed pods of the service. <strong><em>Note</em></strong>: not failed pods may be running, succeeded or pending.</li>
+<li><code>[X]</code> - number of not-failed pods of the service. <strong><em>Note</em></strong>: not-failed pods may be <em>running</em>, <em>succeeded</em> or <em>pending</em>.</li>
 <li><code>[Y]</code> - total number of the service pods</li>
 </ul>
 <p>Additionally, there is a colorful icon that shows <em>service</em> status:</p>
@@ -520,7 +533,7 @@
 <li><strong><em>Unhealthy</em></strong> services (i.e. services with at least one failed pod) has a red status circle</li>
 <li><strong><em>Healthy</em></strong> services (i.e. services without failed pods) has a green status circle</li>
 </ul>
-<p><img alt="" src="../attachments/core_services_018.png" /></p>
+<p><img alt="CP_CloudNodes" src="../attachments/CoreServices_18.png" /></p>
 <p>For <em>pods</em>, status may be one of the following:</p>
 <ul>
 <li><strong><em>Pending</em></strong>, status icon is orange</li>
@@ -528,37 +541,37 @@
 <li><strong><em>Succeeded</em></strong>, status icon is green</li>
 <li><strong><em>Failed</em></strong>, status icon is red</li>
 </ul>
-<p><img alt="" src="../attachments/core_services_019.png" /></p>
+<p><img alt="CP_CloudNodes" src="../attachments/CoreServices_19.png" /></p>
 <p><em>Containers</em> have statuses from the same categories as pods, with the corresponding icons. Name of these statuses may vary from the category names depending on the container state.</p>
-<p><img alt="" src="../attachments/core_services_020.png" /></p>
-<h2 id="filters"><strong>Filters</strong></h2>
+<p><img alt="CP_CloudNodes" src="../attachments/CoreServices_20.png" /></p>
+<h3 id="filters">Filters</h3>
 <p>There are several ways to filter core services:</p>
 <ul>
-<li><em>Main filter</em> - allows to show only <strong><em>healthy</em></strong> / <strong><em>unhealthy</em></strong> / <strong><em>all</em></strong> core services - this filter is located above the table and presents the corresponding control, e.g.:</li>
-</ul>
-<p><img alt="" src="../attachments/core_services_021.png" /></p>
-<ul>
+<li>
+<p><em>Main filter</em> - allows to show only <strong><em>healthy</em></strong> / <strong><em>unhealthy</em></strong> / <strong><em>all</em></strong> core services - this filter is located above the table and presents the corresponding control, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_21.png" /></p>
+</li>
 <li>
 <p><em>Column filter</em> - allows to filter table by the specific value(s) in the desired column(s):</p>
 <ul>
 <li>click the filter icon in the column header</li>
 <li>specify/select the desired value in the filter field</li>
-<li>table will be automatically filtered by the specified value, e.g.:</li>
+<li>table will be automatically filtered by the specified value, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_22.png" /></li>
 </ul>
-<p><img alt="" src="../attachments/core_services_022.png" /></p>
 </li>
 <li>
-<p><em>Search field</em> - allows to perform the search over the whole services table, e.g.:</p>
+<p><em>Search field</em> - allows to perform the search over the whole services table, e.g.:<br />
+<img alt="CP_CloudNodes" src="../attachments/CoreServices_23.png" /></p>
 </li>
 </ul>
-<p><img alt="" src="../attachments/core_services_023.png" /></p>
 <p>To reset all specified filters, click the button <strong>Clear filters</strong> in the top of the table.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../9.1._Hot_node_pools/" class="btn btn-neutral float-left" title="9.1. Hot node pools"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../10_Manage_Tools/10._Manage_Tools/" class="btn btn-neutral float-right" title="10.0. Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../9.3._Cloud_nodes/" class="btn btn-neutral float-right" title="9.3. Cloud nodes">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -584,7 +597,7 @@
       <span><a href="../9.1._Hot_node_pools/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../10_Manage_Tools/10._Manage_Tools/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../9.3._Cloud_nodes/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
