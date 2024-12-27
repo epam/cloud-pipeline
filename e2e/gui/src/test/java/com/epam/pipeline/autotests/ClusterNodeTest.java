@@ -43,7 +43,8 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
             .launch(this);
 
         clusterMenu()
-            .waitForTheNode(getPipelineName(), getRunId());
+                .sortByDecrease(DATE)
+                .waitForTheNode(getPipelineName(), getRunId());
 
         runsMenu()
             .stopRun(getRunId());
@@ -69,16 +70,20 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
     @TestCase(value = {"EPMCMBIBPC-274"})
     public void nodesSortingIncreaseByLabelShouldBeValid() {
         clusterMenu()
-            .sortByIncrease(LABEL)
-            .validateSortedByIncrease(LABEL);
+                .filterByHasRunId()
+                .sortByIncrease(LABEL)
+                .validateSortedByIncrease(LABEL)
+                .resetFiltering(LABEL);
     }
 
     @Test(priority = 4, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-275"})
     public void nodesSortingDecreaseByLabelShouldBeValid() {
         clusterMenu()
-            .sortByDecrease(LABEL)
-            .validateSortedByDecrease(LABEL);
+                .filterByHasRunId()
+                .sortByDecrease(LABEL)
+                .validateSortedByDecrease(LABEL)
+                .resetFiltering(LABEL);
     }
 
     @Test(priority = 5, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})

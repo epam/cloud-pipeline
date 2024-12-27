@@ -98,13 +98,6 @@ public class Profile implements AccessObject<Profile> {
         );
     }
 
-    public ParameterFieldAO getParameterByIndex(int parameterIndex) {
-        return parameters()
-                .skip(parameterIndex)
-                .findFirst()
-                .orElseThrow(NoSuchElementException::new);
-    }
-
     public Profile addStringParameter(final String name, final String value) {
         clickAddStringParameter().setName(name).setValue(value).close();
         return this;

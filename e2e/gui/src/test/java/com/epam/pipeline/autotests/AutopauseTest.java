@@ -67,7 +67,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                     .settings()
                     .switchToUserManagement()
                     .switchToUsers()
-                    .searchUserEntry(userWithoutCompletedRuns.login)
+                    .searchUserEntry(user.login)
                     .edit();
             userIsAdvancedUser = editUserPopup
                     .isUserHasRoleOrGroup(ROLE_ADVANCED_USER);
@@ -85,7 +85,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                     .settings()
                     .switchToUserManagement()
                     .switchToUsers()
-                    .searchUserEntry(userWithoutCompletedRuns.login)
+                    .searchUserEntry(user.login)
                     .edit()
                     .deleteRoleOrGroupIfExist(ROLE_ADVANCED_USER)
                     .ok();
