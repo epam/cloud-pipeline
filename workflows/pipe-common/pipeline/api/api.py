@@ -22,8 +22,8 @@ import time
 import urllib3
 
 from .region import CloudRegion
-from .datastorage import DataStorage
-from .datastorage import DataStorageWithShareMount
+from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
+from .token import StaticToken
 
 # Date format expected by Pipeline API
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -211,6 +211,7 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_STORAGE_ITEM_CONTENT_URL = '/datastorage/{id}/content?path={path}'
     LOAD_METADATA = "/metadata/load"
+    SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
@@ -259,22 +260,26 @@ class PipelineAPI:
     LOG_GROUP = "log/group"
     STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
+    DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
 
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
     MAX_PAGE_SIZE = 400
 
-    def __init__(self, api_url, log_dir, attempts=3, timeout=5, connection_timeout=10):
+    def __init__(self, api_url=None, log_dir=None, attempts=3, timeout=5, connection_timeout=10, token=None):
         urllib3.disable_warnings()
-        token = os.environ.get('API_TOKEN')
-        self.api_url = api_url
-        self.log_dir = log_dir
-        self.header = {'content-type': 'application/json',
-                       'Authorization': 'Bearer {}'.format(token)}
+        self.api_url = api_url or os.environ['API']
+        self.log_dir = log_dir or os.getenv('LOG_DIR', '/var/log')
         self.attempts = attempts
         self.timeout = timeout
         self.connection_timeout = connection_timeout
+        self.token = token or StaticToken()
+
+    @property
+    def header(self):
+        return {'content-type': 'application/json',
+                'Authorization': 'Bearer {}'.format(self.token.get())}
 
     def check_response(self, response, not_found_msg=None):
         if response.status_code != 200:
@@ -726,6 +731,20 @@ class PipelineAPI:
             raise RuntimeError("Failed to load metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
 
+    def search_metadata(self, entity_key, entity_value, entity_class):
+        try:
+            suffix = self.SEARCH_METADATA.format(entity_key=entity_key,
+                                              entity_value=entity_value,
+                                              entity_class=entity_class)
+            result = self.execute_request(str(self.api_url) + suffix,
+                                          method="get")
+            if not result or len(result) == 0:
+                return []
+            return result
+        except Exception as e:
+            raise RuntimeError("Failed to search metadata for the given entity. "
+                               "Error message: {}".format(str(e.message)))
+
     def load_metadata_efficiently(self, entity_id, entity_class):
         all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
         return (all_metadata[0] if all_metadata else {}).get('data', {})
@@ -1089,6 +1108,17 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
 
+    def generate_user_token_efficiently(self, user_name=None, duration=None):
+        args = {}
+        if user_name:
+            args['name'] = user_name
+        if duration:
+            args['expiration'] = str(duration)
+        endpoint = '/user/token'
+        if args:
+            endpoint += '?' + '&'.join('{}={}'.format(key, value) for key, value in args.items())
+        return self._request('GET', endpoint) or {}
+
     def load_roles(self, load_users=False):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
@@ -1400,9 +1430,12 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to delete tool \n {}".format(e))
 
-    def load_datastorage_items(self, storage_id):
+    def load_datastorage_items(self, storage_id, path=None):
         try:
-            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+            endpoint = self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id)
+            if path:
+                endpoint + "?path={}".format(path)
+            return self._request(endpoint=endpoint, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
 
@@ -1427,9 +1460,17 @@ class PipelineAPI:
             raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
                 entity_class, str(entity_id), str(e)))
 
-    def update_pipeline_run_tags(self, run_id, tags):
+    def update_pipeline_run_tags(self, run_id, tags, keep_existing_tags=False):
         try:
-            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
+            if 'tags' in tags:
+                tags = tags['tags']
+
+            if keep_existing_tags:
+                run = self.load_run(run_id)
+                current_tags = run.get('tags') or {}
+                tags.update(current_tags)
+
+            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data={ 'tags': tags })
         except Exception as e:
             raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))
 
@@ -1499,3 +1540,10 @@ class PipelineAPI:
             return response.content
         except Exception as e:
             raise RuntimeError("Failed to load billing export \n {}".format(e))
+
+    def load_file_share_mount(self, mount_id):
+        try:
+            result = self._request(endpoint=self.DATA_STORAGE_MOUNT_LOAD.format(id=mount_id), http_method="get")
+            return {} if result is None else FileShareMount.from_json(result)
+        except Exception as e:
+            raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))

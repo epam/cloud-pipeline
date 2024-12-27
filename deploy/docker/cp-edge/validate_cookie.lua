@@ -65,6 +65,13 @@ local function split_str(inputstr, sep)
     return t
 end
 
+-- If edge_jwt_auth is set to False - it is requested to bypass authentication
+if ngx.var.edge_jwt_auth == "False" then
+    ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
+            "; User: bypass; Status: Successfully authenticated.")
+    return
+end
+
 -- Check if request alread contains a cookie or a header named "bearer"
 local token = ngx.var.cookie_bearer or ngx.var.http_bearer
 if token then
@@ -136,6 +143,10 @@ if token then
         ngx.var.auth_user_name_cropped = split_str(username, '@')[1]
     end
     ngx.req.set_header('X-Auth-User', username)
+    if ngx.var.edge_pass_bearer == "True" then
+        ngx.req.set_header('X-Auth-Bearer', token)
+    end
+
     return
 end
 
@@ -157,7 +168,9 @@ local api_endpoint = os.getenv("API_EXTERNAL")
 if not api_endpoint then
     api_endpoint = os.getenv("API")
 end
-local api_uri = api_endpoint .. "/route?url=" .. req_uri .. "&type=FORM"
+
+local encoded_req_uri = ngx.escape_uri(req_uri)
+local api_uri = api_endpoint .. "/route?url=" .. encoded_req_uri .. "&type=FORM"
 
 -- Get list of POST params, if a request from API is received
 ngx.req.read_body()
@@ -182,7 +195,11 @@ if token == nil then
     return
 else
     -- If "bearer" param is found - set it as cookie and redirect to initial uri
-        ngx.header['Set-Cookie'] = 'bearer=' .. token  .. '; path=/'
-        ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
-        return
+    local bearer_cookie_extra = ''
+    if ngx.var.bearer_cookie_extra ~= nil then
+        bearer_cookie_extra = ngx.var.bearer_cookie_extra
+    end
+    ngx.header['Set-Cookie'] = 'bearer=' .. token  .. '; path=/;' .. bearer_cookie_extra
+    ngx.say('<html><body><script>window.location.href = "' .. req_uri .. '"</script></body></html>')
+    return
 end

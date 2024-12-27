@@ -80,6 +80,7 @@ class DataStorageModel(DataStorageItemModel):
             instance.mask = json['mask']
         if 'regionId' in json:
             instance.region = cls._find_region_code(json['regionId'], region_data)
+            instance.endpoint = cls._find_endpoint(json['regionId'], region_data)
         instance.policy = StoragePolicy()
         if 'storagePolicy' in json:
             cls.parse_policy(instance.policy, json['storagePolicy'])
@@ -135,6 +136,13 @@ class DataStorageModel(DataStorageItemModel):
         for region in region_data:
             if int(region.get('id', 0)) == int(region_id):
                 return region.get('regionId', None)
+        return None
+
+    @staticmethod
+    def _find_endpoint(region_id, region_data):
+        for region in region_data:
+            if int(region.get('id', 0)) == int(region_id):
+                return region.get('endpoint', None)
         return None
 
 

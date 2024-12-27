@@ -55,7 +55,7 @@ import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/continuelist';
 import 'codemirror/addon/edit/trailingspace';
 
-function addClassListElement(object, className) {
+function addClassListElement (object, className) {
   if (!object || !className) {
     return;
   }
@@ -64,7 +64,7 @@ function addClassListElement(object, className) {
   }
 }
 
-function removeClassListElement(object, className) {
+function removeClassListElement (object, className) {
   if (!object || !className) {
     return;
   }
@@ -75,7 +75,6 @@ function removeClassListElement(object, className) {
 
 @observer
 export default class CodeEditor extends React.Component {
-
   static propTypes = {
     language: PropTypes.string,
     fileExtension: PropTypes.string,
@@ -299,7 +298,7 @@ export default class CodeEditor extends React.Component {
         {regex: /[-+\/*=<>!]+/, token: 'operator'},
         {regex: /[\{\[\(\:]/, indent: true},
         {regex: /[\}\]\)]/, dedent: true},
-        {regex: /[A-Za-z$][\w$]*/, token: 'variable'},
+        {regex: /[A-Za-z$][\w$]*/, token: 'variable'}
       ],
 
       command_usual: [

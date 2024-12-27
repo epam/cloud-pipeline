@@ -15,12 +15,14 @@
  */
 
 import React from 'react';
+import {observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
 import classNames from 'classnames';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import AdaptedLink from '../special/AdaptedLink';
 import styles from './styles.css';
+import Roles from '../../models/user/Roles';
 import roleModel from '../../utils/roleModel';
 import 'highlight.js/styles/github.css';
 
@@ -41,19 +43,19 @@ const SettingsTabs = [
     key: 'user',
     path: '/settings/user',
     title: 'User management',
-    available: (user, props) => {
+    available: (user, props, users, roles) => {
       if (!user) {
         return false;
       }
-      if (roleModel.userHasRole(user, 'ROLE_USER_READER')) {
+      if (roleModel.userHasRole(user, 'ROLE_USER_READER')
+      ) {
         return true;
       }
-      const {users} = props || {};
-      if (users.pending && !users.loaded) {
-        return false;
-      }
-      const list = users.value || [];
-      return list.some((user) => roleModel.readAllowed(user));
+      const usersHasSharedPermissions = users
+        .some(user => roleModel.readAllowed(user));
+      const groupsHasSharedPermissions = roles
+        .some(r => roleModel.readAllowed(r));
+      return usersHasSharedPermissions || groupsHasSharedPermissions;
     }
   },
   {
@@ -84,7 +86,7 @@ const SettingsTabs = [
     key: 'system',
     path: '/settings/system',
     title: 'System Management',
-    available: (user) => user ? user.admin : false
+    available: (user) => user ? user.admin || roleModel.userIs.dtsManager(user) : false
   },
   {
     key: 'profile',
@@ -101,6 +103,38 @@ const SettingsTabs = [
 @roleModel.authenticationInfo
 @observer
 export default class extends React.Component {
+  @observable
+  _roles = new Roles();
+
+  componentDidMount () {
+    this._roles.fetch();
+  }
+
+  componentDidUpdate (prevProps) {
+    const {location} = this.props;
+    if (location) {
+      const {pathname} = location;
+      const {pathname: prevPathname} = prevProps.location;
+      if (prevPathname !== pathname) {
+        this._roles.fetch();
+      }
+    }
+  }
+
+  @computed
+  get users () {
+    return this.props.users?.loaded
+      ? (this.props.users.value || [])
+      : [];
+  }
+
+  @computed
+  get roles () {
+    return this._roles.loaded
+      ? (this._roles.value || [])
+      : [];
+  }
+
   get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
@@ -110,7 +144,12 @@ export default class extends React.Component {
 
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
-    const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser, this.props));
+    const tabs = SettingsTabs.filter(tab => tab.available(
+      this.currentUser,
+      this.props,
+      this.users,
+      this.roles
+    ));
     const activeTab = location.pathname.split('/').filter(Boolean)[1];
     return (
       <Row
@@ -142,7 +181,6 @@ export default class extends React.Component {
 
   render () {
     const {children} = this.props;
-
     return (
       <div
         className={

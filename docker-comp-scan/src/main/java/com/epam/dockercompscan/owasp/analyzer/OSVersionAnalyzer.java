@@ -18,6 +18,7 @@ package com.epam.dockercompscan.owasp.analyzer;
 
 import com.epam.dockercompscan.owasp.analyzer.filter.FilePathGlobFilter;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.analyzer.AbstractFileTypeAnalyzer;
 import org.owasp.dependencycheck.analyzer.AnalysisPhase;
@@ -56,23 +57,11 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     /**
      * Names of OS version files to analyze.
      */
-    public static final String OS_RELEASE = "/**/etc/os-release";
-    public static final String OS_RELEASE_USR_LIB = "/**/usr/lib/os-release";
-    public static final String REDHAT_RELEASE = "/**/etc/redhat-release";
-    public static final String SYSTEM_RELEASE = "/**/etc/system-release";
-    public static final String CENTOS_RELEASE = "/**/etc/centos-release";
-
-    /**
-     * Filter that detects files named "os-release".
-     */
-    private static final FilePathGlobFilter NAME_FILE_FILTER = new FilePathGlobFilter(
-            OS_RELEASE, OS_RELEASE_USR_LIB, REDHAT_RELEASE, SYSTEM_RELEASE, CENTOS_RELEASE
-    );
-
-    /**
-     * The file filter used to determine which files this analyzer supports.
-     */
-    private static final FileFilter FILTER = FileFilterBuilder.newInstance().addFileFilters(NAME_FILE_FILTER).build();
+    public static final String OS_RELEASE = "etc/os-release";
+    public static final String OS_RELEASE_USR_LIB = "usr/lib/os-release";
+    public static final String REDHAT_RELEASE = "etc/redhat-release";
+    public static final String SYSTEM_RELEASE = "etc/system-release";
+    public static final String CENTOS_RELEASE = "etc/centos-release";
 
     private static final Pattern VERSION_PATTERN = Pattern.compile(".*\nVERSION_ID=\"?([^\n\"]*)\"?\n.*");
     private static final Pattern NAME_TITLE_PATTERN = Pattern.compile(".*\nID=\"?([^\n\"]*)\"?\n.*");
@@ -82,7 +71,9 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
 
     @Override
     protected FileFilter getFileFilter() {
-        return FILTER;
+        final String searchBasePath = getSettings().getString(AnalyzerConstants.BASE_SEARCH_PATH_SETTING);
+        final FilePathGlobFilter nameFileFilter = buildFilter(searchBasePath);
+        return FileFilterBuilder.newInstance().addFileFilters(nameFileFilter).build();
     }
 
     @Override
@@ -157,5 +148,19 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
             }
             dependency.addEvidence(type, source, name, matcher.group(1), confidence);
         }
+    }
+
+    public FilePathGlobFilter buildFilter(final String searchBasePath) {
+        return new FilePathGlobFilter(
+                buildSearchPath(searchBasePath, OS_RELEASE),
+                buildSearchPath(searchBasePath, OS_RELEASE_USR_LIB),
+                buildSearchPath(searchBasePath, REDHAT_RELEASE),
+                buildSearchPath(searchBasePath, SYSTEM_RELEASE),
+                buildSearchPath(searchBasePath, CENTOS_RELEASE)
+        );
+    }
+
+    private String buildSearchPath(final String searchBasePath, final String pattern) {
+        return FilenameUtils.concat(searchBasePath, pattern);
     }
 }

@@ -39,12 +39,13 @@ import PipelineStorageRules from '../pipelines/version/storageRules/PipelineStor
 import LaunchPipeline from '../pipelines/launch/LaunchPipeline';
 import ClusterRoot from '../cluster';
 import Cluster from '../cluster/Cluster';
+import CoreNodes from '../cluster/core-nodes';
 import HotCluster from '../cluster/hot-node-pool';
 import HotClusterUsage from '../cluster/hot-node-pool/hot-cluster-usage';
 import ClusterNode from '../cluster/ClusterNode';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
-import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
+import ClusterNodeMonitor from '../cluster/cluster-node-monitor';
 import Tool from '../tools/Tool';
 import Tools from '../tools/Tools';
 import SettingsForm from '../settings';
@@ -80,6 +81,7 @@ import NotificationBrowser from './notification/NotificationBrowser';
 import TicketsBrowser from '../special/tickets/tickets-list';
 import TicketPage from '../special/tickets/ticket';
 import NewTicketPage from '../special/tickets/new-ticket-page';
+import CloudNodes from '../cluster/cloud-nodes';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -132,6 +134,8 @@ function AppRouterComponent ({history, uiNavigation}) {
         </Route>
         <Route path="/cluster" component={ClusterRoot}>
           <IndexRoute component={Cluster} />
+          <Route path="core-nodes" component={CoreNodes} />
+          <Route path="cloud-nodes" component={CloudNodes} />
           <Route path="hot" component={HotCluster} />
           <Route path="usage" component={HotClusterUsage} />
         </Route>

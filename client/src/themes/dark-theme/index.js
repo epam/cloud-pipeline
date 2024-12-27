@@ -95,6 +95,8 @@ export default {
     '@gcp-icon-contrast': "@static_resource('icons/providers/gcp-light.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
+    '@local-icon': "@static_resource('icons/providers/local-light.svg')",
+    '@local-icon-contrast': "@static_resource('icons/providers/local-light.svg')",
     '@modal-mask-background': 'rgba(0, 0, 0, 0.6)',
     '@even-element-background': 'lighten(@card-background-color, 5%)',
     '@alert-success-background': 'fade(@color-success, 25%)',

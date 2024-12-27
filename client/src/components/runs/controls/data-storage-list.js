@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import {Popover} from 'antd';
 import DataStorageBadge from './data-storage-badge';
 import styles from './data-storage-list.css';
+import {getStoragesByIdentifiers} from '../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const MAX_ITEMS_TO_SHOW = 5;
 
@@ -29,8 +30,7 @@ class DataStorageList extends React.Component {
   get storages () {
     const {dataStorages, identifiers} = this.props;
     if (dataStorages.loaded) {
-      const ids = new Set((identifiers || []).map(id => +id));
-      const result = (dataStorages.value || []).filter(storage => ids.has(storage.id));
+      const result = getStoragesByIdentifiers(identifiers || [], dataStorages.value || []);
       result.sort((a, b) => {
         if (a.name.toLowerCase() > b.name.toLowerCase()) {
           return 1;

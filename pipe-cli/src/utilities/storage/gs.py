@@ -40,10 +40,8 @@ from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
     from urllib.parse import urlparse  # Python 3
-    from urllib.request import urlopen  # Python 3
 except ImportError:
     from urlparse import urlparse  # Python 2
-    from urllib2 import urlopen  # Python 2
 
 import click
 from google.auth import _helpers
@@ -63,6 +61,7 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import AbstractRestoreManager, AbstractListingManager, StorageOperations, \
     AbstractDeleteManager, AbstractTransferManager, TransferResult, UploadResult
+
 
 KB = 1024
 MB = KB * KB
@@ -124,10 +123,14 @@ class GsCompositeUploadClient(S3TransferUploadClient):
 
     def upload_part(self, Bucket, Key, UploadId, PartNumber, Body, *args, **kwargs):
         part_path = self._part_path(PartNumber)
-        part_blob = self._bucket_object.blob(part_path)
+        part_blob = _CustomBlob(
+            size=len(Body),
+            progress_callback=self._progress_callback,
+            name=part_path,
+            bucket=self._bucket_object,
+            chunk_size=8 * MB
+        )
         part_blob.upload_from_file(Body)
-        if self._progress_callback:
-            self._progress_callback(part_blob.size)
         self._parts[PartNumber] = part_blob
         return {'ETag': part_path}
 
@@ -440,6 +443,10 @@ class GsListingManager(GsManager, AbstractListingManager):
             storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.size)
         return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), storage_usage]
 
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None, show_archive=False):
+        return self.list_items(relative_path, recursive, page_size, show_all=False, show_archive=show_archive), None
+
     def get_summary_with_depth(self, max_depth, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
         bucket = self.client.bucket(self.bucket.path)
@@ -452,6 +459,9 @@ class GsListingManager(GsManager, AbstractListingManager):
             name = blob.name
             accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
+
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        raise NotImplementedError("List items with depth is not implemented yet")
 
     def _to_storage_file(self, blob):
         item = DataStorageItemModel()
@@ -520,7 +530,8 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         if recursive and version:
             raise RuntimeError('Recursive folder deletion with specified version is not available '
                                'for GCP cloud provider.')
@@ -714,11 +725,14 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_path):
         return destination_wrapper.get_list_manager().get_file_size(destination_path)
 
+    def get_destination_object_head(self, destination_wrapper, destination_path):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_path)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
         source_client = GsBucketOperations.get_client(source_wrapper.bucket, read=True, write=clean)
@@ -779,11 +793,15 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return StorageOperations.get_local_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -841,6 +859,50 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE = chunk_size
 
 
+class GsDownloadStreamManager(GsManager, AbstractTransferManager):
+    DEFAULT_BUFFERING_SIZE = 1024 * 1024  # 1MB
+
+    def __init__(self, client, events, buffering=DEFAULT_BUFFERING_SIZE):
+        GsManager.__init__(self, client, events)
+        self._buffering = int(os.environ.get(CP_CLI_DOWNLOAD_BUFFERING_SIZE) or buffering)
+
+    def get_destination_key(self, destination_wrapper, relative_path):
+        return destination_wrapper.path
+
+    def get_destination_size(self, destination_wrapper, destination_key):
+        return 0
+
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return 0, None
+
+    def get_source_key(self, source_wrapper, source_path):
+        return source_path or source_wrapper.path
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+        source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
+
+        if StorageOperations.show_progress(quiet, size, lock):
+            progress_callback = ProgressPercentage(source_key, size)
+        else:
+            progress_callback = None
+        self._replace_default_download_chunk_size(self._buffering)
+        self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
+        bucket = self.client.bucket(source_wrapper.bucket.path)
+        if StorageOperations.file_is_empty(size):
+            blob = bucket.blob(source_key)
+        else:
+            blob = self.custom_blob(bucket, source_key, progress_callback, size)
+        blob.download_to_file(destination_wrapper.get_output_stream(destination_key))
+        if clean:
+            self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
+            blob.delete()
+
+    def _replace_default_download_chunk_size(self, chunk_size):
+        resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE = chunk_size
+
+
 class GsUploadManager(GsManager, AbstractTransferManager):
     """
     Google cloud storage upload manager that performs either simple upload or
@@ -860,6 +922,9 @@ class GsUploadManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
             return os.path.join(source_wrapper.path, source_path)
@@ -867,7 +932,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -937,42 +1002,37 @@ class _SourceUrlIO:
         return new_bytes
 
 
-class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
+class GSUploadStreamManager(GsManager, AbstractTransferManager):
 
     def get_destination_key(self, destination_wrapper, relative_path):
-        if destination_wrapper.path.endswith(os.path.sep):
-            return os.path.join(destination_wrapper.path, relative_path)
-        else:
-            return destination_wrapper.path
+        return StorageOperations.normalize_path(destination_wrapper, relative_path)
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
-        if clean:
-            raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
-                                 'is not supported for ftp/http sources.')
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         if StorageOperations.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
-        bucket = self.client.bucket(destination_wrapper.bucket.path)
-        if StorageOperations.file_is_empty(size):
-            blob = bucket.blob(destination_key)
-        else:
-            blob = self.custom_blob(bucket, destination_key, progress_callback, size)
         destination_tags = StorageOperations.generate_tags(tags, source_key)
+        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
+        bucket = self.client.bucket(destination_wrapper.bucket.path)
+        blob = self.custom_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = destination_tags
-        blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
-        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=blob.generation,
+        blob.upload_from_file(_SourceUrlIO(source_wrapper.get_input_stream(source_key)))
+        generation = blob.generation
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=generation,
                             tags=destination_tags)
 
 
@@ -1078,14 +1138,19 @@ class GsBucketOperations:
         return GsDownloadManager(client, events)
 
     @classmethod
+    def get_download_stream_manager(cls, source_wrapper, destination_wrapper, events, command):
+        client = GsBucketOperations.get_client(source_wrapper.bucket, read=True, write=command == 'mv')
+        return GsDownloadStreamManager(client, events)
+
+    @classmethod
     def get_upload_manager(cls, source_wrapper, destination_wrapper, events, command):
         client = GsBucketOperations.get_client(destination_wrapper.bucket, read=True, write=True)
         return GsUploadManager(client, events)
 
     @classmethod
-    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, events, command):
+    def get_upload_stream_manager(cls, source_wrapper, destination_wrapper, events, command):
         client = GsBucketOperations.get_client(destination_wrapper.bucket, read=True, write=True)
-        return TransferFromHttpOrFtpToGsManager(client, events)
+        return GSUploadStreamManager(client, events)
 
     @classmethod
     def get_client(cls, *args, **kwargs):

@@ -14,6 +14,8 @@
 
 config_path=${1:-/etc/docker/registry/config.yml}
 
+mkdir -p $(dirname "$config_path")
+
 # Setup certificates trust
 ln -s /usr/local/share/ca-certificates/cp-api/ssl-public-cert.pem  /usr/local/share/ca-certificates/cp-api-ssl-public-cert.pem
 update-ca-certificates
@@ -37,7 +39,7 @@ if [ "$CP_DOCKER_STORAGE_TYPE" == "obj" ]; then
       CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
     fi
 
-read -r -d '' storage_driver_config <<-EOF
+IFS= read -r -d '' storage_driver_config <<-EOF
   s3:
     region: ${CP_DOCKER_STORAGE_REGION:-$CP_CLOUD_REGION_ID}
     bucket: ${CP_DOCKER_STORAGE_CONTAINER}
@@ -54,7 +56,7 @@ EOF
     CP_DOCKER_STORAGE_KEY_NAME=${CP_DOCKER_STORAGE_KEY_NAME:-$CP_AZURE_STORAGE_ACCOUNT}
     CP_DOCKER_STORAGE_KEY_SECRET=${CP_DOCKER_STORAGE_KEY_SECRET:-$CP_AZURE_STORAGE_KEY}
 
-read -r -d '' storage_driver_config <<-EOF
+IFS= read -r -d '' storage_driver_config <<-EOF
   azure: 
     accountname: ${CP_DOCKER_STORAGE_KEY_NAME}
     accountkey: ${CP_DOCKER_STORAGE_KEY_SECRET}
@@ -69,7 +71,7 @@ EOF
            CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
      fi
 
-read -r -d '' storage_driver_config <<-EOF
+IFS= read -r -d '' storage_driver_config <<-EOF
   gcs:
     bucket: ${CP_DOCKER_STORAGE_CONTAINER}
     keyfile: ${CP_CLOUD_CREDENTIALS_LOCATION}
@@ -84,7 +86,7 @@ fi
 if [ -z "$storage_driver_config" ]; then
   echo "Setting default local filesystem driver configuration"
 
-read -r -d '' storage_driver_config <<-EOF
+IFS= read -r -d '' storage_driver_config <<-EOF
   filesystem:
     rootdirectory: /var/lib/registry
     maxthreads: 100

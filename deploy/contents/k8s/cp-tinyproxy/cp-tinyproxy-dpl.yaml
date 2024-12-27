@@ -1,15 +1,19 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-tinyproxy
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-tinyproxy: "true"
   replicas: 1
   template:
     metadata:
       namespace: default
       labels:
         cloud-pipeline/cp-tinyproxy: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-tinyproxy: "true"
@@ -21,6 +25,11 @@ spec:
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:tinyproxy-$CP_VERSION
           imagePullPolicy: "IfNotPresent"
           command: ["/init"]
+          env:
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
           envFrom:
           - configMapRef:
               name: cp-config-global

@@ -40,7 +40,7 @@
 
 import React, {
   useCallback,
-  useEffect,
+  useEffect, useMemo,
   useRef,
   useState,
 } from 'react';
@@ -52,6 +52,7 @@ import {
   DETAIL_VIEW_ID,
 } from '@hms-dbmi/viv';
 import VivViewer from './components/viv-viewer';
+import Viv3DViewer, { defaultExtensions as defaultExtensions3D } from './components/viv-3d-viewer';
 import useHCSImageState from '../state';
 import useElementSize from './utilities/use-element-size';
 import getZoomLevel from '../state/utilities/get-zoom-level';
@@ -179,6 +180,12 @@ function HCSImageViewer(
     lensEnabled,
     lensChannel,
     pending: viewerStatePending,
+    use3D,
+    loader3DIndex,
+    renderingModeIdx,
+    xSlice,
+    ySlice,
+    zSlice
   } = viewerState;
   useEffect(() => {
     if (typeof setImageViewportLoading === 'function') {
@@ -225,12 +232,16 @@ function HCSImageViewer(
     maxZoomBackOff,
     defaultZoomBackOff,
     onViewStateChange,
+    use3D
   ]);
   const readyForRendering = loader
     && ready
     && size.width
     && size.height
     && viewState;
+
+  const extension3d = useMemo(() => defaultExtensions3D.find((o) => o.id === renderingModeIdx)?.extension ?? defaultExtensions3D[0]?.extension, [renderingModeIdx]);
+  const extensions3d = useMemo(() => extension3d ? [extension3d] : [], [extension3d]);
   return (
     <div
       className={className}
@@ -238,7 +249,7 @@ function HCSImageViewer(
       ref={containerRef}
     >
       {
-        readyForRendering && (
+        readyForRendering && !use3D && (
           <VivViewer
             mesh={pending || viewerStatePending ? undefined : mesh}
             overlayImages={overlayImages}
@@ -264,6 +275,29 @@ function HCSImageViewer(
             onEditAnnotation={onEditAnnotation}
             onViewStateChange={onViewStateChange}
             deckProps={deckProps}
+          />
+        )
+      }
+      {
+        readyForRendering && use3D && extensions3d.length > 0 && loader3DIndex !== undefined && (
+          <Viv3DViewer
+            contrastLimits={contrastLimits}
+            colors={colors}
+            channelsVisible={channelsVisibility}
+            loader={loader}
+            selections={selections}
+            height={size.height}
+            width={size.width}
+            extensions={extensions3d}
+            colormap={colorMap || 'viridis'}
+            onViewportLoad={setImageViewportLoaded}
+            viewStates={viewState}
+            onViewStateChange={onViewStateChange}
+            deckProps={deckProps}
+            resolution={loader3DIndex}
+            xSlice={xSlice}
+            ySlice={ySlice}
+            zSlice={zSlice}
           />
         )
       }

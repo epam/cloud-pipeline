@@ -6,35 +6,75 @@ CP_GIT_CLONE_URL=$2
 PIPELINE_VERSION=$3
 CP_CMD=$4
 
+declare -px > /etc/cp_startup.env
+
 _CP_STARTUP_BASH_FILE=/opt/cp_startup.sh
 cat > $_CP_STARTUP_BASH_FILE << EOF
 #!/bin/bash
 
-CP_LAUNCH_SH_URL="$CP_LAUNCH_SH_URL"
-CP_GIT_CLONE_URL="$CP_GIT_CLONE_URL"
-PIPELINE_VERSION="$PIPELINE_VERSION"
-CP_CMD="$CP_CMD"
+CP_LAUNCH_SH_URL='$CP_LAUNCH_SH_URL'
 
-cat /proc/1/environ | tr '\0' '\n' | awk '{ print "export " \$1 }' > /opt/cp_env.tmp
-chmod +x /opt/cp_env.tmp
-source /opt/cp_env.tmp
-rm -rf /opt/cp_env.tmp
+# Inherit environment variables from the PID 1 process, which are dumped earlier into /etc/cp_startup.env
+# So that the SystemD option get a correct environment
+# If no SystemD is requested - variables will inherited on their own
+if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
+    if [ -f "/etc/cp_startup.env" ]; then
+        source /etc/cp_startup.env
+    else
+        echo "Environment file /etc/cp_startup.env not found"
+    fi
+fi
+rm -f /etc/cp_startup.env
 
 set -o pipefail
 
 command -v wget >/dev/null 2>&1
-_wget_exists=$?
+_wget_exists=\$?
 if [ "\$_wget_exists" -eq 0 ]; then
     export LAUNCH_CMD="wget --no-check-certificate -q -O - '\$CP_LAUNCH_SH_URL'"
 fi
 
 command -v curl >/dev/null 2>&1
-_curl_exists=$?
+_curl_exists=\$?
 if [ "\$_curl_exists" -eq 0 ]; then
     export LAUNCH_CMD="curl -s -k '\$CP_LAUNCH_SH_URL'"
 fi
 
-eval "\$LAUNCH_CMD" | bash /dev/stdin "\$CP_GIT_CLONE_URL" "\$PIPELINE_VERSION" "\$CP_CMD"
+eval "\$LAUNCH_CMD" | bash /dev/stdin '$CP_GIT_CLONE_URL' '$PIPELINE_VERSION' '$CP_CMD'
+_launch_sh_result=\$?
+
+echo "[init.sh] Main script exited with \${_launch_sh_result}"
+
+if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
+    echo "[init.sh] Running in systemd, will try to self-stop"
+    _stop_retry_count=20
+    _stop_result=0
+    for _iter in \$(seq 1 "\$_stop_retry_count"); do
+        if [ \$_launch_sh_result -ne 0 ]; then
+            _stop_status=FAILURE
+        else
+            _stop_status=SUCCESS
+        fi
+        pipe stop -y \$RUN_ID --status \$_stop_status
+        _stop_result=\$?
+
+        if [ \$_stop_result -ne 0 ]; then
+            echo "[WARN] Cannot stop run with \$_stop_status status, will retry"
+            sleep 60
+        else
+            echo "[INFO] Run has been stopped with \$_stop_status status"
+            break
+        fi
+    done
+
+    # We were not able to stop via API, may it's down. As a fallback - kill current instance.
+    if [ \$_stop_result -ne 0 ]; then
+        echo "[ERROR] Cannot stop current run, forcebly shutting down"
+        shutdown -r now
+    fi
+else
+    exit \$_launch_sh_result
+fi
 EOF
 chmod +x $_CP_STARTUP_BASH_FILE
 

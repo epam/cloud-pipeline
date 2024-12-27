@@ -19,7 +19,7 @@
   overflow: hidden;
 }
 
-.container .slider-container {
+.container .badges-container {
   padding: 0;
   display: flex;
   flex-direction: row;
@@ -28,10 +28,17 @@
   width: 100%;
 }
 
-.title {
-  font-weight: bold;
+.title-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
+}
+
+.title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .z-item {
@@ -44,4 +51,16 @@
 
 .z-item.active {
   cursor: default;
+}
+
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  padding: 5px 0;
+}
+
+.slider-container span[class~="rc-slider-mark-text"] {
+  white-space: nowrap;
 }

@@ -24,10 +24,11 @@ function configure_consumable_sge_resource {
     RESOURCE_DEFAULT="$3"
     RESOURCE_VALUE="$4"
     RESOURCE_CONSUMABLE_TYPE="$5"
+    RESOURCE_RELOP="$6"
 
     # Add consumable resource if it is master node, this shall be done once
     if [[ "$cluster_role" = "master" ]]; then
-        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT" "$RESOURCE_CONSUMABLE_TYPE"
+        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT" "$RESOURCE_CONSUMABLE_TYPE" "$RESOURCE_RELOP"
     fi
 
     # Add consumable resource capacity for a current execution host
@@ -39,13 +40,14 @@ function add_consumable_sge_resource {
     RESOURCE_TYPE="$2"
     RESOURCE_DEFAULT="$3"
     RESOURCE_CONSUMABLE_TYPE="$4"
+    RESOURCE_RELOP="$5"
 
     _CONFIG_FILE=/tmp/complex_${_CURRENT_EXEC_NODE_NAME}.txt
     qconf -sc > "$_CONFIG_FILE"
     # First remove any line, which start with the resource name, in case it already exists
     # Otherwise - resource won't be added/modified
     sed -i "/^$RESOURCE_NAME /d" "$_CONFIG_FILE"
-    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE <= YES $RESOURCE_CONSUMABLE_TYPE $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
+    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE $RESOURCE_RELOP YES $RESOURCE_CONSUMABLE_TYPE $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
     qconf -Mc "$_CONFIG_FILE"
     rm "$_CONFIG_FILE"
     pipe_log_info "Added GridEngine consumable resource: $RESOURCE_NAME" "$_SGE_RESOURCES_SETUP_TASK"
@@ -116,6 +118,10 @@ fi
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU:-n_cpu}
 pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
+# "exclusive" resource can be used to schedule jobs which occupy a whole node
+# See: http://web.archive.org/web/20130706011021/http://docs.oracle.com/cd/E24901_01/doc.62/e21978/management.htm#autoId61
+CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE:-exclusive}
+
 pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_SETUP_TASK"
 
 # Changed consumable type of the "n_cpu" and "gpus" resources to "JOB" (see http://www.softpanorama.org/HPC/Grid_engine/Resources/sge_consumable_resources.shtml)
@@ -124,8 +130,52 @@ pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_
 # For the "ram" resource, keeping it as "YES", as it makes sense to request this resource per slot
 
 # For the CPU-only nodes, we still add "gpus" resource with value "0", so that the scripts do not fail if the request "-l gpus=N"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB"
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB" "<="
+# We also add a predefined value for slots as it is not exposed by default
+# This can be handy when using "fill up" scheduling approach: http://talby.rcs.manchester.ac.uk/~ri/_notes_sge/least_used_vs_fill_up.html
+CP_CAP_GE_CONSUMABLE_RESOURCE_SLOTS_ENABLED="${CP_CAP_GE_CONSUMABLE_RESOURCE_SLOTS_ENABLED:-true}"
+if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_SLOTS_ENABLED" == "true" ]; then
+    qconf -aattr exechost complex_values "slots=$_NODE_CPU_COUNT" "$_CURRENT_EXEC_NODE_NAME"
+fi
+
+if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED" != "false" ]; then
+    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE" "BOOL" "0" "true" "YES" "EXCL"
+else
+    pipe_log_info "Skipping $CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE configuration as CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED == $CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED" "$_SGE_RESOURCES_SETUP_TASK"
+fi
+
+# The worker_type is not used as a consumable, but can be added to the "load_formula" https://gridscheduler.sourceforge.net/htmlman/htmlman5/sched_conf.html
+# Setting load_formula to worker_type will make SGE prioritize static workers before autoscaled
+# https://github.com/epam/cloud-pipeline/issues/825
+CP_CAP_GE_CONSUMABLE_RESOURCE_WORKER_TYPE_ENABLED="${CP_CAP_GE_CONSUMABLE_RESOURCE_WORKER_TYPE_ENABLED:-true}"
+if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_WORKER_TYPE_ENABLED" == "true" ]; then
+    CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_WORKER_TYPE="worker_type"
+    CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_STATIC="${CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_STATIC:-0}"
+    CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_ADD="${CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_ADD:-1000}"
+    if [ "$cluster_role" == master ] || [ "$cluster_role_type" != "additional" ]; then
+        _NODE_WORKER_TYPE_WEIGHT="$CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_STATIC"
+    elif [ "$cluster_role_type" == "additional" ]; then
+        _NODE_WORKER_TYPE_WEIGHT="$CP_CAP_GE_CONSUMABLE_RESOURCE_DEFAULT_VALUE_WORKER_TYPE_ADD"
+    fi
+    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_WORKER_TYPE" "INT" "0" "$_NODE_WORKER_TYPE_WEIGHT" "JOB" "<="
+    
+    if [ "$CP_CAP_SGE_DEFAULT_LOAD_FORMULA" ] && [ "$cluster_role" == master ]; then
+        pipe_log_info "CP_CAP_SGE_DEFAULT_LOAD_FORMULA is set to ${CP_CAP_SGE_DEFAULT_LOAD_FORMULA}. Configuring scheduler." "$_SGE_RESOURCES_SETUP_TASK"
+        
+        qconf -ssconf > /tmp/sge_scheduler.conf
+        sed -i '/^load_formula/d' /tmp/sge_scheduler.conf
+        echo "load_formula $CP_CAP_SGE_DEFAULT_LOAD_FORMULA" >> /tmp/sge_scheduler.conf
+        qconf -Msconf /tmp/sge_scheduler.conf
+        
+        if [ $? -ne 0 ]; then
+            pipe_log_warn "Failed configuring load_formula in SGE scheduler" "$_SGE_RESOURCES_SETUP_TASK"  
+        else
+            pipe_log_info "SGE scheduler load_formula is set to $CP_CAP_SGE_DEFAULT_LOAD_FORMULA" "$_SGE_RESOURCES_SETUP_TASK"  
+        fi
+        rm -f /tmp/sge_scheduler.conf
+    fi
+fi
 
 pipe_log_success "Finished GridEngine resources configuration" "$_SGE_RESOURCES_SETUP_TASK"

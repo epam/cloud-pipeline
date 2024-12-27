@@ -48,12 +48,15 @@ import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageIte
 import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
 import GenerateFolderDownloadUrl from '../../../../models/dataStorage/GenerateFolderDownloadUrl';
 import DataStorageConvert from '../../../../models/dataStorage/DataStorageConvert';
+import OmicsStoreImport from '../../../../models/dataStorage/OmicsStoreImport';
+import OmicsActivate from '../../../../models/dataStorage/OmicsActivate';
 // eslint-disable-next-line max-len
 import LifeCycleEffectiveHierarchy from '../../../../models/dataStorage/lifeCycleRules/LifeCycleEffectiveHierarchy';
 // eslint-disable-next-line max-len
 import LifeCycleRestoreCreate from '../../../../models/dataStorage/lifeCycleRules/LifeCycleRestoreCreate';
 import EditItemForm from '../forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from '../forms/DataStorageEditDialog';
+import {OmicsStorageImportDialog} from '../forms/OmicsStorageImportDialog';
 import {LifeCycleRestoreModal} from '../forms/life-cycle-rules/modals';
 import DataStorageNavigation from '../forms/DataStorageNavigation';
 import RestrictedImagesInfo from '../forms/restrict-docker-images/restricted-images-info';
@@ -69,6 +72,7 @@ import RestoreStatusIcon, {STATUS} from '../forms/life-cycle-rules/components/re
 import PreviewModal from '../../../search/preview/preview-modal';
 import {getPreviewConfiguration} from '../../../search/preview/vsi-preview';
 import UploadButton from '../../../special/UploadButton';
+import {UploadOmicsButton} from '../../../special/UploadOmicsButton';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import EmbeddedMiew from '../../../applications/miew/EmbeddedMiew';
 import parseQueryParameters from '../../../../utils/queryParameters';
@@ -86,6 +90,7 @@ import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../../special/metadata/special/request-dav-access';
 import StorageSize from '../../../special/storage-size';
+import highlightText from '../../../special/highlightText';
 import {extractFileShareMountList} from '../forms/DataStoragePathInput';
 import SharedItemInfo from '../forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../../special/sample-sheet/utilities';
@@ -99,12 +104,18 @@ import LabelsRenderer from './components/labels-renderer';
 import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
+import DownloadOmicsButton from './components/download-omics-button';
 import handleDownloadItems from '../../../special/download-storage-items';
+import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
+import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
+import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
+import {getNgbFileName, isNgbFile, openNgbFile} from './ngb-files';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
-  intelligentTiering: 'INTELLIGENT_TIERING'
+  intelligentTiering: 'INTELLIGENT_TIERING',
+  active: 'ACTIVE'
 };
 
 const standardClasses = [
@@ -112,8 +123,16 @@ const standardClasses = [
   STORAGE_CLASSES.intelligentTiering
 ];
 
+const activeClass = [STORAGE_CLASSES.active];
+
 const isStandardClass = (storageClass) =>
   standardClasses.includes((storageClass || '').toUpperCase());
+
+const isActiveClass = (storageClass) => (
+  activeClass.includes((storageClass || '').toUpperCase())
+);
+
+const SUBMITTED_STATUS = 'SUBMITTED';
 
 @roleModel.authenticationInfo
 @inject(
@@ -169,7 +188,9 @@ export default class DataStorage extends React.Component {
     previewModal: null,
     previewAvailable: false,
     previewPending: false,
-    restorePending: false
+    restorePending: false,
+    omicsDialogVisible: false,
+    importedJobs: false
   };
 
   @observable storage = new DataStorageListing({
@@ -177,6 +198,7 @@ export default class DataStorage extends React.Component {
   });
 
   @observable generateDownloadUrls;
+  @observable filterDropdownVisible;
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -184,6 +206,13 @@ export default class DataStorage extends React.Component {
         this.storage.readAllowed;
     }
     return !!this.state.metadata;
+  }
+
+  get showJobs () {
+    if (this.state.importedJobs) {
+      return this.storage.info && this.storage.readAllowed;
+    }
+    return this.state.importedJobs;
   }
 
   get region () {
@@ -263,6 +292,7 @@ export default class DataStorage extends React.Component {
     return this.storage.infoLoaded &&
       this.storage.info &&
       !/^nfs$/i.test(this.storage.info.type) &&
+      !this.isOmicsStore &&
       preferences &&
       preferences.loaded &&
       preferences.sharedStoragesSystemDirectory &&
@@ -285,6 +315,7 @@ export default class DataStorage extends React.Component {
       const isAdmin = authenticatedUserInfo.value.admin;
       const isOwner = roleModel.isOwner(this.storage.info);
       return isAdmin ||
+        roleModel.isManager.storageAdmin(this) ||
         (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
@@ -309,15 +340,15 @@ export default class DataStorage extends React.Component {
     const readAllowed = roleModel.readAllowed(this.storage.info);
     const writeAllowed = roleModel.writeAllowed(this.storage.info);
     return {
-      read: (
+      read: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(this.storage.info) ||
         roleModel.isManager.archiveManager(this) ||
         roleModel.isManager.archiveReader(this)
-      ) && readAllowed && isS3,
-      write: (
+      ) && readAllowed && isS3),
+      write: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(this.storage.info) ||
         roleModel.isManager.archiveManager(this)
-      ) && writeAllowed && isS3
+      ) && writeAllowed && isS3)
     };
   }
 
@@ -403,10 +434,11 @@ export default class DataStorage extends React.Component {
       ? authenticatedUserInfo.value.admin
       : false;
     // Whilst in the restricted tag access mode, only admins and users (including owners) with roles
-    // STORAGE_MANAGER or STORAGE_TAG_MANAGER are allowed to edit file's tags.
+    // STORAGE_MANAGER STORAGE_ADMIN or STORAGE_TAG_MANAGER are allowed to edit file's tags.
     const restrictedAccessCheck = isAdmin ||
       roleModel.isManager.storage(this) ||
-      roleModel.isManager.storageTag(this);
+      roleModel.isManager.storageTag(this) ||
+      roleModel.isManager.storageAdmin(this);
     const storageFileTagsEditable = this.storageTagRestrictedAccess
       ? restrictedAccessCheck
       // If restricted tag access mode is off, all users with WRITE permissions are
@@ -415,6 +447,24 @@ export default class DataStorage extends React.Component {
     return this.state.selectedFile
       ? storageFileTagsEditable
       : this.storage.writeAllowed;
+  }
+
+  get isReferenceStorage () {
+    const {type} = this.storage.info || {};
+    return type === ServiceTypes.omicsRef;
+  }
+
+  get isSequenceStorage () {
+    const {type} = this.storage.info || {};
+    return type === ServiceTypes.omicsSeq;
+  }
+
+  get isOmicsStore () {
+    return this.isSequenceStorage || this.isReferenceStorage;
+  }
+
+  get isOmicsFolder () {
+    return this.isOmicsStore && !this.storage.pagePath && this.storage.path === '/';
   }
 
   onDataStorageEdit = async (storage) => {
@@ -483,6 +533,38 @@ export default class DataStorage extends React.Component {
       }
     }
   };
+
+  onImportOmicsJob = async (job) => {
+    if (!job || !this.storage.info) {
+      return;
+    }
+    const {parentFolderId} = this.storage.info;
+    const payload = {
+      sources: [
+        {...job}
+      ]
+    };
+    const request = new OmicsStoreImport(this.props.storageId);
+    await request.send(payload);
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      this.closeOmicsDialog();
+      this.storage.refreshStorageInfo();
+      this.props.folders.invalidateFolder(parentFolderId);
+      this.setState({
+        importedJobs: true,
+        updateJobsSearch: true
+      }, () => {
+        this.setState({
+          updateJobsSearch: false
+        });
+      });
+      if (this.props.onReloadTree) {
+        this.props.onReloadTree(!parentFolderId);
+      }
+    }
+  }
 
   get items () {
     const {
@@ -570,14 +652,27 @@ export default class DataStorage extends React.Component {
     items.push(...elements.map(i => {
       const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
       const archived = i.labels && !isStandardClass(i.labels['StorageClass']);
-      return {
-        key: `${i.type}_${i.path}`,
-        ...i,
-        downloadable: i.type.toLowerCase() === 'file' &&
+      const active = i.labels && isActiveClass(i.labels['StorageClass']);
+      const type = i.type.toLowerCase();
+      const isDownloadable = !this.isOmicsStore
+        ? (
+          type === 'file' &&
           !i.deleteMarker &&
           !sensitive &&
           (!archived || restored) &&
-          downloadable,
+          downloadable
+        )
+        : (
+          (type === 'file' || type === 'folder') &&
+          !i.deleteMarker &&
+          !sensitive &&
+          (active || restored) &&
+          downloadable
+        );
+      return {
+        key: `${i.type}_${i.path}`,
+        ...i,
+        downloadable: isDownloadable,
         editable: writeAllowed && !i.deleteMarker,
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
         deletable: writeAllowed,
@@ -593,6 +688,10 @@ export default class DataStorage extends React.Component {
         hcs: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
           fastCheckHCSPreviewAvailable({path: i.path, storageId}),
+        ngb: !i.deleteMarker &&
+          this.storage.ngbSettingsFileExists &&
+          i.type.toLowerCase() === 'file' &&
+          isNgbFile(i.path),
         documentPreview: !i.deleteMarker &&
           documentPreviewAvailable(i),
         archived,
@@ -619,6 +718,16 @@ export default class DataStorage extends React.Component {
 
   closeEditDialog = () => {
     this.setState({editDialogVisible: false}, () => {
+      this.storage.refreshStorageInfo();
+    });
+  };
+
+  openOmicsDialog = () => {
+    this.setState({omicsDialogVisible: true});
+  };
+
+  closeOmicsDialog = () => {
+    this.setState({omicsDialogVisible: false}, () => {
       this.storage.refreshStorageInfo();
     });
   };
@@ -702,6 +811,8 @@ export default class DataStorage extends React.Component {
       path = path.substring(0, path.length - 1);
     }
     this.storage.clearMarkersForPath(path, clearPathMarkers);
+    this.storage.resetSorting();
+    this.storage.clearClientPaging();
     const params = [
       path ? `path=${encodeURIComponent(path)}` : false,
       this.versionControlsEnabled
@@ -821,6 +932,24 @@ export default class DataStorage extends React.Component {
           this.setState({restorePending: false});
           this.closeRestoreFilesDialog();
         });
+    });
+  };
+
+  restoreOmics = async () => {
+    const payload = {
+      readSetIds: this.restorableItems.map(item => item.path)
+    };
+    const request = new OmicsActivate(this.props.storageId);
+    this.setState({restorePending: true}, async () => {
+      await request.send(payload);
+      if (request.error) {
+        message.error(request.error, 5);
+        return this.setState({restorePending: false});
+      }
+      if (request.value && request.value.status === SUBMITTED_STATUS) {
+        message.info('Restoring was successfully initialized', 5);
+      }
+      this.setState({restorePending: false});
     });
   };
 
@@ -1151,27 +1280,38 @@ export default class DataStorage extends React.Component {
       );
     };
     if (item.downloadable) {
-      actions.push((
-        <OpenInToolAction
-          key="open-in-tool"
-          file={item.path}
-          storageId={this.props.storageId}
-          className="cp-button"
-          style={{
-            display: 'flex',
-            textDecoration: 'none',
-            alignItems: 'center'
-          }}
-        />
-      ));
-      actions.push(
-        <DownloadFileButton
-          key={`download-${item.path}`}
-          storageId={this.props.storageId}
-          path={item.path}
-          version={item.version}
-        />
-      );
+      if (!this.isOmicsStore) {
+        actions.push((
+          <OpenInToolAction
+            key="open-in-tool"
+            file={item.path}
+            storageId={this.props.storageId}
+            className="cp-button"
+            style={{
+              display: 'flex',
+              textDecoration: 'none',
+              alignItems: 'center'
+            }}
+          />
+        ));
+        actions.push(
+          <DownloadFileButton
+            key={`download-${item.path}`}
+            storageId={this.props.storageId}
+            path={item.path}
+            version={item.version}
+          />
+        );
+      } else if (this.isSequenceStorage) {
+        actions.push(
+          <DownloadOmicsButton
+            key={`download-${item.path}`}
+            storageInfo={this.storage.info}
+            region={this.regionName}
+            item={item}
+          />
+        );
+      }
     }
     if (
       (item.isVersion
@@ -1179,7 +1319,7 @@ export default class DataStorage extends React.Component {
         : item.editable
       ) && (
         !item.archived || item.restored
-      )
+      ) && !this.isOmicsStore
     ) {
       actions.push(
         <Button
@@ -1203,9 +1343,10 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (item.isVersion
+    if ((item.isVersion
       ? item.deletable && this.versionControlsEnabled
-      : item.deletable
+      : item.deletable) &&
+      (!this.isOmicsStore || this.isOmicsFolder)
     ) {
       actions.push(separator());
       actions.push(
@@ -1228,13 +1369,23 @@ export default class DataStorage extends React.Component {
 
   fileIsSelected = (item) => {
     return !!this.state.selectedItems
-      .find(s => s.name === item.name && s.type === item.type);
+      .find(s => {
+        if (this.isOmicsStore) {
+          return (s.path === item.path && s.type === item.type);
+        }
+        return (s.name === item.name && s.type === item.type);
+      });
   };
 
   selectFile = (item) => () => {
     const selectedItems = this.state.selectedItems;
     const selectedItem = this.state.selectedItems
-      .find(s => s.name === item.name && s.type === item.type);
+      .find(s => {
+        if (this.isOmicsStore) {
+          return (s.path === item.path && s.type === item.type);
+        }
+        return (s.name === item.name && s.type === item.type);
+      });
     if (selectedItem) {
       const index = selectedItems.indexOf(selectedItem);
       selectedItems.splice(index, 1);
@@ -1356,6 +1507,24 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  onNgbFileActionClick = async (file, event) => {
+    const {storageId, path, preferences} = this.props;
+    event && event.stopPropagation();
+    const fileName = getNgbFileName(file.path);
+    const hide = message.loading((<span>Opening <b>{fileName}</b>...</span>), 0);
+    try {
+      await openNgbFile({
+        storageId,
+        path: file.path,
+        preferences
+      });
+    } catch (error) {
+      message.error(error.message, 5);
+    } finally {
+      hide();
+    }
+  };
+
   closePreviewModal = () => {
     this.setState({previewModal: null});
   };
@@ -1441,7 +1610,12 @@ export default class DataStorage extends React.Component {
 
   get columns () {
     const tableData = this.items;
-    const hasAppsColumn = tableData.some(o => o.miew || o.vsi || o.hcs || o.documentPreview);
+    const hasAppsColumn = tableData.some(o => o.miew ||
+      o.vsi ||
+      o.hcs ||
+      o.ngb ||
+      o.documentPreview
+    );
     const hasVersions = tableData.some(o => o.versions);
     const getItemIcon = (item) => {
       if (!item) {
@@ -1474,14 +1648,25 @@ export default class DataStorage extends React.Component {
         </RestoreStatusIcon>
       );
     };
+    const filteredStatus = (keys = []) => {
+      const filtered = keys.some(key => !!this.storage.currentFilter?.[key]);
+      return {
+        filtered,
+        filteredValue: filtered ? ['filtered'] : null
+      };
+    };
+    const hideFilterDropdown = () => {
+      this.filterDropdownVisible = undefined;
+    };
     const selectionColumn = {
       key: 'selection',
-      title: '',
       className: (this.showVersions || hasVersions)
         ? styles.checkboxCellVersions
         : styles.checkboxCell,
       render: (item) => {
-        if (item.selectable && (item.downloadable || item.editable || item.shareAvailable)) {
+        if (item.selectable &&
+          (item.downloadable || item.editable || item.shareAvailable) &&
+          (!this.isOmicsStore || this.isSequenceStorage)) {
           return (
             <Checkbox
               checked={this.fileIsSelected(item)}
@@ -1562,6 +1747,17 @@ export default class DataStorage extends React.Component {
             </div>
           );
         }
+        if (item.ngb) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.onNgbFileActionClick(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/ngb.svg" width={20} height={20} />
+            </div>
+          );
+        }
         if (item.documentPreview) {
           apps.push(
             <div
@@ -1580,33 +1776,97 @@ export default class DataStorage extends React.Component {
         return apps;
       }
     };
+    const renderTitle = (key = '', title) => (
+      <span
+        style={{cursor: 'pointer'}}
+        className={classNames({
+          'cp-primary': (this.storage.currentSorter.field || '')
+            .toLowerCase() === key.toLowerCase()
+        })}
+        onClick={() => this.storage.toggleSorter(key)}
+      >
+        {title}
+      </span>
+    );
     const nameColumn = {
       dataIndex: 'name',
       key: 'name',
-      title: 'Name',
+      title: renderTitle('name', 'Name'),
+      sorter: true,
+      sortOrder: this.storage.currentSorter.field === 'name' &&
+        this.storage.currentSorter.order,
       className: styles.nameCell,
       render: (text, item) => {
+        const search = this.storage.currentFilter[FILTER_FIELDS.name];
+        const highlightedText = this.storage.filtersApplied && search
+          ? highlightText(text, search)
+          : text;
         if (item.latest) {
-          return `${text} (latest)`;
+          return <span>{highlightedText} (latest)</span>;
         }
-        return text;
+        return highlightedText;
       },
+      filterDropdown: (
+        <InputFilter
+          filterKey={FILTER_FIELDS.name}
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'name'}
+          placeholder="File name"
+          submitDisabled={value => (value || '').length < 3}
+        />
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'name',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'name' : undefined;
+      },
+      ...filteredStatus([FILTER_FIELDS.name]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const sizeColumn = {
       dataIndex: 'size',
       key: 'size',
-      title: 'Size',
+      title: renderTitle('size', 'Size'),
+      sorter: true,
+      sortOrder: this.storage.currentSorter.field === 'size' &&
+        this.storage.currentSorter.order,
       className: styles.sizeCell,
       render: size => displaySize(size),
+      filterDropdown: (
+        <SizeFilter
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'size'}
+        />
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'size',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'size' : undefined;
+      },
+      ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const changedColumn = {
       dataIndex: 'changed',
       key: 'changed',
-      title: 'Date changed',
+      title: renderTitle('changed', 'Date changed'),
+      sorter: true,
+      sortOrder: this.storage.currentSorter.field === 'changed' &&
+        this.storage.currentSorter.order,
       className: styles.changedCell,
       render: (date) => date ? displayDate(date) : '',
+      filterDropdown: (
+        <DateFilter
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'date'}
+        />
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'date',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'date' : undefined;
+      },
+      ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const labelsColumn = {
@@ -1625,6 +1885,19 @@ export default class DataStorage extends React.Component {
     const actionsColumn = {
       key: 'actions',
       className: styles.itemActions,
+      title: (
+        <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+          {this.storage.resultsFiltered ? (
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => this.storage.resetFilter(false)}
+            >
+              Reset filters
+            </Button>
+          ) : null}
+        </div>
+      ),
       render: this.actionsRenderer
     };
 
@@ -1643,6 +1916,11 @@ export default class DataStorage extends React.Component {
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
       this.navigate(this.props.storageId, item.path, {clearPathMarkers: false});
+      if (this.state.metadata) {
+        this.setState({
+          importedJobs: this.isOmicsStore
+        });
+      }
       return;
     }
     if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
@@ -1652,7 +1930,8 @@ export default class DataStorage extends React.Component {
         .toLowerCase();
       this.setState({
         selectedFile: item,
-        metadata: true
+        metadata: true,
+        importedJobs: this.isOmicsStore
       }, () => {
         switch (extension) {
           case 'vsi':
@@ -1921,13 +2200,27 @@ export default class DataStorage extends React.Component {
         path: o.path,
         name: o.name
       }));
+    const omicsItemsForDownload = selectedItems
+      .filter(o => o.downloadable && this.isSequenceStorage)
+      .map(o => ({
+        storageId,
+        path: o.path,
+        name: o.name,
+        type: o.type
+      }));
+    const omicsDownloadConfig = {
+      region: this.regionName,
+      storageInfo: this.storage.info
+    };
     const Keys = {
       clear: 'clear',
       restore: 'restore',
       share: 'share',
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
-      download: 'download'
+      download: 'download',
+      restoreOmics: 'restoreOmics',
+      downloadOmics: 'downloadOmics'
     };
     const clearAction = {
       key: Keys.clear,
@@ -1938,13 +2231,27 @@ export default class DataStorage extends React.Component {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
-      available: itemsAvailableForDownload.length > 0
+      available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
+    };
+    const downloadOmicsAction = {
+      key: Keys.downloadOmics,
+      title: 'Download',
+      icon: 'download',
+      available: this.isOmicsStore && omicsItemsForDownload.length > 0 &&
+        this.isSequenceStorage
     };
     const restoreAction = {
       key: Keys.restore,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
       available: this.userLifeCyclePermissions.write &&
-        this.restorableItems.length > 0,
+        this.restorableItems.length > 0 && !this.isOmicsStore,
+      icon: 'reload'
+    };
+    const restoreOmicsAction = {
+      key: Keys.restoreOmics,
+      title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
+      available: this.userLifeCyclePermissions.write &&
+        this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
     };
     const getShareActionTitle = () => {
@@ -1974,13 +2281,15 @@ export default class DataStorage extends React.Component {
       key: Keys.generateUrl,
       title: 'Generate URL',
       available: this.bulkDownloadEnabled &&
-        this.storageAllowSignedUrls,
+        this.storageAllowSignedUrls &&
+        (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
       icon: 'link'
     };
     const removeAllAction = {
       key: Keys.removeAll,
       title: 'Remove',
-      available: this.removeAllSelectedItemsEnabled,
+      available: this.removeAllSelectedItemsEnabled &&
+        (!this.isOmicsStore || (this.isSequenceStorage && this.isOmicsFolder)),
       className: 'cp-danger',
       icon: 'delete'
     };
@@ -2001,8 +2310,10 @@ export default class DataStorage extends React.Component {
     };
     appendAction(shareAction);
     appendAction(restoreAction);
+    appendAction(restoreOmicsAction);
     appendAction(generateURLAction);
     appendAction(downloadAction);
+    appendAction(downloadOmicsAction);
     appendDivider();
     appendAction(clearAction);
     appendDivider();
@@ -2027,6 +2338,9 @@ export default class DataStorage extends React.Component {
         case Keys.restore:
           this.openRestoreFilesDialog('file');
           break;
+        case Keys.restoreOmics:
+          this.restoreOmics();
+          break;
         case Keys.generateUrl:
           this.toggleGenerateDownloadUrlsModalFn(event);
           break;
@@ -2035,6 +2349,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
+          break;
+        case Keys.downloadOmics:
+          handleDownloadOmicsItems(preferences, omicsItemsForDownload, omicsDownloadConfig);
           break;
         default:
           break;
@@ -2109,7 +2426,7 @@ export default class DataStorage extends React.Component {
     const {
       path
     } = this.props;
-    if (!path) {
+    if (!path || this.isOmicsStore) {
       return undefined;
     }
     return (
@@ -2121,6 +2438,10 @@ export default class DataStorage extends React.Component {
         Share <b>current</b> folder
       </Button>
     );
+  };
+
+  onTableChange = (pagination, filters, sorter) => {
+    this.storage.setSorter(sorter);
   };
 
   renderContent = () => {
@@ -2161,21 +2482,28 @@ export default class DataStorage extends React.Component {
           type="flex"
           justify="space-between">
           <div>
-            <Button
-              id="select-all-button"
-              size="small" onClick={() => this.selectAll(undefined)}
-              disabled={!this.selectAllAvailable}
-            >
-              Select page
-            </Button>
             {
-              this.renderSelectionActionsButton()
+              (!this.isOmicsStore || this.isSequenceStorage) && (
+                <Button
+                  id="select-all-button"
+                  size="small" onClick={() => this.selectAll(undefined)}
+                  disabled={!this.selectAllAvailable}
+                >
+                  Select page
+                </Button>
+              )
+            }
+            {
+              (!this.isOmicsStore || this.isSequenceStorage) && (
+                this.renderSelectionActionsButton()
+              )
             }
           </div>
           <div style={{paddingRight: 8}}>
             {this.renderShareCurrentFolderButton()}
             {
-              this.storage.writeAllowed && (
+              this.storage.writeAllowed &&
+              !this.isOmicsStore && (
                 <Dropdown
                   placement="bottomRight"
                   trigger={['hover']}
@@ -2209,7 +2537,8 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              this.storage.writeAllowed && (
+              this.storage.writeAllowed &&
+              !this.isOmicsStore && (
                 <UploadButton
                   multiple
                   onRefresh={() => this.refreshList()}
@@ -2235,6 +2564,30 @@ export default class DataStorage extends React.Component {
                 />
               )
             }
+            {
+              this.storage.writeAllowed &&
+              this.isSequenceStorage && (
+                <UploadOmicsButton
+                  storageInfo={this.storage.info}
+                  region={this.regionName}
+                  onRefresh={() => this.refreshList()}
+                />
+              )
+            }
+            {
+              this.storage.writeAllowed &&
+              this.isOmicsStore &&
+              this.isOmicsFolder && (
+                <Button
+                  id="import-button"
+                  size="small"
+                  type="primary"
+                  onClick={() => this.openOmicsDialog()}
+                >
+                  Import
+                </Button>
+              )
+            }
           </div>
         </Row>
       );
@@ -2255,6 +2608,7 @@ export default class DataStorage extends React.Component {
           [styles[item.type.toLowerCase()]]: true,
           'cp-storage-deleted-row': !!item.deleteMarker
         })}
+        onChange={this.onTableChange}
         locale={{emptyText: 'Folder is empty'}}
         size="small"
       />
@@ -2269,10 +2623,19 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  onToggleJobs = () => {
+    this.setState({
+      importedJobs: !this.showJobs
+    });
+  };
+
   onPanelClose = (key) => {
     switch (key) {
       case METADATA_PANEL_KEY:
-        this.setState({metadata: false});
+        this.setState({
+          metadata: false,
+          importedJobs: false
+        });
         break;
     }
   };
@@ -2284,11 +2647,18 @@ export default class DataStorage extends React.Component {
       checked: this.showMetadata,
       available: true
     };
+    const jobAction = {
+      key: 'jobs',
+      title: 'Show import jobs',
+      checked: this.showJobs,
+      available: this.isOmicsStore
+    };
     const archivedFilesAction = {
       key: 'archive',
       title: 'Show archived files',
       checked: this.showArchives,
-      available: (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write)
+      available: (!this.isOmicsStore &&
+        (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write))
     };
     const versionsAction = {
       key: 'version',
@@ -2302,6 +2672,7 @@ export default class DataStorage extends React.Component {
       }
       switch (action.key) {
         case 'attributes': this.onToggleMetadata(); break;
+        case 'jobs': this.onToggleJobs(); break;
         case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
         default:
@@ -2315,6 +2686,7 @@ export default class DataStorage extends React.Component {
       }
     };
     appendAction(metadataAction);
+    appendAction(jobAction);
     appendAction(archivedFilesAction);
     appendAction(versionsAction);
     if (actions.length === 0) {
@@ -2433,7 +2805,7 @@ export default class DataStorage extends React.Component {
               type={ItemTypes.storage}
               textEditableField={name}
               onSaveEditableField={this.renameDataStorage}
-              readOnlyEditableField={!this.storage.writeAllowed}
+              readOnlyEditableField={!this.storage.writeAllowed || this.isOmicsStore}
               editStyleEditableField={{flex: 1}}
               icon={!/^nfs$/i.test(type) ? 'inbox' : 'hdd'}
               iconClassName={
@@ -2532,6 +2904,14 @@ export default class DataStorage extends React.Component {
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
+            {this.storage.resultsFilteredAndTruncated || this.storage.resultsSortedAndTruncated ? (
+              <Alert
+                style={{marginBottom: 3}}
+                message={`Current folder contains too many objects.
+                Filtered data does not include all of them.`}
+                type="info"
+              />
+            ) : null}
             {
               this.renderContent()
             }
@@ -2541,7 +2921,7 @@ export default class DataStorage extends React.Component {
             />
           </div>
           {
-            this.showMetadata &&
+            (this.showMetadata || this.showJobs) &&
             <Metadata
               pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
@@ -2594,14 +2974,14 @@ export default class DataStorage extends React.Component {
               }
               fileIsEmpty={this.isFileSelectedEmpty}
               extraKeys={[
-                /^nfs$/i.test(type)
+                (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                !/^nfs$/i.test(type) && !this.state.selectedFile
+                ((!/^nfs$/i.test(type) && !this.state.selectedFile) && !this.isOmicsStore)
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
-              extraInfo={[
+              extraInfo={!this.isOmicsStore ? [
                 <LifeCycleCounter
                   storage={this.storage.info}
                   path={this.props.path}
@@ -2614,12 +2994,21 @@ export default class DataStorage extends React.Component {
                   )}
                 />,
                 <StorageSize storage={this.storage.info} />
-              ]}
+              ] : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
                 storageMask: mask,
                 storageId: Number(this.props.storageId)
               }}
+              jobList={
+                this.isOmicsStore && this.state.importedJobs ? (
+                  <JobList
+                    storageId={this.props.storageId}
+                    updateJobsSearch={this.state.updateJobsSearch}
+                  />
+                ) : null
+              }
+              showMetadata={this.showMetadata}
             />
           }
         </ContentMetadataPanel>
@@ -2631,6 +3020,13 @@ export default class DataStorage extends React.Component {
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
+        <OmicsStorageImportDialog
+          visible={this.state.omicsDialogVisible}
+          dataStorage={this.storage.info}
+          pending={this.storage.infoPending}
+          policySupported={policySupported}
+          onCancel={this.closeOmicsDialog}
+          onSubmit={this.onImportOmicsJob} />
         <ConvertToVersionedStorage
           storageName={name}
           visible={this.state.convertToVSDialogVisible}
@@ -2822,21 +3218,30 @@ export default class DataStorage extends React.Component {
       };
       this.openPreviewModal(file);
     }
+    if (!this.isOmicsStore) {
+      this.closeImportedJobsIfRequired();
+    }
     this.updateStorageIfRequired();
   }
 
   componentDidUpdate (prevProps) {
     this.clearSelectedItemsIfRequired();
     this.updateStorageIfRequired();
+    this.closeImportedJobsIfRequired(prevProps.storageId);
   }
 
   updateStorageIfRequired = () => {
-    this.storage.initialize(
+    const changed = this.storage.initialize(
       this.props.storageId,
       this.props.path,
       this.props.showVersions,
       this.props.showArchives
     );
+    if (changed) {
+      this.storage.resetFilter();
+      this.storage.resetSorting();
+      this.storage.clearClientPaging();
+    }
   };
 
   clearSelectedItemsIfRequired = () => {
@@ -2844,6 +3249,20 @@ export default class DataStorage extends React.Component {
       this.clearSelection();
     }
   };
+
+  componentWillReceiveProps (nextProps, nextState) {
+    if (nextProps.storageId !== this.props.storageId) {
+      this.setState({selectedFile: null});
+    }
+  }
+
+  closeImportedJobsIfRequired = (prevStorageId) => {
+    if (this.state.importedJobs) {
+      if (!this.isOmicsStore && prevStorageId !== this.props.storageId) {
+        this.setState({importedJobs: false});
+      }
+    }
+  }
 }
 
 export {STORAGE_CLASSES, isStandardClass};

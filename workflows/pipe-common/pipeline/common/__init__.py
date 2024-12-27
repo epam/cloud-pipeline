@@ -19,3 +19,4 @@ from .samplesheet import *
 from .container import *
 from .kubernetes import *
 from .utils import *
+from .noverify_kubernetes import *

@@ -19,7 +19,7 @@ package com.epam.pipeline.dao.region;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.Getter;
@@ -74,7 +74,7 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         final String customInstanceTypes = rs.getString(CloudRegionParameters.CUSTOM_INSTANCE_TYPES.name());
         if (StringUtils.isNotBlank(customInstanceTypes)) {
             region.setCustomInstanceTypes(JsonMapper.parseData(customInstanceTypes,
-                    new TypeReference<List<GCPCustomInstanceType>>() {}));
+                    new TypeReference<List<CustomInstanceType>>() {}));
         } else {
             region.setCustomInstanceTypes(Collections.emptyList());
         }

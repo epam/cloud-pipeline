@@ -46,6 +46,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
@@ -233,16 +234,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
+        return getS3HelperForSignedUrl(dataStorage, version, false).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
+        return getS3HelperForSignedUrl(dataStorage, null, true).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
     }
 
@@ -447,7 +446,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (StringUtils.isNotBlank(region.getIamRole())) {
             return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, region.getIamRole());
         }
-        return new RegionAwareS3Helper(s3Events, messageHelper, region);
+        return new RegionAwareS3Helper(s3Events, messageHelper, region, getAwsCredentials(region));
     }
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
@@ -464,6 +463,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
+    }
+
+    private AwsRegionCredentials getAwsCredentials(final AwsRegion region) {
+        return cloudRegionManager.loadCredentials(region);
+    }
+
+    private S3Helper getS3HelperForSignedUrl(final S3bucketDataStorage dataStorage,
+                                             final String version,
+                                             final boolean write) {
+        final AwsRegion awsRegion = getAwsRegion(dataStorage);
+        if (StringUtils.isBlank(awsRegion.getS3Endpoint())) {
+            final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, write);
+            return getS3Helper(credentials, awsRegion);
+        }
+        return getS3Helper(dataStorage);
     }
 
     private TemporaryCredentials getStsCredentials(final S3bucketDataStorage dataStorage,

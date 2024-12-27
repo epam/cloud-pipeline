@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-search-srv-nfs-events
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-srv: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: cp-search-srv-nfs-events
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-srv: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-search-srv
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CP_SEARCH_SYNC_TIMEOUT
+              value: "60000"
+            - name: CP_SEARCH_DISABLE_AZ_BLOB_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_AZ_BLOB_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_NFS_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_RUN
+              value: "true"
+            - name: CP_SEARCH_DISABLE_S3_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_GS_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_GS_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_S3_STORAGE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_TOOL
+              value: "true"
+            - name: CP_SEARCH_DISABLE_FOLER
+              value: "true"
+            - name: CP_SEARCH_DISABLE_TOOL_GROUP
+              value: "true"
+            - name: CP_SEARCH_DISABLE_DOCKER_REGISTRY
+              value: "true"
+            - name: CP_SEARCH_DISABLE_ISSUE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_METADATA
+              value: "true"
+            - name: CP_SEARCH_DISABLE_CONFIGURATION
+              value: "true"
+            - name: CP_SEARCH_DISABLE_PIPELINE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_NFS_FILE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_NFS_OBSERVER_SYNC
+              value: "false"
+            - name: LANG
+              value: en_US.UTF-8
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/search/logs
+              subPath: search-nfs-events/logs
+              name: cp-system
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

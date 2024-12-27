@@ -62,6 +62,7 @@ export default function extractTools (groups = [], currentFilter) {
     my,
     personal,
     sensitive,
+    labels,
     os,
     interactive,
     gpu,
@@ -88,6 +89,9 @@ export default function extractTools (groups = [], currentFilter) {
   const checkMy = (tool) => checkBooleanProperty(tool, 'my', my);
   const checkPersonal = (tool) => checkBooleanProperty(tool, 'personal', personal);
   const checkShared = (tool) => checkBooleanProperty(tool, 'shared', shared);
+  const checkLabels = (tool) => labels && labels.length > 0
+    ? (tool.labels || []).some(label => labels.includes(label))
+    : true;
   return tools.filter((tool) =>
     checkSensitive(tool) &&
     checkInteractive(tool) &&
@@ -95,6 +99,7 @@ export default function extractTools (groups = [], currentFilter) {
     checkOS(tool) &&
     checkMy(tool) &&
     checkPersonal(tool) &&
-    checkShared(tool)
+    checkShared(tool) &&
+    checkLabels(tool)
   );
 };

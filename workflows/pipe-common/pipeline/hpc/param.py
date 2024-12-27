@@ -189,6 +189,10 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             name='CP_CAP_AUTOSCALE_IDLE_TIMEOUT', type=PARAM_INT, default=30,
             help='Specifies a timeout in seconds after which an inactive worker is considered idled.\n'
                  'If an autoscaling worker is idle then it is scaled down.')
+        self.scale_down_invalid_timeout = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INVALID_TIMEOUT', type=PARAM_INT, default=60 * 60,
+            help='Specifies a timeout in seconds after which an unavailable worker is considered invalid.\n'
+                 'If an autoscaling worker is invalid then it is scaled down.')
         self.log_dir = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_LOGDIR', type=PARAM_STR, default=os.getenv('LOG_DIR', '/var/log'),
             help='Specifies logging directory.')
@@ -249,6 +253,29 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.event_ttl = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_EVENT_TTL', type=PARAM_INT, default=3 * 60 * 60,
             help='Specifies event ttl in seconds after which an event is removed.')
+        self.custom_requirements = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS', type=PARAM_BOOL, default=True,
+            help='Enables custom requirements processing.')
+        self.custom_requirements_purge = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS_PURGE', type=PARAM_BOOL, default=False,
+            help='Enables custom requirements purge.')
+        self.node_mem_reservations = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_NODE_MEM_RESERVATIONS', type=PARAM_BOOL, default=False,
+            help='Enables node memory reservations processing.')
+        self.grid_engine = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_GRID_ENGINE', type=PARAM_STR, default=None,
+            help='Specifies grid engine type.\n'
+                 'Allowed values: SGE, SLURM and KUBE.')
+        self.polling_delay = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_POLLING_DELAY', type=PARAM_INT, default=10,
+            help='Specifies a polling delay in seconds for grid engine jobs')
+        self.instance_inheritable_params = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES', type=PARAM_STR, default=None,
+            help='Specifies parameter names which will be inherited by workers.')
+        self.instance_inheritable_param_prefixes = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_PREFIXES', type=PARAM_STR,
+            default='CP_CAP_MOUNT_OPTIONS_',
+            help='Specifies parameter prefixes which will be inherited by workers.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):
@@ -274,12 +301,24 @@ class GridEngineQueueParameters(GridEngineParametersGroup):
         self.master_cores = GridEngineParameter(
             name='CP_CAP_SGE_MASTER_CORES', type=PARAM_INT, default=None,
             help='Specifies a number of available cores on a cluster manager.')
-        self.sge_selected = GridEngineParameter(
-            name='CP_CAP_SGE', type=PARAM_BOOL, default=True,
-            help='Defines if SGE selected as grid engine.')
-        self.slurm_selected = GridEngineParameter(
+        self.gpu_resource_name = GridEngineParameter(
+            name='CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU', type=PARAM_STR, default='gpus',
+            help='Specifies gpu resource name.')
+        self.mem_resource_name = GridEngineParameter(
+            name='CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM', type=PARAM_STR, default='ram',
+            help='Specifies ram resource name.')
+        self.exc_resource_name = GridEngineParameter(
+            name='CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE', type=PARAM_STR, default='exclusive',
+            help='Specifies exclusive resource name.')
+        self.sge_grid_engine = GridEngineParameter(
+            name='CP_CAP_SGE', type=PARAM_BOOL, default=False,
+            help='Enables SGE grid engine.')
+        self.slurm_grid_engine = GridEngineParameter(
             name='CP_CAP_SLURM', type=PARAM_BOOL, default=False,
-            help='Defines if Slurm selected as grid engine.')
+            help='Enables Slurm grid engine.')
+        self.kube_grid_engine = GridEngineParameter(
+            name='CP_CAP_KUBE', type=PARAM_BOOL, default=False,
+            help='Enables Kubernetes grid engine.')
 
 
 class GridEngineParameters(GridEngineParametersGroup):

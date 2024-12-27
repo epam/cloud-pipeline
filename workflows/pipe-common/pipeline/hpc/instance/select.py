@@ -65,31 +65,34 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
         instances = self.instance_provider.provide()
         remaining_demands = demands
         while remaining_demands:
-            best_capacity = IntegralDemand()
+            best_demand = IntegralDemand()
             best_instance = None
+            best_supply = None
             best_remaining_demands = None
             best_fulfilled_demands = None
             for instance in instances:
-                supply = ResourceSupply.of(instance) - self.reserved_supply
-                current_remaining_demands, current_fulfilled_demands = self._apply(remaining_demands, supply)
-                current_capacity = functools.reduce(operator.add, current_fulfilled_demands, IntegralDemand())
-                if current_capacity.cpu > best_capacity.cpu:
-                    best_capacity = current_capacity
+                current_supply = ResourceSupply.of(instance) - self.reserved_supply
+                current_remaining_demands, current_fulfilled_demands = self._apply(remaining_demands, current_supply)
+                current_demand = functools.reduce(operator.add, current_fulfilled_demands, IntegralDemand())
+                if current_demand.cpu > best_demand.cpu:
+                    best_demand = current_demand
                     best_instance = instance
+                    best_supply = current_supply
                     best_remaining_demands = current_remaining_demands
                     best_fulfilled_demands = current_fulfilled_demands
             remaining_demands = best_remaining_demands
             if not best_instance:
                 Logger.info('There are no available instance types.')
                 break
-            best_instance_owner = self._resolve_owner(best_fulfilled_demands)
-            Logger.info('Selecting %s instance using %s/%s cpu, %s/%s gpu, %s/%s mem for %s user...'
+            best_supply.owner = self._resolve_owner(best_fulfilled_demands)
+            Logger.info('Selecting %s instance using %s/%s cpu, %s/%s gpu, %s/%s mem, %s/%s exc for %s user...'
                         % (best_instance.name,
-                           best_capacity.cpu, best_instance.cpu,
-                           best_capacity.gpu, best_instance.gpu,
-                           best_capacity.mem, best_instance.mem,
-                           best_instance_owner))
-            yield InstanceDemand(best_instance, best_instance_owner)
+                           best_demand.cpu, best_supply.cpu,
+                           best_demand.gpu, best_supply.gpu,
+                           best_demand.mem, best_supply.mem,
+                           best_demand.exc, best_supply.exc,
+                           best_supply.owner))
+            yield InstanceDemand(best_instance, best_supply.owner)
 
     def _apply(self, demands, supply):
         remaining_supply = supply
@@ -143,6 +146,7 @@ class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
                               else FractionalDemand(cpu=demand.cpu,
                                                     gpu=demand.gpu,
                                                     mem=demand.mem,
+                                                    exc=demand.exc,
                                                     owner=demand.owner)
                               for demand in demands]
         return self.instance_selector.select(fractional_demands)

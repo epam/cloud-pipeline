@@ -33,7 +33,7 @@ class StorageLifecycleRestoreNotification:
         if obj_dict["enabled"]:
             recipients = obj_dict.get('recipients', []) or []
             notify_users = obj_dict.get('notifyUsers', False)
-            if len(recipients) < 1 or not notify_users:
+            if len(recipients) < 1 and not notify_users:
                 raise RuntimeError("Lifecycle restore notification object with 'enabled' = true, "
                                    "should have 'recipients' list or users notifications shall be enabled!")
             for recipient in recipients:

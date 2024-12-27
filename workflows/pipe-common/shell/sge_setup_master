@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,9 @@ configure_global() {
     sed -i '/gid_range/c\gid_range 20000-30000' ./global
 
     if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then
+        mkdir -p "$COMMON_DIR/sge/logs"
+        chown sgeadmin:sgeadmin "$COMMON_DIR/sge/logs"
+        chmod 777 "$COMMON_DIR/sge/logs"
         sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_prolog" ./global
         sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_epilog" ./global
     fi
@@ -469,6 +472,9 @@ fi
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
+
+# Add accounting file sync to the cloud storage
+sync_to_storage add "$SGE_ROOT/$SGE_CELL/common/accounting"
 
 pipe_log_success "SGE master node was successfully configured" "$SGE_MASTER_SETUP_TASK"
 

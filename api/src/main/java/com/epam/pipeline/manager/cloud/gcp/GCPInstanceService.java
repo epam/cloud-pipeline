@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -23,6 +24,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -54,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -97,7 +100,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance,
-                                   final Map<String, String> runtimeParameters) {
+                                   final Map<String, String> runtimeParameters, final Map<String, String> tags) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap(),
                 runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptGCPEnvVars(region));
@@ -126,17 +129,19 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
+    public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId,
+                                final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProviderName());
+                nodeReassignScript, oldId, newId, getProviderName(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptGCPEnvVars(region));
     }
 
     @Override
-    public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId,
+                                    final Map<String, String> tags) {
         final String command = commandService
-            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName());
+            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel, String.valueOf(newId),
                                                      buildScriptGCPEnvVars(region));
     }
@@ -221,7 +226,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
     }
 
@@ -244,6 +250,22 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+    }
+
+    @Override
+    public void deleteInstanceTags(final GCPRegion region, final String runId, final Set<String> tagNames) {
+
+    }
+
+    @Override
+    public List<NodeInstance> getCloudNodes(final GCPRegion region, final FilterNodesVO filter) {
+        throw new UnsupportedOperationException("Loading instances doesn't work with GCP provider yet.");
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final GCPRegion region, final String instanceId) {
+        // not supported yet
+        return Optional.empty();
     }
 
     @Override

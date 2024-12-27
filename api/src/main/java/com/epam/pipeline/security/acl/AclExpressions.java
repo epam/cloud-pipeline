@@ -86,7 +86,7 @@ public final class AclExpressions {
             ADMIN_ONLY + OR + "@storagePermissionManager.storageMgmtPermission(#storage.id, 'OWNER')";
 
     public static final String STORAGE_ID_MGMT_DELETE =
-            ADMIN_ONLY + OR + "(" + "hasRole('STORAGE_MANAGER')"
+            ADMIN_ONLY + OR + "hasRole('STORAGE_ADMIN')" + OR + "(" + "hasRole('STORAGE_MANAGER')"
                 + AND + "@storagePermissionManager.storageMgmtPermission(#id, 'OWNER')" + ")";
 
     public static final String STORAGE_ID_TAGS_WRITE =
@@ -137,8 +137,12 @@ public final class AclExpressions {
 
     public static final String METADATA_FILTER = ADMIN_ONLY + OR +
             "@metadataPermissionManager.metadataPermission(" +
-            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')" + OR +
-            "filterObject.entity.entityClass.name() == 'PIPELINE_USER'" + AND + "hasRole('USER_METADATA_READER')";
+            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')" +
+            OR + "(" +
+                "filterObject.entity.entityClass.name() == 'PIPELINE_USER'" +
+                OR + "filterObject.entity.entityClass.name() == 'ROLE'" +
+            ")" +
+            AND + "hasRole('USER_METADATA_READER')";
 
     public static final String ACL_ENTITY_OWNER =
             "hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#id, #aclClass)";
@@ -163,6 +167,9 @@ public final class AclExpressions {
     public static final String NODE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";
 
+    public static final String CLOUD_NODE_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodePermission(#name, #machineType, 'READ')";
+
     public static final String NODE_USAGE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodeUsagePermission(#name, 'READ')";
 
@@ -170,7 +177,7 @@ public final class AclExpressions {
             "@grantPermissionManager.nodePermission(filterObject, 'READ')";
     
     public static final String NODE_STOP = ADMIN_ONLY + OR +
-            "@grantPermissionManager.nodeStopPermission(#name, 'EXECUTE')";
+            "@grantPermissionManager.nodeStopPermission(#name, #machineType, 'EXECUTE')";
 
     public static final String TOOL_READ = ADMIN_ONLY + OR +
             "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Tool', 'READ')";

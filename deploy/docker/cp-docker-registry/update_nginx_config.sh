@@ -21,6 +21,11 @@ events {
 
 http {
 
+  map $upstream_http_www_authenticate $registry_request_scope {
+    ~(.*)(,)(.*)(,)(.*)  $5;
+    default "";
+  }
+
   server {
     set $docker_external_host "${CP_DOCKER_EXTERNAL_HOST}";
     set $realm_external_host "${CP_API_SRV_EXTERNAL_HOST}";
@@ -83,7 +88,7 @@ http {
       }
 
       proxy_hide_header Www-Authenticate;
-      add_header Www-Authenticate 'Bearer realm="https://${realm_endpoint}/pipeline/restapi/dockerRegistry/oauth",service="${docker_internal_host}:${docker_internal_port}"' always;
+      add_header Www-Authenticate 'Bearer realm="https://${realm_endpoint}/pipeline/restapi/dockerRegistry/oauth",service="${docker_internal_host}:${docker_internal_port}",${registry_request_scope}' always;
     }
   }
 }

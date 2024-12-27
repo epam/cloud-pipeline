@@ -21,6 +21,7 @@ import storagesRequest from '../models/dataStorage/DataStorageAvailable';
 import DataStorageRequest from '../models/dataStorage/DataStoragePage';
 import DataStorageItemUpdateContent from '../models/dataStorage/DataStorageItemUpdateContent';
 import auditStorageAccessManager from './audit-storage-access';
+import {base64toString} from './base64';
 
 const parser = new DOMParser();
 
@@ -134,7 +135,7 @@ class ObjectStorage {
     if (request.error) {
       throw new Error(request.error);
     }
-    return atob((request.value || {}).url);
+    return base64toString((request.value || {}).url);
   }
 
   async getFileContent (file, options = {}) {
@@ -157,7 +158,7 @@ class ObjectStorage {
     if (request.error) {
       throw new Error(request.error);
     }
-    return atob((request.value || {}).content);
+    return base64toString((request.value || {}).content);
   }
 
   async getFolderContents (folder) {

@@ -30,9 +30,10 @@ RUN_ID = '12345'
 
 cmd_executor = Mock()
 grid_engine = Mock()
+api = Mock()
 instance_cores = 4
 common_utils = Mock()
-scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
+scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                 common_utils=common_utils)
 
 
@@ -42,6 +43,7 @@ def setup_function():
     grid_engine.disable_host = MagicMock()
     grid_engine.delete_host = MagicMock()
     cmd_executor.execute = MagicMock()
+    api.stop_run = MagicMock()
     grid_engine.get_host_resource = MagicMock(return_value=ComputeResource(instance_cores))
 
 
@@ -65,6 +67,7 @@ def test_not_scaling_down_if_host_has_running_jobs():
     grid_engine.disable_host.assert_called()
     grid_engine.enable_host.assert_called()
     grid_engine.delete_host.assert_not_called()
+    api.stop_run.assert_not_called()
     assert_first_argument_not_contained(cmd_executor.execute, HOSTNAME)
 
 
@@ -117,7 +120,7 @@ def test_scaling_down_if_host_has_completed_jobs():
 def test_scaling_down_stops_pipeline():
     scale_down_handler.scale_down(HOSTNAME)
 
-    assert_first_argument_contained(cmd_executor.execute, 'pipe stop')
+    api.stop_run.assert_called()
 
 
 def test_scaling_down_updates_hosts():

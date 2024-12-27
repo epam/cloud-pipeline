@@ -26,6 +26,7 @@ import {
   Col,
   Collapse,
   Icon,
+  Input,
   Menu,
   message,
   Modal,
@@ -43,7 +44,7 @@ import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBr
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
-import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
+import PipelineRunUpdateSids, {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
   canCommitRun,
@@ -66,6 +67,7 @@ import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import {TaskLink} from './tasks/TaskLink';
 import RunTaskLogs from '../run-task-logs';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
+import runStatusTooltips from '../../special/run-status-icon/run-status-tooltips';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
@@ -73,10 +75,10 @@ import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm from './forms/ShareWithForm';
+import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
-import RunTags from '../run-tags';
+import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
@@ -98,6 +100,8 @@ import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
+import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
+import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -110,7 +114,14 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
+@inject(
+  'preferences',
+  'dtsList',
+  'multiZoneManager',
+  'dockerRegistries',
+  'preferences',
+  'uiNavigation'
+)
 @VSActions.check
 @inject(({routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -140,6 +151,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 class Logs extends localization.LocalizedReactComponent {
   state = {
     run: undefined,
+    runDataLoaded: false,
     pending: false,
     error: undefined,
     showActiveWorkersOnly: false,
@@ -148,6 +160,7 @@ class Logs extends localization.LocalizedReactComponent {
     totalNestedRuns: 0,
     nestedRunsPending: false,
     runTasks: [],
+    searchTasks: '',
     language: undefined,
     timings: false,
     commitRun: false,
@@ -158,7 +171,9 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    nestedRunsModalVisible: false
+    nestedRunsModalVisible: false,
+    tasksCollapsed: false,
+    runPreviousStatus: undefined
   };
 
   @observable runScheduleRequest;
@@ -181,12 +196,89 @@ class Logs extends localization.LocalizedReactComponent {
     this.reFetchRunInfo = undefined;
   };
 
+  /**
+   * Checks if the form should be navigated to a specific task
+   */
+  checkTaskNavigation = () => {
+    const {
+      uiNavigation
+    } = this.props;
+    // `task` holds current selected run task
+    let {
+      task
+    } = this.props;
+    const {
+      runTasks = [],
+      run,
+      tasksCollapsed: currentTaskCollapsed,
+      runPreviousStatus
+    } = this.state;
+    let taskToNavigate;
+    if (!task && runTasks.length > 0) {
+      // If no task is selected and there are some tasks in run -
+      // we need to navigate to any of it
+      taskToNavigate = runTasks[0];
+    }
+    const {
+      pipelineName,
+      podId,
+      status
+    } = run;
+    let tasksCollapsed = currentTaskCollapsed;
+    const runningStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+    if (runPreviousStatus !== status && !runningStatuses.includes(status)) {
+      // Run status changed to "FAILURE", "STOPPED" or "SUCCESS".
+      // We should switch to the "main" task in that case
+      task = undefined; // that will force task navigation
+    }
+    if (uiNavigation.runLogsMainTask && !task) {
+      // user has "ui-run-logs-main-task" set to true ("display main task by default").
+      // we need to navigate to "pipeline" task (if it is finished) or "console" task,
+      // if there isn't selected task
+      const pipelineTaskName = pipelineName || podId || '';
+      const pipelineTask = runTasks
+        .find((t) => (t.name || '').toLowerCase() === pipelineTaskName.toLowerCase());
+      const consoleTask = runTasks
+        .find((t) => (t.name || '').toLowerCase() === 'console');
+      if (
+        pipelineTask &&
+        pipelineTask.status &&
+        !runningStatuses.includes(pipelineTask.status.toUpperCase())
+      ) {
+        // run has finished "pipeline" task - we should navigate to it
+        taskToNavigate = pipelineTask;
+        tasksCollapsed = true;
+      } else if (consoleTask) {
+        // run doesn't have finished "pipeline" task - we should navigate to console task
+        taskToNavigate = consoleTask;
+        tasksCollapsed = true;
+      }
+    }
+    if (runPreviousStatus !== status || currentTaskCollapsed !== tasksCollapsed) {
+      this.setState({
+        tasksCollapsed,
+        runPreviousStatus: status
+      });
+    }
+    if (
+      taskToNavigate &&
+      (!task || task.name.toLowerCase() !== taskToNavigate.name.toLowerCase())
+    ) {
+      // there is a task to be navigated to (`taskToNavigate`)
+      // and current selected task either is missing or differs from the `taskToNavigate`
+      const taskUrl = this.getTaskUrl(taskToNavigate);
+      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      this.props.router.push(url);
+    }
+  };
+
   updateFromProps = () => {
     this.stopAutoUpdate();
     const {
       runId,
       preferences,
-      dockerRegistries
+      dockerRegistries,
+      uiNavigation
     } = this.props;
     if (runId) {
       this.fetchToken += 1;
@@ -201,14 +293,20 @@ class Logs extends localization.LocalizedReactComponent {
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
-        language: undefined
+        language: undefined,
+        tasksCollapsed: false,
+        runDataLoaded: false,
+        runPreviousStatus: undefined
       }, async () => {
         const commit = (data = {}) => {
           if (token === this.fetchToken) {
-            this.setState({pending: false, ...data});
+            this.setState({pending: false, ...data}, () => {
+              this.checkTaskNavigation();
+            });
           }
         };
         try {
+          await uiNavigation.fetch();
           this.runScheduleRequest = new RunSchedules(runId);
           (this.runScheduleRequest.fetch)();
           const {
@@ -221,8 +319,9 @@ class Logs extends localization.LocalizedReactComponent {
           });
           this.stop = stop;
           this.reFetchRunInfo = reFetch;
+          commit({runDataLoaded: true});
         } catch (error) {
-          commit({error: error.message});
+          commit({error: error.message, runDataLoaded: true});
         }
       });
     } else {
@@ -237,7 +336,10 @@ class Logs extends localization.LocalizedReactComponent {
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
-        language: undefined
+        language: undefined,
+        tasksCollapsed: false,
+        runDataLoaded: false,
+        runPreviousStatus: undefined
       });
     }
   }
@@ -306,6 +408,15 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  get combineRolesIntoAllRoles () {
+    const {run} = this.state;
+    const {runSids = []} = run || {};
+    return {
+      ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
+    };
   }
 
   exportLog = async () => {
@@ -408,6 +519,25 @@ class Logs extends localization.LocalizedReactComponent {
     const {run} = this.state;
     if (run) {
       return openReRunForm(run, this.props);
+    }
+  };
+
+  onContinueRunClick = () => {
+    const {run} = this.state;
+    if (run) {
+      (async () => {
+        try {
+          const confirmed = await confirmRunContinuation(run);
+          if (confirmed) {
+            const runId = await continueRun(run);
+            if (runId) {
+              this.closeNestedRunsModalAndNavigateToRun(runId);
+            }
+          }
+        } catch (e) {
+          // noop
+        }
+      })();
     }
   };
 
@@ -604,6 +734,7 @@ class Logs extends localization.LocalizedReactComponent {
             <RunTags
               run={run}
               onlyKnown
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
             />
           ),
           additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
@@ -811,6 +942,7 @@ class Logs extends localization.LocalizedReactComponent {
               run={run}
               location={location}
               overflow={false}
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
             />
           )
         });
@@ -851,21 +983,24 @@ class Logs extends localization.LocalizedReactComponent {
           endDate && `to=${encodeURIComponent(endDate)}`
         ].filter(Boolean);
         const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+        const isWindowsRun = /^windows$/i.test(run.platform);
         if (instance.nodeName) {
+          const url = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           details.push({
             key: 'IP',
             value: (
-              <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
+              <Link to={url}>
                 {instance.nodeName} ({instance.nodeIP})
               </Link>
             )});
         } else {
           const parts = instance.nodeIP.split('.');
+          const url = `/cluster/ip-${parts.join('-')}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           if (parts.length === 4) {
             details.push({
               key: 'IP',
               value: (
-                <Link to={`/cluster/ip-${parts.join('-')}/monitor${query}`}>
+                <Link to={url}>
                   {instance.nodeIP}
                 </Link>
               )
@@ -1006,11 +1141,14 @@ class Logs extends localization.LocalizedReactComponent {
           timeout = null;
         }, 100);
       };
+      const {tasksCollapsed, runDataLoaded} = this.state;
+      const collapse = tasksCollapsed || !runDataLoaded;
       return (
         <Row type="flex" style={{flex: 1}}>
           <SplitPane
             style={{display: 'flex', flex: 1, minHeight: 500}}
-            defaultSize={300}
+            defaultSize={collapse ? 0 : 300}
+            minSize={collapse ? 0 : 100}
             onChange={resizeGraph}
             pane1Style={{display: 'flex', flexDirection: 'column'}}
             pane2Style={{display: 'flex', flexDirection: 'column'}}
@@ -1042,6 +1180,7 @@ class Logs extends localization.LocalizedReactComponent {
                 taskParameters={this.props.task ? this.props.task.parameters : undefined}
                 taskInstance={this.props.task ? this.props.task.instance : undefined}
                 autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+                fetchAllLogs={false}
               />
             </div>
           </SplitPane>
@@ -1071,13 +1210,18 @@ class Logs extends localization.LocalizedReactComponent {
     return url;
   };
 
+  onSearchTasksChanged = (e) => {
+    this.setState({searchTasks: e.target.value});
+  }
+
   renderContentPlainMode () {
     const {runId} = this.props.params;
     const {
       timings,
       run,
       pending,
-      runTasks = []
+      runTasks = [],
+      searchTasks
     } = this.state;
     const {
       status
@@ -1090,15 +1234,20 @@ class Logs extends localization.LocalizedReactComponent {
     } else if (runTasks.length === 0) {
       Tasks = <Menu.Item key={-2}>No tasks</Menu.Item>;
     } else {
-      Tasks = runTasks.map((task, index) => (
-        <Menu.Item key={this.getTaskUrl(task, index)}>
-          <TaskLink
-            to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
-            location={location}
-            task={task}
-            timings={timings} />
-        </Menu.Item>
-      ));
+      Tasks = runTasks
+        .filter(task => searchTasks
+          ? (task.name || '').toLowerCase().includes((searchTasks || '').toLowerCase())
+          : true
+        ).map((task, index) => (
+          <Menu.Item key={this.getTaskUrl(task, index)}>
+            <TaskLink
+              to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
+              location={location}
+              task={task}
+              searchText={searchTasks}
+              timings={timings} />
+          </Menu.Item>
+        ));
     }
 
     const SwitchTimingsButton = (
@@ -1110,11 +1259,15 @@ class Logs extends localization.LocalizedReactComponent {
       </div>
     );
 
+    const {tasksCollapsed, runDataLoaded} = this.state;
+    const collapse = tasksCollapsed || !runDataLoaded;
+
     return (
       <Row type="flex" style={{flex: 1}}>
         <SplitPane
           style={{display: 'flex', flex: 1, minHeight: 500}}
-          defaultSize={300}
+          defaultSize={collapse ? 0 : 300}
+          minSize={collapse ? 0 : 100}
           pane1Style={{display: 'flex', flexDirection: 'column'}}
           pane2Style={{display: 'flex', flexDirection: 'column'}}
           resizerClassName="cp-split-panel-resizer"
@@ -1126,14 +1279,25 @@ class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
-            {SwitchTimingsButton}
-            <Menu
-              selectedKeys={selectedTask ? [selectedTask] : []}
-              mode="inline"
-              className={this.state.timings ? styles.taskListTimings : styles.taskList}>
-              {Tasks}
-            </Menu>
+          <div className={styles.tasksNavigationContainer}>
+            <Input.Search
+              placeholder="Search tasks"
+              onChange={this.onSearchTasksChanged}
+              style={{
+                width: 'calc(100% - 20px)',
+                alignSelf: 'center',
+                marginBottom: 5
+              }}
+            />
+            <div style={{position: 'relative'}}>
+              {SwitchTimingsButton}
+              <Menu
+                selectedKeys={selectedTask ? [selectedTask] : []}
+                mode="inline"
+                className={this.state.timings ? styles.taskListTimings : styles.taskList}>
+                {Tasks}
+              </Menu>
+            </div>
           </div>
           <div
             className={styles.logContent}>
@@ -1144,6 +1308,7 @@ class Logs extends localization.LocalizedReactComponent {
               taskParameters={this.props.task ? this.props.task.parameters : undefined}
               taskInstance={this.props.task ? this.props.task.instance : undefined}
               autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+              fetchAllLogs={false}
             />
           </div>
         </SplitPane>
@@ -1524,6 +1689,7 @@ class Logs extends localization.LocalizedReactComponent {
     let Title;
     let PauseResumeButton;
     let ActionButton;
+    let ContinueButton;
     let SSHButton;
     let FSBrowserButton;
     let ExportLogsButton;
@@ -1532,6 +1698,7 @@ class Logs extends localization.LocalizedReactComponent {
     let CommitStatusButton;
     let ResumeFailureReason;
     let ShowMonitorButton;
+    let NodePendingAlert;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -1670,8 +1837,24 @@ class Logs extends localization.LocalizedReactComponent {
         roleModel.isOwner(run)
       ) {
         let shareList = 'Not shared (click to configure)';
-        if ((runSids || []).length > 0) {
-          shareList = (runSids || [])
+        const {
+          ssh: combineSshRoles,
+          endpoint: combineEndpointRoles
+        } = this.combineRolesIntoAllRoles;
+        const filteredRunSids = combineSshRoles || combineEndpointRoles
+          ? [ROLE_ALL, ...runSids]
+            .filter(({name, accessType}) => {
+              if (
+                (combineSshRoles && accessType === AccessTypes.ssh) ||
+                (combineEndpointRoles && accessType === AccessTypes.endpoint)
+              ) {
+                return !ROLE_ALL.includedRoles.includes(name);
+              }
+              return true;
+            })
+          : runSids;
+        if (filteredRunSids.length > 0) {
+          shareList = filteredRunSids
             .map((s, index, array) => {
               return (
                 <span
@@ -2026,6 +2209,19 @@ class Logs extends localization.LocalizedReactComponent {
               </a>
             );
           }
+          if (
+            roleModel.executeAllowed(run) &&
+            !isRemovedPipeline &&
+            runSupportsContinue(run)
+          ) {
+            ContinueButton = (
+              <a
+                onClick={() => this.onContinueRunClick()}
+              >
+                CONTINUE
+              </a>
+            );
+          }
           break;
       }
       if (
@@ -2188,6 +2384,52 @@ class Logs extends localization.LocalizedReactComponent {
       }
     };
 
+    if (
+      isRunStatusNodePending(run) &&
+      runStatusTooltips[RunStatuses.nodePending] &&
+      runStatusTooltips[RunStatuses.nodePending].description
+    ) {
+      NodePendingAlert = (
+        <Alert
+          message={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
+          type="warning"
+        />
+      );
+    }
+    const renderNetworkLimitAlert = () => {
+      const {preferences} = this.props;
+      const tags = run?.tags || {};
+      let networkLimitTag = tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()];
+      const suffix = preferences?.systemRunTagDateSuffix || '';
+      const networkLimitTagTimestamp = suffix
+        ? tags[`${KNOWN_TAG_NAMES.network_limit.toUpperCase()}${suffix}`]
+        : undefined;
+      if (
+        networkLimitTag === undefined ||
+        !RunTags.shouldDisplayTags(run, this.props.preferences, true)
+      ) {
+        return null;
+      }
+      return (
+        <Row
+          type="flex"
+          align="middle"
+          className="cp-error"
+          style={{gap: '5px', fontSize: 'larger'}}
+        >
+          <Icon type="exclamation-circle-o" />
+          Network is limited to
+          <b>
+            {networkLimitValueRender(networkLimitTag)}
+          </b>
+          {networkLimitTagTimestamp ? (
+            <span>
+              {`(on ${displayDate(networkLimitTagTimestamp)})`}
+            </span>
+          ) : null}
+        </Row>
+      );
+    };
     return (
       <Card
         className={
@@ -2210,6 +2452,7 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
+            {renderNetworkLimitAlert()}
             {
               stateReasonMessage && (
                 <Alert
@@ -2223,6 +2466,9 @@ class Logs extends localization.LocalizedReactComponent {
               style={{margin: '5px 0'}}
               run={run}
             />
+            {
+              NodePendingAlert && (<Row>{NodePendingAlert}</Row>)
+            }
             <Row>
               {Details}
             </Row>
@@ -2236,6 +2482,7 @@ class Logs extends localization.LocalizedReactComponent {
                 )
               }
               {this.buttonsWrapper(ActionButton)}
+              {this.buttonsWrapper(ContinueButton)}
               {this.buttonsWrapper(SSHButton)}
               {this.buttonsWrapper(FSBrowserButton)}
               {this.buttonsWrapper(ExportLogsButton)}
@@ -2285,7 +2532,9 @@ class Logs extends localization.LocalizedReactComponent {
           sids={(runSids || []).map(s => s)}
           pending={this.state.operationInProgress}
           onSave={this.operationWrapper(this.saveShareSids)}
-          onClose={this.closeShareDialog} />
+          onClose={this.closeShareDialog}
+          runSharing
+        />
         <CommitRunDialog
           runId={this.props.runId}
           defaultDockerImage={dockerImage}

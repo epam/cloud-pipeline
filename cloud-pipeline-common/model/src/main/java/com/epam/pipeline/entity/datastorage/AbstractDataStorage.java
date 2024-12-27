@@ -38,6 +38,8 @@ import java.util.Set;
         property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = S3bucketDataStorage.class, name = "S3"),
+        @JsonSubTypes.Type(value = AWSOmicsRefStorage.class, name = "AWS_OMICS_REF"),
+        @JsonSubTypes.Type(value = AWSOmicsSeqStorage.class, name = "AWS_OMICS_SEQ"),
         @JsonSubTypes.Type(value = NFSDataStorage.class, name = "NFS"),
         @JsonSubTypes.Type(value = AzureBlobStorage.class, name = "AZ"),
         @JsonSubTypes.Type(value = GSBucketStorage.class, name = "GS")})
@@ -64,6 +66,12 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * Defines mount options for a particular data storage to be used when mounting to a container
      */
     private String mountOptions;
+
+    /**
+     * Defines if this storage should be mounted with its fileShareMount path or directly with its own path.
+     * By default, false, which means to use fileShareMount path.
+     */
+    private boolean mountExactPath;
 
     /**
      * Defines if that data storage can be shared though a proxy service

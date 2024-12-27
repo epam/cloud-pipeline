@@ -52,6 +52,11 @@ export default {
       'it may mean that a cluster capacity is reached',
     title: <b>Queued</b>
   },
+  [Statuses.nodePending]: {
+    description: 'Platform has reached maximum nodes count. ' +
+      'New instances creation will be delayed till the compute resources are freed.',
+    title: <b>Node pending</b>
+  },
   [Statuses.resuming]: {
     description: 'A paused run is being resumed. ' +
       'At this moment compute node is starting back from the stopped state. ' +

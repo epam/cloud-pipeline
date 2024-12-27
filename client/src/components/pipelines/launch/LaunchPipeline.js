@@ -60,6 +60,7 @@ const DTS_ENVIRONMENT = 'DTS';
         : undefined
     };
   }
+  const continueRun = `${components.continue || 'false'}`.trim().toLowerCase() === 'true';
   return {
     allowedInstanceTypes: allowedInstanceTypes,
     preferences,
@@ -75,7 +76,8 @@ const DTS_ENVIRONMENT = 'DTS';
       ? new PipelineConfigurations(params.id, params.version)
       : undefined,
     isVersionedStorage,
-    versionedStorageLaunchInfo
+    versionedStorageLaunchInfo,
+    continueRun: continueRun && params.runId ? params.runId : undefined
   };
 })
 @observer
@@ -86,7 +88,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     runPayload: null,
     showMetadataBrowser: false,
     currentProjectId: null,
-    currentMetadataEntity: null
+    currentMetadataEntity: null,
+    pending: false
   };
 
   @observable allowedInstanceTypes;
@@ -277,6 +280,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
             const required = parameterInfo && parameterInfo.required
               ? parameterInfo.required : false;
             parameters.parameters[param.name] = {
+              ...(parameterInfo || {}),
               value: param.value,
               resolvedValue: param.resolvedValue,
               type,
@@ -288,8 +292,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       }
       return parameters;
     }
-    if (this.getConfigurationParameters()) {
-      return this.getConfigurationParameters();
+    const configurationParameters = this.getConfigurationParameters();
+    if (configurationParameters) {
+      return configurationParameters;
     }
     if (
       this.props.isVersionedStorage &&
@@ -349,21 +354,25 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   launch = async (payload, hostedApplicationConfiguration, platform, skipCheck) => {
-    payload.configurationName = this.currentConfiguration
-      ? this.currentConfiguration.name
-      : this.configurationName;
-    if (await run(this)(
-      payload,
-      true,
-      undefined,
-      undefined,
-      this.allowedInstanceTypes,
-      hostedApplicationConfiguration,
-      platform,
-      skipCheck
-    )) {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
-    }
+    this.setState({pending: true}, async () => {
+      payload.configurationName = this.currentConfiguration
+        ? this.currentConfiguration.name
+        : this.configurationName;
+      const runResolved = await run(this)(
+        payload,
+        true,
+        undefined,
+        undefined,
+        this.allowedInstanceTypes,
+        hostedApplicationConfiguration,
+        platform,
+        skipCheck
+      );
+      this.setState({pending: false});
+      if (runResolved) {
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      }
+    });
   };
 
   showMetadataBrowser = () => {
@@ -504,6 +513,15 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   onConfigurationChanged = (name) => {
     this.setState({configName: name});
+  };
+
+  onPipelineChanged = (pipelineId, pipelineVersion) => {
+    const {router, continueRun, configurationName = 'default'} = this.props;
+    if (continueRun) {
+      router.push(`/launch/${pipelineId}/${pipelineVersion}/${configurationName}/${continueRun}?continue=true`);
+    } else {
+      router.push(`/launch/${pipelineId}/${pipelineVersion}`);
+    }
   };
 
   loadTool = async (image) => {
@@ -684,6 +702,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         }
       >
         <LaunchPipelineForm
+          pending={this.state.pending}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           editConfigurationMode={false}
           currentConfigurationName={
@@ -698,10 +717,12 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           configurations={this.getConfigurations()}
           alerts={alerts}
           onConfigurationChanged={this.onConfigurationChanged}
+          onPipelineChanged={this.onPipelineChanged}
           onLaunch={this.launch}
           runConfiguration={this.prepareRunPayload}
           runConfigurationId={this.configurationId}
           isDetachedConfiguration={false}
+          continueRun={this.props.continueRun}
         />
         <MetadataBrowser
           multiple={false}

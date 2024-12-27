@@ -1,15 +1,19 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-bkp-worker-$CP_BKP_SERVICE_NAME
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-bkp-worker: "$CP_BKP_SERVICE_NAME"
   replicas: 1
   template:
     metadata:
       namespace: default
       labels:
         cloud-pipeline/cp-bkp-worker: "$CP_BKP_SERVICE_NAME"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/$CP_BKP_SERVICE_NAME: "true"

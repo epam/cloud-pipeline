@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selectors.withText;
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
 import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
@@ -24,6 +25,7 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
+import static java.lang.String.format;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -39,7 +41,6 @@ import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.profileWithName;
 import static com.epam.pipeline.autotests.utils.Conditions.collapsedTab;
@@ -187,11 +188,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             })
             .sleep(5, SECONDS)
             .editConfiguration(defaultProfile, profile ->
-                profile.refresh().ensure(byValue(firstParameter), visible)
+                profile.refresh().ensure(byValue(firstParameter), exist)
                        .ensure(byValue(firstParameterValue), visible)
             )
             .editConfiguration(anotherProfile, profile ->
-                profile.refresh().ensure(byValue(secondParameter), visible)
+                profile.refresh().ensure(byValue(secondParameter), exist)
                        .ensure(byValue(secondParameterValue), visible)
             );
     }
@@ -213,7 +214,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(profileWithName(defaultConfigurationName), visible)
                 .editConfiguration(defaultConfigurationName, profile ->
                         profile.ensure(SAVE, visible)
-                               .ensure(ESTIMATE_PRICE, visible)
+                               .ensure(ESTIMATED_PRICE, visible)
                                .ensure(INSTANCE, expandedTab)
                                .ensure(EXEC_ENVIRONMENT, collapsedTab)
                                .ensure(PARAMETERS, expandedTab)
@@ -244,13 +245,14 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(profileWithName(configurationName), exist, visible)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
-                .shouldContainInCode(String.format("\"name\" : \"%s\"", configurationName))
+                .shouldContainInCode(format("\"name\" : \"%s\"", configurationName))
                 .close();
     }
 
     @Test(priority = 3, dependsOnMethods = "validationOfAddingNewConfigurationFeature")
     @TestCase("EPMCMBIBPC-797")
     public void validationOfEditNewConfiguration() {
+        String updatemessage = format("Updating '%s' configuration", configurationName);
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
                 .editConfiguration(configurationName, profile ->
@@ -263,9 +265,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .sleep(2, SECONDS)
                                .click(SAVE)
                 )
-                .messageShouldAppear(String.format("Updating '%s' configuration", configurationName))
+                .messageShouldAppear(updatemessage)
+                .ensure(withText(updatemessage), not(visible))
                 // Because the page refreshes
                 .sleep(5, SECONDS)
+                .ensureDisable(SAVE)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
                 .shouldContainInCode("\"name\" : \"conf\"")
@@ -347,13 +351,13 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @Test(priority = 8, dependsOnMethods = "validationOfSettingAsDefaultBehavior")
     @TestCase("EPMCMBIBPC-805")
     public void validationOfConfigurationRemoving() {
-        final String expectedTitle = String.format(
+        final String expectedTitle = format(
                 "Are you sure you want to remove configuration '%s'?", configurationName
         );
-        final String deletionWasCancelled = String.format(
+        final String deletionWasCancelled = format(
                 "Configuration with name %s supposed exists as deletion was cancelled.", configurationName
         );
-        final String deletionWasConfirmed = String.format(
+        final String deletionWasConfirmed = format(
                 "Configuration with name %s supposed to be deleted.", configurationName
         );
         onPipelinePage()

@@ -16,6 +16,7 @@
 
 import {Project} from '../../../../../../utils/pipeline-builder';
 import VersionFile from '../../../../../../models/pipelines/VersionFile';
+import {base64toString} from '../../../../../../utils/base64';
 
 export default function buildWdlContentsResolver (pipelineId, version) {
   return async (uri) => {
@@ -30,6 +31,6 @@ export default function buildWdlContentsResolver (pipelineId, version) {
     if (request.error) {
       throw new Error(request.error);
     }
-    return atob(request.response);
+    return base64toString(request.response);
   };
 }

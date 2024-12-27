@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.SSH_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.*;
@@ -86,12 +88,29 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    private void openRegionSelector() {
+        get(SSH_LINK).parent().find(className("ultizone-url__expander")).click();
+    }
+
+    public String getBestRegion() {
+        openRegionSelector();
+        return $$(className("rc-dropdown-menu-item")).get(0).find("a")
+                .text().replace("(best)", "");
+    }
+
+    public ShellAO clickOnSelectedRegionLink() {
+        openRegionSelector();
+        String link = $$(className("ultizone-url__menu-link"))
+                .filter(text(SSH_CLOUD_REGION)).first().attr("href");
+        return ShellAO.open(link);
+    }
+
     public ShellAO clickOnSshLink() {
         return ShellAO.open(getSshLink());
     }
 
     public LogAO ssh(final Consumer<ShellAO> shell) {
-        shell.accept(clickOnSshLink());
+        shell.accept(SSH_CLOUD_REGION.isEmpty() ? clickOnSshLink() : clickOnSelectedRegionLink());
         return this;
     }
 
@@ -173,7 +192,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO pause(final String pipelineName) {
         clickOnPauseButton();
-        $(byClassName("ant-modal-body")).shouldBe(visible);
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
         ensure(byClassName("ause-confirmation__title"),
                 matchText(format("Do you want to pause%s", pipelineName)))
                 .sleep(1, SECONDS)
@@ -281,6 +300,13 @@ public class LogAO implements AccessObject<LogAO> {
                 .find(byXpath(format("td/div[2]/a[%s]/b", childNum))).getText();
     }
 
+    public LogAO waitForNestedRunWorking(String childRunID) {
+        $(byAttribute("href", format("#/run/%s", childRunID)))
+                .$(byXpath(".//i[contains(@class, 'anticon')]"))
+                .waitUntil(cssClass("anticon-play-circle-o"), COMPLETION_TIMEOUT);
+        return this;
+    }
+
     public LogAO shareWithGroup(final String groupName) {
         click(SHARE_WITH);
         new ShareWith().addGroupToShare(groupName);
@@ -329,6 +355,11 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO waitForTask(final String task) {
         $(taskWithName(task)).waitUntil(visible, COMPLETION_TIMEOUT);
+        return this;
+    }
+
+    public LogAO waitForTaskStatus(final String task, Status status) {
+        $(taskWithName(task)).waitUntil(status.reached, COMPLETION_TIMEOUT);
         return this;
     }
 
@@ -381,9 +412,9 @@ public class LogAO implements AccessObject<LogAO> {
         if (!get(PARAMETERS).exists()) {
             return this;
         }
-        $(byXpath(format(
+        ensure(byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') " +
-                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+                        "and contains(.//text(), '%s')]]", name)), not(Condition.exist));
         return this;
     }
 
@@ -403,7 +434,8 @@ public class LogAO implements AccessObject<LogAO> {
 
     public SelenideElement waitForMountBuckets() {
         return $(byXpath("//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
-                .waitUntil(cssClass("cp-runs-table-icon-green"), BUCKETS_MOUNTING_TIMEOUT);
+                .waitUntil(visible, BUCKETS_MOUNTING_TIMEOUT)
+                .waitUntil(not(cssClass("cp-runs-table-icon-blue")), BUCKETS_MOUNTING_TIMEOUT);
     }
 
     public static By runId() {
@@ -445,16 +477,18 @@ public class LogAO implements AccessObject<LogAO> {
                 ".//td[contains(., '%s')]]", name, value));
     }
 
+    private SelenideElement cpCapLimitMountsParameter(String storage) {
+        return $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage));
+    }
+
     public LogAO checkMountLimitsParameter(String...storages) {
-        Arrays.stream(storages)
-                .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
-                        .shouldHave(text(storage)));
+        Arrays.stream(storages).forEach(this::cpCapLimitMountsParameter);
         return this;
     }
 
     public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
-        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
-                .shouldHave(text(storage)).click();
+        cpCapLimitMountsParameter(storage).click();
         return new StorageContentAO();
     }
 
@@ -478,7 +512,7 @@ public class LogAO implements AccessObject<LogAO> {
         String str = logMess.stream().filter(Pattern.compile("\\d+ available storage\\(s\\)\\. Checking mount options\\.")
                         .asPredicate()).findFirst().toString();
         Matcher matcher = Pattern.compile(" \\d* ").matcher(str);
-        assert matcher.find();
+        assertTrue(matcher.find(), "Available storages were not found.");
         int res = Integer.parseInt(matcher.group().replace(" ", ""));
         assertTrue(res >= count,
                format("Available storages count (actual %s) should be more or equal %s", res, count));

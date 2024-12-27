@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
@@ -28,6 +29,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -51,6 +53,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -87,10 +90,10 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance,
-                                   final Map<String, String> runtimeParameters) {
+                                   final Map<String, String> runtimeParameters, final Map<String, String> tags) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
         final RunInstance scaledUpInstance = getInstanceService(region)
-                .scaleUpNode(region, runId, instance, runtimeParameters);
+                .scaleUpNode(region, runId, instance, runtimeParameters, tags);
         kubernetesManager.createNodeService(scaledUpInstance);
         return scaledUpInstance;
     }
@@ -145,15 +148,15 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public boolean reassignNode(final Long oldId, final Long newId) {
+    public boolean reassignNode(final Long oldId, final Long newId, final Map<String, String> tags) {
         final AbstractCloudRegion region = getRegionByRunId(oldId);
-        return getInstanceService(region).reassignNode(region, oldId, newId);
+        return getInstanceService(region).reassignNode(region, oldId, newId, tags);
     }
 
     @Override
-    public boolean reassignPoolNode(final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final String nodeLabel, final Long newId, final Map<String, String> tags) {
         final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
-        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId);
+        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId, tags);
     }
 
     @Override
@@ -266,9 +269,10 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public void attachDisk(final Long regionId, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final Long regionId, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        getInstanceService(region).attachDisk(region, runId, request);
+        getInstanceService(region).attachDisk(region, runId, request, tags);
     }
 
     @Override
@@ -313,6 +317,29 @@ public class CloudFacadeImpl implements CloudFacade {
     public void adjustOfferRequest(final Long regionId, final InstanceOfferRequestVO requestVO) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         getInstanceService(region).adjustOfferRequest(requestVO);
+    }
+
+    @Override
+    public boolean instanceScalingSupported(final Long regionId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return region.getProvider() != CloudProvider.LOCAL;
+    }
+
+    @Override
+    public List<NodeInstance> getCloudNodes(final Long regionId, final FilterNodesVO filterNodesVO) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).getCloudNodes(region, filterNodesVO);
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final Long regionId, final String instanceId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).findCloudNode(region, instanceId);
+    }
+
+    public void deleteInstanceTags(final Long regionId, final String runId, final Set<String> tagNames) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).deleteInstanceTags(region, runId, tagNames);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

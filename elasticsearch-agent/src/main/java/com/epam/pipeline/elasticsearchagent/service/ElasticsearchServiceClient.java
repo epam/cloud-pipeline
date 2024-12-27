@@ -33,6 +33,7 @@ public interface ElasticsearchServiceClient {
     boolean isIndexExists(String indexName);
     void createIndexAlias(String indexName, String indexAlias);
     String getIndexNameByAlias(String alias);
+    List<String> findIndices(String pattern);
     SearchResponse search(SearchRequest request);
     SearchResponse nextScrollPage(String scrollId, Scroll scroll);
     MultiSearchResponse search(MultiSearchRequest request);

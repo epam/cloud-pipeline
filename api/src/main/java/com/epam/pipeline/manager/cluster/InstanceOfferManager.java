@@ -341,7 +341,8 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowedInAnyRegion(final String instanceType,
                                                     final ContextualPreferenceExternalResource toolResource) {
-        final List<ContextualPreferenceExternalResource> resources = Collections.singletonList(toolResource);
+        final List<ContextualPreferenceExternalResource> resources = toolResource != null
+                ? Collections.singletonList(toolResource) : Collections.emptyList();
         return isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
                 || isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
     }
@@ -409,6 +410,12 @@ public class InstanceOfferManager {
     private List<InstanceOffer> updatePriceList(final AbstractCloudRegion region) {
         try {
             final List<InstanceOffer> offers = retrievePriceList(region);
+            if (offers.isEmpty()) {
+                LOGGER.warn("Skipping instance offers update for region {} {} #{} " +
+                                "because no instance offers have been retrieved...",
+                        region.getProvider(), region.getRegionCode(), region.getId());
+                return offers;
+            }
             final List<InstanceOffer> filteredOffers = filterPriceList(region, offers);
             return replacePriceList(region, filteredOffers);
         } catch (RuntimeException e) {

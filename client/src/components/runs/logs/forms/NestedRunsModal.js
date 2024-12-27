@@ -152,7 +152,7 @@ function getHoveredElementsInfo (hoveredItems = [], styles = {}) {
           )
         }
         <span className={styles.dataset}>
-          Jobs:
+          Nodes:
         </span>
         <span className={styles.value}>
           {min === max ? min : `${min} - ${max}`}

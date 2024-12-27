@@ -17,6 +17,8 @@ import logging
 import requests
 import time
 
+NON_RETRY_CODES = [200, 401, 403]
+
 
 class CloudType:
 
@@ -41,8 +43,8 @@ class TemporaryCredentials:
         instance = cls()
         instance.access_key_id = json['keyID'] if 'keyID' in json else None
         instance.secret_key = json['accessKey']
-        instance.session_token = json['token']
-        instance.expiration = json['expiration']
+        instance.session_token = json['token'] if 'token' in json else None
+        instance.expiration = json['expiration'] if 'expiration' in json else None
         instance.region = json['region'] if 'region' in json else None
         return instance
 
@@ -93,6 +95,7 @@ class DataStorage:
         instance.sensitive = json['sensitive']
         instance.type = json['type']
         instance.region_name = cls._find_region_code(json.get('regionId', 0), region_info)
+        instance.endpoint = cls._find_endpoint(json.get('regionId', 0), region_info)
         return instance
 
     @staticmethod
@@ -100,6 +103,13 @@ class DataStorage:
         for region in region_data:
             if int(region.get('id', 0)) == int(region_id):
                 return region.get('regionId', None)
+        return None
+
+    @staticmethod
+    def _find_endpoint(region_id, region_data):
+        for region in region_data:
+            if int(region.get('id', 0)) == int(region_id):
+                return region.get('endpoint', None)
         return None
 
     def is_read_allowed(self):
@@ -197,8 +207,11 @@ class CloudPipelineClient:
                 response = requests.request(method=http_method, url=url, data=json.dumps(data),
                                             headers=self.__headers__, verify=False,
                                             timeout=self.__connection_timeout__)
-                if response.status_code != 200:
-                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                if response.status_code not in NON_RETRY_CODES:
+                    error_message = 'API responded with http status %s.' % str(response.status_code)
+                    if response.json() is not None and response.json().get('message'):
+                        error_message = error_message + response.json().get('message')
+                    raise HTTPError(error_message)
                 response_data = response.json()
                 status = response_data.get('status') or 'ERROR'
                 message = response_data.get('message') or 'No message'

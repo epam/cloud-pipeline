@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
+import com.epam.pipeline.entity.docker.ToolImageDockerfile;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -112,6 +113,11 @@ public class ToolApiService {
     @PreAuthorize(AclExpressions.TOOL_READ)
     public List<ImageHistoryLayer> getImageHistory(final Long id, final String tag) {
         return toolManager.loadToolHistory(id, tag);
+    }
+
+    @PreAuthorize(AclExpressions.TOOL_READ)
+    public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
+        return toolManager.loadDockerFile(id, tag, from);
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)

@@ -223,9 +223,9 @@ class Pipeline(API):
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
-    def stop_pipeline(cls, run_id):
+    def stop_pipeline(cls, run_id, status='STOPPED'):
         api = cls.instance()
-        data = json.dumps({'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')})
+        data = json.dumps({'status': status, 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')})
         response_data = api.call('run/{}/status'.format(run_id), data)
         return PipelineRunModel.load(response_data['payload'])
 

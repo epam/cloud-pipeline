@@ -132,22 +132,24 @@ export default async function fetchRunInfo (
     currentStatus = nextStatus;
     const error = runInfo.error;
     hasNestedRuns = hasNestedRuns || (nestedRuns.total || 0) > 0;
+    const data = {
+      run,
+      nestedRuns: nestedRuns.value || [],
+      hasNestedRuns,
+      totalNestedRuns: nestedRuns.total || 0,
+      nestedRunsPending: false,
+      error,
+      showActiveWorkersOnly,
+      runTasks: runTasks.value || [],
+      language: pipelineLanguage && pipelineLanguage.loaded ? pipelineLanguage.value : undefined,
+      commitAllowed
+    };
     if (typeof dataCallback === 'function' && !stopped) {
-      dataCallback({
-        run,
-        nestedRuns: nestedRuns.value || [],
-        hasNestedRuns,
-        totalNestedRuns: nestedRuns.total || 0,
-        nestedRunsPending: false,
-        error,
-        showActiveWorkersOnly,
-        runTasks: runTasks.value || [],
-        language: pipelineLanguage && pipelineLanguage.loaded ? pipelineLanguage.value : undefined,
-        commitAllowed
-      });
+      dataCallback(data);
     }
+    return data;
   };
-  commit();
+  const result = commit();
   let stop = () => {
     stopped = true;
   };
@@ -172,6 +174,7 @@ export default async function fetchRunInfo (
   }
   return {
     stop,
-    fetch: reFetch
+    fetch: reFetch,
+    data: result
   };
 }

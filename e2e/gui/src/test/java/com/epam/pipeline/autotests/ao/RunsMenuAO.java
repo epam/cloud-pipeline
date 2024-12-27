@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public ElementsCollection allRuns() {
-        return $("tbody").shouldBe(visible).findAll("tr");
+        return $("tbody").shouldBe(visible).findAll("tr").filter(visible);
     }
 
     public RunsMenuAO ensureHasOwner(String owner) {
@@ -336,7 +336,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(withText("Currently viewing")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        $(withText("Currently viewing")).waitUntil(visible, DEFAULT_TIMEOUT);
         if ($(elementWithText(tagName("b"), "other available ")).isDisplayed()) {
             $(withText("Currently viewing")).click();
             $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
@@ -352,7 +352,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        $(byClassName("ant-modal-body")).shouldBe(visible);
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
         ensure(byClassName("ause-confirmation__title"),
                matchText(format("Do you want to pause%s", pipelineName)))
             .sleep(1, SECONDS)

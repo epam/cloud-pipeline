@@ -20,6 +20,7 @@ const Statuses = {
   pausing: 'PAUSING',
   pulling: 'PULLING',
   queued: 'QUEUED',
+  nodePending: 'NODE_PENDING',
   resuming: 'RESUMING',
   running: 'RUNNING',
   scheduled: 'SCHEDULED',
@@ -38,8 +39,20 @@ export function correctStatusValue (status) {
   }
   return Statuses.unknown;
 }
+export function isRunStatusNodePending (run) {
+  return run &&
+    typeof run === 'object' &&
+    run.tags &&
+    run.tags['NODE_PENDING'] &&
+    run.status &&
+    /^running$/i.test(run.status);
+}
 export function getRunStatus (run) {
   if (run) {
+    const nodePending = isRunStatusNodePending(run);
+    if (nodePending) {
+      return Statuses.nodePending;
+    }
     let status = run.status || Statuses.unknown;
     if (status.toUpperCase() === Statuses.running &&
       run.instance &&

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, computed} from 'mobx';
 import classNames from 'classnames';
 import {
   Icon,
@@ -76,6 +76,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   inputControl;
 
   @observable delayedSearch;
+
+  @computed
+  get quickSearchDisabled () {
+    const {preferences} = this.props;
+    return preferences.uiQuickSearchDisabled;
+  }
 
   get searchTypesArray () {
     const result = [];
@@ -818,7 +824,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   handleKeyPress = (e) => {
-    if (this.props.blockInput || searchDialogBlocker.blocked) {
+    if (this.props.blockInput || searchDialogBlocker.blocked || this.quickSearchDisabled) {
       return;
     }
     const modals = Array.from(document.getElementsByClassName('ant-modal-mask'));

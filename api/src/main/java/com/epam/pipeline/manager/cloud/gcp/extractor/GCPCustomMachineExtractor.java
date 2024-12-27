@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.cluster.GpuDevice;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPCustomVMType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
@@ -52,7 +52,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
                 .collect(Collectors.toList());
     }
 
-    private GCPMachine toMachine(final GCPCustomInstanceType type) {
+    private GCPMachine toMachine(final CustomInstanceType type) {
         final GCPCustomVMType instanceFamily = StringUtils.isNotBlank(type.getFamily())
                 ? GCPCustomVMType.valueOf(type.getFamily())
                 : GCPCustomVMType.n1;
@@ -68,11 +68,11 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory, instanceFamily);
     }
 
-    private String gpuCustomGpuMachine(final GCPCustomInstanceType type, final String cpuMachineName) {
+    private String gpuCustomGpuMachine(final CustomInstanceType type, final String cpuMachineName) {
         return String.format("gpu-%s-%s-%s", cpuMachineName, type.getGpuType().toLowerCase(), type.getGpu());
     }
 
-    private String customCpuMachine(final GCPCustomInstanceType type, final GCPCustomVMType instanceFamily) {
+    private String customCpuMachine(final CustomInstanceType type, final GCPCustomVMType instanceFamily) {
         return String.format("%s%s-%s-%s", instanceFamily.getPrefix(), CUSTOM_FAMILY, type.getCpu(),
                 (int) (type.getRam() * MEGABYTES_IN_GIGABYTE));
     }
@@ -81,25 +81,25 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         return isExtendedInstance ? String.format("%s-ext", name) : name;
     }
 
-    private String getCustomMachineType(final GCPCustomInstanceType type, final GCPCustomVMType instanceFamily) {
+    private String getCustomMachineType(final CustomInstanceType type, final GCPCustomVMType instanceFamily) {
         final String cpuMachineName = customCpuMachine(type, instanceFamily);
         return type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())
                 ? gpuCustomGpuMachine(type, cpuMachineName)
                 : cpuMachineName;
     }
 
-    private String buildMachineType(final GCPCustomInstanceType type, final boolean isExtendedInstance,
+    private String buildMachineType(final CustomInstanceType type, final boolean isExtendedInstance,
                                     final GCPCustomVMType instanceFamily) {
         return withExtendedMachineType(getCustomMachineType(type, instanceFamily), isExtendedInstance);
     }
 
-    private boolean isInstanceExtended(final GCPCustomInstanceType type, final GCPCustomVMType instanceFamily) {
+    private boolean isInstanceExtended(final CustomInstanceType type, final GCPCustomVMType instanceFamily) {
         final double ramCpuFactor = type.getRam() / type.getCpu();
         return instanceFamily.isSupportExternal()
                 && Precision.compareTo(ramCpuFactor, instanceFamily.getExtendedFactor(), FACTOR_PRECISION) > 0;
     }
 
-    private double calculateExtendedMemory(final boolean isExtendedInstance, final GCPCustomInstanceType type,
+    private double calculateExtendedMemory(final boolean isExtendedInstance, final CustomInstanceType type,
                                            final GCPCustomVMType instanceFamily) {
         return isExtendedInstance ? type.getRam() - type.getCpu() * instanceFamily.getExtendedFactor() : 0.0;
     }

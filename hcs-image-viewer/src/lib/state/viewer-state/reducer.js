@@ -18,6 +18,7 @@ import ViewerStateActions from './actions';
 import { changeChannelProperties, setDefaultChannelsColors } from './change-channel-properties';
 import lockChannelsState from './lock-channels-state';
 import { GlobalDimensionFields } from '../constants';
+import {set3D} from "./set-3d";
 
 const EMPTY_ARRAY = [];
 const DEFAULT_SLICE = [0, 1];
@@ -110,7 +111,9 @@ export default function reducer(state, action) {
       const {
         channels = EMPTY_ARRAY,
         contrastLimits = EMPTY_ARRAY,
+        contrastLimits3D = EMPTY_ARRAY,
         realDomains = EMPTY_ARRAY,
+        realDomains3D = EMPTY_ARRAY
       } = state;
       const newState = {
         ...state,
@@ -125,6 +128,12 @@ export default function reducer(state, action) {
           return domain;
         }
         return realDomains[idx] || domain;
+      });
+      newState.domains3D = (newState.domains3D || []).map((domain, idx) => {
+        if (channelsToLock.includes(channels[idx])) {
+          return domain;
+        }
+        return realDomains3D[idx] || domain;
       });
       newState.contrastLimits = contrastLimits.map((limit, index) => {
         if (channelsToLock.includes(channels[index])) {
@@ -143,6 +152,23 @@ export default function reducer(state, action) {
         }
         return limit;
       });
+      newState.contrastLimits3D = contrastLimits3D.map((limit, index) => {
+        if (channelsToLock.includes(channels[index])) {
+          return limit;
+        }
+        const domain3D = newState.domains3D[index];
+        if (domain3D && Array.isArray(domain3D) && domain3D.length === 2) {
+          const [cFrom, cTo, ...limitRest] = limit;
+          const [dFrom, dTo] = domain3D;
+          const correct = (l) => Math.max(dFrom, Math.min(dTo, l));
+          return [
+            correct(cFrom),
+            correct(cTo),
+            ...limitRest,
+          ];
+        }
+        return limit;
+      });
       return newState;
     }
     case ViewerStateActions.setDefault: {
@@ -152,16 +178,22 @@ export default function reducer(state, action) {
         selections = EMPTY_ARRAY,
         colors = EMPTY_ARRAY,
         domains = EMPTY_ARRAY,
+        domains3D = EMPTY_ARRAY,
         realDomains = domains.slice(),
+        realDomains3D = domains3D.slice(),
         contrastLimits = EMPTY_ARRAY,
+        contrastLimits3D = EMPTY_ARRAY,
         useLens = false,
         useColorMap = false,
         colorMap = useColorMap ? state.colorMap : '',
         lensEnabled = false,
         lensChannel = 0,
         xSlice = DEFAULT_SLICE,
+        xSliceRange = DEFAULT_SLICE,
         ySlice = DEFAULT_SLICE,
+        ySliceRange = DEFAULT_SLICE,
         zSlice = DEFAULT_SLICE,
+        zSliceRange = DEFAULT_SLICE,
         use3D = false,
         ready = false,
         isRGB = false,
@@ -169,6 +201,7 @@ export default function reducer(state, action) {
         globalDimensions = EMPTY_ARRAY,
         metadata,
         loader,
+        loadersInfo,
       } = lockChannelsState(state, action);
       return {
         ...state,
@@ -181,16 +214,22 @@ export default function reducer(state, action) {
         pixelValues: new Array((selections || []).length).fill('-----'),
         colors,
         domains,
+        domains3D,
         realDomains,
+        realDomains3D,
         contrastLimits,
+        contrastLimits3D,
         useLens,
         useColorMap,
         colorMap,
         lensEnabled,
         lensChannel,
         xSlice,
+        xSliceRange,
         ySlice,
+        ySliceRange,
         zSlice,
+        zSliceRange,
         use3D,
         ready,
         isRGB,
@@ -199,7 +238,12 @@ export default function reducer(state, action) {
         error: undefined,
         metadata,
         loader,
+        loadersInfo,
+        loader3DIndex: undefined
       };
+    }
+    case ViewerStateActions.set3D: {
+      return set3D(state, action);
     }
     case ViewerStateActions.setError: {
       const { error } = action;

@@ -19,6 +19,9 @@ package com.epam.pipeline.manager.execution;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
@@ -26,10 +29,12 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.Affinity;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
@@ -51,10 +56,12 @@ import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -69,7 +76,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class PipelineExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExecutor.class);
@@ -82,26 +91,32 @@ public class PipelineExecutor {
     private static final String TRUE = "true";
     private static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
     private static final String DEFAULT_CPU_REQUEST = "1";
-    private static final String CPU_REQUEST_NAME = "cpu";
     private static final DockerMount HOST_CGROUP_MOUNT = DockerMount.builder()
             .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
     private static final String DOMAIN_DELIMITER = "@";
     private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
+    private static final String CP_CAP_NETWORK_POLICY_TYPE = "CP_CAP_NETWORK_POLICY_TYPE";
+    private static final String NETWORK_POLICY_COMMON = "common";
+    private static final String NETWORK_POLICY_INTERNAL = "internal";
+    private static final String NETWORK_POLICY_SENSITIVE = "sensitive";
 
     private final PreferenceManager preferenceManager;
+    private final ContextualPreferenceManager contextualPreferenceManager;
     private final String kubeNamespace;
     private final AuthManager authManager;
     private final KubernetesManager kubernetesManager;
     private final Map<ContainerMemoryResourcePolicy, ContainerMemoryResourceService> memoryRequestServices;
 
     public PipelineExecutor(final PreferenceManager preferenceManager,
+                            ContextualPreferenceManager contextualPreferenceManager,
                             final AuthManager authManager,
                             final List<ContainerMemoryResourceService> memoryRequestServices,
                             @Value("${kube.namespace}") final String kubeNamespace,
                             final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
+        this.contextualPreferenceManager = contextualPreferenceManager;
         this.kubeNamespace = kubeNamespace;
         this.authManager = authManager;
         this.memoryRequestServices = CommonUtils.groupByKey(memoryRequestServices,
@@ -127,9 +142,10 @@ public class PipelineExecutor {
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
             labels.put("owner", normalizeOwner(run.getOwner()));
-            if (Boolean.TRUE.equals(run.getSensitive())) {
-                labels.put("sensitive", "true");
+            if (isSensitive(run)) {
+                labels.put("sensitive", TRUE);
             }
+            labels.put("network_policy_type", getNetworkPolicyType(run, envVars));
             if (MapUtils.isNotEmpty(kubeLabels)) {
                 labels.putAll(kubeLabels);
             }
@@ -140,6 +156,7 @@ public class PipelineExecutor {
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
                 nodeSelector.put(podAssignPolicy.getSelector().getLabel(), podAssignPolicy.getSelector().getValue());
+
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) &&
                         podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
@@ -167,6 +184,20 @@ public class PipelineExecutor {
 
     private String normalizeOwner(final String owner) {
         return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_FULL_REGEXP, "-");
+    }
+
+    private String getNetworkPolicyType(final PipelineRun run, final List<EnvVar> envVars) {
+        if (isSensitive(run)) {
+            return NETWORK_POLICY_SENSITIVE;
+        } else if (isParameterEqual(envVars, CP_CAP_NETWORK_POLICY_TYPE, NETWORK_POLICY_INTERNAL)) {
+            return NETWORK_POLICY_INTERNAL;
+        } else {
+            return NETWORK_POLICY_COMMON;
+        }
+    }
+
+    private boolean isSensitive(final PipelineRun run) {
+        return Boolean.TRUE.equals(run.getSensitive());
     }
 
     private String fetchVerifiedKubeServiceAccount(final KubernetesClient client, final String kubeServiceAccount) {
@@ -216,9 +247,16 @@ public class PipelineExecutor {
         if (KubernetesConstants.WINDOWS.equalsIgnoreCase(run.getPlatform())
             && nodeSelector.containsKey(KubernetesConstants.RUN_ID_LABEL)) {
             spec.setAffinity(buildNodeSelectorAffinity(nodeSelector.get(KubernetesConstants.RUN_ID_LABEL)));
-        } else {
-            spec.setNodeSelector(nodeSelector);
+
+            // In case of AWS native deployment on EKS these labels will be used by EKS to prepare Pod to be run
+            // on windows machine on EKS see more info in:
+            // https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html#windows-support-pod-deployment
+            // basically it will add vpc.amazonaws.com/PrivateIPv4Address resource demand for a pod
+            nodeSelector.clear();
+            nodeSelector.put(KubernetesConstants.K8S_OS, KubernetesConstants.WINDOWS);
+            nodeSelector.put(KubernetesConstants.K8S_ARCH, KubernetesConstants.AMD_64);
         }
+        spec.setNodeSelector(nodeSelector);
         if (preferenceManager.getPreference(SystemPreferences.KUBE_POD_DOMAINS_ENABLED)) {
             configurePodDns(run, spec);
         }
@@ -228,13 +266,16 @@ public class PipelineExecutor {
         final boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         final boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+        final boolean isEBSVolumesEnabled = BooleanUtils.isNotTrue(
+                isParameterEnabled(envVars, KubernetesConstants.CP_CAP_EBS_VOLUMES_MOUNT_DISABLED)
+        );
 
         spec.setServiceAccountName(kubeServiceAccount);
-
+        final List<DockerMount> commonMounts = getMountPreference(run);
         if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             spec.setVolumes(getWindowsVolumes());
         } else {
-            spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+            spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts));
         }
 
         Optional.of(PodSpecMapperHelper.buildTolerations(nodeTolerances))
@@ -245,10 +286,26 @@ public class PipelineExecutor {
             spec.setHostNetwork(true);
         }
 
-        spec.setContainers(Collections.singletonList(getContainer(run,
-                envVars, dockerImage, command, imagePullPolicy,
-                isDockerInDockerEnabled, isSystemdEnabled, isParentPod, template)));
+        spec.setContainers(Collections.singletonList(
+                getContainer(
+                        run, envVars, dockerImage, command, imagePullPolicy, isDockerInDockerEnabled,
+                        isSystemdEnabled, isEBSVolumesEnabled, isParentPod, template, commonMounts
+                )
+        ));
         return spec;
+    }
+
+    private List<DockerMount> getMountPreference(final PipelineRun run) {
+        if (run.getInstance() == null || run.getInstance().getCloudRegionId() == null) {
+            return Collections.emptyList();
+        }
+        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
+                ContextualPreferenceLevel.REGION,
+                run.getInstance().getCloudRegionId().toString());
+
+        final ContextualPreference preference = contextualPreferenceManager.search(
+                Collections.singletonList(SystemPreferences.LAUNCH_COMMON_MOUNTS.getKey()), resource);
+        return ContextualPreferenceManager.parse(preference, new TypeReference<List<DockerMount>>() {});
     }
 
     private Affinity buildNodeSelectorAffinity(final String runId) {
@@ -274,21 +331,34 @@ public class PipelineExecutor {
         spec.setDnsConfig(podDNSConfig);
     }
 
-    private boolean isParameterEnabled(List<EnvVar> envVars, String parameter) {
-        return ListUtils.emptyIfNull(envVars)
-                .stream()
-                .anyMatch(env -> parameter.equals(env.getName()) && TRUE.equals(env.getValue()));
+    private boolean isParameterEnabled(final List<EnvVar> envVars, final String name) {
+        return isParameterEqual(envVars, name, TRUE);
     }
 
+    private boolean isParameterEqual(final List<EnvVar> envVars, final String name, final String value) {
+        return getParameter(envVars, name)
+                .map(value::equals)
+                .orElse(false);
+    }
 
-    private Container getContainer(PipelineRun run,
-                                   List<EnvVar> envVars,
-                                   String dockerImage,
-                                   String command,
-                                   ImagePullPolicy imagePullPolicy,
-                                   boolean isDockerInDockerEnabled,
-                                   boolean isSystemdEnabled, boolean isParentPod,
-                                   OSSpecificLaunchCommandTemplate template) {
+    private Optional<String> getParameter(final List<EnvVar> envVars, final String name) {
+        return ListUtils.emptyIfNull(envVars).stream()
+                .filter(var -> name.equals(var.getName()))
+                .map(EnvVar::getValue)
+                .findFirst();
+    }
+
+    private Container getContainer(final PipelineRun run,
+                                   final List<EnvVar> envVars,
+                                   final String dockerImage,
+                                   final String command,
+                                   final ImagePullPolicy imagePullPolicy,
+                                   final boolean isDockerInDockerEnabled,
+                                   final boolean isSystemdEnabled,
+                                   final boolean isEBSVolumesEnabled,
+                                   final boolean isParentPod,
+                                   final OSSpecificLaunchCommandTemplate template,
+                                   final List<DockerMount> commonMounts) {
         Container container = new Container();
         container.setName("pipeline");
         SecurityContext securityContext = new SecurityContext();
@@ -313,7 +383,9 @@ public class PipelineExecutor {
                 mergedArgs.add(command);
                 container.setArgs(mergedArgs);
             }
-            container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
+            container.setVolumeMounts(
+                    getMounts(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts)
+            );
             container.setTerminationMessagePath("/dev/termination-log");
         }
         container.setImagePullPolicy(imagePullPolicy.getName());
@@ -324,39 +396,55 @@ public class PipelineExecutor {
     }
 
     private void buildContainerResources(PipelineRun run, List<EnvVar> envVars, Container container) {
-        final ContainerResources cpuResources = buildCpuRequests(envVars);
-        final ContainerResources memoryResources = buildMemoryRequests(run, envVars);
-        container.setResources(ContainerResources.merge(cpuResources, memoryResources)
-                .toContainerRequirements());
+        log.debug("Building container requests/limits for run #{}...", run.getId());
+        final ContainerResources resources = buildResources(run, envVars);
+        log.debug("Built container requests/limits for run #{}: requests {}, limits {}", run.getId(),
+                toResourceString(resources.getRequests()), toResourceString(resources.getLimits()));
+        container.setResources(resources.toContainerRequirements());
     }
 
-    private ContainerResources buildMemoryRequests(final PipelineRun run, final List<EnvVar> envVars) {
-        final String policyName = ListUtils.emptyIfNull(envVars).stream()
-                .filter(var -> SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName().equals(var.getName()))
-                .findFirst()
-                .map(EnvVar::getValue)
+    private ContainerResources buildResources(final PipelineRun run, final List<EnvVar> envVars) {
+        return ContainerResources.merge(
+                buildCpuResources(run, envVars),
+                buildMemoryResources(run, envVars));
+    }
+
+    private ContainerResources buildMemoryResources(final PipelineRun run, final List<EnvVar> envVars) {
+        final String policyName = getParameter(envVars, SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName())
                 .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
-                policyName, ContainerMemoryResourcePolicy.NO_LIMIT);
-        return memoryRequestServices.get(policy).buildResourcesForRun(run);
+                policyName, ContainerMemoryResourcePolicy.DEFAULT);
+        final ContainerResources resources = memoryRequestServices.get(policy).buildResourcesForRun(run);
+        if (MapUtils.isEmpty(resources.getRequests())) {
+            log.warn("Container memory requests for run #{} are missing", run.getId());
+        }
+        if (MapUtils.isEmpty(resources.getLimits())) {
+            log.warn("Container memory limits for run #{} are missing", run.getId());
+        }
+        return resources;
     }
 
-    private ContainerResources buildCpuRequests(List<EnvVar> envVars) {
-        return ListUtils.emptyIfNull(envVars).stream()
-                .filter(var -> SystemParams.CONTAINER_CPU_RESOURCE.getEnvName().equals(var.getName()))
-                .findFirst()
-                .map(var -> {
-                    if (NumberUtils.isDigits(var.getValue())) {
-                        return var.getValue();
-                    }
-                    return DEFAULT_CPU_REQUEST;
-                })
+    private ContainerResources buildCpuResources(final PipelineRun run, final List<EnvVar> envVars) {
+        final ContainerResources resources = getParameter(envVars, SystemParams.CONTAINER_CPU_RESOURCE.getEnvName())
+                .filter(NumberUtils::isDigits).map(Optional::of)
+                .orElseGet(() -> Optional.of(DEFAULT_CPU_REQUEST))
                 .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
                 .map(cpuRequest ->
                     ContainerResources.builder()
-                            .requests(Collections.singletonMap(CPU_REQUEST_NAME, new Quantity(cpuRequest)))
+                            .requests(Collections.singletonMap(KubernetesConstants.CPU_RESOURCE_NAME,
+                                    new Quantity(cpuRequest)))
                             .build())
                 .orElse(ContainerResources.empty());
+        if (MapUtils.isEmpty(resources.getRequests())) {
+            log.warn("Container cpu requests for run #{} are missing", run.getId());
+        }
+        return resources;
+    }
+
+    private String toResourceString(final Map<String, Quantity> resources) {
+        return MapUtils.emptyIfNull(resources).entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue().getAmount())
+                .collect(Collectors.joining(","));
     }
 
     private List<Volume> getWindowsVolumes() {
@@ -364,10 +452,15 @@ public class PipelineExecutor {
                 createVolume(RUNS_DATA_MOUNT, "c:\\runs"));
     }
 
-    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
+    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled,
+                                    final boolean isSystemdEnabled,
+                                    final boolean isEBSVolumesEnabled,
+                                    final List<DockerMount> commonMounts) {
         final List<Volume> volumes = new ArrayList<>();
-        volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
-        volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
+        if (isEBSVolumesEnabled) {
+            volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
+            volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
+        }
         volumes.add(createEmptyVolume(EMPTY_MOUNT, "Memory"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
@@ -375,8 +468,6 @@ public class PipelineExecutor {
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
-        final List<DockerMount> commonMounts = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_COMMON_MOUNTS);
         if (CollectionUtils.isNotEmpty(commonMounts)) {
             commonMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
@@ -391,21 +482,26 @@ public class PipelineExecutor {
                 getVolumeMount(RUNS_DATA_MOUNT, "c:\\runs"));
     }
 
-    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
+    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled,
+                                        final boolean isSystemdEnabled,
+                                        final boolean isEBSVolumesEnabled,
+                                        final List<DockerMount> commonMounts) {
         final List<VolumeMount> mounts = new ArrayList<>();
-        mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
-        mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
+        if (isEBSVolumesEnabled) {
+            mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
+            mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
+        }
         mounts.add(getVolumeMount(EMPTY_MOUNT, "/dev/shm"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
-            dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
+            dockerMounts.forEach(mount -> mounts.add(
+                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
         }
-        final List<DockerMount> commonMounts = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_COMMON_MOUNTS);
         if (CollectionUtils.isNotEmpty(commonMounts)) {
-            commonMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
+            commonMounts.forEach(mount -> mounts.add(
+                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
         }
         if (isSystemdEnabled) {
             mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getMountPath()));
@@ -413,10 +509,15 @@ public class PipelineExecutor {
         return mounts;
     }
 
-    private VolumeMount getVolumeMount(String name, String path) {
+    private VolumeMount getVolumeMount(final String name, final String path) {
+        return getVolumeMount(name, path, false);
+    }
+
+    private VolumeMount getVolumeMount(final String name, final String path, final boolean readOnly) {
         VolumeMount mount = new VolumeMount();
         mount.setName(name);
         mount.setMountPath(path);
+        mount.setReadOnly(readOnly);
         return mount;
     }
 

@@ -28,13 +28,15 @@
                         name,
                         predefined,
                         user_default,
-                        default_storage_id)
+                        default_storage_id,
+                        owner)
                     VALUES (
                         :ROLE_ID,
                         :ROLE_NAME,
                         :ROLE_PREDEFINED,
                         :ROLE_USER_DEFAULT,
-                        :ROLE_DEFAULT_STORAGE_ID)
+                        :ROLE_DEFAULT_STORAGE_ID,
+                        :ROLE_OWNER)
                 ]]>
             </value>
         </property>
@@ -44,7 +46,8 @@
                     UPDATE pipeline.role SET
                         name = :ROLE_NAME,
                         user_default = :ROLE_USER_DEFAULT,
-                        default_storage_id = :ROLE_DEFAULT_STORAGE_ID
+                        default_storage_id = :ROLE_DEFAULT_STORAGE_ID,
+                        owner = :ROLE_OWNER
                     WHERE id = :ROLE_ID
                 ]]>
             </value>
@@ -65,7 +68,8 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM
                         pipeline.role r
                     WHERE
@@ -83,7 +87,8 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM
                         pipeline.role r
                     WHERE
@@ -101,7 +106,8 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM
                         pipeline.role r
                     WHERE
@@ -119,7 +125,8 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM
                         pipeline.role r
                     WHERE
@@ -138,6 +145,7 @@
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
                         r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner,
                         g.blocked as group_blocked
                     FROM
                         pipeline.role r
@@ -154,7 +162,8 @@
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM
                         pipeline.role r
                     WHERE
@@ -172,6 +181,7 @@
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner,
                       u.id as user_id,
                       u.name as user_name,
                       u.groups as user_groups,
@@ -203,6 +213,7 @@
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner,
                       u.id as user_id,
                       u.name as user_name,
                       u.groups as user_groups,

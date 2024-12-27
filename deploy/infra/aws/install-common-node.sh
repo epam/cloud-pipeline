@@ -51,14 +51,14 @@ yum install -y yum-utils \
 yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.03* \
-                docker-ce-cli-18.03* \
+yum install -y  docker-ce-20.10* \
+                docker-ce-cli-20.10* \
                 containerd.io
 if [ $? -ne 0 ]; then
   echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
 
   # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-18.03*
+  yum install -y docker-20.10*
   if [ $? -ne 0 ]; then
     echo "Unable to install default docker-18.03* too, exiting"
     exit 1
@@ -78,20 +78,6 @@ wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docke
 
 systemctl stop docker
 
-# Install kubelet
-cat <<EOF >/etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-EOF
-
-yum -q makecache -y --enablerepo kubernetes --nogpg
-
 # Enable forwarding
 cat <<EOF >/etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -104,10 +90,10 @@ sysctl --system
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
-yum install -y \
-            kubeadm-1.15.4-0.x86_64 \
-            kubectl-1.15.4-0.x86_64 \
-            kubelet-1.15.4-0.x86_64
+wget --no-check-certificate https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/rpm/kube-1.15.4.el7.tgz -O kube.tgz && \
+     tar -xf kube.tgz && \
+     cd kube && yum localinstall *kube*.rpm *cri-tools*.rpm -y && \
+     cd .. && rm -rf kube/ && rm -rf kube.tgz
 
 # Label instance as Done
 instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)

@@ -49,6 +49,7 @@ import LoadingView from '../../../../../special/LoadingView';
 import CWLProperties from './components/properties';
 import CWLCommandLineTool from './components/command-line-tool';
 import CWLToolsRepository from './components/tools-repository';
+import {base64toString} from '../../../../../../utils/base64';
 import styles from '../Graph.css';
 import 'cwl-svg/src/assets/styles/theme.scss';
 import 'cwl-svg/src/plugins/selection/theme.scss';
@@ -178,7 +179,7 @@ export default class CwlGraph extends Graph {
   initializeGraph = (svgRoot) => {
     try {
       if (this._fileRequest && svgRoot) {
-        const response = yaml.load(atob(this._fileRequest.response));
+        const response = yaml.load(base64toString(this._fileRequest.response));
         this.model = this.initializeModel(response);
         this.cwlWorkflow = new Workflow({
           svgRoot: svgRoot,

@@ -14,6 +14,11 @@
 
 FROM centos:7.7.1908
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 RUN yum install -y wget \
                    bzip2 \
                    gcc \
@@ -25,6 +30,7 @@ RUN yum install -y wget \
                    unzip \
                    git \
                    curl \
-                   epel-release && \
+                   epel-release \
+                   openssh-server && \
     yum clean all && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -

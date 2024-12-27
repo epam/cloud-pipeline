@@ -43,6 +43,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final String kubeToken;
     private final String kubeCertHash;
     private final String kubeNodeToken;
+    private final String kubeClusterName;
     private final String region;
     private final String encryptionKey;
     private final boolean isSpot;
@@ -51,6 +52,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final Map<String, String> additionalLabels;
     private final Set<String> prePulledImages;
     private final Map<String, String> runtimeParameters;
+    private final Map<String, String> tags;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -81,6 +83,10 @@ public class NodeUpCommand extends AbstractClusterCommand {
         commands.add(region);
         commands.add(CLOUD_PARAMETER);
         commands.add(cloud);
+        if (StringUtils.isNotBlank(kubeClusterName)) {
+            commands.add("--kube_cluster_name");
+            commands.add(kubeClusterName);
+        }
         if (StringUtils.isNotBlank(encryptionKey)) {
             commands.add("--kms_encyr_key_id");
             commands.add(encryptionKey);
@@ -104,6 +110,10 @@ public class NodeUpCommand extends AbstractClusterCommand {
         MapUtils.emptyIfNull(runtimeParameters).forEach((argName, argValue) -> {
             commands.add(argName);
             commands.add(argValue);
+        });
+        MapUtils.emptyIfNull(tags).forEach((key, value) -> {
+            commands.add("--tags");
+            commands.add(key + "=" + value);
         });
         return commands;
     }

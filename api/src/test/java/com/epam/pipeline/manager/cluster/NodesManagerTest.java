@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -131,7 +132,7 @@ public class NodesManagerTest {
         filterNodesVO.setAddress(TEST_ADDRESS);
         filterNodesVO.setLabels(Collections.singletonMap(TEST_NODENAME, TEST_NODENAME));
 
-        final List<NodeInstance> filteredNodes = nodesManager.filterNodes(filterNodesVO);
+        final List<NodeInstance> filteredNodes = nodesManager.filterNodes(filterNodesVO, MachineType.KUBE);
         final NodeInstance returnedNode = filteredNodes.get(0);
 
         assertThat(filteredNodes).hasSize(1);
@@ -145,7 +146,7 @@ public class NodesManagerTest {
         filterNodesVO.setAddress(ANOTHER_TEST_ADDRESS);
         filterNodesVO.setLabels(Collections.singletonMap(TEST_NODENAME, TEST_NODENAME));
 
-        assertThat(nodesManager.filterNodes(filterNodesVO)).isEmpty();
+        assertThat(nodesManager.filterNodes(filterNodesVO, MachineType.KUBE)).isEmpty();
     }
 
     @Test

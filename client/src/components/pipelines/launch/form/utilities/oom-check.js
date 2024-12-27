@@ -17,6 +17,9 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Alert} from 'antd';
+import {
+  storageMatchesIdentifiers
+} from '../../../../../utils/limit-mounts/get-limit-mounts-storages';
 
 function OOMCheck (
   {
@@ -40,11 +43,12 @@ function OOMCheck (
   }
   const allNonSensitive = !limitMounts;
   const ids = limitMounts && !/^none$/i.test(limitMounts)
-    ? (new Set(limitMounts.split(',').map(id => +id)))
-    : new Set();
+    ? limitMounts.split(',')
+    : [];
   const storages = (dataStorages || [])
     .filter(storage => !storage.mountDisabled)
-    .filter(storage => (allNonSensitive && !storage.sensitive) || ids.has(storage.id))
+    .filter(storage => (allNonSensitive && !storage.sensitive && !storage.sourceStorageId) ||
+      storageMatchesIdentifiers(storage, ids))
     .filter(storage => !/^nfs$/i.test(storage.type))
     .length;
   if (preferences.storageMountsPerGBRatio * instance.memory <= storages && platform !== 'windows') {

@@ -18,6 +18,7 @@ package com.epam.pipeline.security.acl;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclEntitySummary;
+import com.epam.pipeline.entity.user.Role;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
@@ -85,7 +87,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     public MutableAcl createAcl(AbstractSecuredEntity securedEntity) {
         Assert.notNull(securedEntity, "Object Identity required");
 
-        ObjectIdentity objectIdentity = new ObjectIdentityImpl(securedEntity);
+        ObjectIdentity objectIdentity = mapToObjectIdentity(securedEntity);
         // Check this object identity hasn't already been persisted
         if (retrieveObjectIdentityPrimaryKey(objectIdentity) != null) {
             throw new AlreadyExistsException("Object identity '" + objectIdentity
@@ -106,8 +108,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
-        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity.getClass(), securedEntity.getId());
+    public MutableAcl getOrCreateObjectIdentity(final AbstractSecuredEntity securedEntity,
+                                                final boolean reload) {
+
+        final ObjectIdentity identity = mapToObjectIdentity(securedEntity);
+        if (reload) {
+            clearCacheIncludingChildren(identity);
+        }
+
         if (retrieveObjectIdentityPrimaryKey(identity) != null) {
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
@@ -124,9 +132,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
+        return getOrCreateObjectIdentity(securedEntity, false);
+    }
+
     public Map<ObjectIdentity, Acl> getObjectIdentities(Set<AbstractSecuredEntity> securedEntities) {
         List<ObjectIdentity> objectIdentities = securedEntities.stream()
-                .map(ObjectIdentityImpl::new)
+                .map(this::mapToObjectIdentity)
                 .collect(Collectors.toList());
         return readAclsById(objectIdentities);
     }
@@ -162,7 +175,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     public MutableAcl getAcl(AbstractSecuredEntity securedEntity) {
         try {
-            ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
+            ObjectIdentity identity = mapToObjectIdentity(securedEntity);
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
                     .getMessage(MessageConstants.ERROR_MUTABLE_ACL_RETURN));
@@ -171,6 +184,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
             log.debug(e.getMessage());
             return null;
         }
+    }
+
+    private ObjectIdentityImpl mapToObjectIdentity(final AbstractSecuredEntity securedEntity) {
+        // in some cases we will have ExtendedRole instead if Role, which leads to wrong ObjectIdentityImpl object
+        if (securedEntity instanceof Role) {
+            return new ObjectIdentityImpl(Role.class, securedEntity.getId());
+        }
+        return new ObjectIdentityImpl(securedEntity);
     }
 
     @Override
@@ -203,13 +224,29 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void changeOwner(final AbstractSecuredEntity entity, final String owner) {
-        final MutableAcl aclFolder = getOrCreateObjectIdentity(entity);
+        final MutableAcl aclFolder = getOrCreateObjectIdentity(entity, true);
         aclFolder.setOwner(createOrGetSid(owner, true));
         updateAcl(aclFolder);
     }
 
     public void putInCache(final MutableAcl acl) {
         aclCache.putInCache(acl);
+    }
+
+    // Copy of JdbcMutableAclService.clearCacheIncludingChildren
+    private void clearCacheIncludingChildren(final ObjectIdentity objectIdentity) {
+        Assert.notNull(objectIdentity, "ObjectIdentity required");
+        List<ObjectIdentity> children = this.findChildren(objectIdentity);
+        if (children != null) {
+            Iterator var3 = children.iterator();
+
+            while(var3.hasNext()) {
+                ObjectIdentity child = (ObjectIdentity)var3.next();
+                this.clearCacheIncludingChildren(child);
+            }
+        }
+
+        this.aclCache.evictFromCache(objectIdentity);
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {

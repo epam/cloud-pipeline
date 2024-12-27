@@ -27,8 +27,10 @@ import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolDescription;
+import com.epam.pipeline.entity.docker.ToolImageDockerfile;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
@@ -36,6 +38,7 @@ import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
 import com.epam.pipeline.entity.scan.ToolDependency;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
+import com.epam.pipeline.entity.scan.ToolOSVersionExecutionPermit;
 import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
@@ -47,6 +50,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.docker.DockerClient;
+import com.epam.pipeline.manager.docker.DockerParsingUtils;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
@@ -55,6 +59,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.utils.StreamUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -84,6 +89,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 
 @Slf4j
@@ -161,7 +167,7 @@ public class ToolManager implements SecuredEntityManager {
         Assert.isTrue(isToolUniqueInGroup(tool.getImage(), group.getId()),
                       messageHelper.getMessage(MessageConstants.ERROR_TOOL_ALREADY_EXIST, tool.getImage(),
                                                group.getName()));
-        validateInstanceType(tool);
+        validateInstanceType(null, tool.getInstanceType());
         DockerRegistry registry = dockerRegistryManager.load(group.getRegistryId());
         if (checkExistence) {
             try {
@@ -203,7 +209,7 @@ public class ToolManager implements SecuredEntityManager {
         if (!StringUtils.isEmpty(tool.getRam())) {
             loadedTool.setRam(tool.getRam());
         }
-        validateInstanceType(tool);
+        validateInstanceType(loadedTool.getId(), tool.getInstanceType());
 
         loadedTool.setInstanceType(tool.getInstanceType());
         loadedTool.setDisk(tool.getDisk());
@@ -224,7 +230,7 @@ public class ToolManager implements SecuredEntityManager {
      * Loads all tools for the specified registry and labels.
      * @param registry registry name where tool is located, optional,
      *                 if it doesn't exist tools for all registries will be loaded.
-     * @param labels labels of a tool, optional, if it doesn't exist filtering by labels will not applied.
+     * @param labels labels of a tool, optional, if it doesn't exist filtering by labels will not be applied.
      * @return list of all matched tools
      */
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -335,7 +341,7 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Resolves tool symlinks if there are any by the given image name.
-     * 
+     *
      * @param image Image name.
      * @return Resolved tool.
      */
@@ -517,6 +523,24 @@ public class ToolManager implements SecuredEntityManager {
         final Tool tool = load(id);
         validateToolNotNull(tool, id);
         return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
+    }
+
+    public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
+        final List<String> commands = loadToolHistory(id, tag).stream()
+                .map(ImageHistoryLayer::getCommand)
+                .collect(Collectors.toList());
+
+        final List<String> commandsPatternsToFilter = StreamUtils.appended(
+                preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX)
+                        .stream().map(OSSpecificLaunchCommandTemplate::getCommand),
+                preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS)
+        ).map(DockerParsingUtils::getLaunchPodPattern).collect(Collectors.toList());
+
+        return ToolImageDockerfile.builder()
+                .toolId(id)
+                .toolVersion(tag)
+                .content(processCommands(from, commands, commandsPatternsToFilter))
+                .build();
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
@@ -801,12 +825,18 @@ public class ToolManager implements SecuredEntityManager {
                 loadToolVersionAttributes(tool, version);
     }
 
-    public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
+    public ToolOSVersionExecutionPermit isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
         final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
+        final String allowedWithWarningOSes = preferenceManager.getPreference(
+                SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING);
+        boolean allowedWithWarning = toolOSVersion != null && toolOSVersion.isMatched(allowedWithWarningOSes);
         if (StringUtils.isEmpty(allowedOSes) || toolOSVersion == null) {
-            return true;
+            return new ToolOSVersionExecutionPermit(true, allowedWithWarning);
         }
-        return toolOSVersion.isMatched(allowedOSes);
+        return new ToolOSVersionExecutionPermit(
+                toolOSVersion.isMatched(allowedOSes) || allowedWithWarning,
+                allowedWithWarning
+        );
     }
 
     /**
@@ -843,7 +873,7 @@ public class ToolManager implements SecuredEntityManager {
             ToolVersion toolVersion = dockerClient.getVersionAttributes(dockerRegistry,
                     imageWithoutTag, tag);
             if (Objects.isNull(toolVersion) || Objects.isNull(toolVersion.getSize())) {
-                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_INVALID_SIZE, 
+                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_INVALID_SIZE,
                         tool.getImage()));
                 return 0;
             }
@@ -873,7 +903,7 @@ public class ToolManager implements SecuredEntityManager {
                 request.getGroupId()));
         Assert.isTrue(!sourceTool.isSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_TARGET_SYMLINK));
-        
+
         final String targetImage = getSymlinkTargetImage(sourceTool, targetGroup);
 
         Assert.isTrue(!Objects.equals(sourceTool.getToolGroupId(), targetGroup.getId()), messageHelper.getMessage(
@@ -961,10 +991,10 @@ public class ToolManager implements SecuredEntityManager {
                 MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
     }
 
-    private void validateInstanceType(final Tool tool) {
-        Assert.isTrue(isInstanceTypeAllowed(tool.getId(), tool.getInstanceType()),
+    private void validateInstanceType(final Long toolId, final String instanceType) {
+        Assert.isTrue(isInstanceTypeAllowed(toolId, instanceType),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
-                        tool.getInstanceType()));
+                        instanceType));
     }
 
     private boolean isInstanceTypeAllowed(final Long toolId, final String instanceType) {

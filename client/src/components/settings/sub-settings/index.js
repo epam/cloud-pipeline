@@ -211,7 +211,11 @@ class SubSettings extends React.Component {
       emptyDataPlaceholder,
       showSectionsSearch,
       sectionsSearchPlaceholder,
-      hideListForSingleSection
+      hideListForSingleSection,
+      sectionsListClassName,
+      beforeListRowRenderer,
+      searchControlsRenderer,
+      sectionListDisabled
     } = this.props;
     if (sections.length === 0) {
       return (
@@ -252,12 +256,15 @@ class SubSettings extends React.Component {
         }
       >
         <SectionsList
+          beforeListRowRenderer={beforeListRowRenderer}
           activeSectionKey={section}
-          className={classNames('cp-divider', 'right')}
+          className={classNames(sectionsListClassName, 'cp-divider', 'right')}
           sections={sections}
           showSearch={showSectionsSearch}
           searchPlaceholder={sectionsSearchPlaceholder}
           onSectionChange={this.onSelectSection}
+          disabled={sectionListDisabled}
+          searchControlsRenderer={searchControlsRenderer}
         />
         {this.renderSectionContent()}
       </div>
@@ -267,6 +274,7 @@ class SubSettings extends React.Component {
 
 SubSettings.propTypes = {
   className: PropTypes.string,
+  sectionsListClassName: PropTypes.string,
   activeSectionKey: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSectionChange: PropTypes.func,
   showSectionsSearch: PropTypes.bool,
@@ -284,7 +292,10 @@ SubSettings.propTypes = {
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   emptyDataPlaceholder: PropTypes.node,
   router: PropTypes.object,
-  hideListForSingleSection: PropTypes.bool
+  hideListForSingleSection: PropTypes.bool,
+  beforeListRowRenderer: PropTypes.func,
+  searchControlsRenderer: PropTypes.func,
+  sectionListDisabled: PropTypes.bool
 };
 
 export default observer(SubSettings);

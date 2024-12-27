@@ -74,6 +74,9 @@ TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre'
 EVENT_FILES_LIMIT_MB = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENT_FILES_LIMIT_MB', 155))
 EVENT_FILES_BACKUP_COUNT = max(1, int(os.getenv('CP_CAP_NFS_OBSERVER_EVENT_FILES_BACKUP_COUNT', 30)))
 
+IGNORED_MOUNTPOINTS = os.getenv('CP_CAP_NFS_OBSERVER_IGNORE_MOUNTPOINTS', '').split(',')
+IGNORED_SOURCES = os.getenv('CP_CAP_NFS_OBSERVER_IGNORE_SOURCES', '').split(',')
+
 logging_format = os.getenv('CP_CAP_NFS_OBSERVER__LOGGING_FORMAT', '%(message)s')
 logging_level = os.getenv('CP_CAP_NFS_OBSERVER_LOGGING_LEVEL', 'WARNING')
 logging.basicConfig(level=logging_level, format=logging_format)
@@ -425,6 +428,9 @@ class NFSMountWatcher:
                     mnt_details = re.search(MNT_PARSING_REGEXP, line).groups()
                     if len(mnt_details) == 4:
                         mount_details = MountPointDetails.from_array(mnt_details)
+                        if NFSMountWatcher._shall_ignore_mountpoint(mount_details):
+                            logging.info(format_message('Ignoring [{}] mount'.format(mount_details.mount_source)))
+                            continue
                         mount_attributes = mount_details.mount_attributes.split(COMMA)
                         if READ_WRITE_OPTION in mount_attributes:
                             NFSMountWatcher.save_details_status_active(mount_details)
@@ -433,6 +439,10 @@ class NFSMountWatcher:
             NFSMountWatcher.move_mount_statuses_from_tmp_file()
         mount_points = NFSMountWatcher._process_modified_mounts(available_storages_dict, is_admin)
         return mount_points
+
+    @staticmethod
+    def _shall_ignore_mountpoint(mountpoint):
+        return mountpoint.mount_source in IGNORED_SOURCES or mountpoint.mount_point in IGNORED_MOUNTPOINTS
 
     @staticmethod
     def is_permission_set(storage, mask):

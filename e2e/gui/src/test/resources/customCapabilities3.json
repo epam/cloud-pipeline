@@ -11,7 +11,7 @@
     "commands": [
       "echo 'testLine2' >> ~/testFile1.txt"
     ],
-    "os": "debian 10,centos*"
+    "os": "debian 10,centos 8"
   },
   "testCapability3": {
     "description": "Custom test capability 3",

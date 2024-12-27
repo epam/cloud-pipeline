@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.ClusterStateRegionProperties;
 import com.epam.pipeline.entity.region.MountStorageRule;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
@@ -38,7 +39,8 @@ import lombok.Setter;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AWSRegionDTO.class, name = "AWS"),
         @JsonSubTypes.Type(value = AzureRegionDTO.class, name = "AZURE"),
-        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP")})
+        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP"),
+        @JsonSubTypes.Type(value = LocalRegionDTO.class, name = "LOCAL")})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractCloudRegionDTO {
 
@@ -57,6 +59,11 @@ public abstract class AbstractCloudRegionDTO {
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
     private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
     private RunRegionShiftPolicy runShiftPolicy;
+    /**
+     * Indicates that region instances shall be included into cluster state panel
+     */
+    private boolean clusterInclude;
+    private ClusterStateRegionProperties clusterStateRegionProperties;
 
     public abstract CloudProvider getProvider();
     public abstract void setProvider(CloudProvider provider);

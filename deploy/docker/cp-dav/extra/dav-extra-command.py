@@ -19,6 +19,9 @@ import flask
 from flask import Flask, jsonify
 import os
 
+import hashlib
+import xxhash
+
 app = Flask(__name__)
 
 def success(payload):
@@ -76,6 +79,17 @@ def verify_token():
 
     return user_id, sub, uid_seed + user_id
 
+
+def generate_hash(file_path, hasher=xxhash.xxh64(), blocksize=2**20):
+    with open(file_path, "rb" ) as f:
+        while True:
+            buf = f.read(blocksize)
+            if not buf:
+                break
+            hasher.update( buf )
+    return hasher.hexdigest()
+    
+
 @app.route('/chown/', methods=['POST'])
 def chown():
     try:
@@ -116,6 +130,51 @@ def chown():
         else:
             return error('\n'.join(errors_list))
 
+    except Exception as e:
+        return error(e.__str__())
+
+
+@app.route('/checksum/', methods=['POST'])
+def checksum():
+    try:
+        user_id, sub, uid = verify_token()
+        flask_json = flask.request.json
+
+        if not flask_json:
+            return error('Request is empty')
+
+        if not 'path' in flask_json:
+            return error('Path is not provided')
+        path = flask_json['path']
+
+        hash_alg = "xxhash"
+        if 'hash_alg' in flask_json:
+            hash_alg = flask_json['hash_alg']
+
+        paths_list = []
+        if isinstance(path, list):
+            paths_list = path
+        else:
+            paths_list.append(path)
+        
+        if len(paths_list) == 0:
+            return error('Paths length is 0')
+
+        result_list = []
+        for path_item in paths_list:
+            full_path = get_path(sub, path_item)
+            if not os.path.exists(full_path):
+                result_list.append({path_item: 'Path {} does not exist'.format(full_path)})
+                continue
+
+            try:
+                hash_value = generate_hash(full_path, hasher=hashlib.md5() if hash_alg == "md5" else xxhash.xxh64())
+                result_list.append({path_item: hash_value})
+            except Exception as file_e:
+                result_list.append({path_item: file_e.__str__()})
+
+        return success(result_list)
+        
     except Exception as e:
         return error(e.__str__())
 

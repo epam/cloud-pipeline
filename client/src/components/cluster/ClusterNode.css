@@ -26,6 +26,10 @@
   filter: none !important;
 }
 
+.cloud-node-table {
+  flex: 1;
+}
+
 .node-main-info {
   font-size: 20px;
   font-weight: 600;
@@ -55,6 +59,7 @@
 
 .main-info-part {
   padding: 10px;
+  display: inline-block;
 }
 
 .key-cell {

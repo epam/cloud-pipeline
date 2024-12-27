@@ -24,6 +24,8 @@ import {observer} from 'mobx-react';
 import {observable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
+import ConfigureRunAsPermissions from './configure-run-as-permissions';
+import {correctRunAsPermissions} from './configure-run-as-permissions/utilities';
 
 function sortByOverlap (str1, str2, query) {
   if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
@@ -40,6 +42,48 @@ function sortByOverlap (str1, str2, query) {
   }
   return 0;
 }
+
+export const ROLE_ALL = {
+  name: 'ALL ROLES',
+  includedRoles: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_ANONYMOUS_USER']
+};
+
+export function shouldCombineRoles (sids, combinableRoles, accessType) {
+  if (!sids || !combinableRoles || !accessType) {
+    return false;
+  }
+  return combinableRoles
+    .every(roleName => !!sids
+      .find((role) => !role.isPrincipal &&
+        role.accessType === accessType &&
+        role.name === roleName
+      )
+    );
+}
+
+function excludeSidFromList (sids, sid) {
+  const filterSids = ({name, isPrincipal}) => {
+    if (sid.name === ROLE_ALL.name) {
+      return !ROLE_ALL.includedRoles.includes(name);
+    }
+    return !(name.toLowerCase() === sid.name.toLowerCase() &&
+      isPrincipal === sid.isPrincipal);
+  };
+  return sids.filter(filterSids);
+}
+
+function correctActiveSid (sids, activeSid) {
+  let corrected = activeSid;
+  if (corrected &&
+    !sids.some(
+      (s) => s.name.toLowerCase() === corrected.name.toLowerCase() &&
+        s.isPrincipal === corrected.isPrincipal)
+  ) {
+    corrected = sids[0];
+  }
+  return corrected;
+}
+
 @observer
 export default class ShareWithForm extends React.Component {
   static propTypes = {
@@ -49,14 +93,16 @@ export default class ShareWithForm extends React.Component {
     onClose: PropTypes.func,
     visible: PropTypes.bool,
     roles: PropTypes.array,
-    pending: PropTypes.bool
+    pending: PropTypes.bool,
+    runSharing: PropTypes.bool,
+    runAsUserConfiguration: PropTypes.bool
   };
 
   state = {
     sids: [],
+    activeSid: undefined,
     findUserVisible: false,
     findGroupVisible: false,
-    selectedPermission: null,
     groupSearchString: null,
     userSearchString: null,
     fetching: false,
@@ -65,16 +111,19 @@ export default class ShareWithForm extends React.Component {
     operationInProgress: false
   };
 
-  operationWrapper = (operation) => (...props) => {
-    this.setState({
-      operationInProgress: true
-    }, async () => {
-      await operation(...props);
-      this.setState({
-        operationInProgress: false
-      });
-    });
-  };
+  get hasDetailsConfiguration () {
+    const {runAsUserConfiguration} = this.props;
+    return runAsUserConfiguration;
+  }
+
+  get combineRolesIntoAllRoles () {
+    const {sids} = this.state;
+    const {runSharing} = this.props;
+    return {
+      ssh: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
+    };
+  }
 
   @observable userFind;
   @observable groupFind;
@@ -142,15 +191,16 @@ export default class ShareWithForm extends React.Component {
       )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
-      return [
-        ...new Set(
-          [
-            ...roles,
-            ...(this.groupFind.value || []).map(g => g)]
-        )
-      ].sort((u1, u2) => sortByOverlap(u1, u2, query));
+      const set = [...new Set([
+        ...(this.props.runSharing ? [ROLE_ALL.name] : []),
+        ...roles,
+        ...(this.groupFind.value || []).map(g => g)
+      ])];
+      return set
+        .sort((u1, u2) => sortByOverlap(u1, u2, query));
     }
-    return [...roles].sort((u1, u2) => sortByOverlap(u1, u2, query));
+    return [...roles]
+      .sort((u1, u2) => sortByOverlap(u1, u2, query));
   };
 
   openFindUserDialog = () => {
@@ -164,7 +214,7 @@ export default class ShareWithForm extends React.Component {
   onSelectUser = async () => {
     const {userSearchString} = this.state;
     const selectedUser = userSearchString ? userSearchString.trim() : null;
-    await this.grantPermission(selectedUser, true);
+    this.grantPermission(selectedUser, true);
     this.closeFindUserDialog();
   };
 
@@ -182,11 +232,15 @@ export default class ShareWithForm extends React.Component {
     const [role] = this.props.roles
       .filter(r => !r.predefined && this.splitRoleName(r.name) === selectedGroup);
     const roleName = role ? role.name : selectedGroup;
-    await this.grantPermission(roleName, false);
+    if (roleName === ROLE_ALL.name) {
+      ROLE_ALL.includedRoles.forEach(role => this.grantPermission(role, false));
+    } else {
+      this.grantPermission(roleName, false);
+    }
     this.closeFindGroupDialog();
   };
 
-  grantPermission = async (name, isPrincipal) => {
+  grantPermission = (name, isPrincipal) => {
     if (name) {
       const sids = this.state.sids;
       const [sidItem] = sids.filter(s => {
@@ -198,26 +252,31 @@ export default class ShareWithForm extends React.Component {
           name,
           isPrincipal
         });
-        this.setState({sids});
+        this.setState({sids, activeSid: {name, isPrincipal}});
       }
     } else {
       message.warning('Please provide non empty string!');
     }
   };
 
+  updateSid = (sid) => {
+    const {sids: currentSids, activeSid: currentActiveSid} = this.state;
+    const sids = excludeSidFromList(currentSids, sid);
+    sids.push({...sid});
+    const activeSid = correctActiveSid(sids, currentActiveSid);
+    this.setState({sids, activeSid});
+  };
+
+  removeSid = (sid) => {
+    const {sids: currentSids, activeSid: currentActiveSid} = this.state;
+    const sids = excludeSidFromList(currentSids, sid);
+    const activeSid = correctActiveSid(sids, currentActiveSid);
+    this.setState({sids, activeSid});
+  };
+
   removeUserOrGroupClicked = (item) => async (event) => {
     event.stopPropagation();
-    const sids = this.state.sids;
-    const [sidItem] = sids.filter(s => {
-      return s.isPrincipal === item.isPrincipal && s.name.toLowerCase() === item.name.toLowerCase();
-    });
-    if (sidItem) {
-      const index = sids.indexOf(sidItem);
-      if (index >= 0) {
-        sids.splice(index, 1);
-        this.setState({sids});
-      }
-    }
+    this.removeSid(item);
   };
 
   renderUserName = (user) => {
@@ -306,15 +365,22 @@ export default class ShareWithForm extends React.Component {
         )
       }
     ].filter(Boolean);
+    const {
+      activeSid
+    } = this.state;
     const getRowClassName = (item) => {
-      if (!this.state.selectedPermission || this.state.selectedPermission.name !== item.name) {
+      if (
+        !this.hasDetailsConfiguration ||
+        !activeSid ||
+        activeSid.name !== item.name ||
+        activeSid.isPrincipal !== item.isPrincipal) {
         return styles.row;
       } else {
         return 'cp-table-element-selected';
       }
     };
     const selectPermission = (item) => {
-      this.setState({selectedPermission: item});
+      this.setState({activeSid: item});
     };
     const title = (
       <Row>
@@ -326,9 +392,31 @@ export default class ShareWithForm extends React.Component {
         </Col>
       </Row>
     );
-    const data = this.state.sids.map((p, index) => {
+    let data = this.state.sids.map((p, index) => {
       return {...p, id: index};
     });
+    const {
+      ssh: combineSshRoles,
+      endpoint: combineEndpointRoles
+    } = this.combineRolesIntoAllRoles;
+    if (combineSshRoles || combineEndpointRoles) {
+      data = [
+        ...data,
+        {
+          ...ROLE_ALL,
+          key: ROLE_ALL.name,
+          id: data.length
+        }
+      ].filter(({name, accessType}) => {
+        if (
+          (combineSshRoles && accessType === AccessTypes.ssh) ||
+          (combineEndpointRoles && accessType === AccessTypes.endpoint)
+        ) {
+          return !ROLE_ALL.includedRoles.includes(name);
+        }
+        return true;
+      });
+    }
     return (
       <Table
         className={styles.table}
@@ -349,8 +437,29 @@ export default class ShareWithForm extends React.Component {
     );
   };
 
+  renderUserConfiguration = () => {
+    const {
+      runAsUserConfiguration
+    } = this.props;
+    const {activeSid, sids} = this.state;
+    if (!runAsUserConfiguration || !activeSid) {
+      return null;
+    }
+    const sid = sids.find((s) => s.name.toLowerCase() === activeSid.name.toLowerCase() &&
+      s.isPrincipal === activeSid.isPrincipal) || activeSid;
+    const onChange = (updates) => this.updateSid(updates);
+    return (
+      <ConfigureRunAsPermissions style={{marginTop: 10}} sid={sid} onChange={onChange} />
+    );
+  }
+
   onSave = () => {
-    this.props.onSave && this.props.onSave(this.state.sids);
+    const {sids = []} = this.state;
+    let payload = sids.slice();
+    if (this.hasDetailsConfiguration) {
+      payload = correctRunAsPermissions(payload);
+    }
+    this.props.onSave && this.props.onSave(payload);
   };
 
   render () {
@@ -363,6 +472,7 @@ export default class ShareWithForm extends React.Component {
         title="Share with users and groups">
         <Row>
           {this.renderUsers()}
+          {this.renderUserConfiguration()}
           <Modal
             title="Select user"
             onCancel={this.closeFindUserDialog}
@@ -402,11 +512,20 @@ export default class ShareWithForm extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.visible !== this.props.visible) {
-      this.setState({
-        sids: this.props.sids || []
-      });
+  componentDidMount () {
+    this.updateFromProps();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.visible !== this.props.visible) {
+      this.updateFromProps();
     }
   }
+
+  updateFromProps = () => {
+    this.setState({
+      sids: this.props.sids || [],
+      activeSid: (this.props.sids || [])[0]
+    });
+  };
 }

@@ -14,6 +14,7 @@
 
 import functools
 import operator
+import os
 import threading
 import traceback
 from collections import namedtuple
@@ -22,7 +23,7 @@ from datetime import timedelta
 import itertools
 import time
 
-from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineType
+from pipeline.hpc.engine.gridengine import GridEngineJobState
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand
 from pipeline.hpc.utils import Clock
@@ -129,7 +130,7 @@ class GridEngineScaleUpHandler:
     _GE_POLL_TIMEOUT = 60
     _GE_POLL_ATTEMPTS = 6
 
-    def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, instance_disk,
+    def __init__(self, cmd_executor, api, grid_engine, launch_adapter, host_storage, parent_run_id, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
                  polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
@@ -141,6 +142,7 @@ class GridEngineScaleUpHandler:
         :param cmd_executor: Cmd executor.
         :param api: Cloud pipeline client.
         :param grid_engine: Grid engine client.
+        :param launch_adapter: Grid engine launch adapter.
         :param host_storage: Additional hosts storage.
         :param parent_run_id: Additional nodes parent run id.
         :param instance_disk: Additional nodes disk size.
@@ -159,6 +161,7 @@ class GridEngineScaleUpHandler:
         self.executor = cmd_executor
         self.api = api
         self.grid_engine = grid_engine
+        self.launch_adapter = launch_adapter
         self.host_storage = host_storage
         self.parent_run_id = parent_run_id
         self.instance_disk = instance_disk
@@ -212,6 +215,7 @@ class GridEngineScaleUpHandler:
         instance_dynamic_launch_params = {
             self.owner_param_name: owner
         }
+        # todo: Use api client here
         pipe_run_command = 'pipe run --yes --quiet ' \
                            '--instance-disk %s ' \
                            '--instance-type %s ' \
@@ -219,7 +223,7 @@ class GridEngineScaleUpHandler:
                            '--cmd-template "%s" ' \
                            '--parent-id %s ' \
                            '--price-type %s ' \
-                           '--region-id %s ' \
+                           '--region-id %s -- ' \
                            'cluster_role worker ' \
                            'cluster_role_type additional ' \
                            '%s ' \
@@ -228,12 +232,13 @@ class GridEngineScaleUpHandler:
                               self._pipe_cli_price_type(self.price_type), self.region_id,
                               self._parameters_str(self.instance_launch_params),
                               self._parameters_str(instance_dynamic_launch_params))
+        os.environ['API_TOKEN'] = self.api.token.get()
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker #%s (%s) has been launched.' % (run_id, instance))
         return run_id
 
     def _parameters_str(self, instance_launch_params):
-        return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
+        return ' '.join("{} '{}'".format(key, value) for key, value in instance_launch_params.items())
 
     def _pipe_cli_price_type(self, price_type):
         """
@@ -244,7 +249,7 @@ class GridEngineScaleUpHandler:
 
     def _retrieve_pod_name(self, run_id):
         Logger.info('Retrieving pod name of additional worker #%s...' % run_id)
-        run = self.api.load_run(run_id)
+        run = self.api.load_run_efficiently(run_id)
         if 'podId' in run:
             name = run['podId']
             Logger.info('Additional worker #%s pod name %s has been retrieved.' % (run_id, name))
@@ -259,7 +264,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
-            run = self.api.load_run(run_id)
+            run = self.api.load_run_efficiently(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker #%s is not running. Probably it has failed.' % run_id
                 Logger.warn(error_msg, crucial=True)
@@ -285,7 +290,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts > 0:
-            run = self.api.load_run(run_id)
+            run = self.api.load_run_efficiently(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker #%s is not running. Probably it has failed.' % run_id
                 Logger.warn(error_msg, crucial=True)
@@ -293,8 +298,9 @@ class GridEngineScaleUpHandler:
             if run['initialized']:
                 Logger.info('Additional worker #%s has been marked as initialized.' % run_id)
                 Logger.info('Checking additional worker #%s grid engine initialization status...' % run_id)
-                run_sge_tasks = self.api.load_task(run_id, self.get_grid_engine_worker_task_name())
-                if any(run_sge_task.get('status') == 'SUCCESS' for run_sge_task in run_sge_tasks):
+                run_grid_engine_tasks = self.api.load_task(run_id, self.launch_adapter.get_worker_init_task_name())
+                if any(run_grid_engine_task.get('status') == 'SUCCESS'
+                       for run_grid_engine_task in run_grid_engine_tasks):
                     Logger.info('Additional worker #%s has been initialized.' % run_id)
                     return
             Logger.info('Additional worker #%s hasn\'t been initialized yet. Only %s attempts remain left.'
@@ -304,12 +310,6 @@ class GridEngineScaleUpHandler:
         error_msg = 'Additional worker #%s hasn\'t been initialized after %s seconds.' % (run_id, self.polling_timeout)
         Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
-
-    def get_grid_engine_worker_task_name(self):
-        if self.grid_engine.get_engine_type() == GridEngineType.SLURM:
-            return 'SLURMWorkerSetup'
-        else:
-            return 'SGEWorkerSetup'
 
     def _enable_worker_in_grid_engine(self, pod):
         Logger.info('Enabling additional worker %s in grid engine...' % pod.name)
@@ -341,17 +341,19 @@ class DoNothingScaleDownHandler:
 
 class GridEngineScaleDownHandler:
 
-    def __init__(self, cmd_executor, grid_engine, common_utils):
+    def __init__(self, cmd_executor, api, grid_engine, common_utils):
         """
         Grid engine scale down handler.
 
         Manages additional workers scaling down.
 
         :param cmd_executor: Cmd executor.
+        :param api: Cloud pipeline client.
         :param grid_engine: Grid engine client.
         :param common_utils: helpful stuff
         """
         self.executor = cmd_executor
+        self.api = api
         self.grid_engine = grid_engine
         self.common_utils = common_utils
 
@@ -390,7 +392,7 @@ class GridEngineScaleDownHandler:
     def _stop_run(self, host):
         run_id = self.common_utils.get_run_id_from_host(host)
         Logger.info('Stopping run #%s...' % run_id)
-        self.executor.execute('pipe stop --yes %s' % run_id)
+        self.api.stop_run(run_id)
         Logger.info('Run #%s was stopped.' % run_id)
 
     def _remove_host_from_hosts(self, host):
@@ -441,7 +443,7 @@ class GridEngineScaleDownOrchestrator:
 
 class GridEngineAutoscaler:
 
-    def __init__(self, grid_engine, job_validator, demand_selector,
+    def __init__(self, grid_engine, job_preprocessor, job_validator, demand_selector,
                  cmd_executor, scale_up_orchestrator, scale_down_orchestrator, host_storage,
                  static_host_storage, scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30,
                  clock=Clock()):
@@ -455,6 +457,7 @@ class GridEngineAutoscaler:
         and there were no new jobs for the given time interval.
 
         :param grid_engine: Grid engine.
+        :param job_preprocessor: Job preprocessor.
         :param job_validator: Job validator.
         :param demand_selector: Demand selector.
         :param cmd_executor: Cmd executor.
@@ -471,8 +474,9 @@ class GridEngineAutoscaler:
         :param idle_timeout: Maximum number of seconds a host could wait for a new job before getting scaled-down.
         """
         self.grid_engine = grid_engine
-        self.demand_selector = demand_selector
+        self.job_preprocessor = job_preprocessor
         self.job_validator = job_validator
+        self.demand_selector = demand_selector
         self.executor = cmd_executor
         self.scale_up_orchestrator = scale_up_orchestrator
         self.scale_down_orchestrator = scale_down_orchestrator
@@ -515,8 +519,9 @@ class GridEngineAutoscaler:
                     resource_demands = list(self.demand_selector.select(waiting_jobs))
                     resource_demand = functools.reduce(operator.add, resource_demands, IntegralDemand())
                     Logger.info('Waiting jobs require: '
-                                '{cpu} cpu, {gpu} gpu, {mem} mem.'
-                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem))
+                                '{cpu} cpu, {gpu} gpu, {mem} mem, {exc} exc.'
+                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem,
+                                        exc=resource_demand.exc))
                     remaining_additional_hosts = self.max_additional_hosts - len(additional_hosts)
                     self.scale_up(resource_demands, remaining_additional_hosts)
                 else:
@@ -547,8 +552,10 @@ class GridEngineAutoscaler:
         Logger.info('Done: Scaling.')
 
     def _get_valid_jobs(self, jobs):
-        Logger.info('Validating %s jobs...' % len(jobs))
-        valid_jobs, invalid_jobs = self.job_validator.validate(jobs)
+        Logger.info('Preprocessing %s jobs...' % len(jobs))
+        relevant_jobs, _ = self.job_preprocessor.process(jobs)
+        Logger.info('Validating %s jobs...' % len(relevant_jobs))
+        valid_jobs, invalid_jobs = self.job_validator.validate(relevant_jobs)
         if invalid_jobs:
             Logger.warn('The following jobs cannot be satisfied with the requested resources '
                         'and therefore will be killed: #{}'

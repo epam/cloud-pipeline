@@ -441,6 +441,7 @@ public class GitManagerTest extends AbstractManagerTest {
             get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + tag.getName())))
                 .willReturn(okJson(with(tag)))
         );
+        mockFileContentRequest("config.json", GIT_MASTER_REPOSITORY, FILE_CONTENT);
         mockFileContentRequest("config.json", tag.getName(), FILE_CONTENT);
         final Pipeline pipeline = testingPipeline();
         final String fileContent = gitManager.getConfigFileContent(pipeline, pipeline.getCurrentVersion().getName());

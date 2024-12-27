@@ -131,6 +131,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
     @Autowired
     private CloudFacade cloudFacade;
 
+
     @Transactional(propagation = Propagation.REQUIRED)
     public DockerRegistry create(DockerRegistryVO dockerRegistryVO) {
         DockerRegistry loadedDockerRegistry = loadByNameOrId(dockerRegistryVO.getPath());

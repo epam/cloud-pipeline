@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
@@ -41,6 +42,8 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
+    private final String anotherGroup = C.ANOTHER_GROUP;
+    private final String testTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private final String rootHost = "root@pipeline";
     private String storage1 = "dataStorageCLI-" + Utils.randomSuffix();
     private String storage2 = "dataStorageCLI-" + Utils.randomSuffix();
@@ -53,13 +56,15 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     private String fileFor1339_1 = "6-fileFor1339";
     private String fileFor1339_2 = "1-fileFor1339";
     private String fileFor1339_3 = "7-fileFor1339";
+    private final String testStorage = format("test-storage-2847-%s", Utils.randomSuffix());
+    private final String testFile = "testFile";
     private String pathStorage3 = "";
     private String runID1339 = "";
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
         open(C.ROOT_ADDRESS);
-        Utils.removeStorages(this, storage1, storage2, storage3);
+        Utils.removeStorages(this, storage1, storage2, storage3, testStorage);
     }
 
     @BeforeMethod
@@ -200,5 +205,55 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                         .checkVersionsListIsSorted(commands[2])
                         .assertPageAfterCommandContainsStrings("(latest)")
                         .close());
+    }
+
+    @Test
+    @TestCase(value = {"2847"})
+    public void introduceExtendedAttributesSupportInPipeFuse() {
+        String[] commands = {
+                "yum install attr -y",
+                format("setfattr -n user.key1 -v value1 cloud-data/%s/%s", testStorage, testFile),
+                format("setfattr -n user.key2 -v value2 cloud-data/%s/%s", testStorage, testFile),
+                format("getfattr cloud-data/%s/%s", testStorage, testFile),
+                format("getfattr -n user.key1 cloud-data/%s/%s", testStorage, testFile),
+                format("setfattr -n another.key1 -v value1 cloud-data/%s/%s", testStorage, testFile),
+                format("getfattr -n another.key1 cloud-data/%s/%s", testStorage, testFile)
+        };
+        library()
+                .createStorage(testStorage)
+                .selectStorage(testStorage)
+                .createFileWithContent(testFile, testFile);
+        tools()
+                .perform(registry, anotherGroup, testTool, ToolTab::runWithCustomSettings)
+                .setPriceType(ON_DEMAND)
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .ssh(shell -> {
+                    shell
+                            .waitUntilTextAppears(getLastRunId())
+                            .execute(commands[0])
+                            .assertNextStringIsVisible(commands[0], rootHost)
+                            .execute(commands[1])
+                            .assertNextStringIsVisible(commands[1], rootHost)
+                            .execute(commands[2])
+                            .assertNextStringIsVisible(commands[2], rootHost)
+                            .execute(commands[3])
+                            .assertNextStringIsVisible(commands[3], rootHost)
+                            .assertPageAfterCommandContainsStrings(format("file: cloud-data/%s/%s", testStorage, testFile),
+                                    "user.key1", "user.key2")
+                            .execute(commands[4])
+                            .assertNextStringIsVisible(commands[4], rootHost)
+                            .assertPageAfterCommandContainsStrings(format("file: cloud-data/%s/%s", testStorage, testFile),
+                                    "user.key1=\"value1\"")
+                            .execute(commands[5])
+                            .assertNextStringIsVisible(commands[5], rootHost)
+                            .assertPageAfterCommandContainsStrings(format("setfattr: cloud-data/%s/%s: Operation not supported",
+                                    testStorage, testFile))
+                            .execute(commands[6])
+                            .assertNextStringIsVisible(commands[6], rootHost)
+                            .assertPageAfterCommandContainsStrings(format("getfattr: cloud-data/%s/%s: Operation not supported",
+                                    testStorage, testFile));
+                });
     }
 }

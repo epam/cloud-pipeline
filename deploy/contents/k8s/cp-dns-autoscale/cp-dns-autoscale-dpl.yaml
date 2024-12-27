@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dns-autoscaler
@@ -31,7 +31,7 @@ spec:
         - /cluster-proportional-autoscaler
         - --namespace=kube-system
         - --configmap=dns-autoscaler
-        - --target=Deployment/kube-dns
+        - --target=Deployment/${CP_KUBE_DNS_DEPLOYMENT_NAME:-kube-dns}
         - --default-params={"linear":{"coresPerReplica":128,"nodesPerReplica":5,"min":${CP_KUBE_MIN_DNS_REPLICAS}}}
         - --logtostderr=true
         - --v=2

@@ -68,7 +68,7 @@ import ConfigurationDelete from '../../../models/configuration/ConfigurationDele
 import CreateDataStorage from '../../../models/dataStorage/DataStorageSave';
 import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import {METADATA_KEYS} from './metadata-controls/get-default-metadata-properties';
 import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
@@ -90,6 +90,7 @@ import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
 
 const MAX_INLINE_METADATA_KEYS = 10;
+const SHOW_SECRET_TAGS_IN_LISTING = false;
 
 function splitFolderPaths (foldersStructure) {
   const uniquePaths = [...new Set(foldersStructure
@@ -161,6 +162,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     createStorageDialog: false,
     createVersionedStorageDialog: false,
     createNewStorageFlag: false,
+    createOmicsStoreFlag: false,
     createNFSFlag: false,
     editableConfiguration: null,
     createConfigurationDialog: false,
@@ -246,7 +248,11 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (!metadata) {
       return null;
     }
-    const {value} = metadata;
+    const {value, type} = metadata;
+    const isSecret = (type || '').toLowerCase() === 'secret';
+    if (isSecret && !SHOW_SECRET_TAGS_IN_LISTING) {
+      return null;
+    }
     const ignoredKey = () => {
       return Object.values(METADATA_KEYS).includes(key);
     };
@@ -285,13 +291,35 @@ export default class Folder extends localization.LocalizedReactComponent {
     };
     let metadataValue;
     let wrapValue;
-    if (SpecialTags.hasOwnProperty(key)) {
+    if (isSecret) {
+      metadataValue = '*****';
+    } else if (SpecialTags.hasOwnProperty(key)) {
       metadataValue = renderSpecialMetadataComponent();
       wrapValue = true;
     } else if (isJson(value)) {
       metadataValue = renderJSONComponent();
     } else {
       metadataValue = value;
+    }
+    const metadataComponent = (
+      <div key={key} className={styles.metadataItemContainer}>
+        <Row className={classNames(
+          styles.metadataItemKey,
+          'cp-library-metadata-item-key'
+        )}>
+          {key}
+        </Row>
+        <Row className={classNames(
+          styles.metadataItemValue,
+          {[styles.wrap]: wrapValue},
+          'cp-library-metadata-item-value'
+        )}>
+          {metadataValue}
+        </Row>
+      </div>
+    );
+    if (isSecret) {
+      return metadataComponent;
     }
     return (
       <Tooltip key={key} overlay={
@@ -302,21 +330,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           </Row>
         </Row>
       }>
-        <div key={key} className={styles.metadataItemContainer}>
-          <Row className={classNames(
-            styles.metadataItemKey,
-            'cp-library-metadata-item-key'
-          )}>
-            {key}
-          </Row>
-          <Row className={classNames(
-            styles.metadataItemValue,
-            {[styles.wrap]: wrapValue},
-            'cp-library-metadata-item-value'
-          )}>
-            {metadataValue}
-          </Row>
-        </div>
+        {metadataComponent}
       </Tooltip>
     );
   };
@@ -519,7 +533,10 @@ export default class Folder extends localization.LocalizedReactComponent {
         }
         break;
       case ItemTypes.storage:
-        if (roleModel.writeAllowed(item)) {
+        if (
+          roleModel.isManager.storageAdmin(this) ||
+          roleModel.writeAllowed(item)
+        ) {
           actions.push(
             <Button
               key="edit"
@@ -555,16 +572,21 @@ export default class Folder extends localization.LocalizedReactComponent {
       return <div />;
     }
   };
-  openCreateStorageDialog = (createNew, createNFS = false) => {
+  openCreateStorageDialog = (createNew, createNFS = false, createOmics = false) => {
     this.setState({
       createStorageDialog: true,
       createNewStorageFlag: createNew,
-      createNFSFlag: createNFS
+      createNFSFlag: createNFS,
+      createOmicsStoreFlag: createOmics
     });
   };
   closeCreateStorageDialog = () => {
     this.setState({createStorageDialog: false}, () => {
-      this.setState({createNewStorageFlag: false, createNFSFlag: false});
+      this.setState({
+        createNewStorageFlag: false,
+        createNFSFlag: false,
+        createOmicsStoreFlag: false
+      });
     });
   };
 
@@ -756,46 +778,62 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
   createStorage = async (storage) => {
-    const request = new CreateDataStorage(this.state.createNewStorageFlag);
+    const request = new CreateDataStorage(this.state.createNewStorageFlag, storage.skipPolicy);
     const hide = message.loading('Creating storage...', 0);
     let path = storage.path;
     let name = storage.name;
-    if (path.toLowerCase().startsWith('s3://')) {
-      path = path.substring('s3://'.length);
+    let payload;
+    if (this.state.createOmicsStoreFlag) {
+      payload = {
+        parentFolderId: this._currentFolder.folder.id,
+        name: name,
+        description: storage.description,
+        regionId: (storage.serviceType === ServiceTypes.omicsRef ||
+          storage.serviceType === ServiceTypes.omicsSeq
+        ) && storage.regionId
+          ? storage.regionId
+          : undefined,
+        serviceType: storage.serviceType
+      };
+    } else {
+      if (path.toLowerCase().startsWith('s3://')) {
+        path = path.substring('s3://'.length);
+      }
+      if (path.toLowerCase().startsWith('nfs://')) {
+        path = path.substring('nfs://'.length);
+      }
+      if (path.toLowerCase().startsWith('az://')) {
+        path = path.substring('az://'.length);
+      }
+      if (path.toLowerCase().startsWith('gs://')) {
+        path = path.substring('gs://'.length);
+      }
+      if (!name || !name.length) {
+        name = path;
+      }
+      payload = {
+        parentFolderId: this._currentFolder.folder.id,
+        name: name,
+        description: storage.description,
+        path: path,
+        shared: storage.serviceType === ServiceTypes.objectStorage && storage.shared,
+        storagePolicy: {
+          backupDuration: storage.backupDuration,
+          versioningEnabled: storage.versioningEnabled
+        },
+        serviceType: storage.serviceType || ServiceTypes.objectStorage,
+        mountDisabled: storage.mountDisabled,
+        mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
+        mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
+        fileShareMountId: storage.fileShareMountId,
+        regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
+          ? storage.regionId
+          : undefined,
+        sensitive: storage.sensitive,
+        toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
+      };
     }
-    if (path.toLowerCase().startsWith('nfs://')) {
-      path = path.substring('nfs://'.length);
-    }
-    if (path.toLowerCase().startsWith('az://')) {
-      path = path.substring('az://'.length);
-    }
-    if (path.toLowerCase().startsWith('gs://')) {
-      path = path.substring('gs://'.length);
-    }
-    if (!name || !name.length) {
-      name = path;
-    }
-    await request.send({
-      parentFolderId: this._currentFolder.folder.id,
-      name: name,
-      description: storage.description,
-      path: path,
-      shared: storage.serviceType === ServiceTypes.objectStorage && storage.shared,
-      storagePolicy: {
-        backupDuration: storage.backupDuration,
-        versioningEnabled: storage.versioningEnabled
-      },
-      serviceType: storage.serviceType || ServiceTypes.objectStorage,
-      mountDisabled: storage.mountDisabled,
-      mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
-      mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
-      fileShareMountId: storage.fileShareMountId,
-      regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
-        ? storage.regionId
-        : undefined,
-      sensitive: storage.sensitive,
-      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
-    });
+    await request.send(payload);
     hide();
     if (request.error) {
       message.error(request.error, 5);
@@ -1403,7 +1441,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           (this.showMetadata && this.props.folderId !== undefined) &&
           <Metadata
             key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.folder.value)}
+            readOnly={!(
+              roleModel.isOwner(this.props.folder.value) ||
+              roleModel.isManager.storageAdmin(this)
+            )}
             entityName={this.props.folder.value.name}
             entityId={this.props.folderId} entityClass="FOLDER" />
         }
@@ -1425,6 +1466,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     const nfsStorageKey = 'nfs';
     const configurationKey = 'configuration';
     const folderKey = 'folder';
+    const omicsStoreKey = 'omics';
     const onCreateActionSelect = ({key}) => {
       const parts = key.split('_');
       const type = parts[0];
@@ -1447,8 +1489,15 @@ export default class Folder extends localization.LocalizedReactComponent {
             break;
           case storageKey:
             const createNFS = identifier ? identifier === nfsStorageKey : false;
-            const createNew = createNFS ? true : (identifier ? identifier === 'new' : true);
-            this.openCreateStorageDialog(createNew, createNFS);
+            const createOmics = identifier ? identifier === omicsStoreKey : false;
+            const createNew = createNFS
+              ? true
+              : (
+                createOmics
+                  ? true
+                  : (identifier ? identifier === 'new' : true)
+              );
+            this.openCreateStorageDialog(createNew, createNFS, createOmics);
             break;
           case versionedStorageKey:
             this.openCreateVersionedStorageDialog();
@@ -1563,7 +1612,9 @@ export default class Folder extends localization.LocalizedReactComponent {
           );
         }
       }
-      if (roleModel.isManager.storage(this)) {
+      if (roleModel.isManager.storage(this) ||
+      (roleModel.isManager.storageAdmin(this) && roleModel.writeAllowed(this.props.folder.value))
+      ) {
         const fsMountsAvailable = this.props.awsRegions.loaded &&
           extractFileShareMountList(this.props.awsRegions.value).length > 0;
         createActions.push(
@@ -1585,6 +1636,16 @@ export default class Folder extends localization.LocalizedReactComponent {
               key={`${storageKey}_new`}>
               Create new object storage
             </MenuItem>
+            {
+              this.isAnyAwsRegion && (
+                <MenuItem
+                  id="create-omics-store-button"
+                  className="create-omics-store-button"
+                  key={`${storageKey}_${omicsStoreKey}`}>
+                  Create AWS HealthOmics Store
+                </MenuItem>
+              )
+            }
             <MenuItem
               id="add-existing-storage-button"
               className="add-existing-storage-button"
@@ -1864,12 +1925,15 @@ export default class Folder extends localization.LocalizedReactComponent {
         );
       }
       if (
-        !this.props.readOnly &&
-        roleModel.writeAllowed(this.props.folder.value) &&
-        roleModel.isManager.folder(this)
+        !this.props.readOnly && (
+          roleModel.isManager.storageAdmin(this) || (
+            roleModel.writeAllowed(this.props.folder.value) &&
+            roleModel.isManager.folder(this)
+          )
+        )
       ) {
         if (editActions.length > 0) {
-          editActions.push(<Divider key="divider"/>);
+          editActions.push(<Divider key="divider" />);
         }
         editActions.push(
           <MenuItem
@@ -1930,7 +1994,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 size="small"
                 className={styles.dropDownTrigger}
               >
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               </Button>
             </Dropdown>
           </DropDownWrapper>
@@ -2002,6 +2066,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       return !!this.state.issuesItem;
     }
+  }
+
+  get isAnyAwsRegion () {
+    const regions = this.props.awsRegions.loaded
+      ? (this.props.awsRegions.value || []).map(r => r) : [];
+    const awsRegions = regions.filter(region => region.provider === 'AWS');
+    return awsRegions && awsRegions.length;
   }
 
   render () {
@@ -2150,6 +2221,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           visible={this.state.createStorageDialog}
           isNfsMount={this.state.createNFSFlag}
           policySupported={!this.state.createNFSFlag}
+          omicsStore={this.state.createOmicsStoreFlag}
           addExistingStorageFlag={!this.state.createNewStorageFlag}
           pending={this.state.operationInProgress}
         />

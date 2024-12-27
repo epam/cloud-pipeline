@@ -73,7 +73,6 @@ class AWSRegionTag extends React.Component {
     return false;
   }
 
-  @computed
   get zone () {
     if (this.region) {
       return this.region.regionId;
@@ -84,7 +83,6 @@ class AWSRegionTag extends React.Component {
     return null;
   }
 
-  @computed
   get provider () {
     if (this.region && this.region.provider) {
       return this.region.provider.toUpperCase();
@@ -95,7 +93,6 @@ class AWSRegionTag extends React.Component {
     return null;
   }
 
-  @computed
   get zoneInfo () {
     if (this.zone) {
       const simpleZone = this.zone.toLowerCase().split('-')[0];
@@ -107,15 +104,30 @@ class AWSRegionTag extends React.Component {
         getGlobalFn = () => {
           const checkZones = [
             {
-              check: ['germany', 'france', 'northeurope', 'westeurope'],
+              check: [
+                'germany',
+                'france',
+                'northeurope',
+                'westeurope',
+                'eu',
+                'europe',
+                'ge',
+                'fr',
+                'it',
+                'es',
+                'be',
+                'po',
+                'fi',
+                'sw'
+              ],
               result: 'eu'
             },
             {
-              check: ['canada'],
+              check: ['canada', 'ca'],
               result: 'ca'
             },
             {
-              check: ['china'],
+              check: ['china', 'ch'],
               result: 'cn'
             },
             {
@@ -147,7 +159,7 @@ class AWSRegionTag extends React.Component {
               result: 'eu'
             },
             {
-              check: ['us'],
+              check: ['us', 'usa'],
               result: 'us'
             }
           ];

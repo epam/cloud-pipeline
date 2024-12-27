@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,12 +77,20 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    public ShellAO execute(String command) {
+    public ShellAO execute(String command, CharSequence key) {
         sleep(300, MILLISECONDS);
         Utils.sendKeysWithSlashes(command);
         sleep(300, MILLISECONDS);
-        actions().sendKeys(Keys.ENTER).perform();
+        actions().sendKeys(key).perform();
         return this;
+    }
+
+    public ShellAO execute(String command) {
+        return execute(command, Keys.ENTER);
+    }
+
+    public ShellAO inputTextToTextEditor(String command) {
+        return execute(command, Keys.ESCAPE);
     }
 
     public ShellAO assertOutputContains(String... messages) {
@@ -99,13 +107,23 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertPageAfterCommandContainsStrings(String command, String... messages) {
         Arrays.stream(messages)
-                .forEach(message -> assertTrue(lastCommandResult(command).contains(message)));
+                .forEach(message -> assertTrue(lastCommandResult(command).contains(message),
+                        format("'%s doesn't contain %s", lastCommandResult(command), message)));
         return this;
     }
 
     public ShellAO assertPageAfterCommandNotContainsStrings(String command, String... messages) {
         Arrays.stream(messages)
                 .forEach(message -> assertFalse(lastCommandResult(command).contains(message)));
+        return this;
+    }
+
+    public ShellAO assertPageContainsStringsWithRegex(String command, String ... messages) {
+        String log = lastCommandResult(command);
+        Arrays.stream(messages)
+                .forEach(message ->
+                        assertTrue(Pattern.compile(message).matcher(log).find(),
+                                format("Message '%s' isn't found", message)));
         return this;
     }
 
@@ -218,6 +236,14 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(20, SECONDS);
         }
         return this;
+    }
+
+    public int getRowsNumber() {
+        final String fileMetadata = context().text().substring(context().text().indexOf("\"/tmp/"));
+        final Pattern pattern = Pattern.compile("\"([^\"]+)\"\\s+(\\d+)L,\\s+(\\d+)C");
+        final Matcher matcher = pattern.matcher(fileMetadata);
+        assertTrue(matcher.find(), format("Could not find the number of lines in the file metadata: %s", fileMetadata));
+        return Integer.parseInt(matcher.group(2));
     }
 
     @Override

@@ -18,7 +18,7 @@ export default function parseCapabilityCloudSetting (cloudSetting) {
   const [providerString, ...rest] = cloudSetting.split(':');
   let cloud;
   let region;
-  if (/^(aws|azure|gcp)$/i.test(providerString)) {
+  if (/^(aws|azure|gcp|local)$/i.test(providerString)) {
     cloud = providerString;
     region = rest.length ? rest.join(':') : undefined;
   } else {

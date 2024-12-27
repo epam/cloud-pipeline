@@ -30,7 +30,7 @@ import sys
 import time
 
 from pipeline.api import PipelineAPI, APIError
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger, ResilientLogger
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 from scripts.generate_sge_profiles import generate_sge_profiles, \
@@ -462,7 +462,7 @@ source "{autoscaling_profile_path}"
         self._logger.debug('Launching grid engine queue {} autoscaling...'.format(profile.name))
         self._executor.execute("""
 source "{autoscaling_profile_path}"
-nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
         """.format(autoscaling_profile_path=profile.path_queue,
                    autoscaling_script_path=autoscaling_script_path))
         self._logger.info('Grid engine {} autoscaling has been launched.'.format(profile.name))
@@ -515,6 +515,7 @@ def _get_manager():
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     logger_warning = ExplicitLogger(level='WARNING', inner=logger)
 

@@ -95,6 +95,10 @@
     "prefix": "N2 Custom Instance Ram",
     "group": "RAM"
   },
+  "gpu_ondemand_l4": {
+    "prefix": "Nvidia L4 GPU running",
+    "group": "GPU"
+  },
   "gpu_ondemand_t4": {
     "prefix": "Nvidia Tesla T4 GPU running",
     "group": "GPU"
@@ -206,6 +210,10 @@
   "extendedram_preemptible_custom": {
     "prefix": "Spot Preemptible Custom Extended Instance Ram",
     "group": "RAM"
+  },
+  "gpu_preemptible_l4": {
+    "prefix": "Nvidia L4 GPU attached to Spot Preemptible",
+    "group": "GPU"
   },
   "gpu_preemptible_t4": {
     "prefix": "Nvidia Tesla T4 GPU attached to Spot Preemptible",

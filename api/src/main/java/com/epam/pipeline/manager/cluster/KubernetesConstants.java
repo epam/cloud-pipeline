@@ -39,12 +39,20 @@ public final class KubernetesConstants {
     public static final String CLOUD_REGION_LABEL = "cloud_region";
     public static final String AWS_REGION_LABEL = "aws_region";
     public static final String CLOUD_PROVIDER_LABEL = "cloud_provider";
+    public static final String CLOUD_REGION_ID_LABEL = "cloud_region_id";
+    public static final String CLOUD_INSTANCE_ID_LABEL = "cloud_ins_id";
+    public static final String CLOUD_INSTANCE_IP_LABEL = "cloud_ins_ip";
+    public static final String CLOUD_INSTANCE_DISK_LABEL = "cloud_ins_disk";
+    public static final String CLOUD_INSTANCE_TYPE_LABEL = "cloud_ins_type";
+    public static final String CLOUD_IMAGE_LABEL = "cloud_image";
+    public static final String CLOUD_REGION_AZ_LABEL = "cloud_az";
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";
     public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
+    public static final String CP_CAP_EBS_VOLUMES_MOUNT_DISABLED = "CP_CAP_EBS_VOLUMES_MOUNT_DISABLED";
 
     public static final String KUBE_NAME_REGEXP = "[^a-z0-9\\-]+";
     public static final String KUBE_NAME_FULL_REGEXP = "[^a-zA-Z0-9\\-._]+";
@@ -57,8 +65,13 @@ public final class KubernetesConstants {
     public static final String POD_NODE_SELECTOR_OPERATOR_IN = "In";
 
     public static final String WINDOWS = "windows";
+    public static final String AMD_64 = "amd64";
+
+    public static final String K8S_OS = "kubernetes.io/os";
+    public static final String K8S_ARCH = "kubernetes.io/arch";
 
     public static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    public static final String CORE_COMPONENT_PREFIX = CP_LABEL_PREFIX + "cp-";
     public static final String TRUE_LABEL_VALUE = "true";
     public static final String KUBERNETES_APP_LABEL = "k8s-app";
     public static final String KUBE_DNS_APP = "kube-dns";
@@ -66,8 +79,17 @@ public final class KubernetesConstants {
     public static final String KUBE_UNREACHABLE_NODE_LABEL = "node.kubernetes.io/unreachable";
     public static final String KUBE_NOT_READY_NODE_LABEL = "node.kubernetes.io/not-ready";
 
+    public static final String CPU_RESOURCE_NAME = "cpu";
+    public static final String MEM_RESOURCE_NAME = "memory";
+
+    public static final int MIB_IN_GIB = 1024;
+
+    public static final String MIB_UNIT = "Mi";
+    public static final String GIB_UNIT = "Gi";
+
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
+    protected static final String EVENT_SELECTOR = "involvedObject.name";
 
     // node condition types
     protected static final String OUT_OF_DISK = "OutOfDisk";

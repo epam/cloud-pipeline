@@ -20,7 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPCustomVMType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -83,6 +83,8 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
         originalRegion.setDnsHostedZoneId(updatedRegion.getDnsHostedZoneId());
         originalRegion.setDnsHostedZoneBase(updatedRegion.getDnsHostedZoneBase());
         originalRegion.setRunShiftPolicy(updatedRegion.getRunShiftPolicy());
+        originalRegion.setClusterInclude(updatedRegion.isClusterInclude());
+        originalRegion.setClusterStateRegionProperties(updatedRegion.getClusterStateRegionProperties());
         return originalRegion;
     }
 
@@ -91,7 +93,7 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
         return CloudProvider.GCP;
     }
 
-    private void validateCustomInstanceType(final GCPCustomInstanceType instanceType) {
+    private void validateCustomInstanceType(final CustomInstanceType instanceType) {
         Assert.state(instanceType.getCpu() > 1,
                 messageHelper.getMessage(MessageConstants.ERROR_GCP_CUSTOM_INSTANCE_CPU_LOWER_LIMIT));
         if (StringUtils.isBlank(instanceType.getFamily())) {

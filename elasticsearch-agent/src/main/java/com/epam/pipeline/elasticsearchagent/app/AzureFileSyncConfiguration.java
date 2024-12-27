@@ -23,6 +23,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.AzureBlobManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -69,9 +70,10 @@ public class AzureFileSyncConfiguration {
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
-            final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
+            final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager,
+            final LockService lockService) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                azFileManager, indexPrefix + indexName,
+                azFileManager, lockService, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.AZ,
                 SearchDocumentType.AZ_BLOB_FILE,

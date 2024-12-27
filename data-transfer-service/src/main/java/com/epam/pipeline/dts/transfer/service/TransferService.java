@@ -27,7 +27,10 @@ public interface TransferService {
     TransferTask runTransferTask(@NonNull StorageItem source,
                                  @NonNull StorageItem destination,
                                  List<String> included,
-                                 boolean deleteSource);
-    
+                                 boolean deleteSource,
+                                 boolean logEnabled,
+                                 String pipeCmd,
+                                 String pipeCmdSuffix);
+
     void failRunningTasks();
 }

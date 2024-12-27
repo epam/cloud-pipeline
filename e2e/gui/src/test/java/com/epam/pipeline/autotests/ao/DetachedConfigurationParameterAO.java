@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Selectors.byClassName;
 import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.ParameterFieldAO.idTemplate;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static java.lang.String.format;
 
 public class DetachedConfigurationParameterAO implements AccessObject<DetachedConfigurationParameterAO>{
 
@@ -33,20 +35,20 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
     private final Configuration configuration;
 
     public DetachedConfigurationParameterAO(Configuration configuration, int parameterIndex) {
+        final SelenideElement parameter = $(byClassName(format("param_%d", parameterIndex)));
         this.configuration = configuration;
 
         this.elements = initialiseElements(
-                entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(REMOVE_PARAMETER, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byAttribute("role", "combobox")).find("input"))
+                entry(PARAMETER_FIELD, parameter.$(byClassName("cp-text-not-important"))),
+                entry(PARAMETER_NAME, $(byId(format(idTemplate, parameterIndex, "name")))),
+                entry(PARAMETER_VALUE, parameter.$(byClassName("launch-pipeline-form__parameter-value"))
+                        .$("input")),
+                entry(REMOVE_PARAMETER, parameter.find(byId("remove-parameter-button")))
         );
     }
 
     public DetachedConfigurationParameterAO setName(String name) {
+        get(PARAMETER_FIELD).click();
         setValue(PARAMETER_NAME, name).resetMouse();
         return this;
     }

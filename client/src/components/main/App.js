@@ -21,11 +21,13 @@ import {observer, Provider, inject} from 'mobx-react';
 import {observable} from 'mobx';
 import styles from './App.css';
 import Navigation from './navigation/Navigation';
+import RunModal from './RunModal';
 import NotificationCenter from './notification/NotificationCenter';
 import searchStyles from '../search/search.css';
 import {SearchDialog} from '../search';
 import roleModel from '../../utils/roleModel';
 import {Pages} from '../../utils/ui-navigation';
+import {RunContinuationConfirmation} from '../runs/actions/continue-run';
 
 @inject('preferences', 'uiNavigation')
 @roleModel.authenticationInfo
@@ -140,6 +142,8 @@ export default class App extends Component {
             disableEmailNotifications={activeTabPath === Pages.notifications}
             router={this.props.router}
           />
+          <RunModal />
+          <RunContinuationConfirmation />
         </div>
       </LocaleProvider>
     );

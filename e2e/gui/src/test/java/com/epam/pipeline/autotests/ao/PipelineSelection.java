@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.exist;
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +36,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.folderWithName
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.version;
+import static org.openqa.selenium.By.className;
 
 public class PipelineSelection extends PopupAO<PipelineSelection, Configuration> {
 
@@ -40,6 +44,7 @@ public class PipelineSelection extends PopupAO<PipelineSelection, Configuration>
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(TREE, context().find(byClassName("Pane1"))),
             entry(FOLDERS, context().find(byClassName("Pane2"))),
+            entry(TABLE, context().$(className("ant-table-content"))),
             entry(CANCEL, context().find(button("Cancel"))),
             entry(OK, context().find(button("OK")))
     );
@@ -50,6 +55,7 @@ public class PipelineSelection extends PopupAO<PipelineSelection, Configuration>
 
     public PipelineSelection selectPipeline(final String pipeline) {
         this.pipeline = pipeline;
+        get(TABLE).waitUntil(exist, DEFAULT_TIMEOUT);
         context().find(pipelineWithName(pipeline, "browser__tree-item-title")).shouldBe(visible).click();
         return this;
     }

@@ -26,6 +26,7 @@ import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
@@ -45,6 +46,7 @@ import com.epam.pipeline.entity.git.report.VersionStorageReportFile;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -129,6 +131,13 @@ public class PipelineApiService {
     @AclMaskList
     public List<Pipeline> loadAllPipelines(boolean loadVersions) {
         return pipelineManager.loadAllPipelines(loadVersions);
+    }
+
+    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @AclMaskList
+    public List<PipelineWithMetadata> filterPipelines(final boolean loadVersions, final boolean loadMetadata,
+                                                      final EntityFilterVO filter) {
+        return pipelineManager.loadAllPipelines(loadVersions, loadMetadata, filter);
     }
 
     @PreAuthorize(ADMIN_ONLY)

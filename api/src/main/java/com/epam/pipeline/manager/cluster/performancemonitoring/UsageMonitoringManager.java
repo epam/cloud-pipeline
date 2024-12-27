@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 
 import javax.annotation.Nullable;
@@ -51,6 +53,22 @@ public interface UsageMonitoringManager {
     List<MonitoringStats> getStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
                                           @Nullable LocalDateTime to);
+
+    /**
+     * Retrieves GPU monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param granularity the list of granularity levels to load GPU usages
+     * @param squashCharts if specified charts shall be squashed into one
+     * @return GPU usage statistics.
+     */
+    GpuMonitoringStats getGpuStatsForNode(String nodeName,
+                                          @Nullable LocalDateTime from,
+                                          @Nullable LocalDateTime to,
+                                          List<GpuMetricsGranularity> granularity,
+                                          boolean squashCharts);
 
     /**
      * Retrieves monitoring stats for node as input stream.

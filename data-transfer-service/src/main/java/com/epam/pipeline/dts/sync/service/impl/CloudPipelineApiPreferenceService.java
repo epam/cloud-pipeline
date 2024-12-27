@@ -51,6 +51,9 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final String dtsSyncRulesKey;
     private final String dtsHeartbeatEnabledKey;
     private final String dtsSourceDeletionEnabledKey;
+    private final String dtsLogEnabledKey;
+    private final String dtsPipeCmdKey;
+    private final String dtsPipeCmdSuffixKey;
 
     @Autowired
     public CloudPipelineApiPreferenceService(
@@ -62,6 +65,12 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             final String dtsHeartbeatEnabledKey,
             @Value("${dts.preference.source.deletion.enabled.key:dts.source.deletion.enabled}")
             final String dtsSourceDeletionEnabledKey,
+            @Value("${dts.preference.pipe.log.enabled.key:dts.pipe.log.enabled}")
+            final String dtsLogEnabledKey,
+            @Value("${dts.preference.pipe.cmd.key:dts.pipe.cmd}")
+            final String dtsPipeCmdKey,
+            @Value("${dts.preference.pipe.cmd.suffix.key:dts.pipe.cmd.suffix}")
+            final String dtsPipeCmdSuffixKey,
             final CloudPipelineAPIClient apiClient,
             final IdentificationService identificationService) {
         this.apiClient = apiClient;
@@ -71,6 +80,9 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.dtsSyncRulesKey = dtsSyncRulesKey;
         this.dtsHeartbeatEnabledKey = dtsHeartbeatEnabledKey;
         this.dtsSourceDeletionEnabledKey = dtsSourceDeletionEnabledKey;
+        this.dtsLogEnabledKey = dtsLogEnabledKey;
+        this.dtsPipeCmdKey = dtsPipeCmdKey;
+        this.dtsPipeCmdSuffixKey = dtsPipeCmdSuffixKey;
         log.info("Synchronizing preferences for current host: `{}`", identificationService.getId());
     }
 
@@ -124,5 +136,20 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
                 dtsShutdownKey, identificationService.getId());
         apiClient.deleteDtsRegistryPreferences(identificationService.getId(),
                 Collections.singletonList(dtsShutdownKey));
+    }
+
+    @Override
+    public boolean isLogEnabled() {
+        return getBooleanPreference(dtsLogEnabledKey);
+    }
+
+    @Override
+    public String getPipeCmd() {
+        return preferences.getOrDefault(dtsPipeCmdKey, "");
+    }
+
+    @Override
+    public String getPipeCmdSuffix() {
+        return preferences.getOrDefault(dtsPipeCmdSuffixKey, "");
     }
 }

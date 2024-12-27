@@ -371,6 +371,30 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void loadByPathsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setName(storageVO.getName() + UUID.randomUUID());
+        storageVO.setPath(storageVO.getPath() + UUID.randomUUID());
+        AbstractDataStorage saved2 = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setName(storageVO.getName() + UUID.randomUUID());
+        storageVO.setPath(storageVO.getPath() + UUID.randomUUID());
+        storageManager.create(storageVO, false, false, false).getEntity();
+
+        List<AbstractDataStorage> loaded = storageManager.getDatastoragesByPaths(
+                Arrays.asList(saved.getPath(), saved2.getPath())
+        );
+        Assert.assertTrue(
+                loaded.stream().anyMatch(ds -> ds.getPath().equals(saved.getPath())
+                        || ds.getPath().equals(saved2.getPath()))
+        );
+        Assert.assertEquals(2, loaded.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void requestDavMountByIdsDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS

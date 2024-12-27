@@ -549,6 +549,7 @@ class RunCapabilities extends React.Component {
         className={className}
       >
         <Dropdown
+          disabled={disabled}
           overlay={(
             <div>
               <Menu
@@ -561,7 +562,7 @@ class RunCapabilities extends React.Component {
               </Menu>
             </div>
           )}
-          trigger={['click']}
+          trigger={[disabled ? undefined : 'click']}
         >
           <div
             tabIndex={0}

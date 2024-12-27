@@ -16,8 +16,7 @@ ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
 # JupyterLab
-RUN conda install -c conda-forge jupyterlab -y && \
-    jupyter serverextension enable --py jupyterlab --sys-prefix
+RUN conda install -c conda-forge jupyterlab -y
 
 ADD start.sh /start.sh
 RUN chmod +x /start.sh

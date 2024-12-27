@@ -20,7 +20,7 @@ import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
@@ -41,9 +41,9 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     private static final String GCP_PROJECT_CHANGED = "Bio";
     private static final String SSH_PUB_PATH = "/ssh.pub";
     private static final String IMPERSONATED_ACCOUNT = "acc";
-    private static final List<GCPCustomInstanceType> CUSTOM_INSTANCE_TYPES = Arrays.asList(
-            GCPCustomInstanceType.withCpu(2, 3.75),
-            GCPCustomInstanceType.withGpu(2, 3.75, 1, "K80")
+    private static final List<CustomInstanceType> CUSTOM_INSTANCE_TYPES = Arrays.asList(
+            CustomInstanceType.withCpu(2, 3.75),
+            CustomInstanceType.withGpu(2, 3.75, 1, "K80")
     );
 
     @Before

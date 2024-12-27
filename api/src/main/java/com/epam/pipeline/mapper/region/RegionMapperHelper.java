@@ -20,10 +20,12 @@ import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
+import com.epam.pipeline.controller.vo.region.LocalRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.entity.region.LocalRegion;
 
 public interface RegionMapperHelper<D extends AbstractCloudRegionDTO, E extends AbstractCloudRegion> {
 
@@ -65,6 +67,19 @@ public interface RegionMapperHelper<D extends AbstractCloudRegionDTO, E extends 
         @Override
         public GCPRegionDTO toDTO(final CloudRegionMapper mapper, final GCPRegion entity) {
             return mapper.toGCPRegionDTO(entity);
+        }
+    }
+
+    class LocalRegionMapper implements RegionMapperHelper<LocalRegionDTO, LocalRegion> {
+
+        @Override
+        public LocalRegion toEntity(final CloudRegionMapper mapper, final LocalRegionDTO dto) {
+            return mapper.toLocalRegion(dto);
+        }
+
+        @Override
+        public LocalRegionDTO toDTO(final CloudRegionMapper mapper, final LocalRegion entity) {
+            return mapper.toLocalregionDTO(entity);
         }
     }
 }

@@ -25,7 +25,7 @@ public final class GitRepositoryUrl {
     private static final String INVALID_URL_FORMAT_MESSAGE = "Invalid repository URL format.";
     private static final String PROTOCOL_PATTERN = "https?";
     // Username could be either placeholder ${GIT_USER} or a real username
-    private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-_A-Za-z0-9]++";
+    private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-._A-Za-z0-9]++";
     // Password could be either placeholder ${GIT_TOKEN} or a real password
     private static final String PASSWORD_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";

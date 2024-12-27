@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -125,11 +126,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadNodes() throws Exception {
-        Mockito.doReturn(nodeInstances).when(mockClusterApiService).getNodes();
+        Mockito.doReturn(nodeInstances).when(mockClusterApiService).getNodes(MachineType.KUBE);
 
         final MvcResult mvcResult = performRequest(get(LOAD_NODES_URL));
 
-        Mockito.verify(mockClusterApiService).getNodes();
+        Mockito.verify(mockClusterApiService).getNodes(MachineType.KUBE);
         assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
@@ -143,11 +144,13 @@ public class ClusterControllerTest extends AbstractControllerTest {
     public void shouldFilterNodes() throws Exception {
         final FilterNodesVO filterNodesVO = NodeCreatorUtils.getDefaultFilterNodesVO();
         final String content = getObjectMapper().writeValueAsString(filterNodesVO);
-        Mockito.doReturn(nodeInstances).when(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
+        Mockito.doReturn(nodeInstances).when(mockClusterApiService)
+                .filterNodes(Mockito.refEq(filterNodesVO), Mockito.refEq(MachineType.KUBE));
 
         final MvcResult mvcResult = performRequest(post(FILTER_NODES_URL).content(content));
 
-        Mockito.verify(mockClusterApiService).filterNodes(Mockito.refEq(filterNodesVO));
+        Mockito.verify(mockClusterApiService)
+                .filterNodes(Mockito.refEq(filterNodesVO), Mockito.refEq(MachineType.KUBE));
         assertResponse(mvcResult, nodeInstances, NodeCreatorUtils.NODE_INSTANCE_LIST_TYPE);
     }
 
@@ -159,11 +162,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadNode() throws Exception {
-        Mockito.doReturn(nodeInstance).when(mockClusterApiService).getNode(NAME);
+        Mockito.doReturn(nodeInstance).when(mockClusterApiService).getNode(NAME, MachineType.KUBE, null);
 
         final MvcResult mvcResult = performRequest(get(String.format(LOAD_NODE_URL, NAME)));
 
-        Mockito.verify(mockClusterApiService).getNode(NAME);
+        Mockito.verify(mockClusterApiService).getNode(NAME, MachineType.KUBE, null);
         assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 
@@ -195,11 +198,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldTerminateNode() throws Exception {
-        Mockito.doReturn(nodeInstance).when(mockClusterApiService).terminateNode(NAME);
+        Mockito.doReturn(nodeInstance).when(mockClusterApiService).terminateNode(NAME, MachineType.KUBE, null);
 
         final MvcResult mvcResult = performRequest(delete(String.format(NODE_NAME_URL, NAME)));
 
-        Mockito.verify(mockClusterApiService).terminateNode(NAME);
+        Mockito.verify(mockClusterApiService).terminateNode(NAME, MachineType.KUBE, null);
         assertResponse(mvcResult, nodeInstance, NodeCreatorUtils.NODE_INSTANCE_TYPE);
     }
 

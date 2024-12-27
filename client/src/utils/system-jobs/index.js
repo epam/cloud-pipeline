@@ -21,6 +21,7 @@ import PipelineFiles from '../../models/pipelines/Source';
 import PipelineConfigurations from '../../models/pipelines/PipelineConfigurations';
 import {PipelineRunner} from '../../models/pipelines/PipelineRunner';
 import VersionFile from '../../models/pipelines/VersionFile';
+import {base64toString} from '../base64';
 
 function extractScriptParameters (text = '') {
   const [parametersRow] = text
@@ -214,7 +215,7 @@ class SystemJobs {
               return Promise.reject(request.error);
             }
             try {
-              const content = atob(request.response || '');
+              const content = base64toString(request.response || '');
               resolve(extractScriptParameters(content) || {});
             } catch (error) {
               return Promise.reject(error);

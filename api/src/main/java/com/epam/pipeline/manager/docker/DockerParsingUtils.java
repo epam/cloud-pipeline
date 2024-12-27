@@ -31,6 +31,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -53,6 +55,18 @@ public final class DockerParsingUtils {
             .toFormatter();
     private static final String NOP_PREFIX = "#(nop)";
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String SPACE = " ";
+    private static final String ADD_TO_FROM_COMMAND_PATTERN = "(ADD|COPY) (file|multi|dir):[a-zA-Z0-9]* in /";
+    private static final List<String> COMMANDS = Arrays.asList("ADD", "ARG", "CMD", "COPY", "ENTRYPOINT", "ENV",
+            "EXPOSE", "FROM", "HEALTHCHECK", "LABEL", "MAINTAINER", "ONBUILD", "RUN", "SHELL", "STOPSIGNAL", "USER",
+            "VOLUME", "WORKDIR");
+    private static final String ARG = "ARG ";
+    private static final String CMD = "CMD ";
+    private static final String ENTRYPOINT = "ENTRYPOINT ";
+    private static final String ADD = "ADD ";
+    private static final String COPY = "COPY ";
+    private static final String RUN_TEMPLATE = "RUN %s";
+    private static final String FROM_TEMPLATE = "FROM %s";
 
     public static Date getEarliestDate(final RawImageDescription rawImage) {
         return getMinElement(getDateStream(rawImage), Comparator.naturalOrder());
@@ -76,9 +90,10 @@ public final class DockerParsingUtils {
             .map(HistoryEntryV1::getContainerConfig)
             .map(ContainerConfig::getCommands)
             .filter(CollectionUtils::isNotEmpty)
-            .map(commands -> String.join(StringUtils.EMPTY, commands))
+            .map(commands -> String.join(SPACE, commands))
             .map(DockerParsingUtils::cropNopPrefix)
-            .map(command -> command.replaceAll("\\t", StringUtils.EMPTY))
+            .map(String::trim)
+            .map(command -> command.replaceAll("\\s+", SPACE))
             .collect(Collectors.toList());
         Collections.reverse(commandsHistory);
         return commandsHistory;
@@ -91,6 +106,68 @@ public final class DockerParsingUtils {
                 .filter(MapUtils::isNotEmpty)
                 .flatMap(labels -> labels.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    public static List<String> processCommands(final String from, final List<String> commands,
+                                               final List<String> commandPatternsToSkip) {
+        final List<String> result = new ArrayList<>();
+
+        result.add(String.format(FROM_TEMPLATE, from));
+        // ONLY THE FIRST "ADD file:... / " or "COPY file:... / " line in the file has to be changed to "FROM <from>"
+        final int startIndex = prettifyCommand(commands.get(0)).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
+
+        if (CollectionUtils.isEmpty(commands)) {
+            return result;
+        }
+
+        String lastCmd = StringUtils.EMPTY;
+        String lastEntrypoint = StringUtils.EMPTY;
+        final List<String> args = new ArrayList<>();
+
+        for (int i = startIndex; i < commands.size(); i++) {
+            String command = prettifyCommand(commands.get(i));
+
+            if (commandPatternsToSkip.stream().anyMatch(command::matches)) {
+                continue;
+            }
+
+            if (command.startsWith(ARG)) {
+                args.add(command.replace(ARG, StringUtils.EMPTY).split("=")[0]);
+            } else if (args.stream().anyMatch(command::contains)) {
+                for (String arg: args) {
+                    command = command.replaceAll(String.format(" %s=[^ ]* ", arg), SPACE);
+                }
+            } else if (command.startsWith(CMD)) {
+                lastCmd = command;
+            } else if (command.startsWith(ENTRYPOINT)) {
+                lastEntrypoint = command;
+            }
+
+            if (command.startsWith(ADD) || command.startsWith(COPY)) {
+                command = command.replaceAll("(file|multi|dir):[a-zA-Z0-9]* in", "<source-location>");
+            } else if (command.startsWith(CMD) || command.startsWith(ENTRYPOINT)) {
+                continue;
+            } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
+                command = String.format(RUN_TEMPLATE, command.trim());
+            }
+            result.add(prettifyCommand(command.replaceAll(" \\|[0-9]+ ", SPACE)));
+        }
+        if (StringUtils.isNotBlank(lastCmd)) {
+            result.add(lastCmd);
+        }
+        if (StringUtils.isNotBlank(lastEntrypoint)) {
+            result.add(lastEntrypoint);
+        }
+        return result;
+    }
+
+    private static String prettifyCommand(final String command) {
+        return command.replaceAll("\\s+", SPACE).trim();
+    }
+
+    public static String getLaunchPodPattern(final String command) {
+        final String result = escapeSpecialCharacters(command).replaceAll("\\$[a-zA-Z0-9_]*", ".+");
+        return result.replaceAll("\\$", "\\\\$");
     }
 
     private static Stream<HistoryEntryV1> getHistoryEntryStream(final RawImageDescription rawImage) {
@@ -134,11 +211,20 @@ public final class DockerParsingUtils {
     }
 
     private static LocalDateTime extractDateTime(String date, String time) {
-        return LocalDateTime.parse(date + " " + time, FORMATTER);
+        return LocalDateTime.parse(date + SPACE + time, FORMATTER);
     }
 
     private static <T> T getMinElement(Stream<T> stream, Comparator<T> comparator) {
         return stream.min(comparator).orElseThrow(RuntimeException::new);
+    }
+
+    private static String escapeSpecialCharacters(String input) {
+        final String[] specialCharacters = { ".", "\\", "*", "?", "[", "^", "]", "+", "(", ")", "{", "}",
+            "=", "!", "<", ">", "|", ":", "-" };
+        for (String ch : specialCharacters) {
+            input = input.replace(ch, "\\" + ch);
+        }
+        return input;
     }
 
     private DockerParsingUtils() {

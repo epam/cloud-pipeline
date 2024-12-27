@@ -20,13 +20,17 @@ import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
+import com.epam.pipeline.controller.vo.region.LocalRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.entity.region.LocalRegion;
+import com.epam.pipeline.entity.region.LocalRegionCredentials;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
@@ -54,13 +58,21 @@ public interface CloudRegionMapper {
 
     GCPRegionDTO toGCPRegionDTO(GCPRegion gcpRegion);
 
+    LocalRegionDTO toLocalregionDTO(LocalRegion localRegion);
+
     AwsRegion toAwsRegion(AWSRegionDTO awsRegion);
 
     AzureRegion toAzureRegion(AzureRegionDTO azureRegion);
 
     GCPRegion toGCPRegion(GCPRegionDTO azureRegion);
 
+    LocalRegion toLocalRegion(LocalRegionDTO localRegion);
+
     AzureRegionCredentials toAzureRegionCredentials(AzureRegionDTO azureRegion);
+
+    AwsRegionCredentials toAwsRegionCredentials(AWSRegionDTO awsRegion);
+
+    LocalRegionCredentials toLocalRegionCredentials(LocalRegionDTO localRegion);
 
     default RegionMapperHelper getMapper(AbstractCloudRegion region) {
         return getMapperByType(region.getProvider());
@@ -72,9 +84,10 @@ public interface CloudRegionMapper {
 
     default RegionCredentialsMapperHelper getCredentialsMapper(AbstractCloudRegionDTO region) {
         switch (region.getProvider()) {
-            case AWS: return new RegionCredentialsMapperHelper.NullCredentialsMapper();
-            case GCP: return new RegionCredentialsMapperHelper.NullCredentialsMapper();
+            case AWS: return new RegionCredentialsMapperHelper.AwsCredentialsMapper();
             case AZURE: return new RegionCredentialsMapperHelper.AzureCredentialsMapper();
+            case GCP: return new RegionCredentialsMapperHelper.NullCredentialsMapper();
+            case LOCAL: return new RegionCredentialsMapperHelper.LocalCredentialsMapper();
             default: throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + region.getProvider());
         }
     }
@@ -84,6 +97,7 @@ public interface CloudRegionMapper {
             case AWS: return new RegionMapperHelper.AWSRegionMapper();
             case GCP: return new RegionMapperHelper.GCPRegionMapper();
             case AZURE: return new RegionMapperHelper.AzureRegionMapper();
+            case LOCAL: return new RegionMapperHelper.LocalRegionMapper();
             default: throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + provider);
         }
     }

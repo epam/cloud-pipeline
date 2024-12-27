@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -27,15 +28,17 @@ import {
   Modal,
   Row,
   Table,
-  Tooltip
+  Tooltip,
+  Icon
 } from 'antd';
-import clusterNodes from '../../models/cluster/ClusterNodes';
-import nodesFilter from '../../models/cluster/FilterClusterNodes';
+import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
+import cloudNodes from '../../models/cluster/CloudNodes';
+import NodesFilter from '../../models/cluster/FilterClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
@@ -47,13 +50,18 @@ import {
   nodeRoles,
   testRole
 } from './node-roles';
+import {checkTerminateNodeErrors} from './constants';
+
+const isCloudNode = (node = {}) => node.machineType === MACHINE_TYPES.all ||
+  node.machineType === MACHINE_TYPES.cloud ||
+  node.isCloudNode;
 
 @connect({
   clusterNodes,
-  nodesFilter
+  cloudNodes
 })
 @localization.localizedComponent
-@inject('clusterNodes', 'nodesFilter')
+@inject('authenticatedUserInfo', 'preferences')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -65,6 +73,17 @@ import {
 })
 @observer
 export default class Cluster extends localization.LocalizedReactComponent {
+  static propTypes = {
+    machineType: PropTypes.string,
+    highlightCloudNodes: PropTypes.bool,
+    title: PropTypes.string
+  };
+
+  static defaultProps = {
+    machineType: MACHINE_TYPES.all,
+    highlightCloudNodes: true
+  };
+
   state = {
     appliedFilter: {
       haveRunId: null,
@@ -101,6 +120,21 @@ export default class Cluster extends localization.LocalizedReactComponent {
     selection: []
   };
 
+  @observable
+  nodesFilterRequest = new NodesFilter(this.props.machineType);
+
+  @computed
+  get nodesFilter () {
+    return this.nodesFilterRequest;
+  }
+
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
+  };
+
   @computed
   get currentNodePool () {
     const {filter, pools} = this.props;
@@ -110,23 +144,46 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  get nodes () {
-    const {clusterNodes, nodesFilter, filter} = this.props;
-    if (filter && Object.keys(filter).length > 0) {
-      if (clusterNodes.loaded) {
-        const nodes = this.props.clusterNodes.value || [];
-        const nodeMatchesLabel = (label) => (node) => node.labels &&
-          node.labels.hasOwnProperty(label) &&
-          `${node.labels[label] || ''}` === `${filter[label]}`;
-        const nodeMatchesLabels = (node) => !Object.keys(filter)
-          .find(label => !nodeMatchesLabel(label)(node));
-        return (nodes || [])
-          .filter(nodeMatchesLabels);
-      }
-    } else if (nodesFilter.loaded) {
-      return nodesFilter.value || [];
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const {preferences} = this.props;
+    if (preferences) {
+      return preferences.uiStandaloneNodesAllowTerminate;
     }
-    return [];
+    return true;
+  }
+
+  get nodes () {
+    const {
+      clusterNodes,
+      cloudNodes,
+      filter,
+      machineType
+    } = this.props;
+    const nodeMatchesLabel = (label) => (node) => node.labels &&
+      node.labels.hasOwnProperty(label) &&
+      `${node.labels[label] || ''}` === `${filter[label]}`;
+    const nodeMatchesLabels = (node) => !Object.keys(filter)
+      .find(label => !nodeMatchesLabel(label)(node));
+    let nodes = [];
+    if (filter && Object.keys(filter).length > 0) {
+      const nodeRequest = machineType === MACHINE_TYPES.cloud
+        ? cloudNodes
+        : clusterNodes;
+      nodes = nodeRequest?.loaded
+        ? (nodeRequest.value || []).filter(nodeMatchesLabels)
+        : [];
+    } else {
+      nodes = this.nodesFilter.loaded
+        ? (this.nodesFilter.value || [])
+        : [];
+    }
+    return nodes.filter(node => {
+      if (this.isAdmin) {
+        return true;
+      }
+      return node.machineType !== MACHINE_TYPES.all && node.machineType !== MACHINE_TYPES.cloud;
+    });
   }
 
   get filteredNodes () {
@@ -153,11 +210,21 @@ export default class Cluster extends localization.LocalizedReactComponent {
   }
 
   refreshCluster = () => {
-    if (!this.props.clusterNodes.pending) {
+    if (
+      this.props.machineType === MACHINE_TYPES.cloud &&
+      !this.props.cloudNodes.pending
+    ) {
+      this.props.cloudNodes.fetch();
+    }
+    if ((
+      this.props.machineType === MACHINE_TYPES.all ||
+      this.props.machineType === MACHINE_TYPES.kube) &&
+        !this.props.clusterNodes.pending
+    ) {
       this.props.clusterNodes.fetch();
     }
-    if (!this.props.nodesFilter.pending) {
-      this.props.nodesFilter.send({
+    if (!this.nodesFilter.pending) {
+      this.nodesFilter.send({
         runId: this.state.appliedFilter.runId,
         address: this.state.appliedFilter.address
       });
@@ -207,10 +274,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   terminateNode = async (item) => {
-    const hide = message.loading('Processing...', 0);
-    const request = new TerminateNodeRequest(item.name);
+    const hide = message.loading('Terminating...', 0);
+    const request = new TerminateNodeRequest(item.name, item.machineType);
     await request.fetch();
-    if (request.error) {
+    if (request.error && checkTerminateNodeErrors) {
       message.error(request.error, 5);
       hide();
     } else {
@@ -222,7 +289,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   terminateNodes = async () => {
     const hide = message.loading('Terminating...', 0);
-    const requests = this.state.selection.map(name => new TerminateNodeRequest(name));
+    const requests = this.state.selection
+      .map(node => new TerminateNodeRequest(node.name, node.machineType));
     const promises = requests.map(r => new Promise((resolve) => {
       r.fetch()
         .then(() => {
@@ -234,7 +302,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       .then(results => {
         hide();
         const errors = results.filter(Boolean);
-        if (errors.length > 0) {
+        if (errors.length > 0 && checkTerminateNodeErrors) {
           message.error(
             (
               <div>
@@ -335,11 +403,22 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   canTerminateNode = (node) => {
+    if (isCloudNode(node)) {
+      return this.isAdmin && this.uiStandaloneNodesAllowTerminate;
+    }
     return roleModel.executeAllowed(node) && roleModel.isOwner(node) && this.nodeIsSlave(node);
   }
 
   renderTerminateButton = (item) => {
-    if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
+    if (item.isCloudNode && !this.isAdmin) {
+      return <span />;
+    }
+    if (
+      roleModel.executeAllowed(item) &&
+      roleModel.isOwner(item) &&
+      this.nodeIsSlave(item) &&
+      (!item.isCloudNode || this.uiStandaloneNodesAllowTerminate)
+    ) {
       return <Button
         id="terminate-node-button"
         type="danger"
@@ -528,22 +607,24 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   generateNodeInstancesTable = (nodes, isLoading, pools) => {
     const {selection = []} = this.state;
+    const {highlightCloudNodes} = this.props;
+    const onlyCloudNodes = this.props.machineType === MACHINE_TYPES.cloud;
     const nodesAllowedToTerminate = nodes
       .filter(node => this.canTerminateNode(node));
-    const nodeIsSelected = node => selection.indexOf(node.name) >= 0;
+    const nodeIsSelected = node => selection.findIndex(({name}) => name === node.name) >= 0;
     const toggleNode = node => {
-      const index = selection.indexOf(node.name);
+      const index = selection.findIndex(({name}) => name === node.name);
       if (index >= 0) {
         selection.splice(index, 1);
       } else {
-        selection.push(node.name);
+        selection.push(node);
       }
       this.setState({selection});
     };
     const selectAll = (select = true) => {
       if (select) {
         this.setState({
-          selection: nodesAllowedToTerminate.map(node => node.name)
+          selection: nodesAllowedToTerminate
         });
       } else {
         this.setState({selection: []});
@@ -582,18 +663,29 @@ export default class Cluster extends localization.LocalizedReactComponent {
         )}
       </div>
     );
+    const pipelineColumns = [];
+    if (!onlyCloudNodes) {
+      pipelineColumns.push({
+        dataIndex: 'pipelineRun',
+        key: 'pipelineRun',
+        title: this.localizedString('Pipeline'),
+        render: pipelineRun => this.renderPipelineName(pipelineRun),
+        className: styles.clusterNodeRowPipeline,
+        onCellClick: this.onNodeInstanceSelect
+      });
+    }
     const columns = [
       {
         key: 'selection',
         className: styles.clusterNodeSelection,
         title: (
           <span>
-            <Checkbox
-              disabled={nodesAllowedToTerminate.length === 0}
-              checked={allSelected}
-              indeterminate={indeterminate}
-              onChange={e => selectAll(e.target.checked)}
-            />
+            {nodesAllowedToTerminate.length > 0 ? (
+              <Checkbox
+                checked={allSelected}
+                indeterminate={indeterminate}
+                onChange={e => selectAll(e.target.checked)}
+              />) : null}
           </span>
         ),
         render: (item) => {
@@ -614,23 +706,26 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Name',
         sorter: this.alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect
+        onCellClick: this.onNodeInstanceSelect,
+        render: (item, record) => {
+          return (
+            <span>
+              {item}
+              {record.isCloudNode ? (
+                <Icon style={{marginLeft: 5, fontSize: 14}} type="cloud-o" />
+              ) : null}
+            </span>
+          );
+        }
       },
-      {
-        dataIndex: 'pipelineRun',
-        key: 'pipelineRun',
-        title: this.localizedString('Pipeline'),
-        render: pipelineRun => this.renderPipelineName(pipelineRun),
-        className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
-      },
+      ...pipelineColumns,
       {
         dataIndex: 'labels',
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('runId', 'Run Id'),
-        sorter: this.runSorter,
+        ...(onlyCloudNodes ? {} : this.getInputFilter('runId', 'Run Id')),
+        sorter: onlyCloudNodes ? undefined : this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect
       },
@@ -666,10 +761,12 @@ export default class Cluster extends localization.LocalizedReactComponent {
         addresses: node.addresses,
         created: node.creationTimestamp,
         labels: node.labels,
-        uid: node.uid,
+        uid: node.uid || `${node.region}_${node.name}_${node.createdDate}`,
         pipelineRun: node.pipelineRun,
         runId: node.runId,
-        mask: node.mask
+        mask: node.mask,
+        isCloudNode: isCloudNode(node),
+        machineType: node.machineType
       });
     }
     return (
@@ -680,15 +777,18 @@ export default class Cluster extends localization.LocalizedReactComponent {
         rowKey="uid"
         loading={isLoading}
         pagination={{pageSize: 25}}
-        rowClassName={(item) => `cluster-row-${item.name}`}
+        rowClassName={(item) => classNames({
+          'cp-background-not-important': highlightCloudNodes && item.isCloudNode
+        }, `cluster-row-${item.name}`)}
         size="small"
       />
     );
   }
 
   onNodeInstanceSelect = (node) => {
+    const type = node.isCloudNode ? MACHINE_TYPES.cloud : MACHINE_TYPES.kube;
     this.props.clusterNodes.clearCachedNode(node.name);
-    this.props.router.push(`/cluster/${node.name}`);
+    this.props.router.push(`/cluster/${node.name}?type=${type}`);
   };
 
   nodeIsSlave = (node) => {
@@ -726,19 +826,23 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   render () {
     let description = this.getDescription();
-    const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
+    const error = this.nodesFilter.error || this.props.clusterNodes.error;
     const selectionLength = (this.state.selection || []).length;
+    let title = this.currentNodePool
+      ? `${this.currentNodePool.name} nodes`
+      : `Cluster nodes`;
+    if (this.props.title) {
+      title = this.props.title;
+    }
     return (
       <div>
         <Row type="flex" align="middle">
           <Col span={19}>
             <span className={styles.nodeMainInfo}>
-              {
-                this.currentNodePool
-                  ? `${this.currentNodePool.name} nodes `
-                  : 'Cluster nodes '
-              }
-              {description}
+              {title}
+              <span style={{marginLeft: 5}}>
+                {description}
+              </span>
             </span>
           </Col>
           <Col span={5} className={styles.refreshButtonContainer}>
@@ -747,7 +851,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
                 <Button
                   id="cluster-batch-terminate-button"
                   type="danger"
-                  disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
+                  disabled={this.nodesFilter.pending || this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}
                 >
@@ -758,7 +862,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
-              disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}>
+              disabled={this.nodesFilter.pending || this.props.clusterNodes.pending}>
               Refresh
             </Button>
           </Col>
@@ -777,7 +881,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         {
           this.generateNodeInstancesTable(
             this.filteredNodes,
-            this.props.nodesFilter.pending || this.props.clusterNodes.pending,
+            this.nodesFilter.pending || this.props.clusterNodes.pending,
             this.props.pools.loaded ? (this.props.pools.value || []) : []
           )
         }

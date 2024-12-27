@@ -207,6 +207,12 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         return this;
     }
 
+    public static boolean hasOnPage(String customTag) {
+        return $(byClassName("ant-table-tbody"))
+                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .exists();
+    }
+
     public PipelineRunFormAO runVersion(final String version) {
         actions().click($(toolVersion(version)).find(byId(format("run-%s-button", version)))).perform();
         return new PipelineRunFormAO();

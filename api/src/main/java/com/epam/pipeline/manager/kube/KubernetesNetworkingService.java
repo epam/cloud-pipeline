@@ -31,6 +31,7 @@ import org.springframework.util.Assert;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +51,10 @@ public class KubernetesNetworkingService {
     }
 
     public void updateEgressIpBlocks(final List<String> ips) {
+        if (isNFSNetworkAccessRestricted()) {
+            return;
+        }
+
         final String networkPolicyName = preferenceManager.getPreference(SystemPreferences.KUBE_NETWORK_POLICY_NAME);
         final NetworkPolicy networkPolicy = kubernetesClient.getNetworkPolicy(kubeNamespace, networkPolicyName);
         Assert.notNull(networkPolicy, String.format("Network policy '%s' was not found", networkPolicyName));
@@ -63,6 +68,10 @@ public class KubernetesNetworkingService {
     }
 
     public void deleteEgressIpBlocks(final List<String> ips) {
+        if (isNFSNetworkAccessRestricted()) {
+            return;
+        }
+
         final String networkPolicyName = preferenceManager.getPreference(SystemPreferences.KUBE_NETWORK_POLICY_NAME);
         final NetworkPolicy networkPolicy = kubernetesClient.getNetworkPolicy(kubeNamespace, networkPolicyName);
         Assert.notNull(networkPolicy, String.format("Network policy '%s' was not found", networkPolicyName));
@@ -76,6 +85,12 @@ public class KubernetesNetworkingService {
         networkPolicy.getSpec().setEgress(filteredRules);
 
         kubernetesClient.updateNetworkPolicy(kubeNamespace, networkPolicyName, networkPolicy);
+    }
+
+    private boolean isNFSNetworkAccessRestricted() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_NFS_NETWORK_ACCESS_RESTRICTED)
+                .map(preferenceManager::getPreference)
+                .orElse(false);
     }
 
     private NetworkPolicyEgressRule buildRule(final String ip) {

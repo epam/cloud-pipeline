@@ -1,17 +1,119 @@
 import moment from 'moment-timezone';
+import {DAYS, COMPUTED_DAYS, ORDINALS} from './forms';
 
 export const ruleModes = {
   daily: 'daily',
-  weekly: 'weekly'
+  weekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly'
+};
+
+const DECODERS = {
+  [ruleModes.daily]: (parts) => ({
+    mode: ruleModes.daily,
+    every: parts.dayOfMonth.split('/')[1]
+  }),
+  [ruleModes.weekly]: (parts) => ({
+    mode: ruleModes.weekly,
+    dayOfWeek: parts.dayOfWeek.includes(',')
+      ? parts.dayOfWeek.replace('0', '7').split(',')
+      : [parts.dayOfWeek.replace('0', '7')]
+  }),
+  [ruleModes.monthly]: ({dayOfMonth, dayOfWeek, month}) => {
+    if (dayOfMonth === '?') {
+      // On nth day of week (1-7)
+      const [dw, ...ordinal] = dayOfWeek;
+      return {
+        mode: ruleModes.monthly,
+        daySelectorMode: 'computed',
+        ordinal: ordinal.join(''),
+        day: dw,
+        dayNumber: 1,
+        every: Number(month.split('/')[1])
+      };
+    } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
+      // On nth weekday
+      const ordinal = dayOfMonth.replace('W', '');
+      return {
+        mode: ruleModes.monthly,
+        daySelectorMode: 'computed',
+        ordinal: ordinal === 'L' ? ordinal : `#${ordinal}`,
+        day: COMPUTED_DAYS.weekday.key,
+        dayNumber: 1,
+        every: Number(month.split('/')[1])
+      };
+    } else if (dayOfMonth === 'L') {
+      // On Last (Weekday | Day | day of week)
+      return {
+        mode: ruleModes.monthly,
+        daySelectorMode: 'computed',
+        ordinal: dayOfMonth,
+        day: COMPUTED_DAYS.day.key,
+        dayNumber: 1,
+        every: Number(month.split('/')[1])
+      };
+    }
+    return {
+      // On nth Day
+      mode: ruleModes.monthly,
+      daySelectorMode: 'numeric',
+      ordinal: ORDINALS[0].cronCode,
+      day: DAYS[0].key,
+      dayNumber: dayOfMonth,
+      every: Number(month.split('/')[1])
+    };
+  },
+  [ruleModes.yearly]: ({dayOfMonth, dayOfWeek, month}) => {
+    if (dayOfMonth === '?') {
+      // On nth day of week (1-7)
+      const [dw, ...ordinal] = dayOfWeek;
+      return {
+        mode: ruleModes.yearly,
+        daySelectorMode: 'computed',
+        ordinal: ordinal.join(''),
+        day: dw,
+        dayNumber: 1,
+        month
+      };
+    } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
+      // On nth weekday
+      const ordinal = dayOfMonth.replace('W', '');
+      return {
+        mode: ruleModes.yearly,
+        daySelectorMode: 'computed',
+        ordinal: ordinal === 'L' ? ordinal : `#${ordinal}`,
+        day: COMPUTED_DAYS.weekday.key,
+        dayNumber: 1,
+        month
+      };
+    } else if (dayOfMonth === 'L') {
+      // On Last (Weekday | Day | day of week)
+      return {
+        mode: ruleModes.yearly,
+        daySelectorMode: 'computed',
+        ordinal: dayOfMonth,
+        day: COMPUTED_DAYS.day.key,
+        dayNumber: 1,
+        month
+      };
+    }
+    return {
+      // On nth Day
+      mode: ruleModes.yearly,
+      daySelectorMode: 'numeric',
+      ordinal: ORDINALS[0].cronCode,
+      day: DAYS[0].key,
+      dayNumber: dayOfMonth,
+      month
+    };
+  }
 };
 
 export function isTimeZoneEqualCurrent (timeZone) {
   const current = moment.tz.guess();
-
   if (!timeZone) {
     return true;
   }
-
   return current === timeZone;
 }
 
@@ -22,20 +124,21 @@ export class CronConvert {
     }
     const parts = expression.split(' ').filter(Boolean);
     if (parts.length > 5) {
-      const [, minutes, hours, dayOfMonth, , dayOfWeek] = parts;
+      const [, minutes, hours, dayOfMonth, month, dayOfWeek] = parts;
       return {
         minutes,
         hours,
+        month,
         dayOfMonth,
         dayOfWeek
       };
     } else if (parts.length === 5) {
-      const [minutes, hours, dayOfMonth, , dayOfWeek] = parts;
-
+      const [minutes, hours, dayOfMonth, month, dayOfWeek] = parts;
       return {
         minutes,
         hours,
         dayOfMonth,
+        month,
         dayOfWeek
       };
     }
@@ -43,42 +146,44 @@ export class CronConvert {
   }
 
   static convertToRuleScheduleObject (cronExpression) {
-    const cronParts = CronConvert._getCronParts(cronExpression);
-
-    let time = {};
-    if (!isNaN(+cronParts.minutes)) {
-      time.minutes = +cronParts.minutes;
-    }
-    if (!isNaN(+cronParts.hours)) {
-      time.hours = +cronParts.hours;
-    }
-    let mode;
-    let every;
-    let dayOfWeek;
-    if ((cronParts.dayOfWeek === '*' || cronParts.dayOfWeek === '?') &&
-      cronParts.dayOfMonth.includes('/')) {
-      mode = ruleModes.daily;
-      every = cronParts.dayOfMonth.split('/')[1];
-    } else {
-      mode = ruleModes.weekly;
-      dayOfWeek = cronParts.dayOfWeek.includes(',')
-        ? cronParts.dayOfWeek.replace('0', '7').split(',')
-        : [cronParts.dayOfWeek.replace('0', '7')];
-    }
-    // {
-    //   mode: ruleModes.daily | ruleModes.weekly,
-    //   dayOfWeek: [], | every: 1,
-    //   time: {
-    //     hours: 0,
-    //     minutes: 0
-    //   }
-    // }
-    return {
-      mode,
-      every,
-      dayOfWeek,
-      time
+    const parts = CronConvert._getCronParts(cronExpression);
+    let schedule = {
+      mode: undefined,
+      every: undefined,
+      day: undefined,
+      dayNumber: undefined,
+      dayOfWeek: undefined,
+      daySelectorMode: undefined,
+      month: undefined,
+      ordinal: undefined,
+      time: {
+        hours: undefined,
+        minutes: undefined
+      }
     };
+    if (!isNaN(+parts.minutes)) {
+      schedule.time.minutes = +parts.minutes;
+    }
+    if (!isNaN(+parts.hours)) {
+      schedule.time.hours = +parts.hours;
+    }
+    if (
+      parts.dayOfMonth.includes('/') &&
+      parts.month === '*' &&
+      (parts.dayOfWeek === '*' || parts.dayOfWeek === '?')
+    ) {
+      schedule = {...schedule, ...DECODERS[ruleModes.daily](parts)};
+    } else if (
+      parts.dayOfMonth === '?' &&
+      parts.dayOfWeek?.split(',').every(d => !isNaN(d))
+    ) {
+      schedule = {...schedule, ...DECODERS[ruleModes.weekly](parts)};
+    } else if (parts.month.includes('/') && !isNaN(parts.month.split('/')[1])) {
+      schedule = {...schedule, ...DECODERS[ruleModes.monthly](parts)};
+    } else if (!isNaN(parts.month)) {
+      schedule = {...schedule, ...DECODERS[ruleModes.yearly](parts)};
+    }
+    return schedule;
   }
 
   /**
@@ -97,8 +202,13 @@ export class CronConvert {
    * */
   static convertToCronString ({
     mode,
-    dayOfWeek,
     every,
+    day,
+    dayNumber,
+    dayOfWeek,
+    daySelectorMode,
+    month,
+    ordinal,
     time: {
       hours,
       minutes
@@ -113,11 +223,41 @@ export class CronConvert {
       return weekday;
     };
     let cron5;
-    if (mode === ruleModes.daily) {
-      cron5 = `${minutes} ${hours} */${every} * ?`;
-    }
-    if (mode === ruleModes.weekly) {
-      cron5 = `${minutes} ${hours} ? * ${dayOfWeek.map(convertSunday).sort().join(',')}`;
+    switch (mode) {
+      case ruleModes.daily:
+        cron5 = `${minutes} ${hours} */${every} * ?`;
+        break;
+      case ruleModes.weekly:
+        cron5 = `${minutes} ${hours} ? * ${dayOfWeek.map(convertSunday).sort().join(',')}`;
+        break;
+      case ruleModes.monthly:
+        if (daySelectorMode === 'numeric') {
+          cron5 = `${minutes} ${hours} ${dayNumber} 1/${every} ?`;
+        } else if (daySelectorMode === 'computed' && ordinal) {
+          if (day === COMPUTED_DAYS.day.key) {
+            cron5 = `${minutes} ${hours} ${ordinal.replace('#', '')} 1/${every} ?`;
+          } else if (day === COMPUTED_DAYS.weekday.key) {
+            cron5 = `${minutes} ${hours} ${ordinal.replace('#', '')}W 1/${every} ?`;
+          } else {
+            cron5 = `${minutes} ${hours} ? 1/${every} ${day}${ordinal}`;
+          }
+        }
+        break;
+      case ruleModes.yearly:
+        if (daySelectorMode === 'numeric') {
+          cron5 = `${minutes} ${hours} ${dayNumber} ${month} ?`;
+        } else if (daySelectorMode === 'computed' && ordinal) {
+          if (day === COMPUTED_DAYS.day.key) {
+            cron5 = `${minutes} ${hours} ${ordinal.replace('#', '')} ${month} ?`;
+          } else if (day === COMPUTED_DAYS.weekday.key) {
+            cron5 = `${minutes} ${hours} ${ordinal.replace('#', '')}W ${month} ?`;
+          } else {
+            cron5 = `${minutes} ${hours} ? ${month} ${day}${ordinal}`;
+          }
+        }
+        break;
+      default:
+        break;
     }
     if (cronLength === 6) {
       return `0 ${cron5}`;
@@ -125,7 +265,6 @@ export class CronConvert {
     if (cronLength === 7) {
       return `0 ${cron5} *`;
     }
-
     return cron5 || null;
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,20 +20,25 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -59,12 +64,15 @@ public class MetadataPermissionManager {
         if (permissionHelper.isAdmin()) {
             return true;
         }
-        if (entityClass.equals(AclClass.ROLE)) {
-            return false;
-        }
         if (entityClass.equals(AclClass.PIPELINE_USER) && isSameUser(entityId)) {
             return true;
         }
+
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
+        }
+
         final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
         return permissionHelper.isAllowed(permission, securedEntity);
     }
@@ -117,10 +125,17 @@ public class MetadataPermissionManager {
         }
         final EntityVO entity = metadataVO.getEntity();
         final AclClass entityClass = entity.getEntityClass();
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
+        }
         if (allowUser && entityClass.equals(AclClass.PIPELINE_USER)) {
             return isMetadataEditAllowedForUser(metadataVO);
         }
         if (entityClass.equals(AclClass.ROLE)) {
+            return isMetadataEditAllowedForRole(metadataVO);
+        }
+        if (AclClass.TOOL.equals(entityClass) && isMetadataContainsRestrictedInstanceValues(metadataVO)) {
             return false;
         }
         return permissionHelper.isOwner(
@@ -128,10 +143,7 @@ public class MetadataPermissionManager {
     }
 
     private boolean isMetadataEditAllowedForUser(final MetadataVO metadataVO) {
-        final List<String> sensitiveKeys = preferenceManager.getPreference(
-                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
-        if (MapUtils.isNotEmpty(metadataVO.getData()) && ListUtils.emptyIfNull(sensitiveKeys).stream()
-                .anyMatch(key -> metadataVO.getData().containsKey(key))) {
+        if (metadataHasSensitiveKeys(metadataVO)){
             return false;
         }
         final Long entityId = metadataVO.getEntity().getEntityId();
@@ -139,8 +151,37 @@ public class MetadataPermissionManager {
                 entityManager.load(AclClass.PIPELINE_USER, entityId));
     }
 
+    private boolean isMetadataEditAllowedForRole(final MetadataVO metadataVO) {
+        if (metadataHasSensitiveKeys(metadataVO)){
+            return false;
+        }
+        final Long entityId = metadataVO.getEntity().getEntityId();
+        return permissionHelper.isAllowed("WRITE",
+                entityManager.load(AclClass.ROLE, entityId));
+    }
+
+    private boolean metadataHasSensitiveKeys(MetadataVO metadataVO) {
+        final List<String> sensitiveKeys = preferenceManager.getPreference(
+                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        if (MapUtils.isNotEmpty(metadataVO.getData()) && ListUtils.emptyIfNull(sensitiveKeys).stream()
+                .anyMatch(key -> metadataVO.getData().containsKey(key))) {
+            return true;
+        }
+        return false;
+    }
+
     private boolean isSameUser(final Long entityId) {
         final PipelineUser user = userManager.load(entityId);
         return permissionHelper.isOwner(user.getUserName());
+    }
+
+    private boolean isMetadataContainsRestrictedInstanceValues(final MetadataVO metadata) {
+        final Set<String> allowedTags = PipelineStringUtils.parseCommaSeparatedSet(
+                preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS));
+        if (CollectionUtils.isEmpty(allowedTags)) {
+            return false;
+        }
+        return SetUtils.emptyIfNull(MapUtils.emptyIfNull(metadata.getData()).keySet()).stream()
+                .anyMatch(allowedTags::contains);
     }
 }

@@ -1,0 +1,68 @@
+.path-navigation {
+  width: 100%;
+  padding: 2px 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.path-navigation .file-system-selector {
+  margin-left: 5px;
+}
+
+.ant-input.path-navigation-input {
+  flex: 1;
+  padding: 0 2px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fafafa;
+}
+
+.path-navigation .ant-breadcrumb {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.ant-input.path-navigation-input,
+.path-navigation .ant-breadcrumb {
+  line-height: 26px;
+  min-height: 28px;
+}
+
+.path-navigation .ant-breadcrumb .part {
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.path-navigation .ant-breadcrumb .part:hover {
+  color: #2282bf;
+}
+
+.path-navigation .ant-breadcrumb .part.current,
+.path-navigation .ant-breadcrumb .part.current:hover {
+  cursor: text;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.path-navigation .ant-breadcrumb > * {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-left: 3px;
+}
+
+.path-navigation .ant-breadcrumb > *:last-child {
+  flex-grow: 1;
+  cursor: text;
+  border: 1px solid transparent;
+  padding-left: 2px;
+}
+
+.path-navigation .ant-breadcrumb > *:last-child:hover {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fafafa;
+}
