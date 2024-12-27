@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -107,8 +108,9 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                         instance.ensureNotVisible(NODE_IMAGE));
         String nodeName =
                 clusterMenu()
-                .waitForTheNode(pipeline1, runID1517_1)
-                .getNodeName(runID1517_1);
+                        .sortByDecrease(DATE)
+                        .waitForTheNode(pipeline1, runID1517_1)
+                        .getNodeName(runID1517_1);
         clusterMenu()
                 .waitForTheNode(pipeline2, getLastRunId())
                 .click(nodeLabel(format("RUN ID %s", getLastRunId())), LogAO::new)
