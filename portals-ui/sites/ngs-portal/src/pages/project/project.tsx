@@ -1,45 +1,18 @@
-import { useEffect } from 'react';
-import { useParams } from 'react-router';
-import { useProjectsStore } from '../../state/projects/hooks';
-import { loadProjects } from '../../state/projects/load-projects';
-import { noop } from '@cloud-pipeline/core';
+import type { Project } from '@cloud-pipeline/core';
 import { ProjectHeader } from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { RoutePath, AppRoutes } from '../../shared/constants/routes';
-import { ItemLayout, PageSpinner } from '../../shared/ui';
+import { ItemLayout } from '../../shared/ui';
 import { useProjectTabs } from './hooks';
 
-export const ProjectPage = () => {
-  const { projectId } = useParams();
-  const {
-    projects,
-    error,
-    pending: isProjectsPending,
-    getProjectById,
-  } = useProjectsStore();
-  const project = getProjectById(Number(projectId));
+type Props = {
+  project: Project;
+};
 
-  useEffect(() => {
-    if (!projects && !isProjectsPending) {
-      loadProjects().then(noop).catch(noop);
-    }
-  }, [projects, isProjectsPending]);
-
+export const ProjectPage = ({ project }: Props) => {
   const { activeTab, tabs, handleChangeTab } = useProjectTabs(project);
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (isProjectsPending && !projects?.length) {
-    return <PageSpinner />;
-  }
-
-  if (!project) {
-    return <div>No data</div>;
-  }
 
   return (
     <div className="flex flex-col h-full">

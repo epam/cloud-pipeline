@@ -8,6 +8,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pagination } from 'antd';
 import { ProjectSearchParams } from '../constants';
 import { PageSpinner } from '../../../shared/ui';
+import {
+  generateProjectRoutePath,
+  ProjectTabs,
+} from '../../../shared/constants/routes.ts';
 
 function runCardRenderer(item: Run, _: string, i: number) {
   return (
@@ -20,7 +24,7 @@ function runCardRenderer(item: Run, _: string, i: number) {
 }
 
 type Props = {
-  projectId?: number;
+  projectId: number;
   extended?: boolean;
 };
 
@@ -33,7 +37,7 @@ export function ProjectRunsList({ projectId, extended }: Props) {
 
   const { runs, total, pending, error } = useAuthenticatedUserRuns({
     reloadIntervalMs: 5000,
-    projectIds: projectId ? [projectId] : undefined,
+    projectIds: [projectId],
     pageSize: extended ? 20 : 10,
     page: activePage,
   });
@@ -53,16 +57,16 @@ export function ProjectRunsList({ projectId, extended }: Props) {
       return undefined;
     }
 
-    const updatedSearchParams = new URLSearchParams(searchParams);
-    updatedSearchParams.set('tab', 'history');
-
-    const historyUrl = `/projects/${projectId}?${updatedSearchParams.toString()}`;
+    const historyUrl = generateProjectRoutePath(projectId, ProjectTabs.History);
 
     return {
       title: 'View all runs',
       link: historyUrl,
     };
-  }, [extended, projectId, searchParams]);
+  }, [extended, projectId]);
+
+  const showTotal = (total: number, range: number[]) =>
+    `${range[0]}-${range[1]} out of ${total} runs`;
 
   useEffect(() => {
     if (!pending && runs.length) {
@@ -96,9 +100,7 @@ export function ProjectRunsList({ projectId, extended }: Props) {
           size="small"
           pageSize={20}
           showSizeChanger={false}
-          showTotal={(total, range) =>
-            `${range[0]}-${range[1]} out of ${total} runs`
-          }
+          showTotal={showTotal}
         />
       )}
     </div>

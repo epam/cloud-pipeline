@@ -1,33 +1,33 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { Markdown } from '@cloud-pipeline/components';
 import type { Project } from '@cloud-pipeline/core';
 import { LayoutCard } from '../../../shared/ui/item-layout/layout-card';
 import { dummyDescription } from '../dummy.description';
 import { ProjectPipelines, ProjectRunsList } from '../components';
-import { useSearchParams } from 'react-router-dom';
-import { ProjectSearchParams, ProjectTabs } from '../constants';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  generateProjectRoutePath,
+  ProjectTabs,
+} from '../../../shared/constants/routes';
 
-export const useProjectTabs = (project?: Project) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+export const useProjectTabs = (project: Project) => {
+  const { tabId } = useParams();
+  const navigate = useNavigate();
 
-  const activeTabKey: ProjectTabs = useMemo(() => {
-    const tab = searchParams.get(ProjectSearchParams.Tab);
+  useEffect(() => {
+    const isValidTab =
+      !tabId || Object.values(ProjectTabs).includes(tabId as ProjectTabs);
 
-    if (tab && Object.values(ProjectTabs).includes(tab as ProjectTabs)) {
-      return tab as ProjectTabs;
+    if (!isValidTab) {
+      navigate(generateProjectRoutePath(project.id, ProjectTabs.Info));
     }
-
-    return ProjectTabs.Info;
-  }, [searchParams]);
+  }, [navigate, project.id, tabId]);
 
   const handleChangeTab = useCallback(
     (key: string) => {
-      // clear all other params
-      const newSearchParams = new URLSearchParams();
-      newSearchParams.set(ProjectSearchParams.Tab, key);
-      setSearchParams(newSearchParams);
+      navigate(generateProjectRoutePath(project.id, key as ProjectTabs));
     },
-    [setSearchParams],
+    [navigate, project.id],
   );
 
   const tabs = useMemo(
@@ -38,7 +38,7 @@ export const useProjectTabs = (project?: Project) => {
         content: <Markdown>{dummyDescription}</Markdown>,
         aside: [
           <LayoutCard key="runs">
-            <ProjectRunsList projectId={project?.id} />
+            <ProjectRunsList projectId={project.id} />
           </LayoutCard>,
           <LayoutCard key="bottom">
             <div>Permissions</div>
@@ -58,15 +58,15 @@ export const useProjectTabs = (project?: Project) => {
       {
         key: ProjectTabs.History,
         label: <span className="px-4">History</span>,
-        content: <ProjectRunsList projectId={project?.id} extended />,
+        content: <ProjectRunsList projectId={project.id} extended />,
       },
     ],
     [project],
   );
 
   const activeTab = useMemo(
-    () => tabs.find((tab) => tab.key === activeTabKey) ?? tabs[0],
-    [activeTabKey, tabs],
+    () => tabs.find((tab) => tab.key === tabId) ?? tabs[0],
+    [tabId, tabs],
   );
 
   return {
