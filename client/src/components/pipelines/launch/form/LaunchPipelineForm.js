@@ -149,7 +149,10 @@ import {
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import PipelineVersionPicker from './pipeline-version-picker';
 import {generateContinueRunParameters} from '../../../runs/actions/continue-run';
-import {getFsConfigFromParameters, getParametersFromFsConfig} from "./utilities/configure-fs/utilities";
+import {
+  getFsConfigFromParameters,
+  getParametersFromFsConfig
+} from './utilities/configure-fs/utilities';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -1314,8 +1317,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: this.rescheduleRun
         };
       }
-      payload[PARAMETERS] = getParametersFromFsConfig(this.state.fsConfig, payload[PARAMETERS]);
     }
+    payload[PARAMETERS] = getParametersFromFsConfig(
+      this.state.fsConfig,
+      payload[PARAMETERS],
+      this.currentCloudRegionProvider
+    );
     payload[PARAMETERS] = applyCapabilities(
       payload[PARAMETERS],
       this.state.runCapabilities,
@@ -1552,7 +1559,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: !!this.rescheduleRun
       };
     }
-    payload.params = getParametersFromFsConfig(this.state.fsConfig, payload.params);
+    payload.params = getParametersFromFsConfig(
+      this.state.fsConfig,
+      payload.params,
+      this.currentCloudRegionProvider
+    );
     payload.params = applyCapabilities(
       payload.params,
       this.state.runCapabilities,

@@ -72,7 +72,11 @@ export function getDeploymentType (parameters) {
   const fsType = getShareFsType(parameters);
   if (fsType === ShareFsType.lustre) {
     const defaultType = getShareFsDeploymentTypeDefault(fsType);
-    const deploymentType = getParameterValue(parameters, CP_CAP_SHARE_FS_DEPLOYMENT_TYPE, defaultType) || defaultType;
+    const deploymentType = getParameterValue(
+      parameters,
+      CP_CAP_SHARE_FS_DEPLOYMENT_TYPE,
+      defaultType
+    ) || defaultType;
     for (const o of Object.values(LustreFSDeploymentTypes)) {
       if (o.toLowerCase() === deploymentType.toLowerCase()) {
         return o;
@@ -128,22 +132,15 @@ export function getShareFsDeploymentTypeDefault (fsType) {
 }
 
 export function getShareFsThroughputDefault (deploymentType) {
-  switch (deploymentType) {
-    case LustreFSDeploymentTypes.persistent1:
-      return 100;
-    case LustreFSDeploymentTypes.persistent2:
-      return 500;
-    default:
-      return undefined;
-  }
+  return undefined;
 }
 
 export function getShareFsThroughputOptions (deploymentType) {
   switch (deploymentType) {
     case LustreFSDeploymentTypes.persistent1:
-      return [50, 100, 200];
+      return [undefined, 50, 100, 200];
     case LustreFSDeploymentTypes.persistent2:
-      return [125, 250, 500, 1000];
+      return [undefined, 125, 250, 500, 1000];
     default:
       return [];
   }
@@ -158,6 +155,7 @@ export function getShareFsIOPSOptions (deploymentType) {
     case LustreFSDeploymentTypes.persistent1:
     case LustreFSDeploymentTypes.persistent2:
       return [
+        undefined,
         1500,
         3000,
         6000,
@@ -183,7 +181,7 @@ export function getShareFsIOPSOptions (deploymentType) {
   }
 }
 
-function asNumber(o) {
+function asNumber (o) {
   if (o === undefined || Number.isNaN(Number(o))) {
     return undefined;
   }
@@ -193,7 +191,7 @@ function asNumber(o) {
 export function validateFsDeploymentType (config) {
   const {
     fsType = ShareFsType.lfs,
-    deploymentType: original,
+    deploymentType: original
   } = config || {};
   let deploymentType = original;
   let error;
@@ -218,7 +216,7 @@ export function validateFsDeploymentType (config) {
 export function validateFsVolume (config) {
   const {
     fsType = ShareFsType.lfs,
-    volume: original,
+    volume: original
   } = config || {};
   let volume = asNumber(original);
   let error;
@@ -231,7 +229,7 @@ export function validateFsVolume (config) {
   }
   if (volume === undefined || (volume % 1200 !== 0) || volume < 1200) {
     volume = 1200;
-    error = 'Volume must be a multiple of 1200 (e.g., 1200, 2400, 3600, ...)'
+    error = 'Volume must be a multiple of 1200 (e.g., 1200, 2400, 3600, ...)';
   }
   return {
     corrected: volume,
@@ -244,7 +242,7 @@ export function validateFsThroughput (config) {
   const {
     fsType = ShareFsType.lfs,
     deploymentType,
-    throughput: original,
+    throughput: original
   } = config || {};
   let throughput = asNumber(original);
   let error;
@@ -270,7 +268,7 @@ export function validateFsIops (config) {
   const {
     fsType = ShareFsType.lfs,
     deploymentType,
-    iops: original,
+    iops: original
   } = config || {};
   let iops = asNumber(original);
   let error;
@@ -298,13 +296,13 @@ export function getDefaultConfig () {
     deploymentType: undefined,
     volume: undefined,
     throughput: undefined,
-    iops: undefined,
+    iops: undefined
   };
 }
 
 export function normalizeFsConfig (config) {
   const {
-    fsType = ShareFsType.lfs,
+    fsType = ShareFsType.lfs
   } = config || {};
   if (fsType === ShareFsType.lfs) {
     return {
@@ -312,19 +310,19 @@ export function normalizeFsConfig (config) {
       deploymentType: undefined,
       volume: undefined,
       throughput: undefined,
-      iops: undefined,
+      iops: undefined
     };
   }
-  const { corrected: deploymentType } = validateFsDeploymentType(config);
-  const { corrected: volume } = validateFsVolume(config);
-  const { corrected: throughput} = validateFsThroughput(config);
-  const { corrected: iops} = validateFsIops(config);
+  const {corrected: deploymentType} = validateFsDeploymentType(config);
+  const {corrected: volume} = validateFsVolume(config);
+  const {corrected: throughput} = validateFsThroughput(config);
+  const {corrected: iops} = validateFsIops(config);
   return {
     fsType,
     deploymentType,
     volume,
     throughput,
-    iops,
+    iops
   };
 }
 
@@ -339,16 +337,19 @@ export function getFsConfigFromParameters (parameters) {
     deploymentType,
     volume,
     throughput,
-    iops,
+    iops
   });
 }
 
-export function getParametersFromFsConfig (fsConfig, parameters) {
+export function getParametersFromFsConfig (fsConfig, parameters, provider = undefined) {
   const result = parameters || {};
   for (const param of CP_CAP_FS_PARAMETERS) {
     if (result.hasOwnProperty(param)) {
       delete result[param];
     }
+  }
+  if (provider !== undefined && !/^aws$/i.test(provider)) {
+    return result;
   }
   if (fsConfig) {
     const {
@@ -365,7 +366,7 @@ export function getParametersFromFsConfig (fsConfig, parameters) {
           value: value.toString()
         };
       }
-    }
+    };
     addParameter(CP_CAP_SHARE_FS_TYPE, fsType);
     addParameter(CP_CAP_SHARE_FS_DEPLOYMENT_TYPE, deploymentType);
     addParameter(CP_CAP_SHARE_FS_SIZE, volume);
@@ -375,8 +376,11 @@ export function getParametersFromFsConfig (fsConfig, parameters) {
   return result;
 }
 
-export function getTooltParametersFromFsConfig (fsConfig, parameters) {
+export function getToolParametersFromFsConfig (fsConfig, parameters, provider = undefined) {
   const result = (parameters || []).filter((p) => !CP_CAP_FS_PARAMETERS.includes(p.name));
+  if (provider !== undefined && !/^aws$/i.test(provider)) {
+    return result;
+  }
   if (fsConfig) {
     const {
       fsType,
@@ -393,7 +397,7 @@ export function getTooltParametersFromFsConfig (fsConfig, parameters) {
           value: value.toString()
         });
       }
-    }
+    };
     addParameter(CP_CAP_SHARE_FS_TYPE, fsType);
     addParameter(CP_CAP_SHARE_FS_DEPLOYMENT_TYPE, deploymentType);
     addParameter(CP_CAP_SHARE_FS_SIZE, volume);
@@ -403,7 +407,7 @@ export function getTooltParametersFromFsConfig (fsConfig, parameters) {
   return result;
 }
 
-export function fsConfigsAreEqual(config1, config2) {
+export function fsConfigsAreEqual (config1, config2) {
   const {
     fsType: fsType1 = ShareFsType.lfs,
     deploymentType: deploymentType1,

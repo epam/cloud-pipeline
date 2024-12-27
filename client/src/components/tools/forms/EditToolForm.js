@@ -109,8 +109,8 @@ import {
 import {
   fsConfigsAreEqual,
   getFsConfigFromParameters,
-  getTooltParametersFromFsConfig
-} from "../../pipelines/launch/form/utilities/configure-fs/utilities";
+  getToolParametersFromFsConfig
+} from '../../pipelines/launch/form/utilities/configure-fs/utilities';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -324,7 +324,11 @@ export default class EditToolForm extends React.Component {
               );
             }
           }
-          params = getTooltParametersFromFsConfig(this.state.fsConfig, params);
+          params = getToolParametersFromFsConfig(
+            this.state.fsConfig,
+            params,
+            this.getCloudProvider()
+          );
           toggleParameter(CP_CAP_SGE, this.state.launchCluster && this.state.gridEngineEnabled);
           toggleParameter(CP_CAP_SPARK, this.state.launchCluster && this.state.sparkEnabled);
           toggleParameter(CP_CAP_SLURM, this.state.launchCluster && this.state.slurmEnabled);

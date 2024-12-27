@@ -1215,6 +1215,7 @@ class ConfigureClusterDialog extends React.Component {
             fsConfig={this.state.fsConfig}
             onChange={this.onChangeFsConfig}
             notSupported={this.selectedClusterType === CLUSTER_TYPE.singleNode}
+            cloudRegionProvider={this.props.cloudRegionProvider}
           />
         </div>
       </Modal>

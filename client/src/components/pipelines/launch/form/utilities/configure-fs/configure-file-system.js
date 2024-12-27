@@ -32,6 +32,27 @@ function renderParameterTooltip (parameter, style) {
   );
 }
 
+function getOptionValue(option) {
+  if (option === undefined) {
+    return 'not-set';
+  }
+  return option.toString();
+}
+
+function getOptionDescription(option) {
+  if (option === undefined) {
+    return 'Not set';
+  }
+  return option.toString();
+}
+
+function parseOptionValue(value) {
+  if (value === 'not-set' || Number.isNaN(Number(value))) {
+    return undefined;
+  }
+  return Number(value);
+}
+
 class ConfigureFileSystem extends React.Component {
   state = {
     fsType: ShareFsType.lfs,
@@ -148,20 +169,27 @@ class ConfigureFileSystem extends React.Component {
   };
 
   onChangeFsThroughput = (throughput) => {
-    this.setState(normalizeFsConfig({...this.state, throughput}), this.validateAndReport);
+    this.setState(normalizeFsConfig({
+      ...this.state,
+      throughput: parseOptionValue(throughput)
+    }), this.validateAndReport);
   };
 
   onChangeFsIops = (iops) => {
-    this.setState(normalizeFsConfig({...this.state, iops}), this.validateAndReport);
+    this.setState(normalizeFsConfig({
+      ...this.state,
+      iops: parseOptionValue(iops)
+    }), this.validateAndReport);
   };
 
   render () {
     const {
       notSupported,
       className,
-      style
+      style,
+      cloudRegionProvider
     } = this.props;
-    if (notSupported) {
+    if (notSupported || (cloudRegionProvider && !/^aws$/i.test(cloudRegionProvider))) {
       return null;
     }
     const {
@@ -195,7 +223,11 @@ class ConfigureFileSystem extends React.Component {
             <span className={styles.configureFsTitle}>
               Type:
             </span>
-            <Select className={styles.configureFsControl} value={fsType} onChange={this.onChangeFsType}>
+            <Select
+              className={styles.configureFsControl}
+              value={fsType}
+              onChange={this.onChangeFsType}
+            >
               {
                 [ShareFsType.lfs, ShareFsType.lustre].map((ft) => (
                   <Select.Option key={ft} value={ft}>
@@ -215,7 +247,10 @@ class ConfigureFileSystem extends React.Component {
                   Deployment type:
                 </span>
                 <Select
-                  className={classNames(styles.configureFsControl, {'cp-error': deploymentTypeError})}
+                  className={classNames(
+                    styles.configureFsControl,
+                    {'cp-error': deploymentTypeError}
+                  )}
                   value={deploymentType}
                   onChange={this.onChangeDeploymentType}
                 >
@@ -276,13 +311,16 @@ class ConfigureFileSystem extends React.Component {
                 </span>
                 <Select
                   className={classNames(styles.configureFsControl, {'cp-error': throughputError})}
-                  value={throughput === undefined ? undefined : throughput.toString()}
+                  value={getOptionValue(throughput)}
                   onChange={this.onChangeFsThroughput}
                 >
                   {
                     throughputOptions.map((to) => (
-                      <Select.Option key={to.toString()} value={to.toString()}>
-                        <span>{to.toString()}</span>
+                      <Select.Option
+                        key={getOptionValue(to)}
+                        value={getOptionValue(to)}
+                      >
+                        <span>{getOptionDescription(to)}</span>
                       </Select.Option>
                     ))
                   }
@@ -310,13 +348,16 @@ class ConfigureFileSystem extends React.Component {
                 </span>
                 <Select
                   className={classNames(styles.configureFsControl, {'cp-error': iopsError})}
-                  value={iops === undefined ? undefined : iops.toString()}
+                  value={getOptionValue(iops)}
                   onChange={this.onChangeFsIops}
                 >
                   {
                     iopsOptions.map((io) => (
-                      <Select.Option key={io.toString()} value={io.toString()}>
-                        <span>{io.toString()}</span>
+                      <Select.Option
+                        key={getOptionValue(io)}
+                        value={getOptionValue(io)}
+                      >
+                        <span>{getOptionDescription(io)}</span>
                       </Select.Option>
                     ))
                   }
@@ -349,7 +390,8 @@ ConfigureFileSystem.propTypes = {
     iops: PropTypes.number
   }),
   onChange: PropTypes.func,
-  notSupported: PropTypes.bool
+  notSupported: PropTypes.bool,
+  cloudRegionProvider: PropTypes.string
 };
 
 ConfigureFileSystem.defaultProps = {
