@@ -56,7 +56,7 @@ public class PipelineRunNextflowTraceDataExtractor implements  PipelineRunRuntim
     }
 
     @Override
-    public RunRuntimeData parseData(final InputStream data) {
+    public RunRuntimeData parseData(final Map<String, String> parameters, final InputStream data) {
         try {
             final List<String> traceLines = Streams.readAllLines(data);
             final Map<String, Integer> header = parseHeader(traceLines.stream().findFirst().orElse(StringUtils.EMPTY));

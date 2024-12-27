@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 public class PipelineRunNextflowTraceDataExtractorTest {
 
@@ -60,7 +61,7 @@ public class PipelineRunNextflowTraceDataExtractorTest {
     public void shouldParseDataForValidTraceFile() {
         final PipelineRunNextflowTraceDataExtractor extractor = new PipelineRunNextflowTraceDataExtractor(jsonMapper);
         final RunRuntimeData result = extractor.parseData(
-                new ByteArrayInputStream(VALID_TRACE_FILE.getBytes(StandardCharsets.UTF_8)));
+                Collections.emptyMap(), new ByteArrayInputStream(VALID_TRACE_FILE.getBytes(StandardCharsets.UTF_8)));
 
         Assert.assertEquals(RunSyncRuntimeDataType.NF_TRACE, result.getType());
         final NextflowTraceFile nfTraceFile = (NextflowTraceFile) result.getData();
@@ -74,13 +75,15 @@ public class PipelineRunNextflowTraceDataExtractorTest {
     @Test(expected = IllegalStateException.class)
     public void shouldThrowIfParseNotValidTraceFile() {
         final PipelineRunNextflowTraceDataExtractor extractor = new PipelineRunNextflowTraceDataExtractor(jsonMapper);
-        extractor.parseData(new ByteArrayInputStream(INVALID_TRACE_FILE.getBytes(StandardCharsets.UTF_8)));
+        extractor.parseData(Collections.emptyMap(),
+                new ByteArrayInputStream(INVALID_TRACE_FILE.getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowIfParseTraceFileWithoutExpectedFields() {
         final PipelineRunNextflowTraceDataExtractor extractor = new PipelineRunNextflowTraceDataExtractor(jsonMapper);
-        extractor.parseData(new ByteArrayInputStream(INVALID_TRACE_FILE_WITHOUT_HASH.getBytes(StandardCharsets.UTF_8)));
+        extractor.parseData(Collections.emptyMap(),
+                new ByteArrayInputStream(INVALID_TRACE_FILE_WITHOUT_HASH.getBytes(StandardCharsets.UTF_8)));
     }
 
 }

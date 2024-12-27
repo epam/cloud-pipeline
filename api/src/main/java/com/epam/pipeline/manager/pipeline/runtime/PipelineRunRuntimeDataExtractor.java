@@ -24,6 +24,6 @@ import java.util.Map;
 
 public interface PipelineRunRuntimeDataExtractor {
     String getDataFilePath(Map<String, String> parameters);
-    RunRuntimeData parseData(InputStream data);
+    RunRuntimeData parseData(Map<String, String> parameters, InputStream data);
     RunSyncRuntimeDataType getDataType();
 }
