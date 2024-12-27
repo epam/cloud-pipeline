@@ -47,7 +47,15 @@ function add_to_spec() {
 }
 
 function start_sync_daemon() {
-    while true; do
+    while [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; do
+
+        if [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]; then
+            echo "File $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE defined as CP_SYNC_TO_STORAGE_STOP_FLAG_FILES and present. Perform last sync iteration before stop."
+            # We need to use such mechanism with additional env var instead of 'while [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]'
+            # because CP_SYNC_TO_STORAGE_STOP_FLAG_FILE can be created during sleep -> we still need to perform one more sync iteration
+            export CP_SYNC_TO_STORAGE_STOP="true"
+        fi
+
         if [ ! -f "$CP_SYNC_TO_STORAGE_SPEC" ]; then
             echo_debug "Spec file not found: $CP_SYNC_TO_STORAGE_SPEC"
             sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
@@ -101,12 +109,15 @@ function start_sync_daemon() {
             fi
         done <"$CP_SYNC_TO_STORAGE_SPEC"
 
-        sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
+        if [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; then
+            sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
+        fi
     done
 }
 
 export CP_SYNC_TO_STORAGE_SPEC="${CP_SYNC_TO_STORAGE_SPEC:-/etc/sync_to_storage.list}"
 export CP_SYNC_TO_STORAGE_PID_FILE="${CP_SYNC_TO_STORAGE_PID_FILE:-/var/run/sync_to_storage.pid}"
+export CP_SYNC_TO_STORAGE_STOP_FLAG_FILE="${CP_SYNC_TO_STORAGE_STOP_FLAG_FILE:-/var/run/sync_to_storage.stop}"
 export CP_SYNC_TO_STORAGE_TIMEOUT_SEC="${CP_SYNC_TO_STORAGE_TIMEOUT_SEC:-3600}"
 export CP_SYNC_TO_STORAGE_LOGFILE="${CP_SYNC_TO_STORAGE_LOGFILE:-/var/log/sync_to_storage.log}"
 export CP_SYNC_TO_STORAGE_DEBUG="${CP_SYNC_TO_STORAGE_DEBUG:-false}"
