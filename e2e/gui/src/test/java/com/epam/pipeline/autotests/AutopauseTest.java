@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.SPOT;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -48,6 +49,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String diskSize = "15";
     private final String onDemand = ON_DEMAND;
+    private final String spot = SPOT;
     private final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
 
     private String maxIdleTimeout;
@@ -99,7 +101,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(defaultPriceType, hidden);
+        final String run2 = launchTool(spot, hidden);
         runsMenu()
                 .activeRuns()
                 .ensure(runWithId(run2), visible)
@@ -118,7 +120,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(defaultPriceType, hidden);
+        final String run2 = launchTool(spot, hidden);
         runsMenu()
                 .activeRuns()
                 .waitUntilResumeButtonAppear(run1)
