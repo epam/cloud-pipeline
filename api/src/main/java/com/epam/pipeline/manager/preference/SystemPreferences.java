@@ -981,6 +981,8 @@ public class SystemPreferences {
             "ui.quick.search.disabled", false, UI_GROUP, pass, true);
     public static final BooleanPreference UI_STANDALONE_NODES_ALLOW_TERMINATE = new BooleanPreference(
             "ui.standalone.nodes.allow.terminate", false, UI_GROUP, pass, true);
+    public static final BooleanPreference UI_CLUSTER_MONITORING_ADMINS_ALLOW_RANGE = new BooleanPreference(
+            "ui.cluster.monitoring.admins.allow.range", false, UI_GROUP, pass, true);
 
 
     // Facet Filters
