@@ -30,14 +30,18 @@ function add_to_spec() {
     local _location_to_add="$(echo ${1%/})"
     local _destination_to_add="$(echo ${2%/})"
     touch "$CP_SYNC_TO_STORAGE_SPEC"
-    # Spec already contains a requested location
-    if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
-        return
-    fi
 
     if [ -n "$_destination_to_add" ]; then
+        # Spec already contains a requested location
+        if grep -q -x -F "$_location_to_add $_destination_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+            return
+        fi
         echo "$_location_to_add" "$_destination_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
     else
+        # Spec already contains a requested location
+        if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+            return
+        fi
         echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
     fi
 }
