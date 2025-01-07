@@ -46,6 +46,19 @@ function add_to_spec() {
     fi
 }
 
+function remove_from_spec() {
+    local _location_to_add="$(echo ${1%/})"
+    touch "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+
+    if grep -q -w -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+        # Spec already marked for a deletion
+        if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"; then
+            return
+        fi
+        echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+    fi
+}
+
 function start_sync_daemon() {
     while [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; do
 
@@ -109,6 +122,24 @@ function start_sync_daemon() {
             fi
         done <"$CP_SYNC_TO_STORAGE_SPEC"
 
+        # Check if some file from config marked for deletion
+        if [ -f "$CP_SYNC_TO_STORAGE_REMOVE_SPEC" ]; then
+            while read -a _sync_config_entry; do
+                local _source_path=${_sync_config_entry[0]}
+                if grep -q -x -F "$_source_path" "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"; then
+                    echo_debug "Path $_source_path is configured for the deletion from sync process"
+                    continue
+                fi
+                echo "${_sync_config_entry[@]}" >> "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+            done <"$CP_SYNC_TO_STORAGE_SPEC"
+
+            if [ -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" ]; then
+                mv -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.prev"
+                mv -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" "${CP_SYNC_TO_STORAGE_SPEC}"
+                rm -f "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+            fi
+        fi
+
         if [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; then
             sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
         fi
@@ -116,6 +147,7 @@ function start_sync_daemon() {
 }
 
 export CP_SYNC_TO_STORAGE_SPEC="${CP_SYNC_TO_STORAGE_SPEC:-/etc/sync_to_storage.list}"
+export CP_SYNC_TO_STORAGE_REMOVE_SPEC="${CP_SYNC_TO_STORAGE_REMOVE_SPEC:-/etc/sync_to_storage_remove.list}"
 export CP_SYNC_TO_STORAGE_PID_FILE="${CP_SYNC_TO_STORAGE_PID_FILE:-/var/run/sync_to_storage.pid}"
 export CP_SYNC_TO_STORAGE_STOP_FLAG_FILE="${CP_SYNC_TO_STORAGE_STOP_FLAG_FILE:-/var/run/sync_to_storage.stop}"
 export CP_SYNC_TO_STORAGE_TIMEOUT_SEC="${CP_SYNC_TO_STORAGE_TIMEOUT_SEC:-3600}"
@@ -134,6 +166,12 @@ if [ "$_cmd" == "add" ]; then
         exit 1
     fi
     add_to_spec "$2" "$3"
+elif [ "$_cmd" == "remove" ]; then
+    if [ -z "$2" ]; then
+        echo "[ERROR] Source file for syncing is not specified, nothing will be removed from the sync spec"
+        exit 1
+    fi
+    remove_from_spec "$2"
 elif [ "$_cmd" == "start" ]; then
     if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
         echo "[WARN] Sync destination location is not defined, only config entries with both source and destination will be processed"
