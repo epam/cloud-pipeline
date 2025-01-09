@@ -11,6 +11,7 @@ import { useNgsFilters } from '../../../features/ngs-filters';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import HighlightedText from '../../../shared/highlight-text';
 import { Link } from 'react-router-dom';
+import { generateLaunchRoutePath } from '../../../shared/constants/routes';
 
 type Props = CommonProps & {
   project: Project | undefined;
@@ -63,8 +64,12 @@ export const ProjectPipelines = (props: Props) => {
             </div>
           </div>
           <div className="flex flex-nowrap items-center gap-1">
-            <Button type="primary" size="small">
-              Run
+            <Button style={{ padding: 0 }} type="primary" size="small">
+              <Link
+                className="flex w-full h-full px-2"
+                to={generateLaunchRoutePath(item.id)}>
+                Run
+              </Link>
             </Button>
             <Button type="primary" danger size="small">
               <TrashIcon className="w-4 h-4" />

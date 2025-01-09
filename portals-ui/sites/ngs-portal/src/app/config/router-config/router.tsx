@@ -8,6 +8,7 @@ import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
 import { RunsPage } from '../../../pages/runs';
 import { ProjectsPage } from '../../../pages/projects';
 import { PipelinePage } from '../../../pages/pipeline';
+import { LaunchPage } from '../../../pages/launch';
 
 export type NgsPortalRoute = RouteObject & {
   ngsPortalRoute: AppRoutes;
@@ -31,6 +32,7 @@ export const routes: NgsPortalRoute[] = [
   generateNgsPortalRoute(AppRoutes.PIPELINES, { element: <PipelinesPage /> }),
   generateNgsPortalRoute(AppRoutes.PIPELINE, { element: <PipelinePage /> }),
   generateNgsPortalRoute(AppRoutes.RUNS, { element: <RunsPage /> }),
+  generateNgsPortalRoute(AppRoutes.LAUNCH, { element: <LaunchPage /> }),
   // TODO: create not-found page
   generateNgsPortalRoute(AppRoutes.NOT_FOUND, { element: <HomePage /> }),
 ];

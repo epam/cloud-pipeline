@@ -5,6 +5,7 @@ export enum AppRoutes {
   PIPELINES = 'pipelines',
   PIPELINE = 'pipeline',
   RUNS = 'runs',
+  LAUNCH = 'launch',
   NOT_FOUND = 'not_found',
 }
 
@@ -15,6 +16,7 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.PIPELINES]: '/pipelines',
   [AppRoutes.PIPELINE]: '/pipelines/:pipelineId',
   [AppRoutes.RUNS]: '/runs',
+  [AppRoutes.LAUNCH]: '/launch/:pipelineId',
   [AppRoutes.NOT_FOUND]: '*',
 };
 
@@ -24,4 +26,8 @@ export function generateProjectRoutePath(projectId: string | number): string {
 
 export function generatePipelineRoutePath(pipelineId: string | number): string {
   return `/pipelines/${pipelineId}`;
+}
+
+export function generateLaunchRoutePath(pipelineId: string | number): string {
+  return `/launch/${pipelineId}`;
 }
