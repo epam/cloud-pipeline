@@ -6,12 +6,15 @@ import cn from 'classnames';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pagination } from 'antd';
-import { ProjectSearchParams } from '../constants';
 import { PageSpinner } from '../../../shared/ui';
 import {
   generateProjectRoutePath,
   ProjectTabs,
 } from '../../../shared/constants/routes.ts';
+
+enum ProjectSearchParams {
+  Page = 'page',
+}
 
 function runCardRenderer(item: Run, _: string, i: number) {
   return (
