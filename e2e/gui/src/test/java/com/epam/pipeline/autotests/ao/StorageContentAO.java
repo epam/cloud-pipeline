@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.google.common.collect.Comparators;
@@ -172,6 +173,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
+        $(byText("Create folder")).waitUntil(not(exist), DEFAULT_TIMEOUT);
         return this;
     }
 

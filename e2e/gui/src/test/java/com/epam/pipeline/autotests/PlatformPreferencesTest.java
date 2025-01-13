@@ -18,6 +18,10 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Condition;
 import static com.codeborne.selenide.Selenide.open;
 import com.epam.pipeline.autotests.ao.LogAO;
+import static com.epam.pipeline.autotests.ao.Primitive.DEPLOYMENT_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.FILE_SYSTEM_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.IOPS;
+import static com.epam.pipeline.autotests.ao.Primitive.THROUGHPUT;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -209,18 +213,11 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                     .enableClusterLaunch()
                     .clusterSettingsForm(clusterSettingForm)
                     .clusterEnableCheckboxSelect("Enable GridEngine")
+                    .setFileSystemParameter(FILE_SYSTEM_TYPE, "LustreFS")
+                    .setFileSystemParameter(DEPLOYMENT_TYPE, "PERSISTENT_2")
+                    .setFileSystemVolume("1200")
+                    .setFileSystemParameter(THROUGHPUT, "500")
                     .ok()
-                    .expandTab(ADVANCED_PANEL)
-                    .clickAddSystemParameter()
-                    .selectSystemParameters("CP_CAP_SHARE_FS_TYPE",
-                            "CP_CAP_SHARE_FS_THROUGHPUT",
-                            "CP_CAP_SHARE_FS_SIZE",
-                            "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE")
-                    .ok()
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_TYPE", "lustre")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
                     .launch(this)
                     .showLog(getLastRunId())
                     .waitForSshLink()
@@ -254,20 +251,12 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                     .enableClusterLaunch()
                     .clusterSettingsForm(clusterSettingForm)
                     .clusterEnableCheckboxSelect("Enable GridEngine")
+                    .setFileSystemParameter(FILE_SYSTEM_TYPE, "LustreFS")
+                    .setFileSystemParameter(DEPLOYMENT_TYPE, "PERSISTENT_2")
+                    .setFileSystemVolume("1200")
+                    .setFileSystemParameter(THROUGHPUT, "500")
+                    .setFileSystemParameter(IOPS, "1500")
                     .ok()
-                    .expandTab(ADVANCED_PANEL)
-                    .clickAddSystemParameter()
-                    .selectSystemParameters("CP_CAP_SHARE_FS_TYPE",
-                            "CP_CAP_SHARE_FS_THROUGHPUT",
-                            "CP_CAP_SHARE_FS_SIZE",
-                            "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE",
-                            "CP_CAP_SHARE_FS_IOPS")
-                    .ok()
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_TYPE", "lustre")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
-                    .inputSystemParameterValue("CP_CAP_SHARE_FS_IOPS", "1500")
                     .launch(this)
                     .showLog(getLastRunId())
                     .waitForSshLink()

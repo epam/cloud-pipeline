@@ -617,10 +617,20 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public static class ConfigureClusterPopupAO  extends PopupAO<ConfigureClusterPopupAO, PipelineRunFormAO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent().find(byClassName("ant-select-selection--single"))),
+                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent()
+                        .find(byClassName("ant-select-selection--single"))),
                 entry(WORKING_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[1]"))),
                 entry(DEFAULT_CHILD_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]"))),
-                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]")))
+                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]"))),
+                entry(FILE_SYSTEM_TYPE, context().$(byText("Type:"))
+                        .parent().$(byClassName("ant-select-selection--single"))),
+                entry(DEPLOYMENT_TYPE, context().$(byText("Deployment type:"))
+                        .parent().$(byClassName("ant-select-selection--single"))),
+                entry(IOPS, context().$(byText("IOPS"))
+                        .parent().parent().$(byClassName("ant-select-selection--single"))),
+                entry(THROUGHPUT, context().$(byText("Throughput"))
+                        .parent().parent().$(byClassName("ant-select-selection--single"))),
+                entry(VOLUME, context().$(byText("Volume")).parent().parent().$(byXpath(".//input")))
         );
 
         public ConfigureClusterPopupAO(PipelineRunFormAO parentAO) {
@@ -663,6 +673,18 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                     .shouldBe(visible)
                     .click();
             return this;
+        }
+
+        public ConfigureClusterPopupAO setFileSystemParameter(Primitive parameter, final String type) {
+            click(parameter);
+            context().find(visible(byClassName("ant-select-dropdown"))).find(byText(type))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public ConfigureClusterPopupAO setFileSystemVolume(final String volume) {
+            return setValue(VOLUME, volume);
         }
 
         public ConfigureClusterPopupAO enableHybridClusterSelect () {
