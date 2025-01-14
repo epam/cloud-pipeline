@@ -503,9 +503,9 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     public void addSupportForAutoscalingFilesystemForAWS() {
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .doNotMountStoragesSelect(true)
                 .setDisk("25")
                 .setPriceType(ON_DEMAND)
-                .doNotMountStoragesSelect(true)
                 .click(START_IDLE)
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
