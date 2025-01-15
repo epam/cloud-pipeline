@@ -49,7 +49,8 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
     }
 
     public PipelinesLibraryAO clickCreateButton() {
-        click(CREATE).ensure(CREATE, not(visible));
+        click(CREATE);
+        ensure(CREATE, not(visible));
         return this.parent();
     }
 
