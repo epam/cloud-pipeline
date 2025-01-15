@@ -21,13 +21,18 @@ export function LaunchPage() {
     return <Spin wrapperClassName="flex h-full" spinning />;
   }
   return (
-    <div className="overflow-auto list-container p-4 h-full w-full flex flex-col">
+    <div className="overflow-auto gap-4 h-full w-full flex flex-col">
       <Spin wrapperClassName="spin-container" spinning={pending}>
-        <LaunchHeader pipelineInfo={pipelineInfo} />
+        <LaunchHeader
+          className="list-container p-4 mb-2 shrink-0"
+          pipelineInfo={pipelineInfo}
+          version={version}
+        />
         <LaunchForm
           version={version}
           configuration={configuration}
           pipelineInfo={pipelineInfo}
+          className="list-container p-4 grow"
         />
       </Spin>
     </div>

@@ -56,7 +56,7 @@ export function LaunchParametersForm({
   return (
     <div className="flex flex-nowrap gap-4 overflow-auto w-full">
       {sections.length > 1 ? (
-        <div className=" pr-2 min-w-fit flex flex-col sticky top-0">
+        <div className="border-r pr-4 min-w-fit flex flex-col sticky top-0">
           {sections.map((section) => {
             const sectionName = (
               section[0].section || OTHER_SECTION_NAME

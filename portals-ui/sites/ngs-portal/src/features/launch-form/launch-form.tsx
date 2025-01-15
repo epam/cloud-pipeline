@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, message } from 'antd';
+import { Button, message, Modal } from 'antd';
 import {
   type PipelineConfiguration,
   type MappedPipelineParameter,
@@ -12,8 +12,10 @@ import { generateLaunchPayload } from './utils/generate-launch-payload';
 import { LaunchParametersForm } from './forms/parameters-form';
 import { mapParameters, unMapParameters } from './utils/parameters';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
+import type { CommonProps } from '@cloud-pipeline/components';
+import classNames from 'classnames';
 
-type LaunchFormProps = {
+type LaunchFormProps = CommonProps & {
   configuration?: PipelineConfiguration;
   pipelineInfo?: Pipeline;
   version?: string;
@@ -25,8 +27,10 @@ export function LaunchForm({
   pipelineInfo,
   version,
   prettyNameEditable = false,
+  className,
 }: LaunchFormProps) {
   const [pending, setPending] = useState(false);
+  const [modal, launchConfirmContext] = Modal.useModal();
   const navigate = useNavigate();
   const [parametersFormData, setParametersFormData] = useState<
     MappedPipelineParameter[] | undefined
@@ -62,50 +66,65 @@ export function LaunchForm({
   const formChanged = useMemo(() => {
     return parametersFormData?.some((parameter) => parameter.touched);
   }, [parametersFormData]);
-  const launch = () => {
+  const launch = async (): Promise<void> => {
     if (launchDisabled) {
       return;
     }
-    messageApi.open({
-      key: 'launch',
-      type: 'loading',
-      content: 'Launching pipeline...',
-    });
-    setPending(true);
-    const payload = generateLaunchPayload(
-      pipelineInfo!,
-      configuration!,
-      unMapParameters(parametersFormData),
-      version!,
-    );
-    launchPipeline(payload)
-      .then(noop)
-      .catch((error) => {
-        messageApi.open({
-          key: 'launch',
-          type: 'error',
-          content: (
-            <div className="flex flex-col items-start">
-              <b>Launch failed.</b>
-              <span>
-                {error instanceof Error ? error.message : String(error)}
-              </span>
-            </div>
-          ),
-          duration: 2,
+    await modal.confirm({
+      title: (
+        <span>
+          Launch <b>{pipelineInfo?.name}</b> ?
+        </span>
+      ),
+      okText: 'Launch',
+      async onOk() {
+        return await new Promise((resolve) => {
+          messageApi.open({
+            key: 'launch',
+            type: 'loading',
+            content: 'Launching pipeline...',
+          });
+          setPending(true);
+          const payload = generateLaunchPayload(
+            pipelineInfo!,
+            configuration!,
+            unMapParameters(parametersFormData),
+            version!,
+          );
+          launchPipeline(payload)
+            .then(noop)
+            .catch((error) => {
+              messageApi.open({
+                key: 'launch',
+                type: 'error',
+                content: (
+                  <div className="flex flex-col items-start">
+                    <b>Launch failed.</b>
+                    <span>
+                      {error instanceof Error ? error.message : String(error)}
+                    </span>
+                  </div>
+                ),
+                duration: 2,
+              });
+            })
+            .finally(() => {
+              setPending(false);
+              resolve(true);
+              navigate(RoutePath[AppRoutes.HOME]);
+            });
         });
-      })
-      .finally(() => {
-        setPending(false);
-        navigate(RoutePath[AppRoutes.HOME]);
-      });
+      },
+    });
   };
   const resetForm = () => {
     setParametersFormData(mapParameters(configuration));
   };
   return (
-    <div className="flex flex-col gap-2 overflow-hidden h-full w-full">
+    <div
+      className={classNames('flex flex-col gap-2 overflow-hidden', className)}>
       {contextHolder}
+      {launchConfirmContext}
       <LaunchParametersForm
         parameters={parametersFormData}
         onChange={onChangeParameter}
@@ -116,7 +135,9 @@ export function LaunchForm({
           Reset
         </Button>
         <Button
-          onClick={launch}
+          onClick={() => {
+            void launch();
+          }}
           loading={pending}
           disabled={launchDisabled}
           type="primary">
