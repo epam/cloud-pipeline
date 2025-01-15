@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String diskSize = "15";
-    private final String onDemand = ON_DEMAND;
-    private final String spot = SPOT;
     private final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
 
     private String maxIdleTimeout;
@@ -100,8 +97,8 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "STOP");
         relogin();
 
-        final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(spot, hidden);
+        final String run1 = launchTool(ON_DEMAND, enabled);
+        final String run2 = launchTool(SPOT, hidden);
         runsMenu()
                 .activeRuns()
                 .ensure(runWithId(run2), visible)
@@ -119,8 +116,8 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "PAUSE_OR_STOP");
         relogin();
 
-        final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(spot, hidden);
+        final String run1 = launchTool(ON_DEMAND, enabled);
+        final String run2 = launchTool(SPOT, hidden);
         runsMenu()
                 .activeRuns()
                 .waitUntilResumeButtonAppear(run1)
@@ -141,7 +138,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "PAUSE");
         relogin();
 
-        final String runId = launchTool(onDemand, enabled);
+        final String runId = launchTool(ON_DEMAND, enabled);
 
         runsMenu()
                 .activeRuns()

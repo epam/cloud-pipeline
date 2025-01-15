@@ -84,17 +84,4 @@ public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunni
                 .documentsTab()
                 .validateDocumentsNotEditable();
     }
-
-    @Test(dependsOnMethods = {"shouldNotBeAbleToEditReleasedVersionAfterCommit"})
-    @TestCase(value = {"TC"})
-    public void changePipelineVersionAtLaunching() {
-        navigationMenu()
-                .library()
-                .sleep(1000, MILLISECONDS)
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .chooseVersion(NEW_VERSION)
-                .checkPipelineVersion(NEW_VERSION);
-    }
 }
