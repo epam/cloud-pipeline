@@ -173,7 +173,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
-        $(byText("Create folder")).waitUntil(disappear, DEFAULT_TIMEOUT);
         return this;
     }
 
