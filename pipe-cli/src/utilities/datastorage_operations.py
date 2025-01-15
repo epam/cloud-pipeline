@@ -279,10 +279,6 @@ class DataStorageOperations(object):
             if not item:
                 continue
 
-            if relative_path.endswith(FOLDER_MARKER):
-                filtered_items.append(item)
-                continue
-
             if relative_path.endswith('/'):
                 continue
 
@@ -309,6 +305,10 @@ class DataStorageOperations(object):
                 if not quiet:
                     click.echo(u"Skipping file {} since it matches exclude patterns [{}]."
                                .format(full_path, ",".join(exclude)))
+                continue
+
+            if relative_path.endswith(FOLDER_MARKER):
+                filtered_items.append(item)
                 continue
 
             if not skip_existing and (force or not verify_destination):
