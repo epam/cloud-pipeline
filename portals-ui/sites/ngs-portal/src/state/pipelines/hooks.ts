@@ -7,7 +7,6 @@ import type {
 import { useStore } from 'zustand';
 import { pipelinesStore } from './store.ts';
 import { useEffect, useMemo, useState } from 'react';
-import type { Configuration } from '@cloud-pipeline/core';
 import { noop, type Pipeline } from '@cloud-pipeline/core';
 import { loadPipelines } from './load-pipelines.ts';
 import {
