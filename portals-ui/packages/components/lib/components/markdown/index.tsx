@@ -3,13 +3,13 @@ import React, { useMemo } from 'react';
 import { Converter } from 'showdown';
 import classNames from 'classnames';
 import './styles.css';
-import {
+import type {
   MarkdownProps,
   MarkdownTagRenderer,
   MarkdownTagRendererPropsMapper,
 } from './types.ts';
 import parse from 'html-react-parser';
-import { CommonProps } from '../common.types.ts';
+import type { CommonProps } from '../common.types.ts';
 
 const converter: Converter = new Converter({
   omitExtraWLInCodeBlocks: true,

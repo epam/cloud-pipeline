@@ -4,7 +4,7 @@ import type { CommonProps } from '@cloud-pipeline/components';
 import { Popover } from 'antd';
 import { getUserDisplayName } from '@cloud-pipeline/core';
 import type { User, UserInfo } from '@cloud-pipeline/core';
-import { TooltipPlacement } from 'antd/es/tooltip';
+import type { TooltipPlacement } from 'antd/es/tooltip';
 import { UserIcon } from '@heroicons/react/24/solid';
 
 export type UserCardProps = CommonProps & {
@@ -27,6 +27,7 @@ export const UserCard = (props: UserCardProps) => {
     className,
     style,
   } = props;
+
   const userName = useMemo(() => {
     if ('name' in user && typeof user.name === 'string') {
       return user.name;
@@ -36,6 +37,7 @@ export const UserCard = (props: UserCardProps) => {
     }
     return getUserDisplayName(user);
   }, [user]);
+
   const renderContent = useCallback(
     (user: User | UserInfo) => {
       if (user.attributes) {
@@ -60,17 +62,21 @@ export const UserCard = (props: UserCardProps) => {
     },
     [userName],
   );
+
   if (!user) {
     return null;
   }
+
   const icon = showIcon ? (
     <UserIcon className={classNames('w-3 h-3 mr-0.5', iconClassName)} />
   ) : null;
+
   const userComponent = (
     <span className={className} style={style}>
       {user ? getUserDisplayName(user) : userName}
     </span>
   );
+
   if (!showTooltip || !user) {
     return (
       <div className="inline-flex whitespace-nowrap items-center">
@@ -79,6 +85,7 @@ export const UserCard = (props: UserCardProps) => {
       </div>
     );
   }
+
   return (
     <span className="inline-flex whitespace-nowrap items-center">
       {icon}

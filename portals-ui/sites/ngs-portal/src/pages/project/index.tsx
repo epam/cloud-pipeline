@@ -1,1 +1,1 @@
-export { ProjectPage } from './project';
+export { ProjectPageContainer } from './project-container';
