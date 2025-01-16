@@ -5,4 +5,5 @@ export * from './pipeline';
 export * from './project';
 export * from './run';
 export * from './data-storage';
+export * from './launch.ts';
 export * from './misc.ts';

@@ -33,3 +33,12 @@ export enum PipelineType {
   pipeline = 'PIPELINE',
   versionedStorage = 'VERSIONED_STORAGE',
 }
+
+export enum PipelineParametersTypes {
+  string = 'string',
+  path = 'path',
+  output = 'output',
+  input = 'input',
+  common = 'common',
+  boolean = 'boolean',
+}

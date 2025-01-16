@@ -1,0 +1,7 @@
+.parameter-section {
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.parameter-section.highlighted {
+  @apply text-sky-500 border-sky-500;
+}

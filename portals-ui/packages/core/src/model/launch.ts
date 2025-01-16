@@ -1,0 +1,32 @@
+import { PipelineParameter } from './pipeline';
+
+export type LaunchPayload = {
+  cloudRegionId?: number;
+  cmdTemplate: string;
+  configurationName?: string;
+  dockerImage: string;
+  executionEnvironment?: string;
+  force: boolean;
+  hddSize?: number;
+  instanceImage?: string;
+  instanceType?: string;
+  isSpot?: boolean;
+  kubeLabels?: any;
+  kubeServiceAccount?: string;
+  nodeCount?: number;
+  nonPause?: boolean;
+  notifications?: Array<Record<string, unknown>>;
+  params?: Record<string, PipelineParameter>;
+  parentNodeId?: number;
+  parentRunId?: number;
+  pipelineId: number;
+  podAssignPolicy?: Record<string, unknown>;
+  prettyUrl?: string;
+  runAs?: string;
+  runSids?: Array<Record<string, unknown>>;
+  tags?: Record<string, unknown>;
+  timeout: number;
+  useRunId?: number;
+  version: string;
+  workerCmd?: string;
+};
