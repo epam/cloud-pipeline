@@ -1,38 +1,18 @@
-import { useEffect } from 'react';
-import { useParams } from 'react-router';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { HomeIcon } from '@heroicons/react/24/solid';
-import { ItemLayout, PageSpinner } from '../../shared/ui';
+import { ItemLayout } from '../../shared/ui';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
-import { usePipelinesStore } from '../../state/pipelines/hooks';
-import { loadPipelines } from '../../state/pipelines/load-pipelines';
+import { usePipelineTabs } from './hooks';
+import type { Pipeline } from '@cloud-pipeline/core';
+import { PipelineHeader } from './components';
 
-export function PipelinePage() {
-  const { pipelineId } = useParams();
-  const { pipelines, error, pending, getPipelineById } = usePipelinesStore();
+type Props = {
+  pipeline: Pipeline;
+};
 
-  const pipeline = getPipelineById(Number(pipelineId));
-
-  useEffect(() => {
-    if (!pipelines?.length) {
-      loadPipelines()
-        .then(() => {})
-        .catch(() => {});
-    }
-  }, [pipelines?.length]);
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (pending && !pipelines?.length) {
-    return <PageSpinner />;
-  }
-
-  if (!pipeline) {
-    return <div>No data</div>;
-  }
+export function PipelinePage({ pipeline }: Props) {
+  const { activeTab, tabs, handleChangeTab } = usePipelineTabs(pipeline);
 
   return (
     <div className="flex flex-col h-full">
@@ -51,9 +31,17 @@ export function PipelinePage() {
       />
 
       <ItemLayout
-        header={<div>{pipeline.name}</div>}
-        main={<div>Main</div>}
-        asideTop={<div>Recent Runs</div>}
+        classes={{ content: 'overflow-hidden' }}
+        header={
+          <PipelineHeader
+            pipeline={pipeline}
+            tabs={tabs}
+            onChangeTab={handleChangeTab}
+            activeKey={activeTab.key}
+          />
+        }
+        main={activeTab.content}
+        aside={activeTab.aside}
       />
     </div>
   );

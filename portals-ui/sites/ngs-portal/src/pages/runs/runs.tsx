@@ -17,7 +17,7 @@ export function RunsPage() {
     return <PageSpinner />;
   }
 
-  if (!runs) {
+  if (!runs.length) {
     return <div>No data</div>;
   }
 

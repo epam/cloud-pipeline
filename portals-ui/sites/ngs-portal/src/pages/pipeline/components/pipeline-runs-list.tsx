@@ -1,18 +1,18 @@
 import { useAuthenticatedUserRuns } from '../../../shared/hooks/use-runs-filter.ts';
-import { ItemsPanel } from '../../../widgets/items-panel';
+import { ItemsPanel } from '../../../widgets/items-panel/index.ts';
 import type { Run } from '@cloud-pipeline/core';
-import { RunCard } from '../../../widgets/cards';
+import { RunCard } from '../../../widgets/cards/index.ts';
 import cn from 'classnames';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pagination } from 'antd';
-import { PageSpinner } from '../../../shared/ui';
+import { PageSpinner } from '../../../shared/ui/index.ts';
 import {
-  generateProjectRoutePath,
-  ProjectTabs,
+  generatePipelineRoutePath,
+  PipelineTabs,
 } from '../../../shared/constants/routes.ts';
 
-enum ProjectSearchParams {
+enum PipelineSearchParams {
   Page = 'page',
 }
 
@@ -27,20 +27,20 @@ function runCardRenderer(item: Run, _: string, i: number) {
 }
 
 type Props = {
-  projectId: number;
+  pipelineId: number;
   extended?: boolean;
 };
 
-export function ProjectRunsList({ projectId, extended }: Props) {
+export function PipelineRunsList({ pipelineId, extended }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRunsLoading, setIsRunsLoading] = useState(true);
 
   const activePage: number =
-    Number(searchParams.get(ProjectSearchParams.Page)) || 1;
+    Number(searchParams.get(PipelineSearchParams.Page)) || 1;
 
   const { runs, total, pending, error } = useAuthenticatedUserRuns({
     reloadIntervalMs: 5000,
-    projectIds: [projectId],
+    pipelineIds: [pipelineId],
     pageSize: extended ? 20 : 10,
     page: activePage,
   });
@@ -48,7 +48,7 @@ export function ProjectRunsList({ projectId, extended }: Props) {
   const handleChangePage = useCallback(
     (page: number) => {
       const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set(ProjectSearchParams.Page, `${page}`);
+      newSearchParams.set(PipelineSearchParams.Page, `${page}`);
       setSearchParams(newSearchParams);
       setIsRunsLoading(true);
     },
@@ -60,13 +60,16 @@ export function ProjectRunsList({ projectId, extended }: Props) {
       return undefined;
     }
 
-    const historyUrl = generateProjectRoutePath(projectId, ProjectTabs.History);
+    const historyUrl = generatePipelineRoutePath(
+      pipelineId,
+      PipelineTabs.RunHistory,
+    );
 
     return {
       title: 'View all runs',
       link: historyUrl,
     };
-  }, [extended, projectId]);
+  }, [extended, pipelineId]);
 
   const showTotal = (total: number, range: number[]) =>
     `${range[0]}-${range[1]} out of ${total} runs`;

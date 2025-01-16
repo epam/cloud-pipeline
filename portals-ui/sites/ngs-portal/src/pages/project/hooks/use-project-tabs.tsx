@@ -3,7 +3,11 @@ import { Markdown } from '@cloud-pipeline/components';
 import type { Project } from '@cloud-pipeline/core';
 import { LayoutCard } from '../../../shared/ui/item-layout/layout-card';
 import { dummyDescription } from '../dummy.description';
-import { ProjectPipelines, ProjectPermissions, ProjectRunsList } from '../components';
+import {
+  ProjectPipelines,
+  ProjectPermissions,
+  ProjectRunsList,
+} from '../components';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   generateProjectRoutePath,

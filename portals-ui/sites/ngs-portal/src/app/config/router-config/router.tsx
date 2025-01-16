@@ -6,7 +6,7 @@ import { PipelinesPage } from '../../../pages/pipelines';
 import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
 import { RunsPage } from '../../../pages/runs';
 import { ProjectsPage } from '../../../pages/projects';
-import { PipelinePage } from '../../../pages/pipeline';
+import { PipelinePageContainer } from '../../../pages/pipeline';
 import { LaunchPage } from '../../../pages/launch';
 import { ProjectPageContainer } from '../../../pages/project';
 
@@ -32,7 +32,9 @@ export const routes: NgsPortalRoute[] = [
     element: <ProjectPageContainer />,
   }),
   generateNgsPortalRoute(AppRoutes.PIPELINES, { element: <PipelinesPage /> }),
-  generateNgsPortalRoute(AppRoutes.PIPELINE, { element: <PipelinePage /> }),
+  generateNgsPortalRoute(AppRoutes.PIPELINE, {
+    element: <PipelinePageContainer />,
+  }),
   generateNgsPortalRoute(AppRoutes.RUNS, { element: <RunsPage /> }),
   generateNgsPortalRoute(AppRoutes.LAUNCH, { element: <LaunchPage /> }),
   // TODO: create not-found page

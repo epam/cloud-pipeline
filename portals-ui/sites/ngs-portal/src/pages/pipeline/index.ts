@@ -1,1 +1,1 @@
-export { PipelinePage } from './pipeline';
+export { PipelinePageContainer } from './pipeline-container';
