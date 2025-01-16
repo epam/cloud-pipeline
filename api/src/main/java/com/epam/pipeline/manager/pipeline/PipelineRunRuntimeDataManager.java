@@ -35,7 +35,6 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -88,7 +87,7 @@ public class PipelineRunRuntimeDataManager {
         final String dataFileName = dataExtractor.getDataFilePath(parameters);
 
         final String dataFilePath = Stream.of(runFolderPathPrefix, String.valueOf(runId), dataPathPrefix, dataFileName)
-                .filter(Objects::nonNull)
+                .filter(StringUtils::isNotBlank)
                 .map(this::cleanupPath)
                 .collect(Collectors.joining(PATH_DELIMITER));
 
@@ -99,7 +98,7 @@ public class PipelineRunRuntimeDataManager {
         final DataStorageStreamingContent fileContent = dataStorageManager
                 .getStreamingContent(dataStorage.getId(), dataFilePath, null);
 
-        return dataExtractor.parseData(fileContent.getContent());
+        return dataExtractor.parseData(parameters, fileContent.getContent());
     }
 
     private static String defineRunFolderStoragePathPrefix(final RunSyncRuntimeDataConfigEntry dataSyncEntry,

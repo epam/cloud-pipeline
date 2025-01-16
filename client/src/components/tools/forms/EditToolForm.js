@@ -106,6 +106,11 @@ import {getSelectOptions} from '../../special/instance-type-info';
 import {
   correctLimitMountsParameterValue
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
+import {
+  fsConfigsAreEqual,
+  getFsConfigFromParameters,
+  getToolParametersFromFsConfig
+} from '../../pipelines/launch/form/utilities/configure-fs/utilities';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -183,6 +188,7 @@ export default class EditToolForm extends React.Component {
     nodesCount: 0,
     maxNodesCount: 0,
     autoScaledCluster: false,
+    fsConfig: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
@@ -262,7 +268,7 @@ export default class EditToolForm extends React.Component {
         (!this.endpointControl || this.endpointControl.validate())) {
         let parameters = {};
         if (this.toolFormParameters && this.toolFormSystemParameters) {
-          const params = [];
+          let params = [];
           params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
           const toggleParameter = (parameter, value) => {
             const p = params.find((o) => o.name === parameter);
@@ -318,6 +324,11 @@ export default class EditToolForm extends React.Component {
               );
             }
           }
+          params = getToolParametersFromFsConfig(
+            this.state.fsConfig,
+            params,
+            this.getCloudProvider()
+          );
           toggleParameter(CP_CAP_SGE, this.state.launchCluster && this.state.gridEngineEnabled);
           toggleParameter(CP_CAP_SPARK, this.state.launchCluster && this.state.sparkEnabled);
           toggleParameter(CP_CAP_SLURM, this.state.launchCluster && this.state.slurmEnabled);
@@ -512,6 +523,7 @@ export default class EditToolForm extends React.Component {
             : 0;
         state.nodesCount = props.configuration.node_count;
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
+        state.fsConfig = props.configuration ? getFsConfigFromParameters(props.configuration.parameters) : undefined;
         state.hybridAutoScaledClusterEnabled = props.configuration &&
           hybridAutoScaledClusterEnabled(props.configuration.parameters);
         const regions = this.props.awsRegions.loaded
@@ -856,6 +868,7 @@ export default class EditToolForm extends React.Component {
         : 0;
     const autoScaledCluster = this.props.configuration &&
       autoScaledClusterEnabled(this.props.configuration.parameters);
+    const fsConfig = this.props.configuration ? getFsConfigFromParameters(this.props.configuration.parameters) : null;
     const hybridAutoScaledCluster = this.props.configuration &&
       hybridAutoScaledClusterEnabled(this.props.configuration.parameters);
     const gpuScalingConfiguration = this.props.configuration
@@ -907,6 +920,7 @@ export default class EditToolForm extends React.Component {
       (this.toolFormSystemParameters && this.toolFormSystemParameters.modified) ||
       !!launchCluster !== !!this.state.launchCluster ||
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
+      !fsConfigsAreEqual(fsConfig, this.state.fsConfig) ||
       !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
       configurationChanged(gpuScalingConfiguration, this.state.gpuScalingConfiguration) ||
       childNodeInstanceConfiguration !== this.state.childNodeInstanceConfiguration ||
@@ -962,6 +976,7 @@ export default class EditToolForm extends React.Component {
     const {
       launchCluster,
       autoScaledCluster,
+      fsConfig,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
       childNodeInstanceConfiguration,
@@ -985,6 +1000,7 @@ export default class EditToolForm extends React.Component {
       launchCluster,
       nodesCount,
       autoScaledCluster,
+      fsConfig,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
       childNodeInstanceConfiguration,
@@ -1558,6 +1574,7 @@ export default class EditToolForm extends React.Component {
                 cloudRegionProvider={this.getCloudProvider()}
                 autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
+                fsConfig={this.state.fsConfig}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gpuScalingConfiguration={this.state.gpuScalingConfiguration}
                 childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}

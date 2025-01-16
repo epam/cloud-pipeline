@@ -1306,7 +1306,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH; };
+check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
 
 ######################################################
 # Configure the dependencies if needed

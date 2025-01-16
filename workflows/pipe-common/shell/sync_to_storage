@@ -30,26 +30,63 @@ function add_to_spec() {
     local _location_to_add="$(echo ${1%/})"
     local _destination_to_add="$(echo ${2%/})"
     touch "$CP_SYNC_TO_STORAGE_SPEC"
-    # Spec already contains a requested location
-    if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
-        return
-    fi
 
     if [ -n "$_destination_to_add" ]; then
+        # Spec already contains a requested location
+        if grep -q -x -F "$_location_to_add $_destination_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+            return
+        fi
         echo "$_location_to_add" "$_destination_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
     else
+        # Spec already contains a requested location
+        if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+            return
+        fi
         echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
     fi
 }
 
+function remove_from_spec() {
+    local _location_to_add="$(echo ${1%/})"
+    touch "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+
+    if grep -q -w -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+        # Spec already marked for a deletion
+        if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"; then
+            return
+        fi
+        echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+    fi
+}
+
+function wait_for_pids() {
+    local _sync_pids=("$@")
+    for pid in ${_sync_pids[*]}; do
+        echo_debug "Waiting for pid $pid to finish"
+        wait "$pid"
+        if [ $? -ne 0 ]; then
+            echo "[WARN] Sync process with pid $pid failed"
+        fi
+    done
+}
+
 function start_sync_daemon() {
-    while true; do
+    while [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; do
+
+        if [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]; then
+            echo "File $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE defined as CP_SYNC_TO_STORAGE_STOP_FLAG_FILES and present. Perform last sync iteration before stop."
+            # We need to use such mechanism with additional env var instead of 'while [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]'
+            # because CP_SYNC_TO_STORAGE_STOP_FLAG_FILE can be created during sleep -> we still need to perform one more sync iteration
+            export CP_SYNC_TO_STORAGE_STOP="true"
+        fi
+
         if [ ! -f "$CP_SYNC_TO_STORAGE_SPEC" ]; then
             echo_debug "Spec file not found: $CP_SYNC_TO_STORAGE_SPEC"
             sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
             continue
         fi
 
+        local _sync_pids=()
         while read -a _sync_config_entry; do
             echo_debug "Processing entry ${_sync_config_entry[*]}"
 
@@ -90,20 +127,59 @@ function start_sync_daemon() {
 
             local _pipe_command="pipe storage cp -f \"$_source_path\" \"$_dest_path\" $_pipe_extra_args"
             echo_debug "pipe command: $_pipe_command"
-            eval "$_pipe_command"
 
-            if [ $? -ne 0 ]; then
-                echo "[WARN] Sync $_source_path to $_dest_path failed"
+            if [ "$CP_SYNC_TO_STORAGE_THREADS" -gt 1 ]; then
+                eval "$_pipe_command" &
+                _sync_process_pid=$!
+                echo_debug "Sync $_source_path to $_dest_path has pid $_sync_process_pid"
+
+                _sync_pids[${#_sync_pids[@]}]=$_sync_process_pid
+                if [ "${#_sync_pids[@]}" -eq "$CP_SYNC_TO_STORAGE_THREADS" ]; then
+                  wait_for_pids "${_sync_pids[*]}"
+                  _sync_pids=()
+                fi
+            else
+                eval "$_pipe_command"
+                if [ $? -ne 0 ]; then
+                    echo "[WARN] Sync $_source_path to $_dest_path failed"
+                fi
             fi
         done <"$CP_SYNC_TO_STORAGE_SPEC"
 
-        sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
+        if [ "${#_sync_pids[@]}" -gt 0 ]; then
+            wait_for_pids "${_sync_pids[*]}"
+        fi
+
+        # Check if some file from config marked for deletion
+        if [ -f "$CP_SYNC_TO_STORAGE_REMOVE_SPEC" ]; then
+            while read -a _sync_config_entry; do
+                local _source_path=${_sync_config_entry[0]}
+                if grep -q -x -F "$_source_path" "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"; then
+                    echo_debug "Path $_source_path is configured for the deletion from sync process"
+                    continue
+                fi
+                echo "${_sync_config_entry[@]}" >> "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+            done <"$CP_SYNC_TO_STORAGE_SPEC"
+
+            if [ -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" ]; then
+                mv -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.prev"
+                mv -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" "${CP_SYNC_TO_STORAGE_SPEC}"
+                rm -f "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+            fi
+        fi
+
+        if [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; then
+            sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
+        fi
     done
 }
 
 export CP_SYNC_TO_STORAGE_SPEC="${CP_SYNC_TO_STORAGE_SPEC:-/etc/sync_to_storage.list}"
+export CP_SYNC_TO_STORAGE_REMOVE_SPEC="${CP_SYNC_TO_STORAGE_REMOVE_SPEC:-/etc/sync_to_storage_remove.list}"
 export CP_SYNC_TO_STORAGE_PID_FILE="${CP_SYNC_TO_STORAGE_PID_FILE:-/var/run/sync_to_storage.pid}"
+export CP_SYNC_TO_STORAGE_STOP_FLAG_FILE="${CP_SYNC_TO_STORAGE_STOP_FLAG_FILE:-/var/run/sync_to_storage.stop}"
 export CP_SYNC_TO_STORAGE_TIMEOUT_SEC="${CP_SYNC_TO_STORAGE_TIMEOUT_SEC:-3600}"
+export CP_SYNC_TO_STORAGE_THREADS="${CP_SYNC_TO_STORAGE_THREADS:-1}"
 export CP_SYNC_TO_STORAGE_LOGFILE="${CP_SYNC_TO_STORAGE_LOGFILE:-/var/log/sync_to_storage.log}"
 export CP_SYNC_TO_STORAGE_DEBUG="${CP_SYNC_TO_STORAGE_DEBUG:-false}"
 
@@ -119,6 +195,12 @@ if [ "$_cmd" == "add" ]; then
         exit 1
     fi
     add_to_spec "$2" "$3"
+elif [ "$_cmd" == "remove" ]; then
+    if [ -z "$2" ]; then
+        echo "[ERROR] Source file for syncing is not specified, nothing will be removed from the sync spec"
+        exit 1
+    fi
+    remove_from_spec "$2"
 elif [ "$_cmd" == "start" ]; then
     if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
         echo "[WARN] Sync destination location is not defined, only config entries with both source and destination will be processed"
@@ -132,6 +214,7 @@ elif [ "$_cmd" == "start" ]; then
         rm -f "$CP_SYNC_TO_STORAGE_PID_FILE"
     fi
     export -f start_sync_daemon
+    export -f wait_for_pids
     export -f echo_debug
     nohup bash -c start_sync_daemon &> "$CP_SYNC_TO_STORAGE_LOGFILE" &
     echo "$!" > "$CP_SYNC_TO_STORAGE_PID_FILE"

@@ -1848,7 +1848,6 @@ export default class Tool extends localization.LocalizedReactComponent {
           </MenuItem>
         </Menu>
       );
-      console.log(this.state)
       return (
         <Button.Group className={styles.runButton}>
           <Tooltip

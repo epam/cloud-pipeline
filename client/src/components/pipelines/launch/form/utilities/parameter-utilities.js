@@ -297,7 +297,25 @@ function booleanParameterIsSetToValue (parameters, parameter, value = true) {
     `${parameters[parameter].value}` === `${value}`;
 }
 
+function getParameterValue (parameters, parameter, defaultValue = undefined) {
+  const value = (parameters && parameters.hasOwnProperty(parameter) ? parameters[parameter].value : undefined);
+  if (value === undefined) {
+    return defaultValue;
+  }
+  return value;
+}
+
+function getParameterNumberValue (parameters, parameter, defaultValue = undefined) {
+  const value = Number(getParameterValue(parameters, parameter, defaultValue));
+  if (Number.isNaN(value)) {
+    return defaultValue;
+  }
+  return value;
+}
+
 export {
+  getParameterValue,
+  getParameterNumberValue,
   booleanParameterValue,
   booleanParameterIsSetToValue,
   correctFormFieldValues,

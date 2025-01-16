@@ -1,0 +1,25 @@
+.configure-file-system-container .configure-fs-row-with-error-container {
+  margin: 5px 0;
+}
+
+.configure-file-system-container .configure-fs-row-with-error-container .configure-fs-row {
+  display: flex;
+  align-items: center;
+}
+
+.configure-file-system-container .configure-fs-row-with-error-container .configure-fs-row .configure-fs-title {
+  padding-right: 5px;
+  min-width: 115px;
+}
+
+.configure-file-system-container.large .configure-fs-row-with-error-container .configure-fs-row .configure-fs-title {
+  min-width: 150px;
+}
+
+.configure-file-system-container .configure-fs-row-with-error-container .configure-fs-row .configure-fs-control {
+  flex: 1;
+}
+
+.configure-file-system-container .configure-fs-row-with-error-container .configure-fs-error {
+  font-size: x-small;
+}

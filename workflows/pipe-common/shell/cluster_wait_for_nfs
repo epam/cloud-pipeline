@@ -139,6 +139,10 @@ elif [ "$CP_CAP_SHARE_FS_TYPE" == "lfs" ]; then
         pipe_log_info "Successfully mounted LFS folder to worker node" "$FS_SETUP_TASK"
     fi
 
+    if [ "$cluster_role" == "master" ] && [ "$CP_CAP_SHARE_FS_LFS_DIRECTIO" ]; then
+        echo "DirectIO=$CP_CAP_SHARE_FS_LFS_DIRECTIO" > ${SHARED_PATH}/.lizardfs_tweaks
+    fi
+
     setfacl -d -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
     setfacl -m user::rwx -m group:root:rwx -m other::rx ${SHARED_PATH}
 elif [ "$CP_CAP_SHARE_FS_TYPE" == "external" ]; then

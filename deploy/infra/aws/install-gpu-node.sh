@@ -51,27 +51,14 @@ yum install -y  gcc \
 yum install -y yum-utils \
   device-mapper-persistent-data \
   lvm2
-
-# User 18.03 to overcome the 8Gb layer commit limit of 18.06 (see https://github.com/moby/moby/issues/37581)
-# 18.09 and up are not yet available for Amzn Linux 2
+ 
 # Try to install from the docker repo
-yum-config-manager \
-    --add-repo \
-    https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.03* \
-                docker-ce-cli-18.03* \
-                containerd.io
+yum install -y docker-20.10*
 if [ $? -ne 0 ]; then
-  echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
-
-  # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-18.03*
-  if [ $? -ne 0 ]; then
-    echo "Unable to install default docker-18.03* too, exiting"
+    echo "Unable to install default docker-20.10*, exiting"
     exit 1
-  fi
 fi
-
+ 
 # Get the kube docker images, required by the kubelet
 # This is needed, as we don't want to rely on the external repos
 systemctl start docker && \
@@ -84,21 +71,8 @@ wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docke
 wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /opt/docker-system-images/k8s.gcr.io-pause-3.1.tar
 
 systemctl stop docker
-
+ 
 # Install kubelet
-cat <<EOF >/etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-EOF
-
-yum -q makecache -y --enablerepo kubernetes --nogpg
-
 # Enable forwarding
 cat <<EOF >/etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -110,61 +84,29 @@ sysctl --system
 # Disable SELinux
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-
-yum install -y \
-            kubeadm-1.15.4-0.x86_64 \
-            kubectl-1.15.4-0.x86_64 \
-            kubelet-1.15.4-0.x86_64
-
+ 
+wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/rpm/kube-1.15.4.el7.tgz -Okube.tgz && \
+     tar -xf kube.tgz && \
+     cd kube && yum localinstall *kube*.rpm *cri-tools*.rpm -y && \
+     cd .. && rm -rf kube/ && rm -rf kube.tgz
+ 
 # Install nvidia driver
-# - For k80 and v100
-wget http://us.download.nvidia.com/tesla/384.145/NVIDIA-Linux-x86_64-384.145.run && \
-sh NVIDIA-Linux-x86_64-384.145.run --silent && \
-rm -f NVIDIA-Linux-x86_64-384.145.run
-# - For a100
-wget https://us.download.nvidia.com/XFree86/Linux-x86_64/470.57.02/NVIDIA-Linux-x86_64-470.57.02.run && \
-sh NVIDIA-Linux-x86_64-470.57.02.run --silent && \
-rm -f NVIDIA-Linux-x86_64-470.57.02.run
-cat > /etc/yum.repos.d/cuda-rhel7.repo <<EOF
-[cuda-rhel7-x86_64]
-name=cuda-rhel7-x86_64
-baseurl=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64
-enabled=1
-gpgcheck=1
-gpgkey=https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub
-EOF
-yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-yum -y install cuda-drivers-fabricmanager-470 && \
-systemctl enable nvidia-fabricmanager
-# -
-
+amazon-linux-extras install -y epel
+yum install -y vulkan-devel libglvnd-devel elfutils-libelf-devel automake make gcc gcc-c++  xorg-x11-server-Xorg xorg-x11-fonts-Type1 xorg-x11-drivers
+ 
+DRIVER_VERSION=560.35.03
+curl -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+CC=/usr/bin/gcc10-cc ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
+ 
 # Install nvidia docker
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 
-curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo |\
   sudo tee /etc/yum.repos.d/nvidia-container-runtime.repo
 curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | \
   sudo tee /etc/yum.repos.d/libnvidia-container.repo
 curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | \
   sudo tee /etc/yum.repos.d/nvidia-docker.repo
-
-yum install nvidia-docker2-2.0.3-1.docker18.03* \
-    nvidia-container-runtime-2.0.0-1.docker18.03* -y
-
-# According to https://aws.amazon.com/ru/premiumsupport/knowledge-center/g2-rhel-boot/ - the following shall be done for p3 instances (p2 work well)
-# 1.    Resize the instance, choosing any instance other than one in the g2 series.
-# 2.    Edit /etc/default/grub and add the following values to the GRUB_CMDLINE_LINUX line:
-#     rd.driver.blacklist=nouveau nouveau.modeset=0
-# 3.    Rebuild the grub configuration:
-# grub2-mkconfig -o /boot/grub2/grub.cfg
-
-sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="rd.driver.blacklist=nouveau nouveau.modeset=0 /g' /etc/default/grub
-grub2-mkconfig -o /boot/grub2/grub.cfg
-
-# Label instance as Done
-instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-region=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
-
-export AWS_ACCESS_KEY_ID={{AWS_ACCESS_KEY_ID}}
-export AWS_SECRET_ACCESS_KEY={{AWS_SECRET_ACCESS_KEY}}
-export AWS_DEFAULT_REGION=$region
-aws ec2 create-tags --resources $instance_id --tags Key=user_data,Value=done
+ 
+yum install nvidia-docker2-2.13.0-1 \
+    nvidia-container-runtime-3.5.0-1 -y
