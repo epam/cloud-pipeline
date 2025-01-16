@@ -136,6 +136,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     private void waitForRunIdAppearing(String runId) {
         for (int i = 0; i < 320; i++) {
             $(button("Refresh")).click();
+            sortByDecrease(DATE);
             if ($(byText(runIdLabelText(runId))).exists()) {
                 break;
             }

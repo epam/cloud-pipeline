@@ -16,7 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Selectors.withText;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -24,6 +24,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -150,6 +151,11 @@ public class SamplesMetadataTest
     private final String rootEntityTypeSampleSet = "SampleSet";
 
     private List<String> selectedSampleName = new ArrayList<>();
+
+    @BeforeMethod
+    public void refreshPage() {
+        getWebDriver().navigate().refresh();
+    }
 
     @AfterClass(alwaysRun = true)
     public void cleanUp() {

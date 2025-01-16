@@ -59,6 +59,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PIPELINE, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-name"))),
             entry(VERSION, context().find(byClassName("launch-pipeline-form__layout-header"))
                     .find(byText("Version:")).parent().find(byClassName("ant-select-selection"))),
+            entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-version"))),
             entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header")).find(byText("Estimated price per hour:"))),
             entry(INFORMATION_ICON, $(byClassName("launch-pipeline-form__layout-header")).find(byClassName("launch-pipeline-form__hint"))),
             entry(PRICE_TABLE, $(byClassName("ant-popover-placement-bottom"))),
