@@ -474,7 +474,7 @@ public class ToolsTest
                 .ensure(DISK, not(empty))
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(testingTool)))
-                .ensure(VERSION, text("latest"))
+                .ensure(TOOL_VERSION, text("latest"))
                 .ensure(ESTIMATED_PRICE, visible)
                 .ensure(INFORMATION_ICON, visible)
                 .expandTab(ADVANCED_PANEL)
