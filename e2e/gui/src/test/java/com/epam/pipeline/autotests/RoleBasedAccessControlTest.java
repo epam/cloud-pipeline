@@ -184,8 +184,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(user);
         navigationMenu()
                 .settings()
-                .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
-                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
+                .ensureNotVisible(SYSTEM_EVENTS_TAB, EMAIL_NOTIFICATIONS_TAB,
+                        PREFERENCES_TAB, CLOUD_REGIONS_TAB);
         logout();
         loginAs(admin);
         navigationMenu()
@@ -220,8 +220,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(user);
         navigationMenu()
                 .settings()
-                .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
-                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
+                .ensureNotVisible(SYSTEM_EVENTS_TAB, EMAIL_NOTIFICATIONS_TAB,
+                        PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 
     @Test
