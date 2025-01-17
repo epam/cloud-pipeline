@@ -1,27 +1,21 @@
 import os
+import argparse
 
 from flask import Flask, request
 
-from cp_api_client import CloudPipelineApi
-from nextflow_event import NextflowEventHandler
+from app.cp_api_client import CloudPipelineApi
+from app.nextflow_event_handler import NextflowEventHandler
+from app.util import parse
 
+API = parse.get_required_env("API")
+RUN_ID = parse.get_required_env("RUN_ID")
 
-def _get_env(env_name):
-    env = os.getenv(env_name, None)
-    if not env:
-        raise RuntimeError("Env Variable: {} should be provided! Exiting!".format(env_name))
-
-API = _get_env("API")
-API_TOKEN = _get_env("API_TOKEN")
-RUN_ID = _get_env("RUN_ID")
-
-
-sync_batch_size = os.getenv("CP_NF_EVENT_HANDLER__SYNC_BATCH_SIZE", 10)
-sync_batch_timeout = os.getenv("CP_NF_EVENT_HANDLER_SYNC_TIMEOUT", 60)
+sync_batch_size = int(os.getenv("CP_NF_EVENT_HANDLER_SYNC_BATCH_SIZE", "10"))
+sync_batch_timeout = int(os.getenv("CP_NF_EVENT_HANDLER_SYNC_TIMEOUT", "60"))
+app_port = int(os.getenv("CP_NF_EVENT_HANDLER_PORT", "8080"))
 
 app = Flask(__name__)
-api_client = CloudPipelineApi(API, API_TOKEN)
-
+api_client = CloudPipelineApi(API, RUN_ID)
 event_handler = NextflowEventHandler(api_client, RUN_ID, sync_batch_size, sync_batch_timeout)
 
 @app.route('/nextflow/event', methods=['POST'])
@@ -32,5 +26,13 @@ def handle():
 
 
 if __name__ == '__main__':
-    event_handler.enable_sync()
-    app.run(port=8080)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--server", help="", action="store_true")
+    parser.add_argument("--trace_file", help="")
+    parser.add_argument("--attempts", help="", default=5)
+    args = parser.parse_args()
+    if args.server:
+        event_handler.enable_sync()
+        app.run(port=app_port)
+    elif args.trace_file:
+        event_handler.sync_events_from_trace_file(args.trace_file, args.attempts)
