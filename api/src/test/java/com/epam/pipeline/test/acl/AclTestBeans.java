@@ -101,6 +101,7 @@ import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
+import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
@@ -115,6 +116,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -605,6 +607,12 @@ public class AclTestBeans {
 
     @MockBean
     protected AWSOmicsStoreManager omicsStoreManager;
+
+    @MockBean
+    protected PipelineRunRuntimeDataManager pipelineRunRuntimeDataManager;
+
+    @MockBean
+    protected EngineRunTaskService engineRunTaskService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

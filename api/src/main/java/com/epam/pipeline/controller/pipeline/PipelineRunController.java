@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
@@ -665,5 +666,16 @@ public class PipelineRunController extends AbstractRestController {
             @RequestParam final RunSyncRuntimeDataType type,
             @RequestBody(required = false) final Map<String, String> parameters) {
         return Result.success(runApiService.getPipelineRunRuntimeData(runId, type, parameters));
+    }
+
+    @PostMapping("/run/{runId}/engine/tasks")
+    @ApiOperation(
+            value = "Registers run engine events for run",
+            notes = "Registers run engine events for run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
+                                                      @RequestBody final List<EngineRunTask> tasks) {
+        return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
     }
 }
