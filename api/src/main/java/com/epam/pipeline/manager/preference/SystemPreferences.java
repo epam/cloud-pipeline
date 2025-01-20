@@ -894,7 +894,10 @@ public class SystemPreferences {
             "ui.standalone.nodes.allow.terminate", false, UI_GROUP, pass, true);
     public static final BooleanPreference UI_LIBRARY_INLINE_METADATA = new BooleanPreference(
             "ui.library.metadata.inline", false, UI_GROUP, pass);
-
+    public static final ObjectPreference<Object> UI_LAUNCH_PARAMETERS = new ObjectPreference<>(
+            "ui.launch.parameters",
+            Collections.emptyMap(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
