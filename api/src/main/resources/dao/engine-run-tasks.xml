@@ -48,7 +48,7 @@
                         :END_DATE,
                         :RUN_ID,
                         :DURATION
-                    ) ON CONFLICT (task_id, engine_type) DO UPDATE SET
+                    ) ON CONFLICT (run_id, task_id, engine_type) DO UPDATE SET
                         status = :STATUS,
                         data = to_jsonb(:DATA::jsonb),
                         end_date = :END_DATE,

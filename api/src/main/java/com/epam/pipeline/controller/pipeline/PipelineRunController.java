@@ -670,8 +670,8 @@ public class PipelineRunController extends AbstractRestController {
 
     @PostMapping("/run/{runId}/engine/tasks")
     @ApiOperation(
-            value = "Registers run engine events for run",
-            notes = "Registers run engine events for run",
+            value = "Consumes engine task events for run",
+            notes = "Consumes engine task events for run",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,

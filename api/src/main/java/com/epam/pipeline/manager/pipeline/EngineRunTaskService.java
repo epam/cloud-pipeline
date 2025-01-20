@@ -40,14 +40,15 @@ public class EngineRunTaskService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public int upsertTasks(final Long runId, final List<EngineRunTask> tasks) {
+        if (CollectionUtils.isEmpty(tasks)) {
+            return 0;
+        }
         runCRUDService.loadRunById(runId);
-        return CollectionUtils.isEmpty(tasks)
-                ? 0
-                : engineRunTaskDao.batchUpsert(tasks.stream()
+        return engineRunTaskDao.batchUpsert(tasks.stream()
                         .peek(task -> task.setRunId(runId))
                         .map(this::validate)
-                        .collect(Collectors.toList())
-                ).size();
+                        .collect(Collectors.toList()))
+                .size();
     }
 
     private EngineRunTask validate(final EngineRunTask task) {

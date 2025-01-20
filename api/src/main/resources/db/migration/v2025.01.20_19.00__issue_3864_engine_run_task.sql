@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS pipeline.engine_run_task (
 	end_date        TIMESTAMP WITH TIME ZONE,
 	run_id          BIGINT      NOT NULL REFERENCES pipeline.pipeline_run(run_id),
 	duration        BIGINT,
-	CONSTRAINT engine_run_task_constrain UNIQUE(task_id, engine_type)
+	CONSTRAINT engine_run_task_constrain UNIQUE(run_id, task_id, engine_type)
 );
