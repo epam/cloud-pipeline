@@ -1,16 +1,15 @@
 import { useMemo, useCallback, useEffect } from 'react';
-import { Markdown } from '@cloud-pipeline/components';
 import type { Pipeline } from '@cloud-pipeline/core';
 import { LayoutCard } from '../../../shared/ui/item-layout/layout-card';
-import { dummyDescription } from '../dummy.description';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   generatePipelineRoutePath,
   PipelineTabs,
 } from '../../../shared/constants/routes';
 import { PipelineRunsList } from '../components';
+import { PipelineFiles } from '../components/pipeline-files';
 
-export const usePipelineTabs = (pipeline: Pipeline) => {
+export const usePipelineTabs = (pipeline: Pipeline, version: string) => {
   const { tabId } = useParams();
   const navigate = useNavigate();
 
@@ -34,12 +33,13 @@ export const usePipelineTabs = (pipeline: Pipeline) => {
     () => [
       {
         key: PipelineTabs.Documents,
-        label: <span className="px-4">Info</span>,
-        content: <Markdown>{dummyDescription}</Markdown>,
+        label: <span className="px-4">Documents</span>,
+        content: <PipelineFiles pipelineId={pipeline.id} version={version} />,
         aside: [
           <LayoutCard key="runs">
-            <PipelineRunsList pipelineId={pipeline.id} />
+            <PipelineRunsList pipelineId={pipeline.id} version={version} />
           </LayoutCard>,
+          <LayoutCard key="permissions">Permissions</LayoutCard>,
         ],
       },
       {
@@ -51,15 +51,20 @@ export const usePipelineTabs = (pipeline: Pipeline) => {
         key: PipelineTabs.Configuration,
         label: <span className="px-4">Configuration</span>,
         content: <div>Configuration</div>,
-        // content: <ProjectPipelines project={pipeline} />,
       },
       {
         key: PipelineTabs.RunHistory,
         label: <span className="px-4">RunHistory</span>,
-        content: <PipelineRunsList pipelineId={pipeline.id} extended />,
+        content: (
+          <PipelineRunsList
+            pipelineId={pipeline.id}
+            version={version}
+            extended
+          />
+        ),
       },
     ],
-    [pipeline.id],
+    [pipeline.id, version],
   );
 
   const activeTab = useMemo(
