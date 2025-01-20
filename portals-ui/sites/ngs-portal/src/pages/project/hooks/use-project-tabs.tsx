@@ -1,18 +1,15 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { Markdown } from '@cloud-pipeline/components';
-import type { Project } from '@cloud-pipeline/core';
+import { AclClass, type Project } from '@cloud-pipeline/core';
 import { LayoutCard } from '../../../shared/ui/item-layout/layout-card';
 import { dummyDescription } from '../dummy.description';
-import {
-  ProjectPipelines,
-  ProjectPermissions,
-  ProjectRunsList,
-} from '../components';
+import { ProjectPipelines, ProjectRunsList } from '../components';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   generateProjectRoutePath,
   ProjectTabs,
 } from '../../../shared/constants/routes';
+import { Permissions } from '../../../features/permissions';
 
 export const useProjectTabs = (project: Project) => {
   const { tabId } = useParams();
@@ -45,7 +42,7 @@ export const useProjectTabs = (project: Project) => {
             <ProjectRunsList projectId={project.id} />
           </LayoutCard>,
           <LayoutCard key="bottom">
-            <ProjectPermissions projectId={project?.id} />
+            <Permissions entityId={project?.id} aclClass={AclClass.folder} />
           </LayoutCard>,
         ],
       },

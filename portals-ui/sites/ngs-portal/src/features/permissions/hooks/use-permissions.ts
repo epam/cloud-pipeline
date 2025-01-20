@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 export const usePermissions = (aclClass: AclClass, id?: number) => {
   const [permissions, setPermissions] = useState<
-    PermissionsResponse | undefined
+    PermissionsResponse['permissions'] | undefined
   >();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,8 +14,8 @@ export const usePermissions = (aclClass: AclClass, id?: number) => {
     if (id) {
       const getPermissions = async () => {
         try {
-          const response = await fetchPermissions(id, aclClass);
-          setPermissions(response);
+          const { permissions } = await fetchPermissions(id, aclClass);
+          setPermissions(permissions);
         } catch (err) {
           if (err instanceof Error) {
             setError(err.message);

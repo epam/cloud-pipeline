@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect } from 'react';
-import type { Pipeline } from '@cloud-pipeline/core';
+import { AclClass, type Pipeline } from '@cloud-pipeline/core';
 import { LayoutCard } from '../../../shared/ui/item-layout/layout-card';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../../shared/constants/routes';
 import { PipelineRunsList } from '../components';
 import { PipelineFiles } from '../components/pipeline-files';
+import { Permissions } from '../../../features/permissions';
 
 export const usePipelineTabs = (pipeline: Pipeline, version: string) => {
   const { tabId } = useParams();
@@ -39,7 +40,9 @@ export const usePipelineTabs = (pipeline: Pipeline, version: string) => {
           <LayoutCard key="runs">
             <PipelineRunsList pipelineId={pipeline.id} version={version} />
           </LayoutCard>,
-          <LayoutCard key="permissions">Permissions</LayoutCard>,
+          <LayoutCard key="permissions">
+            <Permissions entityId={pipeline.id} aclClass={AclClass.pipeline} />
+          </LayoutCard>,
         ],
       },
       {

@@ -97,12 +97,8 @@ export function PipelineRunsList({ pipelineId, extended, version }: Props) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center pb-2 border-b-2">
-        <p>Show all versions</p>
-        <Switch
-          checked={isAllVersions}
-          onChange={toggleVersionFilter}
-          className="ml-2"
-        />
+        <Switch checked={isAllVersions} onChange={toggleVersionFilter} />
+        <p className="ml-2">Show all versions</p>
       </div>
       {isFetching ? (
         <PageSpinner />
