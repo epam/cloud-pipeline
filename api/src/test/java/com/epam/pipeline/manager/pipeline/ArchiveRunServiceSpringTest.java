@@ -499,7 +499,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 Arrays.asList(run1.getId(), run2.getId(), run3.getId(), runAfterTestDate.getId())))
                 .hasSize(4);
 
-        verifyDryRunInvoked(7, 6 * 2);
+        verifyDryRunInvoked(7, 7 * 2);
     }
 
     private PipelineRun run() {

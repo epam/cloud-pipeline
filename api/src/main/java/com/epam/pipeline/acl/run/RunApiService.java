@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
@@ -56,6 +57,7 @@ import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
@@ -110,6 +112,7 @@ public class RunApiService {
     private final RunPermissionManager runPermissionManager;
     private final EdgeServiceManager edgeServiceManager;
     private final ArchiveRunService archiveRunService;
+    private final EngineRunTaskService engineRunTaskService;
 
     @AclMask
     @QuotaLaunchCheck
@@ -418,5 +421,10 @@ public class RunApiService {
     public RunRuntimeData getPipelineRunRuntimeData(final Long runId, final RunSyncRuntimeDataType type,
                                                     final Map<String, String> parameters) {
         return runRuntimeDataManager.getPipelineRunRuntimeData(runId, type, parameters);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public int consumeRunEngineTaskEvents(final Long runId, final List<EngineRunTask> tasks) {
+        return engineRunTaskService.upsertTasks(runId, tasks);
     }
 }
