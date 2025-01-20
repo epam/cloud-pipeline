@@ -1,4 +1,3 @@
-import os
 import argparse
 
 from flask import Flask, request
@@ -10,29 +9,33 @@ from app.util import parse
 API = parse.get_required_env("API")
 RUN_ID = parse.get_required_env("RUN_ID")
 
-sync_batch_size = int(os.getenv("CP_NF_EVENT_HANDLER_SYNC_BATCH_SIZE", "10"))
-sync_batch_timeout = int(os.getenv("CP_NF_EVENT_HANDLER_SYNC_TIMEOUT", "60"))
-app_port = int(os.getenv("CP_NF_EVENT_HANDLER_PORT", "8080"))
 
 app = Flask(__name__)
 api_client = CloudPipelineApi(API, RUN_ID)
-event_handler = NextflowEventHandler(api_client, RUN_ID, sync_batch_size, sync_batch_timeout)
+event_handler = None
 
 @app.route('/nextflow/event', methods=['POST'])
-def handle():
+def handle_events():
     data = request.get_json()
     event_handler.put_event(data)
+    return "True"
+
+@app.route('/nextflow/event/tracefile', methods=['GET'])
+def handle_tracefile():
+    trace_file_path = request.args.get('path')
+    event_handler.sync_events_from_trace_file(trace_file_path, 5)
     return "True"
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", help="", action="store_true")
-    parser.add_argument("--trace_file", help="")
-    parser.add_argument("--attempts", help="", default=5)
+    parser.add_argument("--port", help="", default=8080)
+    parser.add_argument("--sync-batch-size", help="", default=10)
+    parser.add_argument("--sync-batch-timeout", help="", default=60)
     args = parser.parse_args()
-    if args.server:
-        event_handler.enable_sync()
-        app.run(port=app_port)
-    elif args.trace_file:
-        event_handler.sync_events_from_trace_file(args.trace_file, args.attempts)
+
+    event_handler = NextflowEventHandler(api_client, RUN_ID, args.sync_batch_size, args.sync_batch_timeout)
+
+    app.run(port=args.port)
+    event_handler.enable_sync()

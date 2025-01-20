@@ -1,11 +1,8 @@
 class CloudPipelineRunEngineTask(object):
 
-    def __init__(self, run_id, engine_run_id, engine_run_name, task_group,
-                 task_id, task_key, task_name, status, attributes,
+    def __init__(self, run_id, task_group, task_id, task_key, task_name, status, attributes,
                  start_timestamp=None, end_timestamp=None):
         self.runId = run_id
-        self.engineRunId = engine_run_id
-        self.engineRunName = engine_run_name
         self.taskGroup = task_group
         self.taskId = task_id
         self.taskKey = task_key

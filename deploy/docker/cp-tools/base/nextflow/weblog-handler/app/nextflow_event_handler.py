@@ -44,27 +44,6 @@ class NextflowEventHandler(object):
                 event_list.append(event)
         self._send_events_if_needed()
 
-    def sync_events_from_trace_file(self, trace_file_path, attempts=5):
-        events = []
-        synched = False
-        with open(trace_file_path) as trace_file:
-            line_index = 0
-            header = None
-            for line in trace_file:
-                if line_index == 0:
-                    header = self._parse_header_from_trace_file(line.rstrip())
-                event = self._parse_event_from_trace_file(header, line.rstrip())
-                if event:
-                    events.append(event)
-                line_index = line_index + 1
-
-
-        while not synched and attempts > 0:
-            if self.api_client.log_pipeline_run_engine_task_events(events):
-                synched = True
-            attempts=attempts - 1
-
-
     def enable_sync(self):
         class ScheduleThread(threading.Thread):
             @classmethod
@@ -77,6 +56,7 @@ class NextflowEventHandler(object):
         continuous_thread.daemon = True
         continuous_thread.start()
 
+
     def _parse_event(self, event_json):
         if not event_json:
             return None
@@ -85,7 +65,7 @@ class NextflowEventHandler(object):
             return None
 
         event_type = event_json["event"]
-        if event_type not in ["process_submitted", "process_started", "process_completed"]:
+        if event_type not in ["trace_file_record", "process_submitted", "process_started", "process_completed"]:
             return None
 
         event_trace = parse.get_json_attr(event_json, "trace")
@@ -95,8 +75,6 @@ class NextflowEventHandler(object):
 
         return CloudPipelineRunEngineTask(
             run_id=self.run_id,
-            engine_run_id=parse.get_json_attr(event_json, "runId"),
-            engine_run_name=parse.get_json_attr(event_json, "runName"),
             task_group=parse.get_json_attr(event_trace, "process"),
             task_id=parse.get_json_attr(event_trace, "task_id"),
             task_key=parse.get_json_attr(event_trace, "hash"),
@@ -107,29 +85,25 @@ class NextflowEventHandler(object):
             attributes=event_trace
         )
 
-    def _parse_header_from_trace_file(self, line):
-        header_fields = line.split("\t")
-        header = {}
-        for i, field in enumerate(header_fields):
-            header[field] = i
-        return header
+    def sync_events_from_trace_file(self, trace_file_path, attempts=5):
+        events = []
+        synced = False
+        with open(trace_file_path) as trace_file:
+            line_index = 0
+            header = None
+            for line in trace_file:
+                if line_index == 0:
+                    header = NextflowEventHandler._parse_header_from_trace_file(line.rstrip())
+                else:
+                    event_json = NextflowEventHandler._parse_event_from_trace_file(header, line.rstrip())
+                    if event_json:
+                        events.append(self._parse_event(event_json))
+                line_index = line_index + 1
 
-    def _parse_event_from_trace_file(self, header, line):
-        task_fields = line.split("\t")
-        return CloudPipelineRunEngineTask(
-            run_id=self.run_id,
-            engine_run_id=None,
-            engine_run_name=None,
-            task_group=parse.get_array_element_or_default(task_fields, header["process"]),
-            task_id=int(parse.get_array_element_or_default(task_fields, header["id"])),
-            task_key=parse.get_array_element_or_default(task_fields, header["hash"]),
-            task_name=parse.get_array_element_or_default(task_fields, header["name"]),
-            status=self._map_status(parse.get_array_element_or_default(task_fields, header["status"])),
-            start_timestamp=parse.get_array_element_or_default(task_fields, header["submit"]),
-            end_timestamp=parse.get_array_element_or_default(task_fields, header["complete"]),
-            attributes=None
-        )
-
+        while not synced and attempts > 0:
+            if self.api_client.log_pipeline_run_engine_task_events(events):
+                synced = True
+            attempts=attempts - 1
 
     def _need_to_send_batch(self, event_list):
         now = time.time()
@@ -166,3 +140,74 @@ class NextflowEventHandler(object):
 
     def _map_status(self, status):
         return  self.NF_STATUSES_CP_STATUSES.get(status, None)
+
+    @staticmethod
+    def _parse_header_from_trace_file(line):
+        header_fields = line.split("\t")
+        header = {}
+        for i, field in enumerate(header_fields):
+            header[field] = i
+        return header
+
+    @staticmethod
+    def _parse_event_from_trace_file(header, line):
+        task_fields = line.split("\t")
+        return {
+            "event": "trace_file_record",
+            "trace": {
+                "task_id": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("task_id", -1))),
+                "native_id": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("native_id", -1))),
+                "status": parse.get_array_element_or_default(task_fields, header.get("status", -1)),
+                "hash": parse.get_array_element_or_default(task_fields, header.get("hash", -1)),
+                "name": parse.get_array_element_or_default(task_fields, header.get("name", -1)),
+                "exit": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("exit", -1))),
+                "submit": parse.date_to_timestamp(
+                    parse.get_array_element_or_default(task_fields, header.get("submit", -1)), "%Y-%m-%d %H:%M:%S.%f"
+                ),
+                "start": parse.date_to_timestamp(
+                    parse.get_array_element_or_default(task_fields, header.get("submit", -1)), "%Y-%m-%d %H:%M:%S.%f"
+                ),
+                "complete": parse.date_to_timestamp(
+                    parse.get_array_element_or_default(task_fields, header.get("complete", -1)), "%Y-%m-%d %H:%M:%S.%f"
+                ),
+                "process": parse.get_array_element_or_default(task_fields, header.get("process", -1)),
+                "tag": parse.get_array_element_or_default(task_fields, header.get("tag", -1)),
+                "container": parse.get_array_element_or_default(task_fields, header.get("container", -1)),
+                "attempt": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("attempt", -1))),
+                "script": parse.get_array_element_or_default(task_fields, header.get("script", -1)),
+                "scratch": parse.get_array_element_or_default(task_fields, header.get("scratch", -1)),
+                "workdir": parse.get_array_element_or_default(task_fields, header.get("workdir", -1)),
+                "queue": parse.get_array_element_or_default(task_fields, header.get("queue", -1)),
+                "cpus": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("cpus", -1))),
+                "memory": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("memory", -1))),
+                "disk": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("disk", -1))),
+                "time": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("time", -1))),
+                "env": parse.get_array_element_or_default(task_fields, header.get("env", -1)),
+                "%cpu": parse.parse_percentage_str(
+                    parse.get_array_element_or_default(task_fields, header.get("%cpu", -1))
+                ),
+                "%mem": parse.parse_percentage_str(
+                    parse.get_array_element_or_default(task_fields, header.get("%mem", -1))
+                ),
+                "vmem": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("vmem", -1))
+                ),
+                "rss": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("rss", -1))
+                ),
+                "peak_rss": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("peak_rss", -1))
+                ),
+                "peak_vmem": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("peak_vmem", -1))
+                ),
+                "rchar": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("rchar", -1))
+                ),
+                "wchar": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("wchar", -1))
+                ),
+                "syscr": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("syscr", -1))),
+                "syscw": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("syscw", -1)))
+            }
+        }
