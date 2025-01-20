@@ -300,6 +300,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     configureClusterDialogVisible: false,
     scheduleRules: null,
     bucketBrowserVisible: false,
+    bucketBrowserAllowUpload: false,
     bucketPath: null,
     bucketPathParameterKey: null,
     bucketPathParameterSection: null,
@@ -1027,6 +1028,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
+        bucketBrowserAllowUpload: false,
         bucketPath: null,
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
@@ -1088,6 +1090,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
+        bucketBrowserAllowUpload: false,
         bucketPath: null,
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
@@ -2244,6 +2247,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   openBucketBrowser = (sectionName, key, value, type) => {
     this.setState({
       bucketBrowserVisible: true,
+      bucketBrowserAllowUpload: type !== 'output',
       bucketPath: value,
       bucketPathParameterKey: key,
       bucketPathParameterSection: sectionName,
@@ -2256,6 +2260,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   closeBucketBrowser = () => {
     this.setState({
       bucketBrowserVisible: false,
+      bucketBrowserAllowUpload: false,
       bucketPath: null,
       bucketPathParameterKey: null,
       bucketPathParameterSection: null,
@@ -6256,6 +6261,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           onSelect={this.selectBucketPath}
           onCancel={this.closeBucketBrowser}
           visible={this.state.bucketBrowserVisible}
+          uploadFilesAllowed={this.state.bucketBrowserAllowUpload}
           path={this.state.bucketPath}
           showOnlyFolder={this.state.showOnlyFolderInBucketBrowser}
           allowBucketSelection={this.state.allowBucketSelectionInBucketBrowser}
