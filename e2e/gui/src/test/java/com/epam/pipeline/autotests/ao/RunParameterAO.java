@@ -34,7 +34,8 @@ public class RunParameterAO
 
     public RunParameterAO(PipelineRunFormAO pipelineRunFormAO, int parameterIndex) {
         super(parameterByIndex(parameterIndex));
-        final SelenideElement parameter = $(byClassName(format("param_%d", parameterIndex)));
+        final SelenideElement parameter = $(byId("launch-pipeline-parameters-panel"))
+                .$(byClassName(format("param_%d", parameterIndex)));
         this.pipelineRunFormAO = pipelineRunFormAO;
 
         this.elements = initialiseElements(
