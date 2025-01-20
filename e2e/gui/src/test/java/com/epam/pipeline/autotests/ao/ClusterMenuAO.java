@@ -294,6 +294,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         ElementsCollection dates = column == HeaderColumn.LABEL
                 ? $$("span").filterBy(id("label-RUNID"))
                 : $$("td").filterBy(cssClass(column.cssClass));
+        $(className("ant-table-placeholder")).waitUntil(not(exist), DEFAULT_TIMEOUT);
         List<String> sortedByStrings = new ArrayList<>();
         for (SelenideElement date : dates) {
             sortedByStrings.add(date.text());
