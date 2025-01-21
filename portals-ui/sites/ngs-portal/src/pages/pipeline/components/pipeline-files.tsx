@@ -121,30 +121,39 @@ export const PipelineFiles = ({ pipelineId, version }: Props) => {
     return <PageSpinner />;
   }
 
+  const noFilesFound = !pipelineFiles || pipelineFiles?.length === 0;
+
   return (
     <div className="h-full flex flex-col">
       <div className="border-b-2 mx-[-16px]">
-        {pipelineFiles?.map(({ name, path }) => (
-          <div
-            onClick={() => void handleSelect(path, name)}
-            className={cn('flex items-center px-4 py-2 cursor-pointer', {
-              'hover:bg-blue-100': fileName !== name,
-              'bg-blue-200': fileName === name,
-            })}
-            key={name}>
-            <DocumentTextIcon className="w-5 h-5" />
-            <p className="font-bold text-blue-500 ml-2">{name}</p>
-            <Button
-              className="ml-auto w-[100px]"
-              disabled={isDownloading}
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleDownload(path, name);
-              }}>
-              {isDownloading ? <Spin size="small" /> : 'Download'}
-            </Button>
-          </div>
-        ))}
+        {noFilesFound ? (
+          <div className="px-4 pb-4">No files found</div>
+        ) : (
+          pipelineFiles?.map(({ name, path }) => (
+            <div
+              onClick={() => void handleSelect(path, name)}
+              className={cn(
+                'flex items-center px-4 py-2 cursor-pointer text-sky-500',
+                {
+                  'hover:bg-sky-50': fileName !== name,
+                  'bg-sky-100': fileName === name,
+                },
+              )}
+              key={name}>
+              <DocumentTextIcon className="w-5 h-5" />
+              <p className="font-bold ml-2">{name}</p>
+              <Button
+                className="ml-auto w-[100px]"
+                disabled={isDownloading}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleDownload(path, name);
+                }}>
+                {isDownloading ? <Spin size="small" /> : 'Download'}
+              </Button>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="flex-grow">{renderFileContent()}</div>

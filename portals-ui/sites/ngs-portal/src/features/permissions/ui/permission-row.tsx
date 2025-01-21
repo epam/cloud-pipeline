@@ -63,8 +63,6 @@ export const PermissionRow = ({
   const { mask, sid } = permission;
   const isUser = sid.principal;
 
-  console.count('PermissionRow');
-
   const currentUser = isUser
     ? usersInfo?.find((user) => user.name === sid.name)
     : null;
