@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import threading
 
@@ -83,6 +84,7 @@ class NextflowEventHandler(object):
             task_id=str(parse.get_json_attr(event_trace, "task_id")),
             task_key=parse.get_json_attr(event_trace, "hash"),
             task_name=parse.get_json_attr(event_trace, "name"),
+            task_tag=parse.get_json_attr(event_trace, "tag"),
             engine_type="NEXTFLOW",
             status=self._map_status(parse.get_json_attr(event_trace, "status")),
             start_timestamp=parse.parse_timestamp(parse.get_json_attr(event_trace, "submit")),
@@ -91,6 +93,12 @@ class NextflowEventHandler(object):
         )
 
     def sync_events_from_trace_file(self, trace_file_path, attempts=5):
+
+        if not os.path.isfile(trace_file_path):
+            self.logger.warn("File with path: {} doesn't exist")
+        else:
+            self.logger.info("Processing nf-trace file with path: {}... ")
+
         events = []
         synced = False
         with open(trace_file_path) as trace_file:

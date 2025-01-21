@@ -27,7 +27,8 @@ def handle_events():
 @app.route('/nextflow/event/tracefile', methods=['GET'])
 def handle_tracefile():
     trace_file_path = request.args.get('path')
-    event_handler.sync_events_from_trace_file(trace_file_path, 5)
+    if trace_file_path:
+        event_handler.sync_events_from_trace_file(trace_file_path, 5)
     return "True"
 
 
