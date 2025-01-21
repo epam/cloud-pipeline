@@ -26,6 +26,7 @@
                         task_id,
                         task_name,
                         task_key,
+                        task_tag,
                         task_group,
                         parent_id,
                         engine_type,
@@ -39,6 +40,7 @@
                         :TASK_ID,
                         :TASK_NAME,
                         :TASK_KEY,
+                        :TASK_TAG,
                         :TASK_GROUP,
                         :PARENT_ID,
                         :ENGINE_TYPE,
@@ -52,7 +54,8 @@
                         status = :STATUS,
                         data = to_jsonb(:DATA::jsonb),
                         end_date = :END_DATE,
-                        duration = :DURATION
+                        duration = :DURATION,
+                        task_tag = :TASK_TAG
                 ]]>
             </value>
         </property>
@@ -70,6 +73,7 @@
                         r.task_id,
                         r.task_name,
                         r.task_key,
+                        r.task_tag,
                         r.task_group,
                         r.parent_id,
                         r.engine_type,
