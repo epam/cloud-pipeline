@@ -14,7 +14,7 @@ def parse_timestamp(timestamp):
         return None
     timestamp_sec = timestamp / 1000
     return (datetime.fromtimestamp(timestamp_sec)
-            .strftime("%Y-%m-%dT%H:%M:%SZ"))
+            .strftime("%Y-%m-%d %H:%M:%S.000Z"))
 
 
 def date_to_timestamp(str_date, format_str):

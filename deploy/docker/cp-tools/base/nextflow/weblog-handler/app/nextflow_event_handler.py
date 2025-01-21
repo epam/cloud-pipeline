@@ -1,10 +1,10 @@
+import json
 import time
 import threading
 
 from app.util import parse
 from engine_task import CloudPipelineRunEngineTask
 from app.util.shared_object import SharedObject
-
 
 class NextflowEventHandler(object):
 
@@ -28,7 +28,8 @@ class NextflowEventHandler(object):
         "ABORTED": "ABORTED"
     }
 
-    def __init__(self, api_client, run_id, sync_batch_size, sync_batch_timeout):
+    def __init__(self, logger, api_client, run_id, sync_batch_size, sync_batch_timeout):
+        self.logger = logger
         self.api_client = api_client
         self.run_id = run_id
         self.events = SharedObject([])
@@ -38,19 +39,22 @@ class NextflowEventHandler(object):
         self.failed_sync_timestamp = 0
 
     def put_event(self, event_json):
+        self.logger.debug("Receiving event...")
         event = self._parse_event(event_json)
         if event:
+            self.logger.debug("Accept event: task id: {} task name: {} hash: {} status: {}"
+                         .format(event.taskId, event.taskName, event.taskKey, event.status))
             with self.events as event_list:
                 event_list.append(event)
-        self._send_events_if_needed()
+            self._send_events_if_needed()
 
     def enable_sync(self):
         class ScheduleThread(threading.Thread):
             @classmethod
             def run(cls):
                 while True:
-                    self._send_events_if_needed()
                     time.sleep(5)
+                    self._send_events_if_needed()
 
         continuous_thread = ScheduleThread()
         continuous_thread.daemon = True
@@ -76,13 +80,14 @@ class NextflowEventHandler(object):
         return CloudPipelineRunEngineTask(
             run_id=self.run_id,
             task_group=parse.get_json_attr(event_trace, "process"),
-            task_id=parse.get_json_attr(event_trace, "task_id"),
+            task_id=str(parse.get_json_attr(event_trace, "task_id")),
             task_key=parse.get_json_attr(event_trace, "hash"),
             task_name=parse.get_json_attr(event_trace, "name"),
+            engine_type="NEXTFLOW",
             status=self._map_status(parse.get_json_attr(event_trace, "status")),
             start_timestamp=parse.parse_timestamp(parse.get_json_attr(event_trace, "submit")),
             end_timestamp=parse.parse_timestamp(parse.get_json_attr(event_trace, "complete")),
-            attributes=event_trace
+            attributes=json.dumps(event_trace)
         )
 
     def sync_events_from_trace_file(self, trace_file_path, attempts=5):
@@ -110,12 +115,13 @@ class NextflowEventHandler(object):
         is_backoff_period = (self.failed_sync_timestamp != 0
                                 and now - self.sync_batch_timeout < self.failed_sync_timestamp)
         batch_size_enough = len(event_list) >= self.sync_batch_size
-        is_time_to_sync = now - self.sync_batch_timeout >= self.sync_timestamp
+        is_time_to_sync = len(event_list) > 0 and now - self.sync_batch_timeout >= self.sync_timestamp
         return not is_backoff_period and (batch_size_enough or is_time_to_sync)
 
     def _send_events_if_needed(self):
         with self.events as event_list:
             if self._need_to_send_batch(event_list):
+                self.logger.info("Sending events batch with size: {} to the API...".format(len(event_list)))
                 self._send_events_batch(event_list)
 
     def _send_events_batch(self, event_list):

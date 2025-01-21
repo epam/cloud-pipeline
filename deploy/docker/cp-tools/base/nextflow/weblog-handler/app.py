@@ -1,4 +1,6 @@
 import argparse
+import logging
+import sys
 
 from flask import Flask, request
 
@@ -11,7 +13,9 @@ RUN_ID = parse.get_required_env("RUN_ID")
 
 
 app = Flask(__name__)
-api_client = CloudPipelineApi(API, RUN_ID)
+logger = app.logger
+
+api_client = CloudPipelineApi(API, RUN_ID, logger)
 event_handler = None
 
 @app.route('/nextflow/event', methods=['POST'])
@@ -29,13 +33,18 @@ def handle_tracefile():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--server", help="", action="store_true")
+    parser.add_argument("--verbose", help="", action="store_true")
     parser.add_argument("--port", help="", default=8080)
     parser.add_argument("--sync-batch-size", help="", default=10)
     parser.add_argument("--sync-batch-timeout", help="", default=60)
     args = parser.parse_args()
 
-    event_handler = NextflowEventHandler(api_client, RUN_ID, args.sync_batch_size, args.sync_batch_timeout)
+    logging_level = logging.INFO
+    if args.verbose:
+        logging_level=logging.DEBUG
+    logger.setLevel(logging_level)
 
-    app.run(port=args.port)
+    event_handler = NextflowEventHandler(logger, api_client, RUN_ID, args.sync_batch_size, args.sync_batch_timeout)
+
     event_handler.enable_sync()
+    app.run(port=args.port)
