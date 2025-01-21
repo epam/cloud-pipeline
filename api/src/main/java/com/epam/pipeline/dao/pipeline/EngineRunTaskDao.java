@@ -68,7 +68,8 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
         START_DATE,
         END_DATE,
         RUN_ID,
-        DURATION;
+        DURATION,
+        TASK_TAG;
 
         private static MapSqlParameterSource[] getBatchParameters(final List<EngineRunTask> tasks) {
             return tasks.stream()
@@ -81,6 +82,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                     .addValue(TASK_ID.name(), task.getTaskId())
                     .addValue(TASK_NAME.name(), task.getTaskName())
                     .addValue(TASK_KEY.name(), task.getTaskKey())
+                    .addValue(TASK_TAG.name(), task.getTaskTag())
                     .addValue(TASK_GROUP.name(), task.getTaskGroup())
                     .addValue(PARENT_ID.name(), task.getParentId())
                     .addValue(ENGINE_TYPE.name(), task.getEngineType().name())
@@ -98,6 +100,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                     .taskId(rs.getString(TASK_ID.name()))
                     .taskName(rs.getString(TASK_NAME.name()))
                     .taskKey(rs.getString(TASK_KEY.name()))
+                    .taskTag(rs.getString(TASK_TAG.name()))
                     .taskGroup(rs.getString(TASK_GROUP.name()))
                     .parentId(rs.getString(PARENT_ID.name()))
                     .engineType(EngineType.valueOf(rs.getString(ENGINE_TYPE.name())))

@@ -30,6 +30,7 @@ public class EngineRunTask {
     private String taskId;
     private String taskName;
     private String taskKey;
+    private String taskTag;
     private String parentId;
     private EngineType engineType;
     private EngineTaskStatus status;
