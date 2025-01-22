@@ -44,6 +44,8 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
+import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
@@ -84,6 +86,7 @@ public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
     private static final String TRUE = "true";
+    private static final String ENGINE_TYPE = "engineType";
 
     @Autowired
     private RunApiService runApiService;
@@ -677,5 +680,17 @@ public class PipelineRunController extends AbstractRestController {
     public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
                                                       @RequestBody final List<EngineRunTask> tasks) {
         return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
+    }
+
+    @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
+    @ApiOperation(
+            value = "Loads engine task statistics for run and engine type",
+            notes = "Loads engine task statistics for run and engine type",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
+        return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
     }
 }

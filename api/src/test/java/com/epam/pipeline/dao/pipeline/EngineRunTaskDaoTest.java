@@ -31,13 +31,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
 public class EngineRunTaskDaoTest extends AbstractJdbcTest {
     private static final String TEST = "TEST";
     private static final String TEST2 = "TEST2";
+    private static final String TASK_GROUP_1 = "Process1";
+    private static final String TASK_GROUP_2 = "Process2";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -45,25 +46,67 @@ public class EngineRunTaskDaoTest extends AbstractJdbcTest {
     private EngineRunTaskDao engineRunTaskDao;
 
     @Test
-    public void shouldBatchInsertEngineRunLogs() {
+    public void shouldBatchInsertEngineRunEvents() {
         final PipelineRun run = run();
         pipelineRunDao.createPipelineRun(run);
 
-        final EngineRunTask log1 = log(run.getId(), TEST);
+        final EngineRunTask log1 = event(run.getId(), TEST);
         engineRunTaskDao.batchUpsert(Collections.singletonList(log1));
 
         log1.setStatus(EngineTaskStatus.COMPLETED);
         log1.setEndDateTime(new Date());
-        final EngineRunTask log2 = log(run.getId(), TEST2);
+        final EngineRunTask log2 = event(run.getId(), TEST2);
         engineRunTaskDao.batchUpsert(Arrays.asList(log1, log2));
 
-        assertThat(engineRunTaskDao.findByRunId(run.getId()).size(), is(2));
+        assertThat(engineRunTaskDao.findByRunId(run.getId())).hasSize(2);
     }
 
-    private EngineRunTask log(final Long runId, final String task) {
+    @Test
+    public void shouldLoadEngineRunTasksStats() {
+        final PipelineRun run = run();
+        pipelineRunDao.createPipelineRun(run);
+
+        final EngineRunTask runningEvent11 = event(run.getId(), TEST + "1");
+        runningEvent11.setTaskGroup(TASK_GROUP_1);
+        runningEvent11.setStatus(EngineTaskStatus.RUNNING);
+
+        final EngineRunTask runningEvent12 = event(run.getId(), TEST + "2");
+        runningEvent12.setTaskGroup(TASK_GROUP_1);
+        runningEvent12.setStatus(EngineTaskStatus.RUNNING);
+
+        final EngineRunTask completedEvent11 = event(run.getId(), TEST + "3");
+        completedEvent11.setTaskGroup(TASK_GROUP_1);
+        completedEvent11.setStatus(EngineTaskStatus.COMPLETED);
+
+        final EngineRunTask runningEvent21 = event(run.getId(), TEST + "4");
+        runningEvent21.setTaskGroup(TASK_GROUP_2);
+        runningEvent21.setStatus(EngineTaskStatus.RUNNING);
+
+        final EngineRunTask runningEvent22 = event(run.getId(), TEST + "5");
+        runningEvent22.setTaskGroup(TASK_GROUP_2);
+        runningEvent22.setStatus(EngineTaskStatus.RUNNING);
+
+        final EngineRunTask completedEvent21 = event(run.getId(), TEST + "6");
+        completedEvent21.setTaskGroup(TASK_GROUP_2);
+        completedEvent21.setStatus(EngineTaskStatus.COMPLETED);
+
+        final EngineRunTask emptyGroupEvent = event(run.getId(), TEST + "7");
+        emptyGroupEvent.setTaskGroup(null);
+        emptyGroupEvent.setStatus(EngineTaskStatus.COMPLETED);
+
+        engineRunTaskDao.batchUpsert(Arrays.asList(
+                runningEvent11, runningEvent12, completedEvent11,
+                runningEvent21, runningEvent22, completedEvent21,
+                emptyGroupEvent));
+
+        assertThat(engineRunTaskDao.loadStats(run.getId(), EngineType.NEXTFLOW)).hasSize(4);
+    }
+
+    private EngineRunTask event(final Long runId, final String task) {
         return EngineRunTask.builder()
                 .runId(runId)
                 .taskGroup(task)
+                .taskTag(task)
                 .taskId(task)
                 .taskKey(task)
                 .taskName(task)

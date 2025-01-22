@@ -87,5 +87,23 @@
                 ]]>
             </value>
         </property>
+        <property name="loadEngineRunTasksStatsByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        engine_type,
+                        task_group,
+                        status,
+                        COUNT(*) AS tasks_count
+                    FROM
+                        pipeline.engine_run_task
+                    WHERE run_id = :RUN_ID AND engine_type = :ENGINE_TYPE AND task_group IS NOT NULL
+                    GROUP BY
+                        engine_type,
+                        task_group,
+                        status
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>
