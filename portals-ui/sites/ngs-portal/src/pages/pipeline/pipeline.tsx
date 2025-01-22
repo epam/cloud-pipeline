@@ -56,7 +56,7 @@ export function PipelinePage({ pipeline, versions }: Props) {
       },
       {
         key: PipelineTabs.RunHistory,
-        label: <span className="px-4">RunHistory</span>,
+        label: <span className="px-4">Runs History</span>,
         content: (
           <PipelineRunsList
             pipelineId={pipeline.id}

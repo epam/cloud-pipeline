@@ -1,6 +1,9 @@
 import { Button, Spin } from 'antd';
 import { usePipelineFiles } from '../hooks';
-import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import {
+  DocumentTextIcon,
+  ArrowDownTrayIcon,
+} from '@heroicons/react/24/outline';
 import { PageSpinner } from '../../../shared/ui';
 import { fetchPipelineFileByPath } from '@cloud-pipeline/api';
 import { useCallback, useEffect, useState } from 'react';
@@ -132,24 +135,25 @@ export const PipelineFiles = ({ pipelineId, version }: Props) => {
           pipelineFiles?.map(({ name, path }) => (
             <div
               onClick={() => void handleSelect(path, name)}
-              className={cn(
-                'flex items-center px-4 py-2 cursor-pointer text-sky-500',
-                {
-                  'hover:bg-sky-50': fileName !== name,
-                  'bg-sky-100': fileName === name,
-                },
-              )}
+              className={cn('flex items-center px-4 py-2 cursor-pointer', {
+                'hover:text-sky-500': fileName !== name,
+                'text-sky-500': fileName === name,
+              })}
               key={name}>
               <DocumentTextIcon className="w-5 h-5" />
               <p className="font-bold ml-2">{name}</p>
               <Button
-                className="ml-auto w-[100px]"
+                className="ml-auto w-[30px] h-[30px] p-0"
                 disabled={isDownloading}
                 onClick={(e) => {
                   e.stopPropagation();
                   void handleDownload(path, name);
                 }}>
-                {isDownloading ? <Spin size="small" /> : 'Download'}
+                {isDownloading ? (
+                  <Spin size="small" />
+                ) : (
+                  <ArrowDownTrayIcon className="w-5 h-5" />
+                )}
               </Button>
             </div>
           ))
