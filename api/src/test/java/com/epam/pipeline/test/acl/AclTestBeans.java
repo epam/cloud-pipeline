@@ -101,6 +101,7 @@ import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
+import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
@@ -609,6 +610,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunRuntimeDataManager pipelineRunRuntimeDataManager;
+
+    @MockBean
+    protected EngineRunTaskService engineRunTaskService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

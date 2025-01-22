@@ -261,6 +261,7 @@ class PipelineAPI:
     STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
+    RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
 
     # Pipeline API default header
 
@@ -1547,3 +1548,14 @@ class PipelineAPI:
             return {} if result is None else FileShareMount.from_json(result)
         except Exception as e:
             raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))
+
+
+    def log_pipeline_run_engine_task_events(self, run_id, events):
+        try:
+            return self._request(
+                endpoint=self.RUN_ENGINE_EVENTS_URL.format(id=str(run_id)),
+                http_method='post',
+                data=events
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to put engine task events for run ID '{}', error: {}".format(str(run_id), str(e)))

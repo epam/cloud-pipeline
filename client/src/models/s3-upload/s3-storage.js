@@ -229,19 +229,20 @@ class S3Storage {
   };
 
   doUpload = async (file, options, callbacks) => {
+    const {
+      uploadID: currentUploadID,
+      partNumber: currentPartNumber,
+      multipartParts = [],
+      owner,
+      fileName = file.name
+    } = options;
     if (this.storage) {
-      const path = [this.prefix, file.name].filter((o) => o.length).join('/');
+      const path = [this.prefix, fileName].filter((o) => o.length).join('/');
       auditStorageAccessManager.reportWriteAccess({
         fullPath: `s3://${this.storage.path}/${path}`,
         storageId: this.storage.id
       });
     }
-    const {
-      uploadID: currentUploadID,
-      partNumber: currentPartNumber,
-      multipartParts = [],
-      owner
-    } = options;
     const {
       onPartError,
       onProgress,
@@ -285,7 +286,7 @@ class S3Storage {
       const next = last ? null : part + UPLOAD_CONCURRENCY_LIMIT;
       const promises = chunks.map(chunk => {
         const uploadStorageObject = this.multipartUploadStorageObject(
-          file.name,
+          fileName,
           chunk.body,
           chunk.partNumber + 1,
           uploadID,
@@ -321,7 +322,7 @@ class S3Storage {
         .filter(Boolean)
         .reduce(
           (a, c) => () => { c(); return a(); },
-          () => this.abortMultipartUploadStorageObject(file.name, uploadID)
+          () => this.abortMultipartUploadStorageObject(fileName, uploadID)
         );
       return {
         abort,
@@ -335,7 +336,7 @@ class S3Storage {
         if (file.size > MAX_FILE_SIZE) {
           reject(new Error(`error: Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`));
         } else {
-          this.createMultipartUpload(file.name, fileTags)
+          this.createMultipartUpload(fileName, fileTags)
             .then((data) => {
               resolve(data.UploadId);
             }, reject);
@@ -345,7 +346,7 @@ class S3Storage {
     const updateDataStorageTags = () => {
       const request = new DataStorageTagsUpdate(
         this._storage.id,
-        this.prefix + file.name
+        this.prefix + fileName
       );
       return new Promise((resolve) => {
         request
@@ -353,7 +354,7 @@ class S3Storage {
           .then(() => {
             if (request.error) {
               console.warn(
-                `Error updating data storage item (${this.prefix + file.name}) tags:`,
+                `Error updating data storage item (${this.prefix + fileName}) tags:`,
                 request.error
               );
             }
@@ -361,7 +362,7 @@ class S3Storage {
           })
           .catch((e) => {
             console.warn(
-              `Error updating data storage item (${this.prefix + file.name}) tags:`,
+              `Error updating data storage item (${this.prefix + fileName}) tags:`,
               e.message
             );
             resolve();
@@ -370,7 +371,7 @@ class S3Storage {
     };
     const finishUpload = (uploadID, parts, done) => {
       this.completeMultipartUploadStorageObject(
-        file.name,
+        fileName,
         parts,
         uploadID
       )

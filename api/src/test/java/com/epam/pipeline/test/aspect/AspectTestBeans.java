@@ -51,6 +51,7 @@ import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
+import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -505,4 +506,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected ArchiveRunDao archiveRunDao;
+
+    @MockBean
+    protected EngineRunTaskDao engineRunTaskDao;
 }
