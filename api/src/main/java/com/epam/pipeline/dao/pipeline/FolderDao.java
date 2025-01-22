@@ -200,6 +200,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         STS_DURATION,
         LTS_DURATION,
         OWNER,
+        DESCRIPTION,
         ENTITY_ID,
         CLASS_NAME,
         CONFIG_ID,
@@ -213,6 +214,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PARENT_ID.name(), folder.getParentId());
             params.addValue(CREATED_DATE.name(), folder.getCreatedDate());
             params.addValue(OWNER.name(), folder.getOwner());
+            params.addValue(DESCRIPTION.name(), folder.getDescription());
             params.addValue(LOCKED.name(), folder.isLocked());
             return params;
         }
@@ -360,11 +362,12 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             }
             folder.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             folder.setOwner(rs.getString(OWNER.name()));
+            folder.setDescription(rs.getString(DESCRIPTION.name()));
             folder.setLocked(rs.getBoolean(LOCKED.name()));
             return folder;
         }
-
     }
+
     @Required
     public void setFolderSequence(String folderSequence) {
         this.folderSequence = folderSequence;

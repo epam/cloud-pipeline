@@ -115,6 +115,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -605,6 +606,9 @@ public class AclTestBeans {
 
     @MockBean
     protected AWSOmicsStoreManager omicsStoreManager;
+
+    @MockBean
+    protected PipelineRunRuntimeDataManager pipelineRunRuntimeDataManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
