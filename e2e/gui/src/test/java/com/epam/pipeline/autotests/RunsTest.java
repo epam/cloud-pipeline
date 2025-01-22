@@ -87,6 +87,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(pipelineRunID = getLastRunId())
                 .waitForCompletion();
