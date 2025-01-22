@@ -112,14 +112,19 @@ public class FolderCrudManager implements SecuredEntityManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public Folder update(final Folder folder) {
-        Folder dbFolder = load(folder.getId());
+        final Folder dbFolder = load(folder.getId());
+        final Long parentId = folder.getParentId();
+        if (StringUtils.hasText(folder.getName()) && !folder.getName().equals(dbFolder.getName())) {
+            Assert.isNull(loadByNameAndParentId(folder.getName(), parentId),
+                    messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS,
+                            folder.getName(), parentId));
+        }
         if (StringUtils.hasText(folder.getName())) {
             dbFolder.setName(validateName(folder.getName()));
         }
-        Long parentId = folder.getParentId();
-        Assert.isNull(loadByNameAndParentId(folder.getName(), parentId),
-                messageHelper.getMessage(MessageConstants.ERROR_FOLDER_NAME_EXISTS,
-                        folder.getName(), parentId));
+        if (StringUtils.hasText(folder.getDescription())) {
+            dbFolder.setDescription(folder.getDescription());
+        }
         if (parentId != null) {
             Assert.isTrue(!dbFolder.getId().equals(parentId), messageHelper.getMessage(
                     MessageConstants.ERROR_FOLDER_RECURSIVE_DEPENDENCY, folder.getId(), parentId));
