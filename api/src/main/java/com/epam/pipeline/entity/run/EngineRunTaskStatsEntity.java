@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.run;
 
+import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
+import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -86,6 +86,7 @@ public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
     private static final String TRUE = "true";
+    private static final String ENGINE_TYPE = "engineType";
 
     @Autowired
     private RunApiService runApiService;
@@ -681,14 +682,15 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
     }
 
-    @GetMapping("run/{runId}/engine/tasks/stats")
+    @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
     @ApiOperation(
-            value = "Loads engine task statistics for run",
-            notes = "Loads engine task statistics for run",
+            value = "Loads engine task statistics for run and engine type",
+            notes = "Loads engine task statistics for run and engine type",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Map<EngineType, Map<String, Map<EngineTaskStatus, Long>>>> loadEngineRunTasksStats(
-            @PathVariable(value = RUN_ID) final Long runId) {
-        return Result.success(runApiService.loadEngineRunTasksStats(runId));
+    public Result<Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
+        return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
     }
 }

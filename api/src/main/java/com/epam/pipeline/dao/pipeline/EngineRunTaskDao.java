@@ -19,7 +19,7 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
-import com.epam.pipeline.entity.pipeline.run.EngineRunTaskStatsEntity;
+import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
     private String upsertEngineRunTaskQuery;
     private String deleteEngineRunTaskByRunIdsQuery;
     private String findEngineRunTaskByRunIdQuery;
-    private String loadEngineRunTasksStatsByRunIdQuery;
+    private String loadEngineRunTasksStatsByRunIdAndTypeQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public List<EngineRunTask> batchUpsert(final List<EngineRunTask> tasks) {
@@ -57,9 +57,12 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                 Parameters.buildRunIdParameter(runId), Parameters.getRowMapper());
     }
 
-    public List<EngineRunTaskStatsEntity> loadStats(final Long runId) {
-        return getNamedParameterJdbcTemplate().query(loadEngineRunTasksStatsByRunIdQuery,
-                Parameters.buildRunIdParameter(runId), Parameters.getStatsRowMapper());
+    public List<EngineRunTaskStatsEntity> loadStats(final Long runId, final EngineType engineType) {
+        return getNamedParameterJdbcTemplate().query(loadEngineRunTasksStatsByRunIdAndTypeQuery,
+                new MapSqlParameterSource()
+                        .addValue(Parameters.RUN_ID.name(), runId)
+                        .addValue(Parameters.ENGINE_TYPE.name(), engineType.name()),
+                Parameters.getStatsRowMapper());
     }
 
     enum Parameters {
@@ -148,7 +151,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadEngineRunTasksStatsByRunIdQuery(final String loadEngineRunTasksStatsByRunIdQuery) {
-        this.loadEngineRunTasksStatsByRunIdQuery = loadEngineRunTasksStatsByRunIdQuery;
+    public void setLoadEngineRunTasksStatsByRunIdAndTypeQuery(final String loadEngineRunTasksStatsByRunIdAndTypeQuery) {
+        this.loadEngineRunTasksStatsByRunIdAndTypeQuery = loadEngineRunTasksStatsByRunIdAndTypeQuery;
     }
 }

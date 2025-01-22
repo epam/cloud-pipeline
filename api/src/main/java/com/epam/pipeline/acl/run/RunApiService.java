@@ -431,7 +431,8 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public Map<EngineType, Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(final Long runId) {
-        return engineRunTaskService.loadTasksStats(runId);
+    public Map<String, Map<EngineTaskStatus, Long>> loadEngineRunTasksStats(final Long runId,
+                                                                            final EngineType engineType) {
+        return engineRunTaskService.loadTasksStats(runId, engineType);
     }
 }

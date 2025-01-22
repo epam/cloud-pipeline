@@ -20,7 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
-import com.epam.pipeline.entity.pipeline.run.EngineRunTaskStatsEntity;
+import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
@@ -57,14 +57,13 @@ public class EngineRunTaskService {
                 .size();
     }
 
-    public Map<EngineType, Map<String, Map<EngineTaskStatus, Long>>> loadTasksStats(final Long runId) {
+    public Map<String, Map<EngineTaskStatus, Long>> loadTasksStats(final Long runId, final EngineType engineType) {
         runCRUDService.loadRunById(runId);
-        return ListUtils.emptyIfNull(engineRunTaskDao.loadStats(runId)).stream()
+        return ListUtils.emptyIfNull(engineRunTaskDao.loadStats(runId, engineType)).stream()
                 .filter(stats -> Objects.nonNull(stats.getTaskGroup()))
-                .collect(Collectors.groupingBy(EngineRunTaskStatsEntity::getEngineType,
-                        Collectors.groupingBy(EngineRunTaskStatsEntity::getTaskGroup,
+                .collect(Collectors.groupingBy(EngineRunTaskStatsEntity::getTaskGroup,
                                 Collectors.toMap(EngineRunTaskStatsEntity::getStatus,
-                                        EngineRunTaskStatsEntity::getTasksCount))));
+                                        EngineRunTaskStatsEntity::getTasksCount)));
     }
 
     private EngineRunTask validate(final EngineRunTask task) {

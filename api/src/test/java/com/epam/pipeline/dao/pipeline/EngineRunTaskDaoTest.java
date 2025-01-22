@@ -99,7 +99,7 @@ public class EngineRunTaskDaoTest extends AbstractJdbcTest {
                 runningEvent21, runningEvent22, completedEvent21,
                 emptyGroupEvent));
 
-        assertThat(engineRunTaskDao.loadStats(run.getId())).hasSize(4);
+        assertThat(engineRunTaskDao.loadStats(run.getId(), EngineType.NEXTFLOW)).hasSize(4);
     }
 
     private EngineRunTask event(final Long runId, final String task) {
