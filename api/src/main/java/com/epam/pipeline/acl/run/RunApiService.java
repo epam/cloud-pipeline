@@ -44,6 +44,8 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
+import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
@@ -426,5 +428,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_EXECUTE)
     public int consumeRunEngineTaskEvents(final Long runId, final List<EngineRunTask> tasks) {
         return engineRunTaskService.upsertTasks(runId, tasks);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public Map<EngineType, Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(final Long runId) {
+        return engineRunTaskService.loadTasksStats(runId);
     }
 }

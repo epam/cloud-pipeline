@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskStatsEntity;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
     private String upsertEngineRunTaskQuery;
     private String deleteEngineRunTaskByRunIdsQuery;
     private String findEngineRunTaskByRunIdQuery;
+    private String loadEngineRunTasksStatsByRunIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public List<EngineRunTask> batchUpsert(final List<EngineRunTask> tasks) {
@@ -52,8 +54,12 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
 
     public List<EngineRunTask> findByRunId(final Long runId) {
         return getNamedParameterJdbcTemplate().query(findEngineRunTaskByRunIdQuery,
-                new MapSqlParameterSource().addValue(Parameters.RUN_ID.name(), runId),
-                Parameters.getRowMapper());
+                Parameters.buildRunIdParameter(runId), Parameters.getRowMapper());
+    }
+
+    public List<EngineRunTaskStatsEntity> loadStats(final Long runId) {
+        return getNamedParameterJdbcTemplate().query(loadEngineRunTasksStatsByRunIdQuery,
+                Parameters.buildRunIdParameter(runId), Parameters.getStatsRowMapper());
     }
 
     enum Parameters {
@@ -69,7 +75,8 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
         END_DATE,
         RUN_ID,
         DURATION,
-        TASK_TAG;
+        TASK_TAG,
+        TASKS_COUNT;
 
         private static MapSqlParameterSource[] getBatchParameters(final List<EngineRunTask> tasks) {
             return tasks.stream()
@@ -110,6 +117,19 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                     .endDateTime(rs.getDate(END_DATE.name()))
                     .build();
         }
+
+        private static RowMapper<EngineRunTaskStatsEntity> getStatsRowMapper() {
+            return (rs, rowNum) -> EngineRunTaskStatsEntity.builder()
+                    .engineType(EngineType.valueOf(rs.getString(ENGINE_TYPE.name())))
+                    .taskGroup(rs.getString(TASK_GROUP.name()))
+                    .status(EngineTaskStatus.valueOf(rs.getString(STATUS.name())))
+                    .tasksCount(rs.getLong(TASKS_COUNT.name()))
+                    .build();
+        }
+
+        private static MapSqlParameterSource buildRunIdParameter(final Long runId) {
+            return new MapSqlParameterSource().addValue(RUN_ID.name(), runId);
+        }
     }
 
     @Required
@@ -125,5 +145,10 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
     @Required
     public void setFindEngineRunTaskByRunIdQuery(final String findEngineRunTaskByRunIdQuery) {
         this.findEngineRunTaskByRunIdQuery = findEngineRunTaskByRunIdQuery;
+    }
+
+    @Required
+    public void setLoadEngineRunTasksStatsByRunIdQuery(final String loadEngineRunTasksStatsByRunIdQuery) {
+        this.loadEngineRunTasksStatsByRunIdQuery = loadEngineRunTasksStatsByRunIdQuery;
     }
 }
