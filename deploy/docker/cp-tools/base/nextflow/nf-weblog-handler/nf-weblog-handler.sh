@@ -14,6 +14,10 @@ function parse_options {
         export CP_NF_WEBLOG_HANDLER_STOP=1
         shift # past argument
         ;;
+        --check)
+        export CP_NF_WEBLOG_HANDLER_CHECK=1
+        shift # past argument
+        ;;
         -f|--force)
         export CP_NF_WEBLOG_HANDLER_FORCE_OPERATION=1
         shift # past argument
@@ -55,8 +59,8 @@ if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ] && [ "$CP_NF_WEBLOG_HANDLER_STOP" == 1
     exit 14
 fi
 
-if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ]; then
-    echo "[ERROR] Options one of the options: --start/--stop should be provided."
+if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ]; then
+    echo "[ERROR] Options one of the options: --start/--stop/--check should be provided."
     exit 14
 fi
 
@@ -110,10 +114,29 @@ if [ "$CP_NF_WEBLOG_HANDLER_STOP" == 1 ]; then
             exit 0
         else
             echo "Can't find process ${_process_pid} ..."
+            exit 14
         fi
     fi
 
     echo "Can't find PID file ${CP_NF_WEBLOG_HANDLER_PID_FILE} ..."
+    exit 14
+fi
+
+if [ "$CP_NF_WEBLOG_HANDLER_CHECK" == 1 ]; then
+    echo "Checking Nextflow weblog handler status ..."
+
+    if [ -f "$CP_NF_WEBLOG_HANDLER_PID_FILE" ]; then
+        _process_pid=$(cat "$CP_NF_WEBLOG_HANDLER_PID_FILE")
+        if ps -p "$_process_pid" > /dev/null; then
+            echo "Nextflow event handler alive with PID: ${_process_pid} ..."
+            exit 0
+        else
+            echo "Can't find Nextflow event handler process by PID: ${_process_pid} ..."
+            exit 14
+        fi
+    fi
+
+    echo "Can't find Nextflow event handler PID file ${CP_NF_WEBLOG_HANDLER_PID_FILE} ..."
     exit 14
 fi
 

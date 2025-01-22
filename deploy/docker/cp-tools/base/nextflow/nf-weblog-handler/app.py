@@ -20,8 +20,11 @@ event_handler = None
 
 @app.route('/nextflow/event', methods=['POST'])
 def handle_events():
-    data = request.get_json()
-    event_handler.put_event(data)
+    try:
+        data = request.get_json()
+        event_handler.put_event(data)
+    except Exception as e:
+        logger.error("Can't process event", e)
     return "True"
 
 @app.route('/nextflow/event/tracefile', methods=['GET'])
@@ -35,9 +38,9 @@ def handle_tracefile():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", help="", action="store_true")
-    parser.add_argument("--port", help="", default=8080)
-    parser.add_argument("--sync-batch-size", help="", default=10)
-    parser.add_argument("--sync-batch-timeout", help="", default=60)
+    parser.add_argument("--port", help="", type=int, default=8080)
+    parser.add_argument("--sync-batch-size", help="", type=int, default=10)
+    parser.add_argument("--sync-batch-timeout", help="", type=int,  default=60)
     args = parser.parse_args()
 
     logging_level = logging.INFO

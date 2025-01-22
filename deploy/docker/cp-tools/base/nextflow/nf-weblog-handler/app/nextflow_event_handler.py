@@ -47,7 +47,6 @@ class NextflowEventHandler(object):
                          .format(event.taskId, event.taskName, event.taskKey, event.status))
             with self.events as event_list:
                 event_list.append(event)
-            self._send_events_if_needed()
 
     def enable_sync(self):
         class ScheduleThread(threading.Thread):
