@@ -8,5 +8,5 @@ type Props = CommonProps & {
 
 export function RunLogsTab({ run }: Props) {
   const { logs } = useRunsLogs(run.id, { task: 'Console' });
-  return <LogsViewer className="h-full" logs={logs} />;
+  return <LogsViewer className="h-full rounded-md" logs={logs} />;
 }
