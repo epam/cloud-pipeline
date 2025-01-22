@@ -16,7 +16,7 @@ export const RunCard = ({ run, className, style }: Props) => {
   return (
     <div className={cn('ngs-container flex flex-col', className)} style={style}>
       <div className="flex flex-nowrap justify-between items-center">
-        <Link className="font-semibold truncate" to={`/run/${id}`}>
+        <Link className="font-semibold truncate" to={`/runs/${id}`}>
           {taskName}
         </Link>
         <Tag className="shrink-0" {...getStatusBadgeStyle(status)}>

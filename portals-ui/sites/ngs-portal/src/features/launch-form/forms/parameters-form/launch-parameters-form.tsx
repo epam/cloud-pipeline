@@ -9,6 +9,7 @@ type Props = {
   parameters?: MappedPipelineParameter[];
   onChange: (key: string, parameter: MappedPipelineParameter) => void;
   prettyNameEditable?: boolean;
+  readOnly?: boolean;
 };
 
 const OTHER_SECTION_NAME = 'other';
@@ -17,6 +18,7 @@ export function LaunchParametersForm({
   parameters,
   onChange,
   prettyNameEditable,
+  readOnly,
 }: Props) {
   const [highlightedSection, setHighlightedSection] = useState('');
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -100,6 +102,7 @@ export function LaunchParametersForm({
                   parameter={parameter}
                   onChange={onChange}
                   prettyNameEditable={prettyNameEditable}
+                  readOnly={readOnly}
                 />
               ))}
             </div>

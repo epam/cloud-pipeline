@@ -1,5 +1,5 @@
 import { AppRoutes, RoutePath } from '../../../shared/constants/routes.ts';
-import { MainMenuItem } from './types.ts';
+import type { MainMenuItem } from './types.ts';
 
 export const mainMenuItems: MainMenuItem[] = [
   {
@@ -22,7 +22,7 @@ export const mainMenuItems: MainMenuItem[] = [
   },
   {
     key: 'runs',
-    routes: [AppRoutes.RUNS],
+    routes: [AppRoutes.RUNS, AppRoutes.RUN],
     uri: RoutePath[AppRoutes.RUNS],
     caption: 'Runs',
   },

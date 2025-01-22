@@ -13,6 +13,7 @@ type Props = CommonProps & {
   classes?: {
     container?: string;
     content?: string;
+    layoutCard?: string;
   };
 };
 
@@ -38,6 +39,7 @@ export const ItemLayout = ({
         <LayoutCard
           className={classNames(
             'overflow-auto',
+            classes.layoutCard,
             hasAsidePanels ? 'w-2/3' : 'w-full',
           )}>
           {main}

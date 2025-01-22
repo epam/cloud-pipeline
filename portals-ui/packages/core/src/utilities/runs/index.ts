@@ -3,4 +3,4 @@ export type {
   RunPriceEstimationResult,
   RunPriceEstimationOptions,
 } from './estimated-price';
-export { getRunDurationInfo } from './run-duration';
+export { getRunDurationInfo, displayDurationInSeconds } from './run-duration';

@@ -217,3 +217,30 @@ export function getRunDurationInfo(
     totalBillableRunningDuration,
   };
 }
+
+export function displayDurationInSeconds(
+  duration: number = 0,
+  details: boolean = false,
+) {
+  const MINUTE = 60;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const days = Math.floor(duration / DAY);
+  const hours = Math.floor((duration - days * DAY) / HOUR);
+  const minutes = Math.floor((duration - days * DAY - hours * HOUR) / MINUTE);
+  const seconds = Math.floor(
+    duration - days * DAY - hours * HOUR - minutes * MINUTE,
+  );
+  const plural = (count: number, word: string) =>
+    `${count} ${word}${count === 1 ? '' : 's'}`;
+  const parts = [
+    days > 0 ? plural(days, 'day') : undefined,
+    hours > 0 ? plural(hours, 'hour') : undefined,
+    minutes > 0 ? plural(minutes, 'minute') : undefined,
+    plural(seconds, 'second'),
+  ].filter(Boolean);
+  if (details) {
+    return parts.join(', ');
+  }
+  return parts[0];
+}

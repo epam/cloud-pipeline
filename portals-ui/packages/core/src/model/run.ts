@@ -106,3 +106,13 @@ export type RunInterval = {
   start: Dayjs;
   end?: Dayjs;
 };
+
+export type RunLog = {
+  runId: number;
+  date: string;
+  status: string;
+  logText: string;
+  task: {
+    name: string;
+  };
+};

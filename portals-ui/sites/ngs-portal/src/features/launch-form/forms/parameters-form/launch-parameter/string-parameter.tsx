@@ -8,6 +8,7 @@ export default function StringParameter({
   parameter,
   onChange,
   prettyNameEditable,
+  readOnly,
 }: LaunchParameterProps) {
   const onChangeValue = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(parameter.key, {
@@ -28,8 +29,9 @@ export default function StringParameter({
           value={String(parameter.value || '')}
           status={parameter.error ? 'error' : undefined}
           onChange={onChangeValue}
+          disabled={readOnly}
         />
-        {parameter.error ? (
+        {!readOnly && parameter.error ? (
           <span className="pl-4 text-xs text-red-500">{parameter.error}</span>
         ) : null}
       </div>

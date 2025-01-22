@@ -9,6 +9,7 @@ export default function LaunchParameter({
   parameter,
   onChange,
   prettyNameEditable = false,
+  readOnly,
 }: LaunchParameterProps) {
   const Component = useMemo(() => {
     if (parameter.initial.type === PipelineParametersTypes.string) {
@@ -27,6 +28,7 @@ export default function LaunchParameter({
       parameter={parameter}
       onChange={onChange}
       prettyNameEditable={prettyNameEditable}
+      readOnly={readOnly}
     />
   );
 }
