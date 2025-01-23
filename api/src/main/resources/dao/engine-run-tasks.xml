@@ -66,27 +66,6 @@
                 ]]>
             </value>
         </property>
-        <property name="findEngineRunTaskByRunIdQuery">
-            <value>
-                <![CDATA[
-                    SELECT
-                        r.task_id,
-                        r.task_name,
-                        r.task_key,
-                        r.task_tag,
-                        r.task_group,
-                        r.parent_id,
-                        r.engine_type,
-                        r.status,
-                        r.start_date,
-                        r.end_date,
-                        r.run_id,
-                        r.duration
-                    FROM pipeline.engine_run_task r
-                    WHERE r.run_id = :RUN_ID
-                ]]>
-            </value>
-        </property>
         <property name="loadEngineRunTasksStatsByRunIdAndTypeQuery">
             <value>
                 <![CDATA[
@@ -102,6 +81,39 @@
                         engine_type,
                         task_group,
                         status
+                ]]>
+            </value>
+        </property>
+        <property name="findEngineRunTaskByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.task_id,
+                        r.task_name,
+                        r.task_key,
+                        r.task_tag,
+                        r.task_group,
+                        r.parent_id,
+                        r.engine_type,
+                        r.status,
+                        r.start_date,
+                        r.end_date,
+                        r.run_id,
+                        r.duration,
+                        r.data
+                    FROM pipeline.engine_run_task r
+                    WHERE r.run_id = :RUN_ID AND r.engine_type = :ENGINE_TYPE @WHERE@
+                    @SORT@
+                    LIMIT :LIMIT OFFSET :OFFSET
+                ]]>
+            </value>
+        </property>
+        <property name="countEngineRunTaskByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT count(*)
+                    FROM pipeline.engine_run_task r
+                    WHERE r.run_id = :RUN_ID AND r.engine_type = :ENGINE_TYPE @WHERE@
                 ]]>
             </value>
         </property>

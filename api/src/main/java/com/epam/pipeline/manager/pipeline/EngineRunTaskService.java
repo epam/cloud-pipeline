@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
 import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
@@ -52,7 +54,7 @@ public class EngineRunTaskService {
         runCRUDService.loadRunById(runId);
         return engineRunTaskDao.batchUpsert(tasks.stream()
                         .peek(task -> task.setRunId(runId))
-                        .map(this::validate)
+                        .map(this::validateEvent)
                         .collect(Collectors.toList()))
                 .size();
     }
@@ -66,7 +68,17 @@ public class EngineRunTaskService {
                                         EngineRunTaskStatsEntity::getTasksCount)));
     }
 
-    private EngineRunTask validate(final EngineRunTask task) {
+    public PagedResult<List<EngineRunTask>> loadTasks(final Long runId, final EngineType engineType,
+                                                      final EngineRunTaskFilter filter) {
+        Assert.isTrue(filter.getPage() > 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
+        Assert.isTrue(filter.getPageSize() > 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+
+        runCRUDService.loadRunById(runId);
+        return new PagedResult<>(engineRunTaskDao.filterTasksByRunIdAndTypeAndFilter(runId, engineType, filter),
+                engineRunTaskDao.countTasksByRunIdAndTypeAndFilter(runId, engineType, filter));
+    }
+
+    private EngineRunTask validateEvent(final EngineRunTask task) {
         Assert.notNull(task.getTaskId(), messageHelper.getMessage(
                 MessageConstants.ERROR_ENGINE_RUN_TASK_SETTING_NOT_FOUND, "taskId"));
         Assert.notNull(task.getEngineType(), messageHelper.getMessage(

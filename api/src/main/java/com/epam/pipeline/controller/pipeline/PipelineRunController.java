@@ -44,6 +44,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
@@ -692,5 +693,18 @@ public class PipelineRunController extends AbstractRestController {
             @PathVariable(value = RUN_ID) final Long runId,
             @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
         return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
+    }
+
+    @PostMapping("run/{runId}/engine/{engineType}/tasks/filter")
+    @ApiOperation(
+            value = "Loads engine task for run with applied filters",
+            notes = "Loads engine task for run with applied filters",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PagedResult<List<EngineRunTask>>> filterEngineRunTasks(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
+            @RequestBody final EngineRunTaskFilter filter) {
+        return Result.success(runApiService.filterEngineRunTasks(runId, engineType, filter));
     }
 }
