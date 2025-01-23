@@ -44,6 +44,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
@@ -434,5 +435,11 @@ public class RunApiService {
     public Map<String, Map<EngineTaskStatus, Long>> loadEngineRunTasksStats(final Long runId,
                                                                             final EngineType engineType) {
         return engineRunTaskService.loadTasksStats(runId, engineType);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public PagedResult<List<EngineRunTask>> filterEngineRunTasks(final Long runId, final EngineType engineType,
+                                                                 final EngineRunTaskFilter filter) {
+        return engineRunTaskService.loadTasks(runId, engineType, filter);
     }
 }
