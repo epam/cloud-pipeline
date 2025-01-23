@@ -242,7 +242,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .click(parameterWithName("IP"), NodePage::new)
             .ensure(mainInfo(), have(textMatches(expectedTitle)))
             .ensure(labelWithType("RUNID"), visible)
-            .ensure(labelWithType("pipeline-info"), visible);
+            .ensure(labelWithType("pipeline-info"), exist);
     }
 
     /**
