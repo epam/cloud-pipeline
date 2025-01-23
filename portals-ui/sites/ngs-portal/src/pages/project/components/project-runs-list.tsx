@@ -6,7 +6,6 @@ import cn from 'classnames';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pagination } from 'antd';
-import { PageSpinner } from '../../../shared/ui';
 import {
   generateProjectRoutePath,
   ProjectTabs,
@@ -77,23 +76,17 @@ export function ProjectRunsList({ projectId, extended }: Props) {
     }
   }, [pending, total]);
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
   return (
     <div className="h-full flex flex-col">
-      {isRunsLoading || total === undefined ? (
-        <PageSpinner />
-      ) : (
-        <ItemsPanel<Run>
-          className="flex-grow bg-white overflow-auto"
-          render={runCardRenderer}
-          items={runs}
-          itemKey="id"
-          viewAll={viewAllProps}
-        />
-      )}
+      <ItemsPanel<Run>
+        className="flex-grow bg-white overflow-auto"
+        render={runCardRenderer}
+        items={runs}
+        itemKey="id"
+        viewAll={viewAllProps}
+        isItemsLoading={isRunsLoading || total === undefined}
+        errorText={error && `Error: ${error}`}
+      />
       {extended && (
         <Pagination
           align="end"

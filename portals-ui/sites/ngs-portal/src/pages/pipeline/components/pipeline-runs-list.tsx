@@ -6,7 +6,6 @@ import cn from 'classnames';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pagination, Switch } from 'antd';
-import { PageSpinner } from '../../../shared/ui/index.ts';
 import {
   generatePipelineRoutePath,
   PipelineTabs,
@@ -90,27 +89,21 @@ export function PipelineRunsList({ pipelineId, extended, version }: Props) {
     setIsFetching(true);
   }, [version, isAllVersions]);
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center pb-2 border-b-2">
         <Switch checked={isAllVersions} onChange={toggleVersionFilter} />
         <p className="ml-2">Show all versions</p>
       </div>
-      {isFetching ? (
-        <PageSpinner />
-      ) : (
-        <ItemsPanel<Run>
-          className="flex-grow bg-white overflow-auto"
-          render={runCardRenderer}
-          items={runs}
-          itemKey="id"
-          viewAll={viewAllProps}
-        />
-      )}
+      <ItemsPanel<Run>
+        className="flex-grow bg-white overflow-auto"
+        render={runCardRenderer}
+        items={runs}
+        itemKey="id"
+        viewAll={viewAllProps}
+        isItemsLoading={isFetching}
+        errorText={error && `Error: ${error}`}
+      />
       {extended && total !== undefined && (
         <Pagination
           align="end"

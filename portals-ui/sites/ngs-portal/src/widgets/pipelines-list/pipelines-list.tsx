@@ -1,21 +1,30 @@
 import type { Pipeline } from '@cloud-pipeline/core';
 import { ItemsPanel } from '../items-panel/items-panel.tsx';
 import { PipelineCard } from '../cards';
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import cn from 'classnames';
 import { ShareIcon } from '@heroicons/react/24/outline';
 import { pipelinesFiltersToDisplay } from '../../pages/pipelines/constants.ts';
 import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
+import { usePipelinesState } from '../../state/pipelines/hooks.ts';
+import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
 
 type Props = {
-  pipelines: Pipeline[];
   mode?: 'standard' | 'extended';
   showDescription?: boolean;
   withFilters?: boolean;
 };
 
 export const PipelinesList = memo(
-  ({ pipelines, mode = 'standard', showDescription, withFilters }: Props) => {
+  ({ mode = 'standard', showDescription, withFilters }: Props) => {
+    const { pipelines = [], error, pending } = usePipelinesState();
+
+    useEffect(() => {
+      loadPipelines()
+        .then(() => {})
+        .catch(() => {});
+    }, []);
+
     const { filteredItems, onSearchChange, filtersProps, search } =
       useNgsFilters({
         items: pipelines,
@@ -38,7 +47,7 @@ export const PipelinesList = memo(
 
     return (
       <ItemsPanel
-        className="max-h-full list-container overflow-auto"
+        className="h-full list-container overflow-auto"
         title={
           <div className="min-h-6 fill-current flex items-center flex-nowrap gap-1">
             <ShareIcon className="w-5 h-5 -rotate-90" />
@@ -63,6 +72,8 @@ export const PipelinesList = memo(
             ? undefined
             : { title: 'View all pipelines', link: '/pipelines' }
         }
+        isItemsLoading={pending}
+        errorText={error && `Error: ${error}`}
       />
     );
   },

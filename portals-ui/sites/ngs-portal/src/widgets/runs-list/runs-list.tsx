@@ -16,11 +16,13 @@ function runCardRenderer(item: Run, _: string, i: number) {
 }
 
 export const RunsList = () => {
-  const { runs } = useAuthenticatedUserRuns({ reloadIntervalMs: 5000 });
+  const { runs, error, pending, total } = useAuthenticatedUserRuns({
+    reloadIntervalMs: 5000,
+  });
 
   return (
     <ItemsPanel<Run>
-      className="max-h-full list-container overflow-auto"
+      className="h-full list-container overflow-auto"
       render={runCardRenderer}
       title={
         <div className="min-h-6 fill-current flex items-center flex-nowrap gap-1">
@@ -32,6 +34,8 @@ export const RunsList = () => {
       sliced
       itemKey="id"
       viewAll={{ title: 'View all runs', link: '/runs' }}
+      isItemsLoading={pending && total === undefined}
+      errorText={error && `Error: ${error}`}
     />
   );
 };

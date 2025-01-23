@@ -2,8 +2,9 @@ import type { ItemsPanelProps, ViewAllItemsConfiguration } from './types.ts';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { List, ListHeader } from '@cloud-pipeline/components';
 import classNames from 'classnames';
-import { Typography } from 'antd';
 import { Link } from 'react-router-dom';
+import { PageSpinner } from '../../shared/ui/page-spinner.tsx';
+import { useCallback } from 'react';
 
 function ItemsPanelFooter(
   props: CommonProps & { viewAll?: ViewAllItemsConfiguration },
@@ -50,7 +51,43 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     extraHeader,
     searchClassName,
     onSearchChange,
+    isItemsLoading,
+    errorText,
   } = props;
+
+  const renderContent = useCallback(() => {
+    if (isItemsLoading) {
+      return <PageSpinner />;
+    }
+
+    if (errorText) {
+      return <div className="p-2 text-faded text-xs">{errorText}</div>;
+    }
+
+    if (items.length === 0) {
+      return <div className="p-2 text-faded text-xs">Nothing found</div>;
+    }
+
+    return (
+      <List
+        className="overflow-auto flex-1"
+        items={items}
+        render={(item, i) => render(item, search ?? '', i)}
+        itemKey={itemKey}
+        virtualized={virtualized}
+        sliced={sliced}
+      />
+    );
+  }, [
+    errorText,
+    isItemsLoading,
+    itemKey,
+    items,
+    render,
+    search,
+    sliced,
+    virtualized,
+  ]);
 
   return (
     <div
@@ -60,7 +97,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         title={title}
         className={classNames('shrink-0', {
           'border-b':
-            title || beforeSearch || afterSearch || Boolean(onSearchChange),
+            title ?? beforeSearch ?? afterSearch ?? Boolean(onSearchChange),
         })}
         search={search}
         onSearch={onSearchChange}
@@ -70,20 +107,8 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         searchClassName={searchClassName}
       />
       {extraHeader}
-      {items.length > 0 && (
-        <List
-          className="overflow-auto flex-1"
-          items={items}
-          render={(item, i) => render(item, search ?? '', i)}
-          itemKey={itemKey}
-          virtualized={virtualized}
-          sliced={sliced}
-        />
-      )}
-      {items.length == 0 && (
-        <div className="p-2 text-faded text-xs">Nothing found</div>
-      )}
-      <ItemsPanelFooter className="border-t" viewAll={viewAll} />
+      {renderContent()}
+      <ItemsPanelFooter className="border-t mt-auto" viewAll={viewAll} />
     </div>
   );
 }
