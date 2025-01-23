@@ -33,7 +33,12 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -189,11 +194,23 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                     .parentId(rs.getString(PARENT_ID.name()))
                     .engineType(EngineType.valueOf(rs.getString(ENGINE_TYPE.name())))
                     .status(EngineTaskStatus.valueOf(rs.getString(STATUS.name())))
-                    .duration(rs.getLong(DURATION.name()))
-                    .startDateTime(rs.getDate(START_DATE.name()))
-                    .endDateTime(rs.getDate(END_DATE.name()))
+                    .duration(getLong(rs, DURATION.name()))
+                    .startDateTime(getDataTime(rs, START_DATE.name()))
+                    .endDateTime(getDataTime(rs, END_DATE.name()))
                     .attributes(rs.getString(DATA.name()))
                     .build();
+        }
+
+        private static Long getLong(final ResultSet rs, final String column) throws SQLException {
+            final long result = rs.getLong(column);
+            return rs.wasNull() ? null : result;
+        }
+
+        private static Date getDataTime(final ResultSet rs, final String column) throws SQLException {
+            return Optional.ofNullable(rs.getTimestamp(column))
+                    .map(Timestamp::getTime)
+                    .map(Date::new)
+                    .orElse(null);
         }
 
         private static RowMapper<EngineRunTaskStatsEntity> getStatsRowMapper() {
