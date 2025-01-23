@@ -290,6 +290,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
                 node(), "any non-master node");
         refresh();
         clusterMenu()
+            .filterByHasRunId()
             .click(nonMasterNode, NodePage::new)
             .ensure(button("Refresh"), visible, enabled)
             .ensure(buttonByIconClass("anticon-arrow-left"), visible, enabled)

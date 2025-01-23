@@ -62,7 +62,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
     private final String configurationFileName = "config.json";
     private final String defaultConfigurationName = "default";
-    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
     private final String defaultDisk = "15";
     private String configurationName = "test_conf";
     private final String pipeline795 = resourceName("epmcmbibpc-795");
