@@ -116,3 +116,14 @@ export type RunLog = {
     name: string;
   };
 };
+
+export type RunTask = {
+  created: string;
+  finished?: string;
+  id: number;
+  instance?: string;
+  name: string;
+  parameters?: string;
+  started: string;
+  status: RunStatuses;
+};

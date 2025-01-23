@@ -18,7 +18,7 @@ export const useRunLogsTabs = (run: Run | undefined) => {
     const isValidTab =
       !tabId || Object.values(RunLogsTabs).includes(tabId as RunLogsTabs);
     if (!isValidTab) {
-      navigate(generateRunLogsRoutePath(run.id, RunLogsTabs.Console));
+      navigate(generateRunLogsRoutePath(run.id, RunLogsTabs.Logs));
     }
   }, [navigate, run, run?.id, tabId]);
   const handleChangeTab = useCallback(
@@ -32,7 +32,7 @@ export const useRunLogsTabs = (run: Run | undefined) => {
   const tabs = useMemo(
     () => [
       {
-        key: RunLogsTabs.Console,
+        key: RunLogsTabs.Logs,
         label: <span className="px-4">Logs</span>,
         content: run ? <RunLogsTab run={run} /> : null,
       },

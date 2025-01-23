@@ -30,7 +30,7 @@ export enum ProjectTabs {
 }
 
 export enum RunLogsTabs {
-  Console = 'console',
+  Logs = 'logs',
   Parameters = 'parameters',
 }
 

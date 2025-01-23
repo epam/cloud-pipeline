@@ -16,7 +16,7 @@ type Parameters = {
   interval?: number;
 };
 
-export function useRunsLogs(
+export function useRunLogs(
   runId: number,
   parameters?: Parameters,
 ): RunsLogsResult {
