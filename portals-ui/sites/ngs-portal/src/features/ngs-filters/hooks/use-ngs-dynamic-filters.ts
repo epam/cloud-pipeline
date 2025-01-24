@@ -1,8 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { noop } from '@cloud-pipeline/core';
 import type { FilterToDisplay, NgsItem, NgsTags, TagFilters } from '../types';
-import { loadUsersInfo } from '../../../state/users-info/load-users-info';
-import { useUsersInfoState } from '../../../state/users-info/hooks';
+import { useUsers } from '../../../state/users-info/hooks';
 import { NgsFilter } from '../../../shared/constants/filters';
 import { collectNgsTags } from '../helpers';
 
@@ -18,11 +16,7 @@ export const useNgsDynamicFilters = <T extends NgsItem>({
   searchedItems,
 }: Props<T>) => {
   const [tagsToFilter, setTagsToFilter] = useState<TagFilters>({});
-  const {
-    usersInfo = [],
-    pending: isUserInfoPending,
-    loaded,
-  } = useUsersInfoState();
+  const users = useUsers();
 
   const isMatchingFilters = useCallback(
     <T extends NgsItem>(item: T, overrideFilters: TagFilters = {}) => {
@@ -42,12 +36,6 @@ export const useNgsDynamicFilters = <T extends NgsItem>({
     },
     [tagsToFilter],
   );
-
-  const handleOwnersFilterFocus = useCallback(() => {
-    if (!usersInfo?.length && !isUserInfoPending && !loaded) {
-      loadUsersInfo().then(noop).catch(noop);
-    }
-  }, [isUserInfoPending, loaded, usersInfo?.length]);
 
   const handleFilterValueChange = useCallback(
     (tagName: string, selectedItems?: string[]) => {
@@ -72,9 +60,9 @@ export const useNgsDynamicFilters = <T extends NgsItem>({
     return collectNgsTags({
       filtersToDisplay,
       items,
-      users: usersInfo,
+      users: users,
     });
-  }, [filtersToDisplay, items, usersInfo]);
+  }, [filtersToDisplay, items, users]);
 
   const dynamicTags = useMemo(() => {
     const updatedTags: NgsTags = { ...initialTags };
@@ -104,18 +92,11 @@ export const useNgsDynamicFilters = <T extends NgsItem>({
 
   return useMemo(
     () => ({
-      handleOwnersFilterFocus,
       handleFilterValueChange,
       tagsToFilter,
       filteredItems,
       tags: dynamicTags,
     }),
-    [
-      handleOwnersFilterFocus,
-      handleFilterValueChange,
-      tagsToFilter,
-      filteredItems,
-      dynamicTags,
-    ],
+    [handleFilterValueChange, tagsToFilter, filteredItems, dynamicTags],
   );
 };

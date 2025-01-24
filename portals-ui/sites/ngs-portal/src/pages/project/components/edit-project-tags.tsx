@@ -9,7 +9,7 @@ import type { MappedTag } from '../../../shared/tags';
 import { extractTags } from '../../../shared/tags';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { updateProjectMetadata } from '@cloud-pipeline/api';
-import { loadProjects } from '../../../state/projects/load-projects';
+import { useReloadProjectsFn } from '../../../state/projects/hooks.ts';
 
 type ButtonProps = CommonProps & {
   project: Project;
@@ -34,6 +34,7 @@ type EditedTag = MappedTag & {
 
 const EditProjectTagsModal = (props: ModalProps) => {
   const { project, visible, onCancel } = props;
+  const reloadProjects = useReloadProjectsFn();
   const [messageApi, contextHolder] = message.useMessage();
   const [tags, setTags] = useState<EditedTag[]>([]);
   const [pending, setPending] = useState(false);
@@ -41,7 +42,8 @@ const EditProjectTagsModal = (props: ModalProps) => {
   useEffect(() => {
     setTags(initialTags);
   }, [initialTags]);
-  const onOk = () => {
+  const projectId = project.id;
+  const onOk = useCallback(() => {
     const payload = {} as NgsData;
     tags.forEach(({ key, value, type, tagState }: EditedTag) => {
       if (tagState !== TagStates.markAsDeleted) {
@@ -57,7 +59,7 @@ const EditProjectTagsModal = (props: ModalProps) => {
       content: 'Updating tags...',
     });
     setPending(true);
-    updateProjectMetadata(payload, project.id)
+    updateProjectMetadata(payload, projectId)
       .then(noop)
       .catch((error) => {
         messageApi.open({
@@ -75,7 +77,7 @@ const EditProjectTagsModal = (props: ModalProps) => {
         });
       })
       .finally(() => {
-        loadProjects()
+        reloadProjects()
           .then(noop)
           .catch(noop)
           .finally(() => {
@@ -89,8 +91,8 @@ const EditProjectTagsModal = (props: ModalProps) => {
             onCancel();
           });
       });
-  };
-  const resetState = () => {};
+  }, [messageApi, onCancel, projectId, reloadProjects, tags]);
+  const resetState = noop;
   const onChangeTag = useCallback(
     (tag: EditedTag, field: 'key' | 'value') =>
       (event: ChangeEvent<HTMLInputElement>) => {

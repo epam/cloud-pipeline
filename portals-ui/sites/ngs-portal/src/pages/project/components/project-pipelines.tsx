@@ -11,7 +11,10 @@ import { useNgsFilters } from '../../../features/ngs-filters';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import HighlightedText from '../../../shared/highlight-text';
 import { Link } from 'react-router-dom';
-import { generateLaunchRoutePath } from '../../../shared/constants/routes';
+import {
+  generateLaunchRoutePath,
+  generatePipelineRoutePath,
+} from '../../../shared/constants/routes';
 
 type Props = CommonProps & {
   project: Project | undefined;
@@ -37,7 +40,9 @@ export const ProjectPipelines = (props: Props) => {
             'flex flex-nowrap gap-3 px-3 py-2 bg-white space-y-1 items-center',
           )}>
           <div className="flex flex-col gap-1 grow">
-            <Link className="font-semibold" to="#">
+            <Link
+              className="font-semibold"
+              to={generatePipelineRoutePath(item.id)}>
               <HighlightedText search={search}>{item.name}</HighlightedText>
             </Link>
             {item.description ? <span>{item.description}</span> : null}

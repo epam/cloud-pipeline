@@ -1,20 +1,28 @@
-import type { ProjectsState, ProjectsStore } from './types.ts';
-import { useStore } from 'zustand';
+import type { ProjectsStore } from './types.ts';
 import { projectsStore } from './store.ts';
-import { useMemo } from 'react';
+import {
+  useLoadableStore,
+  useRefreshLoadableStore,
+} from '../common/loadable-store/hooks.ts';
+import type { Project } from '@cloud-pipeline/core';
+import { noop } from '@cloud-pipeline/core';
+import { useEffect } from 'react';
 
 export function useProjectsStore(): ProjectsStore {
-  return useStore(projectsStore);
+  return useLoadableStore(projectsStore);
 }
 
-export function useProjectsState(): ProjectsState {
-  const { projects, pending, error } = useProjectsStore();
-  return useMemo(
-    () => ({
-      projects,
-      pending,
-      error,
-    }),
-    [projects, pending, error],
-  );
+export function useProjects(): Project[] {
+  return useProjectsStore().data;
+}
+
+export function useReloadProjectsFn(): () => Promise<Project[]> {
+  return useRefreshLoadableStore(projectsStore);
+}
+
+export function useReloadProjects() {
+  const fn = useReloadProjectsFn();
+  useEffect(() => {
+    fn().then(noop).catch(noop);
+  }, [fn]);
 }

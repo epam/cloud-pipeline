@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Input } from 'antd';
+import { Input, Spin } from 'antd';
 import type { ListHeaderProps } from './types';
 import './style.css';
 import { useInputChange } from '../../hooks/use-input-change.ts';
@@ -17,6 +17,7 @@ const ListHeader = (props: ListHeaderProps) => {
     searchPlaceholder,
     afterSearch,
     beforeSearch,
+    pending,
   } = props;
   const onChange = useInputChange(onSearch);
   return (
@@ -25,6 +26,7 @@ const ListHeader = (props: ListHeaderProps) => {
         <div
           className={classNames('flex text items-center no-wrap list-header')}>
           <b>{title}</b>
+          {pending && <Spin size="small" className="ml-1" />}
           {controls ? <div className="ml-auto">{controls}</div> : null}
         </div>
       ) : null}

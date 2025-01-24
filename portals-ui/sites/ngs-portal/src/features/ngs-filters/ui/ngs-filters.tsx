@@ -1,5 +1,4 @@
 import { useCallback, useEffect } from 'react';
-import { NgsFilter } from '../../../shared/constants/filters';
 import { SelectFilter } from '../../../shared/ui';
 import type { FilterToDisplay, NgsItem } from '../types';
 import { useNgsDynamicFilters } from '../hooks';
@@ -21,17 +20,12 @@ export const NgsFilters = <T extends NgsItem>({
   searchedItems = [],
   filtersToDisplay,
 }: Props<T>) => {
-  const {
-    tagsToFilter,
-    filteredItems,
-    tags,
-    handleFilterValueChange,
-    handleOwnersFilterFocus,
-  } = useNgsDynamicFilters({
-    items,
-    filtersToDisplay,
-    searchedItems,
-  });
+  const { tagsToFilter, filteredItems, tags, handleFilterValueChange } =
+    useNgsDynamicFilters({
+      items,
+      filtersToDisplay,
+      searchedItems,
+    });
 
   useEffect(() => {
     onFilteredItemsChange(filteredItems);
@@ -42,15 +36,6 @@ export const NgsFilters = <T extends NgsItem>({
       handleFilterValueChange(id, selectedItems);
     },
     [handleFilterValueChange],
-  );
-
-  const handleFocus = useCallback(
-    (id: string) => {
-      if (id === (NgsFilter.OWNER as string)) {
-        handleOwnersFilterFocus();
-      }
-    },
-    [handleOwnersFilterFocus],
   );
 
   return (
@@ -73,7 +58,6 @@ export const NgsFilters = <T extends NgsItem>({
             selectedValues={tagsToFilter[key] ?? []}
             onChange={handleFilterChange(key)}
             label={label}
-            onFocus={() => handleFocus(key)}
           />
         );
       })}

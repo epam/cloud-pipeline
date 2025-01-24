@@ -4,31 +4,103 @@ import type {
   PipelinesState,
   PipelinesStore,
 } from './types.ts';
-import { useStore } from 'zustand';
-import { pipelinesStore } from './store.ts';
-import { useEffect, useMemo, useState } from 'react';
-import { noop, type Pipeline } from '@cloud-pipeline/core';
-import { loadPipelines } from './load-pipelines.ts';
+import { pipelinesStore } from './store';
+import { useEffect, useMemo } from 'react';
+import { noop } from '@cloud-pipeline/core';
+import type {
+  Pipeline,
+  PipelineConfiguration,
+  PipelineInfo,
+  PipelineVersion,
+} from '@cloud-pipeline/core';
 import {
   fetchPipelineConfigurations,
   fetchPipelineInfo,
   fetchPipelineVersions,
 } from '@cloud-pipeline/api';
+import { useLoadableStore } from '../common/loadable-store/hooks';
+import { useAsyncState } from '../common/async-state/hooks';
 
 export function usePipelinesStore(): PipelinesStore {
-  return useStore(pipelinesStore);
+  return useLoadableStore(pipelinesStore);
 }
 
 export function usePipelinesState(): PipelinesState {
-  const { pipelines, pending, error } = usePipelinesStore();
-  return useMemo(
-    () => ({
-      pipelines,
-      pending,
-      error,
-    }),
-    [pipelines, pending, error],
-  );
+  return usePipelinesStore();
+}
+
+export function useReloadPipelinesFn(): () => Promise<Pipeline[]> {
+  return usePipelinesStore().refresh;
+}
+
+export function useReloadPipelines() {
+  const refresh = useReloadPipelinesFn();
+  useEffect(() => {
+    void refresh().then(noop).catch(noop);
+  }, [refresh]);
+}
+
+export function usePipelines(): Pipeline[] {
+  return usePipelinesStore().data;
+}
+
+async function fetchPipelineInfoWrapped(
+  pipelineId: string | number | undefined,
+): Promise<PipelineInfo | undefined> {
+  if (pipelineId === undefined) {
+    return undefined;
+  }
+  if (Number.isNaN(Number(pipelineId))) {
+    return undefined;
+  }
+  return fetchPipelineInfo(Number(pipelineId));
+}
+
+async function fetchPipelineVersionsWrapped(
+  pipelineId: string | number | undefined,
+): Promise<PipelineVersion[]> {
+  if (pipelineId === undefined) {
+    return [];
+  }
+  if (Number.isNaN(Number(pipelineId))) {
+    return [];
+  }
+  return fetchPipelineVersions(Number(pipelineId));
+}
+
+async function fetchPipelineInfoDetailedWrapped(
+  pipelineId: string | number | undefined,
+): Promise<
+  | {
+      info: PipelineInfo;
+      versions: PipelineVersion[];
+    }
+  | undefined
+> {
+  const [info, versions] = await Promise.all([
+    fetchPipelineInfoWrapped(pipelineId),
+    fetchPipelineVersionsWrapped(pipelineId),
+  ]);
+  if (info) {
+    return {
+      info,
+      versions,
+    };
+  }
+  return undefined;
+}
+
+async function fetchPipelineConfigurationsWrapped(
+  pipelineId: string | number | undefined,
+  version: string,
+): Promise<PipelineConfiguration[]> {
+  if (pipelineId === undefined) {
+    return [] as PipelineConfiguration[];
+  }
+  if (Number.isNaN(Number(pipelineId))) {
+    return [] as PipelineConfiguration[];
+  }
+  return fetchPipelineConfigurations(Number(pipelineId), version);
 }
 
 export function usePipeline(pipelineId: string | number | undefined): {
@@ -36,114 +108,56 @@ export function usePipeline(pipelineId: string | number | undefined): {
   error: string | undefined;
   pending: boolean;
 } {
-  const { pipelines, error, pending } = usePipelinesState();
-  if (!pipelines && !error && !pending) {
-    loadPipelines().then(noop).catch(noop);
-  }
-  const pipeline = useMemo(() => {
-    if (pipelineId !== undefined && pipelines) {
-      return pipelines.find(
-        (pipeline) => String(pipeline.id) === String(pipelineId),
-      );
-    }
-    return undefined;
-  }, [pipelineId, pipelines]);
+  const { data, pending, error } = useAsyncState(
+    fetchPipelineInfoWrapped,
+    undefined,
+    pipelineId,
+  );
   return useMemo(
     () => ({
-      pipeline,
+      pipeline: data,
       error,
       pending,
     }),
-    [error, pending, pipeline],
+    [error, pending, data],
   );
 }
 
 export const usePipelineInfo = (
   pipelineId: string | number | undefined,
 ): PipelineInfoState => {
-  const [state, setState] = useState<PipelineInfoState>({
-    pending: true,
-    error: undefined,
-    pipelineInfo: undefined,
-    versions: undefined,
-  });
-  useEffect(() => {
-    if (pipelineId !== undefined) {
-      void (async () => {
-        try {
-          setState((curr) => ({
-            ...curr,
-            pending: true,
-            error: undefined,
-          }));
-          const [pipelineInfo, versions] = await Promise.all([
-            fetchPipelineInfo(Number(pipelineId)),
-            fetchPipelineVersions(Number(pipelineId)),
-          ]);
-          setState({
-            pending: false,
-            error: undefined,
-            pipelineInfo,
-            versions,
-          });
-        } catch (err) {
-          const errorText =
-            err instanceof Error
-              ? err.message
-              : `Failed to load pipeline ${pipelineId} info.`;
-          setState({
-            pending: false,
-            error: errorText,
-            pipelineInfo: undefined,
-            versions: undefined,
-          });
-        }
-      })();
-    }
-  }, [pipelineId]);
-  return state;
+  const { data, pending, error } = useAsyncState(
+    fetchPipelineInfoDetailedWrapped,
+    undefined,
+    pipelineId,
+  );
+  return useMemo(
+    () => ({
+      pipelineInfo: data?.info,
+      versions: data?.versions,
+      error,
+      pending,
+    }),
+    [error, pending, data],
+  );
 };
 
 export function usePipelineConfiguration(
   pipelineId: number | undefined,
   version: string,
 ): PipelineConfigurationsState {
-  const [state, setState] = useState<PipelineConfigurationsState>({
-    pending: true,
-    error: undefined,
-    configurations: undefined,
-  });
-  useEffect(() => {
-    if (pipelineId !== undefined && version) {
-      void (async () => {
-        try {
-          setState((curr) => ({
-            ...curr,
-            pending: true,
-            error: undefined,
-          }));
-          const configurations = await fetchPipelineConfigurations(
-            pipelineId,
-            version,
-          );
-          setState({
-            pending: false,
-            error: undefined,
-            configurations,
-          });
-        } catch (err) {
-          const errorText =
-            err instanceof Error
-              ? err.message
-              : `Failed to load pipeline ${pipelineId} (${version}) configurations.`;
-          setState({
-            pending: false,
-            error: errorText,
-            configurations: undefined,
-          });
-        }
-      })();
-    }
-  }, [pipelineId, version]);
-  return state;
+  const { data, pending, error } = useAsyncState(
+    fetchPipelineConfigurationsWrapped,
+    [],
+    pipelineId,
+    version,
+  );
+  return useMemo(
+    () => ({
+      configurations: data,
+      error,
+      pending,
+    }),
+    [error, pending, data],
+  );
 }

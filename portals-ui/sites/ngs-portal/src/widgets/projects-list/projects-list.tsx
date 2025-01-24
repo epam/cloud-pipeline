@@ -1,16 +1,19 @@
-import { noop, type Project } from '@cloud-pipeline/core';
+import type { Project } from '@cloud-pipeline/core';
 import { ProjectCard } from '../cards';
-import { ItemsPanel } from '../items-panel/items-panel.tsx';
+import { ItemsPanel } from '../items-panel';
 import cn from 'classnames';
-import { memo, useEffect } from 'react';
-import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
-import { usePipelinesState } from '../../state/pipelines/hooks.ts';
+import { memo, useCallback } from 'react';
+import {
+  usePipelines,
+} from '../../state/pipelines/hooks.ts';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { CreateProjectButton } from '../modals';
 import { projectFiltersToDisplay } from '../../pages/projects/constants.ts';
 import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
-import { useProjectsState } from '../../state/projects/hooks.ts';
-import { loadProjects } from '../../state/projects/load-projects.ts';
+import {
+  useProjectsStore,
+  useReloadProjects,
+} from '../../state/projects/hooks.ts';
 
 type Props = {
   mode?: 'standard' | 'extended';
@@ -20,26 +23,23 @@ type Props = {
 
 export const ProjectsList = memo(
   ({ mode = 'standard', withFilters, showDescription = false }: Props) => {
-    useEffect(() => {
-      loadProjects()
-        .then(() => {})
-        .catch(() => {});
-    }, []);
+    useReloadProjects();
 
     const {
-      projects = [],
+      data: projects = [],
       error,
       pending: isProjectsLoading,
-    } = useProjectsState();
+    } = useProjectsStore();
 
-    const { pipelines } = usePipelinesState();
+    const pipelines = usePipelines();
 
-    const getRandomPipeline = () =>
-      pipelines?.[Math.floor(Math.random() * pipelines.length)];
-
-    useEffect(() => {
-      loadPipelines().then(noop).catch(noop);
-    }, []);
+    const getRandomPipeline = useCallback(
+      () =>
+        pipelines.length > 0
+          ? pipelines[Math.floor(Math.random() * pipelines.length)]
+          : undefined,
+      [pipelines],
+    );
 
     const { filteredItems, onSearchChange, filtersProps, search } =
       useNgsFilters({

@@ -1,5 +1,6 @@
 import { Select, Tooltip } from 'antd';
 import { memo, useCallback } from 'react';
+import type { FocusEvent as ReactFocusEvent } from 'react';
 
 type Option = {
   value: string;
@@ -12,7 +13,7 @@ type Props = {
   selectedValues: string[];
   onChange: (selectedItems?: string[]) => void;
   label: string;
-  onFocus?: (e: React.FocusEvent<HTMLElement, Element>) => void;
+  onFocus?: (e: ReactFocusEvent<HTMLElement, Element>) => void;
 };
 
 export const SelectFilter = memo(

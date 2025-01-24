@@ -4,12 +4,12 @@ import type {
   PipelineInfo,
   PipelineVersion,
 } from '@cloud-pipeline/core';
+import type {
+  LoadableStoreActions,
+  LoadableStoreState,
+} from '../common/loadable-store/types.ts';
 
-export type PipelinesState = {
-  pipelines: Pipeline[] | undefined;
-  error: string | undefined;
-  pending: boolean;
-};
+export type PipelinesState = LoadableStoreState<Pipeline[]>;
 
 export type PipelineInfoState = {
   pending: boolean;
@@ -24,11 +24,6 @@ export type PipelineConfigurationsState = {
   configurations?: PipelineConfiguration[];
 };
 
-export type PipelinesActions = {
-  setError: (error: string | undefined) => void;
-  setPending: (pending: boolean) => void;
-  setPipelines: (result: Pick<PipelinesState, 'pipelines' | 'error'>) => void;
-  getPipelineById: (pipelineId: number) => Pipeline | undefined;
-};
+export type PipelinesActions = LoadableStoreActions<Pipeline[]>;
 
 export type PipelinesStore = PipelinesState & PipelinesActions;

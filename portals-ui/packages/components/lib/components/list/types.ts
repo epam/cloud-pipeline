@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { CommonProps } from '../common.types';
-import { VirtualListProps } from '../virtual-list/types.ts';
+import type { VirtualListProps } from '../virtual-list/types.ts';
 
 export type ListProps<Item> = VirtualListProps<Item> & {
   header?: ReactNode;
@@ -19,4 +19,5 @@ export type ListHeaderProps = CommonProps & {
   afterSearch?: ReactNode;
   beforeSearch?: ReactNode;
   searchClassName?: string;
+  pending?: boolean;
 };

@@ -1,13 +1,15 @@
 import type { Pipeline } from '@cloud-pipeline/core';
-import { ItemsPanel } from '../items-panel/items-panel.tsx';
+import { ItemsPanel } from '../items-panel';
 import { PipelineCard } from '../cards';
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import cn from 'classnames';
 import { ShareIcon } from '@heroicons/react/24/outline';
 import { pipelinesFiltersToDisplay } from '../../pages/pipelines/constants.ts';
 import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
-import { usePipelinesState } from '../../state/pipelines/hooks.ts';
-import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
+import {
+  usePipelinesState,
+  useReloadPipelines,
+} from '../../state/pipelines/hooks.ts';
 
 type Props = {
   mode?: 'standard' | 'extended';
@@ -17,13 +19,8 @@ type Props = {
 
 export const PipelinesList = memo(
   ({ mode = 'standard', showDescription, withFilters }: Props) => {
-    const { pipelines = [], error, pending } = usePipelinesState();
-
-    useEffect(() => {
-      loadPipelines()
-        .then(() => {})
-        .catch(() => {});
-    }, []);
+    const { data: pipelines = [], error, pending } = usePipelinesState();
+    useReloadPipelines();
 
     const { filteredItems, onSearchChange, filtersProps, search } =
       useNgsFilters({
@@ -56,7 +53,7 @@ export const PipelinesList = memo(
         }
         items={filteredItems}
         render={renderItem}
-        sliced
+        sliced={mode !== 'extended'}
         virtualized
         search={search}
         afterSearch={

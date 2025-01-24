@@ -1,7 +1,7 @@
-import { useAuthenticatedUserRuns } from '../../../shared/hooks/use-runs-filter.ts';
-import { ItemsPanel } from '../../../widgets/items-panel/index.ts';
+import { useRunsFilter } from '../../../shared/hooks';
+import { ItemsPanel } from '../../../widgets/items-panel';
 import type { Run } from '@cloud-pipeline/core';
-import { RunCard } from '../../../widgets/cards/index.ts';
+import { RunCard } from '../../../widgets/cards';
 import cn from 'classnames';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -38,13 +38,15 @@ export function PipelineRunsList({ pipelineId, extended, version }: Props) {
     [searchParams],
   );
 
-  const { runs, total, pending, error } = useAuthenticatedUserRuns({
-    reloadIntervalMs: 5000,
-    pipelineIds: [pipelineId],
-    pageSize: extended ? 20 : 10,
-    page: activePage,
-    versions: isAllVersions ? undefined : [version],
-  });
+  const { runs, total, pending, error } = useRunsFilter(
+    {
+      pipelineIds: [pipelineId],
+      pageSize: extended ? 20 : 10,
+      page: activePage,
+      versions: isAllVersions ? undefined : [version],
+    },
+    5000,
+  );
 
   const handleChangePage = useCallback(
     (page: number) => {
@@ -95,7 +97,7 @@ export function PipelineRunsList({ pipelineId, extended, version }: Props) {
         <Switch checked={isAllVersions} onChange={toggleVersionFilter} />
         <p className="ml-2">Show all versions</p>
       </div>
-      <ItemsPanel<Run>
+      <ItemsPanel
         className="flex-grow bg-white overflow-auto"
         render={runCardRenderer}
         items={runs}

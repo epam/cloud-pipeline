@@ -1,42 +1,29 @@
-import type { UsersInfoState, UsersInfoStore } from './types.ts';
-import { useStore } from 'zustand';
+import type { UsersInfoStore } from './types.ts';
 import { usersInfoStore } from './store.ts';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { UserInfo } from '@cloud-pipeline/core';
 import {
   compareUserNames,
   compareUserNamesWithoutDomain,
-  noop,
 } from '@cloud-pipeline/core';
-import { loadUsersInfo } from './load-users-info.ts';
+import { useLoadableStore } from '../common/loadable-store/hooks.ts';
 
 function useUsersInfoStore(): UsersInfoStore {
-  return useStore(usersInfoStore);
+  return useLoadableStore(usersInfoStore);
 }
 
-export function useUsersInfoState(): UsersInfoState {
-  const { usersInfo, pending, error, loaded } = useUsersInfoStore();
-  return useMemo(
-    () => ({
-      usersInfo,
-      pending,
-      error,
-      loaded,
-    }),
-    [usersInfo, pending, error, loaded],
-  );
+export function useUsersInfoState(): UsersInfoStore {
+  return useUsersInfoStore();
+}
+
+export function useUsers(): UserInfo[] {
+  return useUsersInfoState().data;
 }
 
 export function useSearchUserInfoByName(
   userName: string,
 ): UserInfo | undefined {
-  const { usersInfo, pending, loaded } = useUsersInfoStore();
-
-  useEffect(() => {
-    if (!usersInfo && !pending && !loaded) {
-      loadUsersInfo().then(noop).catch(noop);
-    }
-  }, [loaded, pending, usersInfo]);
+  const { data: usersInfo } = useUsersInfoStore();
 
   return useMemo(() => {
     if (!usersInfo || !userName) {

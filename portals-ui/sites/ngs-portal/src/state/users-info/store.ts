@@ -1,21 +1,11 @@
-import { createStore } from 'zustand';
-import type { UsersInfoState, UsersInfoStore } from './types.ts';
+import type { UsersInfoStore } from './types.ts';
+import createLoadableStore from '../common/loadable-store/create-loadable-store.ts';
+import { fetchUsersInfo } from '@cloud-pipeline/api';
 
-const usersInfoStore = createStore<UsersInfoStore>((set) => ({
-  usersInfo: undefined,
-  error: undefined,
-  pending: false,
-  loaded: false,
-  setUsersInfo(result: Pick<UsersInfoState, 'usersInfo' | 'error'>) {
-    const { usersInfo, error } = result;
-    set({ usersInfo, error, loaded: true, pending: false });
-  },
-  setError(error: string | undefined) {
-    set({ error });
-  },
-  setPending(pending: boolean) {
-    set({ pending });
-  },
-}));
+const usersInfoStore = createLoadableStore<UsersInfoStore>(
+  fetchUsersInfo,
+  [],
+  () => ({}),
+);
 
 export { usersInfoStore };

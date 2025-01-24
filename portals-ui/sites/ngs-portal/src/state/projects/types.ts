@@ -1,15 +1,12 @@
 import type { Project } from '@cloud-pipeline/core';
+import type {
+  LoadableStoreActions,
+  LoadableStoreState,
+} from '../common/loadable-store/types.ts';
 
-export type ProjectsState = {
-  projects: Project[] | undefined;
-  error: string | undefined;
-  pending: boolean;
-};
+export type ProjectsState = LoadableStoreState<Project[]>;
 
-export type ProjectsActions = {
-  setError: (error: string | undefined) => void;
-  setPending: (pending: boolean) => void;
-  setProjects: (result: Pick<ProjectsState, 'projects' | 'error'>) => void;
+export type ProjectsActions = LoadableStoreActions<Project[]> & {
   getProjectById: (projectId: number) => Project | undefined;
 };
 

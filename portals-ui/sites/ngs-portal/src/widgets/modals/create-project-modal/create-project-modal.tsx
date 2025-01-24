@@ -8,7 +8,7 @@ import type { CommonProps } from '@cloud-pipeline/components';
 import type { DataStorage } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
 import { useAuthenticatedUser } from '../../../state/authentication/hooks';
-import { loadProjects } from '../../../state/projects/load-projects';
+import { useReloadProjectsFn } from '../../../state/projects/hooks.ts';
 import './styles.css';
 
 type Props = CommonProps & {
@@ -51,7 +51,8 @@ export const CreateProjectModal = (props: Props) => {
         setPending(false);
       });
   }, []);
-  const onOk = async (): Promise<void> => {
+  const reloadProjects = useReloadProjectsFn();
+  const onOk = useCallback(async (): Promise<void> => {
     if (pending || !name?.length) {
       return;
     }
@@ -64,7 +65,7 @@ export const CreateProjectModal = (props: Props) => {
     });
     try {
       await registerProject(name);
-      await loadProjects();
+      await reloadProjects();
       messageApi.open({
         key: 'register',
         type: 'success',
@@ -90,7 +91,7 @@ export const CreateProjectModal = (props: Props) => {
       setPending(false);
       setSpin(false);
     }
-  };
+  }, [messageApi, name, onCancel, pending, reloadProjects]);
   const options = useMemo(() => {
     if (!dataStorages) {
       return [];

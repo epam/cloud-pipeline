@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Modal, Select, message } from 'antd';
 import type { Pipeline } from '@cloud-pipeline/core';
-import { noop } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
-import { loadProjects } from '../../../state/projects/load-projects';
-import { useProjectsState } from '../../../state/projects/hooks';
+import { useProjects } from '../../../state/projects/hooks';
 
 type Props = CommonProps & {
   visible: boolean;
@@ -15,15 +13,10 @@ type Props = CommonProps & {
 export const PipelineToProjectModal = (props: Props) => {
   const { pipeline, visible, onCancel } = props;
   const [messageApi, contextHolder] = message.useMessage();
-  const { projects, pending: projectsPending } = useProjectsState();
+  const projects = useProjects();
   const [pending, setPending] = useState(false);
   const [spin, setSpin] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number>();
-  useEffect(() => {
-    if (!projects && !projectsPending) {
-      loadProjects().then(noop).catch(noop);
-    }
-  }, [projectsPending, projects]);
   const onOk = () => {
     if (pending || !selectedProjectId) {
       return;

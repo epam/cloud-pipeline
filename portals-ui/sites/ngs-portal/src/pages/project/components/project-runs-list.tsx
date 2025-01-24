@@ -1,4 +1,4 @@
-import { useAuthenticatedUserRuns } from '../../../shared/hooks/use-runs-filter.ts';
+import { useRunsFilter } from '../../../shared/hooks';
 import { ItemsPanel } from '../../../widgets/items-panel';
 import type { Run } from '@cloud-pipeline/core';
 import { RunCard } from '../../../widgets/cards';
@@ -37,12 +37,14 @@ export function ProjectRunsList({ projectId, extended }: Props) {
   const activePage: number =
     Number(searchParams.get(ProjectSearchParams.Page)) || 1;
 
-  const { runs, total, pending, error } = useAuthenticatedUserRuns({
-    reloadIntervalMs: 5000,
-    projectIds: [projectId],
-    pageSize: extended ? 20 : 10,
-    page: activePage,
-  });
+  const { runs, total, pending, error } = useRunsFilter(
+    {
+      projectIds: [projectId],
+      pageSize: extended ? 20 : 10,
+      page: activePage,
+    },
+    5000,
+  );
 
   const handleChangePage = useCallback(
     (page: number) => {

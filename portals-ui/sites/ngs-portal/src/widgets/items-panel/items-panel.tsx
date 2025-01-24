@@ -56,7 +56,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
   } = props;
 
   const renderContent = useCallback(() => {
-    if (isItemsLoading) {
+    if (isItemsLoading && items.length === 0) {
       return <PageSpinner />;
     }
 
@@ -95,6 +95,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
       style={style}>
       <ListHeader
         title={title}
+        pending={isItemsLoading}
         className={classNames('shrink-0', {
           'border-b':
             title ?? beforeSearch ?? afterSearch ?? Boolean(onSearchChange),

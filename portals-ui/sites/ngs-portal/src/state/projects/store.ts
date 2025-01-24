@@ -1,24 +1,17 @@
-import { createStore } from 'zustand';
-import type { ProjectsState, ProjectsStore } from './types.ts';
+import type { ProjectsStore } from './types.ts';
+import createLoadableStore from '../common/loadable-store/create-loadable-store.ts';
+import { fetchProjects } from '@cloud-pipeline/api';
+import type { Project } from '@cloud-pipeline/core';
 
-const projectsStore = createStore<ProjectsStore>((set, get) => ({
-  projects: undefined,
-  error: undefined,
-  pending: false,
-  setProjects(result: Pick<ProjectsState, 'projects' | 'error'>) {
-    const { projects, error } = result;
-    set({ projects, error, pending: false });
-  },
-  setError(error: string | undefined) {
-    set({ error });
-  },
-  setPending(pending: boolean) {
-    set({ pending });
-  },
-  getProjectById(projectId: number) {
-    const { projects } = get();
-    return projects?.find((project) => project.id === projectId);
-  },
-}));
+const projectsStore = createLoadableStore<ProjectsStore>(
+  fetchProjects,
+  [],
+  (_, get) => ({
+    getProjectById(projectId: number): Project | undefined {
+      const { data: projects } = get();
+      return projects?.find((project) => project.id === projectId);
+    },
+  }),
+);
 
 export { projectsStore };
