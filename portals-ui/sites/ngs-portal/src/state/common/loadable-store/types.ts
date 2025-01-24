@@ -1,11 +1,12 @@
-import type { AsyncState } from '../async-state/types.ts';
-
-export type LoadableStoreState<StoreData> = AsyncState<StoreData> & {
+export type LoadableStoreState<StoreData> = {
+  pending: boolean;
+  error: string | undefined;
+  data: StoreData;
   loaded: boolean;
 };
 export type LoadableStoreActions<StoreData> = {
   load: (force?: boolean) => Promise<StoreData>;
-  refresh: () => Promise<StoreData>;
+  reload: () => Promise<StoreData>;
 };
 
 /**

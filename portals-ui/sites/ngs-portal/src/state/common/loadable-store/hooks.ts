@@ -16,5 +16,5 @@ export function useLoadableStore<
 export function useRefreshLoadableStore<StoreData>(
   loadableStoreApi: StoreApi<LoadableStore<StoreData>>,
 ): () => Promise<StoreData> {
-  return useStore(loadableStoreApi).refresh;
+  return useStore(loadableStoreApi).reload;
 }

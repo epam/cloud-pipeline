@@ -19,7 +19,7 @@ import {
   fetchPipelineVersions,
 } from '@cloud-pipeline/api';
 import { useLoadableStore } from '../common/loadable-store/hooks';
-import { useAsyncState } from '../common/async-state/hooks';
+import { useLoadableState } from '../../shared/hooks';
 
 export function usePipelinesStore(): PipelinesStore {
   return useLoadableStore(pipelinesStore);
@@ -30,7 +30,7 @@ export function usePipelinesState(): PipelinesState {
 }
 
 export function useReloadPipelinesFn(): () => Promise<Pipeline[]> {
-  return usePipelinesStore().refresh;
+  return usePipelinesStore().reload;
 }
 
 export function useReloadPipelines() {
@@ -108,37 +108,35 @@ export function usePipeline(pipelineId: string | number | undefined): {
   error: string | undefined;
   pending: boolean;
 } {
-  const { data, pending, error } = useAsyncState(
+  const { state, pending, error } = useLoadableState(
     fetchPipelineInfoWrapped,
-    undefined,
     pipelineId,
   );
   return useMemo(
     () => ({
-      pipeline: data,
+      pipeline: state,
       error,
       pending,
     }),
-    [error, pending, data],
+    [error, pending, state],
   );
 }
 
 export const usePipelineInfo = (
   pipelineId: string | number | undefined,
 ): PipelineInfoState => {
-  const { data, pending, error } = useAsyncState(
+  const { state, pending, error } = useLoadableState(
     fetchPipelineInfoDetailedWrapped,
-    undefined,
     pipelineId,
   );
   return useMemo(
     () => ({
-      pipelineInfo: data?.info,
-      versions: data?.versions,
+      pipelineInfo: state?.info,
+      versions: state?.versions,
       error,
       pending,
     }),
-    [error, pending, data],
+    [error, pending, state],
   );
 };
 
@@ -146,18 +144,17 @@ export function usePipelineConfiguration(
   pipelineId: number | undefined,
   version: string,
 ): PipelineConfigurationsState {
-  const { data, pending, error } = useAsyncState(
+  const { state, pending, error } = useLoadableState(
     fetchPipelineConfigurationsWrapped,
-    [],
     pipelineId,
     version,
   );
   return useMemo(
     () => ({
-      configurations: data,
+      configurations: state ?? [],
       error,
       pending,
     }),
-    [error, pending, data],
+    [error, pending, state],
   );
 }

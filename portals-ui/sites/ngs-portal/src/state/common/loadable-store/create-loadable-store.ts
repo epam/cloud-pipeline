@@ -51,14 +51,16 @@ export default function createLoadableStore<
               }
               return result;
             } catch (error) {
-              set({
-                pending: false,
-                error:
-                  error instanceof Error
-                    ? error.message
-                    : 'error fetching data',
-                loaded: false,
-              } as Partial<Store>);
+              if (requestToken === token) {
+                set({
+                  pending: false,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : 'error fetching data',
+                  loaded: false,
+                } as Partial<Store>);
+              }
               throw error;
             } finally {
               if (requestToken === token) {
@@ -69,7 +71,7 @@ export default function createLoadableStore<
           }
           return data;
         },
-        async refresh(): Promise<StoreData> {
+        async reload(): Promise<StoreData> {
           const { load } = get();
           return load(true);
         },

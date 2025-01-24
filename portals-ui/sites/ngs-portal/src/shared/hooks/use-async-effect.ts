@@ -6,7 +6,7 @@ export type CommitActualChangesCallback = (f: CommitChangesFunction) => void;
 
 /**
  * Used for applying state changes only if the passed callback was not aborted
- * (by the calling callback when deps changed). Usage:
+ * (by calling callback when deps changed). Usage:
  * ```typescript
  * useAsyncEffect(async (commit) => {
  *   commit(() => { setState({ pending: true, result: undefined }); });
