@@ -4,6 +4,8 @@ import dayjs from 'dayjs';
 import { type CommonProps } from '@cloud-pipeline/components';
 import { noop, RunStatuses, type Run } from '@cloud-pipeline/core';
 import { stopRun } from '@cloud-pipeline/api';
+import { generateLaunchRoutePath } from '../../shared/constants/routes';
+import { useNavigate } from 'react-router';
 
 type Props = CommonProps & {
   run?: Run;
@@ -11,6 +13,7 @@ type Props = CommonProps & {
 };
 
 export default function RunHeaderControls({ run, className, refresh }: Props) {
+  const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const onStopClick = useCallback(() => {
@@ -37,6 +40,13 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
       })
       .catch(noop);
   }, [messageApi, refresh, run]);
+  const onRerunClick = useCallback(() => {
+    if (!run) {
+      return;
+    }
+    const { pipelineId } = run;
+    navigate(generateLaunchRoutePath(pipelineId, run.id));
+  }, [navigate, run]);
   const controlButton = useMemo(() => {
     if (run?.status === RunStatuses.running) {
       return (
@@ -47,7 +57,7 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
     }
     if (run?.status === RunStatuses.stopped) {
       return (
-        <Button disabled={pending} type="link">
+        <Button disabled={pending} type="link" onClick={onRerunClick}>
           Rerun
         </Button>
       );
@@ -59,7 +69,7 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
         </Button>
       );
     }
-  }, [onStopClick, pending, run]);
+  }, [onRerunClick, onStopClick, pending, run?.status]);
   if (!run) {
     return null;
   }

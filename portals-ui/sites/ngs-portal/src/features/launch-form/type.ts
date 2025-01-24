@@ -2,6 +2,7 @@ import type {
   PipelineConfiguration,
   PipelineInfo,
   PipelineVersion,
+  RunParameter,
 } from '@cloud-pipeline/core';
 
 export type ParameterValue = string | boolean;
@@ -20,6 +21,12 @@ export type ParametersFormData = Array<{
   };
 }>;
 
+export type RunConfiguration = {
+  configuration: {
+    parameters: Record<string, RunParameter>;
+  };
+};
+
 export type LaunchInfo = {
   version?: string;
   versions?: PipelineVersion[];
@@ -28,6 +35,4 @@ export type LaunchInfo = {
   pipelineInfo?: PipelineInfo;
   pending: boolean;
   errors: string[];
-  setVersion: (version: string) => void;
-  setConfiguration: (configuration?: PipelineConfiguration) => void;
 };

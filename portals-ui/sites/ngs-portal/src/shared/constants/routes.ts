@@ -18,7 +18,7 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.PIPELINE]: '/pipelines/:pipelineId',
   [AppRoutes.RUNS]: '/runs',
   [AppRoutes.RUN]: '/runs/:runId/:tabId?',
-  [AppRoutes.LAUNCH]: '/launch/:pipelineId',
+  [AppRoutes.LAUNCH]: '/launch',
   [AppRoutes.NOT_FOUND]: '*',
 };
 
@@ -55,6 +55,13 @@ export function generatePipelineRoutePath(pipelineId: string | number): string {
   return `/pipelines/${pipelineId}`;
 }
 
-export function generateLaunchRoutePath(pipelineId: string | number): string {
-  return `/launch/${pipelineId}`;
+export function generateLaunchRoutePath(
+  pipelineId?: string | number,
+  runId?: string | number,
+): string {
+  let query = new URLSearchParams({ pipelineId: `${pipelineId}` }).toString();
+  if (runId) {
+    query = new URLSearchParams({ runId: `${runId}` }).toString();
+  }
+  return `/launch?${query}`;
 }

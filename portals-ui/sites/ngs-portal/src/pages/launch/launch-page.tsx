@@ -1,15 +1,21 @@
 import { useMemo } from 'react';
-import { useParams } from 'react-router';
 import { Alert, Spin } from 'antd';
-import useLaunchInfo from '../../features/launch-form/hooks/use-launch-info';
 import { LaunchForm } from '../../features/launch-form';
 import LaunchHeader from './launch-header';
 import './style.css';
+import { useSearchParams } from 'react-router-dom';
+import { useRunInfo } from '../../shared/hooks/use-run-info';
+import useLaunchInfo from '../../features/launch-form/hooks/use-launch-info';
+import useLaunchConfiguration from '../../features/launch-form/hooks/use-launch-configuration';
 
 export function LaunchPage() {
-  const { pipelineId } = useParams();
+  const [searchParams] = useSearchParams();
+  const pipelineId = Number(searchParams.get('pipelineId')) || undefined;
+  const runId = Number(searchParams.get('runId')) || undefined;
+  const { run } = useRunInfo(runId);
   const { pipelineInfo, version, versions, configuration, errors, pending } =
-    useLaunchInfo(Number(pipelineId));
+    useLaunchInfo(pipelineId ?? run?.pipelineId, run?.configName, run?.version);
+  const launchConfiguration = useLaunchConfiguration(configuration, run);
   const launchInfoLoaded = useMemo(
     () => version && versions?.length && configuration && pipelineInfo,
     [configuration, pipelineInfo, version, versions?.length],
@@ -30,7 +36,7 @@ export function LaunchPage() {
         />
         <LaunchForm
           version={version}
-          configuration={configuration}
+          configuration={launchConfiguration}
           pipelineInfo={pipelineInfo}
           className="list-container p-4 grow"
         />

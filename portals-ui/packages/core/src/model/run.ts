@@ -2,9 +2,9 @@ import { AclClass, AclEntry } from './acl';
 import { CloudProviders, CommitStatuses, RunStatuses } from './enums';
 import { Dayjs } from 'dayjs';
 
-type RunParameter = {
+export type RunParameter = {
   dataStorageLinks?: string[];
-  name?: string;
+  name: string;
   resolvedValue?: string;
   type?: string;
   value?: string;

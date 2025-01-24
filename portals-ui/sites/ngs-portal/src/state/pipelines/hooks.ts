@@ -62,7 +62,7 @@ export const usePipelineInfo = (
   pipelineId: string | number | undefined,
 ): PipelineInfoState => {
   const [state, setState] = useState<PipelineInfoState>({
-    pending: true,
+    pending: false,
     error: undefined,
     pipelineInfo: undefined,
     versions: undefined,
@@ -106,10 +106,10 @@ export const usePipelineInfo = (
 
 export function usePipelineConfiguration(
   pipelineId: number | undefined,
-  version: string,
+  version?: string,
 ): PipelineConfigurationsState {
   const [state, setState] = useState<PipelineConfigurationsState>({
-    pending: true,
+    pending: false,
     error: undefined,
     configurations: undefined,
   });

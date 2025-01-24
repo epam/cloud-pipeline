@@ -54,7 +54,8 @@ export default function LogsViewer({
       return false;
     }
     if (/^(Escape|esc)$/i.test(event.key)) {
-      setSearchVisible(true);
+      setSearchVisible(false);
+      setSearch('');
       event.preventDefault();
       event.stopPropagation();
       return false;
@@ -89,12 +90,17 @@ export default function LogsViewer({
       return false;
     });
     if (lineNode && lineNode instanceof HTMLElement) {
-      lineNode.scrollIntoView({ behavior: animated ? 'smooth' : 'auto' });
+      lineNode.scrollIntoView({
+        behavior: animated ? 'smooth' : 'instant',
+        block: 'center',
+      });
     }
   };
   const doSearch = () => {
-    setSearchIndex(0);
-    scrollToLine(searchResults[searchIndex]?.lineIndex);
+    setTimeout(() => {
+      setSearchIndex(0);
+      scrollToLine(searchResults[0]?.lineIndex);
+    }, 100);
   };
   const searchPrev = () => {
     const nextSearchIndex =
