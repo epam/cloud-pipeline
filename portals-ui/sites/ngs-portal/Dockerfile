@@ -38,8 +38,27 @@ RUN npm i
 RUN npm run ngs-portal-build
 
 FROM library/ubuntu:20.04 as main-stage
+
+RUN apt-get update -y && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get install -y --no-install-recommends vim \
+                                               xvfb \
+                                               gnupg \
+                                               wget \
+                                               curl \
+                                               unzip \
+                                               build-essential \
+                                               cmake \
+                                               nginx && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /opt/ngs-portal
+
+ADD ./sites/ngs-portal/nginx.conf /etc/nginx/nginx.conf
+ADD ./sites/ngs-portal/start.sh .
 
 # Copy built application from the build stage
 COPY --from=build-stage /app/sites/ngs-portal/dist /opt/ngs-portal
