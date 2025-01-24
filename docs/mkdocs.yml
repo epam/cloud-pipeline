@@ -139,14 +139,15 @@ nav:
   - JavaScript example: 'api/API_tutorials/JavaScript_example.md'
 - Cloud Pipeline Installation:
   - Prerequisites:
-    - General requirements: 'installation/prerequisites/common.md'
-    - AWS: 'installation/prerequisites/aws.md'
-    - Azure: 'installation/prerequisites/azure.md'
-    - GCP: 'installation/prerequisites/gcp.md'
+    - General requirements: 'installation/self-hosed/prerequisites/common.md'
+    - AWS: 'installation/prerequisites/self-hosed/aws.md'
+    - Azure: 'installation/prerequisites/self-hosed/azure.md'
+    - GCP: 'installation/prerequisites/self-hosed/gcp.md'
   - Deployment:
-    - AWS:
-      - Terraform: 'installation/deployment/aws/terraform/README.md'
-      - AWS CloudFormation: 'installation/deployment/aws/cloud-formation/README.md'
+    - Cloud native:
+      - AWS:
+        - Terraform: 'installation/native/aws/terraform/README.md'
+        - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
   - Management:
     - Environments sync: 'installation/management/environments_sync.md'
   - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
