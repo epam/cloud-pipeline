@@ -130,7 +130,7 @@ export default function useRunWithLogsInfo(
       setTasks(tasks);
       setLogs(logs);
     },
-    [run, runId],
+    [run?.status, runId],
   );
   const refreshRun = useCallback(async () => {
     if (!runId) {
