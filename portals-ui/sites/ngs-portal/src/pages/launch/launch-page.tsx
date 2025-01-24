@@ -17,8 +17,8 @@ export function LaunchPage() {
     useLaunchInfo(pipelineId ?? run?.pipelineId, run?.configName, run?.version);
   const launchConfiguration = useLaunchConfiguration(configuration, run);
   const launchInfoLoaded = useMemo(
-    () => version && versions?.length && configuration && pipelineInfo,
-    [configuration, pipelineInfo, version, versions?.length],
+    () => launchConfiguration,
+    [launchConfiguration],
   );
   if (errors.length) {
     return errors.map((error) => <Alert type="error" message={error} />);

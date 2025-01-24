@@ -57,7 +57,10 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
     }
     if (run?.status === RunStatuses.stopped) {
       return (
-        <Button disabled={pending} type="link" onClick={onRerunClick}>
+        <Button
+          disabled={pending || !run.pipelineId}
+          type="link"
+          onClick={onRerunClick}>
           Rerun
         </Button>
       );

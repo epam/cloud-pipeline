@@ -4,11 +4,11 @@ import type {
   Run,
 } from '@cloud-pipeline/core';
 
-
 export default function useLaunchConfiguration(
   configuration?: PipelineConfiguration,
   run?: Run,
 ): PipelineConfiguration | undefined {
+  console.log({run, configuration})
   if (!run) {
     return configuration;
   }
