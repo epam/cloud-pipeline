@@ -48,17 +48,26 @@ async function castToSettings(obj: unknown): Promise<Settings | undefined> {
 
 const fetchSettings = createSingleCallPromise(
   async function fetchSettings(): Promise<Settings> {
-    const settingsUrl = normalizeBaseUrl('settings.json');
-    if (!settingsUrl) {
+    try {
+      const settingsUrl = normalizeBaseUrl('settings.json');
+      if (!settingsUrl) {
+        throw new Error('settings url is not defined')
+      }
+      const data = await fetch(settingsUrl, {
+        credentials: 'include',
+        mode: 'cors',
+      });
+      const json = await data.json();
+      const settings = await castToSettings(json);
+      if (!settings) {
+        throw new Error('wrong settings format');
+      }
+      return settings;
+    } catch (error) {
+      console.warn('error fetching settings', error);
+      console.log('using default settings');
       return defaultSettings;
     }
-    const data = await fetch(settingsUrl, {
-      credentials: 'include',
-      mode: 'cors',
-    });
-    const json = await data.json();
-    const settings = await castToSettings(json);
-    return settings ?? defaultSettings;
   },
 );
 

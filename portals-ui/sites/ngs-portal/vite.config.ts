@@ -64,6 +64,39 @@ export default (cfg: ConfigEnv) => {
           ])
         : undefined,
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          assetFileNames(asset) {
+            const check = (regExp: RegExp): boolean => asset.name ? regExp.test(asset.name) : false;
+            if (check(/\.js$/i)) {
+              return 'js/[name].[hash:10].[ext]';
+            }
+            if (check(/\.css$/i)) {
+              return 'css/[name].[hash:10].[ext]';
+            }
+            if (check(/\.wasm$/i)) {
+              return 'wasm/[name].[hash:10].[ext]';
+            }
+            return 'assets/[name].[hash:10].[ext]';
+          },
+          chunkFileNames: 'js/[name].[hash:10].js',
+          entryFileNames: 'js/[name].[hash:10].js',
+          manualChunks(id) {
+            const r = /\/packages\/([^\/]+)(\/|$)/.exec(id);
+            if (r && !/node_modules\//.test(id)) {
+              return r[1];
+            }
+            if (/\/node_modules\/(@aws|@smi)/i.test(id)) {
+              return 'aws.utilities';
+            }
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          },
+        },
+      },
+    },
     define: {
       CLOUD_PIPELINE_API: JSON.stringify(cloudPipelineApi),
     },

@@ -11,9 +11,21 @@
 #
 # +------------------------------------------------------------------+
 
-FROM node:22 AS build-stage
+FROM library/ubuntu:20.04 AS build-stage
+ENV DEBIAN_FRONTEND noninteractive
 # Set the working directory
 WORKDIR /app
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    python3 \
+    apt-utils \
+    && rm -rf /var/lib/apt/lists/*
+# Add NodeSource repository and install Node.js v22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy package files and install dependencies
 COPY lerna.json ./

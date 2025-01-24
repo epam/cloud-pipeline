@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import classNames from 'classnames';
-import type { CommonProps } from '@cloud-pipeline/components';
 import { Popover } from 'antd';
+import type { CommonProps } from '../common.types.ts';
 import { getUserDisplayName } from '@cloud-pipeline/core';
 import type { User, UserInfo } from '@cloud-pipeline/core';
 import type { TooltipPlacement } from 'antd/es/tooltip';
