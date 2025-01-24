@@ -1,4 +1,5 @@
 import { Button, Spin } from 'antd';
+import { base64ToString } from 'uint8array-extras'
 import { usePipelineFiles } from '../hooks';
 import {
   DocumentTextIcon,
@@ -9,7 +10,7 @@ import { fetchPipelineFileByPath } from '@cloud-pipeline/api';
 import { useCallback, useEffect, useState } from 'react';
 import { Markdown } from '@cloud-pipeline/components';
 import cn from 'classnames';
-import { decodeBase64, downloadFile } from '../../../shared/helpers';
+import { downloadFile } from '../../../shared/helpers';
 
 type Props = {
   pipelineId: number;
@@ -41,7 +42,7 @@ export const PipelineFiles = ({ pipelineId, version }: Props) => {
           version,
           encodedPath,
         );
-        const decoded = decodeBase64(base64String);
+        const decoded = base64ToString(base64String);
 
         const blobType = fileName.endsWith('.docx')
           ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -78,7 +79,7 @@ export const PipelineFiles = ({ pipelineId, version }: Props) => {
           encodedPath,
         );
 
-        setFileContent(decodeBase64(base64String));
+        setFileContent(base64ToString(base64String));
       } catch (err) {
         console.error('Failed to fetch file content:', err);
         setFileContent('Error loading file content');

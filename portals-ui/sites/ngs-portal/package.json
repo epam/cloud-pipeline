@@ -28,6 +28,7 @@
     "react-router": "^6.28.0",
     "react-router-dom": "^6.28.0",
     "showdown": "^2.1.0",
+    "uint8array-extras": "^1.4.0",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
