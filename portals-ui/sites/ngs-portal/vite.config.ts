@@ -1,17 +1,69 @@
-import type { ConfigEnv } from 'vite';
+import type { ConfigEnv, PluginOption } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
+import fs from 'fs';
+
+type DevFile = {
+  pathToFile?: string;
+  url: RegExp;
+};
+
+function serveDevFiles(devFiles: DevFile[]): PluginOption {
+  if (devFiles.length === 0) {
+    return undefined;
+  }
+  return {
+    name: 'serve-dev',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url) {
+          const devFile = devFiles.find((o) => o.url.test(req.url!));
+          if (devFile) {
+            if (devFile.pathToFile && fs.existsSync(devFile.pathToFile)) {
+              console.log(req.url, 'serving', devFile.pathToFile);
+              const settingsContent = fs
+                .readFileSync(devFile.pathToFile)
+                .toString();
+              if (/\.json$/i.test(devFile.pathToFile)) {
+                res.setHeader('content-type', 'application/json');
+              }
+              res.writeHead(200);
+              res.write(settingsContent);
+              res.end();
+              return;
+            }
+            res.writeHead(404);
+            res.end();
+            return;
+          }
+        }
+        next();
+      });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default (cfg: ConfigEnv) => {
   const { mode } = cfg;
   const env = loadEnv(mode, process.cwd(), '');
   const base = env.PUBLIC_URL ?? '/';
-  const cloudPipelineApi = env.CLOUD_PIPELINE_API ?? '/restapi';
+  const cloudPipelineApi = env.CLOUD_PIPELINE_API ?? '/api';
   return defineConfig({
     base,
-    plugins: [react(), svgr()],
+    plugins: [
+      react(),
+      svgr(),
+      /^development$/i.test(mode)
+        ? serveDevFiles([
+            {
+              url: /\/settings.json\/?$/i,
+              pathToFile: env.SETTINGS,
+            },
+          ])
+        : undefined,
+    ],
     define: {
       CLOUD_PIPELINE_API: JSON.stringify(cloudPipelineApi),
     },

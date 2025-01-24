@@ -28,6 +28,22 @@ export function buildFullUrl(
   return urlBase;
 }
 
+export function normalizeBaseUrl(base: string | undefined): string | undefined {
+  if (base === undefined) {
+    return undefined;
+  }
+  try {
+    const { href, search = '' } = new URL(base, window.location.href);
+    let url = href;
+    if (search.length > 0 && url.endsWith(search)) {
+      url = url.substring(0, url.length - search.length);
+    }
+    return url;
+  } catch {
+    return base;
+  }
+}
+
 export function checkResponseStatus(response: Response): never | void {
   if (response.status === 401) {
     throw new AuthorizationError();
