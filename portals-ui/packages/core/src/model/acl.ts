@@ -1,5 +1,6 @@
 export enum AclClass {
   user = 'USER',
+  pipelineUser = 'PIPELINE_USER',
   role = 'ROLE',
   pipeline = 'PIPELINE',
   folder = 'FOLDER',

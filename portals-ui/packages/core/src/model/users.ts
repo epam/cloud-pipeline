@@ -21,3 +21,5 @@ export type User = AclEntry<AclClass.user> & {
 export type UserInfo = Omit<User, 'userName' | 'admin' | 'blocked'> & {
   name: string;
 };
+
+export type UserMetadata = Record<string, Record<string, unknown>>;

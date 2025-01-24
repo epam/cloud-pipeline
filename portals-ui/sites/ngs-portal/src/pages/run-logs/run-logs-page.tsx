@@ -1,14 +1,16 @@
-import { useRunInfo } from '../../shared/hooks/use-run-info.ts';
 import { useParams } from 'react-router';
 import { Alert, Spin } from 'antd';
 import RunLogsHeader from './run-logs-header.tsx';
 import { useRunLogsTabs } from './hooks/use-run-logs-tabs.tsx';
 import { ItemLayout } from '../../shared/ui/index.ts';
+import useRunWithLogsInfo from './hooks/use-run-with-logs-info.tsx';
 
 export function RunLogsPage() {
   const { runId } = useParams();
-  const { run, pending, error, refresh } = useRunInfo(runId);
-  const { activeTab, tabs, handleChangeTab } = useRunLogsTabs(run);
+  const { pending, error, run, logs, refreshRun } = useRunWithLogsInfo(
+    Number(runId),
+  );
+  const { activeTab, tabs, handleChangeTab } = useRunLogsTabs(run, logs);
   if (!run || pending) {
     return <Spin spinning />;
   }
@@ -28,7 +30,7 @@ export function RunLogsPage() {
             tabs={tabs}
             onChangeTab={handleChangeTab}
             run={run}
-            refresh={refresh}
+            refresh={refreshRun}
           />
         }
         main={activeTab.content}

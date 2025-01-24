@@ -1,4 +1,4 @@
-import { fetchAuthenticatedUser } from '@cloud-pipeline/api';
+import { fetchAuthenticatedUser, fetchUserMetadata } from '@cloud-pipeline/api';
 import type { User } from '@cloud-pipeline/core';
 import { authenticationStore } from './store.ts';
 
@@ -11,12 +11,12 @@ export async function authenticate(): Promise<User> {
 
   try {
     const user = await fetchAuthenticatedUser();
-
+    const metadata = await fetchUserMetadata(user.id);
     store.setAuthenticationResult({
       authenticatedUser: user,
+      metadata,
       error: undefined,
     });
-
     return user;
   } catch (authError) {
     const errorMessage =
@@ -24,6 +24,7 @@ export async function authenticate(): Promise<User> {
 
     store.setAuthenticationResult({
       authenticatedUser: undefined,
+      metadata: undefined,
       error: errorMessage,
     });
 
