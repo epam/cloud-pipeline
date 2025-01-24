@@ -1,38 +1,9 @@
-import { useEffect } from 'react';
-import { loadProjects } from '../../state/projects/load-projects';
-import { useProjectsState } from '../../state/projects/hooks';
 import { ProjectsList } from '../../widgets/projects-list';
-import { PageSpinner } from '../../shared/ui';
 
 export function ProjectsPage() {
-  useEffect(() => {
-    loadProjects()
-      .then(() => {})
-      .catch(() => {});
-  }, []);
-
-  const { projects, error, pending } = useProjectsState();
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (pending && (!projects || projects.length === 0)) {
-    return <PageSpinner />;
-  }
-
-  if (!projects) {
-    return <div>No data</div>;
-  }
-
   return (
     <div className="overflow-hidden h-full w-full">
-      <ProjectsList
-        projects={projects}
-        mode="extended"
-        showDescription
-        withFilters
-      />
+      <ProjectsList mode="extended" showDescription withFilters />
     </div>
   );
 }

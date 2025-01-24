@@ -6,6 +6,7 @@ const colors = {
   green500: '#22c55e',
   red500: '#e00444',
   orange500: '#f97316',
+  slate700: '#334155',
 };
 
 export default colors;

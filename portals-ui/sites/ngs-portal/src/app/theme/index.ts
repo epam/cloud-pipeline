@@ -1,5 +1,6 @@
 import colors from './colors';
 
+const text = colors.slate700;
 const primary = colors.sky500;
 const primaryHover = colors.sky400;
 const bg = '#F5F6FA';
@@ -11,6 +12,7 @@ const warning = colors.orange500;
 const theme = {
   cssVar: true,
   token: {
+    colorText: text,
     colorPrimary: primary,
     colorPrimaryHover: primaryHover,
     colorLink: primary,

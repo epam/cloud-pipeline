@@ -51,3 +51,11 @@ export function executeInheritedExtended(mask: number): boolean {
 export function executeDeniedExtended(mask: number): boolean {
   return checkPermission(mask, EXECUTE_DENIED);
 }
+
+export function isAllPermissionsInheritedExtended(mask: number): boolean {
+  return (
+    readInheritedExtended(mask) &&
+    writeInheritedExtended(mask) &&
+    executeInheritedExtended(mask)
+  );
+}

@@ -114,7 +114,7 @@ function useMemoizedRunsFilter(filter?: RunsFilter): RunsFilter {
 
 export type RunsFilterResult = {
   runs: Run[];
-  total: number;
+  total?: number;
   pending: boolean;
   error: string | undefined;
 };
@@ -133,7 +133,7 @@ export function useRunsFilter(
   return useMemo(
     () => ({
       runs: runs ?? [],
-      total: total ?? 0,
+      total,
       pending,
       error,
     }),

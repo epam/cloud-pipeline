@@ -1,38 +1,79 @@
-import { useEffect } from 'react';
-import { useParams } from 'react-router';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { HomeIcon } from '@heroicons/react/24/solid';
-import { ItemLayout, PageSpinner } from '../../shared/ui';
-import { AppRoutes, RoutePath } from '../../shared/constants/routes';
-import { usePipelinesStore } from '../../state/pipelines/hooks';
-import { loadPipelines } from '../../state/pipelines/load-pipelines';
+import { ItemLayout } from '../../shared/ui';
+import {
+  AppRoutes,
+  generatePipelineRoutePath,
+  PipelineTabs,
+  RoutePath,
+} from '../../shared/constants/routes';
+import { usePipelineVersions } from './hooks';
+import {
+  AclClass,
+  type Pipeline,
+  type PipelineVersion,
+} from '@cloud-pipeline/core';
+import { PipelineHeader, PipelineRunsList } from './components';
+import { useMemo } from 'react';
+import { LayoutCard } from '../../shared/ui/item-layout/layout-card';
+import { PipelineFiles } from './components/pipeline-files';
+import { Permissions } from '../../features/permissions';
+import { useNgsTabs } from '../../shared/hooks';
 
-export function PipelinePage() {
-  const { pipelineId } = useParams();
-  const { pipelines, error, pending, getPipelineById } = usePipelinesStore();
+type Props = {
+  pipeline: Pipeline;
+  versions: PipelineVersion[];
+};
 
-  const pipeline = getPipelineById(Number(pipelineId));
+export function PipelinePage({ pipeline, versions }: Props) {
+  const { onChangeVersion, version } = usePipelineVersions(versions);
 
-  useEffect(() => {
-    if (!pipelines?.length) {
-      loadPipelines()
-        .then(() => {})
-        .catch(() => {});
-    }
-  }, [pipelines?.length]);
+  const tabs = useMemo(
+    () => [
+      {
+        key: PipelineTabs.Documents,
+        label: <span className="px-4">Documents</span>,
+        content: <PipelineFiles pipelineId={pipeline.id} version={version} />,
+        aside: [
+          <LayoutCard key="runs">
+            <PipelineRunsList pipelineId={pipeline.id} version={version} />
+          </LayoutCard>,
+          <LayoutCard key="permissions">
+            <Permissions entityId={pipeline.id} aclClass={AclClass.pipeline} />
+          </LayoutCard>,
+        ],
+      },
+      {
+        key: PipelineTabs.Code,
+        label: <span className="px-4">Code</span>,
+        content: <div>Code</div>,
+      },
+      {
+        key: PipelineTabs.Configuration,
+        label: <span className="px-4">Configuration</span>,
+        content: <div>Configuration</div>,
+      },
+      {
+        key: PipelineTabs.RunHistory,
+        label: <span className="px-4">Runs History</span>,
+        content: (
+          <PipelineRunsList
+            pipelineId={pipeline.id}
+            version={version}
+            extended
+          />
+        ),
+      },
+    ],
+    [pipeline.id, version],
+  );
 
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (pending && !pipelines?.length) {
-    return <PageSpinner />;
-  }
-
-  if (!pipeline) {
-    return <div>No data</div>;
-  }
+  const { activeTab, handleChangeTab } = useNgsTabs({
+    entityId: pipeline.id,
+    tabs,
+    generatePath: generatePipelineRoutePath,
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -51,9 +92,20 @@ export function PipelinePage() {
       />
 
       <ItemLayout
-        header={<div>{pipeline.name}</div>}
-        main={<div>Main</div>}
-        asideTop={<div>Recent Runs</div>}
+        classes={{ content: 'overflow-hidden' }}
+        header={
+          <PipelineHeader
+            pipeline={pipeline}
+            tabs={tabs}
+            onChangeTab={handleChangeTab}
+            activeKey={activeTab.key}
+            versions={versions}
+            onChangeVersion={onChangeVersion}
+            versionName={version}
+          />
+        }
+        main={activeTab.content}
+        aside={activeTab.aside}
       />
     </div>
   );

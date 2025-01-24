@@ -1,43 +1,17 @@
-import { useEffect } from 'react';
-import { useProjectsState } from '../../state/projects/hooks';
-import { loadProjects } from '../../state/projects/load-projects';
-import { usePipelinesState } from '../../state/pipelines/hooks.ts';
-import { loadPipelines } from '../../state/pipelines/load-pipelines.ts';
 import { ProjectsList } from '../../widgets/projects-list';
 import { PipelinesList } from '../../widgets/pipelines-list';
 import { RunsList } from '../../widgets/runs-list';
 import './style.css';
 
 export const HomePage = () => {
-  const { projects } = useProjectsState();
-  const { pipelines } = usePipelinesState();
-
-  useEffect(() => {
-    loadProjects()
-      .then(() => {})
-      .catch(() => {});
-
-    loadPipelines()
-      .then(() => {})
-      .catch(() => {});
-  }, []);
-
   return (
     <div className="relative flex h-full w-full gap-4 overflow-hidden flex-nowrap">
       <div className="flex-1 h-full overflow-auto">
-        {projects?.length ? (
-          <ProjectsList showDescription projects={projects} />
-        ) : (
-          <div>No data</div>
-        )}
+        <ProjectsList showDescription />
       </div>
 
       <div className="flex-1 h-full overflow-auto">
-        {pipelines?.length ? (
-          <PipelinesList showDescription pipelines={pipelines} />
-        ) : (
-          <div>No data</div>
-        )}
+        <PipelinesList showDescription />
       </div>
 
       <div className="flex-1 h-full overflow-auto">

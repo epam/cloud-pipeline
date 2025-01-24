@@ -79,6 +79,14 @@ export type PipelineConfiguration = {
   default: boolean;
 };
 
+export type PipelineFile = {
+  id: string;
+  mode: string;
+  name: string;
+  path: string;
+  type: string;
+};
+
 export type PipelineInfo = Pipeline & {
   currentVersion: PipelineVersion;
 };

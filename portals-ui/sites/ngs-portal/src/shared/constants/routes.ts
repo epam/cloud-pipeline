@@ -14,7 +14,7 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.PROJECTS]: '/projects',
   [AppRoutes.PROJECT]: '/projects/:projectId/:tabId?',
   [AppRoutes.PIPELINES]: '/pipelines',
-  [AppRoutes.PIPELINE]: '/pipelines/:pipelineId',
+  [AppRoutes.PIPELINE]: '/pipelines/:pipelineId/:tabId?',
   [AppRoutes.RUNS]: '/runs',
   [AppRoutes.LAUNCH]: '/launch/:pipelineId',
   [AppRoutes.NOT_FOUND]: '*',
@@ -27,6 +27,13 @@ export enum ProjectTabs {
   History = 'history',
 }
 
+export enum PipelineTabs {
+  Documents = 'documents',
+  Code = 'code',
+  Configuration = 'configuration',
+  RunHistory = 'run-history',
+}
+
 export function generateProjectRoutePath(
   projectId: string | number,
   tabId?: ProjectTabs,
@@ -36,8 +43,13 @@ export function generateProjectRoutePath(
   return `/projects/${projectId}${tabPath}`;
 }
 
-export function generatePipelineRoutePath(pipelineId: string | number): string {
-  return `/pipelines/${pipelineId}`;
+export function generatePipelineRoutePath(
+  pipelineId: string | number,
+  tabId?: PipelineTabs,
+): string {
+  const tabPath = tabId ? `/${tabId}` : '';
+
+  return `/pipelines/${pipelineId}${tabPath}`;
 }
 
 export function generateLaunchRoutePath(pipelineId: string | number): string {

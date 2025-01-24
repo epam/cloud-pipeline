@@ -9,21 +9,29 @@ import { CubeIcon } from '@heroicons/react/24/outline';
 import { CreateProjectButton } from '../modals';
 import { projectFiltersToDisplay } from '../../pages/projects/constants.ts';
 import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
+import { useProjectsState } from '../../state/projects/hooks.ts';
+import { loadProjects } from '../../state/projects/load-projects.ts';
 
 type Props = {
-  projects: Project[];
   mode?: 'standard' | 'extended';
   withFilters?: boolean;
   showDescription?: boolean;
 };
 
 export const ProjectsList = memo(
-  ({
-    projects,
-    mode = 'standard',
-    withFilters,
-    showDescription = false,
-  }: Props) => {
+  ({ mode = 'standard', withFilters, showDescription = false }: Props) => {
+    useEffect(() => {
+      loadProjects()
+        .then(() => {})
+        .catch(() => {});
+    }, []);
+
+    const {
+      projects = [],
+      error,
+      pending: isProjectsLoading,
+    } = useProjectsState();
+
     const { pipelines } = usePipelinesState();
 
     const getRandomPipeline = () =>
@@ -54,7 +62,7 @@ export const ProjectsList = memo(
 
     return (
       <ItemsPanel
-        className="max-h-full list-container overflow-auto"
+        className="h-full list-container overflow-auto"
         title={
           <div className="min-h-6 fill-current flex items-center flex-nowrap gap-1">
             <CubeIcon className="w-5 h-5" />
@@ -80,6 +88,8 @@ export const ProjectsList = memo(
             ? { title: 'View all projects', link: '/projects' }
             : undefined
         }
+        isItemsLoading={isProjectsLoading}
+        errorText={error && `Error: ${error}`}
       />
     );
   },

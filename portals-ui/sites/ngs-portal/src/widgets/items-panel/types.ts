@@ -21,4 +21,6 @@ export type ItemsPanelProps<Item> = Omit<
   searchClassName?: string;
   onSearchChange?: (search: string) => void;
   search?: string;
+  errorText?: string;
+  isItemsLoading?: boolean;
 };
