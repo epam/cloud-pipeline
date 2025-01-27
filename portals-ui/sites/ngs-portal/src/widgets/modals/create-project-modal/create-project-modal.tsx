@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { message, Input, Modal, Select } from 'antd';
 import {
   fetchAvailableDataStorages,
@@ -9,6 +10,7 @@ import type { DataStorage } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
 import { useAuthenticatedUser } from '../../../state/authentication/hooks';
 import { useReloadProjectsFn } from '../../../state/projects/hooks.ts';
+import { generateProjectRoutePath } from '../../../shared/constants/routes.ts';
 import './styles.css';
 
 type Props = CommonProps & {
@@ -19,6 +21,7 @@ type Props = CommonProps & {
 export const CreateProjectModal = (props: Props) => {
   const { visible, onCancel } = props;
   const [messageApi, contextHolder] = message.useMessage();
+  const navigate = useNavigate();
   const authenticatedUser = useAuthenticatedUser();
   const [name, setName] = useState<string | undefined>('');
   const [defaultDataStorageId, setDefaultDataStorageId] = useState<
@@ -64,8 +67,8 @@ export const CreateProjectModal = (props: Props) => {
       content: 'Creating data datastorage...',
     });
     try {
-      await registerProject(name);
-      await reloadProjects();
+      const projectResponse = await registerProject(name);
+      const projects = await reloadProjects();
       messageApi.open({
         key: 'register',
         type: 'success',
@@ -73,6 +76,15 @@ export const CreateProjectModal = (props: Props) => {
         duration: 2,
       });
       onCancel();
+      setPending(false);
+      setSpin(false);
+      // not always createdp roject gets into the list of projects, waiting for projects filter fix
+      if (
+        projectResponse?.id &&
+        projects?.find((project) => project.id === projectResponse?.id)
+      ) {
+        navigate(generateProjectRoutePath(projectResponse.id));
+      }
     } catch (error) {
       messageApi.open({
         key: 'register',
@@ -87,11 +99,10 @@ export const CreateProjectModal = (props: Props) => {
         ),
         duration: 2,
       });
-    } finally {
       setPending(false);
       setSpin(false);
     }
-  }, [messageApi, name, onCancel, pending, reloadProjects]);
+  }, [messageApi, name, navigate, onCancel, pending, reloadProjects]);
   const options = useMemo(() => {
     if (!dataStorages) {
       return [];
