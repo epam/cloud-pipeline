@@ -39,6 +39,8 @@ RUN npm run ngs-portal-build
 
 FROM library/ubuntu:20.04 as main-stage
 
+ARG NGS_PORTAL_VERSION
+
 RUN apt-get update -y && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \

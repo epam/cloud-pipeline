@@ -50,6 +50,12 @@ export default (cfg: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd(), '');
   const base = env.PUBLIC_URL ?? '/';
   const cloudPipelineApi = env.CLOUD_PIPELINE_API ?? '/api';
+  const ngsPortalVersion = env.NGS_PORTAL_VERSION ?? '';
+  if (ngsPortalVersion.length > 0) {
+    console.log(`building NGS portal (version ${ngsPortalVersion})`);
+  } else {
+    console.log('building NGS portal');
+  }
   return defineConfig({
     base,
     plugins: [
@@ -68,7 +74,8 @@ export default (cfg: ConfigEnv) => {
       rollupOptions: {
         output: {
           assetFileNames(asset) {
-            const check = (regExp: RegExp): boolean => asset.name ? regExp.test(asset.name) : false;
+            const check = (regExp: RegExp): boolean =>
+              asset.name ? regExp.test(asset.name) : false;
             if (check(/\.js$/i)) {
               return 'js/[name].[hash:10].[ext]';
             }
@@ -83,8 +90,8 @@ export default (cfg: ConfigEnv) => {
           chunkFileNames: 'js/[name].[hash:10].js',
           entryFileNames: 'js/[name].[hash:10].js',
           manualChunks(id) {
-            const r = /\/packages\/([^\/]+)(\/|$)/.exec(id);
-            if (r && !/node_modules\//.test(id)) {
+            const r = /\/packages\/([^/]+)(\/|$)/.exec(id);
+            if (r && !id.includes('node_modules/')) {
               return r[1];
             }
             if (/\/node_modules\/(@aws|@smi)/i.test(id)) {
@@ -99,6 +106,7 @@ export default (cfg: ConfigEnv) => {
     },
     define: {
       CLOUD_PIPELINE_API: JSON.stringify(cloudPipelineApi),
+      NGS_PORTAL_VERSION: JSON.stringify(ngsPortalVersion),
     },
   });
 };

@@ -88,6 +88,7 @@ fi
 
 # Build the Docker image with the version tag
 docker build \
+  --build-arg NGS_PORTAL_VERSION="$NGS_PORTAL_COMMIT_SHA" \
   -t "$NGS_PORTAL_IMAGE:$NGS_PORTAL_VERSION" \
   -f sites/ngs-portal/Dockerfile .
 
