@@ -8,7 +8,7 @@ export type TagValue =
   | string
   | number
   | boolean
-  | Record<any, any>
+  | Record<string, unknown>
   | Array<unknown>;
 
 export type NgsTagProps<Value extends TagValue> = TagProps & {
@@ -31,7 +31,9 @@ function NgsGeneralTag(props: NgsTagProps<string | number | boolean>) {
   );
 }
 
-function NgsObjectTag(props: NgsTagProps<Record<any, any> | Array<unknown>>) {
+function NgsObjectTag(
+  props: NgsTagProps<Record<string, unknown> | Array<unknown>>,
+) {
   const { className, tag, value, showTagName = false, color } = props;
   const objType = Array.isArray(value)
     ? `${value.length} item${value.length === 1 ? '' : 's'}`
@@ -51,8 +53,7 @@ export function NgsTag<Value extends TagValue>(props: NgsTagProps<Value>) {
   const formattedValue = useMemo(() => {
     if (typeof value === 'string') {
       try {
-        const obj = JSON.parse(value);
-        return obj;
+        return JSON.parse(value) as Value;
       } catch {
         return value;
       }

@@ -1,5 +1,5 @@
-import { AppRoutes } from '../../../shared/constants/routes.ts';
-import { ReactNode } from 'react';
+import type { AppRoutes } from '../../../shared/constants/routes.ts';
+import type { ReactNode } from 'react';
 
 export type MainMenuItem = {
   key: string;

@@ -40,7 +40,10 @@ export const SelectFilter = memo(
           maxTagPlaceholder={(omittedValues) => (
             <Tooltip
               overlayStyle={{ pointerEvents: 'none' }}
-              title={omittedValues.map(({ label }) => label).join(', ')}>
+              title={omittedValues
+                .map(({ label }) => (typeof label === 'string' ? label : false))
+                .filter(Boolean)
+                .join(', ')}>
               <span>+{selectedValues.length - 1}</span>
             </Tooltip>
           )}

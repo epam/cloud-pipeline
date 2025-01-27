@@ -2,7 +2,7 @@ import { fetchRun, fetchRunTasks, fetchRunLogs } from '@cloud-pipeline/api';
 import type { Run, RunTask, RunLog, UserMetadata } from '@cloud-pipeline/core';
 import { RunStatuses } from '@cloud-pipeline/core';
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useLoadableStateWithInterval } from '../../../shared/hooks/use-loadable-state';
+import { useLoadableStateWithInterval } from '../../../shared/hooks';
 import { useAuthenticatedUserMetadata } from '../../../state/authentication/hooks';
 
 const RUN_LOGS_MAIN_TASK = 'ui-run-logs-main-task';
@@ -78,7 +78,7 @@ export default function useRunWithLogsInfo(
   const [logs, setLogs] = useState<RunLog[] | undefined>();
   const [pending, setPending] = useState(false);
   //todo implement Error handling
-  const [error, setError] = useState<string | undefined>();
+  const [error] = useState<string | undefined>();
   const userMetadata = useAuthenticatedUserMetadata();
   const refreshSelectedTask = useCallback(
     (run?: Run, tasks?: RunTask[], selectedTask?: string) => {

@@ -30,7 +30,7 @@ function getSettingsFieldError(
   return undefined;
 }
 
-async function castToSettings(obj: unknown): Promise<Settings | undefined> {
+function castToSettings(obj: unknown): Settings | undefined {
   if (!obj || typeof obj !== 'object') {
     return undefined;
   }
@@ -51,14 +51,14 @@ const fetchSettings = createSingleCallPromise(
     try {
       const settingsUrl = normalizeBaseUrl('settings.json');
       if (!settingsUrl) {
-        throw new Error('settings url is not defined')
+        throw new Error('settings url is not defined');
       }
       const data = await fetch(settingsUrl, {
         credentials: 'include',
         mode: 'cors',
       });
-      const json = await data.json();
-      const settings = await castToSettings(json);
+      const json = (await data.json()) as Promise<unknown>;
+      const settings = castToSettings(json);
       if (!settings) {
         throw new Error('wrong settings format');
       }

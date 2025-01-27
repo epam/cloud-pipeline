@@ -2,13 +2,13 @@ import type {
   PipelineConfiguration,
   PipelineParameter,
   Run,
+  RunParameter,
 } from '@cloud-pipeline/core';
 
 export default function useLaunchConfiguration(
   configuration?: PipelineConfiguration,
   run?: Run,
 ): PipelineConfiguration | undefined {
-  console.log({run, configuration})
   if (!run) {
     return configuration;
   }
@@ -20,9 +20,12 @@ export default function useLaunchConfiguration(
       (acc, runParameter) => {
         const { name } = runParameter;
         if (parameters[name]) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           acc[name] = { ...parameters[name] };
           for (const key in runParameter) {
-            acc[name][key] = runParameter[key];
+            // @ts-expect-error parameters assignment
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
+            acc[name][key] = runParameter[key as keyof RunParameter];
           }
         }
         return acc;

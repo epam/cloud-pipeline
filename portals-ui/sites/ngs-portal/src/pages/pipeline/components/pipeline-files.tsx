@@ -1,5 +1,5 @@
 import { Button, Spin } from 'antd';
-import { base64ToString } from 'uint8array-extras'
+import { base64ToString } from 'uint8array-extras';
 import { usePipelineFiles } from '../hooks';
 import {
   DocumentTextIcon,

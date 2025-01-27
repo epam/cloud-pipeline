@@ -3,9 +3,7 @@ import { ProjectCard } from '../cards';
 import { ItemsPanel } from '../items-panel';
 import cn from 'classnames';
 import { memo, useCallback } from 'react';
-import {
-  usePipelines,
-} from '../../state/pipelines/hooks.ts';
+import { usePipelines } from '../../state/pipelines/hooks.ts';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { CreateProjectButton } from '../modals';
 import { projectFiltersToDisplay } from '../../pages/projects/constants.ts';

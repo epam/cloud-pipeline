@@ -13,7 +13,7 @@ export function LaunchPage() {
   const pipelineId = Number(searchParams.get('pipelineId')) || undefined;
   const runId = Number(searchParams.get('runId')) || undefined;
   const { run } = useRunInfo(runId);
-  const { pipelineInfo, version, versions, configuration, errors, pending } =
+  const { pipelineInfo, version, configuration, errors, pending } =
     useLaunchInfo(pipelineId ?? run?.pipelineId, run?.configName, run?.version);
   const launchConfiguration = useLaunchConfiguration(configuration, run);
   const launchInfoLoaded = useMemo(
