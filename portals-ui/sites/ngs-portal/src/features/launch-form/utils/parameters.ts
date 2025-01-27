@@ -2,8 +2,10 @@ import type {
   MappedPipelineParameter,
   PipelineConfiguration,
   PipelineParameter,
+  RunParameter,
 } from '@cloud-pipeline/core';
 import { validateParameter } from './validators';
+import type { RunConfiguration } from '../type';
 
 function mapParameters(
   configuration: PipelineConfiguration | undefined,
@@ -37,4 +39,23 @@ function unMapParameters(parametersFormData: MappedPipelineParameter[] = []) {
   return parameters;
 }
 
-export { mapParameters, unMapParameters };
+function mapRunParameters(
+  runParameters: RunParameter[] = [],
+): RunConfiguration {
+  const parameters = runParameters.reduce(
+    (acc, parameter) => {
+      if (parameter.name) {
+        acc[parameter.name] = parameter;
+      }
+      return acc;
+    },
+    {} as Record<string, RunParameter>,
+  );
+  return {
+    configuration: {
+      parameters,
+    },
+  };
+}
+
+export { mapParameters, unMapParameters, mapRunParameters };

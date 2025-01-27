@@ -20,7 +20,6 @@ export const ProjectHeader = (props: Props) => {
   const { project, tabs, onChangeTab, activeKey } = props;
   const { data } = project ?? {};
   const tags = useMemo(() => extractTags(data), [data]);
-
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-nowrap gap-1 items-center">

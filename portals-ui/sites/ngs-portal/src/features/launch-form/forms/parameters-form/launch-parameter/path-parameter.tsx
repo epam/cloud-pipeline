@@ -9,6 +9,7 @@ export default function PathParameter({
   parameter,
   onChange,
   prettyNameEditable,
+  readOnly,
 }: LaunchParameterProps) {
   const onChangeValue = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(parameter.key, {
@@ -30,8 +31,9 @@ export default function PathParameter({
           status={parameter.error ? 'error' : undefined}
           onChange={onChangeValue}
           addonBefore={<FolderIcon className="w-4 h-4" />}
+          disabled={readOnly}
         />
-        {parameter.error ? (
+        {!readOnly && parameter.error ? (
           <span className="pl-4 text-xs text-red-500">{parameter.error}</span>
         ) : null}
       </div>

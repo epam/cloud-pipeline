@@ -1,39 +1,39 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   usePipelineConfiguration,
   usePipelineInfo,
 } from '../../../state/pipelines/hooks';
-import type { PipelineConfiguration } from '@cloud-pipeline/core';
 import type { LaunchInfo } from '../type';
 
-function useLaunchInfo(pipelineId: number): LaunchInfo {
-  const [version, setVersion] = useState<string>('');
-  const [configuration, setConfiguration] = useState<
-    PipelineConfiguration | undefined
-  >();
+function useLaunchInfo(
+  pipelineId?: number,
+  configName?: string,
+  versionName?: string,
+): LaunchInfo {
   const {
     pipelineInfo,
     pending: pipelineInfoPending,
     error: pipelineInfoError,
     versions,
   } = usePipelineInfo(pipelineId);
+  const version = useMemo(() => {
+    return versionName ?? pipelineInfo?.currentVersion?.name;
+  }, [pipelineInfo?.currentVersion?.name, versionName]);
   const {
     configurations,
     pending: configurationsPending,
     error: configurationsError,
   } = usePipelineConfiguration(Number(pipelineId), version);
-  useEffect(() => {
-    if (!version && pipelineInfo?.currentVersion) {
-      setVersion(pipelineInfo.currentVersion.name);
-    }
-  }, [version, pipelineInfo?.currentVersion]);
-  useEffect(() => {
-    if (!configuration && configurations) {
-      setConfiguration(
-        configurations.find((configuration) => configuration.default),
+  const configuration = useMemo(() => {
+    if (configName && configurations) {
+      return configurations.find(
+        (configuration) => configuration.name === configName,
       );
     }
-  }, [configurations, configuration]);
+    return (configurations ?? []).find(
+      (configuration) => configuration.default,
+    );
+  }, [configName, configurations]);
   const pending = useMemo(
     () => pipelineInfoPending || configurationsPending,
     [configurationsPending, pipelineInfoPending],
@@ -51,8 +51,6 @@ function useLaunchInfo(pipelineId: number): LaunchInfo {
       pipelineInfo,
       pending,
       errors,
-      setVersion,
-      setConfiguration,
     }),
     [
       configuration,

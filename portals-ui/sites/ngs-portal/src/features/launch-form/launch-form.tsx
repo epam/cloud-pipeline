@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, message, Modal } from 'antd';
+import classNames from 'classnames';
 import {
   type PipelineConfiguration,
   type MappedPipelineParameter,
   type Pipeline,
-  noop,
 } from '@cloud-pipeline/core';
 import { launchPipeline } from '@cloud-pipeline/api';
 import { generateLaunchPayload } from './utils/generate-launch-payload';
 import { LaunchParametersForm } from './forms/parameters-form';
 import { mapParameters, unMapParameters } from './utils/parameters';
-import { AppRoutes, RoutePath } from '../../shared/constants/routes';
+import { generateRunLogsRoutePath } from '../../shared/constants/routes';
 import type { CommonProps } from '@cloud-pipeline/components';
-import classNames from 'classnames';
 
 type LaunchFormProps = CommonProps & {
   configuration?: PipelineConfiguration;
   pipelineInfo?: Pipeline;
   version?: string;
   prettyNameEditable?: boolean;
+  readOnly?: boolean;
 };
 
 export function LaunchForm({
@@ -28,6 +28,7 @@ export function LaunchForm({
   version,
   prettyNameEditable = false,
   className,
+  readOnly = false,
 }: LaunchFormProps) {
   const [pending, setPending] = useState(false);
   const [modal, launchConfirmContext] = Modal.useModal();
@@ -92,7 +93,11 @@ export function LaunchForm({
             version!,
           );
           launchPipeline(payload)
-            .then(noop)
+            .then((run) => {
+              setPending(false);
+              resolve(true);
+              navigate(generateRunLogsRoutePath(Number(run.id)));
+            })
             .catch((error) => {
               messageApi.open({
                 key: 'launch',
@@ -107,11 +112,6 @@ export function LaunchForm({
                 ),
                 duration: 2,
               });
-            })
-            .finally(() => {
-              setPending(false);
-              resolve(true);
-              navigate(RoutePath[AppRoutes.HOME]);
             });
         });
       },
@@ -129,21 +129,27 @@ export function LaunchForm({
         parameters={parametersFormData}
         onChange={onChangeParameter}
         prettyNameEditable={prettyNameEditable}
+        readOnly={readOnly}
       />
-      <div className="flex items-center gap-1 justify-end">
-        <Button onClick={resetForm} disabled={!formChanged} className="ml-auto">
-          Reset
-        </Button>
-        <Button
-          onClick={() => {
-            void launch();
-          }}
-          loading={pending}
-          disabled={launchDisabled}
-          type="primary">
-          Launch
-        </Button>
-      </div>
+      {!readOnly ? (
+        <div className="flex items-center gap-1 justify-end">
+          <Button
+            onClick={resetForm}
+            disabled={!formChanged}
+            className="ml-auto">
+            Reset
+          </Button>
+          <Button
+            onClick={() => {
+              void launch();
+            }}
+            loading={pending}
+            disabled={launchDisabled}
+            type="primary">
+            Launch
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

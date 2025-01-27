@@ -8,6 +8,7 @@ export default function BooleanParameter({
   parameter,
   onChange,
   prettyNameEditable,
+  readOnly,
 }: LaunchParameterProps) {
   const onChangeValue = (event: CheckboxChangeEvent) => {
     onChange(parameter.key, {
@@ -24,7 +25,10 @@ export default function BooleanParameter({
         onChange={onChange}
         editable={prettyNameEditable}
       />
-      <Checkbox checked={parameter.value === true} onChange={onChangeValue}>
+      <Checkbox
+        disabled={readOnly}
+        checked={parameter.value === true}
+        onChange={onChangeValue}>
         Enabled
       </Checkbox>
       {parameter.error ? (

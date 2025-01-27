@@ -2,9 +2,9 @@ import { AclClass, AclEntry } from './acl';
 import { CloudProviders, CommitStatuses, RunStatuses } from './enums';
 import { Dayjs } from 'dayjs';
 
-type RunParameter = {
+export type RunParameter = {
   dataStorageLinks?: string[];
-  name?: string;
+  name: string;
   resolvedValue?: string;
   type?: string;
   value?: string;
@@ -105,4 +105,25 @@ export type RunInterval = {
   phase: RunHistoryPhase;
   start: Dayjs;
   end?: Dayjs;
+};
+
+export type RunLog = {
+  runId: number;
+  date: string;
+  status: string;
+  logText: string;
+  task: {
+    name: string;
+  };
+};
+
+export type RunTask = {
+  created: string;
+  finished?: string;
+  id: number;
+  instance?: string;
+  name: string;
+  parameters?: string;
+  started: string;
+  status: RunStatuses;
 };

@@ -142,7 +142,7 @@ export const usePipelineInfo = (
 
 export function usePipelineConfiguration(
   pipelineId: number | undefined,
-  version: string,
+  version?: string,
 ): PipelineConfigurationsState {
   const { state, pending, error } = useLoadableState(
     fetchPipelineConfigurationsWrapped,

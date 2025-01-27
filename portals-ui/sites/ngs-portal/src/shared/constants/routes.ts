@@ -5,6 +5,7 @@ export enum AppRoutes {
   PIPELINES = 'pipelines',
   PIPELINE = 'pipeline',
   RUNS = 'runs',
+  RUN = 'run',
   LAUNCH = 'launch',
   NOT_FOUND = 'not_found',
 }
@@ -16,7 +17,8 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.PIPELINES]: '/pipelines',
   [AppRoutes.PIPELINE]: '/pipelines/:pipelineId/:tabId?',
   [AppRoutes.RUNS]: '/runs',
-  [AppRoutes.LAUNCH]: '/launch/:pipelineId',
+  [AppRoutes.RUN]: '/runs/:runId/:tabId?',
+  [AppRoutes.LAUNCH]: '/launch',
   [AppRoutes.NOT_FOUND]: '*',
 };
 
@@ -32,6 +34,11 @@ export enum PipelineTabs {
   Code = 'code',
   Configuration = 'configuration',
   RunHistory = 'run-history',
+}
+
+export enum RunLogsTabs {
+  Logs = 'logs',
+  Parameters = 'parameters',
 }
 
 export function generateProjectRoutePath(
@@ -52,6 +59,21 @@ export function generatePipelineRoutePath(
   return `/pipelines/${pipelineId}${tabPath}`;
 }
 
-export function generateLaunchRoutePath(pipelineId: string | number): string {
-  return `/launch/${pipelineId}`;
+export function generateRunLogsRoutePath(
+  runId: string | number,
+  tabId?: RunLogsTabs,
+): string {
+  const tabPath = tabId ? `/${tabId}` : '';
+  return `/runs/${runId}${tabPath}`;
+}
+
+export function generateLaunchRoutePath(
+  pipelineId?: string | number,
+  runId?: string | number,
+): string {
+  let query = new URLSearchParams({ pipelineId: `${pipelineId}` }).toString();
+  if (runId) {
+    query = new URLSearchParams({ runId: `${runId}` }).toString();
+  }
+  return `/launch?${query}`;
 }
