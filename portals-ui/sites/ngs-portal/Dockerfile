@@ -52,16 +52,22 @@ RUN apt-get update -y && \
                                                cmake \
                                                nginx && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* \
+
+ENV NGS_PORTAL_ROOT=/opt/ngs-portal
 
 # Set working directory
-WORKDIR /opt/ngs-portal
+WORKDIR $NGS_PORTAL_ROOT
 
 ADD ./sites/ngs-portal/nginx.conf /etc/nginx/nginx.conf
 ADD ./sites/ngs-portal/start.sh .
 
+RUN chmod +x start.sh
+
 # Copy built application from the build stage
-COPY --from=build-stage /app/sites/ngs-portal/dist /opt/ngs-portal
+COPY --from=build-stage /app/sites/ngs-portal/dist $NGS_PORTAL_ROOT
 
 # Expose the necessary port
 EXPOSE 8080
+
+CMD ["$NGS_PORTAL_ROOT/start.sh"]
