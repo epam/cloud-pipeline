@@ -91,6 +91,12 @@ docker build \
   -t "$NGS_PORTAL_IMAGE:$NGS_PORTAL_VERSION" \
   -f sites/ngs-portal/Dockerfile .
 
+# Exit immediately if the docker build fails
+if [[ $? -ne 0 ]]; then
+  echo "Docker build failed. Exiting."
+  exit 1
+fi
+
 # Tag the image as "latest" if required
 if [[ "$LATEST_TAG" == true ]]; then
   docker tag "$NGS_PORTAL_IMAGE:$NGS_PORTAL_VERSION" "$NGS_PORTAL_IMAGE:latest"

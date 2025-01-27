@@ -52,7 +52,7 @@ RUN apt-get update -y && \
                                                cmake \
                                                nginx && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* \
+    rm -rf /var/lib/apt/lists/*
 
 ENV NGS_PORTAL_ROOT=/opt/ngs-portal
 
