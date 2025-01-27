@@ -42,5 +42,8 @@ RUN mkdir -p $NXF_HOME && \
     mv nextflow "$NXF_HOME/nextflow"
 
 ADD nextflow /usr/bin/nextflow
-ADD weblog-handler /opt/weblog-handler
 RUN chmod +x /usr/bin/nextflow
+
+ADD nf-weblog-handler /opt/nf-weblog-handler
+RUN chmod +x /opt/nf-weblog-handler/nf-weblog-handler.sh
+

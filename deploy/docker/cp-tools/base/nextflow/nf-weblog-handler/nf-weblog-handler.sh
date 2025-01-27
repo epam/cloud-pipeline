@@ -6,15 +6,15 @@ function parse_options {
     key="$1"
 
     case $key in
-        --start)
+        --start|start)
         export CP_NF_WEBLOG_HANDLER_START=1
         shift # past argument
         ;;
-        --stop)
+        --stop|stop)
         export CP_NF_WEBLOG_HANDLER_STOP=1
         shift # past argument
         ;;
-        --check)
+        --check|check)
         export CP_NF_WEBLOG_HANDLER_CHECK=1
         shift # past argument
         ;;
@@ -36,7 +36,7 @@ function parse_options {
         shift # past argument
         shift # past value
         ;;
-        -bs|--sync-batch-timeout)
+        -bt|--sync-batch-timeout)
         export CP_NF_WEBLOG_HANDLER_SYNC_BATCH_TIMEOUT=$2
         shift # past argument
         shift # past value
@@ -45,12 +45,13 @@ function parse_options {
     done
 }
 
-CP_NF_WEBLOG_HANDLER_PORT=8080
-CP_NF_WEBLOG_HANDLER_SYNC_BATCH_SIZE=10
-CP_NF_WEBLOG_HANDLER_SYNC_BATCH_TIMEOUT=60
-CP_NF_WEBLOG_HANDLER_PID_FILE=${CP_NF_WEBLOG_HANDLER_PID_FILE:-/var/run/nf_weblog_handler.pid}
-CP_NF_WEBLOG_HANDLER_LOG_FILE=${CP_NF_WEBLOG_HANDLER_LOG_FILE:-/var/log/nf_weblog_handler.log}
-CP_NF_WEBLOG_HANDLER_LOCATION=${CP_NF_WEBLOG_HANDLER_LOCATION:-/opt/nf-weblog-handler}
+export CP_NF_WEBLOG_HANDLER_PORT=8080
+export CP_NF_WEBLOG_HANDLER_VERBOSE=0
+export CP_NF_WEBLOG_HANDLER_SYNC_BATCH_SIZE=10
+export CP_NF_WEBLOG_HANDLER_SYNC_BATCH_TIMEOUT=60
+export CP_NF_WEBLOG_HANDLER_PID_FILE=${CP_NF_WEBLOG_HANDLER_PID_FILE:-/var/run/nf_weblog_handler.pid}
+export CP_NF_WEBLOG_HANDLER_LOG_FILE=${CP_NF_WEBLOG_HANDLER_LOG_FILE:-/var/log/nf_weblog_handler.log}
+export CP_NF_WEBLOG_HANDLER_LOCATION=${CP_NF_WEBLOG_HANDLER_LOCATION:-/opt/nf-weblog-handler}
 
 parse_options "$@"
 
@@ -82,20 +83,15 @@ if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ]; then
         fi
     fi
 
-    _ADDITIONAL_ARGS=""
-    if [ "$CP_NF_WEBLOG_HANDLER_VERBOSE" == 1 ]; then
-        _ADDITIONAL_ARGS="$_ADDITIONAL_ARGS --verbose"
-    fi
-
-    nohup python2 "$CP_NF_WEBLOG_HANDLER_LOCATION/app.py" \
-                  --port $CP_NF_WEBLOG_HANDLER_PORT \
-                  --sync-batch-size "$CP_NF_WEBLOG_HANDLER_SYNC_BATCH_SIZE" \
-                  --sync-batch-timeout "$CP_NF_WEBLOG_HANDLER_SYNC_BATCH_TIMEOUT" $_ADDITIONAL_ARGS &> "$CP_NF_WEBLOG_HANDLER_LOG_FILE" &
+    python2 "$CP_NF_WEBLOG_HANDLER_LOCATION/app.py"  &> "$CP_NF_WEBLOG_HANDLER_LOG_FILE" &
 
     echo "$!" > "$CP_NF_WEBLOG_HANDLER_PID_FILE"
     _process_pid=$(cat "$CP_NF_WEBLOG_HANDLER_PID_FILE")
+    # Waiting for process to start up
+    sleep 3
     if ps -p "$_process_pid" > /dev/null; then
         echo "Nextflow weblog handler has been started with PID: ${_process_pid}, review logs in $CP_NF_WEBLOG_HANDLER_LOG_FILE"
+        exit 0
     else
         echo "[ERROR] problem with running Nextflow weblog handler. Please review the logs at $CP_NF_WEBLOG_HANDLER_LOG_FILE"
         exit 14

@@ -34,9 +34,11 @@ def get_array_element_or_default(array, index, default=None):
     return array[index]
 
 
-def get_required_env(env_name):
+def get_required_env(env_name, default_value=None):
     env = os.getenv(env_name, None)
     if not env:
+        if default_value:
+            return default_value
         raise RuntimeError("Env Variable: {} should be provided! Exiting!".format(env_name))
     return env
 
