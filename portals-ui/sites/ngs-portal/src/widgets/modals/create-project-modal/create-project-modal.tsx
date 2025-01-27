@@ -78,7 +78,7 @@ export const CreateProjectModal = (props: Props) => {
       onCancel();
       setPending(false);
       setSpin(false);
-      // not always createdp roject gets into the list of projects, waiting for projects filter fix
+      // not always created project gets into the list of projects, waiting for projects filter fix
       if (
         projectResponse?.id &&
         projects?.find((project) => project.id === projectResponse?.id)
