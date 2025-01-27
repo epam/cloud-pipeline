@@ -92,9 +92,9 @@ async function fetchPipelineInfoDetailedWrapped(
 
 async function fetchPipelineConfigurationsWrapped(
   pipelineId: string | number | undefined,
-  version: string,
+  version?: string,
 ): Promise<PipelineConfiguration[]> {
-  if (pipelineId === undefined) {
+  if (pipelineId === undefined || !version) {
     return [] as PipelineConfiguration[];
   }
   if (Number.isNaN(Number(pipelineId))) {
