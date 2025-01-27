@@ -1,11 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Modal, Select, message } from 'antd';
+import { clonePipeline } from '@cloud-pipeline/api';
 import type { Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
-import { useProjects } from '../../../state/projects/hooks';
-import { clonePipeline } from '@cloud-pipeline/api';
-import { generatePipelineRoutePath } from '../../../shared/constants/routes';
+import {
+  useProjects,
+  useReloadProjectsFn,
+} from '../../../state/projects/hooks';
+import { generateProjectRoutePath } from '../../../shared/constants/routes';
 
 type Props = CommonProps & {
   visible: boolean;
@@ -16,9 +19,10 @@ type Props = CommonProps & {
 export const PipelineToProjectModal = (props: Props) => {
   const { pipeline, visible, onCancel } = props;
   const [messageApi, contextHolder] = message.useMessage();
-  const projects = useProjects();
   const [pending, setPending] = useState(false);
   const [spin, setSpin] = useState(false);
+  const projects = useProjects();
+  const reloadProjects = useReloadProjectsFn();
   const [selectedProjectId, setSelectedProjectId] = useState<number>();
   const onOk = async () => {
     if (pending || !selectedProjectId) {
@@ -40,17 +44,18 @@ export const PipelineToProjectModal = (props: Props) => {
       });
       const targetName = `${selected.name}-${pipeline.name}`;
       const cloned = await clonePipeline(pipeline.id, targetName, selected.id);
+      await reloadProjects();
       messageApi.open({
         key: 'clone pipeline',
         type: 'success',
         content: (
           <span>
-            Successfully added <b>{cloned.name}</b> to
+            Pipeline <b>{cloned.name}</b> successfully added to project
             <b>{selected?.name}</b>.
             <Link
               className="ml-1 font-semibold truncate"
-              to={generatePipelineRoutePath(cloned.id)}>
-              Navigate to {cloned.name}.
+              to={generateProjectRoutePath(selected.id)}>
+              Open project.
             </Link>
           </span>
         ),
