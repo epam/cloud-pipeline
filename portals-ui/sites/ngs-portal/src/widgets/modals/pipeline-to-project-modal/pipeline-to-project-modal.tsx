@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Modal, Select, message } from 'antd';
 import type { Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { useProjects } from '../../../state/projects/hooks';
+import { clonePipeline } from '@cloud-pipeline/api';
+import { generatePipelineRoutePath } from '../../../shared/constants/routes';
 
 type Props = CommonProps & {
   visible: boolean;
@@ -17,26 +20,47 @@ export const PipelineToProjectModal = (props: Props) => {
   const [pending, setPending] = useState(false);
   const [spin, setSpin] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number>();
-  const onOk = () => {
+  const onOk = async () => {
     if (pending || !selectedProjectId) {
       return;
     }
     setPending(true);
     setSpin(true);
-    const selected = projects?.find(({ id }) => id === selectedProjectId);
+    const selected = projects.find(({ id }) => id === selectedProjectId)!;
     try {
-      messageApi.success({
+      messageApi.open({
+        key: 'clone pipeline',
+        type: 'loading',
         content: (
-          <b>
-            Successfully added {pipeline?.name ?? 'pipeline'} to{' '}
-            {selected?.name ?? 'project'}.
-          </b>
+          <span>
+            Adding <b>{pipeline.name}</b> to <b>selected.name</b>...
+          </span>
         ),
-        duration: 2,
+        duration: -1,
+      });
+      const targetName = `${selected.name}-${pipeline.name}`;
+      const cloned = await clonePipeline(pipeline.id, targetName, selected.id);
+      messageApi.open({
+        key: 'clone pipeline',
+        type: 'success',
+        content: (
+          <span>
+            Successfully added <b>{cloned.name}</b> to
+            <b>{selected?.name}</b>.
+            <Link
+              className="ml-1 font-semibold truncate"
+              to={generatePipelineRoutePath(cloned.id)}>
+              Navigate to {cloned.name}.
+            </Link>
+          </span>
+        ),
+        duration: 8,
       });
       onCancel();
     } catch (error) {
-      messageApi.error({
+      messageApi.open({
+        key: 'clone pipeline',
+        type: 'error',
         content: (
           <div className="flex flex-col items-start">
             <b>
@@ -48,7 +72,7 @@ export const PipelineToProjectModal = (props: Props) => {
             </span>
           </div>
         ),
-        duration: 2,
+        duration: 5,
       });
     } finally {
       setPending(false);

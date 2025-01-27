@@ -32,7 +32,6 @@ export const PipelineCard = ({
   showDescription = false,
 }: Props) => {
   const { id, name, owner, data = {}, description, pipelineType } = pipeline;
-  console.log(pipeline)
   const tags = useMemo(() => extractTags(data), [data]);
   return (
     <div
