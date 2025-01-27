@@ -48,7 +48,7 @@ function serveDevFiles(devFiles: DevFile[]): PluginOption {
 export default (cfg: ConfigEnv) => {
   const { mode } = cfg;
   const env = loadEnv(mode, process.cwd(), '');
-  const base = env.PUBLIC_URL ?? '/';
+  const base = env.PUBLIC_URL ?? '';
   const cloudPipelineApi = env.CLOUD_PIPELINE_API ?? '/api';
   const ngsPortalVersion = env.NGS_PORTAL_VERSION ?? '';
   if (ngsPortalVersion.length > 0) {
