@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Checkbox, Input } from 'antd';
 import { displayDate, type RunLog } from '@cloud-pipeline/core';
-import type { CommonProps } from '@cloud-pipeline/components';
+import type { CommonProps } from '../common.types.ts';
 import { ArrowDownCircleIcon } from '@heroicons/react/24/solid';
 import { useLogs } from './hooks/logs';
 import downloadLog from './utils/download-log';
