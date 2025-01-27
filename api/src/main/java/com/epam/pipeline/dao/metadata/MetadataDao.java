@@ -139,6 +139,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         return items.isEmpty() ? null : items;
     }
 
+    public List<MetadataEntry> loadMetadataItemsByKey(final String key, final List<EntityVO> entities) {
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
+                convertEntitiesToString(loadMetadataItemsQuery, entities),
+                MetadataParameters.getParametersWithArrays(entities),
+                MetadataParameters.getRowMapper(Collections.singletonList(key)));
+        return items.isEmpty() ? null : items;
+    }
+
     public List<MetadataEntryWithIssuesCount> loadMetadataItemsWithIssues(List<EntityVO> entities) {
         List<MetadataEntryWithIssuesCount> items = getNamedParameterJdbcTemplate()
                 .query(convertEntitiesToString(loadMetadataItemsWithIssuesQuery, entities),
@@ -291,6 +299,8 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         IDS,
         CLASSES;
 
+        public static final String SECRET_METADATA_TYPE = "secret";
+
         static MapSqlParameterSource getParameters(EntityVO entityVO) {
             MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(ENTITY_ID.name(), entityVO.getEntityId());
@@ -323,10 +333,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         }
 
         static RowMapper<MetadataEntry> getRowMapper() {
+            return getRowMapper(Collections.emptyList());
+        }
+
+        static RowMapper<MetadataEntry> getRowMapper(final List<String> keyToRetrieve) {
             return (rs, rowNum) -> {
                 Long metadataEntityId = rs.getLong(ENTITY_ID.name());
                 String metadataEntityClass = rs.getString(ENTITY_CLASS.name());
-                return initMetadataItem(rs, metadataEntityId, metadataEntityClass);
+                return initMetadataItem(rs, metadataEntityId, metadataEntityClass, keyToRetrieve);
             };
         }
 
@@ -367,16 +381,33 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
-        private static MetadataEntry initMetadataItem(ResultSet rs, Long metadataItemId, String metadataEntityClass)
+        private static MetadataEntry initMetadataItem(final ResultSet rs, final Long metadataItemId,
+                                                      final String metadataEntityClass,
+                                                      final List<String> keysToRetrieve)
                 throws SQLException {
             MetadataEntry metadataEntry = new MetadataEntry();
             metadataEntry.setEntity(new EntityVO(metadataItemId, AclClass.valueOf(metadataEntityClass)));
-            metadataEntry.setData(parseData(rs.getString(DATA.name())));
+            metadataEntry.setData(parseData(rs.getString(DATA.name()), keysToRetrieve));
             return metadataEntry;
         }
 
-        public static Map<String, PipeConfValue> parseData(String data) {
-            return JsonMapper.parseData(data, new TypeReference<Map<String, PipeConfValue>>() {});
+        public static Map<String, PipeConfValue> parseData(final String data) {
+            return parseData(data, Collections.emptyList());
+        }
+
+        public static Map<String, PipeConfValue> parseData(final String data, final List<String> keysToRetrieve) {
+            final Map<String, PipeConfValue> parsedData = JsonMapper.parseData(
+                    data, new TypeReference<Map<String, PipeConfValue>>() {});
+            if (CollectionUtils.isEmpty(keysToRetrieve)) {
+                return parsedData.entrySet().stream()
+                        .filter(metadataEntry ->
+                                !SECRET_METADATA_TYPE.equalsIgnoreCase(metadataEntry.getValue().getType()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            } else {
+                return parsedData.entrySet().stream()
+                        .filter(metadataEntry -> keysToRetrieve.contains(metadataEntry.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            }
         }
     }
 }
