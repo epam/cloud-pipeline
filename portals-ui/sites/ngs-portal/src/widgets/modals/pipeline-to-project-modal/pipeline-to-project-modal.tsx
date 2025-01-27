@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Modal, Select, message } from 'antd';
 import { clonePipeline } from '@cloud-pipeline/api';
-import type { Pipeline } from '@cloud-pipeline/core';
+import type { Pipeline, Project } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import {
   useProjects,
@@ -16,12 +16,25 @@ type Props = CommonProps & {
   pipeline: Pipeline;
 };
 
+const getClonedPipelineName = (pipeline: Pipeline, project: Project) =>
+  `${project.name}-${pipeline.name}`;
+
 export const PipelineToProjectModal = (props: Props) => {
   const { pipeline, visible, onCancel } = props;
   const [messageApi, contextHolder] = message.useMessage();
   const [pending, setPending] = useState(false);
   const [spin, setSpin] = useState(false);
   const projects = useProjects();
+  const filteredProjects = useMemo(
+    () =>
+      projects.filter(
+        (project) =>
+          !project.pipelines?.some(
+            (p) => p.name === getClonedPipelineName(pipeline, project),
+          ),
+      ),
+    [pipeline, projects],
+  );
   const reloadProjects = useReloadProjectsFn();
   const [selectedProjectId, setSelectedProjectId] = useState<number>();
   const onOk = async () => {
@@ -30,7 +43,9 @@ export const PipelineToProjectModal = (props: Props) => {
     }
     setPending(true);
     setSpin(true);
-    const selected = projects.find(({ id }) => id === selectedProjectId)!;
+    const selected = filteredProjects.find(
+      ({ id }) => id === selectedProjectId,
+    )!;
     try {
       messageApi.open({
         key: 'clone pipeline',
@@ -42,8 +57,11 @@ export const PipelineToProjectModal = (props: Props) => {
         ),
         duration: -1,
       });
-      const targetName = `${selected.name}-${pipeline.name}`;
-      const cloned = await clonePipeline(pipeline.id, targetName, selected.id);
+      const cloned = await clonePipeline(
+        pipeline.id,
+        getClonedPipelineName(pipeline, selected),
+        selected.id,
+      );
       await reloadProjects();
       messageApi.open({
         key: 'clone pipeline',
@@ -51,7 +69,7 @@ export const PipelineToProjectModal = (props: Props) => {
         content: (
           <span>
             Pipeline <b>{cloned.name}</b> successfully added to project
-            <b>{selected?.name}</b>.
+            <b className="ml-1">{selected?.name}</b>.
             <Link
               className="ml-1 font-semibold truncate"
               to={generateProjectRoutePath(selected.id)}>
@@ -91,11 +109,11 @@ export const PipelineToProjectModal = (props: Props) => {
   }, []);
   const options = useMemo(
     () =>
-      projects?.map(({ id, name }) => ({
+      filteredProjects?.map(({ id, name }) => ({
         value: id,
         label: name,
       })) ?? [],
-    [projects],
+    [filteredProjects],
   );
   return (
     <Modal
