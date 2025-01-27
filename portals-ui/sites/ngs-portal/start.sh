@@ -7,3 +7,5 @@ NGINX_CONF="$(envsubst '${CP_API_HOST} ${API_TOKEN} ${NGS_PORTAL_ROOT}' < /etc/n
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 nginx
+
+sleep infinity
