@@ -13,7 +13,7 @@
 
 FROM library/ubuntu:20.04 AS build-stage
 ENV DEBIAN_FRONTEND noninteractive
-ARG NGS_PORTAL_VERSION
+
 # Set the working directory
 WORKDIR /app
 # Install necessary dependencies
@@ -36,6 +36,9 @@ COPY ./packages ./packages
 COPY ./sites ./sites
 
 RUN npm i
+
+ARG NGS_PORTAL_VERSION
+
 RUN npm run ngs-portal-build
 
 FROM library/ubuntu:20.04 as main-stage
