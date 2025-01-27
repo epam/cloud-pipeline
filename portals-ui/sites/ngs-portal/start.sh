@@ -6,6 +6,10 @@ export NGS_PORTAL_ROOT="${NGS_PORTAL_ROOT:-/opt/ngs-portal}"
 NGINX_CONF="$(envsubst '${CP_API_HOST} ${API_TOKEN} ${NGS_PORTAL_ROOT}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
+# define the content of the settings.json file
+settings_content="{\"api\": \"$API\"}"
+echo "$settings_content" > "$NGS_PORTAL_ROOT/settings.json"
+
 nginx
 
 sleep infinity
