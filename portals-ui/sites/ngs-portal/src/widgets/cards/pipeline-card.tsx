@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import cn from 'classnames';
-import { Typography } from 'antd';
+import { Button, Typography } from 'antd';
 import { Link } from 'react-router-dom';
-import { type Pipeline } from '@cloud-pipeline/core';
+import { PipelineType, type Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { Tag } from '@cloud-pipeline/components';
 import HighlightedText from '../../shared/highlight-text';
@@ -11,7 +11,10 @@ import { NgsTag } from '../ngs-tag';
 import { PipelineToProjectButton } from '../modals';
 import { extractTags } from '../../shared/tags';
 import './style.css';
-import { generatePipelineRoutePath } from '../../shared/constants/routes.ts';
+import {
+  generateLaunchRoutePath,
+  generatePipelineRoutePath,
+} from '../../shared/constants/routes.ts';
 
 type Props = CommonProps & {
   pipeline: Pipeline;
@@ -28,7 +31,7 @@ export const PipelineCard = ({
   mode = 'standard',
   showDescription = false,
 }: Props) => {
-  const { id, name, owner, data = {}, description } = pipeline;
+  const { id, name, owner, data = {}, description, pipelineType } = pipeline;
   const tags = useMemo(() => extractTags(data), [data]);
   return (
     <div
@@ -65,8 +68,17 @@ export const PipelineCard = ({
         )}
       </div>
       {mode === 'extended' && (
-        <div className="ml-auto flex items-center">
+        <div className="ml-auto flex gap-1 items-center">
           <PipelineToProjectButton pipeline={pipeline} />
+          {pipelineType === PipelineType.pipeline ? (
+            <Button style={{ padding: 0 }} type="primary" size="small">
+              <Link
+                className="flex w-full h-full px-2"
+                to={generateLaunchRoutePath(id)}>
+                Run
+              </Link>
+            </Button>
+          ) : null}
         </div>
       )}
     </div>

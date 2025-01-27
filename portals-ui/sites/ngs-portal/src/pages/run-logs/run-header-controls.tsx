@@ -72,7 +72,7 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
         </Button>
       );
     }
-  }, [onRerunClick, onStopClick, pending, run?.status]);
+  }, [onRerunClick, onStopClick, pending, run]);
   if (!run) {
     return null;
   }

@@ -15,6 +15,7 @@ import {
   generateLaunchRoutePath,
   generatePipelineRoutePath,
 } from '../../../shared/constants/routes';
+import { omitClonedPipelinePrefix } from '../../../shared/helpers';
 
 type Props = CommonProps & {
   project: Project | undefined;
@@ -22,10 +23,18 @@ type Props = CommonProps & {
 
 export const ProjectPipelines = (props: Props) => {
   const { project } = props;
+  const pipelineSearch = useCallback(
+    (item: Pipeline, search: string) => {
+      const pipelineName = omitClonedPipelinePrefix(item, project);
+      return pipelineName.toLowerCase().includes(search.toLowerCase());
+    },
+    [project],
+  );
   const { filteredItems, onSearchChange, search } = useNgsFilters({
     items: project?.pipelines ?? [],
     withFilters: false,
     filtersToDisplay: [],
+    searchCallback: pipelineSearch,
   });
   const renderItem = useCallback(
     (item: Pipeline, search: string, i: number) => {
@@ -43,7 +52,9 @@ export const ProjectPipelines = (props: Props) => {
             <Link
               className="font-semibold"
               to={generatePipelineRoutePath(item.id)}>
-              <HighlightedText search={search}>{item.name}</HighlightedText>
+              <HighlightedText search={search}>
+                {omitClonedPipelinePrefix(item, project)}
+              </HighlightedText>
             </Link>
             {item.description ? <span>{item.description}</span> : null}
             <div className="flex gap-3 items-center text-xs">
