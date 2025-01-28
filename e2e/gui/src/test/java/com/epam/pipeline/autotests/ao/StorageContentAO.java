@@ -175,7 +175,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
+        $(byText("Create folder")).waitUntil(disappear, DEFAULT_TIMEOUT);
         return this;
+    }
+
+    public StorageContentAO createFolderWithError(String folderName, String message) {
+        sleep(1, SECONDS);
+        resetMouse().hover(CREATE);
+        get(CREATE_FOLDER).waitUntil(enabled, DEFAULT_TIMEOUT);
+        click(CREATE_FOLDER);
+        $(byId("name")).shouldBe(visible).setValue(folderName);
+        $(button("OK")).shouldBe(visible).click();
+        return this.messageShouldAppear(message);
     }
 
     public ElementEditPopupAO clickOnCreateFolderButton() {

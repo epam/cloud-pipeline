@@ -151,8 +151,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void createFolderInDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
             .selectStorage(storage)
-            .createFolder(folder)
-            .messageShouldAppear(format("Storage path '%s/' for bucket '%s' already exists.", folder,
+            .createFolderWithError(folder,
+                format("Storage path '%s/' for bucket '%s' already exists.", folder,
                     format("%s%s", STORAGE_PREFIX, storage)));
 
         refresh();

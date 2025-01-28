@@ -285,7 +285,6 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             editor.click();
             final List<String> lines = $(className("CodeMirror")).findAll(className("CodeMirror-line")).texts();
             final String code = String.join("", lines);
-            screenshot(format("editFile_%s", Utils.randomSuffix()));
             final String edited = action.apply(code);
             if (code.equals(edited)) {
                 return this;

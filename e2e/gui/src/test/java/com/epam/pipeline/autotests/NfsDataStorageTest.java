@@ -152,8 +152,8 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     public void createFolderInDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
                 .selectStorage(storage)
-                .createFolder(folder)
-                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
+                .createFolderWithError(folder,
+                        String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
         clickCancelButtonIfItIsDisplayed();
         refresh();
     }
