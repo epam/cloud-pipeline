@@ -2223,6 +2223,10 @@ export default `
 @THEME .cp-run-engine-tasks-group:hover {
   background-color: @color-grey-semi-transparent;
 }
+@THEME .cp-run-details-tabs .ant-menu-item {
+  padding: 0 10px;
+  margin: 0 5px;
+}
 
 @THEME .cp-billing-menu {
   width: fit-content;

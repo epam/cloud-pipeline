@@ -187,6 +187,7 @@ class NextflowEngineTasks extends React.Component {
       processes = [],
       activeTasksGroup,
       tasks,
+      tasksPending,
       page,
       tasksFilter,
       tasksSorting,
@@ -220,6 +221,7 @@ class NextflowEngineTasks extends React.Component {
         <TasksTable
           className={classNames(styles.nextflowTasks, cardClassNames)}
           tasks={tasks}
+          pending={tasksPending}
           page={page}
           total={totalTasksCount}
           totalFiltered={filteredTasksCount}

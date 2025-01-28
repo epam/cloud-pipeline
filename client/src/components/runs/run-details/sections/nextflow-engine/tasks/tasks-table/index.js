@@ -2,9 +2,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Icon, Pagination} from 'antd';
-import styles from './nextflow-engine-tasks.css';
-import displayDate from '../../../../../../utils/displayDate';
-import {NextflowTaskStatus} from './utilities';
+import styles from '../nextflow-engine-tasks.css';
+import displayDate from '../../../../../../../utils/displayDate';
+import {NextflowTaskStatus} from '../utilities';
+import TasksTableTagFilter from './tasks-table-tag-filter';
+import TasksTableStatusesFilter from './tasks-table-statuses-filter';
 
 export const TASKS_TABLE_PAGE_SIZE = 25;
 
@@ -31,7 +33,12 @@ const columns = [
       } = o;
       return taskTag || name || taskName;
     },
-    sorting: true
+    sorting: true,
+    filter: (props) => (
+      <TasksTableTagFilter
+        {...props}
+      />
+    )
   },
   {
     key: 'taskGroup',
@@ -44,7 +51,12 @@ const columns = [
     dataIndex: 'status',
     title: 'Status',
     sorting: true,
-    render: (o) => (<NextflowTaskStatus status={o.status} />)
+    render: (o) => (<NextflowTaskStatus status={o.status} />),
+    filter: (props) => (
+      <TasksTableStatusesFilter
+        {...props}
+      />
+    )
   },
   {
     key: 'started',
@@ -68,34 +80,47 @@ const columns = [
       return undefined;
     }
   },
-  {
-    key: 'cpus',
-    title: 'CPU',
-    render: attributeRenderer('cpus')
-  },
-  {
-    key: 'disk',
-    title: 'Disk',
-    render: attributeRenderer('disk')
-  },
-  {
-    key: 'memory',
-    title: 'Memory',
-    render: attributeRenderer('memory')
-  }
+  ...[
+    'cpus',
+    'memory',
+    'disk',
+    'time',
+    'duration',
+    'realtime',
+    '%cpu',
+    '%mem',
+    'vmem',
+    'rss',
+    'peak_vmem',
+    'peak_rss',
+    'read_bytes',
+    'write_bytes'
+  ].map((field) => ({
+    key: field,
+    title: field,
+    render: attributeRenderer(field)
+  }))
 ];
+
+function getTableColumnName (field) {
+  return field.replace(/[^A-Za-z0-9_-]/g, '_');
+}
+
 function TasksTableColumn (props) {
   const {
     className,
     style,
     column,
     sorting = [],
-    onChangeColumnSorting
+    onChangeColumnSorting,
+    filter,
+    onFilterChange
   } = props;
   const {
     key,
     title,
-    sorting: sortingEnabled = false
+    sorting: sortingEnabled = false,
+    filter: ColumnFilter
   } = column || {};
   const columnSorting = sorting.find((s) => s.column === key);
   const onChangeSorting = (desc, event) => {
@@ -136,7 +161,7 @@ function TasksTableColumn (props) {
       style={{
         ...(style || {}),
         gridRow: 'header',
-        gridColumn: key,
+        gridColumn: getTableColumnName(key),
         position: 'sticky',
         top: 0,
         zIndex: 1,
@@ -145,6 +170,17 @@ function TasksTableColumn (props) {
       onClick={sortingEnabled ? toggleSorting : undefined}
     >
       <span>{title || key}</span>
+      {
+        ColumnFilter &&
+        onFilterChange
+          ? (
+            <ColumnFilter
+              filter={filter}
+              onFilterChange={onFilterChange}
+              style={{marginLeft: 5}}
+            />)
+          : undefined
+      }
       {
         sortingEnabled && (
           <div
@@ -186,7 +222,9 @@ TasksTableColumn.propTypes = {
   style: PropTypes.object,
   column: PropTypes.object,
   sorting: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
-  onChangeColumnSorting: PropTypes.func
+  onChangeColumnSorting: PropTypes.func,
+  filter: PropTypes.object,
+  onFilterChange: PropTypes.func
 };
 
 function TasksTable (props) {
@@ -194,6 +232,7 @@ function TasksTable (props) {
     className,
     style,
     tasks = [],
+    pending,
     total = 0,
     totalFiltered = 0,
     page = 0,
@@ -237,7 +276,8 @@ function TasksTable (props) {
     }
   };
   const tableStyle = {
-    gridTemplateColumns: columns.map(column => `[${column.key}] auto`).join(' '),
+    gridTemplateColumns: columns
+      .map(column => `[${getTableColumnName(column.key)}] auto`).join(' '),
     gridTemplateRows: `[header] 30px repeat(${tasks.length}, 30px)`
   };
   return (
@@ -282,14 +322,30 @@ function TasksTable (props) {
               column={column}
               sorting={sorting}
               onChangeColumnSorting={onChangeColumnSorting}
+              filter={filter}
+              onFilterChange={onFilterChange}
             />
           ))
+        }
+        {
+          tasks.length === 0 && pending && (
+            <div
+              style={{
+                gridArea: '2 / 1 / 2 / -1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <span className="cp-text-not-important">Loading...</span>
+            </div>
+          )
         }
         {
           tasks.map((task, row) => columns.map((column) => (
             <div
               key={`${task.taskKey}-${column.key}`}
-              style={{gridRow: `${row + 2}`, gridColumn: column.key}}
+              style={{gridRow: `${row + 2}`, gridColumn: getTableColumnName(column.key)}}
               className={classNames(
                 styles.cell,
                 'cp-divider',
@@ -337,7 +393,8 @@ TasksTable.propTypes = {
   onFilterChange: PropTypes.func,
   sorting: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   onSortingChange: PropTypes.func,
-  multipleSorting: PropTypes.bool
+  multipleSorting: PropTypes.bool,
+  pending: PropTypes.bool
 };
 
 export default TasksTable;

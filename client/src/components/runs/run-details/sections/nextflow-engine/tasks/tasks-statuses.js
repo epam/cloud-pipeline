@@ -53,7 +53,7 @@ function TasksStatuses (props) {
               sorted.map((s) => (
                 <tr key={s.status}>
                   <td style={{width: 1}}>
-                    <NextflowTaskStatus status={s.status} showLabel/>
+                    <NextflowTaskStatus status={s.status} showLabel />
                   </td>
                   <td style={{minWidth: 80, width: 80}}>
                     {`${s.count}`}

@@ -48,7 +48,7 @@ export const nextflowTaskStatuses = [
   nextflowTaskStatusRunning,
   nextflowTaskStatusCreated,
   nextflowTaskStatusSubmitted,
-  nextflowTaskStatusGroupCached
+  nextflowTaskStatusCached
 ];
 
 export const nextflowTaskStatusGroups = [

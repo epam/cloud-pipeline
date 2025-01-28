@@ -20,7 +20,7 @@ function RunTabs (props) {
   const onChange = ({key}) => onTabChange ? onTabChange(key) : undefined;
   return (
     <div
-      className={classNames(className, styles.runTabs)}
+      className={classNames(className, styles.runTabs, 'cp-run-details-tabs')}
       style={style}
     >
       <Menu
@@ -36,7 +36,10 @@ function RunTabs (props) {
               key={tab.tab}
               id={tab.tab}
             >
-              {tab.title}
+              <div className={styles.runTabsMenuItem}>
+                {tab.icon}
+                <span>{tab.title}</span>
+              </div>
             </Menu.Item>
           ))
         }

@@ -12,3 +12,8 @@
   border-bottom: none;
   line-height: 28px;
 }
+
+.run-tabs .run-tabs-menu .run-tabs-menu-item {
+  display: inline-flex;
+  align-items: center;
+}

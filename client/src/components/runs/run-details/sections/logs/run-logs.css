@@ -16,6 +16,14 @@
   line-height: 24px;
 }
 
+.run-task .run-task-title .run-task-name {
+  margin-left: 5px;
+}
+
+.run-task.active .run-task-title .run-task-name {
+  font-weight: bold;
+}
+
 .run-task .time-info {
   margin-top: 2px;
   display: flex;

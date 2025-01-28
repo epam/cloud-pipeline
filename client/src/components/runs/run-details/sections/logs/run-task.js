@@ -112,7 +112,7 @@ class RunTask extends Component {
         className={classNames(
           className,
           styles.runTask,
-          {'cp-primary': active},
+          {'cp-primary': active, [styles.active]: active},
           'cp-divider',
           'light',
           'bottom'
@@ -122,7 +122,11 @@ class RunTask extends Component {
       >
         <div className={styles.runTaskTitle}>
           <StatusIcon status={status} small displayTooltip={false} />
-          <span style={{marginLeft: 5}}>{highlightText(name, searchText)}</span>
+          <span
+            className={styles.runTaskName}
+          >
+            {highlightText(name, searchText)}
+          </span>
         </div>
         {infos}
       </div>
