@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.PIPELINE_RUN ADD COLUMN project_id BIGINT;
