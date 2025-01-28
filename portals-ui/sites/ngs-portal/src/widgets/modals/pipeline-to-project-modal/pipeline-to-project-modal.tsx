@@ -2,22 +2,20 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Modal, Select, message } from 'antd';
 import { clonePipeline } from '@cloud-pipeline/api';
-import type { Pipeline, Project } from '@cloud-pipeline/core';
+import type { Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import {
   useProjects,
   useReloadProjectsFn,
 } from '../../../state/projects/hooks';
 import { generateProjectRoutePath } from '../../../shared/constants/routes';
+import { clonedPipelineName } from '../../../shared/helpers';
 
 type Props = CommonProps & {
   visible: boolean;
   onCancel: () => void;
   pipeline: Pipeline;
 };
-
-const getClonedPipelineName = (pipeline: Pipeline, project: Project) =>
-  `${project.name}-${pipeline.name}`;
 
 export const PipelineToProjectModal = (props: Props) => {
   const { pipeline, visible, onCancel } = props;
@@ -30,7 +28,7 @@ export const PipelineToProjectModal = (props: Props) => {
       projects.filter(
         (project) =>
           !project.pipelines?.some(
-            (p) => p.name === getClonedPipelineName(pipeline, project),
+            (p) => p.name === clonedPipelineName(pipeline, project),
           ),
       ),
     [pipeline, projects],
@@ -57,9 +55,9 @@ export const PipelineToProjectModal = (props: Props) => {
         ),
         duration: -1,
       });
-      const cloned = await clonePipeline(
+      await clonePipeline(
         pipeline.id,
-        getClonedPipelineName(pipeline, selected),
+        clonedPipelineName(pipeline, selected),
         selected.id,
       );
       await reloadProjects();
@@ -68,7 +66,7 @@ export const PipelineToProjectModal = (props: Props) => {
         type: 'success',
         content: (
           <span>
-            Pipeline <b>{cloned.name}</b> successfully added to project
+            Pipeline <b>{pipeline.name}</b> successfully added to project
             <b className="ml-1">{selected?.name}</b>.
             <Link
               className="ml-1 font-semibold truncate"

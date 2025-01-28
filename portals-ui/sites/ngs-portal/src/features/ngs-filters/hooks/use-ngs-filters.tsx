@@ -9,18 +9,23 @@ type Props<T extends NgsItem> = {
   items: T[];
   withFilters?: boolean;
   filtersToDisplay: FilterToDisplay[];
+  searchCallback?: (item: T, search: string) => boolean;
 };
 
 export const useNgsFilters = <T extends NgsItem>({
   items,
   withFilters,
   filtersToDisplay,
+  searchCallback,
 }: Props<T>) => {
   const {
     filtered: searchedItems,
     search,
     onSearchChange,
-  } = useSearch<T>({ items } as SearchOptions<T>);
+  } = useSearch<T>({
+    items,
+    searchCallback,
+  } as SearchOptions<T>);
 
   const [filteredItems, setFilteredItems] = useState(searchedItems);
 
