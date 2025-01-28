@@ -69,6 +69,7 @@ export default {
     '@input-search-icon-hovered-color': '@primary-hover-color',
     '@panel-background-color': 'rgb(23, 27, 33)',
     '@panel-border-color': 'rgb(41, 46, 54)',
+    '@panel-border-color-light': 'rgb(41, 46, 54)',
     '@card-background-color': '@panel-background-color',
     '@card-border-color': '@panel-border-color',
     '@card-hovered-shadow-color': '@card-border-color',

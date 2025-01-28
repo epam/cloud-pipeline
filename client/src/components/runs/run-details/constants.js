@@ -1,0 +1,3 @@
+export const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
+export const MAX_NESTED_RUNS_TO_DISPLAY = 10;
+export const MAX_KUBE_SERVICES_TO_DISPLAY = 3;

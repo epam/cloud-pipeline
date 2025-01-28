@@ -1,0 +1,279 @@
+:root {
+  --tasks-group-progress-height: 3px;
+  --tasks-status-bar-height: 5px;
+  --sorting-icon-size: 8px;
+}
+
+.nextflow-engine-tasks {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.nextflow-engine-tasks .nextflow-processes {
+  max-height: 33%;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.nextflow-engine-tasks .nextflow-tasks {
+  flex: 1;
+  overflow: auto;
+  padding: 5px 0;
+}
+
+.nextflow-engine-tasks > *:not(:last-child) {
+  margin-bottom: 5px;
+}
+
+.nextflow-engine-tasks .nextflow-processes .nextflow-processes-list {
+  flex: 1;
+  padding: 5px;
+}
+
+.nextflow-engine-tasks .nextflow-processes .nextflow-processes-chart {
+  flex-shrink: 0;
+  min-width: max(200px, 40%);
+  padding: 5px 0 5px 5px;
+}
+
+.tasks-groups {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.tasks-groups .tasks-group-list-header {
+  flex-shrink: 0;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+}
+
+.tasks-groups .tasks-group-list {
+  flex: 1;
+  overflow: auto;
+}
+
+.tasks-group {
+  margin: 0;
+  padding: 10px 0 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+}
+
+.tasks-group + .tasks-group {
+  margin-top: 5px;
+}
+
+.tasks-group {
+  cursor: pointer;
+}
+
+.tasks-group .tasks-group-info {
+  flex: 1;
+  margin-right: 5px;
+}
+
+.tasks-group .tasks-group-active-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: end;
+}
+
+.tasks-group .tasks-group-active-indicator .indicator {
+  width: 2px;
+  height: 0;
+  opacity: 0;
+  transition: opacity 250ms ease, height 250ms ease;
+  background: currentColor;
+}
+
+.tasks-group.active .tasks-group-header .tasks-group-name {
+  font-weight: bold;
+}
+
+.tasks-group.active .tasks-group-active-indicator .indicator {
+  opacity: 1;
+  height: 100%;
+}
+
+.tasks-group .tasks-group-header {
+  display: flex;
+  align-items: center;
+}
+
+.tasks-group .tasks-group-header .tasks-group-name {
+  flex-shrink: 1;
+  flex-grow: 0;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: min(150px, 33%);
+}
+
+.tasks-group .tasks-group-header .tasks-group-stats-entry {
+  font-size: smaller;
+}
+
+.tasks-group .tasks-group-header .tasks-group-stats-entry + .tasks-group-stats-entry::before {
+  content: ' / ';
+  white-space: pre;
+  margin-left: 5px;
+}
+
+.tasks-group-progress {
+  width: 100%;
+  display: grid;
+  height: var(--tasks-group-progress-height);
+  grid-gap: 2px;
+}
+
+.tasks-group-progress .tasks-group-status-progress {
+  height: var(--tasks-group-progress-height);
+  background: currentColor;
+  border-radius: var(--tasks-group-progress-height);
+}
+
+.tasks-statuses {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.tasks-statuses .tasks-statuses-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  line-height: 24px;
+}
+
+.tasks-statuses .tasks-statuses-container {
+  flex: 1;
+  overflow: auto;
+}
+
+.tasks-statuses .tasks-status {
+  display: flex;
+  align-items: center;
+}
+
+.tasks-status-count-bar {
+  display: block;
+  min-width: 100px;
+  width: 100%;
+  height: var(--tasks-status-bar-height);
+  border-radius: var(--tasks-status-bar-height);
+}
+
+.tasks-status-count-bar-fill {
+  display: block;
+  height: var(--tasks-status-bar-height);
+  border-radius: var(--tasks-status-bar-height);
+  background: currentColor;
+  transition: width 250ms ease;
+}
+
+.tasks-status-count-bar-fill.non-empty {
+  min-width: var(--tasks-status-bar-height);
+}
+
+.tasks-statuses .tasks-statuses-table {
+  min-width: 100%;
+}
+
+.tasks-statuses .tasks-statuses-table td {
+  padding: 2px 5px;
+}
+
+.tasks-statuses .tasks-statuses-table td:first-child {
+  padding: 2px 5px 2px 0;
+}
+
+.tasks-table-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.tasks-table-container .tasks-table {
+  flex-shrink: 1;
+  flex-grow: 0;
+  overflow: auto;
+}
+
+.tasks-table-container .tasks-table-header {
+  flex-shrink: 0;
+  margin-top: 5px;
+  padding: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  line-height: 24px;
+}
+
+.tasks-table-container .tasks-grid {
+  margin-bottom: 5px;
+  min-width: 100%;
+  flex-shrink: 1;
+  flex-grow: 0;
+  overflow: auto;
+  display: grid;
+  position: relative;
+}
+
+.tasks-table-container .tasks-table-pagination {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.tasks-grid .cell {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+
+.tasks-grid .cell.sorting {
+  cursor: pointer;
+}
+
+.tasks-grid .cell-sorting {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+}
+
+.tasks-grid .cell-sorting .cell-sorting-control {
+  width: var(--sorting-icon-size);
+  height: var(--sorting-icon-size);
+  cursor: pointer;
+  fill: transparent;
+}
+
+.tasks-grid .cell-sorting .cell-sorting-control.active {
+  fill: currentColor;
+}
+
+.nf-task-status-icon {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 5px;
+  font-size: x-small;
+  padding: 2px 3px;
+  line-height: 1;
+}

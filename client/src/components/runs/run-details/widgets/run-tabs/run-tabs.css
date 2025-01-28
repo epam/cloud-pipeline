@@ -1,0 +1,14 @@
+:root {
+  --run-tab-vertical-offset: 5px;
+  --run-tab-horizontal-offset: 5px;
+}
+
+.run-tabs {
+  width: 100%;
+  padding-bottom: 0 !important;
+}
+
+.run-tabs .run-tabs-menu {
+  border-bottom: none;
+  line-height: 28px;
+}

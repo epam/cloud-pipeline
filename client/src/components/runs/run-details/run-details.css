@@ -1,0 +1,34 @@
+:root {
+  --section-margin: 5px;
+}
+
+.run-details {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.run-header {
+  flex-shrink: 0;
+}
+
+.run-details-tabs {
+
+}
+
+.run-details-content {
+  width: 100%;
+  flex: 1;
+  overflow: auto;
+}
+
+.run-details-section {
+  padding: 5px;
+}
+
+.run-details-section + .run-details-section {
+  margin-top: var(--section-margin);
+}

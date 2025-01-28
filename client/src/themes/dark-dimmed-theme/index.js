@@ -53,6 +53,7 @@ export default {
     '@spinner': '@application-color',
     '@panel-background-color': 'rgb(44, 49, 55)',
     '@panel-border-color': 'rgb(28, 30, 33)',
+    '@panel-border-color-light': 'rgb(28, 30, 33)',
     '@element-hover-color': '@application-color',
     '@element-hover-background-color': 'lighten(@panel-background-color, 3%)',
     '@element-selected-color': '@application-color',

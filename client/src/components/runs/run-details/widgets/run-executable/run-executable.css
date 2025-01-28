@@ -1,0 +1,13 @@
+.run-executable {
+  display: inline-flex;
+  align-items: center;
+}
+
+.run-executable a {
+  color: inherit !important;
+  text-decoration: underline;
+}
+
+.tool-icon {
+  height: 0.75rem;
+}

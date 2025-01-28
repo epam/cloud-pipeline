@@ -207,6 +207,9 @@ export default `
 @THEME .cp-divider.inline {
   background: @panel-border-color;
 }
+@THEME .cp-divider.light {
+  border-color: @panel-border-color-light;
+}
 @THEME .cp-primary {
   color: @primary-color;
 }
@@ -2215,6 +2218,10 @@ export default `
   background-color: @panel-background-color;
   border: 1px solid @panel-border-color;
   color: @application-color;
+}
+@THEME .cp-run-engine-tasks-group.active,
+@THEME .cp-run-engine-tasks-group:hover {
+  background-color: @color-grey-semi-transparent;
 }
 
 @THEME .cp-billing-menu {

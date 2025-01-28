@@ -1,0 +1,51 @@
+.run-header {
+  width: 100%;
+}
+
+.run-header .run-header-row {
+  display: flex;
+  align-items: center;
+}
+
+.run-header .run-name {
+  display: inline-flex;
+  align-items: center;
+  font-size: large;
+}
+
+.run-header .run-name > * {
+  margin-right: 5px;
+}
+
+.run-header .run-header-row > * {
+  margin-right: 8px;
+}
+
+.run-header .run-title {
+  line-height: 30px;
+}
+
+.run-header .run-title + .run-header-details {
+  margin-top: 10px;
+}
+
+.run-header .run-header-details {
+  padding: 0;
+}
+
+.run-owner,
+.run-failure-reason,
+.run-pipeline-link,
+.run-executable {
+  font-weight: normal;
+  font-size: small;
+}
+
+.run-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+.run-actions > *:not(:last-child) {
+  margin-right: 10px;
+}

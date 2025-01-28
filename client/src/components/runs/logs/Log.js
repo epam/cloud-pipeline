@@ -136,6 +136,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 
   return {
     runId: params.runId,
+    mode: params.mode || 'plain',
     taskName: params.taskName,
     runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
     runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(params.runId),
@@ -267,7 +268,7 @@ class Logs extends localization.LocalizedReactComponent {
       // there is a task to be navigated to (`taskToNavigate`)
       // and current selected task either is missing or differs from the `taskToNavigate`
       const taskUrl = this.getTaskUrl(taskToNavigate);
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      const url = `/run/${this.props.runId}/${this.props.mode}/${taskUrl}`;
       this.props.router.push(url);
     }
   };
@@ -588,7 +589,7 @@ class Logs extends localization.LocalizedReactComponent {
           <td>
             <AdaptedLink
               className={styles.taskParameterValue}
-              to={`/run/${valueSelector()}/${this.props.params.mode}`}
+              to={`/run/${valueSelector()}/${this.props.mode}`}
               location={this.props.router.location}>
               {valueSelector()}
             </AdaptedLink>
@@ -1038,10 +1039,10 @@ class Logs extends localization.LocalizedReactComponent {
         return;
       }
       const taskUrl = this.getTaskUrl(task);
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      const url = `/run/${this.props.runId}/${this.props.mode}/${taskUrl}`;
       this.props.router.push(url);
     } else {
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}`;
+      const url = `/run/${this.props.runId}/${this.props.mode}`;
       this.props.router.push(url);
     }
   };
@@ -1215,7 +1216,7 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   renderContentPlainMode () {
-    const {runId} = this.props.params;
+    const {runId} = this.props;
     const {
       timings,
       run,
@@ -1241,7 +1242,7 @@ class Logs extends localization.LocalizedReactComponent {
         ).map((task, index) => (
           <Menu.Item key={this.getTaskUrl(task, index)}>
             <TaskLink
-              to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
+              to={`/run/${runId}/${this.props.mode}/${this.getTaskUrl(task)}`}
               location={location}
               task={task}
               searchText={searchTasks}
@@ -1327,7 +1328,7 @@ class Logs extends localization.LocalizedReactComponent {
       );
     }
     if (graphIsSupportedForLanguage(language)) {
-      if (this.props.params.mode.toLowerCase() === 'plain') {
+      if (this.props.mode.toLowerCase() === 'plain') {
         return this.renderContentPlainMode();
       } else {
         return this.renderContentGraphMode();
@@ -1878,7 +1879,7 @@ class Logs extends localization.LocalizedReactComponent {
       const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
-      const {runId} = this.props.params;
+      const {runId} = this.props;
 
       const resumeFailureReason = getResumeFailureReason(run);
       if (resumeFailureReason) {
@@ -2339,7 +2340,7 @@ class Logs extends localization.LocalizedReactComponent {
 
       let switchModeUrl;
       if (graphIsSupportedForLanguage(language)) {
-        if (this.props.params.mode.toLowerCase() === 'graph') {
+        if (this.props.mode.toLowerCase() === 'graph') {
           switchModeUrl = `/run/${this.props.runId}/plain`;
         } else {
           switchModeUrl = `/run/${this.props.runId}/graph`;
@@ -2361,7 +2362,7 @@ class Logs extends localization.LocalizedReactComponent {
 
       SwitchModeButton = switchModeUrl &&
         <AdaptedLink to={switchModeUrl} location={location}>
-          {this.props.params.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
+          {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
       if (instance && instance.nodeName) {

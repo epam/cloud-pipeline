@@ -1,0 +1,1 @@
+export const NEXTFLOW_ENGINE_TYPE = 'NEXTFLOW';
