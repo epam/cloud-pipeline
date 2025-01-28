@@ -52,6 +52,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private static final String KEY = "KEY";
     private static final String VALUE = "VALUE";
     private static final String LIST_PARAMETER = "list";
+    public static final String SECRET_MASK_VALUE = "***";
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
     private Pattern entitiesValuePattern = Pattern.compile("@ENTITIES@");
@@ -398,11 +399,22 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         public static Map<String, PipeConfValue> parseData(final String data, final List<String> keysToRetrieve) {
             final Map<String, PipeConfValue> parsedData = JsonMapper.parseData(
                     data, new TypeReference<Map<String, PipeConfValue>>() {});
+
+            if (CollectionUtils.isEmpty(parsedData)) {
+                return parsedData;
+            }
+
             if (CollectionUtils.isEmpty(keysToRetrieve)) {
                 return parsedData.entrySet().stream()
-                        .filter(metadataEntry ->
-                                !SECRET_METADATA_TYPE.equalsIgnoreCase(metadataEntry.getValue().getType()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                        .map(metadataEntry -> {
+                            if (SECRET_METADATA_TYPE.equalsIgnoreCase(metadataEntry.getValue().getType())) {
+                                return Pair.of(metadataEntry.getKey(),
+                                        new PipeConfValue(SECRET_METADATA_TYPE, SECRET_MASK_VALUE));
+                            } else {
+                                return Pair.of(metadataEntry.getKey(), metadataEntry.getValue());
+                            }
+                        })
+                        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
             } else {
                 return parsedData.entrySet().stream()
                         .filter(metadataEntry -> keysToRetrieve.contains(metadataEntry.getKey()))

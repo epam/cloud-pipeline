@@ -22,6 +22,7 @@ import static org.mockito.Matchers.eq;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
+import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.preference.Preference;
@@ -248,10 +249,11 @@ public class MetadataManagerTest extends AbstractSpringTest {
         Assert.assertFalse(loadResultByKey.isEmpty());
         Assert.assertFalse(loadResultByKey.get(0).getData().isEmpty());
 
-        // But we can't see secret value when list all metadata for the entity
+        // But we can't see the value of the secret when list all metadata for the entity
         List<MetadataEntry> loadResult = metadataManager.listMetadataItems(Collections.singletonList(entityVO));
         Assert.assertFalse(loadResult.isEmpty());
-        Assert.assertTrue(loadResult.get(0).getData().isEmpty());
+        Assert.assertFalse(loadResult.get(0).getData().isEmpty());
+        Assert.assertEquals(MetadataDao.SECRET_MASK_VALUE, loadResult.get(0).getData().get(KEY_1).getValue());
     }
 
     @Test(expected = MetadataReadingException.class)
