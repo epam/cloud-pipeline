@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function parse_options {
+    _UNKNOWN=()
     while [[ $# -gt 0 ]]
     do
     key="$1"
@@ -41,8 +42,16 @@ function parse_options {
         shift # past argument
         shift # past value
         ;;
+        *)    # unknown option
+        _UNKNOWN+=("$1") # save it in an array for later
+        shift # past argument
+        ;;
     esac
     done
+
+    if [ -n "${_UNKNOWN[*]}" ]; then
+        echo "[WARN] There are unknown options: ${_UNKNOWN[*]}"
+    fi
 }
 
 export CP_NF_WEBLOG_HANDLER_PORT=8080
