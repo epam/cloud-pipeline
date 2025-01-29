@@ -1,15 +1,22 @@
 import { Project } from '@cloud-pipeline/core';
 import cloudPipelineApi from '../cloud-pipeline-api';
 
-const parentIdMock = 3; // UI-ZONE
+export type RegisterProjectOptions = {
+  parentFolderId?: number;
+  abortSignal?: AbortSignal;
+};
 
-export async function registerProject(name: string): Promise<Project> {
-  const result = await cloudPipelineApi.jsonPost<Project>({
+export async function registerProject(
+  name: string,
+  options?: RegisterProjectOptions,
+): Promise<Project> {
+  const { parentFolderId, abortSignal } = options ?? {};
+  return await cloudPipelineApi.jsonPost<Project>({
     uri: 'folder/register?templateName=Project',
     body: {
       name,
-      parentId: parentIdMock,
+      parentId: parentFolderId,
     },
+    signal: abortSignal,
   });
-  return result;
 }

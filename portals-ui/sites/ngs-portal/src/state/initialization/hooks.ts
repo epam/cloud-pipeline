@@ -1,42 +1,11 @@
-import { useEffect, useState } from 'react';
-import { initialize } from './initialize.ts';
+import { useLoadableStore } from '../common/loadable-store/hooks.ts';
+import { initializationStore } from './store.ts';
+import type { InitializationStore } from './types.ts';
 
-export type InitializeState = {
-  pending: boolean;
-  error: string | undefined;
-  completed: boolean;
-};
+export function useInitializationStore(): InitializationStore {
+  return useLoadableStore(initializationStore);
+}
 
-export function useInitializeApplication() {
-  const [state, setState] = useState<InitializeState>({
-    pending: true,
-    error: undefined,
-    completed: false,
-  });
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        setState((curr) => ({
-          ...curr,
-          pending: true,
-          error: undefined,
-        }));
-        await initialize();
-        setState({
-          pending: false,
-          error: undefined,
-          completed: true,
-        });
-      } catch (error) {
-        setState({
-          pending: false,
-          error: error instanceof Error ? error.message : String(error),
-          completed: false,
-        });
-      }
-    })();
-  }, [setState]);
-
-  return state;
+export function useApplicationInitialized(): boolean {
+  return useInitializationStore().data;
 }

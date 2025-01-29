@@ -1,33 +1,24 @@
 import { fetchAuthenticatedUser, fetchUserMetadata } from '@cloud-pipeline/api';
-import type { User } from '@cloud-pipeline/core';
-import { authenticationStore } from './store.ts';
+import type { AuthenticatedUserInfo } from './types';
+import { initializeCloudPipelineApi } from '../initialization/initialize-cp-api';
 
 /**
- * Returns authenticated user or throws an error
+ * Returns authenticated user with metadata or throws an error
  */
-export async function authenticate(): Promise<User> {
-  const store = authenticationStore.getState();
-  store.setPending(true);
-
-  try {
-    const user = await fetchAuthenticatedUser();
-    const metadata = await fetchUserMetadata(user.id);
-    store.setAuthenticationResult({
-      authenticatedUser: user,
-      metadata,
-      error: undefined,
-    });
-    return user;
-  } catch (authError) {
-    const errorMessage =
-      authError instanceof Error ? authError.message : String(authError);
-
-    store.setAuthenticationResult({
-      authenticatedUser: undefined,
-      metadata: undefined,
-      error: errorMessage,
-    });
-
-    throw new Error(errorMessage);
+export async function authenticate(
+  abortSignal?: AbortSignal,
+): Promise<AuthenticatedUserInfo> {
+  if (abortSignal?.aborted) {
+    throw new Error('Authentication aborted');
   }
+  await initializeCloudPipelineApi();
+  const user = await fetchAuthenticatedUser();
+  if (abortSignal?.aborted) {
+    throw new Error('Authentication aborted');
+  }
+  const metadata = await fetchUserMetadata(user.id);
+  return {
+    user,
+    metadata,
+  };
 }

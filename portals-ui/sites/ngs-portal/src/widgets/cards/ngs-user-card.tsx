@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import type { UserCardProps } from '@cloud-pipeline/components';
 import { UserCard } from '@cloud-pipeline/components';
 import { useSearchUserInfoByName } from '../../state/users-info/hooks.ts';
-import { useAuthenticationState } from '../../state/authentication/hooks.ts';
+import {
+  useAuthenticatedUser,
+} from '../../state/authentication/hooks.ts';
 
 export const NgsUserCard = (
   props: Omit<UserCardProps, 'user'> & { userName: string },
@@ -10,7 +12,7 @@ export const NgsUserCard = (
   const { userName, ...restProps } = props;
   const userInfo = useSearchUserInfoByName(userName);
 
-  const { authenticatedUser } = useAuthenticationState();
+  const authenticatedUser = useAuthenticatedUser();
 
   const user = useMemo(() => {
     if (authenticatedUser?.userName === userName) {

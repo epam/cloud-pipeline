@@ -1,31 +1,16 @@
-import type { AuthenticationState, AuthenticationStore } from './types.ts';
-import { useStore } from 'zustand';
+import type { AuthenticationStore } from './types.ts';
 import { authenticationStore } from './store.ts';
-import { useMemo } from 'react';
 import type { User, UserMetadata } from '@cloud-pipeline/core';
+import { useLoadableStore } from '../common/loadable-store/hooks.ts';
 
 function useAuthenticationStore(): AuthenticationStore {
-  return useStore(authenticationStore);
-}
-
-export function useAuthenticationState(): AuthenticationState {
-  const { authenticatedUser, metadata, pending, error } =
-    useAuthenticationStore();
-  return useMemo(
-    () => ({
-      authenticatedUser,
-      metadata,
-      pending,
-      error,
-    }),
-    [authenticatedUser, metadata, pending, error],
-  );
+  return useLoadableStore(authenticationStore);
 }
 
 export function useAuthenticatedUser(): User | undefined {
-  return useAuthenticationState().authenticatedUser;
+  return useAuthenticationStore().data?.user;
 }
 
 export function useAuthenticatedUserMetadata(): UserMetadata | undefined {
-  return useAuthenticationState().metadata;
+  return useAuthenticationStore().data?.metadata;
 }

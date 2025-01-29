@@ -1,31 +1,27 @@
-import { cloudPipelineApi } from '@cloud-pipeline/api';
-import type { User } from '@cloud-pipeline/core';
-import { authenticate } from '../authentication/authenticate.ts';
-import fetchSettings from '../../shared/settings/fetch-settings.ts';
-import { settingsStore } from '../settings/store.ts';
+import type { InitializationMessage } from './types.ts';
+import { authenticationStore } from '../authentication/store.ts';
+import { initializeCloudPipelineApi } from './initialize-cp-api.ts';
 
-export type InitializeApplicationState = {
-  message?: string;
-  details?: string;
-};
+export type InitializeCallback = (state: InitializationMessage) => void;
 
-export type InitializeCallback = (state: InitializeApplicationState) => void;
-
-export async function initialize(callback?: InitializeCallback): Promise<User> {
+export async function initialize(
+  callback?: InitializeCallback,
+): Promise<boolean> {
   if (callback) {
-    callback({ message: 'Fetching settings...' });
+    callback({ message: 'Initializing...', details: 'fetching settings' });
   }
-  const settings = await fetchSettings();
-  settingsStore.setState({ settings });
-  cloudPipelineApi.initialize({
-    base: settings.api,
-  });
+  await initializeCloudPipelineApi();
   if (callback) {
     callback({ message: 'Authenticating...' });
   }
-  const user = await authenticate();
+  const user = await authenticationStore.getState().load();
+  if (!user) {
+    throw new Error(
+      authenticationStore.getState().error ?? 'Authentication failed',
+    );
+  }
   if (callback) {
     callback({ message: 'User authenticated' });
   }
-  return user;
+  return true;
 }

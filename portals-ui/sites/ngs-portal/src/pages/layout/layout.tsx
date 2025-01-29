@@ -6,13 +6,13 @@ import './style.css';
 
 export const Layout = () => {
   return (
-    <Initialization>
-      <AntApp className="app-layout">
-        <Header />
-        <div className="layout-content">
+    <AntApp className="app-layout">
+      <Header />
+      <div className="layout-content">
+        <Initialization>
           <Outlet />
-        </div>
-      </AntApp>
-    </Initialization>
+        </Initialization>
+      </div>
+    </AntApp>
   );
 };

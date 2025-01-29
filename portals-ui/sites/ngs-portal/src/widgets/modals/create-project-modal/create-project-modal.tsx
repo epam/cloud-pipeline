@@ -10,6 +10,7 @@ import { noop } from '@cloud-pipeline/core';
 import { useAuthenticatedUser } from '../../../state/authentication/hooks';
 import { useReloadProjectsFn } from '../../../state/projects/hooks.ts';
 import './styles.css';
+import { useNgsProjectsRoot } from '../../../state/settings/hooks.ts';
 
 type Props = CommonProps & {
   visible: boolean;
@@ -52,6 +53,7 @@ export const CreateProjectModal = (props: Props) => {
       });
   }, []);
   const reloadProjects = useReloadProjectsFn();
+  const ngsProjectsRoot = useNgsProjectsRoot();
   const onOk = useCallback(async (): Promise<void> => {
     if (pending || !name?.length) {
       return;
@@ -64,7 +66,7 @@ export const CreateProjectModal = (props: Props) => {
       content: 'Creating data datastorage...',
     });
     try {
-      await registerProject(name);
+      await registerProject(name, { parentFolderId: ngsProjectsRoot });
       await reloadProjects();
       messageApi.open({
         key: 'register',
@@ -91,7 +93,7 @@ export const CreateProjectModal = (props: Props) => {
       setPending(false);
       setSpin(false);
     }
-  }, [messageApi, name, onCancel, pending, reloadProjects]);
+  }, [messageApi, name, onCancel, pending, reloadProjects, ngsProjectsRoot]);
   const options = useMemo(() => {
     if (!dataStorages) {
       return [];

@@ -1,6 +1,6 @@
 import type { Run } from '@cloud-pipeline/core';
-import { ItemsPanel } from '../items-panel/items-panel.tsx';
-import { useAuthenticatedUserRuns } from '../../shared/hooks/use-runs-filter.ts';
+import { ItemsPanel } from '../items-panel';
+import { useAuthenticatedUserProjectRuns } from '../../shared/hooks/use-runs-filter';
 import { RunCard } from '../cards';
 import cn from 'classnames';
 import { PlayCircleIcon } from '@heroicons/react/24/outline';
@@ -16,7 +16,7 @@ function runCardRenderer(item: Run, _: string, i: number) {
 }
 
 export const RunsList = () => {
-  const { runs, error, pending, total } = useAuthenticatedUserRuns({
+  const { runs, error, pending, total } = useAuthenticatedUserProjectRuns({
     reloadIntervalMs: 5000,
   });
 

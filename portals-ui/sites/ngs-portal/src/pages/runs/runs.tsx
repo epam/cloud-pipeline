@@ -1,13 +1,13 @@
 import { List, ListHeader } from '@cloud-pipeline/components';
-import { useAuthenticatedUserRuns } from '../../shared/hooks/use-runs-filter.ts';
 import { PageSpinner } from '../../shared/ui';
+import { useAuthenticatedUserProjectRuns } from '../../shared/hooks/use-runs-filter.ts';
 
 export function RunsPage() {
   const {
     runs,
     error: runsError,
     pending: runsPending,
-  } = useAuthenticatedUserRuns({ reloadIntervalMs: 5000 });
+  } = useAuthenticatedUserProjectRuns({ reloadIntervalMs: 5000 });
 
   if (runsError) {
     return <div>{runsError}</div>;

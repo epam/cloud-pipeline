@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { useLoadableStateWithInterval } from './use-loadable-state.ts';
 import type { Run } from '@cloud-pipeline/core';
 import { useAuthenticatedUser } from '../../state/authentication/hooks.ts';
+import { useProjects } from '../../state/projects/hooks.ts';
+import { usePipelines } from '../../state/pipelines/hooks.ts';
 
 function useMemoizedArray<T>(array: T[] | undefined): T[] | undefined {
   const str = array ? JSON.stringify(array) : undefined;
@@ -160,4 +162,36 @@ export function useUserRuns(
 export function useAuthenticatedUserRuns(filter?: UserRunsFilter) {
   const authenticatedUser = useAuthenticatedUser();
   return useUserRuns(authenticatedUser?.userName, filter);
+}
+
+export function useAuthenticatedUserProjectRuns(
+  filter?: Omit<UserRunsFilter, 'projectIds'>,
+) {
+  const authenticatedUser = useAuthenticatedUser();
+  const projects = useProjects();
+  const pipelines = usePipelines();
+  const projectIds = useMemoizedArray(projects.map((project) => project.id));
+  const pipelineIds = useMemoizedArray(
+    pipelines.map((pipeline) => pipeline.id),
+  );
+  const mergedFilter = useMemo(() => {
+    if (
+      (!projectIds || projectIds.length === 0) &&
+      (!pipelineIds || pipelineIds.length === 0)
+    ) {
+      return undefined;
+    }
+    return {
+      ...(filter ?? {}),
+      projectIds,
+      pipelineIds,
+    };
+  }, [filter, projectIds, pipelineIds]);
+  const { reloadIntervalMs, page = 1, ...rest } = mergedFilter ?? {};
+  return useRunsFilter(
+    authenticatedUser && mergedFilter
+      ? { owners: [authenticatedUser.userName], page, ...rest }
+      : undefined,
+    reloadIntervalMs,
+  );
 }

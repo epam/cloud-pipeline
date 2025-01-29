@@ -1,44 +1,57 @@
 import type { CommonParentProps } from '@cloud-pipeline/components';
-import { useAuthenticationState } from '../../state/authentication/hooks.ts';
-import { useInitializeApplication } from '../../state/initialization/hooks.ts';
+import { useInitializationStore } from '../../state/initialization/hooks.ts';
 import './style.css';
+import { useMemo } from 'react';
 
 export default function Initialization(props: CommonParentProps) {
   const { children } = props;
   const {
-    error: authenticationError,
-    authenticatedUser,
-    pending: authPending,
-  } = useAuthenticationState();
-  const {
-    completed: initialized,
-    error: initializationError,
-    pending: initializePending,
-  } = useInitializeApplication();
+    data: initialized,
+    error,
+    pending,
+    messages,
+  } = useInitializationStore();
 
-  if (authenticatedUser && initialized) {
+  const lastMessage = useMemo(
+    () =>
+      messages.length > 0
+        ? messages[messages.length - 1]
+        : {
+            message: 'Loading...',
+          },
+    [messages],
+  );
+
+  if (initialized) {
     return children;
   }
 
-  if (authenticationError || initializationError) {
+  if (error) {
     return (
       <div className="app-initialization">
-        <span className="auth-error">
-          {authenticationError ?? initializationError}
-        </span>
+        <span className="app-initialization-error">{error}</span>
       </div>
     );
   }
-  if (authPending || initializePending) {
+  if (pending) {
     return (
       <div className="app-initialization">
-        <span className="auth-pending">Loading...</span>
+        <div className="text-center">
+          <div className="app-initialization-pending">
+            {lastMessage.message}
+          </div>
+          {lastMessage.details && (
+            <div className="app-initialization-pending-details">
+              {lastMessage.details}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
   return (
     <div className="app-initialization">
-      <span className="auth-error">Something went wrong.</span>
+      <span className="app-initialization-error">Something went wrong.</span>
     </div>
   );
 }

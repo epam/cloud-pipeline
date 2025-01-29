@@ -1,13 +1,13 @@
 import { Logo } from './logo';
-import { authenticationStore } from '../../state/authentication/store';
 import { AppRoutes, RoutePath } from '../../shared/constants/routes';
 import { useNavigate } from 'react-router';
 import { useCallback } from 'react';
 import { NgsUserCard } from '../cards';
 import { MainMenu } from './main-menu/main-menu.tsx';
+import { useAuthenticatedUser } from '../../state/authentication/hooks.ts';
 
 export const Header = () => {
-  const { authenticatedUser } = authenticationStore.getState();
+  const authenticatedUser = useAuthenticatedUser();
   const navigate = useNavigate();
 
   const onLogoClick = useCallback(() => {
@@ -19,10 +19,8 @@ export const Header = () => {
       <Logo onClick={onLogoClick} />
       <MainMenu />
       <div className="text-white text-sm">
-        {authenticatedUser?.userName ? (
+        {authenticatedUser && (
           <NgsUserCard userName={authenticatedUser?.userName} showIcon />
-        ) : (
-          'Login'
         )}
       </div>
     </header>

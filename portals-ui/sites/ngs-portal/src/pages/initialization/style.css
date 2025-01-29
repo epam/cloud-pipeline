@@ -4,10 +4,14 @@
   @apply w-full h-full flex items-center justify-center overflow-auto;
 }
 
-.app-initialization .auth-pending {
-  @apply text;
+.app-initialization .app-initialization-pending {
+  @apply text-faded text-sm;
 }
 
-.app-initialization .auth-error {
+.app-initialization .app-initialization-pending-details {
+  @apply text-faded text-xs;
+}
+
+.app-initialization .app-initialization-error {
   @apply text-orange-700;
 }

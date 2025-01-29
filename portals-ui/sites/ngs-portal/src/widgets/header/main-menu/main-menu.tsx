@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Menu } from 'antd';
 import { useSelectedMenuItemKeys } from './use-selected-menu-item-keys.ts';
 import { mainMenuItems } from './items.ts';
+import rbac from '../../../shared/rbac';
 import '../style.css';
 
 const menuItems = mainMenuItems.map((m) => ({
@@ -13,7 +14,7 @@ const menuItems = mainMenuItems.map((m) => ({
   ),
 }));
 
-export const MainMenu = () => {
+export const MainMenu = rbac.initialized(() => {
   const selectedKeys = useSelectedMenuItemKeys();
 
   return (
@@ -26,4 +27,4 @@ export const MainMenu = () => {
       className="main-menu text-gray"
     />
   );
-};
+});

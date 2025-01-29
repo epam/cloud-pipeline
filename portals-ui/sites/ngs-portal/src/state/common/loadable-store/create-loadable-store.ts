@@ -6,32 +6,61 @@ type StoreDataType<T> = T extends LoadableStore<infer U> ? U : never;
 type RestStoreType<T> =
   T extends LoadableStore<infer U> ? Omit<T, keyof LoadableStore<U>> : T;
 
-export default function createLoadableStore<
+function createLoadableStore<
+  StoreData,
+>(
+  loader: (
+    abortSignal: AbortSignal,
+    setter: StoreApi<LoadableStore<StoreData | undefined>>['setState'],
+    getter: StoreApi<LoadableStore<StoreData | undefined>>['getState'],
+  ) => Promise<StoreData | undefined>,
+): StoreApi<LoadableStore<StoreData | undefined>>;
+function createLoadableStore<
   Store extends LoadableStore<StoreData>,
   StoreData = StoreDataType<Store>,
 >(
-  loader: (abortSignal?: AbortSignal) => Promise<StoreData>,
+  loader: (
+    abortSignal: AbortSignal,
+    setter: StoreApi<Store>['setState'],
+    getter: StoreApi<Store>['getState'],
+  ) => Promise<StoreData>,
   defaultValue: StoreData,
   storeInitializer: (
+    setter: StoreApi<Store>['setState'],
+    getter: StoreApi<Store>['getState'],
+  ) => RestStoreType<Store>,
+): StoreApi<Store>;
+function createLoadableStore<
+  Store extends LoadableStore<StoreData>,
+  StoreData = StoreDataType<Store>,
+>(
+  loader: (
+    abortSignal: AbortSignal,
+    setter: StoreApi<Store>['setState'],
+    getter: StoreApi<Store>['getState'],
+  ) => Promise<StoreData>,
+  defaultValue?: StoreData,
+  storeInitializer?: (
     setter: StoreApi<Store>['setState'],
     getter: StoreApi<Store>['getState'],
   ) => RestStoreType<Store>,
 ): StoreApi<Store> {
   let abortController: AbortController | undefined;
   let token: unknown;
-  let inProgress = false;
+  let currentPromise: Promise<StoreData> | undefined;
   return createStore<Store>(
     (set, get) =>
       ({
-        ...storeInitializer(set, get),
+        ...(storeInitializer ? storeInitializer(set, get) : {}),
         pending: false,
         error: undefined,
         data: defaultValue,
         loaded: false,
         async load(force = false): Promise<StoreData> {
-          const { loaded, data } = get();
-          if ((!loaded && !inProgress) || force) {
-            inProgress = true;
+          if (!force && currentPromise) {
+            return currentPromise;
+          }
+          currentPromise = (async () => {
             const requestToken = {};
             token = requestToken;
             if (abortController) {
@@ -40,7 +69,11 @@ export default function createLoadableStore<
             abortController = new AbortController();
             set({ pending: true, error: undefined } as Partial<Store>);
             try {
-              const result = await loader(abortController.signal);
+              const result = await loader(
+                abortController.signal,
+                set,
+                get,
+              );
               if (requestToken === token) {
                 set({
                   pending: false,
@@ -64,12 +97,11 @@ export default function createLoadableStore<
               throw error;
             } finally {
               if (requestToken === token) {
-                inProgress = false;
                 abortController = undefined;
               }
             }
-          }
-          return data;
+          })();
+          return currentPromise;
         },
         async reload(): Promise<StoreData> {
           const { load } = get();
@@ -78,3 +110,5 @@ export default function createLoadableStore<
       }) as Store,
   );
 }
+
+export default createLoadableStore;
