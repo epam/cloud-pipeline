@@ -103,7 +103,9 @@ export const CreateProjectModal = (props: Props) => {
         type: 'error',
         content: (
           <div className="flex flex-col items-start">
-            <span>Error creating project <b>{name}</b></span>
+            <span>
+              Error creating project <b>{name}</b>
+            </span>
             <span>
               {error instanceof Error ? error.message : String(error)}
             </span>
