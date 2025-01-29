@@ -66,7 +66,11 @@ export const CreateProjectModal = (props: Props) => {
     messageApi.open({
       key: 'register',
       type: 'loading',
-      content: 'Creating data datastorage...',
+      content: (
+        <span>
+          Creating <b>{name}</b> project...
+        </span>
+      ),
     });
     try {
       const projectResponse = await registerProject(name, {
@@ -76,7 +80,11 @@ export const CreateProjectModal = (props: Props) => {
       messageApi.open({
         key: 'register',
         type: 'success',
-        content: 'Datastorage successfully created!',
+        content: (
+          <span>
+            Project <b>{name}</b> successfully created
+          </span>
+        ),
         duration: 2,
       });
       onCancel();
@@ -95,7 +103,7 @@ export const CreateProjectModal = (props: Props) => {
         type: 'error',
         content: (
           <div className="flex flex-col items-start">
-            <b>Failed to create project {name}.</b>
+            <span>Error creating project <b>{name}</b></span>
             <span>
               {error instanceof Error ? error.message : String(error)}
             </span>
