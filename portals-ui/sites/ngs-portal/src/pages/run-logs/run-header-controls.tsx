@@ -34,6 +34,9 @@ export default function RunHeaderControls({
         </span>
       ),
       okText: 'Stop',
+      okButtonProps: {
+        danger: true,
+      },
       async onOk() {
         return await new Promise((resolve) => {
           messageApi.open({
