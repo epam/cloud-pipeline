@@ -1,5 +1,10 @@
 import { AclClass, type Project } from '@cloud-pipeline/core';
-import { ProjectHeader, ProjectPipelines, ProjectRunsList } from './components';
+import {
+  ProjectDescription,
+  ProjectHeader,
+  ProjectPipelines,
+  ProjectRunsList,
+} from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
@@ -10,24 +15,34 @@ import {
   generateProjectRoutePath,
 } from '../../shared/constants/routes';
 import { ItemLayout } from '../../shared/ui';
-import { Markdown } from '@cloud-pipeline/components';
 import { useMemo } from 'react';
 import { LayoutCard } from '../../shared/ui/item-layout/layout-card';
-import { dummyDescription } from './dummy.description';
 import { Permissions } from '../../features/permissions';
 import { useNgsTabs } from '../../shared/hooks';
+import { useProjectDescription } from './hooks';
 
 type Props = {
   project: Project;
 };
 
 export const ProjectPage = ({ project }: Props) => {
+  const {
+    handleDescriptionSave,
+    projectDescription,
+    projectDescriptionContextHolder,
+  } = useProjectDescription(project);
+
   const tabs = useMemo(
     () => [
       {
         key: ProjectTabs.Info,
         label: <span className="px-4">Info</span>,
-        content: <Markdown>{dummyDescription}</Markdown>,
+        content: (
+          <ProjectDescription
+            description={projectDescription}
+            onSave={handleDescriptionSave}
+          />
+        ),
         aside: [
           <LayoutCard key="runs">
             <ProjectRunsList projectId={project.id} />
@@ -53,7 +68,7 @@ export const ProjectPage = ({ project }: Props) => {
         content: <ProjectRunsList projectId={project.id} extended />,
       },
     ],
-    [project],
+    [handleDescriptionSave, project, projectDescription],
   );
 
   const { activeTab, handleChangeTab } = useNgsTabs({
@@ -64,6 +79,7 @@ export const ProjectPage = ({ project }: Props) => {
 
   return (
     <div className="flex flex-col h-full">
+      {projectDescriptionContextHolder}
       <Breadcrumb
         items={[
           {
@@ -74,7 +90,7 @@ export const ProjectPage = ({ project }: Props) => {
             ),
           },
           { title: <Link to={RoutePath[AppRoutes.PROJECTS]}>Projects</Link> },
-          { title: project?.name },
+          { title: project.name },
         ]}
       />
 

@@ -22,7 +22,7 @@ export const ProjectPageContainer = () => {
   }
 
   if (!project) {
-    return <div>No data</div>;
+    return <div>Project with id {projectId} not found</div>;
   }
 
   return <ProjectPage project={project} />;

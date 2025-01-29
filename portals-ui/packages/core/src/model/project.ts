@@ -58,4 +58,5 @@ export type Project = AclEntry<AclClass.folder> & {
   metadata?: Record<string, any>;
   data?: NgsData;
   storages?: Record<string, any>[];
+  description?: string;
 };
