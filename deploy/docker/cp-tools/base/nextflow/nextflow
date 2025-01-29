@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+_IS_RUN_COMMAND=
+for param in "$@"; do
+   if [ "$param" == "run" ]; then
+      _IS_RUN_COMMAND="1"
+      break
+   fi
+done
 
 NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
@@ -37,13 +44,18 @@ if [ "$CP_CAP_SGE" == "true" ]; then
     echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
 fi
 
+_ARGS=("$@")
 if [ -f "$NEXTFLOW_CONFIG" ]; then
-    NEXTFLOW_CONFIG_ARG="-c $NEXTFLOW_CONFIG"
+    _ARGS+=('-c')
+    _ARGS+=("$NEXTFLOW_CONFIG")
 fi
 
-if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
-    _NF_WITH_WEB_LOG_ARGS="-with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event"
-    [ -n "$NEXTFLOW_CONFIG_ARG" ] && NEXTFLOW_CONFIG_ARG="$NEXTFLOW_CONFIG_ARG $_NF_WITH_WEB_LOG_ARGS" || NEXTFLOW_CONFIG_ARG="$_NF_WITH_WEB_LOG_ARGS"
+if [ "$_IS_RUN_COMMAND" == "1" ]; then
+    if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
+        echo "Running Nextflow with -with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event option"
+        _ARGS+=('-with-weblog')
+        _ARGS+=("http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event")
+    fi
 fi
 
-$NXF_HOME/nextflow $NEXTFLOW_CONFIG_ARG "$@"
+$NXF_HOME/nextflow "${_ARGS[@]}"
