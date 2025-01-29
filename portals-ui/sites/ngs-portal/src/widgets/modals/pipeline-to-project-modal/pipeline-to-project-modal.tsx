@@ -21,7 +21,6 @@ export const PipelineToProjectModal = (props: Props) => {
   const { pipeline, visible, onCancel } = props;
   const [messageApi, contextHolder] = message.useMessage();
   const [pending, setPending] = useState(false);
-  const [spin, setSpin] = useState(false);
   const projects = useProjects();
   const filteredProjects = useMemo(
     () =>
@@ -40,7 +39,6 @@ export const PipelineToProjectModal = (props: Props) => {
       return;
     }
     setPending(true);
-    setSpin(true);
     const selected = filteredProjects.find(
       ({ id }) => id === selectedProjectId,
     )!;
@@ -97,13 +95,11 @@ export const PipelineToProjectModal = (props: Props) => {
       });
     } finally {
       setPending(false);
-      setSpin(false);
     }
   };
   const resetState = useCallback(() => {
     setSelectedProjectId(undefined);
     setPending(false);
-    setSpin(false);
   }, []);
   const options = useMemo(
     () =>
@@ -120,11 +116,11 @@ export const PipelineToProjectModal = (props: Props) => {
       onOk={() => void onOk()}
       onCancel={onCancel}
       okButtonProps={{
-        disabled: pending || spin || selectedProjectId === undefined,
+        disabled: pending || selectedProjectId === undefined,
       }}
       okText="Add"
       width={'70vw'}
-      confirmLoading={spin}
+      confirmLoading={pending}
       style={{ maxWidth: 600 }}
       afterClose={resetState}
       centered>
@@ -139,6 +135,7 @@ export const PipelineToProjectModal = (props: Props) => {
           placeholder="Select project"
           optionFilterProp="label"
           options={options}
+          disabled={pending}
         />
       </div>
     </Modal>
