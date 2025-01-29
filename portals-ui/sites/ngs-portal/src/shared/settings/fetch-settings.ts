@@ -9,7 +9,7 @@ type SettingsFieldValidationBase = {
 };
 
 type SettingsFieldValidationTypes = SettingsFieldValidationBase & {
-  types?: string[];
+  types?: Array<'string' | 'number' | 'boolean' | 'object'>;
 };
 
 type SettingsFieldValidationCallback = SettingsFieldValidationBase & {
@@ -53,32 +53,86 @@ const validation: SettingsFieldValidation[] = [
   { field: 'api', required: true },
   { field: 'ngsProjectsRoot', validate: identifiersValidation },
   { field: 'ngsPipelinesRoot', validate: identifiersValidation },
+  {
+    field: 'launchSettings.parameters.*',
+    types: ['string', 'number', 'boolean'],
+  },
+  { field: 'runsFilter.parameters.*', types: ['string', 'number', 'boolean'] },
 ];
+
+function getSettingsFieldValueError(
+  field: string,
+  value: unknown,
+  validation: SettingsFieldValidation,
+): string | undefined {
+  if ('validate' in validation) {
+    const { validate } = validation;
+    try {
+      validate(value);
+    } catch (e) {
+      return `settings: field "${field}" validation failed: ${e instanceof Error ? e.message : e}`;
+    }
+  } else {
+    const { types = ['string'] } = validation;
+    if (!types.some((t) => typeof value === t)) {
+      return `settings: field "${field}" has wrong type (expected ${types.join(', ')}; got ${typeof value})`;
+    }
+  }
+  return undefined;
+}
 
 function getSettingsFieldError(
   obj: Record<string, unknown>,
   validation: SettingsFieldValidation,
+  parentField?: string,
 ): string | undefined {
   const { required = false } = validation;
-  if (!(validation.field in obj) && required) {
-    return `settings: required field "${validation.field}" is missing`;
+  const fullFieldName = parentField
+    ? `${parentField}.${validation.field}`
+    : validation.field;
+  const [field, ...rest] = validation.field.split('.');
+  const subField = rest.length > 0 ? rest.join('.') : undefined;
+  if (!(field in obj) && required && !subField) {
+    return `settings: required field "${fullFieldName}" is missing`;
   }
-  if (validation.field in obj) {
-    if ('types' in validation) {
-    }
-    if ('validate' in validation) {
-      const { validate } = validation;
-      try {
-        validate(obj[validation.field]);
-      } catch (e) {
-        return `settings: field "${validation.field}" validation failed: ${e instanceof Error ? e.message : e}`;
+  if (field in obj) {
+    const value = obj[field];
+    if (subField) {
+      if (typeof value !== 'object') {
+        return `settings: field "${fullFieldName}" is not an object`;
       }
-    } else {
-      const { types = ['string'] } = validation;
-      if (!types.some((t) => typeof obj[validation.field] === t)) {
-        return `settings: field "${validation.field}" has wrong type (expected ${types.join(', ')}; got ${typeof obj[validation.field]})`;
+      if (subField === '*') {
+        // apply validation to all properties
+        const subValidationErrors: string[] = [];
+        for (const [propKey, propValue] of Object.entries(
+          value as Record<string, unknown>,
+        )) {
+          const subValidation = getSettingsFieldValueError(
+            parentField
+              ? `${parentField}.${field}.${propKey}`
+              : `${field}.${propKey}`,
+            propValue,
+            validation,
+          );
+          if (subValidation) {
+            subValidationErrors.push(subValidation);
+          }
+        }
+        if (subValidationErrors.length > 0) {
+          return subValidationErrors.join('\n');
+        }
+        return undefined;
       }
+      return getSettingsFieldError(
+        value as Record<string, unknown>,
+        {
+          ...validation,
+          field: subField,
+        },
+        field,
+      );
     }
+    return getSettingsFieldValueError(fullFieldName, value, validation);
   }
   return undefined;
 }

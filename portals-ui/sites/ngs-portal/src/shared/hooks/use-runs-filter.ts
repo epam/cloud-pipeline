@@ -4,8 +4,7 @@ import { useMemo } from 'react';
 import { useLoadableStateWithInterval } from './use-loadable-state.ts';
 import type { Run } from '@cloud-pipeline/core';
 import { useAuthenticatedUser } from '../../state/authentication/hooks.ts';
-import { useProjects } from '../../state/projects/hooks.ts';
-import { usePipelines } from '../../state/pipelines/hooks.ts';
+import { useRunsFilterSettings } from '../../state/settings/hooks.ts';
 
 function useMemoizedArray<T>(array: T[] | undefined): T[] | undefined {
   const str = array ? JSON.stringify(array) : undefined;
@@ -168,25 +167,21 @@ export function useAuthenticatedUserProjectRuns(
   filter?: Omit<UserRunsFilter, 'projectIds'>,
 ) {
   const authenticatedUser = useAuthenticatedUser();
-  const projects = useProjects();
-  const pipelines = usePipelines();
-  const projectIds = useMemoizedArray(projects.map((project) => project.id));
-  const pipelineIds = useMemoizedArray(
-    pipelines.map((pipeline) => pipeline.id),
-  );
-  const mergedFilter = useMemo(() => {
-    if (
-      (!projectIds || projectIds.length === 0) &&
-      (!pipelineIds || pipelineIds.length === 0)
-    ) {
-      return undefined;
-    }
-    return {
+  const { parameters } = useRunsFilterSettings();
+  const mergedFilter = useMemo(
+    () => ({
       ...(filter ?? {}),
-      projectIds,
-      pipelineIds,
-    };
-  }, [filter, projectIds, pipelineIds]);
+      partialParameters: parameters
+        ? Object.entries(parameters)
+            .map(
+              ([key, value]) =>
+                `${key}=${value}=${typeof value === 'boolean' ? 'boolean' : 'string'}`,
+            )
+            .join('|')
+        : undefined,
+    }),
+    [filter, parameters],
+  );
   const { reloadIntervalMs, page = 1, ...rest } = mergedFilter ?? {};
   return useRunsFilter(
     authenticatedUser && mergedFilter

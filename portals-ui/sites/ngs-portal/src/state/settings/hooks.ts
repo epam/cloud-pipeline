@@ -1,4 +1,8 @@
-import type { Settings } from '../../shared/settings/types.ts';
+import type {
+  LaunchSettings,
+  RunsFilterSettings,
+  Settings,
+} from '../../shared/settings/types.ts';
 import { useStore } from 'zustand';
 import { settingsStore } from './store.ts';
 import { useMemo } from 'react';
@@ -19,4 +23,21 @@ export function useNgsProjectsRoots(): number[] {
 export function useNgsProjectsRoot(): number | undefined {
   const [first] = useNgsProjectsRoots();
   return first;
+}
+
+export function useLaunchSettings(): LaunchSettings {
+  const { launchSettings } = useSettings();
+  return useMemo(() => launchSettings ?? {}, [launchSettings]);
+}
+
+export function useRunsFilterSettings(): RunsFilterSettings {
+  const { runsFilter } = useSettings();
+  const launchSettings = useLaunchSettings();
+  return useMemo(() => {
+    const { parameters = launchSettings.parameters, ...rest } = runsFilter ?? {};
+    return {
+      ...rest,
+      parameters,
+    };
+  }, [runsFilter, launchSettings]);
 }

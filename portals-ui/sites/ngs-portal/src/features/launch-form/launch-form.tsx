@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
+import type {
+  PipelineParameter,
+  PipelineParametersTypes,
+} from '@cloud-pipeline/core';
 import {
   type PipelineConfiguration,
   type MappedPipelineParameter,
@@ -13,6 +17,7 @@ import { LaunchParametersForm } from './forms/parameters-form';
 import { mapParameters, unMapParameters } from './utils/parameters';
 import { generateRunLogsRoutePath } from '../../shared/constants/routes';
 import type { CommonProps } from '@cloud-pipeline/components';
+import { useLaunchSettings } from '../../state/settings/hooks.ts';
 
 type LaunchFormProps = CommonProps & {
   configuration?: PipelineConfiguration;
@@ -67,6 +72,23 @@ export function LaunchForm({
   const formChanged = useMemo(() => {
     return parametersFormData?.some((parameter) => parameter.touched);
   }, [parametersFormData]);
+  const launchSettings = useLaunchSettings();
+  const predefinedParameters = useMemo<
+    Record<string, PipelineParameter>
+  >(() => {
+    const { parameters = {} } = launchSettings;
+    const result: Record<string, PipelineParameter> = {};
+    for (const [param, value] of Object.entries(parameters)) {
+      result[param] = {
+        value: typeof value === 'boolean' ? value : `${value}`,
+        type: (typeof value === 'boolean'
+          ? 'boolean'
+          : 'string') as PipelineParametersTypes,
+        required: true,
+      };
+    }
+    return result;
+  }, [launchSettings]);
   const launch = async (): Promise<void> => {
     if (launchDisabled) {
       return;
@@ -89,7 +111,7 @@ export function LaunchForm({
           const payload = generateLaunchPayload(
             pipelineInfo!,
             configuration!,
-            unMapParameters(parametersFormData),
+            { ...unMapParameters(parametersFormData), ...predefinedParameters },
             version!,
           );
           launchPipeline(payload)
