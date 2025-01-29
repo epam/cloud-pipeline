@@ -1,7 +1,7 @@
 import type { Project } from '@cloud-pipeline/core';
 import fetchSettings from '../../shared/settings/fetch-settings.ts';
 import { fetchProjects } from '@cloud-pipeline/api';
-import {flattenNumberIdentifiers} from "../../shared/helpers/arrays.ts";
+import { flattenNumberIdentifiers } from '../../shared/helpers';
 
 export async function fetchNgsProjects(
   abortSignal?: AbortSignal,
@@ -18,8 +18,6 @@ export async function fetchNgsProjects(
     .map((project: Project) => ({
       ...project,
       childFolders: [],
-      pipelines: [],
-      storages: [],
       configurations: [],
     }));
 }

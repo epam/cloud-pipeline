@@ -50,7 +50,7 @@ export const PipelineToProjectModal = (props: Props) => {
         type: 'loading',
         content: (
           <span>
-            Adding <b>{pipeline.name}</b> to <b>selected.name</b>...
+            Adding <b>{pipeline.name}</b> to <b>{selected.name}</b>...
           </span>
         ),
         duration: -1,
