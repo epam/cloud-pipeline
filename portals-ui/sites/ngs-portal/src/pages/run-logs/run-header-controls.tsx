@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Button, message } from 'antd';
+import { Button, message, Modal } from 'antd';
 import dayjs from 'dayjs';
 import { type CommonProps } from '@cloud-pipeline/components';
 import { noop, RunStatuses, type Run } from '@cloud-pipeline/core';
@@ -9,37 +9,58 @@ import { useNavigate } from 'react-router';
 
 type Props = CommonProps & {
   run?: Run;
+  runName?: string | number;
   refresh: () => Promise<void>;
 };
 
-export default function RunHeaderControls({ run, className, refresh }: Props) {
+export default function RunHeaderControls({
+  run,
+  runName,
+  className,
+  refresh,
+}: Props) {
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
-  const onStopClick = useCallback(() => {
+  const [modal, modalConfirmContext] = Modal.useModal();
+  const [messageApi, messageContext] = message.useMessage();
+  const onStopClick = useCallback(async () => {
     if (!run) {
       return;
     }
-    messageApi.open({
-      key: 'stop',
-      type: 'loading',
-      content: 'Stopping run...',
-    });
-    setPending(true);
-    stopRun(run.id, dayjs().format('YYYY-MM-DD HH:mm:ss.SSS'))
-      .then(() => {
-        void refresh().then(() => {
-          setPending(false);
+    await modal.confirm({
+      title: (
+        <span>
+          Stop Run <b>{runName ?? ''}</b> ?
+        </span>
+      ),
+      okText: 'Stop',
+      async onOk() {
+        return await new Promise((resolve) => {
           messageApi.open({
             key: 'stop',
-            type: 'success',
-            content: `Run ${run.id} successfully stopped.`,
-            duration: 2,
+            type: 'loading',
+            content: 'Stopping run...',
+            duration: 0,
           });
+          setPending(true);
+          stopRun(run.id, dayjs().format('YYYY-MM-DD HH:mm:ss.SSS'))
+            .then(() => {
+              void refresh().then(() => {
+                setPending(false);
+                messageApi.open({
+                  key: 'stop',
+                  type: 'success',
+                  content: `Run ${runName ?? ''} successfully stopped.`,
+                  duration: 2,
+                });
+                resolve(true);
+              });
+            })
+            .catch(noop);
         });
-      })
-      .catch(noop);
-  }, [messageApi, refresh, run]);
+      },
+    });
+  }, [messageApi, modal, refresh, run, runName]);
   const onRerunClick = useCallback(() => {
     if (!run) {
       return;
@@ -50,7 +71,11 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
   const controlButton = useMemo(() => {
     if (run?.status === RunStatuses.running) {
       return (
-        <Button danger disabled={pending} type="link" onClick={onStopClick}>
+        <Button
+          danger
+          disabled={pending}
+          type="link"
+          onClick={() => void onStopClick()}>
           Stop
         </Button>
       );
@@ -78,7 +103,8 @@ export default function RunHeaderControls({ run, className, refresh }: Props) {
   }
   return (
     <div className={className}>
-      {contextHolder}
+      {messageContext}
+      {modalConfirmContext}
       {controlButton}
     </div>
   );

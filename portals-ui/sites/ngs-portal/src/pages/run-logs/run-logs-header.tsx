@@ -53,7 +53,12 @@ export default function RunLogsHeader({
         <Tag className="mr-0">
           <NgsUserCard userName={run.owner} showIcon />
         </Tag>
-        <RunHeaderControls className="ml-auto" run={run} refresh={refresh} />
+        <RunHeaderControls
+          className="ml-auto"
+          run={run}
+          runName={runName}
+          refresh={refresh}
+        />
       </div>
       <div className="flex flex-nowrap gap-1 items-center">
         <span className="text-xs">
