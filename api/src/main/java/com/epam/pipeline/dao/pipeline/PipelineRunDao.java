@@ -1045,7 +1045,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         KUBE_SERVICE_ENABLED,
         CLUSTER_PRICE,
         NODE_POOL_ID,
-        NODE_START_DATE;
+        NODE_START_DATE,
+        PROJECT_ID;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1057,6 +1058,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(VERSION.name(), run.getVersion());
             params.addValue(START_DATE.name(), run.getStartDate());
             params.addValue(NODE_START_DATE.name(), run.getInstanceStartDate());
+            params.addValue(PROJECT_ID.name(), run.getProjectId());
             params.addValue(END_DATE.name(), run.getEndDate());
             params.addValue(PARAMETERS.name(), run.getParams());
             params.addValue(STATUS.name(), run.getStatus().getId());
@@ -1189,6 +1191,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
             run.setSensitive(rs.getBoolean(SENSITIVE.name()));
             run.setKubeServiceEnabled(rs.getBoolean(KUBE_SERVICE_ENABLED.name()));
+            run.setProjectId(rs.getLong(PROJECT_ID.name()));
             RunInstance instance = new RunInstance();
             instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
             instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));

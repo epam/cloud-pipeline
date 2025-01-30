@@ -73,7 +73,8 @@
                         tags,
                         sensitive,
                         pipeline_name,
-                        node_start_date)
+                        node_start_date,
+                        project_id)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -124,7 +125,8 @@
                         to_jsonb(:TAGS::jsonb),
                         :SENSITIVE,
                         :PIPELINE_NAME,
-                        :NODE_START_DATE)
+                        :NODE_START_DATE,
+                        :PROJECT_ID)
                 ]]>
             </value>
         </property>
@@ -185,6 +187,7 @@
                         r.pipeline_name,
                         r.node_pool_id,
                         r.node_start_date,
+				        r.project_id,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -279,7 +282,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -345,7 +349,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -411,7 +416,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -543,7 +549,8 @@
                         sensitive = :SENSITIVE,
                         kube_service_enabled = :KUBE_SERVICE_ENABLED,
                         pipeline_name = :PIPELINE_NAME,
-                        node_start_date = :NODE_START_DATE
+                        node_start_date = :NODE_START_DATE,
+                        project_id = :PROJECT_ID
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -651,7 +658,8 @@
                       r.pipeline_name,
                       r.cluster_price,
                       r.node_pool_id,
-                      r.node_start_date
+                      r.node_start_date,
+                      r.project_id
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -719,7 +727,8 @@
                       r.pipeline_name,
                       r.cluster_price,
                       r.node_pool_id,
-                      r.node_start_date
+                      r.node_start_date,
+                      r.project_id
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -785,6 +794,7 @@
                       r.cluster_price,
                       r.node_pool_id,
                       r.node_start_date,
+                      r.project_id,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -851,6 +861,7 @@
                       active_run.cluster_price,
                       active_run.node_pool_id,
                       active_run.node_start_date,
+                      active_run.project_id,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1067,7 +1078,8 @@
                         r.pipeline_name,
                         r.cluster_price,
                         r.node_pool_id,
-                        r.node_start_date
+                        r.node_start_date,
+                        r.project_id
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1131,7 +1143,8 @@
                         r.pipeline_name,
                         r.cluster_price,
                         r.node_pool_id,
-                        r.node_start_date
+                        r.node_start_date,
+                        r.project_id
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1196,6 +1209,7 @@
                         r.cluster_price,
                         r.node_pool_id,
                         r.node_start_date,
+                        r.project_id,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1286,6 +1300,7 @@
                         runs.cluster_price,
                         runs.node_pool_id,
                         runs.node_start_date,
+                        runs.project_id,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1365,7 +1380,8 @@
                             p.pipeline_name,
                             p.cluster_price,
                             p.node_pool_id,
-                            p.node_start_date
+                            p.node_start_date,
+                            p.project_id
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1425,7 +1441,8 @@
                             c.pipeline_name,
                             c.cluster_price,
                             c.node_pool_id,
-                            c.node_start_date
+                            c.node_start_date,
+                            c.project_id
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1483,6 +1500,7 @@
                         runs.cluster_price,
                         runs.node_pool_id,
                         runs.node_start_date,
+                        runs.project_id,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1560,6 +1578,7 @@
                         r.cluster_price,
                         r.node_pool_id,
                         r.node_start_date,
+                        r.project_id,
                         (
                             SELECT count(*)
                             FROM pipeline.pipeline_run cr
@@ -1725,7 +1744,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1805,7 +1825,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1871,7 +1892,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1937,7 +1959,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2003,7 +2026,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2079,7 +2103,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2145,7 +2170,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE

@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -431,6 +432,7 @@ public class PipelineRunManager {
             run.setTags(configuration.getTags());
             pipelineRunDao.updateRunTags(run);
         }
+        run.setProjectId(getPipelineProjectId(pipeline));
         return run;
     }
 
@@ -1798,5 +1800,13 @@ public class PipelineRunManager {
         } catch (Exception e) {
             log.error("An error occurred during cloud resource tags removal for run '{}'", run.getId(), e);
         }
+    }
+
+    private Long getPipelineProjectId(final Pipeline pipeline) {
+        if (pipeline == null || pipeline.getId() == null) {
+            return null;
+        }
+        final FolderWithMetadata project = folderApiService.getProject(pipeline.getId(), AclClass.PIPELINE);
+        return project != null ? project.getId() : null;
     }
 }
