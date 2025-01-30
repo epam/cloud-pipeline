@@ -7,6 +7,7 @@ NGS_PORTAL_IMAGE="${NGS_PORTAL_IMAGE:-ngs-portal}"
 NGS_PORTAL_VERSION="${NGS_PORTAL_VERSION:-}"
 NGS_PORTAL_COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 PUSH_IMAGES=false
+TAG_AS_LATEST=false
 
 # Display help
 function display_help() {
