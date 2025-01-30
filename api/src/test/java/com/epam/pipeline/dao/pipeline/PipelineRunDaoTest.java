@@ -141,6 +141,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String NODE_TYPE = "m5.xlarge";
     private static final String NODE_TYPE_2 = "r5.2xlarge";
     private static final String TRUE = "True";
+    private static final long PROJECT_ID = 1L;
 
     private static final BigDecimal INITIAL_CLUSTER_PRICE_1 = BigDecimal.valueOf(1.9511111);
     private static final BigDecimal INITIAL_CLUSTER_PRICE_2 = BigDecimal.valueOf(123456.5666);
@@ -211,6 +212,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         List<PipelineRun> pipelineRuns = filterDao.filterPipelineRuns(
                 FilterExpression.prepare(logicalExpression), 1, 2, 0);
         assertEquals(1, pipelineRuns.size());
+        assertEquals(PROJECT_ID, pipelineRuns.get(0).getProjectId().longValue());
         assertEquals(pipelineRuns.get(0).getPodId(), run1.getPodId());
     }
 
@@ -255,6 +257,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         createTestPipelineRun();
         List<PipelineRun> pipelineRuns =
                 pipelineRunDao.loadPipelineRuns(Collections.singletonList(run1.getId()));
+        assertEquals(PROJECT_ID, pipelineRuns.get(0).getProjectId().longValue());
         assertEquals(1, pipelineRuns.size());
         assertEquals(run1.getId(), pipelineRuns.get(0).getId());
     }
@@ -1427,6 +1430,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setParams(TEST_PARAMS);
         run.setOwner(USER);
         run.setPlatform(TEST_PLATFORM);
+        run.setProjectId(PROJECT_ID);
 
         Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
         PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();

@@ -77,7 +77,8 @@
                         r.pipeline_name,
                         r.cluster_price,
                         r.node_pool_id,
-                        r.node_start_date
+                        r.node_start_date,
+                        r.project_id
                     FROM
                         pipeline.pipeline_run r
                     WHERE @WHERE@
