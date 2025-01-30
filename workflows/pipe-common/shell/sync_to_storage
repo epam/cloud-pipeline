@@ -152,6 +152,8 @@ function start_sync_daemon() {
 
         # Check if some file from config marked for deletion
         if [ -f "$CP_SYNC_TO_STORAGE_REMOVE_SPEC" ]; then
+            echo "Cleaning up $CP_SYNC_TO_STORAGE_SPEC with respect to $CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+            touch "${CP_SYNC_TO_STORAGE_SPEC}.updated"
             while read -a _sync_config_entry; do
                 local _source_path=${_sync_config_entry[0]}
                 if grep -q -x -F "$_source_path" "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"; then
@@ -160,12 +162,10 @@ function start_sync_daemon() {
                 fi
                 echo "${_sync_config_entry[@]}" >> "${CP_SYNC_TO_STORAGE_SPEC}.updated"
             done <"$CP_SYNC_TO_STORAGE_SPEC"
-
-            if [ -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" ]; then
-                mv -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.prev"
-                mv -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" "${CP_SYNC_TO_STORAGE_SPEC}"
-                rm -f "${CP_SYNC_TO_STORAGE_SPEC}.updated"
-            fi
+            mv -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.prev"
+            mv -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" "${CP_SYNC_TO_STORAGE_SPEC}"
+            rm -f "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+            echo "Previous number of entries to sync is: $(wc -l < "${CP_SYNC_TO_STORAGE_SPEC}".prev) new number us: $(wc -l < "$CP_SYNC_TO_STORAGE_SPEC")"
         fi
 
         if [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; then
@@ -219,6 +219,24 @@ elif [ "$_cmd" == "start" ]; then
     nohup bash -c start_sync_daemon &> "$CP_SYNC_TO_STORAGE_LOGFILE" &
     echo "$!" > "$CP_SYNC_TO_STORAGE_PID_FILE"
     echo "Sync process has been started, review logs in $CP_SYNC_TO_STORAGE_LOGFILE"
+elif [ "$_cmd" == "check" ]; then
+  if [ -f "$CP_SYNC_TO_STORAGE_PID_FILE" ]; then
+     _prev_pid=$(cat "$CP_SYNC_TO_STORAGE_PID_FILE")
+     if  ps -p "$_prev_pid" > /dev/null ; then
+        echo "Sync process is running with pid: $_prev_pid"
+        exit 0
+    fi
+  fi
+  exit 1
+elif [ "$_cmd" == "count" ]; then
+  if [ -f "$CP_SYNC_TO_STORAGE_SPEC" ]; then
+      _FILES_TO_SYNC_COUNT=$(wc -l < "$CP_SYNC_TO_STORAGE_SPEC")
+      if [ "$?" -eq 0 ]; then
+          echo "$_FILES_TO_SYNC_COUNT"
+          exit 0
+      fi
+  fi
+  exit 1
 else
     echo "[ERROR] Unknown command $_cmd"
     exit 1
