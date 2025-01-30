@@ -349,6 +349,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool),
                         ToolTab::runWithCustomSettings)
                 .selectValue(INSTANCE_TYPE, testingNode)
+                .setPriceType(ON_DEMAND)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Apache Spark")
