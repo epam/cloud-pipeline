@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import { PageSpinner } from '../../shared/ui/page-spinner.tsx';
 import { useCallback } from 'react';
+import { PlaceholderText } from '../../shared/ui';
 
 function ItemsPanelFooter(
   props: CommonProps & { viewAll?: ViewAllItemsConfiguration },
@@ -61,11 +62,11 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     }
 
     if (errorText) {
-      return <div className="p-2 text-faded text-xs">{errorText}</div>;
+      return <PlaceholderText className="p-2">{errorText}</PlaceholderText>;
     }
 
     if (items.length === 0) {
-      return <div className="p-2 text-faded text-xs">Nothing found</div>;
+      return <PlaceholderText className="p-2">Nothing found</PlaceholderText>;
     }
 
     return (

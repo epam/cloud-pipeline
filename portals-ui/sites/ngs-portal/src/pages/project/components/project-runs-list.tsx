@@ -80,8 +80,9 @@ export function ProjectRunsList({ projectId, extended }: Props) {
 
   return (
     <div className="h-full flex flex-col">
+      <b className="text-base">Runs history</b>
       <ItemsPanel<Run>
-        className="flex-grow bg-white overflow-auto"
+        className="flex-grow bg-white overflow-auto mt-1"
         render={runCardRenderer}
         items={runs}
         itemKey="id"
