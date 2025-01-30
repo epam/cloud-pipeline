@@ -237,6 +237,22 @@ elif [ "$_cmd" == "count" ]; then
       fi
   fi
   exit 1
+elif [ "$_cmd" == "stop" ]; then
+    echo "Stopping sync_to_storage daemon!"
+    if [ -n "$2" ]; then
+        _force="$2"
+        if [ "$_force" == "force" ]; then
+            echo "Force option is provided, sync_to_storage daemon would be stopped immediately!"
+            if [ -f "$CP_SYNC_TO_STORAGE_PID_FILE" ]; then
+                _pid=$(cat "$CP_SYNC_TO_STORAGE_PID_FILE")
+                kill "$_pid"
+                rm -f "$CP_SYNC_TO_STORAGE_PID_FILE"
+            fi
+        fi
+    else
+        echo "Creating STOP_FLAG file: $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE, sync_to_storage daemon will finish its iteration and will be stopped gracefully!"
+        touch "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE"
+    fi
 else
     echo "[ERROR] Unknown command $_cmd"
     exit 1
