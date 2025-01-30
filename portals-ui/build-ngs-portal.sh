@@ -18,6 +18,7 @@ function display_help() {
   echo "  --image <image-name>   Specify the image name (default: ngs-portal)"
   echo "  --version <version>    Specify the version tag (default: commit SHA if not provided)"
   echo "  --push                 Push the built images to the registry (default: false)"
+  echo "  --latest               Tag as latest (default: true if version is not specified)"
   echo "  --help                 Show this help message and exit"
   echo ""
   echo "Examples:"
@@ -47,6 +48,8 @@ while [[ $# -gt 0 ]]; do
       PUSH_IMAGES=true
       shift
       ;;
+    --latest)
+      TAG_AS_LATEST=true
     --help)
       display_help
       exit 0
@@ -74,6 +77,14 @@ if [[ -z "$NGS_PORTAL_VERSION" ]]; then
   fi
 else
   # If a version is specified, only create the specified version tag
+  LATEST_TAG=false
+fi
+
+if [[ "$TAG_AS_LATEST" == true ]]; then
+  LATEST_TAG=true
+fi
+
+if [[ "$NGS_PORTAL_VERSION" == "latest" ]]; then
   LATEST_TAG=false
 fi
 
