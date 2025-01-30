@@ -281,7 +281,7 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
-    public void launchPipelineShouldSetUpProjectId() {
+    public void launchPipelineFromProjectShouldSetUpProjectId() {
         final FolderWithMetadata folder = new FolderWithMetadata();
         final Pipeline pipeline = new Pipeline(PIPELINE_ID);
         folder.setId(FOLDER_ID);
@@ -291,7 +291,7 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
-    public void launchPipelineIfProjectNotFound() {
+    public void launchPipelineWithoutProjectShouldSetProjectIdAsNull() {
         doReturn(null).when(folderApiService).getProject(PIPELINE_ID, AclClass.PIPELINE);
         final PipelineRun run = launchPipeline(configuration, new Pipeline(PIPELINE_ID), null, null, null);
         assertNull(run.getProjectId());
