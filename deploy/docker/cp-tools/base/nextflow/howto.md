@@ -19,7 +19,7 @@ To manually configure `nf-weblog-handler`. The following steps should be done:
 
 It is also possible to configure this image to use this functionality automatically:
 
-1. Configure new custom capability in `launch.capabilities` system preference:
+1. Configure new custom capability in `launch.capabilities` system preference, and make it visible:
     ```
      "NF_EVENT_HANDLER": {
       "description": "Enables Nextflow WebLog event handler.",

@@ -95,6 +95,7 @@ function enable_nf_runtime_data_sync() {
     [ "$(nproc)" -eq "1" ] && _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 )) || _DEFAULT_NUMBER_OF_THREADS=1
     export CP_SYNC_TO_STORAGE_THREADS=${CP_SYNC_TO_STORAGE_THREADS:-$_DEFAULT_NUMBER_OF_THREADS}
     CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
+    CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 
     pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
     run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "$API_TOKEN")
@@ -125,8 +126,8 @@ function enable_nf_runtime_data_sync() {
         while true; do
             sleep "$(( CP_SYNC_TO_STORAGE_TIMEOUT_SEC / 2 ))"
 
-            if [ -f "${CP_NF_WORKDIR}/trace.txt" ] ; then
-                tail -n +2 "${CP_NF_WORKDIR}/trace.txt" | while read -r task
+            if [ -f "${CP_NF_TRACE_FILE}" ] ; then
+                tail -n +2 "${CP_NF_TRACE_FILE}" | while read -r task
                 do
                     task_hash=$(echo "$task" | awk '{ print $2 }')
                     task_workdir=$(realpath "${CP_NF_WORKDIR}/$task_hash*")
@@ -155,7 +156,7 @@ function enable_nf_runtime_data_sync() {
                     fi
                 done
             else
-                pipe_log_warn "[WARN] There is no ${CP_NF_WORKDIR}/trace.txt at the moment, skip runtime data sync iteration." "$SYNC_RUN_RUNTIME_DATA_TASK"
+                pipe_log_warn "[WARN] There is no ${CP_NF_TRACE_FILE} at the moment, skip runtime data sync iteration." "$SYNC_RUN_RUNTIME_DATA_TASK"
             fi
         done
     else

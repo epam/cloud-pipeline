@@ -15,9 +15,12 @@
 # limitations under the License.
 
 CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
-export NXF_WORK="$CP_NF_WORKDIR"
+CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
 CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=6
+
+export NXF_WORK="$CP_NF_WORKDIR"
+mkdir -p "$NXF_WORK"
 
 _IS_RUN_COMMAND=
 for param in "$@"; do
@@ -62,7 +65,7 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
         _ARGS+=("http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event")
         if [ -n "$CP_NF_WORKDIR" ]; then
             _ARGS+=('-with-trace')
-            _ARGS+=("${CP_NF_WORKDIR}/trace.txt")
+            _ARGS+=("${CP_NF_TRACE_FILE}")
         fi
     fi
 fi
