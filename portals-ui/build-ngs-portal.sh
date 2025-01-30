@@ -51,6 +51,8 @@ while [[ $# -gt 0 ]]; do
       ;;
     --latest)
       TAG_AS_LATEST=true
+      shift
+      ;;
     --help)
       display_help
       exit 0
