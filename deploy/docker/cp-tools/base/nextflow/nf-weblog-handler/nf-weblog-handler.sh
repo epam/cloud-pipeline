@@ -92,7 +92,7 @@ function parse_options {
 function enable_nf_runtime_data_sync() {
     SYNC_RUN_RUNTIME_DATA_TASK="SyncRunRuntimeData"
 
-    [ "$(nproc)" -eq "1" ] && _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 )) || _DEFAULT_NUMBER_OF_THREADS=1
+    _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 + 1 ))
     export CP_SYNC_TO_STORAGE_THREADS=${CP_SYNC_TO_STORAGE_THREADS:-$_DEFAULT_NUMBER_OF_THREADS}
     CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
     CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
@@ -107,7 +107,21 @@ function enable_nf_runtime_data_sync() {
     run_sync_data=$(echo "$run_sync_data_pref_response" | jq '.payload.value' -r)
     export CP_SYNC_TO_STORAGE_TIMEOUT_SEC=$(echo "$run_sync_data" | jq '.syncTimeout // 60' -r)
 
+    nf_trace_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TRACE // ""' -r)
+    nf_trace_run_folder_sync_path=$(echo "$nf_trace_sync_config_entry" | jq '.runFolderPathPrefix // ""' -r)
+    nf_trace_data_sync_path=$(echo "$nf_trace_sync_config_entry" | jq '.dataPathPrefix // ""' -r)
+    if [ -n "$nf_trace_run_folder_sync_path" ]; then
+        nf_trace_file_sync_path="${nf_trace_run_folder_sync_path#/}/${RUN_ID}/trace.txt"
+        if [ -n "$nf_trace_data_sync_path" ]; then
+            nf_trace_file_sync_path="${nf_trace_run_folder_sync_path#/}/${RUN_ID}/${nf_trace_data_sync_path#/}/trace.txt"
+        fi
+    fi
+
     sync_to_storage start
+    if [ -n "$nf_trace_file_sync_path" ]; then
+        pipe_log_info "[INFO] Starting nextflow trace file sync process." "$SYNC_RUN_RUNTIME_DATA_TASK"
+        sync_to_storage add "${CP_NF_TRACE_FILE}" "$nf_trace_file_sync_path"
+    fi
 
     # Configure synchronization for nf task workdirs
     pipe_log_info "[INFO] Starting nextflow task workdir sync process." "$SYNC_RUN_RUNTIME_DATA_TASK"

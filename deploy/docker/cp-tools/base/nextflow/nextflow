@@ -17,7 +17,7 @@
 CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
 CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
-CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=6
+CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
 
 export NXF_WORK="$CP_NF_WORKDIR"
 mkdir -p "$NXF_WORK"
@@ -79,7 +79,9 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
         while [ "$_wait_count" -lt "$((CP_NF_RUNTIME_DATA_SYNC_PERIOD / CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC))" ]; do
           _wait_count=$((_wait_count + 1))
           _files_to_sync=$(sync_to_storage count)
-          if [ "$?" -eq 0 ] && [ "$_files_to_sync" -eq "0" ]; then
+
+          # "$_files_to_sync" -eq "1" because there always will be trace file in sync
+          if [ "$?" -eq 0 ] && [ "$_files_to_sync" -eq "1" ]; then
               echo "Synchronization of nextflow task runtime files finished."
               exit 0
           fi
