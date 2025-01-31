@@ -453,7 +453,6 @@ public class PipelineRunManager {
         }
         run.parseParameters();
         updateMetadataEntities(run);
-        run.setProjectId(getPipelineProjectId(pipeline));
         return run;
     }
 
@@ -976,6 +975,7 @@ public class PipelineRunManager {
             run.setPipelineId(pipeline.getId());
             run.setVersion(version);
             run.setRevisionName(gitManager.getRevisionName(version));
+            run.setProjectId(getPipelineProjectId(pipeline));
         }
         run.setStatus(TaskStatus.RUNNING);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
