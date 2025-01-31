@@ -257,9 +257,27 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         createTestPipelineRun();
         List<PipelineRun> pipelineRuns =
                 pipelineRunDao.loadPipelineRuns(Collections.singletonList(run1.getId()));
-        assertEquals(PROJECT_ID, pipelineRuns.get(0).getProjectId().longValue());
         assertEquals(1, pipelineRuns.size());
         assertEquals(run1.getId(), pipelineRuns.get(0).getId());
+    }
+
+    @Test
+    public void testShouldReturnProjectIdIfExists() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setProjectId(PROJECT_ID);
+        pipelineRunDao.createPipelineRun(run);
+        final List<PipelineRun> pipelineRuns =
+                pipelineRunDao.loadPipelineRuns(Collections.singletonList(run.getId()));
+        assertEquals(PROJECT_ID, pipelineRuns.get(0).getProjectId().longValue());
+    }
+
+    @Test
+    public void testShouldReturnNullProjectIdIfAbsent() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+        final List<PipelineRun> pipelineRuns =
+                pipelineRunDao.loadPipelineRuns(Collections.singletonList(run.getId()));
+        assertNull(pipelineRuns.get(0).getProjectId());
     }
 
     @Test
@@ -1430,7 +1448,6 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setParams(TEST_PARAMS);
         run.setOwner(USER);
         run.setPlatform(TEST_PLATFORM);
-        run.setProjectId(PROJECT_ID);
 
         Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
         PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();

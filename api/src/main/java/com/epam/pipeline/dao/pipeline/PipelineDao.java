@@ -253,6 +253,9 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             if (!rs.wasNull()) {
                 pipeline.setParentFolderId(folderId);
             }
+            if (!rs.wasNull()) {
+                pipeline.setParent(new Folder(folderId));
+            }
         }
 
         private static Pipeline basicInitPipeline(final ResultSet rs, final Pipeline pipeline) throws SQLException {

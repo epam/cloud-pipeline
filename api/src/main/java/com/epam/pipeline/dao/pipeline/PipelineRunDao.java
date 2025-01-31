@@ -1252,7 +1252,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
             run.setSensitive(rs.getBoolean(SENSITIVE.name()));
             run.setKubeServiceEnabled(rs.getBoolean(KUBE_SERVICE_ENABLED.name()));
-            run.setProjectId(rs.getLong(PROJECT_ID.name()));
+            Long projectId = rs.getLong(PROJECT_ID.name());
+            if (!rs.wasNull()) {
+                run.setProjectId(projectId);
+            }
             RunInstance instance = new RunInstance();
             instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
             instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));
