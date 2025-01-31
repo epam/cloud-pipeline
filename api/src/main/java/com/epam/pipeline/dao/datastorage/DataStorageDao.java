@@ -695,6 +695,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             Long parentFolderId = rs.getLong(FOLDER_ID.name());
             if (!rs.wasNull()) {
                 dataStorage.setParentFolderId(parentFolderId);
+                dataStorage.setParent(new Folder(parentFolderId));
             }
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);

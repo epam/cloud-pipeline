@@ -252,6 +252,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         Long parentId = rs.getLong(PARENT_ID.name());
                         if (!rs.wasNull()) {
                             folder.setParentId(parentId);
+                            folder.setParent(new Folder(parentId));
                             folderToChildren.putIfAbsent(parentId, new HashSet<>());
                             folderToChildren.get(parentId).add(folderId);
                         }
@@ -271,6 +272,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                 new Date(rs.getTimestamp(PIPELINE_CREATED_DATE.name()).getTime()));
                         pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
                         pipeline.setParentFolderId(folderId);
+                        pipeline.setParent(new Folder(folderId));
                         pipeline.setOwner(rs.getString(OWNER.name()));
                         String rawVisibility = rs.getString(PIPELINE_VISIBILITY.name());
                         pipeline.setVisibility(
@@ -324,6 +326,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         StoragePolicy policy = DataStorageDao.DataStorageParameters.getStoragePolicy(rs);
                         dataStorage.setStoragePolicy(policy);
                         dataStorage.setParentFolderId(folderId);
+                        dataStorage.setParent(new Folder(folderId));
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
@@ -359,6 +362,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             long parentId = rs.getLong(PARENT_ID.name());
             if (!rs.wasNull()) {
                 folder.setParentId(parentId);
+                folder.setParent(new Folder(parentId));
             }
             folder.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             folder.setOwner(rs.getString(OWNER.name()));
