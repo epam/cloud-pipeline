@@ -24,7 +24,7 @@ It is also possible to configure this image to use this functionality automatica
      "NF_EVENT_HANDLER": {
       "description": "Enables Nextflow WebLog event handler.",
       "commands": [
-       "[ -f /opt/nf-weblog-handler/nf-weblog-handler.sh ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --start -p $CP_NF_WEBLOG_HANDLER_PORT || exit 1"
+       "[ -f /opt/nf-weblog-handler/nf-weblog-handler.sh ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --start --enable-runtime-data -p $CP_NF_WEBLOG_HANDLER_PORT || exit 1"
       ],
       "params": {
        "CP_RUN_ENGINE_TYPE": "NEXTFLOW",

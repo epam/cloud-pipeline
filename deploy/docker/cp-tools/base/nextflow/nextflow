@@ -71,24 +71,11 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 $NXF_HOME/nextflow "${_ARGS[@]}"
+_result_code="$?"
 
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
-    if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && sync_to_storage check &> /dev/null ; then
-        echo "Nextflow process finished. Waiting for synchronization of nextflow task runtime files... "
-        _wait_count=0
-        while [ "$_wait_count" -lt "$((CP_NF_RUNTIME_DATA_SYNC_PERIOD / CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC))" ]; do
-          _wait_count=$((_wait_count + 1))
-          _files_to_sync=$(sync_to_storage count)
-
-          # "$_files_to_sync" -eq "1" because there always will be trace file in sync
-          if [ "$?" -eq 0 ] && [ "$_files_to_sync" -eq "1" ]; then
-              echo "Synchronization of nextflow task runtime files finished."
-              exit 0
-          fi
-          sleep $CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC
-        done
-        echo "[WARN] Synchronization of nextflow task runtime files can't finished in configured time, not all files would be available in statistic report. Exiting!"
-        exit 0
-    fi
+    /opt/nf-weblog-handler/nf-weblog-handler.sh --wait-runtime-data
 fi
+
+exit $_result_code
 

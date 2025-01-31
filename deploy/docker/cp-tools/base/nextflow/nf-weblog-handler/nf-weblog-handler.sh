@@ -90,6 +90,10 @@ function parse_options {
         export CP_NF_ENABLE_RUNTIME_DATA_SYNC=1
         shift # past argument
         ;;
+        --wait-runtime-data)
+        export CP_NF_WAIT_RUNTIME_DATA_SYNC=1
+        shift # past argument
+        ;;
         *)    # unknown option
         _UNKNOWN+=("$1") # save it in an array for later
         shift # past argument
@@ -208,8 +212,8 @@ if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ] && [ "$CP_NF_WEBLOG_HANDLER_STOP" == 1
     exit 14
 fi
 
-if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ] && [ -z "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" ]; then
-    echo "[ERROR] One of the options: --start/--stop/--check/--enable-runtime-data should be provided."
+if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ] && [ -z "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" ] && [ -z "$CP_NF_WAIT_RUNTIME_DATA_SYNC" ]; then
+    echo "[ERROR] One of the options: --start/--stop/--check/--enable-runtime-data/--wait-runtime-data should be provided."
     exit 14
 fi
 
@@ -267,6 +271,31 @@ if [ "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" == 1 ]; then
     export -f check_api_response_status
     nohup bash -c enable_nf_runtime_data_sync &> "$CP_NF_RUNTIME_DATA_SYNC_LOG_FILE" &
     echo "$!" > "$CP_NF_RUNTIME_DATA_SYNC_PID_FILE"
+fi
+
+if [ "$CP_NF_WAIT_RUNTIME_DATA_SYNC" == 1 ]; then
+    CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
+    CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
+    if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && sync_to_storage check &> /dev/null ; then
+        echo "Nextflow process finished. Waiting for synchronization of nextflow task runtime files... "
+        _wait_count=0
+        while [ "$_wait_count" -lt "$((CP_NF_RUNTIME_DATA_SYNC_PERIOD / CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC))" ]; do
+          _wait_count=$((_wait_count + 1))
+          _files_to_sync=$(sync_to_storage count)
+
+          # "$_files_to_sync" -eq "1" because there always will be trace file in sync
+          if [ "$?" -eq 0 ] && [ "$_files_to_sync" -eq "1" ]; then
+              echo "Synchronization of nextflow task runtime files finished."
+              exit 0
+          fi
+          sleep "$CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC"
+        done
+        echo "[WARN] Synchronization of nextflow task runtime files can't finished in configured time, not all files would be available in statistic report. Exiting!"
+        exit 14
+    else
+        echo "[WARN] There is no Nextflow runtime data sync process running..."
+        exit 14
+    fi
 fi
 
 if [ "$CP_NF_WEBLOG_HANDLER_STOP" == 1 ]; then
