@@ -20,6 +20,7 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      terminationGracePeriodSeconds: 600
       containers:
         - name: cp-search-elk
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
