@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import roleModel from '../../utils/roleModel';
+import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -1039,6 +1040,27 @@ class PreferencesLoad extends Remote {
         return JSON.parse(value);
       } catch (e) {
         console.warn('Error parsing "ui.launch.parameters" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get uiRunActions () {
+    const value = this.getPreferenceValue('ui.run.actions');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          const result = {};
+          for (const [key, value] of Object.entries(cfg)) {
+            result[key] = parseRunActionCriteria(key, value);
+          }
+          return result;
+        }
+        throw Error(`unsupported ui.run.actions format. expected object, got ${typeof cfg}`);
+      } catch (e) {
+        console.warn('Error parsing "ui.run.actions" preference:', e.message);
       }
     }
     return {};

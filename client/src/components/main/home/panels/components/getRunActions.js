@@ -23,6 +23,7 @@ import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/Pre
 import DataStorageLink from '../../../../special/data-storage-link';
 import roleModel from '../../../../../utils/roleModel';
 import {runSupportsContinue} from '../../../../runs/actions/continue-run';
+import {checkRunActionAvailable, runActions} from '../../../../runs/actions/actions-availability';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -41,11 +42,13 @@ export default function (
       case 'FAILURE':
       case 'STOPPED':
       case 'SUCCESS':
-        actions.push({
-          title: 'RERUN',
-          icon: 'play-circle-o',
-          action: callbacks ? callbacks.run : undefined
-        });
+        if (checkRunActionAvailable(run, runActions.rerun)) {
+          actions.push({
+            title: 'RERUN',
+            icon: 'play-circle-o',
+            action: callbacks ? callbacks.run : undefined
+          });
+        }
         if (runSupportsContinue(run) && callbacks && callbacks.continue) {
           actions.push({
             title: 'CONTINUE',
@@ -181,7 +184,8 @@ export default function (
           run.instance &&
           run.instance.spot !== undefined &&
           !run.instance.spot &&
-          run.platform !== 'windows'
+          run.platform !== 'windows' &&
+          checkRunActionAvailable(run, runActions.resume)
         ) {
           actions.push({
             title: 'RESUME',

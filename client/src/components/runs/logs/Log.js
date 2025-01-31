@@ -102,6 +102,7 @@ import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
+import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1490,7 +1491,8 @@ class Logs extends localization.LocalizedReactComponent {
       }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(run) &&
-        podIP;
+        podIP &&
+        checkRunActionAvailable(run, runActions.browse);
     }
     return false;
   }
@@ -2200,7 +2202,8 @@ class Logs extends localization.LocalizedReactComponent {
         case 'success':
           if (
             roleModel.executeAllowed(run) &&
-            !isRemovedPipeline
+            !isRemovedPipeline &&
+            checkRunActionAvailable(run, runActions.rerun)
           ) {
             ActionButton = (
               <a
@@ -2244,9 +2247,11 @@ class Logs extends localization.LocalizedReactComponent {
             }
             break;
           case 'paused':
-            PauseResumeButton = this.maintenanceMode
-              ? getMaintenanceDisabledButton('RESUME')
-              : (<a onClick={this.showResumeConfirmDialog}>RESUME</a>);
+            if (checkRunActionAvailable(run, runActions.resume)) {
+              PauseResumeButton = this.maintenanceMode
+                ? getMaintenanceDisabledButton('RESUME')
+                : (<a onClick={this.showResumeConfirmDialog}>RESUME</a>);
+            }
             break;
           case 'pausing':
             PauseResumeButton = (<span>PAUSING</span>);
@@ -2334,7 +2339,7 @@ class Logs extends localization.LocalizedReactComponent {
         }
       }
 
-      if (status !== 'RUNNING') {
+      if (status !== 'RUNNING' && checkRunActionAvailable(run, runActions.exportLogs)) {
         ExportLogsButton = (<a onClick={this.exportLog}>EXPORT LOGS</a>);
       }
 
@@ -2365,7 +2370,7 @@ class Logs extends localization.LocalizedReactComponent {
           {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
-      if (instance && instance.nodeName) {
+      if (instance && instance.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
         const parts = [
           startDate && `from=${encodeURIComponent(startDate)}`,
           endDate && `to=${encodeURIComponent(endDate)}`
