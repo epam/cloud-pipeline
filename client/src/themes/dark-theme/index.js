@@ -50,6 +50,8 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
+    '@color-grey-light': '#aaa',
+    '@color-aqua-accent': '@color-aqua-light',
     '@color-green-soft': '#008080',
     '@color-blue-soft': '#025979',
     '@spinner': '@application-color',
@@ -141,6 +143,8 @@ export default {
     '@vs-color-change-applied-background': '@vs-color-change-background',
     '@application-console-background-color': '@card-background-color',
     '@application-console-color': '@application-color',
-    '@application-console-color-details': '@application-color-faded'
+    '@application-console-color-details': '@application-color-faded',
+    '@codemirror-selected-background-color': '#5c5769',
+    '@codemirror-focused-selected-background-color': '#5c5769'
   }
 };

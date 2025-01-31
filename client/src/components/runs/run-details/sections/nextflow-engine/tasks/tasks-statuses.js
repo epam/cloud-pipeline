@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './nextflow-engine-tasks.css';
 import {
-  getClassNameForNextflowTaskStatus,
-  NextflowTaskStatus,
-  nextflowTaskStatusGroups
+  getBarClassNameForNextflowTaskStatus,
+  getSortedTaskStatuses,
+  NextflowTaskStatus
 } from './utilities';
 
 function TasksStatuses (props) {
@@ -15,11 +15,8 @@ function TasksStatuses (props) {
     statuses = [],
     taskGroupFilter
   } = props;
-  const sorted = nextflowTaskStatusGroups.map((st) => ({
-    status: st.statuses[0],
-    count: statuses.filter((s) => st.statuses.includes(s.status)).reduce((r, c) => r + c.count, 0)
-  }));
-  const total = sorted.reduce((res, cur) => res + cur.count, 1);
+  const sorted = getSortedTaskStatuses(statuses);
+  const total = sorted.reduce((res, cur) => res + cur.count, 0);
   return (
     <div
       className={classNames(
@@ -59,14 +56,17 @@ function TasksStatuses (props) {
                     {`${s.count}`}
                   </td>
                   <td>
-                    <div className={styles.tasksStatusCountBar}>
+                    <div className={classNames(
+                      styles.tasksStatusCountBar,
+                      'cp-run-engine-task-status-bar'
+                    )}>
                       <div
                         className={classNames(
                           styles.tasksStatusCountBarFill,
                           {[styles.nonEmpty]: s.count > 0},
-                          getClassNameForNextflowTaskStatus(s.status)
+                          getBarClassNameForNextflowTaskStatus(s.status)
                         )}
-                        style={{width: `${(s.count / total) * 100.0}%`}}
+                        style={{width: `${total === 0 ? 0 : (s.count / total) * 100.0}%`}}
                       />
                     </div>
                   </td>

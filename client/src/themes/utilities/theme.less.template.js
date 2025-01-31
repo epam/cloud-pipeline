@@ -254,6 +254,78 @@ export default `
   color: @color-sensitive;
   border: 1px solid currentColor;
 }
+@THEME .cp-grey {
+  color: @color-grey;
+}
+@THEME .cp-grey.border {
+  border-color: @color-grey;
+}
+@THEME .cp-grey-light {
+  color: @color-grey-light;
+}
+@THEME .cp-grey-light.border {
+  border-color: @color-grey-light;
+}
+@THEME .cp-grey-semi-transparent {
+  color: @color-grey-semi-transparent;
+}
+@THEME .cp-grey-semi-transparent.border {
+  border-color: @color-grey-semi-transparent;
+}
+@THEME .cp-violet {
+  color: @color-violet;
+}
+@THEME .cp-violet.border {
+  border-color: @color-violet;
+}
+@THEME .cp-pink {
+  color: @color-violet;
+}
+@THEME .cp-pink.border {
+  border-color: @color-violet;
+}
+@THEME .cp-pink-light {
+  color: @color-pink-light;
+}
+@THEME .cp-pink-light.border {
+  border-color: @color-pink-light;
+}
+@THEME .cp-pink-dusty {
+  color: @color-pink-dusty;
+}
+@THEME .cp-pink-dusty.border {
+  border-color: @color-pink-dusty;
+}
+@THEME .cp-aqua {
+  color: @color-aqua;
+}
+@THEME .cp-aqua.border {
+  border-color: @color-aqua;
+}
+@THEME .cp-aqua-accent {
+  color: @color-aqua-accent;
+}
+@THEME .cp-aqua-accent.border {
+  border-color: @color-aqua-accent;
+}
+@THEME .cp-aqua-light {
+  color: @color-aqua-light;
+}
+@THEME .cp-aqua-light.border {
+  border-color: @color-aqua-light;
+}
+@THEME .cp-blue-soft {
+  color: @color-blue-soft;
+}
+@THEME .cp-blue-soft.border {
+  border-color: @color-blue-soft;
+}
+@THEME .cp-blue-dimmed {
+  color: @color-blue-dimmed;
+}
+@THEME .cp-blue-dimmed.border {
+  border-color: @color-blue-dimmed;
+}
 @THEME .cp-tag {
   background-color: transparent;
   border: 1px solid @card-border-color;
@@ -324,6 +396,72 @@ export default `
 @THEME .cp-tag.cp-primary.hovered {
   background-color: @primary-color;
   border-color: @primary-color;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.violet {
+  border-color: currentColor;
+  color: @color-violet;
+}
+@THEME .cp-tag.violet.filled,
+@THEME .cp-tag.violet.link:hover,
+@THEME .cp-tag.violet.hovered {
+  background-color: @color-violet;
+  border-color: @color-violet;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.blue-soft {
+  border-color: currentColor;
+  color: @color-blue-soft;
+}
+@THEME .cp-tag.blue-soft.filled,
+@THEME .cp-tag.blue-soft.link:hover,
+@THEME .cp-tag.blue-soft.hovered {
+  background-color: @color-blue-soft;
+  border-color: @color-blue-soft;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.blue-dimmed {
+  border-color: currentColor;
+  color: @color-blue-dimmed;
+}
+@THEME .cp-tag.blue-dimmed.filled,
+@THEME .cp-tag.blue-dimmed.link:hover,
+@THEME .cp-tag.blue-dimmed.hovered {
+  background-color: @color-blue-dimmed;
+  border-color: @color-blue-dimmed;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.aqua {
+  border-color: currentColor;
+  color: @color-aqua;
+}
+@THEME .cp-tag.aqua.filled,
+@THEME .cp-tag.aqua.link:hover,
+@THEME .cp-tag.aqua.hovered {
+  background-color: @color-aqua;
+  border-color: @color-aqua;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.aqua-light {
+  border-color: currentColor;
+  color: @color-aqua-light;
+}
+@THEME .cp-tag.aqua-light.filled,
+@THEME .cp-tag.aqua-light.link:hover,
+@THEME .cp-tag.aqua-light.hovered {
+  background-color: @color-aqua-light;
+  border-color: @color-aqua-light;
+  color: @application-color;
+}
+@THEME .cp-tag.aqua-accent {
+  border-color: currentColor;
+  color: @color-aqua-accent;
+}
+@THEME .cp-tag.aqua-accent.filled,
+@THEME .cp-tag.aqua-accent.link:hover,
+@THEME .cp-tag.aqua-accent.hovered {
+  background-color: @color-aqua-accent;
+  border-color: @color-aqua-accent;
   color: @primary-text-color;
 }
 @THEME .cp-versioned-storage {
@@ -2220,12 +2358,31 @@ export default `
   color: @application-color;
 }
 @THEME .cp-run-engine-tasks-group.active,
-@THEME .cp-run-engine-tasks-group:hover {
+@THEME .cp-run-engine-tasks-group:hover,
+@THEME .cp-run-engine-task.active,
+@THEME .cp-run-engine-task:hover,
+@THEME .cp-run-engine-task-cell.active,
+@THEME .cp-run-engine-task-cell:hover {
   background-color: @color-grey-semi-transparent;
 }
 @THEME .cp-run-details-tabs .ant-menu-item {
-  padding: 0 10px;
+  padding: 0 5px;
   margin: 0 5px;
+}
+@THEME .cp-run-details-tabs .ant-menu-item:first-child {
+  margin-left: 0;
+}
+@THEME .cp-run-details-tabs .ant-menu-item:last-child {
+  margin-right: 0;
+}
+@THEME .cp-run-engine-task-modal .ant-modal-content {
+  background-color: @application-background-color;
+}
+@THEME .cp-run-engine-task-modal .ant-modal-body {
+  padding: 5px;
+}
+@THEME .cp-run-engine-task-status-bar {
+  background-color: @color-grey-semi-transparent;
 }
 
 @THEME .cp-billing-menu {
@@ -3121,6 +3278,12 @@ export default `
 }
 @THEME .CodeMirror-linenumber {
   color: @application-color-faded;
+}
+@THEME .CodeMirror-selected {
+  background-color: @codemirror-selected-background-color;
+}
+@THEME .CodeMirror-focused .CodeMirror-selected {
+  background-color: @codemirror-focused-selected-background-color;
 }
 @THEME .cm-s-default .cm-header {
   color: @color-blue;

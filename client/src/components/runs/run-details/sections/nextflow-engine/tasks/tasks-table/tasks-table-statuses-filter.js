@@ -87,7 +87,7 @@ class TasksTableStatuses extends React.Component {
                 checked={value.includes(st)}
                 onChange={(e) => this.onToggleStatus(st, e.target.checked, e)}
               >
-                <NextflowTaskStatus status={st} showLabel filled />
+                <NextflowTaskStatus status={st} showLabel filled={false} />
               </Checkbox>
             </div>
           ))

@@ -88,7 +88,7 @@ class TasksTableTagFilter extends React.Component {
           onClick={prevent}
           style={style}
         >
-          <Icon type="filter" className={styles.tasksTableColumnFilter}/>
+          <Icon type="filter" className={styles.tasksTableColumnFilter} />
         </div>
       </Popover>
     );

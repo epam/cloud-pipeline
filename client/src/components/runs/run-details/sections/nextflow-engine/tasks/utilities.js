@@ -42,12 +42,12 @@ export const nextflowTaskStatusGroupCached = {
 };
 
 export const nextflowTaskStatuses = [
+  nextflowTaskStatusCreated,
+  nextflowTaskStatusSubmitted,
+  nextflowTaskStatusRunning,
   nextflowTaskStatusCompleted,
   nextflowTaskStatusFailed,
   nextflowTaskStatusAborted,
-  nextflowTaskStatusRunning,
-  nextflowTaskStatusCreated,
-  nextflowTaskStatusSubmitted,
   nextflowTaskStatusCached
 ];
 
@@ -72,8 +72,22 @@ export function getClassNameForNextflowTaskStatus (status) {
     case nextflowTaskStatusRunning:
       return 'cp-primary';
     case nextflowTaskStatusCreated:
+      return 'cp-grey-light';
+    case nextflowTaskStatusSubmitted:
+      return 'cp-aqua-accent';
+    case nextflowTaskStatusCached:
+      return 'cp-violet';
     default:
       return 'cp-text-not-important';
+  }
+}
+
+export function getBarClassNameForNextflowTaskStatus (status) {
+  switch ((status || '').toUpperCase()) {
+    case nextflowTaskStatusSubmitted:
+      return 'cp-aqua-light';
+    default:
+      return getClassNameForNextflowTaskStatus(status);
   }
 }
 
@@ -88,6 +102,11 @@ export function getTagNameForNextflowTaskStatus (status) {
     case nextflowTaskStatusRunning:
       return 'primary';
     case nextflowTaskStatusCreated:
+      return 'grey-light';
+    case nextflowTaskStatusSubmitted:
+      return 'aqua-accent';
+    case nextflowTaskStatusCached:
+      return 'violet';
     default:
       return undefined;
   }
@@ -113,6 +132,25 @@ export function getIconForStatus (status, filled = false) {
   }
 }
 
+export function getSortedTaskStatuses (statuses, includeAllStatuses = true) {
+  return nextflowTaskStatusGroups.map((st) => ({
+    status: st.statuses[0],
+    count: statuses.filter((s) => st.statuses.includes(s.status)).reduce((r, c) => r + c.count, 0)
+  })).filter((o) => includeAllStatuses || o.count > 0);
+}
+
+function isStatusFilled (status) {
+  switch ((status || '').toUpperCase()) {
+    case nextflowTaskStatusCompleted:
+    case nextflowTaskStatusAborted:
+    case nextflowTaskStatusFailed:
+    case nextflowTaskStatusRunning:
+      return true;
+    default:
+      return false;
+  }
+}
+
 function NextflowTaskStatus (props) {
   const {
     className,
@@ -122,16 +160,17 @@ function NextflowTaskStatus (props) {
     showLabel = true
   } = props;
   const tagName = getTagNameForNextflowTaskStatus(status);
-  const tagFilled = Boolean(filled && tagName && showLabel);
+  const asTag = Boolean(filled && tagName && showLabel);
+  const tagFilled = asTag && isStatusFilled(status);
   return (
     <span
       className={classNames(
         className,
         styles.nfTaskStatusIcon,
         {
-          'cp-tag': tagFilled,
+          'cp-tag': asTag,
           filled: tagFilled,
-          [getTagNameForNextflowTaskStatus(status)]: tagFilled
+          [getTagNameForNextflowTaskStatus(status)]: asTag
         }
       )}
       style={style}

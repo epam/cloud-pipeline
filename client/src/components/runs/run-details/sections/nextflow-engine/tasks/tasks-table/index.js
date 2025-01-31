@@ -2,11 +2,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Icon, Pagination} from 'antd';
-import styles from '../nextflow-engine-tasks.css';
 import displayDate from '../../../../../../../utils/displayDate';
 import {NextflowTaskStatus} from '../utilities';
 import TasksTableTagFilter from './tasks-table-tag-filter';
 import TasksTableStatusesFilter from './tasks-table-statuses-filter';
+import styles from './tasks-table.css';
 
 export const TASKS_TABLE_PAGE_SIZE = 25;
 
@@ -23,28 +23,32 @@ function attributeRenderer (attribute, formatter = (o) => `${o}`) {
 
 const columns = [
   {
-    key: 'taskTag',
-    title: 'Name',
+    key: 'taskId',
+    title: '##',
     render: (o) => {
       const {
-        taskTag,
         name,
         taskName
       } = o;
-      return taskTag || name || taskName;
-    },
-    sorting: true,
-    filter: (props) => (
-      <TasksTableTagFilter
-        {...props}
-      />
-    )
+      return name || taskName;
+    }
   },
   {
     key: 'taskGroup',
     dataIndex: 'taskGroup',
     title: 'Process',
     sorting: true
+  },
+  {
+    key: 'taskTag',
+    dataIndex: 'taskTag',
+    title: 'Tag',
+    sorting: true,
+    filter: (props) => (
+      <TasksTableTagFilter
+        {...props}
+      />
+    )
   },
   {
     key: 'status',
@@ -227,156 +231,202 @@ TasksTableColumn.propTypes = {
   onFilterChange: PropTypes.func
 };
 
-function TasksTable (props) {
-  const {
-    className,
-    style,
-    tasks = [],
-    pending,
-    total = 0,
-    totalFiltered = 0,
-    page = 0,
-    onPageChange,
-    pageSize = TASKS_TABLE_PAGE_SIZE,
-    taskGroupFilter,
-    filter,
-    onFilterChange,
-    sorting,
-    onSortingChange,
-    multipleSorting = false
-  } = props;
-  const onPageChangeCallback = (newPage) => {
-    if (onPageChange) {
-      onPageChange(Math.max(0, newPage - 1));
+class TasksTable extends React.PureComponent {
+  state = {
+    hovered: undefined
+  };
+
+  componentDidMount () {
+    this.onUnHover();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.tasks !== this.props.tasks) {
+      this.onUnHover();
+    }
+  }
+
+  onHover = (element) => {
+    const {hovered} = this.state;
+    if (hovered !== element) {
+      this.setState({hovered: element});
     }
   };
-  const onChangeColumnSorting = (columnKey, descending) => {
-    if (!onSortingChange) {
-      return;
-    }
-    if (multipleSorting) {
-      const newSorting = sorting.slice();
-      let idx = newSorting.findIndex((s) => s.key === columnKey);
-      if (idx === -1) {
-        newSorting.push({column: columnKey, descending: false});
-        idx = newSorting.length - 1;
+
+  onUnHover = () => this.onHover(undefined);
+
+  render () {
+    const {
+      className,
+      style,
+      tasks = [],
+      pending,
+      total = 0,
+      totalFiltered = 0,
+      page = 0,
+      onPageChange,
+      pageSize = TASKS_TABLE_PAGE_SIZE,
+      taskGroupFilter,
+      filter,
+      onFilterChange,
+      sorting,
+      onSortingChange,
+      multipleSorting = false,
+      onTaskClick
+    } = this.props;
+    const {
+      hovered
+    } = this.state;
+    const onClick = (task) => {
+      if (onTaskClick) {
+        onTaskClick(task);
       }
-      if (descending !== undefined) {
-        newSorting[idx].descending = descending;
+    };
+    const onPageChangeCallback = (newPage) => {
+      if (onPageChange) {
+        onPageChange(Math.max(0, newPage - 1));
+      }
+    };
+    const onChangeColumnSorting = (columnKey, descending) => {
+      if (!onSortingChange) {
+        return;
+      }
+      if (multipleSorting) {
+        const newSorting = sorting.slice();
+        let idx = newSorting.findIndex((s) => s.key === columnKey);
+        if (idx === -1) {
+          newSorting.push({column: columnKey, descending: false});
+          idx = newSorting.length - 1;
+        }
+        if (descending !== undefined) {
+          newSorting[idx].descending = descending;
+        } else {
+          newSorting.splice(idx, 1);
+        }
+        onSortingChange(newSorting);
       } else {
-        newSorting.splice(idx, 1);
+        if (descending !== undefined) {
+          onSortingChange([{column: columnKey, descending: descending}]);
+        } else {
+          onSortingChange([]);
+        }
       }
-      onSortingChange(newSorting);
-    } else {
-      if (descending !== undefined) {
-        onSortingChange([{column: columnKey, descending: descending}]);
-      } else {
-        onSortingChange([]);
-      }
-    }
-  };
-  const tableStyle = {
-    gridTemplateColumns: columns
-      .map(column => `[${getTableColumnName(column.key)}] auto`).join(' '),
-    gridTemplateRows: `[header] 30px repeat(${tasks.length}, 30px)`
-  };
-  return (
-    <div
-      className={classNames(className, styles.tasksTableContainer)}
-      style={style}
-    >
-      <div className={classNames(styles.tasksTableHeader, 'cp-card-background-color')}>
-        {
-          taskGroupFilter ? (
-            <span>
+    };
+    const tableStyle = {
+      gridTemplateColumns: columns
+        .map(column => `[${getTableColumnName(column.key)}] auto`).join(' '),
+      gridTemplateRows: `[header] 30px repeat(${tasks.length}, 30px)`
+    };
+    return (
+      <div
+        className={classNames(className, styles.tasksTableContainer)}
+        style={style}
+      >
+        <div className={classNames(styles.tasksTableHeader, 'cp-card-background-color')}>
+          {
+            taskGroupFilter ? (
+              <span>
+                <span style={{fontWeight: 'bold'}}>
+                  {taskGroupFilter}
+                </span>
+                <span style={{marginLeft: 5}}>
+                  process tasks
+                </span>
+              </span>
+            ) : (
               <span style={{fontWeight: 'bold'}}>
-                {taskGroupFilter}
+                Tasks
               </span>
+            )
+          }
+          {
+            total > 0 && (
               <span style={{marginLeft: 5}}>
-                process tasks
+                {
+                  total > totalFiltered
+                    ? `(${totalFiltered} / ${total})`
+                    : `(${totalFiltered})`
+                }
               </span>
-            </span>
-          ) : (
-            <span style={{fontWeight: 'bold'}}>
-              Tasks
-            </span>
-          )
-        }
+            )
+          }
+          {
+            pending && (<Icon type="loading" style={{marginLeft: 5}} />)
+          }
+        </div>
+        <div className={styles.tasksGrid} style={tableStyle} onMouseLeave={this.onUnHover}>
+          {
+            columns.map((column) => (
+              <TasksTableColumn
+                key={`header-${column.key}`}
+                column={column}
+                sorting={sorting}
+                onChangeColumnSorting={onChangeColumnSorting}
+                filter={filter}
+                onFilterChange={onFilterChange}
+              />
+            ))
+          }
+          {
+            tasks.length === 0 && pending && (
+              <div
+                style={{
+                  gridArea: '2 / 1 / 2 / -1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <span className="cp-text-not-important">Loading...</span>
+              </div>
+            )
+          }
+          {
+            tasks.map((task, row) => columns.map((column) => (
+              <div
+                key={`${task.taskKey}-${column.key}`}
+                style={{gridRow: `${row + 2}`, gridColumn: getTableColumnName(column.key)}}
+                className={classNames(
+                  styles.cell,
+                  styles.taskCell,
+                  'cp-run-engine-task-cell',
+                  'cp-divider',
+                  'light',
+                  'bottom',
+                  {
+                    [styles.hovered]: hovered ? hovered.taskKey === task.taskKey : false,
+                    active: hovered ? hovered.taskKey === task.taskKey : false,
+                    'cp-primary': hovered ? hovered.taskKey === task.taskKey : false
+                  }
+                )}
+                onMouseOver={() => this.onHover(task)}
+                onClick={() => onClick(task)}
+              >
+                {
+                  column.render
+                    ? column.render(task)
+                    : (column.dataIndex ? task[column.dataIndex] : undefined)
+                }
+              </div>
+            )))
+          }
+        </div>
         {
-          total > 0 && (
-            <span style={{marginLeft: 5}}>
-              {
-                total > totalFiltered
-                  ? `(${totalFiltered} / ${total})`
-                  : `(${totalFiltered})`
-              }
-            </span>
-          )
-        }
-      </div>
-      <div className={styles.tasksGrid} style={tableStyle}>
-        {
-          columns.map((column) => (
-            <TasksTableColumn
-              key={`header-${column.key}`}
-              column={column}
-              sorting={sorting}
-              onChangeColumnSorting={onChangeColumnSorting}
-              filter={filter}
-              onFilterChange={onFilterChange}
-            />
-          ))
-        }
-        {
-          tasks.length === 0 && pending && (
-            <div
-              style={{
-                gridArea: '2 / 1 / 2 / -1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <span className="cp-text-not-important">Loading...</span>
+          totalFiltered > pageSize && (
+            <div className={styles.tasksTablePagination}>
+              <Pagination
+                current={page + 1}
+                pageSize={pageSize}
+                total={totalFiltered}
+                onChange={onPageChangeCallback}
+                size="small"
+              />
             </div>
           )
         }
-        {
-          tasks.map((task, row) => columns.map((column) => (
-            <div
-              key={`${task.taskKey}-${column.key}`}
-              style={{gridRow: `${row + 2}`, gridColumn: getTableColumnName(column.key)}}
-              className={classNames(
-                styles.cell,
-                'cp-divider',
-                'light',
-                'bottom'
-              )}
-            >
-              {
-                column.render
-                  ? column.render(task)
-                  : (column.dataIndex ? task[column.dataIndex] : undefined)
-              }
-            </div>
-          )))
-        }
       </div>
-      {
-        totalFiltered > pageSize && (
-          <div className={styles.tasksTablePagination}>
-            <Pagination
-              current={page + 1}
-              pageSize={pageSize}
-              total={totalFiltered}
-              onChange={onPageChangeCallback}
-              size="small"
-            />
-          </div>
-        )
-      }
-    </div>
-  );
+    );
+  }
 }
 
 TasksTable.propTypes = {
@@ -394,7 +444,8 @@ TasksTable.propTypes = {
   sorting: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   onSortingChange: PropTypes.func,
   multipleSorting: PropTypes.bool,
-  pending: PropTypes.bool
+  pending: PropTypes.bool,
+  onTaskClick: PropTypes.func
 };
 
 export default TasksTable;

@@ -2,7 +2,23 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './nextflow-engine-tasks.css';
-import {getClassNameForNextflowTaskStatus} from './utilities';
+import {
+  getBarClassNameForNextflowTaskStatus,
+  getSortedTaskStatuses
+} from './utilities';
+
+function getStatusStyle (statusCount, total) {
+  if (total === 0 || statusCount === 0) {
+    return {
+      width: 0,
+      padding: 0
+    };
+  }
+  const percent = (statusCount / total) * 100;
+  return {
+    width: `${percent}%`
+  };
+}
 
 function TasksGroupProgress (props) {
   const {
@@ -13,27 +29,32 @@ function TasksGroupProgress (props) {
   const {
     stats = []
   } = tasksGroup || {};
-  const columns = stats.map((st) => `[${st.status}] minmax(5px, ${st.count}fr)`).join(' ');
-  const gridStyle = {
-    gridTemplateColumns: columns
-  };
+  const sorted = getSortedTaskStatuses(stats, true);
+  const total = sorted.reduce((res, cur) => res + cur.count, 0);
   return (
     <div
       className={classNames(
         className,
         styles.tasksGroupProgress
       )}
-      style={{...(style || {}), ...gridStyle}}
+      style={style}
+      key="tasks-group-progress"
     >
-      {stats.map((st) => (
+      {sorted.map((st) => (
         <div
           key={st.status}
-          style={{gridColumn: st.status}}
+          style={getStatusStyle(st.count, total)}
           className={classNames(
-            styles.tasksGroupStatusProgress,
-            getClassNameForNextflowTaskStatus(st.status)
+            styles.tasksGroupStatusProgress
           )}
-        />
+        >
+          <div
+            className={classNames(
+              styles.tasksGroupStatusProgressBar,
+              getBarClassNameForNextflowTaskStatus(st.status)
+            )}
+          />
+        </div>
       ))}
     </div>
   );

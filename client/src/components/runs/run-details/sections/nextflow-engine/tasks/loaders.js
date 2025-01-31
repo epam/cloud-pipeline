@@ -1,13 +1,9 @@
 import GetRunEngineTasksStats from '../../../../../../models/run-engines/fetch-tasks-stats';
 import {NEXTFLOW_ENGINE_TYPE} from '../../../../../../models/run-engines/engines';
-import GetRunEngineTasksFilter from "../../../../../../models/run-engines/fetch-tasks";
+import GetRunEngineTasksFilter from '../../../../../../models/run-engines/fetch-tasks';
 
 class NextflowTasksBaseLoader {
   constructor (runId, loader, options = {}) {
-    const {
-      reload = false,
-      interval = 5000
-    } = options;
     this.runId = runId;
     this.loader = loader;
     this.token = {};
@@ -15,10 +11,32 @@ class NextflowTasksBaseLoader {
     this.pending = true;
     this.error = undefined;
     this.data = undefined;
+    this.reload = false;
+    this.interval = 5000;
+    this.timeout = undefined;
+    const {
+      reload = false,
+      interval = 5000
+    } = options;
     this.reload = reload;
     this.interval = interval;
-    this.timeout = undefined;
   }
+
+  setOptions = (options) => {
+    this.abort();
+    const {
+      reload = false,
+      interval = 5000
+    } = options;
+    this.reload = reload;
+    this.interval = interval;
+    this._applyOptions(options);
+    (this.load)();
+  };
+
+  _applyOptions = (options) => {
+    // noop, to be overridden
+  };
 
   removeListener = (listener) => {
     this.listeners = this.listeners.filter((l) => l !== listener);
@@ -127,7 +145,8 @@ async function loadTasks (opts) {
   } = request.value || {};
   return {
     elements,
-    totalCount
+    totalCount,
+    loadedTasksGroup: tasksGroup
   };
 }
 
@@ -161,18 +180,45 @@ async function loadProcesses (opts) {
   return {stats, total};
 }
 
-class NextflowProcessesLoader extends NextflowTasksBaseLoader {
-  constructor (runId, options) {
-    super(runId, loadProcesses, options);
-    (this.load)();
-  }
-
-  getData = () => ({
-    pending: this.pending,
-    error: this.error,
-    processes: this.data ? this.data.stats || [] : [],
-    totalTasks: this.data ? this.data.total : 0
-  });
+async function generalLoader (opts) {
+  const wrapPromise = async (promise) => {
+    try {
+      const result = await promise;
+      return {result};
+    } catch (error) {
+      return {error: error.message};
+    }
+  };
+  const [tasksResult, processesResult] = await Promise.all([
+    wrapPromise(loadTasks(opts)),
+    wrapPromise(loadProcesses(opts))
+  ]);
+  const {
+    result: tasksData = {},
+    error: tasksError
+  } = tasksResult;
+  const {
+    result: processesData = {},
+    error: processesError
+  } = processesResult;
+  const {
+    elements: tasks = [],
+    totalCount: filteredTasksCount = 0,
+    loadedTasksGroup
+  } = tasksData;
+  const {
+    stats: processes = [],
+    total: totalTasksCount = 0
+  } = processesData;
+  return {
+    tasks,
+    loadedTasksGroup,
+    processes,
+    totalTasksCount,
+    filteredTasksCount,
+    tasksError,
+    processesError
+  };
 }
 
 function parseAttributes (attributes) {
@@ -213,6 +259,16 @@ function taskMapper (task) {
 
 class NextflowTasksLoader extends NextflowTasksBaseLoader {
   constructor (runId, options) {
+    super(runId, generalLoader, options);
+    this.tasksGroup = undefined;
+    this.page = 1;
+    this.pageSize = 1;
+    this.filters = {};
+    this.sorting = undefined;
+    this.setOptions(options);
+  }
+
+  _applyOptions = (options) => {
     const {
       tasksGroup,
       page,
@@ -220,14 +276,12 @@ class NextflowTasksLoader extends NextflowTasksBaseLoader {
       filters,
       sorting
     } = options || {};
-    super(runId, loadTasks, options);
     this.tasksGroup = tasksGroup;
     this.page = page;
     this.pageSize = pageSize;
     this.filters = filters;
     this.sorting = sorting;
-    (this.load)();
-  }
+  };
 
   getLoaderPayload = () => ({
     runId: this.runId,
@@ -238,15 +292,29 @@ class NextflowTasksLoader extends NextflowTasksBaseLoader {
     sorting: this.sorting
   });
 
-  getData = () => ({
-    pending: this.pending,
-    error: this.error,
-    tasks: (this.data ? this.data.elements : []).map(taskMapper),
-    totalCount: this.data ? this.data.totalCount : 0
-  });
+  getData = () => {
+    const {
+      tasks = [],
+      processes = [],
+      totalTasksCount = 0,
+      filteredTasksCount = 0,
+      tasksError,
+      processesError,
+      loadedTasksGroup
+    } = this.data || {};
+    return {
+      pending: this.pending,
+      processes,
+      tasks: tasks.map(taskMapper),
+      loadedTasksGroup,
+      totalTasksCount,
+      filteredTasksCount,
+      error: processesError,
+      tasksError
+    };
+  };
 }
 
 export {
-  NextflowProcessesLoader,
   NextflowTasksLoader
 };

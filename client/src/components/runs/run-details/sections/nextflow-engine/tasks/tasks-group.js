@@ -1,10 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
 import styles from './nextflow-engine-tasks.css';
 import TasksGroupProgress from './tasks-group-progress';
-import {NextflowTaskStatus} from './utilities';
+import {getSortedTaskStatuses, NextflowTaskStatus} from './utilities';
 
 function TasksGroup (props) {
   const {
@@ -21,10 +20,10 @@ function TasksGroup (props) {
       onClick(tasksGroup.key);
     }
   };
-  const stats = ((tasksGroup ? tasksGroup.stats : undefined) || [])
+  const stats = getSortedTaskStatuses(tasksGroup ? tasksGroup.stats : [], false)
     .map((st) => (
       <div key={st.status} className={styles.tasksGroupStatsEntry}>
-        <NextflowTaskStatus status={st.status} showLabel={false} />
+        <NextflowTaskStatus status={st.status} showLabel={false} style={{fontWeight: 'bold'}} />
         <span>{st.count}</span>
       </div>
     ));
@@ -42,7 +41,9 @@ function TasksGroup (props) {
       <div className={styles.tasksGroupInfo}>
         <div className={styles.tasksGroupHeader}>
           <span className={styles.tasksGroupName}>{tasksGroup.name}</span>
-          {stats}
+          <div className={styles.tasksGroupStats}>
+            {stats}
+          </div>
         </div>
         <TasksGroupProgress tasksGroup={tasksGroup} />
       </div>

@@ -15,10 +15,6 @@
   flex-shrink: 0;
 }
 
-.run-details-tabs {
-
-}
-
 .run-details-content {
   width: 100%;
   flex: 1;
@@ -27,6 +23,10 @@
 
 .run-details-section {
   padding: 5px;
+}
+
+.run-details-tabs.run-details-section {
+  padding: 0;
 }
 
 .run-details-section + .run-details-section {

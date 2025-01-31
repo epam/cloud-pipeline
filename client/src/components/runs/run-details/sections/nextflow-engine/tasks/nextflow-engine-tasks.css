@@ -1,7 +1,8 @@
 :root {
-  --tasks-group-progress-height: 3px;
-  --tasks-status-bar-height: 5px;
+  --tasks-group-progress-height: 5px;
+  --tasks-status-bar-height: 8px;
   --sorting-icon-size: 8px;
+  --task-status-bar-transition-duration: 250ms;
 }
 
 .nextflow-engine-tasks {
@@ -114,16 +115,17 @@
 }
 
 .tasks-group .tasks-group-header .tasks-group-name {
-  flex-shrink: 1;
-  flex-grow: 0;
+  flex: 1;
   margin-right: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: min(150px, 33%);
 }
 
-.tasks-group .tasks-group-header .tasks-group-stats-entry {
-  font-size: smaller;
+.tasks-group .tasks-group-header .tasks-group-stats {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tasks-group .tasks-group-header .tasks-group-stats-entry + .tasks-group-stats-entry::before {
@@ -134,15 +136,26 @@
 
 .tasks-group-progress {
   width: 100%;
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   height: var(--tasks-group-progress-height);
-  grid-gap: 2px;
+  overflow: hidden;
 }
 
-.tasks-group-progress .tasks-group-status-progress {
+.tasks-group-status-progress {
   height: var(--tasks-group-progress-height);
+  transition: width var(--task-status-bar-transition-duration) ease, padding var(--task-status-bar-transition-duration) ease;
+  padding: 0 2px;
+  overflow: hidden;
+}
+
+.tasks-group-status-progress .tasks-group-status-progress-bar {
+  width: 100%;
+  height: 100%;
   background: currentColor;
   border-radius: var(--tasks-group-progress-height);
+  border: 1px solid currentColor;
 }
 
 .tasks-statuses {
@@ -175,19 +188,21 @@
   min-width: 100px;
   width: 100%;
   height: var(--tasks-status-bar-height);
-  border-radius: var(--tasks-status-bar-height);
+  border-radius: calc(var(--tasks-status-bar-height) / 1.5);
 }
 
 .tasks-status-count-bar-fill {
   display: block;
   height: var(--tasks-status-bar-height);
-  border-radius: var(--tasks-status-bar-height);
+  border-radius: calc(var(--tasks-status-bar-height) / 1.5);
+  border: none;
   background: currentColor;
-  transition: width 250ms ease;
+  transition: width var(--task-status-bar-transition-duration) ease;
 }
 
 .tasks-status-count-bar-fill.non-empty {
   min-width: var(--tasks-status-bar-height);
+  border: 1px solid currentColor;
 }
 
 .tasks-statuses .tasks-statuses-table {
@@ -202,73 +217,6 @@
   padding: 2px 5px 2px 0;
 }
 
-.tasks-table-container {
-  display: flex;
-  flex-direction: column;
-}
-
-.tasks-table-container .tasks-table {
-  flex-shrink: 1;
-  flex-grow: 0;
-  overflow: auto;
-}
-
-.tasks-table-container .tasks-table-header {
-  flex-shrink: 0;
-  margin-top: 5px;
-  padding: 5px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  line-height: 24px;
-}
-
-.tasks-table-container .tasks-grid {
-  margin-bottom: 5px;
-  min-width: 100%;
-  flex-shrink: 1;
-  flex-grow: 0;
-  overflow: auto;
-  display: grid;
-  position: relative;
-}
-
-.tasks-table-container .tasks-table-pagination {
-  flex-shrink: 0;
-  text-align: right;
-}
-
-.tasks-grid .cell {
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  padding: 2px 5px;
-  white-space: nowrap;
-}
-
-.tasks-grid .cell.sorting {
-  cursor: pointer;
-}
-
-.tasks-grid .cell-sorting {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-left: 5px;
-}
-
-.tasks-grid .cell-sorting .cell-sorting-control {
-  width: var(--sorting-icon-size);
-  height: var(--sorting-icon-size);
-  cursor: pointer;
-  fill: transparent;
-}
-
-.tasks-grid .cell-sorting .cell-sorting-control.active {
-  fill: currentColor;
-}
-
 .nf-task-status-icon {
   display: inline-flex;
   align-items: center;
@@ -276,4 +224,9 @@
   font-size: x-small;
   padding: 2px 3px;
   line-height: 1;
+}
+
+.task-details-modal-body {
+  height: calc(99vh - 220px);
+  overflow: auto;
 }

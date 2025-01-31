@@ -2,82 +2,137 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './nextflow-engine-tasks.css';
-import {NextflowProcessesLoader, NextflowTasksLoader} from './loaders';
+import {NextflowTasksLoader} from './loaders';
 import TasksGroupList from './tasks-group-list';
 import TasksStatuses from './tasks-statuses';
+import {Modal} from 'antd';
 import TasksTable, {TASKS_TABLE_PAGE_SIZE} from './tasks-table';
+import TaskDetails from '../task-details/task-details';
 
 class NextflowEngineTasks extends React.Component {
   state = {
     processes: [],
     pending: false,
     error: undefined,
-    tasksPending: false,
     tasksError: undefined,
     activeTasksGroup: undefined,
+    loadedTasksGroup: undefined,
     page: 0,
     totalTasksCount: 0,
     filteredTasksCount: 0,
     tasksFilter: undefined,
-    tasksSorting: undefined
+    tasksSorting: undefined,
+    taskDetails: undefined
   };
 
   componentDidMount () {
-    this.onChangeRun();
-    this.onChangeTasksFilter(undefined);
+    this.updateData(true);
   }
 
   componentDidUpdate (prevProps) {
     const {run: prevRun = {}} = prevProps;
     const {run = {}} = this.props;
-    if (prevRun.id !== run.id) {
-      this.onChangeRun();
-      this.onChangeTasksFilter(undefined);
-    } else if (prevRun.status !== run.status) {
-      this.onChangeRun();
+    if (prevRun.id !== run.id || prevRun.status !== run.status) {
+      this.updateData(prevRun.id !== run.id);
     }
   }
 
   componentWillUnmount () {
-    if (this.processesLoader) {
-      this.processesLoader.destroy();
-      this.processesLoader = undefined;
-    }
     if (this.tasksLoader) {
       this.tasksLoader.destroy();
       this.tasksLoader = undefined;
     }
   }
 
-  onChangeRun = () => {
-    const {run = {}} = this.props;
-    const {
-      id,
-      status
-    } = run;
-    if (this.processesLoader) {
-      this.processesLoader.destroy();
-      this.processesLoader = undefined;
+  updateData = (runChanged = false) => {
+    const {run} = this.props;
+    if (runChanged) {
+      this.setState({
+        processes: [],
+        pending: false,
+        error: undefined,
+        tasksError: undefined,
+        activeTasksGroup: undefined,
+        loadedTasksGroup: undefined,
+        page: 0,
+        totalTasksCount: 0,
+        filteredTasksCount: 0,
+        tasksFilter: undefined,
+        tasksSorting: undefined,
+        taskDetails: undefined
+      });
+      if (this.tasksLoader) {
+        this.tasksLoader.destroy();
+        this.tasksLoader = undefined;
+      }
     }
-    if (id) {
-      this.processesLoader = new NextflowProcessesLoader(id, {reload: /^running$/i.test(status)});
-      this.processesLoader.addListener(this.onProcessesUpdated);
-      this.onChangeTasksFilter(undefined);
+    if (run) {
+      const {
+        id,
+        status
+      } = run;
+      const {
+        activeTasksGroup,
+        tasksFilter,
+        tasksSorting,
+        page
+      } = this.state;
+      const taskLoaderOptions = {
+        reload: /^running$/i.test(status),
+        tasksGroup: activeTasksGroup,
+        page,
+        pageSize: TASKS_TABLE_PAGE_SIZE,
+        filters: tasksFilter,
+        sorting: tasksSorting
+      };
+      if (!this.tasksLoader) {
+        this.tasksLoader = new NextflowTasksLoader(id, taskLoaderOptions);
+        this.tasksLoader.addListener(this.onDataUpdated);
+      } else {
+        this.tasksLoader.setOptions(taskLoaderOptions);
+      }
+    } else {
+      if (this.tasksLoader) {
+        this.tasksLoader.destroy();
+        this.tasksLoader = undefined;
+      }
+      this.setState({
+        processes: [],
+        pending: false,
+        error: undefined,
+        tasksError: undefined,
+        activeTasksGroup: undefined,
+        loadedTasksGroup: undefined,
+        page: 0,
+        totalTasksCount: 0,
+        filteredTasksCount: 0,
+        tasksFilter: undefined,
+        tasksSorting: undefined,
+        taskDetails: undefined
+      });
     }
   };
 
-  onProcessesUpdated = (processesData) => {
+  onDataUpdated = (data) => {
     const {
-      pending,
+      pending = false,
+      processes = [],
+      tasks = [],
+      totalTasksCount = 0,
+      filteredTasksCount = 0,
       error,
-      processes,
-      totalTasks
-    } = processesData;
+      tasksError,
+      loadedTasksGroup
+    } = data || {};
     this.setState({
       pending,
-      error,
       processes,
-      totalTasksCount: totalTasks
+      tasks,
+      totalTasksCount,
+      filteredTasksCount,
+      error,
+      tasksError,
+      loadedTasksGroup
     });
   }
 
@@ -93,7 +148,7 @@ class NextflowEngineTasks extends React.Component {
   getStatuses = () => {
     const {
       activeTasksGroup,
-      processes
+      processes = []
     } = this.state;
     const result = [];
     const filteredProcesses = processes
@@ -114,25 +169,10 @@ class NextflowEngineTasks extends React.Component {
     return result;
   };
 
-  onTasksUpdated = (tasksPayload) => {
-    const {
-      pending,
-      error,
-      tasks = [],
-      totalCount = 0
-    } = tasksPayload;
-    this.setState({
-      tasksPending: pending,
-      tasksError: error,
-      tasks,
-      filteredTasksCount: totalCount
-    });
-  };
-
   onChangeTasksFilter = (filter) => {
     this.setState({
       tasksFilter: filter
-    }, () => this.onChangeTasksPage(0));
+    }, () => this.updateData());
   };
 
   onChangeTasksSorting = (sorting) => {
@@ -144,56 +184,36 @@ class NextflowEngineTasks extends React.Component {
   onChangeTasksPage = (page) => {
     this.setState({
       page
-    }, this.loadTasks);
+    }, this.updateData);
   };
 
-  loadTasks = () => {
-    const {run} = this.props;
-    if (this.tasksLoader) {
-      this.tasksLoader.destroy();
-      this.tasksLoader = undefined;
-    }
-    if (run) {
-      const {
-        id,
-        status
-      } = run;
-      const {
-        activeTasksGroup,
-        tasksFilter,
-        tasksSorting,
-        page
-      } = this.state;
-      this.tasksLoader = new NextflowTasksLoader(
-        id,
-        {
-          reload: /^running$/i.test(status),
-          tasksGroup: activeTasksGroup,
-          page,
-          pageSize: TASKS_TABLE_PAGE_SIZE,
-          filters: tasksFilter,
-          sorting: tasksSorting
-        });
-      this.tasksLoader.addListener(this.onTasksUpdated);
-    }
-  };
+  onTaskClick = (task) => this.setState({taskDetails: task});
+
+  closeTaskDetails = () => this.onTaskClick(undefined);
 
   render () {
     const {
       className,
-      style
+      style,
+      run
     } = this.props;
     const {
+      pending,
+      error,
       processes = [],
       activeTasksGroup,
+      loadedTasksGroup,
       tasks,
-      tasksPending,
       page,
       tasksFilter,
       tasksSorting,
       totalTasksCount,
-      filteredTasksCount
+      filteredTasksCount,
+      taskDetails
     } = this.state;
+    const {
+      status
+    } = run || {};
     const cardClassNames = undefined;
     const statuses = this.getStatuses();
     return (
@@ -211,6 +231,8 @@ class NextflowEngineTasks extends React.Component {
             tasksGroups={processes}
             active={activeTasksGroup}
             onActiveChange={this.onActiveTasksGroupChange}
+            pending={pending}
+            error={error}
           />
           <TasksStatuses
             className={classNames(styles.nextflowProcessesChart, cardClassNames)}
@@ -221,18 +243,38 @@ class NextflowEngineTasks extends React.Component {
         <TasksTable
           className={classNames(styles.nextflowTasks, cardClassNames)}
           tasks={tasks}
-          pending={tasksPending}
+          pending={pending}
           page={page}
           total={totalTasksCount}
           totalFiltered={filteredTasksCount}
-          taskGroupFilter={activeTasksGroup}
+          taskGroupFilter={loadedTasksGroup}
           onPageChange={this.onChangeTasksPage}
           pageSize={TASKS_TABLE_PAGE_SIZE}
           filter={tasksFilter}
           onFilterChange={this.onChangeTasksFilter}
           sorting={tasksSorting}
           onSortingChange={this.onChangeTasksSorting}
+          onTaskClick={this.onTaskClick}
         />
+        <Modal
+          title={false}
+          footer={false}
+          onCancel={this.closeTaskDetails}
+          visible={taskDetails !== undefined}
+          width="90%"
+          className="cp-run-engine-task-modal"
+        >
+          <div className={styles.taskDetailsModalBody}>
+            {
+              taskDetails && (
+                <TaskDetails
+                  task={taskDetails}
+                  reload={/^running$/i.test(status)}
+                />
+              )
+            }
+          </div>
+        </Modal>
       </div>
     );
   }
