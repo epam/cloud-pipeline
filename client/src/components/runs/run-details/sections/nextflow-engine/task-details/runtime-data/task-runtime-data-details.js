@@ -27,7 +27,10 @@ class TaskRuntimeDataDetails extends React.Component {
       detailsType !== prevDetailsType ||
       reload !== prevReload
     ) {
-      this.fetchTaskRuntimeData();
+      const clear = runId !== prevRunId ||
+        taskKey !== prevTaskKey ||
+        detailsType !== prevDetailsType;
+      this.fetchTaskRuntimeData(clear);
     }
   }
 
@@ -43,16 +46,20 @@ class TaskRuntimeDataDetails extends React.Component {
     }
   };
 
-  fetchTaskRuntimeData = () => {
+  fetchTaskRuntimeData = (clear = false) => {
     this.abortReload();
     const {task = {}, detailsType, reload = false} = this.props;
     const {runId, taskKey} = task;
     const token = this.token = {};
     if (runId && taskKey && detailsType) {
-      this.setState({
+      const statePayload = {
         pending: true,
         error: undefined
-      }, async () => {
+      };
+      if (clear) {
+        statePayload.data = undefined;
+      }
+      this.setState(statePayload, async () => {
         const commit = (fn) => {
           if (token === this.token) {
             fn();
