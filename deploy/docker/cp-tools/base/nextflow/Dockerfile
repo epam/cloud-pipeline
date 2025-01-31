@@ -27,7 +27,7 @@ RUN apt update && \
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script
-ENV NXF_VER="22.10.7"
+ENV NXF_VER="24.10.4"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 
@@ -43,3 +43,8 @@ RUN mkdir -p $NXF_HOME && \
 
 ADD nextflow /usr/bin/nextflow
 RUN chmod +x /usr/bin/nextflow
+
+ADD nf-weblog-handler /opt/nf-weblog-handler
+RUN chmod +x /opt/nf-weblog-handler/nf-weblog-handler.sh
+RUN python2 -m pip install flask
+

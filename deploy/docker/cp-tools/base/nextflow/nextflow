@@ -14,6 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
+CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
+CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
+CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
+
+export NXF_WORK="$CP_NF_WORKDIR"
+mkdir -p "$NXF_WORK"
+
+_IS_RUN_COMMAND=
+for param in "$@"; do
+   if [ "$param" == "run" ]; then
+      _IS_RUN_COMMAND="1"
+      break
+   fi
+done
 
 NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
@@ -37,8 +52,43 @@ if [ "$CP_CAP_SGE" == "true" ]; then
     echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
 fi
 
+_ARGS=("$@")
 if [ -f "$NEXTFLOW_CONFIG" ]; then
-    NEXTFLOW_CONFIG_ARG="-c $NEXTFLOW_CONFIG"
+    _ARGS+=('-c')
+    _ARGS+=("$NEXTFLOW_CONFIG")
 fi
 
-$NXF_HOME/nextflow $NEXTFLOW_CONFIG_ARG "$@"
+if [ "$_IS_RUN_COMMAND" == "1" ]; then
+    if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
+        echo "Running Nextflow with -with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event option"
+        _ARGS+=('-with-weblog')
+        _ARGS+=("http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event")
+        if [ -n "$CP_NF_WORKDIR" ]; then
+            _ARGS+=('-with-trace')
+            _ARGS+=("${CP_NF_TRACE_FILE}")
+        fi
+    fi
+fi
+
+$NXF_HOME/nextflow "${_ARGS[@]}"
+
+if [ "$_IS_RUN_COMMAND" == "1" ]; then
+    if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && sync_to_storage check &> /dev/null ; then
+        echo "Nextflow process finished. Waiting for synchronization of nextflow task runtime files... "
+        _wait_count=0
+        while [ "$_wait_count" -lt "$((CP_NF_RUNTIME_DATA_SYNC_PERIOD / CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC))" ]; do
+          _wait_count=$((_wait_count + 1))
+          _files_to_sync=$(sync_to_storage count)
+
+          # "$_files_to_sync" -eq "1" because there always will be trace file in sync
+          if [ "$?" -eq 0 ] && [ "$_files_to_sync" -eq "1" ]; then
+              echo "Synchronization of nextflow task runtime files finished."
+              exit 0
+          fi
+          sleep $CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC
+        done
+        echo "[WARN] Synchronization of nextflow task runtime files can't finished in configured time, not all files would be available in statistic report. Exiting!"
+        exit 0
+    fi
+fi
+
