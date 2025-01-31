@@ -252,8 +252,6 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             final Long folderId = rs.getLong(FOLDER_ID.name());
             if (!rs.wasNull()) {
                 pipeline.setParentFolderId(folderId);
-            }
-            if (!rs.wasNull()) {
                 pipeline.setParent(new Folder(folderId));
             }
         }
