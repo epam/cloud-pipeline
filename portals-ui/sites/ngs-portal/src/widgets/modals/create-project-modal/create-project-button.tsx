@@ -13,12 +13,15 @@ type Props = CommonProps & {
 export const CreateProjectButton = (props: Props) => {
   const { showIcon = true, text, className, style } = props;
   const [visible, setVisible] = useState(false);
+
   const showModal = useCallback(() => {
     setVisible(true);
   }, []);
+
   const hideModal = useCallback(() => {
     setVisible(false);
   }, []);
+
   return (
     <>
       <Button
