@@ -26,7 +26,7 @@ export default function useRunBreadcrumbs(
             </Link>
           ),
         },
-        { title: <Link to={RoutePath[AppRoutes.RUNS]}>Runs</Link> },
+        { title: <Link to={RoutePath[AppRoutes.PROJECTS]}>Projects</Link> },
         {
           title: (
             <Link to={generateProjectRoutePath(parentProject.id)}>
