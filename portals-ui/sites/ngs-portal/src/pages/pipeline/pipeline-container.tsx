@@ -6,8 +6,8 @@ import { PipelinePage } from './pipeline';
 export const PipelinePageContainer = () => {
   const { pipelineId } = useParams();
 
-  const { pipelineInfo, pending, error, versions } =
-    usePipelineInfo(pipelineId);
+  const { pipelineInfo, parentProject, pending, error, versions } =
+    usePipelineInfo(pipelineId, true);
 
   if (error) {
     return <div>{error}</div>;
@@ -21,5 +21,12 @@ export const PipelinePageContainer = () => {
     return <div>No data</div>;
   }
 
-  return <PipelinePage pipeline={pipelineInfo} versions={versions} />;
+  return (
+    <PipelinePage
+      pipeline={pipelineInfo}
+      parentProject={parentProject}
+      versions={versions}
+      pending={pending}
+    />
+  );
 };

@@ -87,6 +87,8 @@ export type Run = AclEntry<AclClass.pipeline> & {
   lastNotificationTime?: string;
   pipelineId?: number;
   entitiesIds?: number[];
+  // todo: change parentFolderId (project) field to valid one, when server is ready
+  parentFolderId?: number;
 };
 
 export type RunTaskInfo = {

@@ -1,14 +1,10 @@
-import { Breadcrumb } from 'antd';
-import { Link } from 'react-router-dom';
-import { HomeIcon } from '@heroicons/react/24/solid';
 import { ItemLayout } from '../../shared/ui';
 import {
-  AppRoutes,
   generatePipelineRoutePath,
   PipelineTabs,
-  RoutePath,
 } from '../../shared/constants/routes';
 import { usePipelineVersions } from './hooks';
+import type { Project } from '@cloud-pipeline/core';
 import {
   AclClass,
   type Pipeline,
@@ -20,14 +16,25 @@ import { LayoutCard } from '../../shared/ui/item-layout/layout-card';
 import { PipelineFiles } from './components/pipeline-files';
 import { Permissions } from '../../features/permissions';
 import { useNgsTabs } from '../../shared/hooks';
+import { NgsBreadcrumbs } from '../../widgets/ngs-breadcrumbs';
+import usePipelineBreadcrumbs from './hooks/use-pipeline-breadcrumbs';
 
 type Props = {
   pipeline: Pipeline;
   versions: PipelineVersion[];
+  parentProject?: Project;
+  pending?: boolean;
 };
 
-export function PipelinePage({ pipeline, versions }: Props) {
+export function PipelinePage({
+  pipeline,
+  pending,
+  parentProject,
+  versions,
+}: Props) {
   const { onChangeVersion, version } = usePipelineVersions(versions);
+
+  const breadcrumbs = usePipelineBreadcrumbs(pipeline, parentProject);
 
   const tabs = useMemo(
     () => [
@@ -77,19 +84,7 @@ export function PipelinePage({ pipeline, versions }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <Breadcrumb
-        items={[
-          {
-            title: (
-              <Link to="/">
-                <HomeIcon className="w-5 h-5" />
-              </Link>
-            ),
-          },
-          { title: <Link to={RoutePath[AppRoutes.PIPELINES]}>Pipelines</Link> },
-          { title: pipeline.name },
-        ]}
-      />
+      <NgsBreadcrumbs items={breadcrumbs} showSkeleton={pending} />
 
       <ItemLayout
         classes={{ content: 'overflow-hidden' }}
