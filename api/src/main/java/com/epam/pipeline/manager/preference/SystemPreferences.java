@@ -987,6 +987,10 @@ public class SystemPreferences {
             "ui.launch.parameters",
             Collections.emptyMap(), new TypeReference<Object>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
+    public static final ObjectPreference<Object> UI_RUN_ACTIONS = new ObjectPreference<>(
+            "ui.run.actions",
+            Collections.emptyMap(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
