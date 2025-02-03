@@ -4,50 +4,51 @@ import {inject} from 'mobx-react';
 import classNames from 'classnames';
 import {computed} from 'mobx';
 import roleModel from '../../../../../../utils/roleModel';
-import pipelineRunSSHCache from '../../../../../../models/pipelines/PipelineRunSSHCache';
+import cache from '../../../../../../models/pipelines/PipelineRunFSBrowserCache';
 import MultizoneUrl from '../../../../../special/multizone-url';
 import styles from './run-actions.css';
-import {Icon} from "antd";
+import {checkRunActionAvailable, runActions} from '../../../../actions/actions-availability';
+import {Icon} from 'antd';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 @inject('preferences')
-class RunSSHButton extends React.Component {
+class RunFsBrowserButton extends React.Component {
   state = {
-    runSSH: undefined
+    runFsBrowser: undefined
   };
 
   componentDidMount () {
-    this.updateRunSSH();
+    this.updateRunFsBrowser();
   }
 
   componentDidUpdate (prevProps) {
     const {run: prevRun = {}} = prevProps;
     const {run = {}} = this.props;
     if (prevRun.id !== run.id) {
-      this.updateRunSSH();
+      this.updateRunFsBrowser();
     }
   }
 
-  updateRunSSH = () => {
+  updateRunFsBrowser = () => {
     const {
       run
     } = this.props;
     if (!run) {
-      this.setState({runSSH: undefined});
+      this.setState({runFsBrowser: undefined});
     } else {
       (async () => {
         try {
-          const request = pipelineRunSSHCache.getPipelineRunSSH(run.id);
+          const request = cache.getPipelineRunFSBrowser(run.id);
           await request.fetch();
           if (request.error) {
             throw new Error(request.error);
           }
-          const runSSH = request.value;
-          this.setState({runSSH});
+          const runFsBrowser = request.value;
+          this.setState({runFsBrowser});
         } catch {
-          this.setState({runSSH: undefined});
+          this.setState({runFsBrowser: undefined});
         }
       })();
     }
@@ -74,22 +75,33 @@ class RunSSHButton extends React.Component {
   }
 
   @computed
-  get sshEnabled () {
+  get fsBrowserEnabled () {
     const {run} = this.props;
-    const {runSSH} = this.state;
+    const {runFsBrowser} = this.state;
     if (
       run &&
-      runSSH &&
+      runFsBrowser &&
       this.initializeEnvironmentFinished &&
       !this.isDtsEnvironment
     ) {
-      const {status, podIP, sshPassword} = run;
+      const {
+        status,
+        platform,
+        podIP,
+        pipelineRunParameters = []
+      } = run;
+      if (/^windows$/i.test(platform)) {
+        return false;
+      }
+      const cpFSBrowserEnabled = pipelineRunParameters
+        .find(p => /^CP_FSBROWSER_ENABLED$/i.test(p.name));
+      if (cpFSBrowserEnabled && `${cpFSBrowserEnabled.value}` === 'false') {
+        return false;
+      }
       return status.toLowerCase() === 'running' &&
-        (
-          roleModel.executeAllowed(run) ||
-          sshPassword
-        ) &&
-        podIP;
+        roleModel.executeAllowed(run) &&
+        podIP &&
+        checkRunActionAvailable(run, runActions.browse);
     }
     return false;
   }
@@ -104,13 +116,13 @@ class RunSSHButton extends React.Component {
     if (!run) {
       return null;
     }
-    const {runSSH} = this.state;
-    if (this.sshEnabled && runSSH) {
+    const {runFsBrowser} = this.state;
+    if (this.fsBrowserEnabled && runFsBrowser) {
       return (
         <MultizoneUrl
           className={classNames(className, styles.runAction)}
           style={style}
-          configuration={runSSH}
+          configuration={runFsBrowser}
           dropDownIconStyle={{
             paddingLeft: 4,
             marginLeft: -2
@@ -119,7 +131,7 @@ class RunSSHButton extends React.Component {
           {
             icon && <Icon type={icon} style={{marginRight: 5}} />
           }
-          <span>SSH</span>
+          <span>BROWSE</span>
         </MultizoneUrl>
       );
     }
@@ -127,11 +139,11 @@ class RunSSHButton extends React.Component {
   }
 }
 
-RunSSHButton.propTypes = {
+RunFsBrowserButton.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   run: PropTypes.object,
   icon: PropTypes.string
 };
 
-export default RunSSHButton;
+export default RunFsBrowserButton;

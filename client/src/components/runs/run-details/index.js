@@ -2,14 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import styles from './run-details.css';
+import {Alert} from 'antd';
 import RunHeader from './widgets/run-header';
-import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import fetchRunInfo from '../logs/misc/fetch-run-info';
 import {MAX_NESTED_RUNS_TO_DISPLAY} from './constants';
 import {getRunTabs} from './widgets/run-tabs/tabs';
 import RunTabs from './widgets/run-tabs';
 import {runPipelineActions} from '../actions';
+import {fetchRunCliCommands, fetchRunPayload} from './utilities/loaders';
+import styles from './run-details.css';
 
 @inject((_, props) => {
   const {params = {}, runId: propRunId, preLoadedRun} = props || {};
@@ -33,7 +34,6 @@ import {runPipelineActions} from '../actions';
 @observer
 class RunDetails extends React.Component {
   state = {
-    task: undefined,
     run: undefined,
     pending: false,
     loaded: false,
@@ -42,13 +42,14 @@ class RunDetails extends React.Component {
     hasNestedRuns: false,
     totalNestedRuns: 0,
     nestedRunsPending: false,
-    showActiveWorkersOnly: false,
     runTasks: [],
-    language: undefined,
-    tasksCollapsed: false,
-    runDataLoaded: false,
-    runPreviousStatus: undefined,
-    tab: undefined
+    runTasksLoaded: false,
+    tab: undefined,
+    tabs: [],
+    runPayload: undefined,
+    cliCommands: undefined,
+    cliCommandsPending: false,
+    cliCommandsError: undefined
   };
 
   componentDidMount () {
@@ -61,6 +62,7 @@ class RunDetails extends React.Component {
   }
   componentWillUnmount () {
     this.stopAutoUpdate();
+    this.cliCommandsToken = undefined;
   }
   stopAutoUpdate = () => {
     this.token = {};
@@ -70,84 +72,8 @@ class RunDetails extends React.Component {
     this.stop = undefined;
     this.reFetchRunInfo = undefined;
   };
-  /**
-   * Checks if the form should be navigated to a specific task
-   */
-  checkTaskNavigation = () => {
-    const {
-      uiNavigation
-    } = this.props;
-    // `task` holds current selected run task
-    let {
-      task
-    } = this.state;
-    const {
-      runTasks = [],
-      run,
-      tasksCollapsed: currentTaskCollapsed,
-      runPreviousStatus
-    } = this.state;
-    let taskToNavigate;
-    if (!task && runTasks.length > 0) {
-      // If no task is selected and there are some tasks in run -
-      // we need to navigate to any of it
-      taskToNavigate = runTasks[0];
-    }
-    const {
-      pipelineName,
-      podId,
-      status
-    } = run;
-    let tasksCollapsed = currentTaskCollapsed;
-    const runningStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
-    if (runPreviousStatus !== status && !runningStatuses.includes(status)) {
-      // Run status changed to "FAILURE", "STOPPED" or "SUCCESS".
-      // We should switch to the "main" task in that case
-      task = undefined; // that will force task navigation
-    }
-    if (uiNavigation.runLogsMainTask && !task) {
-      // user has "ui-run-logs-main-task" set to true ("display main task by default").
-      // we need to navigate to "pipeline" task (if it is finished) or "console" task,
-      // if there isn't selected task
-      const pipelineTaskName = pipelineName || podId || '';
-      const pipelineTask = runTasks
-        .find((t) => (t.name || '').toLowerCase() === pipelineTaskName.toLowerCase());
-      const consoleTask = runTasks
-        .find((t) => (t.name || '').toLowerCase() === 'console');
-      if (
-        pipelineTask &&
-        pipelineTask.status &&
-        !runningStatuses.includes(pipelineTask.status.toUpperCase())
-      ) {
-        // run has finished "pipeline" task - we should navigate to it
-        taskToNavigate = pipelineTask;
-        tasksCollapsed = true;
-      } else if (consoleTask) {
-        // run doesn't have finished "pipeline" task - we should navigate to console task
-        taskToNavigate = consoleTask;
-        tasksCollapsed = true;
-      }
-    }
-    if (runPreviousStatus !== status || currentTaskCollapsed !== tasksCollapsed) {
-      this.setState({
-        tasksCollapsed,
-        runPreviousStatus: status
-      });
-    }
-    if (
-      taskToNavigate &&
-      (!task || task.name.toLowerCase() !== taskToNavigate.name.toLowerCase())
-    ) {
-      // there is a task to be navigated to (`taskToNavigate`)
-      // and current selected task either is missing or differs from the `taskToNavigate`
-      this.setState({
-        task: taskToNavigate
-      });
-    }
-  };
   getActiveTab = () => {
-    const {run, tab: currentTabName} = this.state;
-    const tabs = getRunTabs(run);
+    const {tab: currentTabName, tabs = []} = this.state;
     const defaultTab = tabs[0];
     const aTab = tabs.find((t) => t.tab === currentTabName);
     return aTab || defaultTab;
@@ -162,6 +88,7 @@ class RunDetails extends React.Component {
       dockerRegistries,
       uiNavigation
     } = this.props;
+    this.fetchRunCliCommands(undefined);
     if (runId) {
       this.setState({
         run: preLoadedRun && preLoadedRun.id === runId ? preLoadedRun : preLoadedRun,
@@ -172,43 +99,51 @@ class RunDetails extends React.Component {
         hasNestedRuns: false,
         totalNestedRuns: 0,
         nestedRunsPending: false,
-        showActiveWorkersOnly: false,
         runTasks: [],
-        language: undefined,
-        tasksCollapsed: false,
-        runDataLoaded: false,
-        runPreviousStatus: undefined,
-        task: undefined,
-        tab: undefined
+        runTasksLoaded: false,
+        tab: undefined,
+        tabs: preLoadedRun && preLoadedRun.id === runId ? getRunTabs(preLoadedRun) : []
       }, async () => {
+        let fetchCliCommands = true;
+        if (preLoadedRun && preLoadedRun.id === runId) {
+          this.fetchRunCliCommands(preLoadedRun);
+          fetchCliCommands = false;
+        }
         const commit = (data = {}) => {
           if (token === this.token) {
-            this.setState({pending: false, loaded: true, ...data}, () => {
-              this.checkTaskNavigation();
+            this.setState({
+              pending: false,
+              loaded: true,
+              runTasksLoaded: true,
+              ...data,
+              tabs: data.run ? getRunTabs(data.run) : []
             });
           }
         };
         try {
-          await uiNavigation.fetch();
-          this.runScheduleRequest = new RunSchedules(runId);
-          (this.runScheduleRequest.fetch)();
+          await Promise.all([
+            uiNavigation.fetch(),
+            preferences.fetchIfNeededOrWait()
+          ]);
           const {
             stop,
-            fetch: reFetch
+            fetch: reFetch,
+            data
           } = await fetchRunInfo(runId, commit, {
             preferences,
             dockerRegistries,
             maxNestedRunsToDisplay: MAX_NESTED_RUNS_TO_DISPLAY
           });
+          if (fetchCliCommands) {
+            this.fetchRunCliCommands(data);
+          }
           this.stop = stop;
           this.reFetchRunInfo = reFetch;
-          commit({runDataLoaded: true});
         } catch (error) {
-          commit({error: error.message, runDataLoaded: true});
+          commit({error: error.message});
         }
       });
     } else {
-      this.runScheduleRequest = undefined;
       this.setState({
         run: undefined,
         pending: false,
@@ -218,24 +153,96 @@ class RunDetails extends React.Component {
         hasNestedRuns: false,
         totalNestedRuns: 0,
         nestedRunsPending: false,
-        showActiveWorkersOnly: false,
         runTasks: [],
-        language: undefined,
-        tasksCollapsed: false,
-        runDataLoaded: false,
-        runPreviousStatus: undefined,
-        task: undefined,
-        tab: undefined
+        runTasksLoaded: false,
+        tab: undefined,
+        tabs: []
       });
     }
   };
+
+  fetchRunCliCommands = (run) => {
+    const cliCommandsToken = this.cliCommandsToken = {};
+    if (run) {
+      this.setState({
+        runPayload: undefined,
+        cliCommands: undefined,
+        cliCommandsPending: true,
+        cliCommandsError: undefined
+      }, async () => {
+        const commit = (fn) => {
+          if (cliCommandsToken === this.cliCommandsToken) {
+            fn();
+          }
+        };
+        try {
+          const payload = await fetchRunPayload(run);
+          const commands = await fetchRunCliCommands(run, payload);
+          commit(() => {
+            this.setState({
+              cliCommands: commands,
+              runPayload: payload,
+              cliCommandsPending: false,
+              cliCommandsError: undefined
+            });
+          });
+        } catch (error) {
+          commit(() => {
+            this.setState({
+              cliCommands: undefined,
+              runPayload: undefined,
+              cliCommandsPending: false,
+              cliCommandsError: error.message
+            });
+          });
+        }
+      });
+    } else {
+      this.setState({
+        cliCommands: undefined,
+        runPayload: undefined,
+        cliCommandsPending: false,
+        cliCommandsError: undefined
+      });
+    }
+  }
+
   onTabChanged = (newTab) => this.setState({tab: newTab});
 
   renderContent = (currentTab) => {
+    const {error, pending} = this.state;
+    if (error && !pending) {
+      return (
+        <Alert message={error} showIcon type="error" />
+      );
+    }
     if (currentTab && currentTab.render && typeof currentTab.render === 'function') {
-      return currentTab.render(this.state);
+      if (currentTab.asPanel === false) {
+        return currentTab.render(this.state);
+      }
+      return (
+        <div
+          className={classNames(
+            styles.runDetailsContent,
+            styles.runDetailsSection,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )}
+        >
+          {currentTab.render(this.state)}
+        </div>
+      );
     }
     return null;
+  };
+
+  onRefreshRunInfo = () => {
+    if (this.reFetchRunInfo) {
+      this.reFetchRunInfo();
+    } else {
+      this.onRunChanged();
+    }
   };
 
   render () {
@@ -247,7 +254,9 @@ class RunDetails extends React.Component {
     const {
       run,
       loaded,
-      runTasks
+      runTasks,
+      runTasksLoaded,
+      tabs
     } = this.state;
     const tab = this.getActiveTab();
     return (
@@ -270,7 +279,8 @@ class RunDetails extends React.Component {
           runId={runId}
           runTasks={runTasks}
           loaded={loaded}
-          onRefreshRunInfo={this.reFetchRunInfo}
+          runTasksLoaded={runTasksLoaded}
+          onRefreshRunInfo={this.onRefreshRunInfo}
         />
         <RunTabs
           className={classNames(
@@ -282,19 +292,10 @@ class RunDetails extends React.Component {
           )}
           run={run}
           tab={tab ? tab.tab : undefined}
+          tabs={tabs}
           onTabChange={this.onTabChanged}
         />
-        <div
-          className={classNames(
-            styles.runDetailsContent,
-            styles.runDetailsSection,
-            'cp-panel',
-            'cp-panel-no-hover',
-            'cp-panel-borderless'
-          )}
-        >
-          {this.renderContent(tab)}
-        </div>
+        {this.renderContent(tab)}
       </div>
     );
   }

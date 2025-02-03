@@ -5,7 +5,6 @@ import styles from './run-actions.css';
 import RunActionButton from './run-action-button';
 import RunPauseResumeButton from './run-pause-resume-button';
 import RunContinueButton from './run-continue-button';
-import RunSSHButton from './run-ssh-button';
 
 function RunActions (props) {
   const {
@@ -22,7 +21,6 @@ function RunActions (props) {
       className={classNames(className, styles.runActions)}
       style={{...(style || {}), display: 'inline-flex', alignItems: 'center'}}
     >
-      <RunSSHButton run={run} />
       <RunPauseResumeButton run={run} onRefreshRunInfo={onRefreshRunInfo} />
       <RunActionButton run={run} onRefreshRunInfo={onRefreshRunInfo} />
       <RunContinueButton run={run} onRefreshRunInfo={onRefreshRunInfo} />

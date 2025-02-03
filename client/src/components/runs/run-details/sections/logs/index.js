@@ -1,18 +1,25 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon, Input} from 'antd';
+import {Button, Icon, Input, message} from 'antd';
 import {inject} from 'mobx-react';
 import styles from './run-logs.css';
 import SplitPane from 'react-split-pane';
 import RunTaskLogs from '../../../run-task-logs';
 import RunTask from './run-task';
+import {checkRunActionAvailable, runActions} from '../../../actions/actions-availability';
+import PipelineExportLog from '../../../../../models/pipelines/PipelineExportLog';
+import FileSaver from 'file-saver';
+import LoadingView from '../../../../special/LoadingView';
+
+const DEFAULT_TASKS_LIST_WIDTH = 300;
 
 @inject('uiNavigation', 'preferences')
 class RunLogsSection extends React.Component {
   state = {
     task: undefined,
-    tasksCollapsed: false,
+    defaultSize: 0,
+    size: undefined,
     runPreviousStatus: undefined,
     timings: false,
     searchTasks: ''
@@ -33,9 +40,10 @@ class RunLogsSection extends React.Component {
     const {
       uiNavigation,
       runTasks = [],
-      run
+      run,
+      loaded
     } = this.props;
-    if (!run) {
+    if (!run || !loaded) {
       return;
     }
     // `task` holds current selected run task
@@ -43,7 +51,7 @@ class RunLogsSection extends React.Component {
       task
     } = this.state;
     const {
-      tasksCollapsed: currentTaskCollapsed,
+      defaultSize: currentTasksListDefaultSize,
       runPreviousStatus
     } = this.state;
     let taskToNavigate;
@@ -57,7 +65,7 @@ class RunLogsSection extends React.Component {
       podId,
       status
     } = run;
-    let tasksCollapsed = currentTaskCollapsed;
+    let defaultSize = currentTasksListDefaultSize;
     const runningStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
     if (runPreviousStatus !== status && !runningStatuses.includes(status)) {
       // Run status changed to "FAILURE", "STOPPED" or "SUCCESS".
@@ -80,16 +88,18 @@ class RunLogsSection extends React.Component {
       ) {
         // run has finished "pipeline" task - we should navigate to it
         taskToNavigate = pipelineTask;
-        tasksCollapsed = true;
+        defaultSize = 0;
       } else if (consoleTask) {
         // run doesn't have finished "pipeline" task - we should navigate to console task
         taskToNavigate = consoleTask;
-        tasksCollapsed = true;
+        defaultSize = 0;
       }
+    } else if (!uiNavigation.runLogsMainTask) {
+      defaultSize = DEFAULT_TASKS_LIST_WIDTH;
     }
-    if (runPreviousStatus !== status || currentTaskCollapsed !== tasksCollapsed) {
+    if (runPreviousStatus !== status || currentTasksListDefaultSize !== defaultSize) {
       this.setState({
-        tasksCollapsed,
+        defaultSize,
         runPreviousStatus: status
       });
     }
@@ -107,6 +117,18 @@ class RunLogsSection extends React.Component {
 
   switchTimings = () => {
     this.setState({timings: !this.state.timings});
+  };
+
+  getCurrentSize = () => {
+    const {size, defaultSize} = this.state;
+    return size === undefined ? defaultSize : size;
+  }
+
+  toggleTasksCollapsed = () => {
+    const size = this.getCurrentSize();
+    this.setState({
+      size: size > 0 ? 0 : DEFAULT_TASKS_LIST_WIDTH
+    });
   };
 
   renderTasksList = () => {
@@ -136,7 +158,9 @@ class RunLogsSection extends React.Component {
           />
           <Button
             onClick={this.switchTimings}
-            type={timings ? 'primary' : undefined} style={{marginLeft: 5}}
+            type={timings ? 'primary' : undefined}
+            style={{marginLeft: 5}}
+            className={styles.runLogsSectionButton}
             size="small"
             title={timings ? 'Hide tasks timings' : 'Show tasks timings'}
           >
@@ -185,11 +209,35 @@ class RunLogsSection extends React.Component {
     );
   };
 
+  exportLog = async () => {
+    const {run} = this.props;
+    if (!run) {
+      return;
+    }
+    try {
+      const hide = message.loading('Exporting log...');
+      const request = new PipelineExportLog(run.id);
+      await request.fetch();
+      if (request.response) {
+        FileSaver.saveAs(request.response, `run_${run.id}_log.txt`);
+      } else {
+        message.error('Error exporting log', 2);
+      }
+      hide();
+    } catch (e) {
+      message.error('Error exporting log', 5);
+    }
+  };
+
+  onSplitPanelSizeChange = (size) => this.setState({size});
+
   render () {
     const {
       className,
       style,
-      run
+      run,
+      loaded,
+      pending
     } = this.props;
     if (!run) {
       return null;
@@ -198,38 +246,73 @@ class RunLogsSection extends React.Component {
     const {
       status
     } = run || {};
-
-    const {tasksCollapsed, runDataLoaded} = this.state;
-    const collapse = tasksCollapsed || !runDataLoaded;
-
+    const size = this.getCurrentSize();
     return (
-      <div className={classNames(className, styles.runLogsSection)} style={style}>
-        <SplitPane
-          style={{display: 'flex', flex: 1, minHeight: 500}}
-          defaultSize={collapse ? 0 : 300}
-          minSize={collapse ? 0 : 100}
-          pane1Style={{display: 'flex', flexDirection: 'column'}}
-          pane2Style={{display: 'flex', flexDirection: 'column'}}
-          resizerClassName="cp-split-panel-resizer"
-          resizerStyle={{
-            width: 8,
-            margin: 0,
-            cursor: 'col-resize',
-            boxSizing: 'border-box',
-            backgroundClip: 'padding',
-            zIndex: 1
-          }}>
-          {this.renderTasksList()}
-          <RunTaskLogs
-            className={styles.logs}
-            runId={run.id}
-            taskName={task ? task.name : undefined}
-            taskParameters={task ? task.parameters : undefined}
-            taskInstance={task ? task.instance : undefined}
-            autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
-            fetchAllLogs={false}
-          />
-        </SplitPane>
+      <div
+        className={classNames(className, styles.runLogsSection)}
+        style={style}
+      >
+        {
+          loaded && (
+            <div className={styles.runLogsSectionHeader}>
+              <a onClick={this.toggleTasksCollapsed}>
+                {size === 0 ? 'Show tasks' : 'Hide tasks'}
+              </a>
+              <div style={{marginLeft: 'auto'}} className={styles.runLogsSectionActions}>
+                {
+                  !/^running$/i.test(status) &&
+                  checkRunActionAvailable(run, runActions.exportLogs) && (
+                    <Button
+                      size="small"
+                      className={styles.runLogsSectionButton}
+                      onClick={this.exportLog}
+                    >
+                      Export logs
+                    </Button>
+                  )
+                }
+              </div>
+            </div>
+          )
+        }
+        {
+          loaded && (
+            <div className={styles.runLogsSectionSplitPanel}>
+              <SplitPane
+                style={{display: 'flex', flex: 1, minHeight: 500}}
+                minSize={0}
+                size={size}
+                onChange={this.onSplitPanelSizeChange}
+                pane1Style={{display: 'flex', flexDirection: 'column'}}
+                pane2Style={{display: 'flex', flexDirection: 'column'}}
+                resizerClassName="cp-split-panel-resizer"
+                resizerStyle={{
+                  width: 8,
+                  margin: 0,
+                  cursor: 'col-resize',
+                  boxSizing: 'border-box',
+                  backgroundClip: 'padding',
+                  zIndex: 1
+                }}>
+                {this.renderTasksList()}
+                <RunTaskLogs
+                  className={styles.logs}
+                  runId={run.id}
+                  taskName={task ? task.name : undefined}
+                  taskParameters={task ? task.parameters : undefined}
+                  taskInstance={task ? task.instance : undefined}
+                  autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+                  fetchAllLogs={false}
+                />
+              </SplitPane>
+            </div>
+          )
+        }
+        {
+          !loaded && pending && (
+            <LoadingView />
+          )
+        }
       </div>
     );
   }
@@ -240,7 +323,8 @@ RunLogsSection.propTypes = {
   style: PropTypes.object,
   run: PropTypes.object,
   runTasks: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
-  pending: PropTypes.bool
+  pending: PropTypes.bool,
+  loaded: PropTypes.bool
 };
 
 export default RunLogsSection;

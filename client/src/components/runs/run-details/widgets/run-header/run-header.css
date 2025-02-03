@@ -1,3 +1,7 @@
+:root {
+  --main-header-margin: 5px;
+}
+
 .run-header {
   width: 100%;
 }
@@ -26,11 +30,15 @@
 }
 
 .run-header .run-title + .run-header-details {
-  margin-top: 10px;
+  margin-top: var(--main-header-margin);
 }
 
 .run-header .run-header-details {
   padding: 0;
+}
+
+.run-endpoints {
+  margin-bottom: var(--main-header-margin);
 }
 
 .run-owner,

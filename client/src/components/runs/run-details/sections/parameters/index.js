@@ -7,6 +7,7 @@ import DataStorageLink from '../../../../special/data-storage-link';
 import AdaptedLink from '../../../../special/AdaptedLink';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../../pipelines/launch/form/utilities/parameters';
 import DataStorageList from '../../../controls/data-storage-list';
+import instanceParameters from './instance-parameters';
 import styles from './run-parameters.css';
 
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
@@ -37,7 +38,7 @@ class RunParametersSection extends React.Component {
           <th className={styles.parameterName}>
             <span>{runParameter.name}: </span>
           </th>
-          <td>
+          <td className={styles.parameterValue}>
             <ul>
               {
                 valueParts.map((value, index) => (
@@ -67,9 +68,8 @@ class RunParametersSection extends React.Component {
           >
             {runParameter.name}:
           </th>
-          <td>
+          <td className={styles.parameterValue}>
             <AdaptedLink
-              className={styles.parameterValue}
               to={`/run/${valueSelector()}`}>
               {valueSelector()}
             </AdaptedLink>
@@ -88,7 +88,7 @@ class RunParametersSection extends React.Component {
           >
             {runParameter.name}:
           </th>
-          <td>
+          <td className={styles.parameterValue}>
             {
               isNone && (<span>None</span>)
             }
@@ -107,7 +107,7 @@ class RunParametersSection extends React.Component {
           <tr
             key={runParameter.name}>
             <th className={styles.parameterName}>{runParameter.name}:</th>
-            <td>
+            <td className={styles.parameterValue}>
               <Link to={`/folder/${metadataFolder}/metadata/${metadataClassName}`}>
                 {metadataClassName} ({itemsCount})
               </Link>
@@ -119,7 +119,7 @@ class RunParametersSection extends React.Component {
         <tr
           key={runParameter.name}>
           <th className={styles.parameterName}>{runParameter.name}:</th>
-          <td>{valueSelector()}</td>
+          <td className={styles.parameterValue}>{valueSelector()}</td>
         </tr>
       );
     }
@@ -129,7 +129,7 @@ class RunParametersSection extends React.Component {
         <tr
           key={runParameter.name}>
           <th className={styles.parameterName}>{runParameter.name}:</th>
-          <td>{values[0]}</td>
+          <td className={styles.parameterValue}>{values[0]}</td>
         </tr>
       );
     }
@@ -139,7 +139,7 @@ class RunParametersSection extends React.Component {
           <th className={styles.parameterName}>
             <span>{runParameter.name}:</span>
           </th>
-          <td>
+          <td className={styles.parameterValue}>
             <ul>
               {values.map((value, index) => <li key={index}>{value}</li>)}
             </ul>
@@ -152,7 +152,7 @@ class RunParametersSection extends React.Component {
         <th className={styles.parameterName}>
           <span>{runParameter.name}:</span>
         </th>
-        <td>
+        <td className={styles.parameterValue}>
           <ul>
             {
               values
@@ -171,6 +171,23 @@ class RunParametersSection extends React.Component {
               </Popover>
             </li>
           </ul>
+        </td>
+      </tr>
+    );
+  };
+
+  renderInstanceParameter = (parameter) => {
+    const {run} = this.props;
+    if (!run) {
+      return null;
+    }
+    return (
+      <tr key={parameter.key}>
+        <th className={styles.parameterName}>
+          {parameter.title || parameter.key}
+        </th>
+        <td className={styles.parameterValue}>
+          {parameter.render(run)}
         </td>
       </tr>
     );
@@ -201,6 +218,10 @@ class RunParametersSection extends React.Component {
       }
     };
     const types = ['input', 'output', 'general'];
+    const instanceParametersFiltered = instanceParameters
+      .filter((p) => (p.available && typeof p.available === 'function' && p.available(run)) ||
+        (p.available && typeof p.available !== 'function') ||
+        p.available === undefined);
     return (
       <div
         className={classNames(className, styles.runParametersSection)}
@@ -208,6 +229,18 @@ class RunParametersSection extends React.Component {
       >
         <table className={styles.runParametersTable}>
           <tbody>
+            {
+              instanceParametersFiltered.length > 0 && (
+                <tr key={`type_instance_parameters`}>
+                  <th colSpan={2} className={styles.section}>
+                    INSTANCE
+                  </th>
+                </tr>
+              )
+            }
+            {
+              instanceParametersFiltered.map(this.renderInstanceParameter)
+            }
             {
               types.map((type, index) => {
                 const parameters = filteredRunParameters
@@ -218,14 +251,12 @@ class RunParametersSection extends React.Component {
                 const rows = [];
                 rows.push((
                   <tr key={`type_${index}`}>
-                    <td
+                    <th
                       colSpan={2}
-                      style={{
-                        fontWeight: 'bold',
-                        paddingTop: index === 0 ? 0 : 10
-                      }}>
+                      className={styles.section}
+                    >
                       {type ? type.toUpperCase() : 'GENERAL'}
-                    </td>
+                    </th>
                   </tr>
                 ));
                 rows.push(...parameters.map((p, i) => this.renderRunParameter(p, i, type)));

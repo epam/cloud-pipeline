@@ -1,8 +1,33 @@
 .run-logs-section {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.run-logs-section .run-logs-section-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.run-logs-section .run-logs-section-header .run-logs-section-actions {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.run-logs-section .run-logs-section-button {
+  line-height: 1;
+}
+
+.run-logs-section .run-logs-section-split-panel {
   overflow: auto;
   position: relative;
   width: 100%;
-  height: 100%;
+  flex: 1;
 }
 
 .run-task {

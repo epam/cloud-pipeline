@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Menu} from 'antd';
 import styles from './run-tabs.css';
-import {getRunTabs} from './tabs';
 
 function RunTabs (props) {
   const {
@@ -11,9 +10,8 @@ function RunTabs (props) {
     style,
     tab: currentTab,
     onTabChange,
-    run
+    tabs = []
   } = props;
-  const tabs = getRunTabs(run);
   if (tabs.length < 2) {
     return null;
   }
@@ -53,6 +51,7 @@ RunTabs.propTypes = {
   style: PropTypes.object,
   run: PropTypes.object,
   tab: PropTypes.string,
+  tabs: PropTypes.array,
   onTabChange: PropTypes.func
 };
 

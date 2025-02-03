@@ -5,7 +5,7 @@ import {Icon, Popover} from 'antd';
 import getRunDurationInfo from '../../../../../utils/run-duration';
 import displayDate from '../../../../../utils/displayDate';
 import {displayDurationInSeconds} from '../../../../../utils/displayDuration';
-import RunTimelineInfo from '../../../logs/misc/run-timeline-info';
+import RunTimelineInfo, {RunTimelineInfoDetails} from '../../../logs/misc/run-timeline-info';
 import styles from './run-timeline.css';
 
 function renderInfo (info, asTable = false) {
@@ -33,13 +33,16 @@ function renderInfo (info, asTable = false) {
   );
 }
 
+const dateFormat = 'D MMMM YYYY, HH:mm';
+
 function RunTimeline (props) {
   const {
     className,
     style,
     run,
     runTasks = [],
-    showIcon
+    showIcon,
+    loaded = true
   } = props;
   if (!run) {
     return null;
@@ -61,7 +64,7 @@ function RunTimeline (props) {
   const scheduled = {
     key: 'scheduled',
     title: 'Scheduled',
-    value: displayDate(scheduledDate)
+    value: displayDate(scheduledDate, dateFormat)
   };
   const started = (() => {
     if (runningDate && runTasks.length > 0) {
@@ -70,7 +73,7 @@ function RunTimeline (props) {
         title: 'Started',
         value: (
           <span>
-            <span>{displayDate(runningDate)}</span>
+            <span>{displayDate(runningDate, dateFormat)}</span>
             <span style={{marginLeft: 5}}>({displayDurationInSeconds(schedulingDuration)})</span>
           </span>
         )
@@ -109,6 +112,8 @@ function RunTimeline (props) {
             run={run}
             runTasks={runTasks}
             analyseSchedulingPhase
+            showDetails={false}
+            dateFormat={dateFormat}
           />
         )
       };
@@ -121,9 +126,19 @@ function RunTimeline (props) {
     <table className={styles.runTimelineTable}>
       <tbody>
         {renderInfo(scheduled, true)}
-        {renderInfo(waiting, true)}
+        {loaded ? renderInfo(waiting, true) : undefined}
         {renderInfo(started, true)}
-        {renderInfo(finished, true)}
+        {loaded ? renderInfo(finished, true) : undefined}
+        <tr>
+          <td colSpan={2}>
+            <RunTimelineInfoDetails
+              run={run}
+              runTasks={runTasks}
+              analyseSchedulingPhase
+              dateFormat={dateFormat}
+            />
+          </td>
+        </tr>
       </tbody>
     </table>
   );
@@ -138,7 +153,7 @@ function RunTimeline (props) {
         )}
         <div className={styles.runTimelineInfo}>
           {renderInfo(first)}
-          {renderInfo(last)}
+          {loaded ? renderInfo(last) : undefined}
         </div>
       </div>
     </Popover>
@@ -150,7 +165,8 @@ RunTimeline.propTypes = {
   style: PropTypes.object,
   run: PropTypes.object,
   runTasks: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
-  showIcon: PropTypes.bool
+  showIcon: PropTypes.bool,
+  loaded: PropTypes.bool
 };
 
 export default RunTimeline;

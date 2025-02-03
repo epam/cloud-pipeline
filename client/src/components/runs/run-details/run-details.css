@@ -29,6 +29,6 @@
   padding: 0;
 }
 
-.run-details-section + .run-details-section {
+.run-details > * + * {
   margin-top: var(--section-margin);
 }

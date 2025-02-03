@@ -327,6 +327,9 @@ function RunTagsComponent (
     }
   }
   result.sort((rA, rB) => rB.isKnown - rA.isKnown);
+  if (result.length === 0) {
+    return null;
+  }
   if (!overflow && overflow !== 0) {
     return (
       <div
