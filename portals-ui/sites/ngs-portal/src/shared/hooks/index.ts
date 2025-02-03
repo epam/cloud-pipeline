@@ -1,5 +1,6 @@
 export { useNgsTabs } from './use-ngs-tabs';
 export { useAsyncEffect } from './use-async-effect';
+export { useRunDisplayName } from './use-run-display-name';
 export {
   type LoadableState,
   type LoadableStateFetchCallback,

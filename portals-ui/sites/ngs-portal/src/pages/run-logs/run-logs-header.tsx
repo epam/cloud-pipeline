@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import classNames from 'classnames';
 import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';
@@ -16,6 +15,7 @@ import {
 } from '@cloud-pipeline/core';
 import { NgsUserCard } from '../../widgets/cards';
 import RunHeaderControls from './run-header-controls';
+import { useRunDisplayName } from '../../shared/hooks';
 
 type Props = CommonProps & {
   run?: Run;
@@ -33,10 +33,7 @@ export default function RunLogsHeader({
   onChangeTab,
   refresh,
 }: Props) {
-  const runName = useMemo(
-    () => (run?.tags?.alias ? `${run.tags.alias} (#${run.id})` : run?.id),
-    [run],
-  );
+  const runName = useRunDisplayName(run, 'Run');
   const { totalDuration } = getRunDurationInfo(run) ?? {};
   if (!run) {
     return;
@@ -49,7 +46,7 @@ export default function RunLogsHeader({
           status={run.status}
           className="shrink-0 w-5 h-5"
         />
-        <b className="text-lg mr-1">Run {runName}</b>
+        <b className="text-lg mr-1">{runName}</b>
         <Tag className="mr-0">
           <NgsUserCard userName={run.owner} showIcon />
         </Tag>
