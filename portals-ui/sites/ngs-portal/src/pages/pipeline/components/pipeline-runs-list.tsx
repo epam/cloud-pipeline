@@ -93,7 +93,8 @@ export function PipelineRunsList({ pipelineId, extended, version }: Props) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center pb-2 border-b-2">
+      <b className="text-base">Runs history</b>
+      <div className="flex items-center pb-2 border-b-2 mt-2">
         <Switch checked={isAllVersions} onChange={toggleVersionFilter} />
         <p className="ml-2">Show all versions</p>
       </div>
