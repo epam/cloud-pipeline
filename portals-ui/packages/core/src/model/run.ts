@@ -87,6 +87,7 @@ export type Run = AclEntry<AclClass.pipeline> & {
   lastNotificationTime?: string;
   pipelineId?: number;
   entitiesIds?: number[];
+  projectId?: number;
 };
 
 export type RunTaskInfo = {

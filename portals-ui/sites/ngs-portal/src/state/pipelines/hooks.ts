@@ -20,6 +20,7 @@ import {
 } from '@cloud-pipeline/api';
 import { useLoadableStore } from '../common/loadable-store/hooks';
 import { useLoadableState } from '../../shared/hooks';
+import { useProjectsStore } from '../projects/hooks.ts';
 
 export function usePipelinesStore(): PipelinesStore {
   return useLoadableStore(pipelinesStore);
@@ -124,19 +125,33 @@ export function usePipeline(pipelineId: string | number | undefined): {
 
 export const usePipelineInfo = (
   pipelineId: string | number | undefined,
+  includeParentProject?: boolean,
 ): PipelineInfoState => {
   const { state, pending, error } = useLoadableState(
     fetchPipelineInfoDetailedWrapped,
     pipelineId,
   );
+  const { pending: projectPending, getProjectById } = useProjectsStore();
+  const parentProject = includeParentProject
+    ? getProjectById(Number(state?.info?.parentFolderId))
+    : undefined;
   return useMemo(
     () => ({
+      parentProject,
       pipelineInfo: state?.info,
       versions: state?.versions,
       error,
-      pending,
+      pending: includeParentProject ? pending || projectPending : pending,
     }),
-    [error, pending, state],
+    [
+      error,
+      includeParentProject,
+      pending,
+      parentProject,
+      projectPending,
+      state?.info,
+      state?.versions,
+    ],
   );
 };
 

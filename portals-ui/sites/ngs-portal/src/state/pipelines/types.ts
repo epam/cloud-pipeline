@@ -3,6 +3,7 @@ import type {
   PipelineConfiguration,
   PipelineInfo,
   PipelineVersion,
+  Project,
 } from '@cloud-pipeline/core';
 import type {
   LoadableStoreActions,
@@ -15,6 +16,7 @@ export type PipelineInfoState = {
   pending: boolean;
   error: string | undefined;
   pipelineInfo?: PipelineInfo;
+  parentProject?: Project;
   versions?: PipelineVersion[];
 };
 
