@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { message, Input, Modal, Select } from 'antd';
+import { message, Input, Modal, Select, Form } from 'antd';
 import {
   fetchAvailableDataStorages,
   registerProject,
@@ -11,8 +11,9 @@ import { noop } from '@cloud-pipeline/core';
 import { useAuthenticatedUser } from '../../../state/authentication/hooks';
 import { useReloadProjectsFn } from '../../../state/projects/hooks.ts';
 import { generateProjectRoutePath } from '../../../shared/constants/routes.ts';
-import './styles.css';
 import { useNgsProjectsRoot } from '../../../state/settings/hooks.ts';
+import type { CreateProjectFormValues } from './form-fields.ts';
+import { CreateProjectField, createProjectFieldConfig } from './form-fields.ts';
 
 type Props = CommonProps & {
   visible: boolean;
@@ -21,33 +22,24 @@ type Props = CommonProps & {
 
 export const CreateProjectModal = (props: Props) => {
   const { visible, onCancel } = props;
+
+  const [form] = Form.useForm<CreateProjectFormValues>();
+  const values = Form.useWatch([], form);
+
   const [messageApi, contextHolder] = message.useMessage();
+
   const navigate = useNavigate();
   const authenticatedUser = useAuthenticatedUser();
-  const [name, setName] = useState<string | undefined>('');
-  const [defaultDataStorageId, setDefaultDataStorageId] = useState<
-    number | undefined
-  >();
+
+  const [pending, setPending] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
   const [dataStorages, setDataStorages] = useState<DataStorage[] | undefined>(
     undefined,
   );
-  const [pending, setPending] = useState(false);
-  const [spin, setSpin] = useState(false);
-  const resetState = useCallback(() => {
-    setName('');
-    setPending(false);
-    setSpin(false);
-    setDefaultDataStorageId(
-      authenticatedUser?.defaultStorageId !== undefined
-        ? Number(authenticatedUser.defaultStorageId)
-        : undefined,
-    );
-  }, [authenticatedUser?.defaultStorageId]);
-  useEffect(() => {
-    resetState();
-  }, [resetState]);
+
   useEffect(() => {
     setPending(true);
+
     fetchAvailableDataStorages()
       .then((dataStorages) => setDataStorages(dataStorages))
       .catch(noop)
@@ -55,45 +47,80 @@ export const CreateProjectModal = (props: Props) => {
         setPending(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (visible) {
+      form.resetFields();
+      setIsFormValid(false);
+      setPending(false);
+    }
+  }, [visible, form]);
+
+  useEffect(() => {
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setIsFormValid(true))
+      .catch(() => setIsFormValid(false));
+  }, [form, values]);
+
+  useEffect(() => {
+    if (
+      visible &&
+      dataStorages?.length &&
+      authenticatedUser?.defaultStorageId
+    ) {
+      form.setFieldsValue({ datastorage: authenticatedUser?.defaultStorageId });
+    }
+  }, [authenticatedUser?.defaultStorageId, dataStorages, form, visible]);
+
   const reloadProjects = useReloadProjectsFn();
   const ngsProjectsRoot = useNgsProjectsRoot();
-  const onOk = useCallback(async (): Promise<void> => {
-    if (pending || !name?.length) {
+
+  const onOk = async (): Promise<void> => {
+    const values = form.getFieldsValue();
+
+    if (pending || !values.projectName?.length) {
       return;
     }
+
+    const { projectName } = values;
+
     setPending(true);
-    setSpin(true);
+
     messageApi.open({
       key: 'register',
       type: 'loading',
       content: (
         <span>
-          Creating <b>{name}</b> project...
+          Creating <b>{projectName}</b> project...
         </span>
       ),
     });
+
     try {
-      const projectResponse = await registerProject(name, {
+      const projectResponse = await registerProject(projectName, {
         parentFolderId: ngsProjectsRoot,
       });
       const projects = await reloadProjects();
+
       messageApi.open({
         key: 'register',
         type: 'success',
         content: (
           <span>
-            Project <b>{name}</b> successfully created
+            Project <b>{projectName}</b> successfully created
           </span>
         ),
         duration: 2,
       });
+
       onCancel();
       setPending(false);
-      setSpin(false);
+
       // not always created project gets into the list of projects, waiting for projects filter fix
       if (
         projectResponse?.id &&
-        projects?.find((project) => project.id === projectResponse?.id)
+        projects?.some((project) => project.id === projectResponse?.id)
       ) {
         navigate(generateProjectRoutePath(projectResponse.id));
       }
@@ -104,7 +131,7 @@ export const CreateProjectModal = (props: Props) => {
         content: (
           <div className="flex flex-col items-start">
             <span>
-              Error creating project <b>{name}</b>
+              Error creating project <b>{projectName}</b>
             </span>
             <span>
               {error instanceof Error ? error.message : String(error)}
@@ -113,22 +140,16 @@ export const CreateProjectModal = (props: Props) => {
         ),
         duration: 2,
       });
+
       setPending(false);
-      setSpin(false);
     }
-  }, [
-    messageApi,
-    name,
-    navigate,
-    onCancel,
-    pending,
-    reloadProjects,
-    ngsProjectsRoot,
-  ]);
+  };
+
   const options = useMemo(() => {
     if (!dataStorages) {
       return [];
     }
+
     return dataStorages.map(({ id, name, pathMask }) => ({
       value: id,
       label: (
@@ -139,45 +160,59 @@ export const CreateProjectModal = (props: Props) => {
       search: `${name} ${pathMask}`,
     }));
   }, [dataStorages]);
+
+  const filterStorageOptions = (
+    searchInput: string,
+    option?: { search?: string },
+  ) => {
+    return (
+      option?.search?.toLowerCase().includes(searchInput.toLowerCase()) ?? false
+    );
+  };
+
+  const isCreateButtonDisabled = pending || !isFormValid;
+
   return (
     <Modal
       title="Create project"
       open={visible}
       onOk={() => void onOk()}
       onCancel={onCancel}
-      okButtonProps={{ disabled: pending || spin || !name }}
+      okButtonProps={{
+        disabled: isCreateButtonDisabled,
+      }}
       okText="Create"
       width={'70vw'}
-      confirmLoading={spin}
+      confirmLoading={pending}
       style={{ maxWidth: 740 }}
-      afterClose={resetState}
       centered>
       {contextHolder}
       <div className="flex flex-col gap-2 py-4">
-        <div className="form-item">
-          <span className="item-label">Name:</span>
-          <Input
-            placeholder="Project name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div className="form-item">
-          <span className="item-label">Default datastorage:</span>
-          <Select
-            showSearch
-            className="w-full overflow-hidden"
-            value={dataStorages?.length ? defaultDataStorageId : undefined}
-            onChange={setDefaultDataStorageId}
-            placeholder="Select datastorage"
-            filterOption={(searchInput, option) => {
-              return (option?.search ?? '')
-                .toLowerCase()
-                .includes((searchInput ?? '').toLowerCase());
-            }}
-            options={options}
-          />
-        </div>
+        <Form
+          // onValuesChange={handleValuesChange}
+          form={form}
+          labelCol={{
+            className: 'w-[145px] text-right break-words',
+          }}
+          wrapperCol={{ className: 'flex-1' }}
+          className="flex flex-col">
+          <Form.Item
+            {...createProjectFieldConfig[CreateProjectField.ProjectName]}
+            hasFeedback>
+            <Input placeholder="Project name" />
+          </Form.Item>
+
+          <Form.Item
+            {...createProjectFieldConfig[CreateProjectField.Datastorage]}>
+            <Select
+              showSearch
+              className="w-full overflow-hidden"
+              placeholder="Select datastorage"
+              filterOption={filterStorageOptions}
+              options={options}
+            />
+          </Form.Item>
+        </Form>
       </div>
     </Modal>
   );
