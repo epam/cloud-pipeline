@@ -198,8 +198,7 @@ export const CreateProjectModal = (props: Props) => {
           className="flex flex-col">
           <Form.Item
             {...createProjectFieldConfig[CreateProjectField.ProjectName]}
-            hasFeedback
-            validateDebounce={500}>
+            hasFeedback>
             <Input placeholder="Project name" />
           </Form.Item>
 
