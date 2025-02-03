@@ -7,12 +7,14 @@ import {
   generateProjectRoutePath,
 } from '../../../shared/constants/routes';
 import { HomeIcon } from '@heroicons/react/24/solid';
+import {usePipelineDisplayName} from "../../../shared/hooks/use-pipeline-display-name.ts";
 
 export default function usePipelineBreadcrumbs(
   pipeline: Pipeline,
   parentProject?: Project,
 ) {
-  const breadcrumbs = useMemo(() => {
+  const pipelineName = usePipelineDisplayName(pipeline);
+  return useMemo(() => {
     if (parentProject) {
       return [
         {
@@ -30,7 +32,7 @@ export default function usePipelineBreadcrumbs(
             </Link>
           ),
         },
-        { title: pipeline.name },
+        { title: pipelineName },
       ];
     }
     return [
@@ -42,8 +44,7 @@ export default function usePipelineBreadcrumbs(
         ),
       },
       { title: <Link to={RoutePath[AppRoutes.PIPELINES]}>Pipelines</Link> },
-      { title: pipeline.name },
+      { title: pipelineName },
     ];
-  }, [parentProject, pipeline.name]);
-  return breadcrumbs;
+  }, [parentProject, pipelineName]);
 }

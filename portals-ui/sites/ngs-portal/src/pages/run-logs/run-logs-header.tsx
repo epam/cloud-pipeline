@@ -66,7 +66,7 @@ export default function RunLogsHeader({
       {run.endDate ? (
         <div className="flex flex-nowrap gap-1 items-center">
           <span className="text-xs">
-            <span className="mr-1 text-faded">Ended:</span>
+            <span className="mr-1 text-faded">Finished:</span>
             <span>{displayDate(run.endDate ?? '')}</span>
             {totalDuration ? (
               <span className="ml-1">

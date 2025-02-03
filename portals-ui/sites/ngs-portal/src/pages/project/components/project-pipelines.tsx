@@ -6,7 +6,7 @@ import { displayDate, type Pipeline, type Project } from '@cloud-pipeline/core';
 import { NgsUserCard } from '../../../widgets/cards';
 import { NgsTag } from '../../../widgets/ngs-tag';
 import { extractTags } from '../../../shared/tags';
-import { ItemsPanel } from '../../../widgets/items-panel/items-panel';
+import { ItemsPanel } from '../../../widgets/items-panel';
 import { useNgsFilters } from '../../../features/ngs-filters';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import HighlightedText from '../../../shared/highlight-text';

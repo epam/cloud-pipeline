@@ -2,6 +2,7 @@ import { Select, Tabs } from 'antd';
 import type { TabsProps } from 'antd';
 import type { CommonProps } from '@cloud-pipeline/components';
 import type { Pipeline, PipelineVersion } from '@cloud-pipeline/core';
+import { usePipelineDisplayName } from '../../../shared/hooks/use-pipeline-display-name.ts';
 
 type Props = CommonProps & {
   pipeline: Pipeline;
@@ -33,10 +34,12 @@ export const PipelineHeader = (props: Props) => {
     options.find(({ label }) => label === versionName)?.value ??
     options[0]?.value;
 
+  const pipelineName = usePipelineDisplayName(pipeline);
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-nowrap gap-1 items-center">
-        <b className="text-lg mr-1">{pipeline.name}</b>
+        <b className="text-lg mr-1">{pipelineName}</b>
         <Select
           className="ml-4 min-w-[150px]"
           disabled={versions.length === 1}

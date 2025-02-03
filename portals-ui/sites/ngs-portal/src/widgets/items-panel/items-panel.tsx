@@ -3,9 +3,8 @@ import type { CommonProps } from '@cloud-pipeline/components';
 import { List, ListHeader } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
-import { PageSpinner } from '../../shared/ui/page-spinner.tsx';
 import { useCallback } from 'react';
-import { PlaceholderText } from '../../shared/ui';
+import { PlaceholderText, PageSpinner } from '../../shared/ui';
 
 function ItemsPanelFooter(
   props: CommonProps & { viewAll?: ViewAllItemsConfiguration },
@@ -54,6 +53,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     onSearchChange,
     isItemsLoading,
     errorText,
+    footer,
   } = props;
 
   const renderContent = useCallback(() => {
@@ -77,6 +77,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         itemKey={itemKey}
         virtualized={virtualized}
         sliced={sliced}
+        footer={footer}
       />
     );
   }, [
@@ -88,6 +89,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     search,
     sliced,
     virtualized,
+    footer,
   ]);
 
   return (
