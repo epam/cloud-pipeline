@@ -19,7 +19,7 @@ export function RunLogsPage() {
     logs,
     refreshRun,
   } = useRunWithLogsInfo(Number(runId));
-  const parentProject = getProjectById(Number(run?.parentFolderId));
+  const parentProject = getProjectById(Number(run?.projectId));
   const { activeTab, tabs, handleChangeTab } = useRunLogsTabs(run, logs);
   const breadcrumbs = useRunBreadcrumbs(run, parentProject);
   if (error) {
