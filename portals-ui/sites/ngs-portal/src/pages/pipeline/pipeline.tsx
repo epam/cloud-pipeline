@@ -55,11 +55,13 @@ export function PipelinePage({
         key: PipelineTabs.Code,
         label: <span className="px-4">Code</span>,
         content: <div>Code</div>,
+        disabled: true,
       },
       {
         key: PipelineTabs.Configuration,
         label: <span className="px-4">Configuration</span>,
         content: <div>Configuration</div>,
+        disabled: true,
       },
       {
         key: PipelineTabs.RunHistory,

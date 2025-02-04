@@ -56,6 +56,7 @@ export const ProjectPage = ({ project }: Props) => {
         key: ProjectTabs.Storage,
         label: <span className="px-4">Storage</span>,
         content: <div className="text-faded">Under implementation</div>,
+        disabled: true,
       },
       {
         key: ProjectTabs.Pipelines,
