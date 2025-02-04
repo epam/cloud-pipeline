@@ -1,3 +1,5 @@
+import { LaunchFormSearchParams } from './search-params';
+
 export enum AppRoutes {
   HOME = 'home',
   PROJECTS = 'projects',
@@ -70,10 +72,20 @@ export function generateRunLogsRoutePath(
 export function generateLaunchRoutePath(
   pipelineId?: string | number,
   runId?: string | number,
+  version?: string,
 ): string {
-  let query = new URLSearchParams({ pipelineId: `${pipelineId}` }).toString();
-  if (runId) {
-    query = new URLSearchParams({ runId: `${runId}` }).toString();
+  const query = new URLSearchParams();
+
+  if (version) {
+    query.append(LaunchFormSearchParams.Version, version);
   }
-  return `/launch?${query}`;
+
+  if (runId) {
+    query.append(LaunchFormSearchParams.RunId, `${runId}`);
+  } else if (pipelineId) {
+    query.append(LaunchFormSearchParams.PipelineId, `${pipelineId}`);
+  }
+
+  const queryString = query.toString();
+  return queryString ? `/launch?${queryString}` : '/launch';
 }
