@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Modal, Select, message } from 'antd';
+import { message, Modal, Select } from 'antd';
 import { clonePipeline } from '@cloud-pipeline/api';
 import type { Pipeline } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
@@ -8,7 +8,10 @@ import {
   useProjects,
   useReloadProjectsFn,
 } from '../../../state/projects/hooks';
-import { generateProjectRoutePath } from '../../../shared/constants/routes';
+import {
+  generateProjectRoutePath,
+  ProjectTabs,
+} from '../../../shared/constants/routes';
 import { clonedPipelineName } from '../../../shared/helpers';
 
 type Props = CommonProps & {
@@ -68,7 +71,7 @@ export const PipelineToProjectModal = (props: Props) => {
             <b className="ml-1">{selected?.name}</b>.
             <Link
               className="ml-1 font-semibold truncate"
-              to={generateProjectRoutePath(selected.id)}>
+              to={generateProjectRoutePath(selected.id, ProjectTabs.Pipelines)}>
               Open project.
             </Link>
           </span>

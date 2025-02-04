@@ -37,3 +37,20 @@ export function flattenNumberIdentifiers(
     })
     .filter((o) => o !== undefined);
 }
+
+export function flattenStringIdentifiers(
+  identifiers: undefined | null | string | string[],
+): string[] {
+  if (identifiers === undefined || identifiers === null) {
+    return [];
+  }
+  if (typeof identifiers === 'string') {
+    return flattenStringIdentifiers(
+      identifiers
+        .split(/[,;\s]/)
+        .map((o) => o.trim())
+        .filter((o) => o.length > 0),
+    );
+  }
+  return identifiers.map((id) => id.trim()).filter((o) => o.length > 0);
+}

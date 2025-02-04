@@ -5,9 +5,8 @@ import { Tag } from '@cloud-pipeline/components';
 import type { Project } from '@cloud-pipeline/core';
 import { NgsUserCard } from '../../../widgets/cards';
 import { NgsTag } from '../../../widgets/ngs-tag';
-import { useMemo } from 'react';
-import { extractTags } from '../../../shared/tags';
 import { EditProjectTagsButton } from './edit-project-tags';
+import { useProjectTags } from '../../../shared/tags/use-project-tags.ts';
 
 type Props = CommonProps & {
   project: Project;
@@ -18,8 +17,7 @@ type Props = CommonProps & {
 
 export const ProjectHeader = (props: Props) => {
   const { project, tabs, onChangeTab, activeKey } = props;
-  const { data } = project ?? {};
-  const tags = useMemo(() => extractTags(data), [data]);
+  const tags = useProjectTags(project?.data);
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-nowrap gap-1 items-center">

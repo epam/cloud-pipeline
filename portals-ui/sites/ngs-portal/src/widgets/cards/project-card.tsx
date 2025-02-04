@@ -11,9 +11,9 @@ import { NgsUserCard } from './ngs-user-card';
 import { NgsTag } from '../ngs-tag';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { UserIcon } from '@heroicons/react/24/solid';
-import { extractTags } from '../../shared/tags';
-import './style.css';
 import { generateProjectRoutePath } from '../../shared/constants/routes.ts';
+import { useProjectTags } from '../../shared/tags/use-project-tags.ts';
+import './style.css';
 
 type Props = CommonProps & {
   project: Project;
@@ -41,7 +41,7 @@ export const ProjectCard = ({
 }: Props) => {
   const { id, name, data, owner } = project;
   const randomRunningCount = getRandomInt(0, 4);
-  const tags = useMemo(() => extractTags(data), [data]);
+  const tags = useProjectTags(data);
   const { showExtraInfo, showDescription, showStatusInfo } = useMemo(
     () => ({
       showExtraInfo: mode === 'extended',

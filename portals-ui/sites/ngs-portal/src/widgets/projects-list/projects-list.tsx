@@ -52,7 +52,7 @@ export const ProjectsList = memo(
         project={item}
         highlightedText={search}
         className={cn({ ['border-t']: i !== 0 })}
-        mode={mode}
+        mode="standard"
         lastRun={getRandomPipeline()}
         showDescription={showDescription}
       />

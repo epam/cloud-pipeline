@@ -8,8 +8,14 @@ type SettingsFieldValidationBase = {
   required?: boolean;
 };
 
+type PrimitiveType = 'string' | 'number' | 'boolean' | 'object' | 'array';
+
+type ArrayType<T extends SettingFieldType> = `array[${T}]`;
+
+type SettingFieldType = PrimitiveType | ArrayType<PrimitiveType>;
+
 type SettingsFieldValidationTypes = SettingsFieldValidationBase & {
-  types?: Array<'string' | 'number' | 'boolean' | 'object'>;
+  types?: SettingFieldType[];
 };
 
 type SettingsFieldValidationCallback = SettingsFieldValidationBase & {
@@ -23,6 +29,31 @@ type SettingsFieldValidationCallback = SettingsFieldValidationBase & {
 type SettingsFieldValidation =
   | SettingsFieldValidationTypes
   | SettingsFieldValidationCallback;
+
+function checkType(o: unknown, type: SettingFieldType): boolean {
+  if (o === undefined || o === null) {
+    return false;
+  }
+  if (type.startsWith('array[')) {
+    const subType = type.slice('array['.length, -1) as SettingFieldType;
+    return (
+      typeof o === 'object' &&
+      Array.isArray(o) &&
+      !o.some((s) => !checkType(s, subType))
+    );
+  }
+  switch (type) {
+    case 'number':
+    case 'string':
+    case 'object':
+    case 'boolean':
+      return typeof o === type;
+    case 'array':
+      return typeof o === 'object' && Array.isArray(o);
+    default:
+      return false;
+  }
+}
 
 function identifiersValidation(o: unknown): void {
   if (o === undefined || o === null) {
@@ -58,6 +89,10 @@ const validation: SettingsFieldValidation[] = [
     types: ['string', 'number', 'boolean'],
   },
   { field: 'runsFilter.parameters.*', types: ['string', 'number', 'boolean'] },
+  { field: 'ngsProject.tagsToDisplay', types: ['string', 'array[string]'] },
+  { field: 'ngsProject.tagsToHide', types: ['string', 'array[string]'] },
+  { field: 'ngsPipeline.tagsToDisplay', types: ['string', 'array[string]'] },
+  { field: 'ngsPipeline.tagsToHide', types: ['string', 'array[string]'] },
 ];
 
 function getSettingsFieldValueError(
@@ -74,7 +109,7 @@ function getSettingsFieldValueError(
     }
   } else {
     const { types = ['string'] } = validation;
-    if (!types.some((t) => typeof value === t)) {
+    if (!types.some((t) => checkType(value, t))) {
       return `settings: field "${field}" has wrong type (expected ${types.join(', ')}; got ${typeof value})`;
     }
   }

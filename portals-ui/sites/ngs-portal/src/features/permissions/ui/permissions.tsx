@@ -1,6 +1,5 @@
 import type { AclClass } from '@cloud-pipeline/core';
 import { usePermissions } from '../hooks';
-import { useUsers } from '../../../state/users-info/hooks';
 import { PermissionRow } from './permission-row';
 import { PageSpinner, PlaceholderText } from '../../../shared/ui';
 
@@ -14,14 +13,12 @@ export const Permissions = ({ entityId, aclClass }: Props) => {
     aclClass,
     entityId,
   );
-  const users = useUsers();
-
   const renderContent = () => {
     if (isPermissionsLoading) {
       return <PageSpinner />;
     }
 
-    if (!entityId || !users.length) {
+    if (!entityId) {
       return <PlaceholderText>No data</PlaceholderText>;
     }
 
@@ -35,7 +32,6 @@ export const Permissions = ({ entityId, aclClass }: Props) => {
           <PermissionRow
             key={permission.sid.name}
             permission={permission}
-            usersInfo={users}
             className="flex-1"
           />
         ))}

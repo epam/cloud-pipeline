@@ -1,15 +1,16 @@
 import type { ChangeEvent } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { noop, type NgsData, type Project } from '@cloud-pipeline/core';
 import type { MappedTag } from '../../../shared/tags';
-import { extractTags } from '../../../shared/tags';
 import { PlusIcon } from '@heroicons/react/24/solid';
 import { updateProjectMetadata } from '@cloud-pipeline/api';
 import { useReloadProjectsFn } from '../../../state/projects/hooks.ts';
+import { useProjectTags } from '../../../shared/tags/use-project-tags.ts';
+import { useMappedTags } from '../../../shared/tags/use-mapped-tags.ts';
 
 type ButtonProps = CommonProps & {
   project: Project;
@@ -28,6 +29,7 @@ enum TagStates {
 }
 
 type EditedTag = MappedTag & {
+  initialKey?: string;
   tagState?: TagStates | undefined;
   new?: boolean;
 };
@@ -38,18 +40,28 @@ const EditProjectTagsModal = (props: ModalProps) => {
   const [messageApi, contextHolder] = message.useMessage();
   const [tags, setTags] = useState<EditedTag[]>([]);
   const [pending, setPending] = useState(false);
-  const initialTags = useMemo(() => extractTags(project.data), [project.data]);
+  const initialTags = useProjectTags(project.data);
+  const allTags = useMappedTags(project.data);
   useEffect(() => {
-    setTags(initialTags);
+    setTags(initialTags.map((t) => ({ ...t, initialKey: t.key })));
   }, [initialTags]);
   const projectId = project.id;
   const onOk = useCallback(() => {
     const payload = {} as NgsData;
-    tags.forEach(({ key, value, type, tagState }: EditedTag) => {
-      if (tagState !== TagStates.markAsDeleted) {
-        payload[key] = {
-          value,
-          type: type ?? 'string',
+    allTags.forEach((aTag) => {
+      const displayedTag = tags.find((t) => t.initialKey === aTag.key);
+      if (displayedTag) {
+        const { tagState, value, type } = displayedTag;
+        if (tagState !== TagStates.markAsDeleted) {
+          payload[aTag.key] = {
+            value,
+            type: type ?? 'string',
+          };
+        }
+      } else {
+        payload[aTag.key] = {
+          value: aTag.value,
+          type: aTag.type ?? 'string',
         };
       }
     });
@@ -91,7 +103,7 @@ const EditProjectTagsModal = (props: ModalProps) => {
             onCancel();
           });
       });
-  }, [messageApi, onCancel, projectId, reloadProjects, tags]);
+  }, [messageApi, onCancel, projectId, reloadProjects, tags, allTags]);
   const resetState = noop;
   const onChangeTag = useCallback(
     (tag: EditedTag, field: 'key' | 'value') =>

@@ -13,6 +13,15 @@ export type RunsFilterSettings = {
   parameters?: Record<string, string | number | boolean>;
 };
 
+export type NgsTaggedObjectSettings = {
+  tagsToDisplay?: string | string[];
+  tagsToHide?: string | string[];
+};
+
+export type NgsProjectSettings = NgsTaggedObjectSettings;
+
+export type NgsPipelineSettings = NgsTaggedObjectSettings;
+
 export type Settings = {
   /**
    * Cloud Pipeline API endpoint
@@ -36,4 +45,12 @@ export type Settings = {
    * Runs lists predefined filters
    */
   runsFilter?: RunsFilterSettings;
+  /**
+   * NGS Project display configuration
+   */
+  ngsProject?: NgsProjectSettings;
+  /**
+   * NGS Pipeline display configuration
+   */
+  ngsPipeline?: NgsPipelineSettings;
 };

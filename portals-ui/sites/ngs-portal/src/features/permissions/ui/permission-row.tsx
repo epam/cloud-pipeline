@@ -1,7 +1,7 @@
 import type { PermissionsResponse } from '@cloud-pipeline/api';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { UserCard } from '@cloud-pipeline/components';
-import type { UserInfo } from '@cloud-pipeline/core';
+import { writeDeniedExtended } from '@cloud-pipeline/core';
 import {
   readAllowedExtended,
   writeAllowedExtended,
@@ -15,6 +15,7 @@ import type { TagProps } from 'antd';
 import { Tag } from 'antd';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import cn from 'classnames';
+import { useUsers } from '../../../state/users-info/hooks.ts';
 
 type PermissionTagProps = {
   isDenied: boolean;
@@ -51,20 +52,20 @@ const PermissionTag = ({
 
 type PermissionRowProps = CommonProps & {
   permission: PermissionsResponse['permissions'][0];
-  usersInfo: UserInfo[];
 };
 
 export const PermissionRow = ({
   permission,
-  usersInfo,
   className,
   style,
 }: PermissionRowProps) => {
   const { mask, sid } = permission;
   const isUser = sid.principal;
 
+  const users = useUsers();
+
   const currentUser = isUser
-    ? usersInfo?.find((user) => user.name === sid.name)
+    ? users?.find((user) => user.name === sid.name)
     : null;
 
   return (
@@ -95,7 +96,7 @@ export const PermissionRow = ({
           />
           <PermissionTag
             isAllowed={writeAllowedExtended(mask)}
-            isDenied={true}
+            isDenied={writeDeniedExtended(mask)}
             label="Write"
             color="orange"
           />

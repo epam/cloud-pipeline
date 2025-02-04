@@ -129,7 +129,7 @@ export const PipelineFiles = ({ pipelineId, version }: Props) => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b-2 mx-[-16px]">
+      <div className="border-b mx-[-16px]">
         {noFilesFound ? (
           <div className="px-4 pb-4">No files found</div>
         ) : (

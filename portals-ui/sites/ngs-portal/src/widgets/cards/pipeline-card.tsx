@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import cn from 'classnames';
 import { Button, Typography } from 'antd';
 import { Link } from 'react-router-dom';
@@ -9,12 +8,12 @@ import HighlightedText from '../../shared/highlight-text';
 import { NgsUserCard } from './ngs-user-card';
 import { NgsTag } from '../ngs-tag';
 import { PipelineToProjectButton } from '../modals';
-import { extractTags } from '../../shared/tags';
 import './style.css';
 import {
   generateLaunchRoutePath,
   generatePipelineRoutePath,
 } from '../../shared/constants/routes.ts';
+import { usePipelineTags } from '../../shared/tags/use-pipeline-tags.ts';
 
 type Props = CommonProps & {
   pipeline: Pipeline;
@@ -32,7 +31,7 @@ export const PipelineCard = ({
   showDescription = false,
 }: Props) => {
   const { id, name, owner, data = {}, description, pipelineType } = pipeline;
-  const tags = useMemo(() => extractTags(data), [data]);
+  const tags = usePipelineTags(data);
   return (
     <div
       className={cn(

@@ -1,5 +1,7 @@
 import type {
   LaunchSettings,
+  NgsPipelineSettings,
+  NgsProjectSettings,
   RunsFilterSettings,
   Settings,
 } from '../../shared/settings/types.ts';
@@ -34,10 +36,21 @@ export function useRunsFilterSettings(): RunsFilterSettings {
   const { runsFilter } = useSettings();
   const launchSettings = useLaunchSettings();
   return useMemo(() => {
-    const { parameters = launchSettings.parameters, ...rest } = runsFilter ?? {};
+    const { parameters = launchSettings.parameters, ...rest } =
+      runsFilter ?? {};
     return {
       ...rest,
       parameters,
     };
   }, [runsFilter, launchSettings]);
+}
+
+export function useNgsProjectSettings(): NgsProjectSettings {
+  const settings = useSettings();
+  return useMemo(() => settings?.ngsProject ?? {}, [settings]);
+}
+
+export function useNgsPipelineSettings(): NgsPipelineSettings {
+  const settings = useSettings();
+  return useMemo(() => settings?.ngsPipeline ?? {}, [settings]);
 }
