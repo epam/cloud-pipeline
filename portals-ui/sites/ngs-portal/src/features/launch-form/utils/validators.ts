@@ -25,6 +25,9 @@ export function validateParameter(
   parameter: MappedPipelineParameter,
   value: string | boolean,
 ): { touched: boolean; error: string | undefined } {
+  if (parameter.isSystemParameter) {
+    return { touched: false, error: undefined };
+  }
   if (
     parameter.initial.type === PipelineParametersTypes.boolean ||
     typeof value === 'boolean'
