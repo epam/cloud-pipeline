@@ -10,6 +10,16 @@ export type RunParameter = {
   value?: string;
 };
 
+export type RunDefaultParameter = {
+  name: string;
+  type: string;
+  defaultValue: string;
+  description?: string;
+  passToWorkers?: boolean;
+  prefix?: boolean;
+  roles?: string[];
+};
+
 type RunInstance = {
   cloudProvider?: CloudProviders;
   cloudRegionId?: number;

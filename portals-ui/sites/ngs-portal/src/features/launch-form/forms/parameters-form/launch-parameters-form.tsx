@@ -29,13 +29,15 @@ export function LaunchParametersForm({
     if (parameters?.length) {
       const sections = {} as Record<string, MappedPipelineParameter[]>;
       parameters.forEach((parameter) => {
-        const sectionName = (
-          parameter.section ?? OTHER_SECTION_NAME
-        ).toLowerCase();
-        if (!sections[sectionName]) {
-          sections[sectionName] = [];
+        if (!parameter.isSystemParameter) {
+          const sectionName = (
+            parameter.section ?? OTHER_SECTION_NAME
+          ).toLowerCase();
+          if (!sections[sectionName]) {
+            sections[sectionName] = [];
+          }
+          sections[sectionName].push(parameter);
         }
-        sections[sectionName].push(parameter);
       });
       return Object.values(sections);
     }

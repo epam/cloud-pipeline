@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import type {
   PipelineParameter,
   PipelineParametersTypes,
+  RunDefaultParameter,
 } from '@cloud-pipeline/core';
 import {
   type PipelineConfiguration,
@@ -23,6 +24,7 @@ type LaunchFormProps = CommonProps & {
   configuration?: PipelineConfiguration;
   pipelineInfo?: Pipeline;
   version?: string;
+  runDefaultParameters?: RunDefaultParameter[];
   prettyNameEditable?: boolean;
   readOnly?: boolean;
 };
@@ -31,6 +33,7 @@ export function LaunchForm({
   configuration,
   pipelineInfo,
   version,
+  runDefaultParameters,
   prettyNameEditable = false,
   className,
   readOnly = false,
@@ -44,9 +47,9 @@ export function LaunchForm({
   const [messageApi, contextHolder] = message.useMessage();
   useEffect(() => {
     if (version && configuration) {
-      setParametersFormData(mapParameters(configuration));
+      setParametersFormData(mapParameters(configuration, runDefaultParameters));
     }
-  }, [configuration, version]);
+  }, [configuration, runDefaultParameters, version]);
   const onChangeParameter = useCallback(
     (key: string, parameter: MappedPipelineParameter) => {
       if (!parametersFormData?.length) {

@@ -2,6 +2,7 @@ import type {
   PipelineConfiguration,
   PipelineInfo,
   PipelineVersion,
+  RunDefaultParameter,
   RunParameter,
 } from '@cloud-pipeline/core';
 
@@ -33,6 +34,7 @@ export type LaunchInfo = {
   configuration?: PipelineConfiguration;
   configurations?: PipelineConfiguration[];
   pipelineInfo?: PipelineInfo;
+  runDefaultParameters?: RunDefaultParameter[];
   pending: boolean;
   errors: string[];
 };

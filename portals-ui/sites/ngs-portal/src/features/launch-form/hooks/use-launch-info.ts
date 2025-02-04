@@ -4,12 +4,18 @@ import {
   usePipelineInfo,
 } from '../../../state/pipelines/hooks';
 import type { LaunchInfo } from '../type';
+import { useRunDefaultParameters } from './useRunDefaultParameters';
 
 function useLaunchInfo(
   pipelineId?: number,
   configName?: string,
   versionName?: string,
 ): LaunchInfo {
+  const {
+    runDefaultParameters,
+    pending: defaultParametersPending,
+    error: defaultParametersError,
+  } = useRunDefaultParameters();
   const {
     pipelineInfo,
     pending: pipelineInfoPending,
@@ -35,12 +41,16 @@ function useLaunchInfo(
     );
   }, [configName, configurations]);
   const pending = useMemo(
-    () => pipelineInfoPending || configurationsPending,
-    [configurationsPending, pipelineInfoPending],
+    () =>
+      defaultParametersPending || pipelineInfoPending || configurationsPending,
+    [configurationsPending, defaultParametersPending, pipelineInfoPending],
   );
   const errors = useMemo<string[]>(
-    () => [pipelineInfoError, configurationsError].filter(Boolean) as string[],
-    [configurationsError, pipelineInfoError],
+    () =>
+      [defaultParametersError, pipelineInfoError, configurationsError].filter(
+        Boolean,
+      ) as string[],
+    [configurationsError, defaultParametersError, pipelineInfoError],
   );
   return useMemo(
     () => ({
@@ -50,6 +60,7 @@ function useLaunchInfo(
       configurations,
       pipelineInfo,
       pending,
+      runDefaultParameters,
       errors,
     }),
     [
@@ -58,6 +69,7 @@ function useLaunchInfo(
       errors,
       pending,
       pipelineInfo,
+      runDefaultParameters,
       version,
       versions,
     ],

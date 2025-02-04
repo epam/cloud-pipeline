@@ -2,13 +2,35 @@ import type {
   MappedPipelineParameter,
   PipelineConfiguration,
   PipelineParameter,
+  RunDefaultParameter,
   RunParameter,
 } from '@cloud-pipeline/core';
 import { validateParameter } from './validators';
 import type { RunConfiguration } from '../type';
 
+const ADDITIONAL_SYSTEM_PARAMETERS = [
+  'CP_CAP_LIMIT_MOUNTS',
+  'CP_CAP_AUTOSCALE',
+  'CP_CAP_AUTOSCALE_WORKERS',
+  'CP_CAP_RESCHEDULE_RUN',
+];
+
+function isSystemParameter(
+  key: string = '',
+  runDefaultParameters: RunDefaultParameter[] = [],
+) {
+  return (
+    ADDITIONAL_SYSTEM_PARAMETERS.includes(key.toUpperCase()) ||
+    runDefaultParameters.some(
+      (defaultParameter) =>
+        defaultParameter.name.toUpperCase() === key.toUpperCase(),
+    )
+  );
+}
+
 function mapParameters(
   configuration: PipelineConfiguration | undefined,
+  runDefaultParameters?: RunDefaultParameter[],
 ): MappedPipelineParameter[] {
   return Object.entries(configuration?.configuration?.parameters ?? {}).map(
     ([key, entry]) => {
@@ -22,6 +44,7 @@ function mapParameters(
         section: entry.section,
         initial: entry,
         initialKey: key,
+        isSystemParameter: isSystemParameter(key, runDefaultParameters),
       } as MappedPipelineParameter;
       return {
         ...mappedParameter,

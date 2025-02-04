@@ -56,6 +56,7 @@ export type MappedPipelineParameter = {
   keyError?: string;
   section: string;
   initial: PipelineParameter;
+  isSystemParameter: boolean;
 };
 
 export type PipelineConfiguration = {

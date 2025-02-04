@@ -27,7 +27,7 @@ export default function BooleanParameter({
       />
       <Checkbox
         disabled={readOnly}
-        checked={parameter.value === true}
+        checked={`${parameter.value}` === 'true'}
         onChange={onChangeValue}>
         Enabled
       </Checkbox>
