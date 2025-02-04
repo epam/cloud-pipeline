@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Alert, Spin } from 'antd';
 import { LaunchForm } from '../../features/launch-form';
 import LaunchHeader from './launch-header';
@@ -7,35 +6,50 @@ import { useSearchParams } from 'react-router-dom';
 import { useRunInfo } from '../../shared/hooks/use-run-info';
 import useLaunchInfo from '../../features/launch-form/hooks/use-launch-info';
 import useLaunchConfiguration from '../../features/launch-form/hooks/use-launch-configuration';
+import { PageSpinner } from '../../shared/ui';
+import { LaunchFormSearchParams } from '../../shared/constants/search-params';
 
 export function LaunchPage() {
   const [searchParams] = useSearchParams();
-  const pipelineId = Number(searchParams.get('pipelineId')) || undefined;
-  const runId = Number(searchParams.get('runId')) || undefined;
+  const pipelineId =
+    Number(searchParams.get(LaunchFormSearchParams.PipelineId)) || undefined;
+  const runId =
+    Number(searchParams.get(LaunchFormSearchParams.RunId)) || undefined;
+  const version = searchParams.get(LaunchFormSearchParams.Version);
+
   const { run } = useRunInfo(runId);
-  const { pipelineInfo, version, configuration, errors, pending } =
-    useLaunchInfo(pipelineId ?? run?.pipelineId, run?.configName, run?.version);
-  const launchConfiguration = useLaunchConfiguration(configuration, run);
-  const launchInfoLoaded = useMemo(
-    () => launchConfiguration,
-    [launchConfiguration],
+
+  const {
+    pipelineInfo,
+    version: currentVersion,
+    configuration,
+    errors,
+    pending,
+  } = useLaunchInfo(
+    pipelineId ?? run?.pipelineId,
+    run?.configName,
+    version ?? run?.version,
   );
+  const launchConfiguration = useLaunchConfiguration(configuration, run);
+
   if (errors.length) {
     return errors.map((error) => <Alert type="error" message={error} />);
   }
-  if (!launchInfoLoaded) {
-    return <Spin wrapperClassName="flex h-full" spinning />;
+
+  if (!launchConfiguration) {
+    return <PageSpinner />;
   }
+
   return (
     <div className="overflow-auto gap-4 h-full w-full flex flex-col">
       <Spin wrapperClassName="spin-container" spinning={pending}>
         <LaunchHeader
           className="list-container p-4 mb-2 shrink-0"
           pipelineInfo={pipelineInfo}
-          version={version}
+          version={currentVersion}
         />
         <LaunchForm
-          version={version}
+          version={currentVersion}
           configuration={launchConfiguration}
           pipelineInfo={pipelineInfo}
           className="list-container p-4 grow"

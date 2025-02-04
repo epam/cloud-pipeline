@@ -16,14 +16,17 @@ function useLaunchInfo(
     error: pipelineInfoError,
     versions,
   } = usePipelineInfo(pipelineId);
+
   const version = useMemo(() => {
     return versionName ?? pipelineInfo?.currentVersion?.name;
   }, [pipelineInfo?.currentVersion?.name, versionName]);
+
   const {
     configurations,
     pending: configurationsPending,
     error: configurationsError,
   } = usePipelineConfiguration(Number(pipelineId), version);
+
   const configuration = useMemo(() => {
     if (configName && configurations) {
       return configurations.find(
@@ -34,14 +37,17 @@ function useLaunchInfo(
       (configuration) => configuration.default,
     );
   }, [configName, configurations]);
+
   const pending = useMemo(
     () => pipelineInfoPending || configurationsPending,
     [configurationsPending, pipelineInfoPending],
   );
+
   const errors = useMemo<string[]>(
     () => [pipelineInfoError, configurationsError].filter(Boolean) as string[],
     [configurationsError, pipelineInfoError],
   );
+
   return useMemo(
     () => ({
       version,

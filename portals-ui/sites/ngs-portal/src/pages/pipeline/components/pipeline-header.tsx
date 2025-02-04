@@ -1,8 +1,14 @@
-import { Select, Tabs } from 'antd';
+import { Button, Select, Tabs } from 'antd';
 import type { TabsProps } from 'antd';
 import type { CommonProps } from '@cloud-pipeline/components';
-import type { Pipeline, PipelineVersion } from '@cloud-pipeline/core';
-import { usePipelineDisplayName } from '../../../shared/hooks/use-pipeline-display-name.ts';
+import {
+  PipelineType,
+  type Pipeline,
+  type PipelineVersion,
+} from '@cloud-pipeline/core';
+import { usePipelineDisplayName } from '../../../shared/hooks/use-pipeline-display-name';
+import { Link } from 'react-router-dom';
+import { generateLaunchRoutePath } from '../../../shared/constants/routes';
 
 type Props = CommonProps & {
   pipeline: Pipeline;
@@ -34,11 +40,12 @@ export const PipelineHeader = (props: Props) => {
     options.find(({ label }) => label === versionName)?.value ??
     options[0]?.value;
 
+  const { id, pipelineType } = pipeline;
   const pipelineName = usePipelineDisplayName(pipeline);
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-nowrap gap-1 items-center">
+      <div className="flex flex-nowrap gap-2 items-center">
         <b className="text-lg mr-1">{pipelineName}</b>
         <Select
           className="ml-4 min-w-[150px]"
@@ -48,6 +55,16 @@ export const PipelineHeader = (props: Props) => {
           placeholder="Select version"
           options={options}
         />
+
+        {pipelineType === PipelineType.pipeline ? (
+          <Button className="p-0 ml-auto" type="primary" size="small">
+            <Link
+              className="flex w-full h-full px-2"
+              to={generateLaunchRoutePath(id, undefined, versionName)}>
+              Run
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <Tabs
