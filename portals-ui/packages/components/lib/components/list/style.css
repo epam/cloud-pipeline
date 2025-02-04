@@ -3,5 +3,5 @@
 }
 
 .list-header-search-container {
-  @apply flex flex-wrap justify-between gap-2 px-1 py-1;
+  @apply flex flex-wrap gap-2 px-1 py-1;
 }

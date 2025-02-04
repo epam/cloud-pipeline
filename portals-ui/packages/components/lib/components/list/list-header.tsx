@@ -9,6 +9,7 @@ const ListHeader = (props: ListHeaderProps) => {
   const {
     className,
     searchClassName,
+    searchInputClassName,
     style,
     title,
     controls,
@@ -44,7 +45,7 @@ const ListHeader = (props: ListHeaderProps) => {
             placeholder={searchPlaceholder ?? 'Search'}
             size="middle"
             style={{ boxShadow: 'none', borderColor: 'transparent' }}
-            className="flex-1"
+            className={classNames(searchInputClassName, 'flex-1')}
           />
           {afterSearch ?? null}
         </div>

@@ -17,6 +17,8 @@ type RunWithLogsInfo = {
   refreshRun: () => Promise<void>;
 };
 
+const __UNSAFE__always_show_main_task__ = true;
+
 function determineTaskToLoad(
   run?: Run,
   tasks?: RunTask[],
@@ -25,6 +27,7 @@ function determineTaskToLoad(
 ) {
   let taskToFetch: RunTask | undefined;
   const runLogsMainTask =
+    __UNSAFE__always_show_main_task__ ??
     ((userMetadata?.[RUN_LOGS_MAIN_TASK]?.value as string) || 'false')
       .toString()
       .toLowerCase() === 'true';
@@ -108,14 +111,18 @@ export default function useRunWithLogsInfo(
     refreshSelectedTask(run, tasks, selectedTask);
     setPending(false);
   }, [refreshSelectedTask, runId, selectedTask]);
+  const refreshSelectedTaskFn = useCallback(() => {
+    refreshSelectedTask(run, tasks, selectedTask);
+  }, [refreshSelectedTask, run, tasks, selectedTask]);
   useEffect(() => {
     if (!selectedTask) {
       void initialize();
     }
   }, [initialize, selectedTask]);
+  const { status } = run ?? {};
   useEffect(() => {
-    refreshSelectedTask(run, tasks, selectedTask);
-  }, [refreshSelectedTask, run, selectedTask, tasks]);
+    refreshSelectedTaskFn();
+  }, [status, refreshSelectedTaskFn]);
   const loadInfo = useCallback(
     async (task: string | undefined) => {
       if (!task || !runId || run?.status === RunStatuses.stopped) {

@@ -14,8 +14,19 @@ export type RunsFilterSettings = {
 };
 
 export type NgsTaggedObjectSettings = {
+  /**
+   * If `tagsToDisplay` is set, only these tags will be displayed
+   */
   tagsToDisplay?: string | string[];
+  /**
+   * If `tagsToHide` is set, these tags won't be displayed
+   */
   tagsToHide?: string | string[];
+  /**
+   * Tags to filter projects by; if omitted, displayed tags will be used for filtering
+   * (respecting `tagsToDisplay` and `tagsToHide` settings)
+   */
+  filterTags?: string | string[];
 };
 
 export type NgsProjectSettings = NgsTaggedObjectSettings;

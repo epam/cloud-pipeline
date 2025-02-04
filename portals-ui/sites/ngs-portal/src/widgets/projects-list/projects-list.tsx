@@ -6,12 +6,14 @@ import { memo, useCallback } from 'react';
 import { usePipelines } from '../../state/pipelines/hooks.ts';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { CreateProjectButton } from '../modals';
-import { projectFiltersToDisplay } from '../../pages/projects/constants.ts';
-import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
+import { NgsFilters, useFilteredNgsItems } from '../ngs-filters';
 import {
   useProjectsStore,
   useReloadProjects,
 } from '../../state/projects/hooks.ts';
+import { useNgsProjectSettings } from '../../state/settings/hooks.ts';
+import classNames from 'classnames';
+import './projects-list.css';
 
 type Props = {
   mode?: 'standard' | 'extended';
@@ -24,8 +26,8 @@ export const ProjectsList = memo(
     useReloadProjects();
 
     const {
-      data: projects = [],
-      error,
+      data: projects,
+      error: projectsLoadError,
       pending: isProjectsLoading,
     } = useProjectsStore();
 
@@ -39,12 +41,17 @@ export const ProjectsList = memo(
       [pipelines],
     );
 
-    const { filteredItems, onSearchChange, filtersProps, search } =
-      useNgsFilters({
-        items: projects,
-        withFilters,
-        filtersToDisplay: projectFiltersToDisplay,
-      });
+    const settings = useNgsProjectSettings();
+
+    const {
+      filteredItems: filteredProjects,
+      search,
+      onSearchChanged,
+      filters,
+      onFiltersChanged,
+      config,
+      error: searchError,
+    } = useFilteredNgsItems(projects, { taggedObjectSettings: settings });
 
     const renderItem = (item: Project, search: string, i: number) => (
       <ProjectCard
@@ -58,6 +65,9 @@ export const ProjectsList = memo(
       />
     );
 
+    const pending = isProjectsLoading;
+    const error = projectsLoadError ?? searchError;
+
     return (
       <ItemsPanel
         className="h-full list-container overflow-auto"
@@ -68,25 +78,32 @@ export const ProjectsList = memo(
           </div>
         }
         actions={<CreateProjectButton />}
-        items={filteredItems}
+        items={filteredProjects}
         render={renderItem}
         sliced
         virtualized={mode === 'extended'}
         search={search}
-        onSearchChange={onSearchChange}
+        onSearchChange={onSearchChanged}
         afterSearch={
-          filtersProps && (
-            <NgsFilters className="flex-shrink-0 flex-wrap" {...filtersProps} />
+          withFilters && (
+            <NgsFilters
+              filters={filters}
+              onFiltersChange={onFiltersChanged}
+              config={config}
+            />
           )
         }
         itemKey="id"
-        searchClassName={mode === 'extended' ? 'py-1' : undefined}
+        searchClassName={classNames({
+          'py-1': mode === 'extended',
+        })}
+        searchInputClassName="projects-list-search"
         viewAll={
           mode === 'standard'
             ? { title: 'View all projects', link: '/projects' }
             : undefined
         }
-        isItemsLoading={isProjectsLoading}
+        isItemsLoading={pending}
         errorText={error && `Error: ${error}`}
       />
     );

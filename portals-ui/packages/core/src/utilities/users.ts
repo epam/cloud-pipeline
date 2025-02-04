@@ -18,18 +18,44 @@ const LAST_NAME_KEY_VARIANTS = [
   'lastName',
 ];
 
-const compareUserNames = (nameA: string, nameB: string): boolean => {
+export function isUser(o: unknown): o is User {
+  return (
+    o !== undefined &&
+    o !== null &&
+    typeof o === 'object' &&
+    'id' in o &&
+    typeof o.id === 'number' &&
+    'userName' in o &&
+    typeof o.userName === 'string' &&
+    (!('attributes' in o) || typeof o.attributes === 'object')
+  );
+}
+
+export function isUserInfo(o: unknown): o is UserInfo {
+  return (
+    o !== undefined &&
+    o !== null &&
+    typeof o === 'object' &&
+    'id' in o &&
+    typeof o.id === 'number' &&
+    'name' in o &&
+    typeof o.name === 'string' &&
+    (!('attributes' in o) || typeof o.attributes === 'object')
+  );
+}
+
+export function compareUserNames(nameA: string, nameB: string): boolean {
   if (!nameA || !nameB) {
     return false;
   }
   return nameA.toLowerCase() === nameB.toLowerCase();
-};
+}
 
-const compareUserNamesWithoutDomain = (nameA: string, nameB: string) => {
+export function compareUserNamesWithoutDomain(nameA: string, nameB: string) {
   const [aLowerCased] = nameA.toLowerCase().split('@');
   const [bLowerCased] = nameB.toLowerCase().split('@');
   return aLowerCased === bLowerCased;
-};
+}
 
 const guessUserAttributeValue = (
   variants: string[],
@@ -46,14 +72,10 @@ const guessUserAttributeValue = (
   });
 };
 
-const getUserDisplayName = (user: User | UserInfo): string | undefined => {
-  let name;
-  if ('name' in user && typeof user.name === 'string') {
-    name = user.name;
-  }
-  if ('userName' in user && typeof user.userName === 'string') {
-    name = user.userName.toLowerCase();
-  }
+export const getUserDisplayName = (
+  user: User | UserInfo,
+): string | undefined => {
+  const name = isUserInfo(user) ? user.name : user.userName;
   const firstName = guessUserAttributeValue(FIRST_NAME_KEY_VARIANTS, user);
   const lastName = guessUserAttributeValue(LAST_NAME_KEY_VARIANTS, user);
   const nameAttribute = guessUserAttributeValue(NAME_KEY_VARIANTS, user);
@@ -66,4 +88,28 @@ const getUserDisplayName = (user: User | UserInfo): string | undefined => {
   return name;
 };
 
-export { compareUserNames, compareUserNamesWithoutDomain, getUserDisplayName };
+export function userMatchesCriteria(
+  user: User | UserInfo,
+  criteria: string | undefined,
+  searchAttributes = true,
+): boolean {
+  if (!criteria || criteria.trim().length === 0) {
+    return true;
+  }
+  const criteriaLowerCased = criteria.trim().toLowerCase();
+  const name = (isUserInfo(user) ? user.name : user.userName)
+    .trim()
+    .toLowerCase();
+  if (name.includes(criteriaLowerCased)) {
+    return true;
+  }
+  if (searchAttributes) {
+    const attributes: string[] = Object.values(user.attributes ?? {})
+      .map((o) => o.toString().trim().toLowerCase())
+      .filter((o) => o.length > 0);
+    return attributes.some((attribute) =>
+      attribute.includes(criteriaLowerCased),
+    );
+  }
+  return false;
+}

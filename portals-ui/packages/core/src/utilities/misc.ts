@@ -151,3 +151,52 @@ export function createSingleCallPromise<PromiseResult>(
     return singleCallPromise;
   };
 }
+
+type AsyncFilterOptions = {
+  abortSignal?: AbortSignal;
+  batch?: number;
+};
+
+export async function asyncFilter<T>(
+  elements: T[],
+  callback: (element: T, index: number, array: T[]) => boolean,
+  options?: AsyncFilterOptions,
+): Promise<T[]> {
+  const { batch = 10000, abortSignal } = options ?? {};
+  let start = 0;
+  const result: T[] = [];
+  return new Promise<T[]>((resolve, reject) => {
+    const fn = (): void => {
+      if (abortSignal?.aborted) {
+        reject(new AbortError());
+      }
+      if (start >= elements.length) {
+        resolve(result);
+      } else {
+        const end = Math.min(elements.length, start + batch);
+        try {
+          for (let i = start; i < end; i += 1) {
+            if (abortSignal?.aborted) {
+              reject(new AbortError());
+            }
+            if (callback(elements[i], i, elements)) {
+              result.push(elements[i]);
+            }
+          }
+        } catch (error) {
+          reject(error as Error);
+          return;
+        }
+        start = end;
+        setTimeout(() => {
+          if (end < elements.length) {
+            setTimeout(fn, 0);
+          } else {
+            resolve(result);
+          }
+        }, 0);
+      }
+    };
+    fn();
+  });
+}

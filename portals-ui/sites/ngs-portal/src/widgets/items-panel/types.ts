@@ -19,6 +19,7 @@ export type ItemsPanelProps<Item> = Omit<
   beforeSearch?: ReactNode;
   extraHeader?: ReactNode;
   searchClassName?: string;
+  searchInputClassName?: string;
   onSearchChange?: (search: string) => void;
   search?: string;
   errorText?: string;

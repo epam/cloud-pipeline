@@ -91,8 +91,10 @@ const validation: SettingsFieldValidation[] = [
   { field: 'runsFilter.parameters.*', types: ['string', 'number', 'boolean'] },
   { field: 'ngsProject.tagsToDisplay', types: ['string', 'array[string]'] },
   { field: 'ngsProject.tagsToHide', types: ['string', 'array[string]'] },
+  { field: 'ngsProject.filterTags', types: ['string', 'array[string]'] },
   { field: 'ngsPipeline.tagsToDisplay', types: ['string', 'array[string]'] },
   { field: 'ngsPipeline.tagsToHide', types: ['string', 'array[string]'] },
+  { field: 'ngsPipeline.filterTags', types: ['string', 'array[string]'] },
 ];
 
 function getSettingsFieldValueError(

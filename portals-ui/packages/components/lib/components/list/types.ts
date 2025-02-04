@@ -19,5 +19,6 @@ export type ListHeaderProps = CommonProps & {
   afterSearch?: ReactNode;
   beforeSearch?: ReactNode;
   searchClassName?: string;
+  searchInputClassName?: string;
   pending?: boolean;
 };

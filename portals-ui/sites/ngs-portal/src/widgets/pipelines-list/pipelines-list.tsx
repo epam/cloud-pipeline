@@ -1,15 +1,16 @@
+import { memo } from 'react';
+import cn from 'classnames';
 import type { Pipeline } from '@cloud-pipeline/core';
 import { ItemsPanel } from '../items-panel';
 import { PipelineCard } from '../cards';
-import { memo } from 'react';
-import cn from 'classnames';
 import { ShareIcon } from '@heroicons/react/24/outline';
-import { pipelinesFiltersToDisplay } from '../../pages/pipelines/constants.ts';
-import { NgsFilters, useNgsFilters } from '../../features/ngs-filters';
+import { NgsFilters, useFilteredNgsItems } from '../ngs-filters';
 import {
   usePipelinesState,
   useReloadPipelines,
 } from '../../state/pipelines/hooks.ts';
+import { useNgsPipelineSettings } from '../../state/settings/hooks.ts';
+import './pipelines-list.css';
 
 type Props = {
   mode?: 'standard' | 'extended';
@@ -19,15 +20,18 @@ type Props = {
 
 export const PipelinesList = memo(
   ({ mode = 'standard', showDescription, withFilters }: Props) => {
-    const { data: pipelines = [], error, pending } = usePipelinesState();
+    const { data: pipelines, error, pending } = usePipelinesState();
     useReloadPipelines();
 
-    const { filteredItems, onSearchChange, filtersProps, search } =
-      useNgsFilters({
-        items: pipelines,
-        withFilters,
-        filtersToDisplay: pipelinesFiltersToDisplay,
-      });
+    const settings = useNgsPipelineSettings();
+    const {
+      filteredItems: filteredPipelines,
+      search,
+      onSearchChanged,
+      filters,
+      onFiltersChanged,
+      config,
+    } = useFilteredNgsItems(pipelines, { taggedObjectSettings: settings });
 
     const renderItem = (item: Pipeline, search: string, i: number) => {
       return (
@@ -51,19 +55,26 @@ export const PipelinesList = memo(
             <span>Pipelines</span>
           </div>
         }
-        items={filteredItems}
+        items={filteredPipelines}
         render={renderItem}
         sliced={mode !== 'extended'}
         virtualized
         search={search}
         afterSearch={
-          filtersProps && (
-            <NgsFilters className="flex-shrink-0 flex-wrap" {...filtersProps} />
+          withFilters && (
+            <NgsFilters
+              filters={filters}
+              onFiltersChange={onFiltersChanged}
+              config={config}
+            />
           )
         }
-        onSearchChange={onSearchChange}
+        onSearchChange={onSearchChanged}
         itemKey="id"
-        searchClassName={mode === 'extended' ? 'py-1' : undefined}
+        searchClassName={cn({
+          'py-1': mode === 'extended',
+        })}
+        searchInputClassName="pipelines-list-search"
         viewAll={
           mode === 'extended'
             ? undefined

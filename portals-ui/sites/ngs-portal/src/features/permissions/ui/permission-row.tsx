@@ -98,13 +98,13 @@ export const PermissionRow = ({
             isAllowed={writeAllowedExtended(mask)}
             isDenied={writeDeniedExtended(mask)}
             label="Write"
-            color="orange"
+            color="blue"
           />
           <PermissionTag
             isAllowed={executeAllowedExtended(mask)}
             isDenied={executeDeniedExtended(mask)}
             label="Execute"
-            color="green"
+            color="blue"
           />
         </div>
       )}

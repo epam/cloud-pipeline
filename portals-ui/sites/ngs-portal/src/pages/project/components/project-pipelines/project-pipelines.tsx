@@ -3,9 +3,9 @@ import classNames from 'classnames';
 import type { CommonProps } from '@cloud-pipeline/components';
 import type { Pipeline, Project } from '@cloud-pipeline/core';
 import { ItemsPanel } from '../../../../widgets/items-panel';
-import { useNgsFilters } from '../../../../features/ngs-filters';
 import { omitClonedPipelinePrefix } from '../../../../shared/helpers';
 import { ProjectPipelineCard } from './project-pipeline-card.tsx';
+import { useFilteredNgsItems } from '../../../../widgets/ngs-filters';
 
 type Props = CommonProps & {
   project: Project | undefined;
@@ -14,17 +14,23 @@ type Props = CommonProps & {
 export const ProjectPipelines = (props: Props) => {
   const { project } = props;
   const pipelineSearch = useCallback(
-    (item: Pipeline, search: string) => {
+    (item: Pipeline, search?: string) => {
       const pipelineName = omitClonedPipelinePrefix(item, project);
-      return pipelineName.toLowerCase().includes(search.toLowerCase());
+      return (
+        !search ||
+        search.length === 0 ||
+        pipelineName.toLowerCase().includes(search.toLowerCase())
+      );
     },
     [project],
   );
-  const { filteredItems, onSearchChange, search } = useNgsFilters({
-    items: project?.pipelines ?? [],
-    withFilters: false,
-    filtersToDisplay: [],
+  const {
+    filteredItems: filteredItems,
+    search,
+    onSearchChanged,
+  } = useFilteredNgsItems(project?.pipelines, {
     searchCallback: pipelineSearch,
+    filtersEnabled: false,
   });
   const renderItem = useCallback(
     (item: Pipeline, search: string, i: number) => (
@@ -49,7 +55,7 @@ export const ProjectPipelines = (props: Props) => {
         sliced
         virtualized
         search={search}
-        onSearchChange={onSearchChange}
+        onSearchChange={onSearchChanged}
         itemKey="id"
       />
     </div>

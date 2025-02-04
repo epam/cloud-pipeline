@@ -4,7 +4,7 @@ import { List, ListHeader } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { PlaceholderText, PageSpinner } from '../../shared/ui';
+import { PlaceholderText } from '../../shared/ui';
 
 function ItemsPanelFooter(
   props: CommonProps & { viewAll?: ViewAllItemsConfiguration },
@@ -50,6 +50,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
     beforeSearch,
     extraHeader,
     searchClassName,
+    searchInputClassName,
     onSearchChange,
     isItemsLoading,
     errorText,
@@ -58,7 +59,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
 
   const renderContent = useCallback(() => {
     if (isItemsLoading && items.length === 0) {
-      return <PageSpinner />;
+      return <PlaceholderText className="p-2">Loading...</PlaceholderText>;
     }
 
     if (errorText) {
@@ -109,6 +110,7 @@ export function ItemsPanel<Item>(props: ItemsPanelProps<Item>) {
         beforeSearch={beforeSearch}
         afterSearch={afterSearch}
         searchClassName={searchClassName}
+        searchInputClassName={searchInputClassName}
       />
       {extraHeader}
       {renderContent()}
