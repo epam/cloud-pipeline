@@ -295,6 +295,15 @@ class DataStorageOperations(object):
             relative_path = item[2]
             source_size = item[3]
 
+            # Unused here but added for visibility of the field
+            source_modification_date = None
+            if len(item) >= 5:
+                source_modification_date = item[4]
+
+            destination_relative_path = None
+            if len(item) >= 6:
+                destination_relative_path = item[5]
+
             logging.debug(u'Preprocessing path {}...'.format(full_path))
 
             item = cls._process_unsafe_chars(item, quiet, unsafe_chars, unsafe_chars_replacement)
@@ -339,7 +348,7 @@ class DataStorageOperations(object):
                 filtered_items.append(item)
                 continue
 
-            destination_key = manager.get_destination_key(destination_wrapper, relative_path)
+            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path if destination_relative_path else relative_path)
             if skip_existing and sync_newer:
                 destination_size, destination_modification_datetime = \
                     manager.get_destination_object_head(destination_wrapper, destination_key)
@@ -686,7 +695,14 @@ class DataStorageOperations(object):
                 splitted = line.split('\t')
                 path = splitted[0]
                 size = long(float(splitted[1]))
-                yield ('File', os.path.join(source_path, path), path, size)
+
+                # Ability to overwrite destination path of the file, by forming --file-list file as:
+                # <path>\t<size>\t<destination_path>
+                if len (splitted) > 2:
+                    destination_path = splitted[2]
+                    yield ('File', os.path.join(source_path, path), path, size, None, destination_path)
+                else:
+                    yield ('File', os.path.join(source_path, path), path, size, None)
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
@@ -802,11 +818,22 @@ class DataStorageOperations(object):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
+
+        # Unused here but added for visibility of the field
+        source_modification_date = None
+        if len(item) >= 5:
+            source_modification_date = item[4]
+
+        if len(item) >= 6:
+            destination_relative_path = item[5]
+        else:
+            destination_relative_path = relative_path
+
         fail_after_exception = None
         try:
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, io_threads=io_threads, lock=lock,
+                                               relative_path=destination_relative_path, clean=clean, quiet=quiet,
+                                               size=size, tags=tags, io_threads=io_threads, lock=lock,
                                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
