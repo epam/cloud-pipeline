@@ -154,7 +154,7 @@ public class SamplesMetadataTest
 
     @BeforeMethod
     public void refreshPage() {
-        getWebDriver().navigate().refresh();
+        refresh();
     }
 
     @AfterClass(alwaysRun = true)
@@ -197,7 +197,6 @@ public class SamplesMetadataTest
     @Test
     @TestCase({"EPMCMBIBPC-1411"})
     public void createProjectFolder() {
-        refresh();
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
