@@ -62,7 +62,7 @@ function remove_from_spec() {
 function wait_for_pids() {
     local _sync_pids=("$@")
     for pid in ${_sync_pids[*]}; do
-        echo_debug "Waiting for pid $pid to finish"
+        echo_debug "[DEBUG] Waiting for pid $pid to finish"
         wait "$pid"
         if [ $? -ne 0 ]; then
             echo "[WARN] Sync process with pid $pid failed"
@@ -75,7 +75,7 @@ function perform_sync() {
 
     local _sync_pids=()
     while read -a _sync_config_entry; do
-        echo_debug "Processing entry ${_sync_config_entry[*]}"
+        echo_debug "[DEBUG] Processing entry ${_sync_config_entry[*]}"
 
         local _source_path=${_sync_config_entry[0]}
         _source_path_trim=${_source_path#/}
@@ -90,13 +90,13 @@ function perform_sync() {
             continue
           fi
           _dest_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/$_source_path_trim"
-          echo_debug "Destination path wasn't provided in configuration, will use default one: $_dest_path"
+          echo_debug "[DEBUG] Destination path wasn't provided in configuration, will use default one: $_dest_path"
         fi
 
-        echo_debug "Source path: $_source_path Destination path: $_dest_path"
+        echo_debug "[DEBUG] Source path: $_source_path Destination path: $_dest_path"
 
         if [ ! -d "$_source_path" ] && [ ! -f "$_source_path" ]; then
-            echo_debug "$_source_path not found"
+            echo_debug "[DEBUG] $_source_path not found"
             continue
         fi
 
@@ -107,17 +107,17 @@ function perform_sync() {
         if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
             _pipe_extra_args="$_pipe_extra_args -q"
         fi
-        echo_debug "pipe extra args: $_pipe_extra_args"
+        echo_debug "[DEBUG] pipe extra args: $_pipe_extra_args"
 
-        echo_debug "destination path: $_dest_path"
+        echo_debug "[DEBUG] destination path: $_dest_path"
 
         local _pipe_command="pipe storage cp -f \"$_source_path\" \"$_dest_path\" $_pipe_extra_args"
-        echo_debug "pipe command: $_pipe_command"
+        echo_debug "[DEBUG] pipe command: $_pipe_command"
 
         if [ "$CP_SYNC_TO_STORAGE_THREADS" -gt 1 ]; then
             eval "$_pipe_command" &
             _sync_process_pid=$!
-            echo_debug "Sync $_source_path to $_dest_path has pid $_sync_process_pid"
+            echo_debug "[DEBUG] Sync $_source_path to $_dest_path has pid $_sync_process_pid"
 
             _sync_pids[${#_sync_pids[@]}]=$_sync_process_pid
             if [ "${#_sync_pids[@]}" -eq "$CP_SYNC_TO_STORAGE_THREADS" ]; then
@@ -189,13 +189,13 @@ function perform_batch_sync() {
           return 1
         fi
         _sync_common_bucket_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/"
-        echo_debug "Destination bucket wasn't provided in sync configuration, will use default one: $_sync_common_bucket_path"
+        echo_debug "[DEBUG] Destination bucket wasn't provided in sync configuration, will use default one: $_sync_common_bucket_path"
     fi
 
     _file_list="${_spec_file}.file_list"
     rm -f "$_file_list"
     while read -a _sync_config_entry; do
-        echo_debug "Processing entry ${_sync_config_entry[*]}"
+        echo_debug "[DEBUG] Processing entry ${_sync_config_entry[*]}"
 
         local _source_path=${_sync_config_entry[0]}
         _source_path_trim=${_source_path#/}
@@ -208,19 +208,19 @@ function perform_batch_sync() {
           _dest_path="$_source_path_trim"
         fi
 
-        echo_debug "Source path: $_source_path Destination path: $_dest_path"
+        echo_debug "[DEBUG] Source path: $_source_path Destination path: $_dest_path"
         printf "%s\t%s\t%s\n" "${_source_path_trim}" "$(stat -c%s "${_source_path}")" "${_dest_path}" >> "${_file_list}"
     done <"$_spec_file"
-    echo_debug "Prepare file-list file: ${_file_list} with $(wc -l "$_spec_file") lines"
+    echo_debug "[DEBUG] Prepare file-list file: ${_file_list} with $(wc -l "$_spec_file") lines"
 
     local _pipe_extra_args="${CP_SYNC_TO_STORAGE_PIPE_EXTRA_ARGS}"
     if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
         _pipe_extra_args="$_pipe_extra_args -q"
     fi
-    echo_debug "pipe extra args: $_pipe_extra_args"
+    echo_debug "[DEBUG] pipe extra args: $_pipe_extra_args"
 
     local _pipe_command="pipe storage cp -f -r / $_sync_common_bucket_path --file-list ${_file_list} $_pipe_extra_args"
-    echo_debug "pipe command: $_pipe_command"
+    echo_debug "[DEBUG] pipe command: $_pipe_command"
     eval "$_pipe_command"
     if [ $? -ne 0 ]; then
         echo "[WARN] Sync $_source_path to $_dest_path failed"
@@ -230,20 +230,22 @@ function perform_batch_sync() {
 
 function start_sync_daemon() {
     while [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; do
+        echo_debug "[DEBUG] Start iteration of sync_to_storage sync cycle"
 
         if [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]; then
-            echo "File $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE defined as CP_SYNC_TO_STORAGE_STOP_FLAG_FILES and present. Perform last sync iteration before stop."
+            echo "[INFO] File $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE defined as CP_SYNC_TO_STORAGE_STOP_FLAG_FILES and present. Perform last sync iteration before stop."
             # We need to use such mechanism with additional env var instead of 'while [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]'
             # because CP_SYNC_TO_STORAGE_STOP_FLAG_FILE can be created during sleep -> we still need to perform one more sync iteration
             export CP_SYNC_TO_STORAGE_STOP="true"
         fi
 
         if [ ! -f "$CP_SYNC_TO_STORAGE_SPEC" ]; then
-            echo_debug "Spec file not found: $CP_SYNC_TO_STORAGE_SPEC"
+            echo_debug "[DEBUG] Spec file not found: $CP_SYNC_TO_STORAGE_SPEC"
             sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
             continue
         fi
 
+        echo_debug "[DEBUG] Creating temp copy of $CP_SYNC_TO_STORAGE_SPEC, $CP_SYNC_TO_STORAGE_REMOVE_SPEC to freez current config state"
         cp -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.tmp"
         cp -f "$CP_SYNC_TO_STORAGE_REMOVE_SPEC" "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"
 
@@ -255,13 +257,13 @@ function start_sync_daemon() {
 
         # Check if some file from config marked for deletion
         if [ -f "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp" ]; then
-            echo "Cleaning up $CP_SYNC_TO_STORAGE_SPEC with respect to $CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+            echo_debug "[DEBUG] Cleaning up $CP_SYNC_TO_STORAGE_SPEC with respect to ${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"
 
             touch "${CP_SYNC_TO_STORAGE_SPEC}.new"
             while read -a _sync_config_entry; do
                 local _source_path=${_sync_config_entry[0]}
                 if grep -q -F "$_source_path" "${CP_SYNC_TO_STORAGE_SPEC}.tmp" && grep -q -x -F "$_source_path" "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"; then
-                    echo_debug "Path $_source_path is configured for the deletion from sync process"
+                    echo_debug "[DEBUG] Path $_source_path is configured for the deletion from sync process"
                     continue
                 fi
                 echo "${_sync_config_entry[@]}" >> "${CP_SYNC_TO_STORAGE_SPEC}.new"
@@ -270,12 +272,14 @@ function start_sync_daemon() {
             mv -f "${CP_SYNC_TO_STORAGE_SPEC}.new" "${CP_SYNC_TO_STORAGE_SPEC}"
             rm -f "${CP_SYNC_TO_STORAGE_SPEC}.new"
 
-            echo "Previous number of entries to sync is: $(wc -l < "${CP_SYNC_TO_STORAGE_SPEC}.tmp") now: $(wc -l < "$CP_SYNC_TO_STORAGE_SPEC")"
+            echo_debug "[DEBUG] Previous number of entries to sync is: $(wc -l < "${CP_SYNC_TO_STORAGE_SPEC}.tmp") now: $(wc -l < "$CP_SYNC_TO_STORAGE_SPEC")"
         fi
 
+        echo_debug "[DEBUG] Removing temp copy of $CP_SYNC_TO_STORAGE_SPEC, $CP_SYNC_TO_STORAGE_REMOVE_SPEC"
         rm -f "${CP_SYNC_TO_STORAGE_SPEC}.tmp"
         rm -f "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"
 
+        echo_debug "[DEBUG] Done iteration of sync_to_storage sync cycle"
         if [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; then
             sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
         fi
