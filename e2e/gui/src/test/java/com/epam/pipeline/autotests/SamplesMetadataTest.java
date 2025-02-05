@@ -155,6 +155,7 @@ public class SamplesMetadataTest
     @BeforeMethod
     public void refreshPage() {
         refresh();
+        sleep(5, SECONDS);
     }
 
     @AfterClass(alwaysRun = true)
