@@ -262,6 +262,7 @@ class PipelineAPI:
     BILLING_EXPORT = "billing/export"
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
     RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
+    RUN_RESULT_URL = '/run/{id}/result'
 
     # Pipeline API default header
 
@@ -1559,3 +1560,24 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to put engine task events for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def add_pipeline_run_results(self, run_id, results):
+        try:
+            return self._request(
+                endpoint=self.RUN_RESULT_URL.format(id=str(run_id)),
+                http_method='post',
+                data=results
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to add run results for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def get_pipeline_run_results(self, run_id):
+        try:
+            return self._request(
+                endpoint=self.RUN_RESULT_URL.format(id=str(run_id)),
+                http_method='get'
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load run results for run ID '{}', error: {}".format(str(run_id), str(e)))
