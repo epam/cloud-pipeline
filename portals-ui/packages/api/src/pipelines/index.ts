@@ -5,3 +5,4 @@ export { fetchPipelineVersions } from './fetch-pipeline-versions';
 export { fetchPipelineFiles } from './fetch-pipeline-files';
 export { fetchPipelineFileByPath } from './fetch-pipeline-file-by-path';
 export { clonePipeline } from './clone-pipeline';
+export { deletePipeline } from './delete-pipeline';

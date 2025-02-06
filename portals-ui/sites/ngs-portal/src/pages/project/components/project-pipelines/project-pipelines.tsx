@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import type { CommonProps } from '@cloud-pipeline/components';
 import type { Pipeline, Project } from '@cloud-pipeline/core';
@@ -6,13 +6,13 @@ import { ItemsPanel } from '../../../../widgets/items-panel';
 import { useNgsFilters } from '../../../../features/ngs-filters';
 import { omitClonedPipelinePrefix } from '../../../../shared/helpers';
 import { ProjectPipelineCard } from './project-pipeline-card.tsx';
+import { DeletePipelineModal } from './delete-pipeline-modal.tsx';
 
 type Props = CommonProps & {
   project: Project | undefined;
 };
 
-export const ProjectPipelines = (props: Props) => {
-  const { project } = props;
+export const ProjectPipelines = ({ project }: Props) => {
   const pipelineSearch = useCallback(
     (item: Pipeline, search: string) => {
       const pipelineName = omitClonedPipelinePrefix(item, project);
@@ -20,12 +20,36 @@ export const ProjectPipelines = (props: Props) => {
     },
     [project],
   );
+
   const { filteredItems, onSearchChange, search } = useNgsFilters({
     items: project?.pipelines ?? [],
     withFilters: false,
     filtersToDisplay: [],
     searchCallback: pipelineSearch,
   });
+
+  const [pipelineIdToDelete, setPipelineIdToDelete] = useState<number | null>(
+    null,
+  );
+
+  const onDeleteClick = useCallback((id: number) => {
+    setPipelineIdToDelete(id);
+  }, []);
+
+  const onDeleteModalClose = useCallback(() => {
+    setPipelineIdToDelete(null);
+  }, []);
+
+  const pipelineNameToDelete = useMemo(() => {
+    const pipeline = project?.pipelines?.find(
+      (p) => p.id === pipelineIdToDelete,
+    );
+
+    if (pipeline) {
+      return omitClonedPipelinePrefix(pipeline, project);
+    }
+  }, [pipelineIdToDelete, project]);
+
   const renderItem = useCallback(
     (item: Pipeline, search: string, i: number) => (
       <ProjectPipelineCard
@@ -36,10 +60,12 @@ export const ProjectPipelines = (props: Props) => {
         project={project}
         pipeline={item}
         search={search}
+        onDelete={onDeleteClick}
       />
     ),
-    [filteredItems, project?.data],
+    [filteredItems.length, onDeleteClick, project],
   );
+
   return (
     <div className="overflow-hidden h-full w-full flex">
       <ItemsPanel
@@ -51,6 +77,13 @@ export const ProjectPipelines = (props: Props) => {
         search={search}
         onSearchChange={onSearchChange}
         itemKey="id"
+      />
+
+      <DeletePipelineModal
+        isOpen={Boolean(pipelineIdToDelete)}
+        onClose={onDeleteModalClose}
+        pipelineId={pipelineIdToDelete}
+        pipelineName={pipelineNameToDelete}
       />
     </div>
   );
