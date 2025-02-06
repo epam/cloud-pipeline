@@ -448,7 +448,11 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_WRITE)
     public void addPipelineRunResults(final Long runId, final List<PipelineRunResult> results) {
-        runResultManager.addPipelineRunResults(results);
+        if (runManager.runExists(runId)) {
+            runResultManager.addPipelineRunResults(results);
+        } else {
+            throw new IllegalArgumentException(String.format("Can't find a run with id: %d", runId));
+        }
     }
 
     @PreAuthorize(RUN_ID_READ)

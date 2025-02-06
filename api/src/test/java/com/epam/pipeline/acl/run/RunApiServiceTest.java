@@ -52,8 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
@@ -530,12 +529,12 @@ public class RunApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         runApiService.addPipelineRunResults(
-                ID,
-                Collections.singletonList(
-                        new PipelineRunResult(
-                                ID, TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                        )
-                )
+            ID,
+            Collections.singletonList(
+                PipelineRunResult.builder().runId(ID)
+                        .name(TEST_NAME).fileMask(TEST_STRING)
+                        .items(Collections.singletonList(TEST_STRING)).build()
+            )
         );
     }
 
@@ -552,15 +551,14 @@ public class RunApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         assertThrows(
-                AccessDeniedException.class,
-                () -> runApiService.addPipelineRunResults(
+            AccessDeniedException.class,
+            () -> runApiService.addPipelineRunResults(
                     ID,
                     Collections.singletonList(
-                            new PipelineRunResult(
-                                    ID, TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                            )
+                        PipelineRunResult.builder().runId(ID).name(TEST_NAME).fileMask(TEST_STRING)
+                                .items(Collections.singletonList(TEST_STRING)).build()
                     )
-                )
+            )
         );
     }
 
@@ -577,12 +575,12 @@ public class RunApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         runApiService.addPipelineRunResults(
-                ID,
-                Collections.singletonList(
-                        new PipelineRunResult(
-                                ID, TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                        )
-                )
+            ID,
+            Collections.singletonList(
+                PipelineRunResult.builder().runId(ID)
+                        .name(TEST_NAME).fileMask(TEST_STRING)
+                        .items(Collections.singletonList(TEST_STRING)).build()
+            )
         );
     }
 
@@ -592,9 +590,9 @@ public class RunApiServiceTest extends AbstractAclTest {
         final Pipeline pipeline = getPipeline(SIMPLE_USER);
         final PipelineRun pipelineRun = getPipelineRun(ID, SIMPLE_USER);
         List<PipelineRunResult> runResult = Collections.singletonList(
-                new PipelineRunResult(
-                        ID, TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                )
+            PipelineRunResult.builder().runId(ID)
+                    .name(TEST_NAME).fileMask(TEST_STRING)
+                    .items(Collections.singletonList(TEST_STRING)).build()
         );
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
@@ -615,9 +613,9 @@ public class RunApiServiceTest extends AbstractAclTest {
         final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
         final PipelineRun pipelineRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
         List<PipelineRunResult> runResult = Collections.singletonList(
-                new PipelineRunResult(
-                        ID, TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                )
+            PipelineRunResult.builder().runId(ID)
+                    .name(TEST_NAME).fileMask(TEST_STRING)
+                    .items(Collections.singletonList(TEST_STRING)).build()
         );
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
@@ -637,9 +635,9 @@ public class RunApiServiceTest extends AbstractAclTest {
         final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
         final PipelineRun pipelineRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
         List<PipelineRunResult> runResult = Collections.singletonList(
-                new PipelineRunResult(
-                        ID, TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                )
+            PipelineRunResult.builder().runId(ID)
+                    .name(TEST_NAME).fileMask(TEST_STRING)
+                    .items(Collections.singletonList(TEST_STRING)).build()
         );
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);

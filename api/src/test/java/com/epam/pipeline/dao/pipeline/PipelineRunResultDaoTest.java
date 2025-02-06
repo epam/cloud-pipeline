@@ -92,13 +92,12 @@ public class PipelineRunResultDaoTest extends AbstractJdbcTest {
         PipelineRun run = createRun(testPipeline.getId(), null, TaskStatus.RUNNING, TEST_PARENT_1);
 
         List<PipelineRunResult> runResult = Arrays.asList(
-                new PipelineRunResult(
-                        run.getId(), TEST_NAME, TEST_STRING, Collections.singletonList(TEST_STRING)
-                ),
-                new PipelineRunResult(
-                        run.getId(), TEST_PIPELINE_NAME, TEST_PIPELINE_NAME,
-                        Arrays.asList(TEST_STRING, TEST_PIPELINE_NAME)
-                )
+            PipelineRunResult.builder().runId(run.getId())
+                    .name(TEST_NAME).fileMask(TEST_STRING)
+                    .items(Collections.singletonList(TEST_STRING)).build(),
+            PipelineRunResult.builder().runId(run.getId())
+                    .name(TEST_PIPELINE_NAME).fileMask(TEST_PIPELINE_NAME)
+                    .items(Collections.singletonList(TEST_PIPELINE_NAME)).build()
         );
 
         runResultDao.addPipelineRunResults(runResult);

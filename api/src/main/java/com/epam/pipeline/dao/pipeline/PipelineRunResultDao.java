@@ -90,7 +90,12 @@ public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
                     final Long runId = rs.getLong(RUN_ID.name());
                     final String mask = rs.getString(FILE_MASK.name());
                     final PipelineRunResult runResult = result.computeIfAbsent(
-                            name, k -> new PipelineRunResult(runId, k, mask)
+                            name, k -> PipelineRunResult.builder()
+                                    .runId(runId)
+                                    .name(k)
+                                    .fileMask(mask)
+                                    .items(new ArrayList<>())
+                                    .build()
                     );
 
                     runResult.addItem(rs.getString(PATH.name()));

@@ -17,16 +17,16 @@
 package com.epam.pipeline.entity.pipeline.run;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Value
+@Builder
 @EqualsAndHashCode
 public class PipelineRunResult {
 
@@ -35,26 +35,12 @@ public class PipelineRunResult {
     String fileMask;
     List<String> items;
 
-    public PipelineRunResult(Long runId, String name, String fileMask, List<String> items) {
-        this.runId = runId;
-        this.name = name;
-        this.fileMask = fileMask;
-        this.items = ListUtils.emptyIfNull(items);
-    }
-
-
-    public PipelineRunResult(Long runId, String name, String fileMask) {
-        this.runId = runId;
-        this.name = name;
-        this.fileMask = fileMask;
-        this.items = new ArrayList<>();
-    }
-
     @JsonIgnore
     public void addItem(final String path) {
         items.add(path);
     }
 
+    @JsonIgnore
     public void validate() {
         Assert.notNull(this.getRunId(), "Run ID should be provided for run result object!");
         Assert.isTrue(this.getRunId() > 0, "Run ID should be > 0 for run result object!");

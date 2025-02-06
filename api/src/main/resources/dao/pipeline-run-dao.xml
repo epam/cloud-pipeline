@@ -2496,5 +2496,12 @@
                 ]]>
             </value>
         </property>
+        <property name="checkIfRunExistsQuery">
+            <value>
+                <![CDATA[
+                    SELECT count(*) FROM pipeline.pipeline_run WHERE run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>
