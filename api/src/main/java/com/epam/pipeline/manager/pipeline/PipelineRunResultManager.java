@@ -37,7 +37,8 @@ public class PipelineRunResultManager {
             Assert.isTrue(StringUtils.hasText(result.getFileMask()), "File mask should be provided!");
             Assert.notEmpty(result.getItems(), "Items should be provided for PipelineRunResult object!");
             result.getItems().forEach(
-                    path -> Assert.isTrue(StringUtils.hasText(path), "Item path should not be empty!"));
+                path -> Assert.isTrue(StringUtils.hasText(path), "Item path should not be empty!")
+            );
         });
     }
 

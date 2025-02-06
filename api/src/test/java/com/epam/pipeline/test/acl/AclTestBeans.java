@@ -22,13 +22,7 @@ import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
-import com.epam.pipeline.dao.pipeline.FolderDao;
-import com.epam.pipeline.dao.pipeline.PipelineDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RestartRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
-import com.epam.pipeline.dao.pipeline.RunStatusDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
+import com.epam.pipeline.dao.pipeline.*;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
@@ -101,31 +95,7 @@ import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
-import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
-import com.epam.pipeline.manager.pipeline.ArchiveRunService;
-import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
-import com.epam.pipeline.manager.pipeline.FolderCrudManager;
-import com.epam.pipeline.manager.pipeline.FolderManager;
-import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
-import com.epam.pipeline.manager.pipeline.ParameterMapper;
-import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
-import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
-import com.epam.pipeline.manager.pipeline.PipelineManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
-import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
-import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
-import com.epam.pipeline.manager.pipeline.RestartRunManager;
-import com.epam.pipeline.manager.pipeline.RunLogManager;
-import com.epam.pipeline.manager.pipeline.RunScheduleManager;
-import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
-import com.epam.pipeline.manager.pipeline.ToolGroupManager;
-import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
+import com.epam.pipeline.manager.pipeline.*;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -227,6 +197,10 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunManager mockPipelineRunManager;
+
+    @MockBean
+    protected PipelineRunResultManager mockPipelineRunResultManager;
+
 
     @MockBean
     protected InstanceOfferManager mockInstanceOfferManager;
@@ -389,6 +363,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+    protected PipelineRunResultDao mockPipelineRunResultDao;
 
     @MockBean
     protected RestartRunDao mockRestartRunDao;

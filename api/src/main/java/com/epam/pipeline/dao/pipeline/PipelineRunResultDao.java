@@ -65,16 +65,19 @@ public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
         PATH;
 
         static MapSqlParameterSource[] getParameters(List<PipelineRunResult> results) {
-            return ListUtils.emptyIfNull(results).stream().flatMap(
-                    result -> {
-                        return ListUtils.emptyIfNull(result.getItems()).stream().map(i -> {
-                            MapSqlParameterSource params = new MapSqlParameterSource();
-                            params.addValue(RUN_ID.name(), result.getRunId());
-                            params.addValue(NAME.name(), result.getName());
-                            params.addValue(FILE_MASK.name(), result.getFileMask().trim());
-                            params.addValue(PATH.name(), i);
-                            return params;
-                        });
+            return ListUtils.emptyIfNull(results)
+                    .stream()
+                    .flatMap(result -> {
+                        return ListUtils.emptyIfNull(result.getItems())
+                                .stream()
+                                .map(i -> {
+                                    MapSqlParameterSource params = new MapSqlParameterSource();
+                                    params.addValue(RUN_ID.name(), result.getRunId());
+                                    params.addValue(NAME.name(), result.getName());
+                                    params.addValue(FILE_MASK.name(), result.getFileMask().trim());
+                                    params.addValue(PATH.name(), i);
+                                    return params;
+                                });
                     }
             ).toArray(MapSqlParameterSource[]::new);
         }
