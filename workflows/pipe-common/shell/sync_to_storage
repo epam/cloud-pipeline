@@ -221,6 +221,10 @@ function perform_batch_sync() {
     if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
         _pipe_extra_args="$_pipe_extra_args -q"
     fi
+
+    if [ "$CP_SYNC_TO_STORAGE_THREADS" -gt 1 ]; then
+        _pipe_extra_args="$_pipe_extra_args --threads $CP_SYNC_TO_STORAGE_THREADS"
+    fi
     echo_debug "pipe extra args: $_pipe_extra_args"
 
     local _pipe_command="pipe storage cp -f -r / $_sync_common_bucket_path --file-list ${_file_list} $_pipe_extra_args"
