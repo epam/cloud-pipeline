@@ -40,6 +40,7 @@
                 <![CDATA[
                     SELECT * FROM pipeline.pipeline_run_result
                     WHERE run_id = :RUN_ID
+                    ORDER BY name
                 ]]>
             </value>
         </property>
