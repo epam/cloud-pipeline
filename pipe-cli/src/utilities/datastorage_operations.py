@@ -184,6 +184,16 @@ class DataStorageOperations(object):
                                       permission_to_check, include, exclude, force, skip_existing, sync_newer,
                                       verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
             sys.exit(0)
+
+        # TODO: rewrite tuple to object
+        # items - collection of items (tuples), each item represents file + additional information about this file
+        # item structure:
+        #  object_type = item[0]
+        #  full_path = item[1]
+        #  relative_path = item[2]
+        #  source_size = item[3]
+        #  source_timestamp = item[4]
+        #  destination_relative_path = item[5]
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -295,14 +305,7 @@ class DataStorageOperations(object):
             relative_path = item[2]
             source_size = item[3]
 
-            # Unused here but added for visibility of the field
-            source_modification_date = None
-            if len(item) >= 5:
-                source_modification_date = item[4]
-
-            destination_relative_path = None
-            if len(item) >= 6:
-                destination_relative_path = item[5]
+            destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
 
             logging.debug(u'Preprocessing path {}...'.format(full_path))
 
@@ -348,7 +351,7 @@ class DataStorageOperations(object):
                 filtered_items.append(item)
                 continue
 
-            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path if destination_relative_path else relative_path)
+            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path)
             if skip_existing and sync_newer:
                 destination_size, destination_modification_datetime = \
                     manager.get_destination_object_head(destination_wrapper, destination_key)
@@ -819,15 +822,7 @@ class DataStorageOperations(object):
         relative_path = item[2]
         size = item[3]
 
-        # Unused here but added for visibility of the field
-        source_modification_date = None
-        if len(item) >= 5:
-            source_modification_date = item[4]
-
-        if len(item) >= 6:
-            destination_relative_path = item[5]
-        else:
-            destination_relative_path = relative_path
+        destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
 
         fail_after_exception = None
         try:
@@ -967,3 +962,10 @@ class DataStorageOperations(object):
                     click.echo(msg)
                 return None
         return item
+
+    @classmethod
+    def _get_tuple_item(cls, collection, index, default=None):
+        if len(collection) > index:
+            return collection[index]
+        return default
+
