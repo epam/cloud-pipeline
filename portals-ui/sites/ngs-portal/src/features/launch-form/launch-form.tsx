@@ -135,8 +135,10 @@ export function LaunchForm({
                     </span>
                   </div>
                 ),
-                duration: 2,
+                duration: 4,
               });
+              setPending(false);
+              resolve(true);
             });
         });
       },
