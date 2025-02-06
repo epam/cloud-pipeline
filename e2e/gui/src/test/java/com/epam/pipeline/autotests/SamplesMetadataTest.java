@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Selectors.withText;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -24,6 +24,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -151,6 +152,12 @@ public class SamplesMetadataTest
 
     private List<String> selectedSampleName = new ArrayList<>();
 
+    @BeforeMethod
+    public void refreshPage() {
+        refresh();
+        sleep(5, SECONDS);
+    }
+
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
         open(C.ROOT_ADDRESS);
@@ -191,7 +198,6 @@ public class SamplesMetadataTest
     @Test
     @TestCase({"EPMCMBIBPC-1411"})
     public void createProjectFolder() {
-        refresh();
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
@@ -398,7 +404,7 @@ public class SamplesMetadataTest
                     return Utils.readResourceFully(configJson)
                             .replace("{{docker_image}}", dockerImage)
                             .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                            .replace("{{is_spot}}", String.valueOf(isSpot));
+                            .replace("\"{{is_spot}}\"", String.valueOf(isSpot));
                 })
                 .deleteExtraBrackets(110)
                 .saveAndCommitWithMessage("test: sample metadata")

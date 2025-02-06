@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
     private final SelenideElement title = element.find(className("ant-confirm-title"));
     private boolean messageIsChecked = false;
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(OK, context().$x(".//button[. =  'OK' or . = 'Yes' or . = 'Launch']")),
+            entry(OK, context().$x(".//button[. =  'OK' or . = 'Yes' or . = 'Launch' or . = 'CHANGE']")),
             entry(CANCEL, context().$x(".//button[. =  'Cancel' or . = 'No']")),
             entry(DELETE, $(byId("remove-button-delete")))
     );

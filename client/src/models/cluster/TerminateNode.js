@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class TerminateNode extends Remote {
-
-  constructor(name) {
+  constructor (name, machineType) {
     super();
     this.constructor.fetchOptions = {
       headers: {
@@ -28,6 +27,10 @@ export default class TerminateNode extends Remote {
       credentials: 'include',
       method: 'DELETE'
     };
-    this.url = `/cluster/node/${name}`;
+    const queryParameters = [
+      machineType ? `machineType=${machineType}` : undefined
+    ].filter(Boolean).join('&');
+    const query = queryParameters.length > 0 ? `?${queryParameters}` : '';
+    this.url = `/cluster/node/${name}${query}`;
   }
 }

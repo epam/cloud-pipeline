@@ -66,9 +66,9 @@ function createRunContinuationConfirmationDialog () {
           id
         } = run;
         if (pipelineId && version) {
-          routing.push(`/launch/${pipelineId}/${version}/default/${id}`);
+          routing.push(`/launch/${pipelineId}/${version}/default/${id}?continue=true`);
         } else {
-          routing.push(`/launch/${id}`);
+          routing.push(`/launch/${id}?continue=true`);
         }
       }
     };
@@ -213,6 +213,14 @@ export async function confirmRunContinuation (run) {
   return openConfirmation(run);
 }
 
+export function generateContinueRunParameters (runId, parameters) {
+  const params = {...(parameters || {})};
+  if (!params[CP_CONTINUE_RUN]) {
+    params[CP_CONTINUE_RUN] = {value: `${runId}`, type: 'string'};
+  }
+  return params;
+}
+
 export async function continueRun (run) {
   const hide = message.loading('Continuing run...', 0);
   try {
@@ -234,18 +242,14 @@ export async function continueRun (run) {
       version,
       configName
     } = run;
-    const params = {};
+    let params = {};
     for (const param of pipelineRunParameters) {
       params[param.name] = {
         value: param.value,
         type: param.type
       };
     }
-    const cpContinueRunParameter = pipelineRunParameters
-      .find((p) => p.name === CP_CONTINUE_RUN);
-    if (!cpContinueRunParameter) {
-      params[CP_CONTINUE_RUN] = {value: `${id}`, type: 'string'};
-    }
+    params = generateContinueRunParameters(id, params);
     const payload = {
       instanceType: instance ? instance.nodeType : undefined,
       hddSize: instance ? instance.nodeDisk : undefined,

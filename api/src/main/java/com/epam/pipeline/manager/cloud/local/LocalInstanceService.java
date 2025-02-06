@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.local;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
@@ -196,7 +197,7 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public List<NodeInstance> getCloudNodes(final LocalRegion region) {
+    public List<NodeInstance> getCloudNodes(final LocalRegion region, final FilterNodesVO filter) {
         throw new UnsupportedOperationException("Loading instances doesn't work with local region yet.");
     }
 

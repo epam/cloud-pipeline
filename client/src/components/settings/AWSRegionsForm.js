@@ -172,6 +172,9 @@ export default class AWSRegionsForm extends React.Component {
             ...r,
             corsRules: preProcessJSON(r.corsRules),
             policy: preProcessJSON(r.policy),
+            clusterStateRegionProperties: parseSLSProperties(
+              r.clusterStateRegionProperties
+            ),
             storageLifecycleServiceProperties: parseSLSProperties(
               r.storageLifecycleServiceProperties
             )
@@ -782,6 +785,8 @@ class AWSRegionForm extends React.Component {
         required: form => form.getFieldValue('versioningEnabled')
       },
       'versioningEnabled',
+      'clusterInclude',
+      'clusterStateRegionProperties',
       'fileShareMounts',
       'mountStorageRule',
       'mountFileStorageRule',
@@ -1081,6 +1086,8 @@ class AWSRegionForm extends React.Component {
       check('omicsEcrUrl', checkStringValue) ||
       check('backupDuration', checkIntegerValue) ||
       check('versioningEnabled', checkBOOLValue) ||
+      check('clusterInclude', checkBOOLValue) ||
+      check('clusterStateRegionProperties', checkStringValue) ||
       check('sshPublicKeyPath', checkStringValue) ||
       check('meterRegionName', checkStringValue) ||
       check('azureApiUrl', checkStringValue) ||
@@ -1234,6 +1241,9 @@ class AWSRegionForm extends React.Component {
         values.storageLifecycleServiceProperties = buildSLSProperties(
           values.storageLifecycleServiceProperties
         );
+        values.clusterStateRegionProperties = buildSLSProperties(
+          values.clusterStateRegionProperties
+        );
         const {
           contextualSettingValue,
           contextualSettingInitialValue
@@ -1282,11 +1292,16 @@ class AWSRegionForm extends React.Component {
   };
 
   corsRulesEditor;
+  clusterStateRegionPropertiesEditor;
   policyEditor;
   customInstanceTypesEditor;
 
   initializeCorsRulesEditor = (editor) => {
     this.corsRulesEditor = editor;
+  };
+
+  initializeClusterStateRegionPropertiesEditor = (editor) => {
+    this.clusterStateRegionPropertiesEditor = editor;
   };
 
   initializePolicyEditor = (editor) => {
@@ -2341,6 +2356,45 @@ class AWSRegionForm extends React.Component {
               })(
                 <Input
                   size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              className={this.getFieldClassName(
+                'clusterInclude',
+                'edit-region-clusterInclude-container'
+              )}
+              {...this.defaultCheckBoxFormItemLayout}>
+              {getFieldDecorator('clusterInclude', {
+                valuePropName: 'checked',
+                initialValue: this.props.region.clusterInclude
+              })(
+                <Checkbox>
+                  Show standalone nodes in Cluster State
+                </Checkbox>
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Standalone nodes filter"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'clusterStateRegionProperties',
+                  'edit-clusterStateRegionProperties-container'
+                )
+              }
+            >
+              {getFieldDecorator('clusterStateRegionProperties', {
+                initialValue: this.props.region.clusterStateRegionProperties,
+                rules: [{
+                  validator: this.jsonValidation
+                }]
+              })(
+                <CodeEditorFormItem
+                  ref={this.initializeClusterStateRegionPropertiesEditor}
+                  editorClassName={styles.codeEditor}
+                  editorLanguage="application/json"
                   disabled={this.props.pending} />
               )}
             </Form.Item>

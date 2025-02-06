@@ -148,6 +148,11 @@ import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import PipelineVersionPicker from './pipeline-version-picker';
+import {generateContinueRunParameters} from '../../../runs/actions/continue-run';
+import {
+  getFsConfigFromParameters,
+  getParametersFromFsConfig
+} from './utilities/configure-fs/utilities';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -258,7 +263,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       configurationSnapshot: PropTypes.string
     }),
     onInitialized: PropTypes.func,
-    onModified: PropTypes.func
+    onModified: PropTypes.func,
+    continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
   };
 
   static defaultProps = {
@@ -290,6 +296,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
+    fsConfig: undefined,
     configureClusterDialogVisible: false,
     scheduleRules: null,
     bucketBrowserVisible: false,
@@ -980,6 +987,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
+    const fsConfigValue = getFsConfigFromParameters(this.props.parameters.parameters);
     let runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     if (
       !this.props.editConfigurationMode
@@ -1010,6 +1018,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         slurmEnabled: slurmEnabledValue,
         kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
+        fsConfig: fsConfigValue,
         runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
@@ -1070,6 +1079,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         slurmEnabled: slurmEnabledValue,
         kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
+        fsConfig: fsConfigValue,
         runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
@@ -1308,6 +1318,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
+    payload[PARAMETERS] = getParametersFromFsConfig(
+      this.state.fsConfig,
+      payload[PARAMETERS],
+      this.currentCloudRegionProvider
+    );
     payload[PARAMETERS] = applyCapabilities(
       payload[PARAMETERS],
       this.state.runCapabilities,
@@ -1544,12 +1559,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: !!this.rescheduleRun
       };
     }
+    payload.params = getParametersFromFsConfig(
+      this.state.fsConfig,
+      payload.params,
+      this.currentCloudRegionProvider
+    );
     payload.params = applyCapabilities(
       payload.params,
       this.state.runCapabilities,
       this.props.preferences,
       this.toolPlatform
     );
+    if (this.props.continueRun) {
+      payload.params = generateContinueRunParameters(this.props.continueRun, payload.params);
+    }
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1724,6 +1747,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
+    const fsConfigValue = getFsConfigFromParameters(this.props.parameters.parameters);
     const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
@@ -1736,6 +1760,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       slurmEnabled: slurmEnabledValue,
       kubeEnabled: kubeEnabledValue,
       autoScaledPriceType: autoScaledPriceTypeValue,
+      fsConfig: fsConfigValue,
       runCapabilities,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
@@ -4371,7 +4396,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       sparkEnabled,
       slurmEnabled,
       kubeEnabled,
-      autoScaledPriceType
+      autoScaledPriceType,
+      fsConfig,
     } = configuration;
     let {runCapabilities} = this.state;
     if (kubeEnabled) {
@@ -4394,6 +4420,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       nodesCount,
       maxNodesCount,
       autoScaledPriceType,
+      fsConfig,
       runCapabilities
     }, () => {
       this.closeConfigureClusterDialog();
@@ -6127,6 +6154,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       launchCluster={this.state.launchCluster}
                       cloudRegionProvider={this.currentCloudRegionProvider}
                       autoScaledPriceType={this.state.autoScaledPriceType}
+                      fsConfig={this.state.fsConfig}
                       autoScaledCluster={this.state.autoScaledCluster}
                       hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                       gpuScalingConfiguration={this.state.gpuScalingConfiguration}

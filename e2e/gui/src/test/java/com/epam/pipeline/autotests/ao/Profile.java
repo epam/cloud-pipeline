@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,13 +96,6 @@ public class Profile implements AccessObject<Profile> {
                         .closest(".ant-row").find(by("role", "combobox"))),
                 entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
         );
-    }
-
-    public ParameterFieldAO getParameterByIndex(int parameterIndex) {
-        return parameters()
-                .skip(parameterIndex)
-                .findFirst()
-                .orElseThrow(NoSuchElementException::new);
     }
 
     public Profile addStringParameter(final String name, final String value) {

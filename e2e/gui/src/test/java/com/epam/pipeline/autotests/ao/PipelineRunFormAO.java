@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
@@ -56,21 +57,27 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(LAUNCH, context().find(byClassName("launch-pipeline-form__layout-header")).find(byText("Launch"))),
             entry(PIPELINE, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-name"))),
-            entry(VERSION, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-version"))),
+            entry(VERSION, context().find(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byText("Version:")).parent().find(byClassName("ant-select-selection"))),
+            entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-version"))),
             entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header")).find(byText("Estimated price per hour:"))),
             entry(INFORMATION_ICON, $(byClassName("launch-pipeline-form__layout-header")).find(byClassName("launch-pipeline-form__hint"))),
             entry(PRICE_TABLE, $(byClassName("ant-popover-placement-bottom"))),
             entry(DISK, context().find(byId("exec.disk"))),
             entry(TIMEOUT, context().find(byId("advanced.timeout"))),
-            entry(CONFIGURATION, context().find(byXpath("//*[.//*[contains(text(), 'Configuration name')] and contains(@class, 'ant-select-selection')]"))),
+            entry(CONFIGURATION, context().find(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byText("Configuration:")).parent().find(byClassName("ant-select-selection"))),
             entry(LAUNCH_CLUSTER, context().find(byText("Configure cluster"))),
             entry(START_IDLE, context().find(byText("Start idle")).closest(".ant-checkbox-wrapper")),
             entry(EXEC_ENVIRONMENT, context().find(byId("launch-pipeline-exec-environment-panel"))),
             entry(ADVANCED_PANEL, context().find(byId("launch-pipeline-advanced-panel"))),
             entry(PARAMETERS_PANEL, context().find(byId("launch-pipeline-parameters-panel"))),
-            entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row").find(byClassName("ant-select"))),
-            entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row").find(by("role", "combobox"))),
-            entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
+            entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row")
+                    .find(byClassName("ant-select"))),
+            entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row")
+                    .find(by("role", "combobox"))),
+            entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex")
+                    .find(cssSelector(".ant-checkbox-wrapper"))),
             entry(IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
@@ -430,6 +437,27 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO chooseVersion(final String version) {
+        click(VERSION);
+        $$(className("ant-select-dropdown")).findBy(visible)
+                .find(withText(version))
+                .shouldBe(visible)
+                .click();
+        new ConfirmationPopupAO(this)
+                .ensureTitleIs(format("Are you sure you want to change version to %s?", version))
+                .sleep(1, SECONDS)
+                .click(OK);
+        return this;
+    }
+
+    public PipelineRunFormAO checkPipelineVersion(final String expectedVersion) {
+        String actualVersion = get(VERSION).$("input").getAttribute("value");
+        assertTrue(actualVersion.equals(expectedVersion),
+                format("Pipeline version corresponds expected version '%s'",
+                        expectedVersion));
+        return this;
+    }
+
     public PipelineRunFormAO checkConfigureClusterLabel(String label) {
         context().find(byXpath(".//div[@class='ant-row-flex launch-pipeline-form__form-item-container']/a"))
                 .shouldBe(visible).shouldHave(text(label));
@@ -590,10 +618,20 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public static class ConfigureClusterPopupAO  extends PopupAO<ConfigureClusterPopupAO, PipelineRunFormAO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent().find(byClassName("ant-select-selection--single"))),
+                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent()
+                        .find(byClassName("ant-select-selection--single"))),
                 entry(WORKING_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[1]"))),
                 entry(DEFAULT_CHILD_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]"))),
-                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]")))
+                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]"))),
+                entry(FILE_SYSTEM_TYPE, context().$(byText("Type:"))
+                        .parent().$(byClassName("ant-select-selection--single"))),
+                entry(DEPLOYMENT_TYPE, context().$(byText("Deployment type:"))
+                        .parent().$(byClassName("ant-select-selection--single"))),
+                entry(IOPS, context().$(byText("IOPS"))
+                        .parent().parent().$(byClassName("ant-select-selection--single"))),
+                entry(THROUGHPUT, context().$(byText("Throughput"))
+                        .parent().parent().$(byClassName("ant-select-selection--single"))),
+                entry(VOLUME, context().$(byText("Volume")).parent().parent().$(byXpath(".//input")))
         );
 
         public ConfigureClusterPopupAO(PipelineRunFormAO parentAO) {
@@ -636,6 +674,18 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                     .shouldBe(visible)
                     .click();
             return this;
+        }
+
+        public ConfigureClusterPopupAO setFileSystemParameter(Primitive parameter, final String type) {
+            click(parameter);
+            context().find(visible(byClassName("ant-select-dropdown"))).find(byText(type))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public ConfigureClusterPopupAO setFileSystemVolume(final String volume) {
+            return setValue(VOLUME, volume);
         }
 
         public ConfigureClusterPopupAO enableHybridClusterSelect () {

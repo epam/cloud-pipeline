@@ -72,8 +72,8 @@ public class ClusterApiService {
     }
 
     @PostFilter(NODE_READ_FILTER)
-    public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO) {
-        return nodesManager.filterNodes(filterNodesVO);
+    public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
+        return nodesManager.filterNodes(filterNodesVO, machineType);
     }
 
     @PreAuthorize(CLOUD_NODE_READ)

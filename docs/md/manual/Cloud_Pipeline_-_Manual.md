@@ -43,6 +43,8 @@
     - [8.14. Omics storages](08_Manage_Data_Storage/8.14._Omics_storages.md)
 - [9. Manage Cluster nodes](09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md)
     - [9.1. Manage hot node pools](09_Manage_Cluster_nodes/9.1._Hot_node_pools.md)
+    - [9.2. Core services monitoring](09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring.md)
+    - [9.3. Cloud nodes](09_Manage_Cluster_nodes/9.3._Cloud_nodes.md)
 - [10. Manage Tools](10_Manage_Tools/10._Manage_Tools.md)
     - [10.1. Add/Edit a Docker registry](10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md)
     - [10.2. Add/Edit a Tool group](10_Manage_Tools/10.2._Add_Edit_a_Tool_group.md)
