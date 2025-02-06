@@ -70,11 +70,173 @@ function wait_for_pids() {
     done
 }
 
+function perform_sync() {
+    local _spec_file=$1
+
+    local _sync_pids=()
+    while read -a _sync_config_entry; do
+        echo_debug "Processing entry ${_sync_config_entry[*]}"
+
+        local _source_path=${_sync_config_entry[0]}
+        _source_path_trim=${_source_path#/}
+        _source_path_trim=${_source_path_trim%/}
+
+        local _dest_path
+        if [ -n "${_sync_config_entry[1]}" ]; then
+          _dest_path=${_sync_config_entry[1]}
+        else
+          if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
+            echo "[WARN] CP_SYNC_TO_STORAGE_DESTINATION is not defined and destination is not provided for entry '${_sync_config_entry[*]}', skipping..."
+            continue
+          fi
+          _dest_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/$_source_path_trim"
+          echo_debug "Destination path wasn't provided in configuration, will use default one: $_dest_path"
+        fi
+
+        echo_debug "Source path: $_source_path Destination path: $_dest_path"
+
+        if [ ! -d "$_source_path" ] && [ ! -f "$_source_path" ]; then
+            echo_debug "$_source_path not found"
+            continue
+        fi
+
+        local _pipe_extra_args="${CP_SYNC_TO_STORAGE_PIPE_EXTRA_ARGS}"
+        if [ -d "$_source_path" ]; then
+            _pipe_extra_args="$_pipe_extra_args -r"
+        fi
+        if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
+            _pipe_extra_args="$_pipe_extra_args -q"
+        fi
+        echo_debug "pipe extra args: $_pipe_extra_args"
+
+        echo_debug "destination path: $_dest_path"
+
+        local _pipe_command="pipe storage cp -f \"$_source_path\" \"$_dest_path\" $_pipe_extra_args"
+        echo_debug "pipe command: $_pipe_command"
+
+        if [ "$CP_SYNC_TO_STORAGE_THREADS" -gt 1 ]; then
+            eval "$_pipe_command" &
+            _sync_process_pid=$!
+            echo_debug "Sync $_source_path to $_dest_path has pid $_sync_process_pid"
+
+            _sync_pids[${#_sync_pids[@]}]=$_sync_process_pid
+            if [ "${#_sync_pids[@]}" -eq "$CP_SYNC_TO_STORAGE_THREADS" ]; then
+              wait_for_pids "${_sync_pids[*]}"
+              _sync_pids=()
+            fi
+        else
+            eval "$_pipe_command"
+            if [ $? -ne 0 ]; then
+                echo "[WARN] Sync $_source_path to $_dest_path failed"
+            fi
+        fi
+    done <"$_spec_file"
+
+    if [ "${#_sync_pids[@]}" -gt 0 ]; then
+        wait_for_pids "${_sync_pids[*]}"
+    fi
+}
+
+function sync_spec_allows_batch_mode() {
+    local _spec_file=$1
+
+    _spec_lines=$( wc -l < "$_spec_file")
+
+    if [ "$_spec_lines" -lt 2 ]; then
+        echo_debug "Only one line in sync config, no need for batch mode."
+        return 1
+    fi
+
+    _all_entries_are_files="true"
+    while read -a _sync_config_entry; do
+        _source_path=${_sync_config_entry[0]}
+        if [ -d "$_source_path" ]; then
+            _all_entries_are_files="false"
+            break
+        fi
+    done <"$_spec_file"
+
+    if [ "$_all_entries_are_files" != "true" ]; then
+        echo_debug "Not all sync entries are files, can't use batch mode!"
+        return 1
+    fi
+
+    _spec_lines_with_default_bucket=$(awk '{ print $2 }' < "$_spec_file" | grep -c "^$")
+
+    _sync_common_bucket_path=$(awk '{ print $2 }' < "$_spec_file" | grep -oP -m 1 "^(\w{2}://[\w-.]+/)(?=.*)")
+    _spec_lines_with_same_bucket=$(awk '{ print $2 }' < "$_spec_file" | grep -c "$_sync_common_bucket_path")
+
+    _all_entries_for_same_bucket=
+    if [ -n "$_sync_common_bucket_path" ] && [ "$_spec_lines" == "$_spec_lines_with_same_bucket" ]; then
+        _all_entries_for_same_bucket="true"
+    fi
+
+    if [ "$_spec_lines" != "$_spec_lines_with_default_bucket" ] && [ "$_all_entries_for_same_bucket" != "true" ]; then
+        echo_debug "Sync entries configured for different bucket to be synced, can't use batch mode!"
+        return 1
+    fi
+
+    return 0
+}
+
+function perform_batch_sync() {
+    local _spec_file=$1
+
+    _sync_common_bucket_path=$(awk '{ print $2 }' < "$_spec_file" | sed -e 'N;s/^\(.*\).*\n\1.*$/\1\n\1/;D')
+
+    if [ -z "$_sync_common_bucket_path" ]; then
+        if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
+          echo "[WARN] CP_SYNC_TO_STORAGE_DESTINATION is not defined and destination is not provided, and CP_SYNC_TO_STORAGE_DESTINATION also is not defined. Exiting."
+          return 1
+        fi
+        _sync_common_bucket_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/"
+        echo_debug "Destination bucket wasn't provided in sync configuration, will use default one: $_sync_common_bucket_path"
+    fi
+
+    _file_list="${_spec_file}.file_list"
+
+    # Clean up before the new iteration
+    rm -f "$_file_list"
+
+    while read -a _sync_config_entry; do
+        echo_debug "Processing entry ${_sync_config_entry[*]}"
+
+        local _source_path=${_sync_config_entry[0]}
+        _source_path_trim=${_source_path#/}
+        _source_path_trim=${_source_path_trim%/}
+
+        local _dest_path
+        if [ -n "${_sync_config_entry[1]}" ]; then
+          _dest_path=${_sync_config_entry[1]#$_sync_common_bucket_path}
+        else
+          _dest_path="$_source_path_trim"
+        fi
+
+        echo_debug "Source path: $_source_path Destination path: $_dest_path"
+        printf "%s\t%s\t%s\n" "${_source_path_trim}" "$(stat -c%s "${_source_path}")" "${_dest_path}" >> "${_file_list}"
+    done <"$_spec_file"
+    echo_debug "Prepare file-list file: ${_file_list} with $(wc -l "$_spec_file") lines"
+
+    local _pipe_extra_args="${CP_SYNC_TO_STORAGE_PIPE_EXTRA_ARGS}"
+    if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
+        _pipe_extra_args="$_pipe_extra_args -q"
+    fi
+    echo_debug "pipe extra args: $_pipe_extra_args"
+
+    local _pipe_command="pipe storage cp -f -r / $_sync_common_bucket_path --file-list ${_file_list} $_pipe_extra_args"
+    echo_debug "pipe command: $_pipe_command"
+    eval "$_pipe_command"
+    if [ $? -ne 0 ]; then
+        echo "[WARN] Sync $_source_path to $_dest_path failed"
+    fi
+}
+
 function start_sync_daemon() {
     while [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; do
+        echo_debug "Start iteration of sync_to_storage sync cycle"
 
         if [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]; then
-            echo "File $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE defined as CP_SYNC_TO_STORAGE_STOP_FLAG_FILES and present. Perform last sync iteration before stop."
+            echo "[INFO] File $CP_SYNC_TO_STORAGE_STOP_FLAG_FILE defined as CP_SYNC_TO_STORAGE_STOP_FLAG_FILES and present. Perform last sync iteration before stop."
             # We need to use such mechanism with additional env var instead of 'while [ -f "$CP_SYNC_TO_STORAGE_STOP_FLAG_FILE" ]'
             # because CP_SYNC_TO_STORAGE_STOP_FLAG_FILE can be created during sleep -> we still need to perform one more sync iteration
             export CP_SYNC_TO_STORAGE_STOP="true"
@@ -86,94 +248,48 @@ function start_sync_daemon() {
             continue
         fi
 
-        local _sync_pids=()
-        while read -a _sync_config_entry; do
-            echo_debug "Processing entry ${_sync_config_entry[*]}"
+        echo_debug "Creating temp copy of $CP_SYNC_TO_STORAGE_SPEC, $CP_SYNC_TO_STORAGE_REMOVE_SPEC to freez current config state"
+        cp -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.tmp"
+        cp -f "$CP_SYNC_TO_STORAGE_REMOVE_SPEC" "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"
 
-            local _source_path=${_sync_config_entry[0]}
-            _source_path_trim=${_source_path#/}
-            _source_path_trim=${_source_path_trim%/}
-
-            local _dest_path
-            if [ -n "${_sync_config_entry[1]}" ]; then
-              _dest_path=${_sync_config_entry[1]}
-            else
-              if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
-                echo "[WARN] CP_SYNC_TO_STORAGE_DESTINATION is not defined and destination is not provided for entry '${_sync_config_entry[*]}', skipping..."
-                continue
-              fi
-              _dest_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/$_source_path_trim"
-              echo_debug "Destination path wasn't provided in configuration, will use default one: $_dest_path"
-            fi
-
-            echo_debug "Source path: $_source_path Destination path: $_dest_path"
-
-            local _pipe_extra_args="${CP_SYNC_TO_STORAGE_PIPE_EXTRA_ARGS}"
-
-            if [ ! -d "$_source_path" ] && [ ! -f "$_source_path" ]; then
-                echo_debug "$_source_path not found"
-                continue
-            fi
-
-            if [ -d "$_source_path" ]; then
-                _pipe_extra_args="$_pipe_extra_args -r"
-            fi
-            if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
-                _pipe_extra_args="$_pipe_extra_args -q"
-            fi
-            echo_debug "pipe extra args: $_pipe_extra_args"
-
-            echo_debug "destination path: $_dest_path"
-
-            local _pipe_command="pipe storage cp -f \"$_source_path\" \"$_dest_path\" $_pipe_extra_args"
-            echo_debug "pipe command: $_pipe_command"
-
-            if [ "$CP_SYNC_TO_STORAGE_THREADS" -gt 1 ]; then
-                eval "$_pipe_command" &
-                _sync_process_pid=$!
-                echo_debug "Sync $_source_path to $_dest_path has pid $_sync_process_pid"
-
-                _sync_pids[${#_sync_pids[@]}]=$_sync_process_pid
-                if [ "${#_sync_pids[@]}" -eq "$CP_SYNC_TO_STORAGE_THREADS" ]; then
-                  wait_for_pids "${_sync_pids[*]}"
-                  _sync_pids=()
-                fi
-            else
-                eval "$_pipe_command"
-                if [ $? -ne 0 ]; then
-                    echo "[WARN] Sync $_source_path to $_dest_path failed"
-                fi
-            fi
-        done <"$CP_SYNC_TO_STORAGE_SPEC"
-
-        if [ "${#_sync_pids[@]}" -gt 0 ]; then
-            wait_for_pids "${_sync_pids[*]}"
+        if [ "$CP_SYNC_TO_STORAGE_BATCH_MODE" -eq "0" ] || ! sync_spec_allows_batch_mode "${CP_SYNC_TO_STORAGE_SPEC}.tmp"; then
+            perform_sync "${CP_SYNC_TO_STORAGE_SPEC}.tmp"
+        else
+            perform_batch_sync "${CP_SYNC_TO_STORAGE_SPEC}.tmp"
         fi
 
         # Check if some file from config marked for deletion
-        if [ -f "$CP_SYNC_TO_STORAGE_REMOVE_SPEC" ]; then
-            echo "Cleaning up $CP_SYNC_TO_STORAGE_SPEC with respect to $CP_SYNC_TO_STORAGE_REMOVE_SPEC"
-            touch "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+        if [ -f "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp" ]; then
+            echo_debug "Cleaning up $CP_SYNC_TO_STORAGE_SPEC with respect to ${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"
+
+            touch "${CP_SYNC_TO_STORAGE_SPEC}.new"
             while read -a _sync_config_entry; do
                 local _source_path=${_sync_config_entry[0]}
-                if grep -q -x -F "$_source_path" "$CP_SYNC_TO_STORAGE_REMOVE_SPEC"; then
+                if grep -q -F "$_source_path" "${CP_SYNC_TO_STORAGE_SPEC}.tmp" && grep -q -x -F "$_source_path" "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"; then
                     echo_debug "Path $_source_path is configured for the deletion from sync process"
                     continue
                 fi
-                echo "${_sync_config_entry[@]}" >> "${CP_SYNC_TO_STORAGE_SPEC}.updated"
+                echo "${_sync_config_entry[@]}" >> "${CP_SYNC_TO_STORAGE_SPEC}.new"
             done <"$CP_SYNC_TO_STORAGE_SPEC"
-            mv -f "$CP_SYNC_TO_STORAGE_SPEC" "${CP_SYNC_TO_STORAGE_SPEC}.prev"
-            mv -f "${CP_SYNC_TO_STORAGE_SPEC}.updated" "${CP_SYNC_TO_STORAGE_SPEC}"
-            rm -f "${CP_SYNC_TO_STORAGE_SPEC}.updated"
-            echo "Previous number of entries to sync is: $(wc -l < "${CP_SYNC_TO_STORAGE_SPEC}".prev) new number us: $(wc -l < "$CP_SYNC_TO_STORAGE_SPEC")"
+
+            # Perform final switch
+            mv -f "${CP_SYNC_TO_STORAGE_SPEC}.new" "${CP_SYNC_TO_STORAGE_SPEC}"
+
+            echo_debug "Previous number of entries to sync is: $(wc -l < "${CP_SYNC_TO_STORAGE_SPEC}.tmp") now: $(wc -l < "$CP_SYNC_TO_STORAGE_SPEC")"
         fi
 
+        echo_debug "Removing temp copy of $CP_SYNC_TO_STORAGE_SPEC, $CP_SYNC_TO_STORAGE_REMOVE_SPEC"
+        rm -f "${CP_SYNC_TO_STORAGE_SPEC}.tmp"
+        rm -f "${CP_SYNC_TO_STORAGE_REMOVE_SPEC}.tmp"
+
+        echo_debug "Done iteration of sync_to_storage sync cycle"
         if [ -z "$CP_SYNC_TO_STORAGE_STOP" ]; then
             sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
         fi
     done
 }
 
+export CP_SYNC_TO_STORAGE_BATCH_MODE="${CP_SYNC_TO_STORAGE_BATCH_MODE:-0}"
 export CP_SYNC_TO_STORAGE_SPEC="${CP_SYNC_TO_STORAGE_SPEC:-/etc/sync_to_storage.list}"
 export CP_SYNC_TO_STORAGE_REMOVE_SPEC="${CP_SYNC_TO_STORAGE_REMOVE_SPEC:-/etc/sync_to_storage_remove.list}"
 export CP_SYNC_TO_STORAGE_PID_FILE="${CP_SYNC_TO_STORAGE_PID_FILE:-/var/run/sync_to_storage.pid}"
@@ -216,6 +332,9 @@ elif [ "$_cmd" == "start" ]; then
     export -f start_sync_daemon
     export -f wait_for_pids
     export -f echo_debug
+    export -f sync_spec_allows_batch_mode
+    export -f perform_sync
+    export -f perform_batch_sync
     nohup bash -c start_sync_daemon &> "$CP_SYNC_TO_STORAGE_LOGFILE" &
     echo "$!" > "$CP_SYNC_TO_STORAGE_PID_FILE"
     echo "Sync process has been started, review logs in $CP_SYNC_TO_STORAGE_LOGFILE"
