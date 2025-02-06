@@ -39,10 +39,10 @@ public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
     private String loadPipelineRunResultQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void addPipelineRunResult(final PipelineRunResult runResult) {
+    public void addPipelineRunResults(final List<PipelineRunResult> results) {
         getNamedParameterJdbcTemplate().batchUpdate(
                 addPipelineRunResultQuery,
-                PipelineRunResultParameters.getParameters(runResult)
+                PipelineRunResultParameters.getParameters(results)
         );
     }
 
@@ -64,15 +64,19 @@ public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
         FILE_MASK,
         PATH;
 
-        static MapSqlParameterSource[] getParameters(PipelineRunResult result) {
-            return ListUtils.emptyIfNull(result.getItems()).stream().map(i -> {
-                MapSqlParameterSource params = new MapSqlParameterSource();
-                params.addValue(RUN_ID.name(), result.getRunId());
-                params.addValue(NAME.name(), result.getName());
-                params.addValue(FILE_MASK.name(), result.getFileMask().trim());
-                params.addValue(PATH.name(), i);
-                return params;
-            }).toArray(MapSqlParameterSource[]::new);
+        static MapSqlParameterSource[] getParameters(List<PipelineRunResult> results) {
+            return ListUtils.emptyIfNull(results).stream().flatMap(
+                    result -> {
+                        return ListUtils.emptyIfNull(result.getItems()).stream().map(i -> {
+                            MapSqlParameterSource params = new MapSqlParameterSource();
+                            params.addValue(RUN_ID.name(), result.getRunId());
+                            params.addValue(NAME.name(), result.getName());
+                            params.addValue(FILE_MASK.name(), result.getFileMask().trim());
+                            params.addValue(PATH.name(), i);
+                            return params;
+                        });
+                    }
+            ).toArray(MapSqlParameterSource[]::new);
         }
 
         static ResultSetExtractor<List<PipelineRunResult>> getExtractor() {
