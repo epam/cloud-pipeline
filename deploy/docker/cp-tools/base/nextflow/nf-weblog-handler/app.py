@@ -56,5 +56,13 @@ def handle_tracefile():
     return "True"
 
 
+@app.route('/nextflow/event/flush', methods=['POST'])
+def flush_events():
+    try:
+        event_handler.flush_events()
+    except Exception as e:
+        logger.error("Can't flush events", e)
+    return "True"
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=APP_PORT)
