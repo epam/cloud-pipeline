@@ -600,24 +600,37 @@ class InputDataTask:
             self.publish_run_results(rules, remote_locations)
 
     def publish_run_results(self, rules, locations):
+
+        def add_result_if_matches(file, destination, run_result_rules, run_results):
+            matched = DataStorageRule.match_which(run_result_rules, file)
+            if matched:
+                run_result = run_results.get(matched.name)
+                if not run_result:
+                    run_result = PipelineRunResult(self.run_id, matched.name, matched.file_mask)
+                    run_results[matched.name] = run_result
+                run_result.add_item(destination)
+                return True
+            return False
+
         run_result_rules = [rule for rule in rules if rule.is_result]
+        result_file_count = 0
         run_results = {}
         for location in locations:
             for path in location.paths:
                 source, destination = self.get_local_paths(path, self.is_upload)
+                if self.is_file(source):
+                    if add_result_if_matches(source, destination, run_result_rules, run_results):
+                        result_file_count = result_file_count + 1
+                else:
+                    for file in self.fetch_source_files(source):
+                        filename = file.filename
+                        if add_result_if_matches(filename, os.path.join(destination, filename),
+                                                      run_result_rules, run_results):
+                            result_file_count = result_file_count + 1
 
-                files = [File(source, os.path.getsize(source))] if self.is_file(source) else self.fetch_source_files(source)
-                for file in files:
-                    matched = DataStorageRule.match_which(run_result_rules, file.filename)
-                    if matched:
-                        run_result = run_results.get(matched.name)
-                        if not run_result:
-                            run_result = PipelineRunResult(self.run_id, matched.name, matched.file_mask)
-                            run_results[matched.name] = run_result
-                        run_result.add_item(file.filename)
-
-        Logger.info('Matched files for %d run result rules. Submitting results to the API' % len(run_results), task_name="PipelineRunResultPublish")
+        Logger.info('Matched {} files for {} run result rules'.format(result_file_count, len(run_results)), task_name=self.task_name)
         self.api.add_pipeline_run_results(self.run_id, [run_results[k].to_dict() for k in run_results.keys()])
+
 
     def perform_local_transfer(self, source, destination):
         Logger.info('Uploading files from {} to {} using local pipe'.format(source, destination), self.task_name)

@@ -32,6 +32,7 @@
                         :NAME,
                         :FILE_MASK,
                         :PATH)
+                    ON CONFLICT (run_id, name, file_mask, path) DO NOTHING
                 ]]>
             </value>
         </property>
