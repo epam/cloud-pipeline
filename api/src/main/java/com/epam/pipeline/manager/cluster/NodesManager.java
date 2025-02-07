@@ -22,7 +22,6 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
-import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
