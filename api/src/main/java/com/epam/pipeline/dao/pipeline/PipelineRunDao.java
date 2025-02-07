@@ -1092,6 +1092,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         PRICE_PER_HOUR,
         COMPUTE_PRICE_PER_HOUR,
         DISK_PRICE_PER_HOUR,
+        FS_PRICE_PER_HOUR,
         STATE_REASON,
         NON_PAUSE,
         NODE_REAL_DISK,
@@ -1152,6 +1153,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
             params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
             params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
+            params.addValue(FS_PRICE_PER_HOUR.name(), run.getFsPricePerHour());
             params.addValue(CLUSTER_PRICE.name(), run.getWorkersPrice());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
@@ -1315,6 +1317,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
             run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
             run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
+            run.setFsPricePerHour(rs.getBigDecimal(FS_PRICE_PER_HOUR.name()));
             run.setWorkersPrice(rs.getBigDecimal(CLUSTER_PRICE.name()));
             String stateReasonMessage = rs.getString(STATE_REASON.name());
             if (!rs.wasNull()) {
