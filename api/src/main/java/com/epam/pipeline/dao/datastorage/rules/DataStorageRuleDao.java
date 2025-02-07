@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import org.apache.commons.lang.BooleanUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -73,6 +74,8 @@ public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
 
     public enum DataStorageRulesParameters {
         PIPELINE_ID,
+        NAME,
+        IS_RESULT,
         FILE_MASK,
         MOVE_TO_STS,
         CREATED_DATE;
@@ -81,6 +84,8 @@ public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
             MapSqlParameterSource params = new MapSqlParameterSource();
 
             params.addValue(PIPELINE_ID.name(), rule.getPipelineId());
+            params.addValue(NAME.name(), rule.getName());
+            params.addValue(IS_RESULT.name(), BooleanUtils.isTrue(rule.getIsResult()));
             params.addValue(FILE_MASK.name(), rule.getFileMask().trim());
             params.addValue(MOVE_TO_STS.name(), rule.getMoveToSts());
             params.addValue(CREATED_DATE.name(), rule.getCreatedDate());
@@ -91,6 +96,8 @@ public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
             return (rs, rowNum) -> {
                 DataStorageRule rule = new DataStorageRule();
                 rule.setPipelineId(rs.getLong(PIPELINE_ID.name()));
+                rule.setName(rs.getString(NAME.name()));
+                rule.setIsResult(rs.getBoolean(IS_RESULT.name()));
                 rule.setFileMask(rs.getString(FILE_MASK.name()));
                 rule.setMoveToSts(rs.getBoolean(MOVE_TO_STS.name()));
                 rule.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
@@ -124,6 +131,7 @@ public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStorageRuleQuery = loadDataStorageRuleQuery;
     }
 
+    @Required
     public void setDeleteRulesByPipelineQuery(String deleteRulesByPipelineQuery) {
         this.deleteRulesByPipelineQuery = deleteRulesByPipelineQuery;
     }

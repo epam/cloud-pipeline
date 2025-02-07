@@ -24,11 +24,15 @@
                 <![CDATA[
                     INSERT INTO pipeline.datastorage_rule (
                         pipeline_id,
+                        name,
+                        is_result,
                         file_mask,
                         move_to_sts,
                         created_date)
                     VALUES (
                         :PIPELINE_ID,
+                        :NAME,
+                        :IS_RESULT,
                         :FILE_MASK,
                         :MOVE_TO_STS,
                         :CREATED_DATE)
@@ -56,6 +60,8 @@
                 <![CDATA[
                     SELECT
                         pipeline_id,
+                        name,
+                        is_result,
                         file_mask,
                         move_to_sts,
                         created_date
@@ -69,6 +75,8 @@
                 <![CDATA[
                     SELECT
                         pipeline_id,
+                        name,
+                        is_result,
                         file_mask,
                         move_to_sts,
                         created_date
@@ -84,6 +92,8 @@
                 <![CDATA[
                     SELECT
                         pipeline_id,
+                        name,
+                        is_result,
                         file_mask,
                         move_to_sts,
                         created_date
