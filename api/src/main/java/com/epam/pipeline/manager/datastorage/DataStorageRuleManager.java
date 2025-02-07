@@ -22,6 +22,7 @@ import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import org.apache.commons.lang.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -51,6 +52,11 @@ public class DataStorageRuleManager {
         Assert.notNull(rule.getPipelineId(), messageHelper
                 .getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED, "PipelineId",
                         DataStorageRuleManager.class.getSimpleName()));
+        if (BooleanUtils.isTrue(rule.getIsResult())) {
+            Assert.hasText(rule.getName(), messageHelper
+                    .getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED, "name",
+                            DataStorageRuleManager.class.getSimpleName()));
+        }
         pipelineManager.load(rule.getPipelineId());
         rule.setCreatedDate(DateUtils.now());
         dataStorageRuleDao.createDataStorageRule(rule);
