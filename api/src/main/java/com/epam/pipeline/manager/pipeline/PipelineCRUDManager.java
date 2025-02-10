@@ -55,6 +55,7 @@ public class PipelineCRUDManager {
         DataStorageRule rule = new DataStorageRule();
         rule.setPipelineId(pipeline.getId());
         rule.setCreatedDate(now);
+        rule.setIsResult(false);
         rule.setMoveToSts(DataStorageRule.DEFAULT_MOVE_TO_STS);
         rule.setFileMask(DataStorageRule.DEFAULT_FILE_MASK);
         return rule;

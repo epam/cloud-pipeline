@@ -152,6 +152,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadRunsChartsQuery;
     private String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
     private String deleteRunsByIdInQuery;
+    private String checkIfRunExistsQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -1007,6 +1008,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         return runs;
     }
 
+    public boolean runExists(final Long runId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.RUN_ID.name(), runId);
+        return getNamedParameterJdbcTemplate().queryForObject(checkIfRunExistsQuery, params, Integer.class) > 0;
+    }
+
     public MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
@@ -1702,5 +1709,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Required
     public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
         this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
+    }
+
+    @Required
+    public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
+        this.checkIfRunExistsQuery = checkIfRunExistsQuery;
     }
 }

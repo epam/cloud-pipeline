@@ -1443,6 +1443,10 @@ public class PipelineRunManager {
         pipelineRunDao.updateRunTags(run);
     }
 
+    public boolean runExists(final Long runId) {
+        return pipelineRunDao.runExists(runId);
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
@@ -1550,8 +1554,8 @@ public class PipelineRunManager {
         }
         return normalizePodName(name, runId);
     }
-
     // PodId should contain only a-z 0-9 and -, it also should be smaller then 63 characters
+
     private String normalizePodName(String name, String runId) {
         String podName = name.trim().toLowerCase();
         podName = podName.replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");

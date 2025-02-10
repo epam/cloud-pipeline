@@ -27,6 +27,7 @@ It is also possible to configure this image to use this functionality automatica
        "[ -f /opt/nf-weblog-handler/nf-weblog-handler.sh ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --start --enable-runtime-data -p $CP_NF_WEBLOG_HANDLER_PORT || exit 1"
       ],
       "params": {
+       "CP_SYNC_TO_STORAGE_BATCH_MODE": "1",
        "CP_RUN_ENGINE_TYPE": "NEXTFLOW",
        "CP_NF_WEBLOG_HANDLER_ENABLED": "1",
        "CP_NF_WEBLOG_HANDLER_PORT": "8080",

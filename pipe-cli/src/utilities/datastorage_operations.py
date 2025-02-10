@@ -184,6 +184,16 @@ class DataStorageOperations(object):
                                       permission_to_check, include, exclude, force, skip_existing, sync_newer,
                                       verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
             sys.exit(0)
+
+        # TODO: rewrite tuple to object
+        # items - collection of items (tuples), each item represents file + additional information about this file
+        # item structure:
+        #  object_type = item[0]
+        #  full_path = item[1]
+        #  relative_path = item[2]
+        #  source_size = item[3]
+        #  source_timestamp = item[4]
+        #  destination_relative_path = item[5]
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -295,6 +305,8 @@ class DataStorageOperations(object):
             relative_path = item[2]
             source_size = item[3]
 
+            destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
+
             logging.debug(u'Preprocessing path {}...'.format(full_path))
 
             item = cls._process_unsafe_chars(item, quiet, unsafe_chars, unsafe_chars_replacement)
@@ -339,7 +351,7 @@ class DataStorageOperations(object):
                 filtered_items.append(item)
                 continue
 
-            destination_key = manager.get_destination_key(destination_wrapper, relative_path)
+            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path)
             if skip_existing and sync_newer:
                 destination_size, destination_modification_datetime = \
                     manager.get_destination_object_head(destination_wrapper, destination_key)
@@ -686,7 +698,14 @@ class DataStorageOperations(object):
                 splitted = line.split('\t')
                 path = splitted[0]
                 size = long(float(splitted[1]))
-                yield ('File', os.path.join(source_path, path), path, size)
+
+                # Ability to overwrite destination path of the file, by forming --file-list file as:
+                # <path>\t<size>\t<destination_path>
+                if len (splitted) > 2:
+                    destination_path = splitted[2]
+                    yield ('File', os.path.join(source_path, path), path, size, None, destination_path)
+                else:
+                    yield ('File', os.path.join(source_path, path), path, size, None)
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
@@ -802,11 +821,14 @@ class DataStorageOperations(object):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
+
+        destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
+
         fail_after_exception = None
         try:
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, io_threads=io_threads, lock=lock,
+                                               relative_path=destination_relative_path, clean=clean, quiet=quiet,
+                                               size=size, tags=tags, io_threads=io_threads, lock=lock,
                                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
@@ -940,3 +962,10 @@ class DataStorageOperations(object):
                     click.echo(msg)
                 return None
         return item
+
+    @classmethod
+    def _get_tuple_item(cls, collection, index, default=None):
+        if len(collection) > index:
+            return collection[index]
+        return default
+

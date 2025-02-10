@@ -48,6 +48,7 @@ import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
@@ -60,13 +61,14 @@ import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.ArchiveRunService;
+import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
@@ -102,6 +104,7 @@ public class RunApiService {
 
     private final PipelineRunManager runManager;
     private final PipelineRunRuntimeDataManager runRuntimeDataManager;
+    private final PipelineRunResultManager runResultManager;
     private final PipelineRunCRUDService runCRUDService;
     private final FilterManager filterManager;
     private final RunLogManager logManager;
@@ -441,5 +444,19 @@ public class RunApiService {
     public PagedResult<List<EngineRunTask>> filterEngineRunTasks(final Long runId, final EngineType engineType,
                                                                  final EngineRunTaskFilter filter) {
         return engineRunTaskService.loadTasks(runId, engineType, filter);
+    }
+
+    @PreAuthorize(RUN_ID_WRITE)
+    public void addPipelineRunResults(final Long runId, final List<PipelineRunResult> results) {
+        if (runManager.runExists(runId)) {
+            runResultManager.addPipelineRunResults(results);
+        } else {
+            throw new IllegalArgumentException(String.format("Can't find a run with id: %d", runId));
+        }
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public List<PipelineRunResult> loadPipelineRunResultsForRun(final Long runId) {
+        return runResultManager.loadPipelineRunResultsForRun(runId);
     }
 }
