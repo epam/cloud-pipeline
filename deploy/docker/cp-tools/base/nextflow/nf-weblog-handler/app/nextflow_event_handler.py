@@ -131,6 +131,10 @@ class NextflowEventHandler(object):
                 synced = True
             attempts=attempts - 1
 
+    def flush_events(self):
+        self.logger.info("Flushing all events and sent batch with size: {} to the API...".format(len(event_list)))
+        self._send_events()
+
     def _need_to_send_batch(self, event_list):
         now = time.time()
         is_backoff_period = (self.failed_sync_timestamp != 0
@@ -144,6 +148,11 @@ class NextflowEventHandler(object):
             if self._need_to_send_batch(event_list):
                 self.logger.info("Sending events batch with size: {} to the API...".format(len(event_list)))
                 self._send_events_batch(event_list)
+
+    def _send_events(self):
+        with self.events as event_list:
+            self.logger.info("Sending events batch with size: {} to the API...".format(len(event_list)))
+            self._send_events_batch(event_list)
 
     def _send_events_batch(self, event_list):
         merged = self._merge_batch(event_list)

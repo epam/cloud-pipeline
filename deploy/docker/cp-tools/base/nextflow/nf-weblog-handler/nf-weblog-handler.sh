@@ -277,7 +277,12 @@ if [ "$CP_NF_WAIT_RUNTIME_DATA_SYNC" == 1 ]; then
     CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
     CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
     if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && sync_to_storage check &> /dev/null ; then
-        echo "Nextflow process finished. Waiting for synchronization of nextflow task runtime files... "
+        echo "Nextflow process finished..."
+
+        echo "Sending flash request to the nf weblog handler..."
+        curl -s -X POST "http://localhost:$CP_NF_WEBLOG_HANDLER_PORT/nextflow/event/flush" &> /dev/null
+
+        echo "Waiting for synchronization of nextflow task runtime files... "
         _wait_count=0
         while [ "$_wait_count" -lt "$((CP_NF_RUNTIME_DATA_SYNC_PERIOD / CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC))" ]; do
           _wait_count=$((_wait_count + 1))
