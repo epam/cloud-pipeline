@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
+import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -68,8 +69,10 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIME
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.VERSION;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRunWithInstance;
@@ -84,6 +87,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -175,6 +179,9 @@ public class PipelineRunManagerLaunchTest {
 
     @Mock
     private PipelineVersionManager pipelineVersionManager;
+
+    @Mock
+    private GitManager gitManager;
 
     @Mock
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
@@ -284,9 +291,14 @@ public class PipelineRunManagerLaunchTest {
     public void launchPipelineFromProjectShouldSetUpProjectId() {
         final FolderWithMetadata folder = new FolderWithMetadata();
         final Pipeline pipeline = new Pipeline(PIPELINE_ID);
+        pipeline.setName(TEST_NAME);
         folder.setId(FOLDER_ID);
-        doReturn(folder).when(folderApiService).getProject(PIPELINE_ID, AclClass.PIPELINE);
+        doReturn(folder).when(folderApiService).getProject(eq(PIPELINE_ID), eq(AclClass.PIPELINE));
+        doReturn(Optional.of(VERSION)).when(pipelineVersionManager).resolvePipelineVersion(eq(pipeline), any());
+        doReturn(VERSION).when(gitManager).getRevisionName(any());
+
         final PipelineRun run = launchPipeline(configuration, pipeline, null, null, null);
+        assertNotNull(run.getProjectId());
         assertEquals(FOLDER_ID, run.getProjectId().longValue());
     }
 
