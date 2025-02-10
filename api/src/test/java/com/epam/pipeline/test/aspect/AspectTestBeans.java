@@ -85,6 +85,7 @@ import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
@@ -431,6 +432,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected BillingManager billingManager;
+
+    @MockBean
+    protected PipelineRunResultManager mockPipelineRunResultManager;
 
     @MockBean(name = "pipelineBillingDetailsLoader")
     protected EntityBillingDetailsLoader pipelineBillingDetailsLoader;

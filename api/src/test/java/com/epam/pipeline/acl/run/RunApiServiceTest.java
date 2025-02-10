@@ -524,6 +524,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        doReturn(true).when(mockRunManager).runExists(pipelineRun.getId());
         initAclEntity(pipeline);
         initAclEntity(pipelineRun);
         mockSecurityContext();
@@ -570,6 +571,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        doReturn(true).when(mockRunManager).runExists(pipelineRun.getId());
         initAclEntity(pipeline, AclPermission.WRITE);
         initAclEntity(pipelineRun, AclPermission.WRITE);
         mockSecurityContext();
@@ -603,7 +605,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         initAclEntity(pipelineRun);
         mockSecurityContext();
 
-        List<PipelineRunResult> actualResults = mockRunResultManager.loadPipelineRunResultsForRun(ID);
+        List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
         Assert.assertEquals(runResult, actualResults);
     }
 
@@ -621,12 +623,13 @@ public class RunApiServiceTest extends AbstractAclTest {
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
         doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
         doReturn(runResult).when(mockRunResultManager).loadPipelineRunResultsForRun(ID);
+        doReturn(true).when(mockRunManager).runExists(pipelineRun.getId());
 
         initAclEntity(pipeline);
         initAclEntity(pipelineRun);
         mockSecurityContext();
 
-        assertThrows(AccessDeniedException.class, () -> mockRunResultManager.loadPipelineRunResultsForRun(ID));
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRunResultsForRun(ID));
     }
 
     @Test
@@ -648,7 +651,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         initAclEntity(pipelineRun, AclPermission.READ);
         mockSecurityContext();
 
-        List<PipelineRunResult> actualResults = mockRunResultManager.loadPipelineRunResultsForRun(ID);
+        List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
         Assert.assertEquals(runResult, actualResults);
     }
 
