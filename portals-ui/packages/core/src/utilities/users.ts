@@ -2,21 +2,9 @@ import { User, UserInfo } from '../model';
 
 const NAME_KEY_VARIANTS = ['Name', 'userName', 'name'];
 
-const FIRST_NAME_KEY_VARIANTS = [
-  'firstname',
-  'first_name',
-  'Firstname',
-  'FirstName',
-  'firstName',
-];
+const FIRST_NAME_KEY_VARIANTS = ['firstname', 'first_name', 'Firstname', 'FirstName', 'firstName'];
 
-const LAST_NAME_KEY_VARIANTS = [
-  'lastname',
-  'last_name',
-  'Lastname',
-  'LastName',
-  'lastName',
-];
+const LAST_NAME_KEY_VARIANTS = ['lastname', 'last_name', 'Lastname', 'LastName', 'lastName'];
 
 export function isUser(o: unknown): o is User {
   return (
@@ -44,41 +32,46 @@ export function isUserInfo(o: unknown): o is UserInfo {
   );
 }
 
-export function compareUserNames(nameA: string, nameB: string): boolean {
+export function compareUserNames(nameA: string | undefined, nameB: string | undefined): boolean {
+  if (!nameA && !nameB) {
+    return true;
+  }
   if (!nameA || !nameB) {
     return false;
   }
   return nameA.toLowerCase() === nameB.toLowerCase();
 }
 
-export function compareUserNamesWithoutDomain(nameA: string, nameB: string) {
+export function compareUserNamesWithoutDomain(nameA: string | undefined, nameB: string | undefined): boolean {
+  if (!nameA && !nameB) {
+    return true;
+  }
+  if (!nameA || !nameB) {
+    return false;
+  }
   const [aLowerCased] = nameA.toLowerCase().split('@');
   const [bLowerCased] = nameB.toLowerCase().split('@');
   return aLowerCased === bLowerCased;
 }
 
-const guessUserAttributeValue = (
-  variants: string[],
-  user: User | UserInfo,
-): string | undefined => {
-  if (!user?.attributes) {
+function guessUserAttributeStringValue(variants: string[], user: User | UserInfo): string | undefined {
+  const { attributes } = user;
+  if (!attributes) {
     return undefined;
   }
-  return variants.reduce((acc, key) => {
-    if (user.attributes[key] && typeof user.attributes[key] === 'string') {
-      acc = user.attributes[key];
+  for (const variant of variants) {
+    if (variant in attributes && typeof attributes[variant] === 'string') {
+      return attributes[variant];
     }
-    return acc;
-  });
-};
+  }
+  return undefined;
+}
 
-export const getUserDisplayName = (
-  user: User | UserInfo,
-): string | undefined => {
+export const getUserDisplayName = (user: User | UserInfo): string | undefined => {
   const name = isUserInfo(user) ? user.name : user.userName;
-  const firstName = guessUserAttributeValue(FIRST_NAME_KEY_VARIANTS, user);
-  const lastName = guessUserAttributeValue(LAST_NAME_KEY_VARIANTS, user);
-  const nameAttribute = guessUserAttributeValue(NAME_KEY_VARIANTS, user);
+  const firstName = guessUserAttributeStringValue(FIRST_NAME_KEY_VARIANTS, user);
+  const lastName = guessUserAttributeStringValue(LAST_NAME_KEY_VARIANTS, user);
+  const nameAttribute = guessUserAttributeStringValue(NAME_KEY_VARIANTS, user);
   if (firstName && lastName) {
     return firstName === lastName ? firstName : `${lastName} ${firstName}`;
   }
@@ -97,9 +90,7 @@ export function userMatchesCriteria(
     return true;
   }
   const criteriaLowerCased = criteria.trim().toLowerCase();
-  const name = (isUserInfo(user) ? user.name : user.userName)
-    .trim()
-    .toLowerCase();
+  const name = (isUserInfo(user) ? user.name : user.userName).trim().toLowerCase();
   if (name.includes(criteriaLowerCased)) {
     return true;
   }
@@ -107,9 +98,7 @@ export function userMatchesCriteria(
     const attributes: string[] = Object.values(user.attributes ?? {})
       .map((o) => o.toString().trim().toLowerCase())
       .filter((o) => o.length > 0);
-    return attributes.some((attribute) =>
-      attribute.includes(criteriaLowerCased),
-    );
+    return attributes.some((attribute) => attribute.includes(criteriaLowerCased));
   }
   return false;
 }

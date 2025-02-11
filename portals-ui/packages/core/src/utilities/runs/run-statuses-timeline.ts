@@ -1,92 +1,66 @@
 import dayjs, { Dayjs } from 'dayjs';
-import { Run, RunTaskInfo } from '../../model';
+import { Run, RunStatuses, RunTaskInfo } from '../../model';
+
+export type RunStatusTimelineStatus = RunStatuses | 'SCHEDULED';
 
 export type RunStatusTimelineItem = {
-  status: string;
+  status: RunStatusTimelineStatus;
   timestamp: Dayjs;
 };
+
+export function sortRunStatusTimelineItems(a: RunStatusTimelineItem, b: RunStatusTimelineItem) {
+  return a.timestamp.unix() - b.timestamp.unix();
+}
 
 export function getRunStatusesTimeline(
   run: Run,
   analyseSchedulingPhase: boolean = false,
   tasks: RunTaskInfo[] = [],
 ): RunStatusTimelineItem[] {
-  if (!run) {
-    return [];
-  }
+  const { startDate: runScheduledDate, endDate: runEndDate, runStatuses = [] } = run;
 
-  const {
-    startDate: runStartDate,
-    endDate: runEndDate,
-    runStatuses = [],
-  } = run;
+  const scheduledDate = dayjs.utc(runScheduledDate);
+  const endDate = runEndDate ? dayjs.utc(runEndDate) : undefined;
 
-  if (!runStartDate) {
-    return [];
-  }
-
-  let actualRunStartDate: Dayjs | undefined;
-  if (
-    tasks &&
-    tasks.filter((task) => !/^console$/i.test(task.name || '') && task.started)
-      .length > 0
-  ) {
-    actualRunStartDate = tasks
-      .filter((task) => !/^console$/i.test(task.name || '') && task.started)
-      .map((task) => dayjs.utc(task.started))
-      .sort((a, b) => (a.isAfter(b) ? -1 : a.isBefore(b) ? 1 : 0))
+  let startDate: Dayjs | undefined;
+  if (analyseSchedulingPhase) {
+    // We're the first non-console task with existing start date, that are before `endDate` (if `endDate` is set) -
+    // that will be a run actual start date.
+    startDate = tasks
+      .filter((task) => !/^console$/i.test(task.name) && task.started)
+      .map((task: RunTaskInfo) => dayjs.utc(task.started))
+      .filter((taskStartDate) => !endDate || endDate.isAfter(dayjs.utc(taskStartDate)))
+      // sorting descending, from newest date to oldest
+      .sort((a, b) => b.unix() - a.unix())
+      // returning the oldest date ("the first started task date")
       .pop();
   }
 
-  const startDate = dayjs.utc(runStartDate);
-  const endDate = runEndDate ? dayjs.utc(runEndDate) : undefined;
-  let actualStartDate = analyseSchedulingPhase
-    ? actualRunStartDate
-      ? dayjs.utc(actualRunStartDate)
-      : undefined
-    : undefined;
-
-  if (actualStartDate && endDate && actualStartDate.isAfter(endDate)) {
-    // Ignore the first task's date if it's after the run's termination date
-    actualStartDate = undefined;
-  }
-
-  const dates: RunStatusTimelineItem[] = (runStatuses || []).map((r) => ({
+  let dates: RunStatusTimelineItem[] = runStatuses.map((r) => ({
     status: r.status,
     timestamp: dayjs.utc(r.timestamp),
   }));
 
-  dates.push({
-    status: 'SCHEDULED',
-    timestamp: startDate,
-  });
-
-  if (actualStartDate) {
+  if (startDate && !dates.some((dt) => dt.timestamp.isSame(startDate))) {
     dates.push({
-      status: 'RUNNING',
-      timestamp: actualStartDate,
+      status: RunStatuses.running,
+      timestamp: startDate,
     });
   }
 
-  dates.sort((dA, dB) => {
-    if (dA.timestamp.isAfter(dB.timestamp)) {
-      return 1;
-    } else if (dA.timestamp.isBefore(dB.timestamp)) {
-      return -1;
-    }
-    if (dA.status === 'SCHEDULED') {
-      return -1;
-    }
-    if (dB.status === 'SCHEDULED') {
-      return 1;
-    }
-    return 0;
-  });
+  dates.sort(sortRunStatusTimelineItems);
+
+  const scheduledTimelineItem: RunStatusTimelineItem = {
+    status: 'SCHEDULED',
+    timestamp: scheduledDate,
+  };
+
+  dates = [scheduledTimelineItem].concat(dates);
 
   dates.forEach((date) => {
-    if (analyseSchedulingPhase && !actualStartDate && !endDate) {
+    if (analyseSchedulingPhase && !startDate && !endDate) {
       date.status = 'SCHEDULED';
-    } else if (actualStartDate && date.timestamp.isBefore(actualStartDate)) {
+    } else if (startDate && date.timestamp.isBefore(startDate)) {
       date.status = 'SCHEDULED';
     }
   });
@@ -104,7 +78,7 @@ export function getRunStatusesTimeline(
   const last = reduced[reduced.length - 1];
   if (endDate && !['STOPPED', 'SUCCESS', 'FAILURE'].includes(last.status)) {
     reduced.push({
-      status: 'STOPPED',
+      status: RunStatuses.stopped,
       timestamp: endDate,
     });
   }

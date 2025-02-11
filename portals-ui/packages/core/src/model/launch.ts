@@ -11,7 +11,7 @@ export type LaunchPayload = {
   instanceImage?: string;
   instanceType?: string;
   isSpot?: boolean;
-  kubeLabels?: any;
+  kubeLabels?: Record<string, unknown>;
   kubeServiceAccount?: string;
   nodeCount?: number;
   nonPause?: boolean;

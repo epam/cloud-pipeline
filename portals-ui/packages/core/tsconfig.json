@@ -114,6 +114,7 @@
   ],
   "include": [
     "src/**/*",
+    "tests/**/*",
     "rollup.*.ts",
   ]
 }

@@ -1,6 +1,6 @@
 import dayjs, { Dayjs } from 'dayjs';
-import { getRunStatusesTimeline } from './run-statuses-timeline';
-import { RunHistoryPhase, RunInterval } from '../../model';
+import { getRunStatusesTimeline, RunStatusTimelineStatus } from './run-statuses-timeline';
+import { Run, RunHistoryPhase, RunInterval, RunStatuses, RunTaskInfo } from '../../model';
 
 export type RunDurationInfo = {
   info: RunInterval;
@@ -23,16 +23,8 @@ export type RunDurationInfo = {
 
 /**
  * Creates an interval
- * @param phase - 0 - scheduled, 1 - running, 2 - paused, 3 - stopped
- * @param start
- * @param end
- * @returns RunInterval
  */
-function getInterval(
-  phase: number,
-  start?: Dayjs | string,
-  end?: Dayjs | string,
-): RunInterval {
+export function getInterval(phase: RunHistoryPhase, start?: Dayjs | string, end?: Dayjs | string): RunInterval {
   const startDate = start ? dayjs.utc(start) : dayjs.utc();
   const endDate = end ? dayjs.utc(end) : undefined;
   return {
@@ -44,30 +36,22 @@ function getInterval(
 
 /**
  * Updates interval end date (in-place) and returns it
- * @param interval - RunInterval
- * @param end - end date
- * @returns RunInterval
  */
-function updateIntervalEndDate(
-  interval: RunInterval,
-  end?: Dayjs | string,
-): RunInterval {
+export function updateIntervalEndDate(interval: RunInterval, end?: Dayjs | string): RunInterval {
   interval.end = end ? dayjs.utc(end) : undefined;
   return interval;
 }
 
 /**
  * Gets run phase by its status
- * @param status - run status
- * @returns number
  */
-function getRunPhaseByStatus(status: string): number {
-  switch ((status || '').toUpperCase()) {
-    case 'FAILURE':
-    case 'STOPPED':
-    case 'SUCCESS':
+export function getRunPhaseByStatus(status: RunStatusTimelineStatus): RunHistoryPhase {
+  switch (status.toUpperCase()) {
+    case RunStatuses.failure:
+    case RunStatuses.stopped:
+    case RunStatuses.success:
       return RunHistoryPhase.stopped;
-    case 'PAUSED':
+    case RunStatuses.paused:
       return RunHistoryPhase.paused;
     case 'SCHEDULED':
       return RunHistoryPhase.scheduled;
@@ -89,11 +73,8 @@ export function getIntervalDuration(interval: RunInterval): number {
  * @param intervals - RunInterval[]
  * @returns number
  */
-function getIntervalsTotalDuration(intervals: RunInterval[] = []): number {
-  return intervals.reduce(
-    (duration, interval) => duration + getIntervalDuration(interval),
-    0,
-  );
+export function getIntervalsTotalDuration(intervals: RunInterval[] = []): number {
+  return intervals.reduce((duration, interval) => duration + getIntervalDuration(interval), 0);
 }
 
 /**
@@ -102,21 +83,14 @@ function getIntervalsTotalDuration(intervals: RunInterval[] = []): number {
  * @param phase - RunHistoryPhase
  * @returns number
  */
-function getRunningDuration(
-  fromDate: string,
-  intervals: RunInterval[],
-  ...phase: number[]
-): number {
+export function getRunningDuration(fromDate: string | undefined, intervals: RunInterval[], ...phase: number[]): number {
   if (!fromDate) {
     return 0;
   }
   const date = dayjs.utc(fromDate);
-  const filtered = (intervals || [])
+  const filtered = intervals
     .filter((interval) => phase.includes(interval.phase))
-    .filter(
-      (interval) =>
-        interval.start >= date || !interval.end || interval.end > date,
-    )
+    .filter((interval) => interval.start >= date || !interval.end || interval.end > date)
     .map((interval) => {
       const { start } = interval;
       if (start >= date) {
@@ -138,9 +112,9 @@ function getRunningDuration(
  * @returns RunDurationInfo | undefined
  */
 export function getRunDurationInfo(
-  run: any,
+  run: Run | undefined,
   analyseSchedulingPhase = false,
-  tasks: any[] = [],
+  tasks: RunTaskInfo[] = [],
 ): RunDurationInfo | undefined {
   if (!run) {
     return undefined;
@@ -152,8 +126,7 @@ export function getRunDurationInfo(
   for (const timelineItem of timeline) {
     const { status, timestamp } = timelineItem;
     const phase = getRunPhaseByStatus(status);
-    const previous =
-      intervals.length > 0 ? intervals[intervals.length - 1] : undefined;
+    const previous = intervals.length > 0 ? intervals[intervals.length - 1] : undefined;
     const current = getInterval(phase, timestamp);
     if (previous && previous.phase !== current.phase) {
       updateIntervalEndDate(previous, timestamp);
@@ -163,18 +136,10 @@ export function getRunDurationInfo(
     }
   }
 
-  const filteredIntervals = intervals.filter(
-    (interval) => getIntervalDuration(interval) > 0,
-  );
-  const runningIntervals = filteredIntervals.filter(
-    (interval) => interval.phase === RunHistoryPhase.running,
-  );
-  const pausedIntervals = filteredIntervals.filter(
-    (interval) => interval.phase === RunHistoryPhase.paused,
-  );
-  const scheduledIntervals = filteredIntervals.filter(
-    (interval) => interval.phase === RunHistoryPhase.scheduled,
-  );
+  const filteredIntervals = intervals.filter((interval) => getIntervalDuration(interval) > 0);
+  const runningIntervals = filteredIntervals.filter((interval) => interval.phase === RunHistoryPhase.running);
+  const pausedIntervals = filteredIntervals.filter((interval) => interval.phase === RunHistoryPhase.paused);
+  const scheduledIntervals = filteredIntervals.filter((interval) => interval.phase === RunHistoryPhase.scheduled);
 
   const totalBillableDuration = getRunningDuration(
     run.instanceStartDate,
@@ -218,21 +183,15 @@ export function getRunDurationInfo(
   };
 }
 
-export function displayDurationInSeconds(
-  duration: number = 0,
-  details: boolean = false,
-) {
+export function displayDurationInSeconds(duration: number = 0, details: boolean = false) {
   const MINUTE = 60;
   const HOUR = 60 * MINUTE;
   const DAY = 24 * HOUR;
   const days = Math.floor(duration / DAY);
   const hours = Math.floor((duration - days * DAY) / HOUR);
   const minutes = Math.floor((duration - days * DAY - hours * HOUR) / MINUTE);
-  const seconds = Math.floor(
-    duration - days * DAY - hours * HOUR - minutes * MINUTE,
-  );
-  const plural = (count: number, word: string) =>
-    `${count} ${word}${count === 1 ? '' : 's'}`;
+  const seconds = Math.floor(duration - days * DAY - hours * HOUR - minutes * MINUTE);
+  const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
   const parts = [
     days > 0 ? plural(days, 'day') : undefined,
     hours > 0 ? plural(hours, 'hour') : undefined,

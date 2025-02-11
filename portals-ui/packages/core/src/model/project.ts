@@ -1,6 +1,7 @@
 import { AclClass, AclEntry } from './acl';
 import { NgsData } from './misc';
 import { Pipeline } from './pipeline';
+import { DataStorage } from './data-storage.ts';
 
 export type ProjectsResponse = {
   childFolders: Project[];
@@ -17,6 +18,8 @@ export type UpdateProjectMetadataResponse = {
   data: NgsData;
 };
 
+export type ConfigurationEntry = unknown;
+
 export type Configuration = {
   id: number;
   name: string;
@@ -32,7 +35,7 @@ export type Configuration = {
     aclClass: AclClass.folder;
     hasMetadata: boolean;
   };
-  entries: Record<string, any>[];
+  entries: Record<string, ConfigurationEntry>[];
 };
 
 export type Project = AclEntry<AclClass.folder> & {
@@ -55,8 +58,8 @@ export type Project = AclEntry<AclClass.folder> & {
     aclClass: AclClass.folder;
     hasMetadata: boolean;
   }>;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean>;
   data?: NgsData;
-  storages?: Record<string, any>[];
+  storages?: Record<string, DataStorage>[];
   description?: string;
 };

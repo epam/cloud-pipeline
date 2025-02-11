@@ -3,13 +3,13 @@ import utc from 'dayjs/plugin/utc';
 
 dayjs.extend(utc);
 
-const displayFormat = 'YYYY-MM-DD, HH:mm:ss';
+const defaultDateDisplayFormat = 'YYYY-MM-DD, HH:mm:ss';
 
-const displayDate = (date: string, format: string = displayFormat): string => {
-  if (!date) {
+const displayDate = (utcDate: string | undefined, format: string = defaultDateDisplayFormat): string => {
+  if (!utcDate) {
     return '';
   }
-  return dayjs.utc(date).local().format(format);
+  return dayjs.utc(utcDate).local().format(format);
 };
 
-export { displayDate };
+export { displayDate, defaultDateDisplayFormat };

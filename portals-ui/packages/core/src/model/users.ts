@@ -11,7 +11,7 @@ export type User = AclEntry<AclClass.user> & {
   id: number;
   userName: string;
   admin: boolean;
-  attributes: Record<string, string | number>;
+  attributes?: Record<string, string | number>;
   blocked: boolean;
   groups: string[];
   roles: Role[];

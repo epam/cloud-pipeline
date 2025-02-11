@@ -4,12 +4,11 @@ export class AbortError extends Error {
   }
 }
 
-export function logError(error: any, message?: string): void {
+export function logError(error: unknown, message?: string): void {
   if (error instanceof AbortError) {
     return;
   }
-  const errorDescription =
-    error instanceof Error ? error.message : (error as string);
+  const errorDescription = error instanceof Error ? error.message : (error as string);
   console.warn(message ? `${message}: ${errorDescription}` : errorDescription);
 }
 
@@ -37,32 +36,12 @@ export function noop() {
   // noop
 }
 
-export const escapeRegExpCharacters = [
-  '.',
-  '-',
-  '+',
-  '*',
-  '?',
-  '^',
-  '$',
-  '(',
-  ')',
-  '[',
-  ']',
-  '{',
-  '}',
-];
+export const escapeRegExpCharacters = ['.', '-', '+', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
 
-export function escapeRegExp(
-  string: string,
-  characters = escapeRegExpCharacters,
-): string {
+export function escapeRegExp(string: string, characters = escapeRegExpCharacters): string {
   let result = string;
   characters.forEach((character) => {
-    result = result.replace(
-      new RegExp('\\' + character, 'g'),
-      `\\${character}`,
-    );
+    result = result.replace(new RegExp('\\' + character, 'g'), `\\${character}`);
   });
   return result;
 }
@@ -74,15 +53,11 @@ export type CorrectPathOptions = {
   removeTrailingSlash?: boolean;
 };
 
-export function correctPath(
-  path: string | undefined,
-  options?: CorrectPathOptions,
-): string {
-  const { ensureLeadingSlash = false, ensureTrailingSlash = false } =
-    options ?? {};
+export function correctPath(path: string | undefined, options?: CorrectPathOptions): string {
+  const { ensureLeadingSlash, ensureTrailingSlash } = options ?? {};
   const {
-    removeLeadingSlash = !ensureLeadingSlash,
-    removeTrailingSlash = !ensureTrailingSlash,
+    removeLeadingSlash = ensureLeadingSlash === undefined ? undefined : !ensureLeadingSlash,
+    removeTrailingSlash = ensureTrailingSlash === undefined ? undefined : !ensureTrailingSlash,
   } = options ?? {};
   let corrected = path ?? '';
   if (!corrected.startsWith('/') && ensureLeadingSlash) {
@@ -113,21 +88,31 @@ export function joinPath(...path: string[]): string {
 }
 
 export function parentPath(path: string): string {
-  if (path.endsWith('://')) {
-    return path;
+  if (/^file:\/\//i.test(path)) {
+    path = '/' + path.slice('file://'.length); // Replace file:// with / for file URLs
   }
+
+  if (/^(https|http|ftp):\/\//i.test(path)) {
+    // For URLs, respect the path and return the parent path
+    const url = new URL(path);
+    const parts = url.pathname.split('/').filter(Boolean);
+    parts.pop(); // Remove last segment to get parent path
+    url.pathname = '/' + parts.join('/');
+    return url.toString().replace(/\/$/, ''); // Remove trailing slash if any
+  }
+
   const corrected = correctPath(path, { removeTrailingSlash: true });
   return corrected.split('/').slice(0, -1).join('/');
 }
 
-export function capitalizedString(input: string): string {
+export function capitalizedString(input: string | undefined): string {
   if (!input || input.length === 0) {
     return input ?? '';
   }
   return input.slice(0, 1).toUpperCase().concat(input.slice(1));
 }
 
-export function unCapitalizedString(input: string): string {
+export function unCapitalizedString(input: string | undefined): string {
   if (!input || input.length === 0) {
     return input ?? '';
   }
@@ -170,31 +155,25 @@ export async function asyncFilter<T>(
       if (abortSignal?.aborted) {
         reject(new AbortError());
       }
-      if (start >= elements.length) {
-        resolve(result);
-      } else {
-        const end = Math.min(elements.length, start + batch);
-        try {
-          for (let i = start; i < end; i += 1) {
-            if (abortSignal?.aborted) {
-              reject(new AbortError());
-            }
-            if (callback(elements[i], i, elements)) {
-              result.push(elements[i]);
-            }
+      const end = Math.min(elements.length, start + batch);
+      try {
+        for (let i = start; i < end; i += 1) {
+          if (abortSignal?.aborted) {
+            reject(new AbortError());
           }
-        } catch (error) {
-          reject(error as Error);
-          return;
+          if (callback(elements[i], i, elements)) {
+            result.push(elements[i]);
+          }
         }
-        start = end;
-        setTimeout(() => {
-          if (end < elements.length) {
-            setTimeout(fn, 0);
-          } else {
-            resolve(result);
-          }
-        }, 0);
+      } catch (error) {
+        reject(error as Error);
+        return;
+      }
+      start = end;
+      if (end < elements.length) {
+        setTimeout(fn, 0);
+      } else {
+        resolve(result);
       }
     };
     fn();

@@ -37,8 +37,8 @@ type RunInstance = {
 };
 
 type RunDetailedStatus = {
-  reason: string;
-  runId: number;
+  reason?: string;
+  runId?: number;
   status: RunStatuses;
   timestamp: string;
 };
@@ -54,7 +54,7 @@ export type Run = AclEntry<AclClass.pipeline> & {
   endDate?: string;
   status: RunStatuses;
   commitStatus: CommitStatuses;
-  lastChangeCommitTime: string;
+  lastChangeCommitTime?: string;
   params?: string;
   dockerImage: string;
   actualDockerImage: string;
@@ -72,8 +72,8 @@ export type Run = AclEntry<AclClass.pipeline> & {
   nodeCount: number;
   initialized: boolean;
   configurationId: number;
-  prolongedAtTime: string;
-  executionPreferences?: Record<string, any>;
+  prolongedAtTime?: string;
+  executionPreferences?: Record<string, string | number | boolean>;
   pricePerHour: number;
   computePricePerHour: number;
   diskPricePerHour: number;
@@ -101,7 +101,7 @@ export type Run = AclEntry<AclClass.pipeline> & {
 };
 
 export type RunTaskInfo = {
-  name?: string;
+  name: string;
   started?: string;
 };
 

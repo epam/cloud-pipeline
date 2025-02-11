@@ -20,25 +20,16 @@ export function evaluateRunPrice(
 ): RunPriceEstimationResult {
   const { analyseSchedulingPhase = false, runTasks = [] } = options;
 
-  if (!run) {
-    return {
-      total: 0,
-      master: 0,
-      workers: 0,
-    };
-  }
+  const { totalBillableDuration, totalBillableRunningDuration } = getRunDurationInfo(
+    run,
+    analyseSchedulingPhase,
+    runTasks,
+  ) || {
+    totalBillableDuration: 0,
+    totalBillableRunningDuration: 0,
+  };
 
-  const { totalBillableDuration, totalBillableRunningDuration } =
-    getRunDurationInfo(run, analyseSchedulingPhase, runTasks) || {
-      totalBillableDuration: 0,
-      totalBillableRunningDuration: 0,
-    };
-
-  const {
-    computePricePerHour = 0,
-    diskPricePerHour = 0,
-    workersPrice = 0,
-  } = run;
+  const { computePricePerHour = 0, diskPricePerHour = 0, workersPrice = 0 } = run ?? {};
 
   const format = (value: number): number => Math.ceil(value * 100.0) / 100.0;
 
