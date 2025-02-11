@@ -1315,10 +1315,8 @@ public class PipelineRunManager {
                 .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
                         getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
                 .map(price ->
-                    // new total price = new disk price + current FS price + compute price
-                    BigDecimal.valueOf(price.getPricePerHour() - price.getComputePricePerHour())
+                    BigDecimal.valueOf(price.getPricePerHour())
                             .add(Optional.ofNullable(run.getFsPricePerHour()).orElse(BigDecimal.ZERO))
-                            .add(run.getComputePricePerHour())
                             .setScale(USER_PRICE_SCALE, RoundingMode.HALF_EVEN))
                 .orElse(run.getPricePerHour());
         run.setPricePerHour(pricePerHour);
