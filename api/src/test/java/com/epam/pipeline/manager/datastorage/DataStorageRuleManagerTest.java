@@ -42,6 +42,17 @@ public class DataStorageRuleManagerTest {
         dataStorageRuleManager.createRule(dataStorageRule);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void createRuleShouldFailIfResultRuleDoesNotHaveMoveToSts() {
+        DataStorageRule dataStorageRule = new DataStorageRule();
+        dataStorageRule.setPipelineId(PIPELINE_ID);
+        dataStorageRule.setIsResult(true);
+        dataStorageRule.setName(NAME);
+        dataStorageRule.setFileMask(FILE_MASK);
+        dataStorageRule.setMoveToSts(false);
+        dataStorageRuleManager.createRule(dataStorageRule);
+    }
+
     @Test
     public void createRuleShouldSucceedIfResultRuleHaveName() {
         DataStorageRule dataStorageRule = new DataStorageRule();

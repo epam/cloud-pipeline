@@ -48,14 +48,17 @@ public class DataStorageRuleManager {
     public DataStorageRule createRule(DataStorageRule rule) {
         Assert.notNull(rule.getFileMask(), messageHelper
                 .getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED, "FileMask",
-                        DataStorageRuleManager.class.getSimpleName()));
+                        DataStorageRule.class.getSimpleName()));
         Assert.notNull(rule.getPipelineId(), messageHelper
                 .getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED, "PipelineId",
-                        DataStorageRuleManager.class.getSimpleName()));
+                        DataStorageRule.class.getSimpleName()));
         if (BooleanUtils.isTrue(rule.getIsResult())) {
             Assert.hasText(rule.getName(), messageHelper
                     .getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED, "name",
-                            DataStorageRuleManager.class.getSimpleName()));
+                            DataStorageRule.class.getSimpleName()));
+            Assert.isTrue(BooleanUtils.isTrue(rule.getMoveToSts()), messageHelper
+                    .getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED, "moveToSts",
+                            DataStorageRule.class.getSimpleName()));
         }
         pipelineManager.load(rule.getPipelineId());
         rule.setCreatedDate(DateUtils.now());
