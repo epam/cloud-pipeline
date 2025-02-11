@@ -1314,11 +1314,36 @@ public class PipelineRunManager {
                 .filter(runInstance -> !runInstance.isEmpty())
                 .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
                         getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
-                .map(InstancePrice::getPricePerHour)
-                .map(this::scaledForUser)
+                .map(price ->
+                    BigDecimal.valueOf(price.getPricePerHour())
+                            .add(Optional.ofNullable(run.getFsPricePerHour()).orElse(BigDecimal.ZERO))
+                            .setScale(USER_PRICE_SCALE, RoundingMode.HALF_EVEN))
                 .orElse(run.getPricePerHour());
         run.setPricePerHour(pricePerHour);
         LOGGER.debug("Adjusted price per hour for run #{} to {}", runId, run.getPricePerHour());
+        return updateRunInfo(run);
+    }
+
+    /**
+     * Adjusts run price per hour including provided file system price per hour.
+     *
+     * @param runId of {@link PipelineRun} to update price for.
+     * @param fsPricePerHour file system price per hour (including size)
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun adjustRunPricePerHourToFs(final Long runId, final BigDecimal fsPricePerHour) {
+        final PipelineRun run = loadPipelineRun(runId, false);
+
+        // new total price = current total price - current FS price + new FS price
+        final BigDecimal pricePerHour = run.getPricePerHour()
+                .subtract(Optional.ofNullable(run.getFsPricePerHour()).orElse(BigDecimal.ZERO))
+                .add(fsPricePerHour)
+                .setScale(USER_PRICE_SCALE, RoundingMode.HALF_EVEN);
+
+        run.setPricePerHour(pricePerHour);
+        run.setFsPricePerHour(fsPricePerHour);
+        LOGGER.debug("Adjusted price per hour and FS price per hour for run #{}", runId);
         return updateRunInfo(run);
     }
 

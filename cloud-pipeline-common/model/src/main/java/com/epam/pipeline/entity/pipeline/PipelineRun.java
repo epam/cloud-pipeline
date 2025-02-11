@@ -116,6 +116,10 @@ public class PipelineRun extends AbstractSecuredEntity {
      */
     private BigDecimal computePricePerHour;
     /**
+     * Run filesystem price per hour (including size).
+     */
+    private BigDecimal fsPricePerHour;
+    /**
      * Pipeline run instance disk gigabyte price per hour. 
      */
     private BigDecimal diskPricePerHour;
