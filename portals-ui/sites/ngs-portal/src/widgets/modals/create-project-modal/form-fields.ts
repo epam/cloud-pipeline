@@ -1,3 +1,5 @@
+import { folderPattern } from '../../../shared/constants/patterns';
+
 export type CreateProjectFormValues = {
   projectName: string;
   datastorage: number;
@@ -15,7 +17,7 @@ export const createProjectFieldConfig = {
     rules: [
       { required: true, message: 'Please provide a project name' },
       {
-        pattern: /^[a-zA-Z0-9_-]+$/,
+        pattern: folderPattern,
         message: 'Only letters, numbers, "_" or "-" are allowed',
       },
     ],

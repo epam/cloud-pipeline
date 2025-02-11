@@ -4,6 +4,7 @@ import {
   ProjectHeader,
   ProjectPipelines,
   ProjectRunsList,
+  ProjectStorage,
 } from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
@@ -55,8 +56,7 @@ export const ProjectPage = ({ project }: Props) => {
       {
         key: ProjectTabs.Storage,
         label: <span className="px-4">Storage</span>,
-        content: <div className="text-faded">Under implementation</div>,
-        disabled: true,
+        content: <ProjectStorage />,
       },
       {
         key: ProjectTabs.Pipelines,
