@@ -30,16 +30,27 @@ def parse_timestamp(timestamp):
     return (datetime.fromtimestamp(timestamp_sec)
             .strftime("%Y-%m-%d %H:%M:%S.000Z"))
 
+def parse_duration_field_from_trace_file(duration_str):
+    if duration_str.isdigit():
+        return int(duration_str)
+    else:
+        return duration_str_to_int(duration_str)
 
-def date_to_timestamp(str_date, format_str):
+def parse_time_field_from_trace_file(datetime_str):
+    if datetime_str.isdigit():
+        return int(datetime_str)
+    else:
+        return date_to_timestamp(datetime_str, "%Y-%m-%d %H:%M:%S.%f")
+
+def date_to_timestamp(datetime_str, format_str):
     import time
 
     def to_mil_seconds(date):
         return time.mktime(date.timetuple()) * 1000
 
-    if str_date is None:
+    if datetime_str is None:
         return None
-    return to_mil_seconds(datetime.strptime(str_date, format_str))
+    return to_mil_seconds(datetime.strptime(datetime_str, format_str))
 
 
 def get_array_element_or_default(array, index, default=None):
@@ -66,22 +77,45 @@ def parse_int_str(value):
 def parse_percentage_str(value):
     if not value or  value == "-":
         return None
-    parsed_value = re.search('(\d+(.\d+)) ?%?', value.strip())
+    parsed_value = re.search('(\d+(.\d+)?) ?%?', value.strip())
     if parsed_value:
         return parsed_value.group(1)
+
+
+def duration_str_to_int(duration_str):
+    total_ms = 0
+    pattern = r'(\d+(\.\d+)?)([dhms])'  # Allow optional decimals in the numbers
+    matches = re.findall(pattern, duration_str)
+
+    for value, _, unit in matches:
+        value = float(value)  # Convert the value to float to handle decimal numbers
+
+        if unit == 'd':
+            total_ms += value * 24 * 60 * 60 * 1000  # days to ms
+        elif unit == 'h':
+            total_ms += value * 60 * 60 * 1000  # hours to ms
+        elif unit == 'm':
+            total_ms += value * 60 * 1000  # minutes to ms
+        elif unit == 's':
+            total_ms += value * 1000  # seconds to ms
+        elif unit == 'ms':
+            total_ms += value  # milliseconds already in ms
+
+    return int(total_ms)  # Return the result as an integer
 
 
 def parse_memory_str(value):
     if not value or  value == "-":
         return None
-    parsed_value = re.search('(\d+(.\d+)) ?(GB|MB|KB)?', value.strip())
+    parsed_value = re.search('(\d+(.\d+)?) ?(GB|MB|KB)?', value.strip())
     if parsed_value:
-        multiplier = parsed_value.group(2)
-        value = parsed_value.group(1)
+        multiplier = parsed_value.group(3)
+        value = float(parsed_value.group(1))
+        result = value
         if multiplier == "GB":
-            return value * 1024 * 1024 * 1024
+            result = value * 1024 * 1024 * 1024
         elif multiplier == "MB":
-            return value * 1024 * 1024
+            result = value * 1024 * 1024
         elif multiplier == "KB":
-            return value * 1024
-        return value
+            result = value * 1024
+        return int(result)
