@@ -104,6 +104,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline2)
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
