@@ -74,7 +74,7 @@ $NXF_HOME/nextflow "${_ARGS[@]}"
 _result_code="$?"
 
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
-    /opt/nf-weblog-handler/nf-weblog-handler.sh --wait-runtime-data
+    /opt/nf-weblog-handler/nf-weblog-handler.sh --wait-runtime-data -tf "$CP_NF_TRACE_FILE"
 fi
 
 exit $_result_code

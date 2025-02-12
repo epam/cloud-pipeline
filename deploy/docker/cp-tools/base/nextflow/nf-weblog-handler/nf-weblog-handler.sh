@@ -94,6 +94,11 @@ function parse_options {
         export CP_NF_WAIT_RUNTIME_DATA_SYNC=1
         shift # past argument
         ;;
+        -tf|--trace-file-to-sync)
+        export CP_NF_TRACE_FILE_TO_SYNC=$2
+        shift # past argument
+        shift # past value
+        ;;
         *)    # unknown option
         _UNKNOWN+=("$1") # save it in an array for later
         shift # past argument
@@ -281,6 +286,11 @@ if [ "$CP_NF_WAIT_RUNTIME_DATA_SYNC" == 1 ]; then
 
         echo "Sending flash request to the nf weblog handler..."
         curl -s -X POST "http://localhost:$CP_NF_WEBLOG_HANDLER_PORT/nextflow/event/flush" &> /dev/null
+
+        if [ -n "$CP_NF_TRACE_FILE_TO_SYNC" ]; then
+          echo "Creating events from trace file and send..."
+          curl -s -X GET "http://localhost:$CP_NF_WEBLOG_HANDLER_PORT/nextflow/event/tracefile?path=$CP_NF_TRACE_FILE_TO_SYNC" &> /dev/null
+        fi
 
         echo "Waiting for synchronization of nextflow task runtime files... "
         _wait_count=0

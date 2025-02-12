@@ -132,7 +132,7 @@ class NextflowEventHandler(object):
             attempts=attempts - 1
 
     def flush_events(self):
-        self.logger.info("Flushing all events and sent batch with size: {} to the API...".format(len(event_list)))
+        self.logger.info("Flushing all events and sent batch to the API...")
         self._send_events()
 
     def _need_to_send_batch(self, event_list):
