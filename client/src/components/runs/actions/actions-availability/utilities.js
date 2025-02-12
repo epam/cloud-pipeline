@@ -98,9 +98,9 @@ export function parseCriteria (criteria = '') {
 
 function getRunParameterValue (run, parameter) {
   const {
-    runPipelineParameters = []
+    pipelineRunParameters = []
   } = run || {};
-  const p = runPipelineParameters
+  const p = pipelineRunParameters
     .find((pp) => pp.name && pp.name.toLowerCase() === parameter.toLowerCase());
   return p ? p.value : undefined;
 }
