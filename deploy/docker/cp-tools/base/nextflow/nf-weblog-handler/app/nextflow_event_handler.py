@@ -108,9 +108,9 @@ class NextflowEventHandler(object):
     def sync_events_from_trace_file(self, trace_file_path, attempts=5):
 
         if not os.path.isfile(trace_file_path):
-            self.logger.warn("File with path: {} doesn't exist")
+            self.logger.warn("File with path: {} doesn't exist".format(trace_file_path))
         else:
-            self.logger.info("Processing nf-trace file with path: {}... ")
+            self.logger.info("Processing nf-trace file with path: {}... ".format(trace_file_path))
 
         events = []
         synced = False
@@ -197,14 +197,20 @@ class NextflowEventHandler(object):
                 "hash": parse.get_array_element_or_default(task_fields, header.get("hash", -1)),
                 "name": parse.get_array_element_or_default(task_fields, header.get("name", -1)),
                 "exit": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("exit", -1))),
-                "submit": parse.date_to_timestamp(
-                    parse.get_array_element_or_default(task_fields, header.get("submit", -1)), "%Y-%m-%d %H:%M:%S.%f"
+                "submit": parse.parse_time_field_from_trace_file(
+                    parse.get_array_element_or_default(task_fields, header.get("submit", -1))
                 ),
-                "start": parse.date_to_timestamp(
-                    parse.get_array_element_or_default(task_fields, header.get("submit", -1)), "%Y-%m-%d %H:%M:%S.%f"
+                "start": parse.parse_time_field_from_trace_file(
+                    parse.get_array_element_or_default(task_fields, header.get("start", -1))
                 ),
-                "complete": parse.date_to_timestamp(
-                    parse.get_array_element_or_default(task_fields, header.get("complete", -1)), "%Y-%m-%d %H:%M:%S.%f"
+                "complete": parse.parse_time_field_from_trace_file(
+                    parse.get_array_element_or_default(task_fields, header.get("complete", -1))
+                ),
+                "duration": parse.parse_duration_field_from_trace_file(
+                    parse.get_array_element_or_default(task_fields, header.get("duration", -1))
+                ),
+                "realtime": parse.parse_duration_field_from_trace_file(
+                    parse.get_array_element_or_default(task_fields, header.get("realtime", -1))
                 ),
                 "process": parse.get_array_element_or_default(task_fields, header.get("process", -1)),
                 "tag": parse.get_array_element_or_default(task_fields, header.get("tag", -1)),
@@ -242,6 +248,12 @@ class NextflowEventHandler(object):
                 ),
                 "wchar": parse.parse_memory_str(
                     parse.get_array_element_or_default(task_fields, header.get("wchar", -1))
+                ),
+                "read_bytes": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("read_bytes", -1))
+                ),
+                "write_bytes": parse.parse_memory_str(
+                    parse.get_array_element_or_default(task_fields, header.get("write_bytes", -1))
                 ),
                 "syscr": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("syscr", -1))),
                 "syscw": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("syscw", -1)))

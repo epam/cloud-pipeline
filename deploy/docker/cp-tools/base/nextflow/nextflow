@@ -30,6 +30,8 @@ for param in "$@"; do
    fi
 done
 
+_ARGS=("$@")
+
 NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
 rm -f "$NEXTFLOW_CONFIG"
@@ -52,22 +54,23 @@ if [ "$CP_CAP_SGE" == "true" ]; then
     echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
 fi
 
-_ARGS=("$@")
-if [ -f "$NEXTFLOW_CONFIG" ]; then
-    _ARGS+=('-c')
-    _ARGS+=("$NEXTFLOW_CONFIG")
-fi
-
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
     if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
         echo "Running Nextflow with -with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event option"
         _ARGS+=('-with-weblog')
         _ARGS+=("http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event")
         if [ -n "$CP_NF_WORKDIR" ]; then
-            _ARGS+=('-with-trace')
-            _ARGS+=("${CP_NF_TRACE_FILE}")
+            echo "trace.enabled = true" >> $NEXTFLOW_CONFIG
+            echo "trace.raw = true" >> $NEXTFLOW_CONFIG
+            echo "trace.file = '${CP_NF_TRACE_FILE}'" >> $NEXTFLOW_CONFIG
+            echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes,env,workdir'" >> $NEXTFLOW_CONFIG
         fi
     fi
+fi
+
+if [ -f "$NEXTFLOW_CONFIG" ]; then
+    _ARGS+=('-c')
+    _ARGS+=("$NEXTFLOW_CONFIG")
 fi
 
 $NXF_HOME/nextflow "${_ARGS[@]}"
