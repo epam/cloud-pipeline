@@ -15,7 +15,7 @@ export default function StoragePagination({
   paging,
   onClickPrevPage,
   onClickNextPage,
-  onResetPaging
+  onResetPaging,
 }: Props) {
   return (
     <div className="flex justify-end gap-1">
