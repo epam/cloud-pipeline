@@ -33,7 +33,7 @@ const columns = [
     dataIndex: 'size',
     key: 'size',
     width: 80,
-    render: (value: string) => (value ? displaySize(value) : ''),
+    render: (value: string) => (value !== undefined ? displaySize(value) : ''),
   },
   {
     title: <span className="text-xs">Date changed</span>,
