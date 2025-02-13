@@ -117,6 +117,7 @@ export default function CreateDataStorageEntityModal({
         title={capitalizedString(`Create ${createEntityType?.toLowerCase()}`)}
         onOk={() => void submitChanges()}
         destroyOnClose
+        okText="Create"
         okButtonProps={{ disabled: hasErrors || pending, loading: pending }}
         onCancel={() => {
           clearState();
