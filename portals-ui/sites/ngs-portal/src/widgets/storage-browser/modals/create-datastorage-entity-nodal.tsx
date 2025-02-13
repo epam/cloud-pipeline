@@ -67,12 +67,15 @@ export default function CreateDataStorageEntityModal({
     const { name, contents = '' } = form.getFieldsValue();
     const pathToEntity =
       path && path !== ROOT_PLACEHOLDER ? `${path}/${name}` : name;
+    const base64Content = contents ? btoa(contents) : '';
     const payload = [
       {
         action: DataStorageItemActions.create,
         path: correctPath(pathToEntity),
         type: createEntityType,
-        ...(createEntityType === DataStorageItemTypes.file ? { contents } : {}),
+        ...(createEntityType === DataStorageItemTypes.file
+          ? { contents: base64Content }
+          : {}),
       },
     ] as UpdateDataStorageItemPayload[];
     try {
