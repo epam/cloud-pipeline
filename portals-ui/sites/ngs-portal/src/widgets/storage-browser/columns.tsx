@@ -9,7 +9,7 @@ const columns = [
   {
     dataIndex: 'type',
     key: 'type',
-    width: 50,
+    width: 20,
     render: (value: DataStorageItemTypes) => {
       if (value === DataStorageItemTypes.file) {
         return <DocumentIcon className="w-4 h-4" />;
