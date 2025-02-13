@@ -561,7 +561,7 @@ class InputDataTask:
         trimmed_suffix = suffix[1:] if suffix.startswith('/') else suffix
         return trimmed_prefix + trimmed_suffix
 
-    def transfer_dts(self, dts_locations, dts_registry, rules=None):
+    def transfer_dts(self, dts_locations, dts_registry, rules=[]):
         rule_patterns = [rule.file_mask for rule in rules]
         grouped_paths = {}
         for path in dts_locations:
