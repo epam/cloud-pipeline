@@ -63,7 +63,7 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
             echo "trace.enabled = true" >> $NEXTFLOW_CONFIG
             echo "trace.raw = true" >> $NEXTFLOW_CONFIG
             echo "trace.file = '${CP_NF_TRACE_FILE}'" >> $NEXTFLOW_CONFIG
-            echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes,env,workdir'" >> $NEXTFLOW_CONFIG
+            echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes'" >> $NEXTFLOW_CONFIG
         fi
     fi
 fi

@@ -24,19 +24,23 @@ def get_json_attr(event_json, attr_name, default=None):
 
 
 def parse_timestamp(timestamp):
-    if not timestamp:
+    if not timestamp or timestamp == "-":
         return None
     timestamp_sec = timestamp / 1000
     return (datetime.fromtimestamp(timestamp_sec)
             .strftime("%Y-%m-%d %H:%M:%S.000Z"))
 
 def parse_duration_field_from_trace_file(duration_str):
+    if not duration_str or duration_str == "-":
+        return None
     if duration_str.isdigit():
         return int(duration_str)
     else:
         return duration_str_to_int(duration_str)
 
 def parse_time_field_from_trace_file(datetime_str):
+    if not datetime_str or datetime_str == "-":
+        return None
     if datetime_str.isdigit():
         return int(datetime_str)
     else:

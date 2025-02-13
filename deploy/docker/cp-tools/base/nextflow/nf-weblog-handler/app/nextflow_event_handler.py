@@ -115,16 +115,17 @@ class NextflowEventHandler(object):
         events = []
         synced = False
         with open(trace_file_path) as trace_file:
-            line_index = 0
             header = None
             for line in trace_file:
-                if line_index == 0:
+                self.logger.info("Reading line: {}".format(line))
+                if not header:
                     header = NextflowEventHandler._parse_header_from_trace_file(line.rstrip())
                 else:
                     event_json = NextflowEventHandler._parse_event_from_trace_file(header, line.rstrip())
                     if event_json:
+                        self.logger.info("event json: {}".format(event_json))
+                        self.logger.info("object: {}\n\n".format(self._parse_event(event_json).to_dict()))
                         events.append(self._parse_event(event_json))
-                line_index = line_index + 1
 
         while not synced and attempts > 0:
             if self.api_client.log_pipeline_run_engine_task_events(events):
