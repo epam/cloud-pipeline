@@ -20,6 +20,7 @@ import { LayoutCard } from '../../shared/ui/item-layout/layout-card';
 import { Permissions } from '../../features/permissions';
 import { useNgsTabs } from '../../shared/hooks';
 import { useProjectDescription } from './hooks';
+import { ProjectStorages } from './components/project-storages';
 
 type Props = {
   project: Project;
@@ -55,8 +56,7 @@ export const ProjectPage = ({ project }: Props) => {
       {
         key: ProjectTabs.Storage,
         label: <span className="px-4">Storage</span>,
-        content: <div className="text-faded">Under implementation</div>,
-        disabled: true,
+        content: <ProjectStorages />,
       },
       {
         key: ProjectTabs.Pipelines,
@@ -96,7 +96,10 @@ export const ProjectPage = ({ project }: Props) => {
       />
 
       <ItemLayout
-        classes={{ content: 'overflow-hidden' }}
+        classes={{
+          content: 'overflow-hidden flex grow',
+          layoutCard: 'overflow-hidden',
+        }}
         header={
           <ProjectHeader
             project={project}

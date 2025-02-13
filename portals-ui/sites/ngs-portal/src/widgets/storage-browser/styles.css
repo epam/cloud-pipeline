@@ -1,0 +1,15 @@
+.storage-content-table div[class~="ant-table"],
+.storage-content-table div[class~="ant-table-container"] {
+  @apply flex flex-col overflow-hidden grow;
+}
+
+
+.storage-content-table div[class~="ant-table-header"] {
+  @apply shrink-0;
+}
+
+.storage-content-table div[class~="ant-spin-nested-loading"],
+.storage-content-table div[class~="ant-spin-container"],
+.storage-content-table {
+  @apply flex h-full overflow-hidden;
+}

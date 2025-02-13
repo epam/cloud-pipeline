@@ -42,3 +42,9 @@ export enum PipelineParametersTypes {
   common = 'common',
   boolean = 'boolean',
 }
+
+export enum DataStorageItemTypes {
+  file = 'File',
+  folder = 'Folder',
+  navigateBack = 'navigateBack',
+}
