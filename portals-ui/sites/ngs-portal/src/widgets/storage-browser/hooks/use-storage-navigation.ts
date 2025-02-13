@@ -5,6 +5,7 @@ import type { PageMarkers, StoragePaging } from '../types';
 import {
   BLANK_MARKER,
   insertNextPageMarker,
+  resetMarkersForPath,
   ROOT_PLACEHOLDER,
   setCurrentPage,
 } from '../utils/navigation';
@@ -15,6 +16,7 @@ export function useStorageNavigation(storageId: number) {
   );
   const [markers, setMarkers] = useState<PageMarkers>({});
   const [items, setItems] = useState<DataStorageItem[]>([]);
+  const [refreshToken, setRefreshtoken] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -77,7 +79,7 @@ export function useStorageNavigation(storageId: number) {
       setPending(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMarker, currentPath, storageId]);
+  }, [currentMarker, currentPath, storageId, refreshToken]);
 
   const navigateNextPage = useCallback(() => {
     if (!paging.canNavigateNext) {
@@ -129,6 +131,18 @@ export function useStorageNavigation(storageId: number) {
     void fetchCurrentPage();
   }, [fetchCurrentPage]);
 
+  const refreshCurrentPath = useCallback(() => {
+    const newMarkers = setCurrentPage(
+      currentPath ?? ROOT_PLACEHOLDER,
+      () => 0,
+      markers,
+    ) as PageMarkers;
+    if (newMarkers) {
+      setMarkers(resetMarkersForPath(currentPath, newMarkers));
+    }
+    setRefreshtoken(refreshToken + 1);
+  }, [currentPath, markers, refreshToken]);
+
   return useMemo(
     () => ({
       changePath,
@@ -136,21 +150,21 @@ export function useStorageNavigation(storageId: number) {
       navigatePrevPage,
       navigateNextPage,
       items,
-      refresh: fetchCurrentPage,
+      refreshCurrentPath,
       paging,
       pending,
       error,
     }),
     [
       changePath,
-      error,
-      navigateNextPage,
-      navigatePrevPage,
-      fetchCurrentPage,
       currentPath,
-      pending,
+      navigatePrevPage,
+      navigateNextPage,
       items,
+      refreshCurrentPath,
       paging,
+      pending,
+      error,
     ],
   );
 }

@@ -41,7 +41,7 @@ export function StorageContentList({
             }
           : null,
         ...(content ?? []),
-      ].filter(Boolean) as DataStorageItem[],
+      ].filter((item) => item?.type && item?.name) as DataStorageItem[],
     [content, currentPath],
   );
   return (

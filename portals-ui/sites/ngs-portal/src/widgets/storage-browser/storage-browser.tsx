@@ -5,19 +5,22 @@ import type { DataStorageItem } from '@cloud-pipeline/core';
 import { StorageContentList } from './storage-content-list';
 import { useStorageNavigation } from './hooks/use-storage-navigation';
 import { ROOT_PLACEHOLDER } from './utils/navigation';
+import HeaderActions from './components/header-actions';
 
 type Props = {
   storageId: number;
   path?: string;
+  showHeaderControls?: boolean;
 };
 
-export function StorageBrowser({ storageId, path }: Props) {
+export function StorageBrowser({ storageId, path, showHeaderControls }: Props) {
   const {
     items,
     currentPath,
     changePath,
     navigatePrevPage,
     navigateNextPage,
+    refreshCurrentPath,
     paging,
     pending,
     error,
@@ -49,8 +52,15 @@ export function StorageBrowser({ storageId, path }: Props) {
     }
   }, [changePath, currentPath, path]);
   return (
-    <div className="h-full flex overflow-hidden">
+    <div className="h-full flex flex-col gap-2 overflow-hidden">
       {contextHolder}
+      {showHeaderControls ? (
+        <HeaderActions
+          currentPath={currentPath}
+          storageId={storageId}
+          refreshNavigation={refreshCurrentPath}
+        />
+      ) : null}
       <StorageContentList
         content={items}
         onRowClick={onRowClick}

@@ -48,3 +48,9 @@ export enum DataStorageItemTypes {
   folder = 'Folder',
   navigateBack = 'navigateBack',
 }
+
+export enum DataStorageItemActions {
+  create = 'Create',
+  move = 'Move',
+  copy = 'Copy',
+}

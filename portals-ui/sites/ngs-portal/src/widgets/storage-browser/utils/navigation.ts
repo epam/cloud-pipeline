@@ -73,3 +73,14 @@ export function setCurrentPage(
   }
   return undefined;
 }
+
+export function resetMarkersForPath(path = '/', markers: PageMarkers = {}) {
+  const correctedPath = correctPath(path);
+  const result = {} as PageMarkers;
+  Object.entries(markers).forEach(([pathKey, markers]) => {
+    if (pathKey !== correctedPath && !pathKey.startsWith(correctedPath)) {
+      result[pathKey] = markers;
+    }
+  });
+  return result;
+}
