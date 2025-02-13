@@ -8,12 +8,12 @@ import { DataStorageItemTypes } from '@cloud-pipeline/core';
 
 const actions = [
   {
-    key: DataStorageItemTypes.file as const,
+    key: DataStorageItemTypes.file,
     icon: <DocumentIcon className="w-4 h-4" />,
     label: 'File',
   },
   {
-    key: DataStorageItemTypes.folder as const,
+    key: DataStorageItemTypes.folder,
     icon: <FolderIcon className="w-4 h-4" />,
     label: 'Folder',
   },
