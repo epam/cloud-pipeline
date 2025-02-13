@@ -68,6 +68,7 @@ export function StorageBrowser({ storageId, path, showHeaderControls }: Props) {
         pending={pending}
         onClickNextPage={navigateNextPage}
         onClickPrevPage={navigatePrevPage}
+        onResetPaging={refreshCurrentPath}
         paging={paging}
       />
     </div>

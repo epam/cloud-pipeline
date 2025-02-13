@@ -18,6 +18,7 @@ type Props = {
   pending?: boolean;
   onClickNextPage: () => void;
   onClickPrevPage: () => void;
+  onResetPaging: () => void;
   paging: StoragePaging;
 };
 
@@ -28,6 +29,7 @@ export function StorageContentList({
   pending,
   onClickPrevPage,
   onClickNextPage,
+  onResetPaging,
   paging,
 }: Props) {
   const dataSource = useMemo<DataStorageItem[]>(
@@ -63,6 +65,7 @@ export function StorageContentList({
           <StoragePagination
             onClickPrevPage={onClickPrevPage}
             onClickNextPage={onClickNextPage}
+            onResetPaging={onResetPaging}
             paging={paging}
             pending={pending}
           />
