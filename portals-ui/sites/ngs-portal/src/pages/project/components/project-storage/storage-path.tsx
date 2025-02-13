@@ -1,33 +1,33 @@
-import { useState } from 'react';
-import { Select, Input, Button, message } from 'antd';
-import { folderUrlPattern } from '../../../../shared/constants/patterns';
+import { useCallback, useMemo, useState } from 'react';
+import { Input, Button, message, Breadcrumb, Dropdown } from 'antd';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const storageProtocols = ['nfs', 's3', 'gcs', 'azure'];
 
 type Props = {
-  storageOptions: { label: string; value: string }[];
-  onChange: (value: string) => void;
+  onPathChange: (value: string) => void;
   onStorageChange: (value: string) => void;
-  selectedStorage?: string;
-  path?: string;
+  selectedStorage: string;
+  storageOptions: { label: string; key: string }[];
+  selectedStoragePath?: string;
 };
 
 export const StoragePath = ({
   storageOptions,
-  onChange,
+  onPathChange,
   selectedStorage,
   onStorageChange,
-  path = '',
+  selectedStoragePath = '',
 }: Props) => {
   const [rawValue, setRawValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
-  const handleInputChange = (value: string) => {
-    setRawValue(value);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRawValue(e.target.value);
   };
 
-  const handleBlur = () => {
+  const leaveEditMode = useCallback(() => {
     const normalizedValue = rawValue.trim().toLowerCase();
     let processedValue = normalizedValue.replace(/\/{2,}/g, '/');
 
@@ -49,7 +49,7 @@ export const StoragePath = ({
 
       const fullStorageUrl = `${protocol}://${bucketName}`;
       const foundStorage = storageOptions.find(
-        (opt) => opt.value === fullStorageUrl,
+        (opt) => opt.key === fullStorageUrl,
       );
 
       if (foundStorage) {
@@ -65,56 +65,109 @@ export const StoragePath = ({
       }
     }
 
-    if (processedValue.length && !folderUrlPattern.test(processedValue)) {
-      messageApi.open({
-        key: 'path-enter',
-        type: 'error',
-        content: 'Only letters, numbers, "_", "-", ".", and "/" are allowed',
-        duration: 3,
-      });
-      return;
-    }
-
     if (!processedValue.endsWith('/')) {
       processedValue += '/';
     }
 
-    onChange(processedValue);
+    onPathChange(processedValue);
     setIsEditing(false);
-  };
+  }, [messageApi, onPathChange, onStorageChange, rawValue, storageOptions]);
+
+  const enterEditMode = useCallback(() => {
+    setRawValue(selectedStoragePath === '/' ? '' : selectedStoragePath);
+    setIsEditing(true);
+  }, [selectedStoragePath]);
+
+  const handleBreadcrumbClick = useCallback(
+    (e: React.MouseEvent<HTMLElement, MouseEvent>, i: number) => {
+      e.stopPropagation();
+      const newPath = selectedStoragePath
+        .split('/')
+        .filter(Boolean)
+        .slice(0, i + 1)
+        .join('/');
+
+      onPathChange(`/${newPath}/`);
+    },
+    [onPathChange, selectedStoragePath],
+  );
+
+  const resetPath = useCallback(() => {
+    onPathChange('/');
+  }, [onPathChange]);
+
+  const handleInputKeydown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        leaveEditMode();
+      }
+    },
+    [leaveEditMode],
+  );
+
+  const breadcrumbs = useMemo(() => {
+    return selectedStoragePath
+      .split('/')
+      .filter(Boolean)
+      .map((item, i, arr) => ({
+        key: item,
+        title:
+          i === arr.length - 1 ? (
+            item
+          ) : (
+            <Button
+              className="p-0"
+              type="link"
+              onClick={(e) => handleBreadcrumbClick(e, i)}>
+              {item}
+            </Button>
+          ),
+      }));
+  }, [handleBreadcrumbClick, selectedStoragePath]);
 
   return (
-    <div className="flex gap-2 items-center w-full">
+    <div className="flex gap-1 items-center w-full">
       {contextHolder}
-      <Select
-        className="w-[250px]"
-        value={selectedStorage}
-        options={storageOptions}
-        onChange={onStorageChange}
-      />
+      <div className="flex items-center cursor-pointer">
+        <Button type="link" className="p-0" onClick={resetPath}>
+          {selectedStorage}
+        </Button>
+
+        <Dropdown
+          className="ml-2"
+          menu={{
+            items: storageOptions,
+            onClick: ({ key }) => onStorageChange(key),
+          }}
+          trigger={['click']}>
+          <Button type="text" className="p-1">
+            <ChevronDownIcon className="w-4 h-4" />
+          </Button>
+        </Dropdown>
+      </div>
       {isEditing ? (
         <Input
           className="flex-grow px-4"
           style={{ flex: 1 }}
           value={rawValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              handleBlur();
-            }
-          }}
-          onBlur={handleBlur}
+          onChange={handleInputChange}
+          onKeyDown={handleInputKeydown}
+          onBlur={leaveEditMode}
           autoFocus
         />
       ) : (
         <Button
-          className="flex-grow justify-start px-4"
+          className="flex-grow justify-start px-4 cursor-text"
           type="text"
-          onClick={() => {
-            setRawValue(path === '/' ? '' : path);
-            setIsEditing(true);
-          }}>
-          {path || '/'}
+          onClick={enterEditMode}>
+          {breadcrumbs.length ? (
+            <Breadcrumb
+              className="[&_li]:flex [&_li]:items-center"
+              items={breadcrumbs}
+            />
+          ) : (
+            '/'
+          )}
         </Button>
       )}
     </div>

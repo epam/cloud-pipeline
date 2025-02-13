@@ -1,25 +1,35 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StoragePath } from './storage-path';
 
-const storageOptions = [
-  { label: 's3://aln-spatial-data-dev', value: 's3://aln-spatial-data-dev' },
-  { label: 's3://another-storage', value: 's3://another-storage' },
-  { label: 'gcs://example-bucket', value: 'gcs://example-bucket' },
+const storages = [
+  { pathMask: 's3://epm-aws-dev-etc' },
+  { pathMask: 's3://test-fonda' },
+  {
+    pathMask:
+      'nfs://fs-2a5ab373.efs.eu-central-1.amazonaws.com:/home/PIPE_ADMIN',
+  },
 ];
 
 export const ProjectStorage = () => {
   const [path, setPath] = useState('');
-  const [selectedStorage, setSelectedStorage] = useState(
-    storageOptions[0].value,
+  const [selectedStorage, setSelectedStorage] = useState<string>(
+    storages[0].pathMask,
   );
+
+  const storageOptions = useMemo(() => {
+    return storages.map((storage) => ({
+      label: storage.pathMask,
+      key: storage.pathMask,
+    }));
+  }, []);
 
   return (
     <StoragePath
       storageOptions={storageOptions}
       selectedStorage={selectedStorage}
       onStorageChange={setSelectedStorage}
-      path={path}
-      onChange={setPath}
+      selectedStoragePath={path}
+      onPathChange={setPath}
     />
   );
 };
