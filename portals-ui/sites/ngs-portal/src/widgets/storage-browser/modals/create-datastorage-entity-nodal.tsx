@@ -109,8 +109,6 @@ export default function CreateDataStorageEntityModal({
     } finally {
       setPending(false);
     }
-
-    console.log({ storageId, path });
   }, [createEntityType, form, messageApi, onCancel, onOk, path, storageId]);
   return (
     <div>
@@ -119,7 +117,7 @@ export default function CreateDataStorageEntityModal({
         title={capitalizedString(`Create ${createEntityType?.toLowerCase()}`)}
         onOk={() => void submitChanges()}
         destroyOnClose
-        okButtonProps={{ disabled: hasErrors || pending }}
+        okButtonProps={{ disabled: hasErrors || pending, loading: pending }}
         onCancel={() => {
           clearState();
           onCancel();
