@@ -17,7 +17,13 @@ export function ProjectStorages() {
       <div className="flex-shrink-0">
         <StoragePath storage={STORAGE_ID_MOCK} path={path} onPathChange={onChangePath} storages="all" />
       </div>
-      <StorageBrowser storageId={STORAGE_ID_MOCK} path={path} showHeaderControls className="flex-1 overflow-auto" />
+      <StorageBrowser
+        storageId={STORAGE_ID_MOCK}
+        path={path}
+        onPathChange={onChangePath}
+        showHeaderControls
+        className="flex-1 overflow-auto"
+      />
     </div>
   );
 }
