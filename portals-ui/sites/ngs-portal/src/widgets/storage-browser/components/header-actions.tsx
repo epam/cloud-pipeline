@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { MenuProps } from 'antd';
-import { Button, Dropdown, Space } from 'antd';
+import { Button, Dropdown } from 'antd';
 import { ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
 import CreateDataStorageEntityModal from '../modals/create-datastorage-entity-nodal';
