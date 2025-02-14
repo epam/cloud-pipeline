@@ -10,7 +10,7 @@ import type { CommonProps } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 
 type Props = CommonProps & {
-  storage: FindSingleDataStorageCriteria;
+  storage: FindSingleDataStorageCriteria | undefined;
   path: string | undefined;
   onPathChange?: (value?: string) => void;
   onStorageChange?: (storage: DataStorage, path?: string) => void;
@@ -162,7 +162,7 @@ export const StoragePath = ({
     <div className={classNames(className, 'inline-flex', 'gap-1', 'items-center', 'w-full')} style={style}>
       {contextHolder}
       <div className="flex items-center cursor-pointer">
-        {(storage || !storagesPending) && (
+        {(storage ?? !storagesPending) && (
           <Button type="link" className="p-0" onClick={resetPath}>
             {storage ? storage.pathMask : 'unknown storage'}
           </Button>

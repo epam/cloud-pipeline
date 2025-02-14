@@ -1,10 +1,22 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { DataStorage, Project } from '@cloud-pipeline/core';
+import type { CommonProps } from '@cloud-pipeline/components';
+import { Alert, Spin } from 'antd';
+import classNames from 'classnames';
 import { StorageBrowser } from '../../../../widgets/storage-browser';
 import { StoragePath } from '../../../../widgets/storage-path';
-import { useCallback, useState } from 'react';
+import { useProjectDataStoragesConfiguration } from '../../../../shared/hooks/use-project-data-storages.ts';
+import { useDataStoragesStore } from '../../../../state/storages/hooks.ts';
 
-const STORAGE_ID_MOCK = 7673;
+type Props = CommonProps & {
+  project: Project;
+};
 
-export function ProjectStorages() {
+export function ProjectStorages(props: Props) {
+  const { className, style, project } = props;
+  const { pending, loaded } = useDataStoragesStore();
+  const { defaultDataStorage, dataStorages: projectDataStorages } = useProjectDataStoragesConfiguration(project);
+  const [storage, setStorage] = useState(defaultDataStorage);
   const [path, setPath] = useState('');
   const onChangePath = useCallback(
     (newPath?: string) => {
@@ -12,18 +24,42 @@ export function ProjectStorages() {
     },
     [setPath],
   );
+  const onStorageChange = useCallback(
+    (newStorage: DataStorage, newPath?: string) => {
+      setStorage(newStorage);
+      onChangePath(newPath);
+    },
+    [setStorage, onChangePath],
+  );
+  useEffect(() => {
+    if (defaultDataStorage) {
+      onStorageChange(defaultDataStorage);
+    }
+  }, [defaultDataStorage, onStorageChange]);
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-shrink-0">
-        <StoragePath storage={STORAGE_ID_MOCK} path={path} onPathChange={onChangePath} storages="all" />
-      </div>
-      <StorageBrowser
-        storageId={STORAGE_ID_MOCK}
-        path={path}
-        onPathChange={onChangePath}
-        showHeaderControls
-        className="flex-1 overflow-auto"
-      />
+    <div className={classNames(className, 'h-full flex flex-col overflow-hidden')} style={style}>
+      {!storage && pending && !loaded && <Spin />}
+      {!storage && !pending && <Alert type="warning" message="Project data storage is not specified" />}
+      {storage && (
+        <>
+          <div className="flex-shrink-0">
+            <StoragePath
+              storage={storage}
+              path={path}
+              onPathChange={onChangePath}
+              onStorageChange={onStorageChange}
+              storages={projectDataStorages}
+            />
+          </div>
+          <StorageBrowser
+            storageId={storage}
+            path={path}
+            onPathChange={onChangePath}
+            showHeaderControls
+            className="flex-1 overflow-auto"
+          />
+        </>
+      )}
     </div>
   );
 }

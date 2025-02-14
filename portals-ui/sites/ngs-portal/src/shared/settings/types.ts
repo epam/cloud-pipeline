@@ -29,7 +29,18 @@ export type NgsTaggedObjectSettings = {
   filterTags?: string | string[];
 };
 
-export type NgsProjectSettings = NgsTaggedObjectSettings;
+export type NgsProjectSettings = NgsTaggedObjectSettings & {
+  /**
+   * Tag for default project data storage id / name.
+   * Default: `DataStorage`
+   */
+  dataStorageTag?: string;
+  /**
+   * Tag for project data storages (identifiers / names, comma-semicolon-space separated, JSON array)
+   * Default: empty
+   */
+  dataStoragesTag?: string;
+};
 
 export type NgsPipelineSettings = NgsTaggedObjectSettings;
 

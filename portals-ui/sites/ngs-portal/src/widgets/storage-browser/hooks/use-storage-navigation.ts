@@ -11,7 +11,7 @@ import {
   setCurrentPage,
 } from '../utils/navigation';
 
-export function useStorageNavigation(storageId: number) {
+export function useStorageNavigation(storageId: number | undefined) {
   const [currentPath, setCurrentPath] = useState<string | undefined>(ROOT_PLACEHOLDER);
   const [markers, setMarkers] = useState<PageMarkers>({});
   const [items, setItems] = useState<DataStorageItem[]>([]);
@@ -48,30 +48,35 @@ export function useStorageNavigation(storageId: number) {
   );
 
   const fetchCurrentPage = useCallback(async () => {
-    let pagePath = currentPath === ROOT_PLACEHOLDER ? undefined : currentPath;
-    if (pagePath) {
-      pagePath = correctPath(pagePath, { removeTrailingSlash: true, removeLeadingSlash: true });
-    }
-    try {
-      setPending(true);
-      const response = await fetchDataStoragePage({
-        id: storageId,
-        path: pagePath,
-        marker: currentMarker,
-      });
-      if (response.nextPageMarker) {
-        const newMarkers = insertNextPageMarker(pagePath, response.nextPageMarker, markers);
-        setMarkers(newMarkers);
+    if (storageId) {
+      let pagePath = currentPath === ROOT_PLACEHOLDER ? undefined : currentPath;
+      if (pagePath) {
+        pagePath = correctPath(pagePath, { removeTrailingSlash: true, removeLeadingSlash: true });
       }
-      setItems(response.results);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('Error loading datastorage content.');
+      try {
+        setPending(true);
+        const response = await fetchDataStoragePage({
+          id: storageId,
+          path: pagePath,
+          marker: currentMarker,
+        });
+        if (response.nextPageMarker) {
+          const newMarkers = insertNextPageMarker(pagePath, response.nextPageMarker, markers);
+          setMarkers(newMarkers);
+        }
+        setItems(response.results);
+        if (error) {
+          setError(undefined);
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('Error loading datastorage content.');
+        }
+      } finally {
+        setPending(false);
       }
-    } finally {
-      setPending(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMarker, currentPath, storageId, refreshToken]);

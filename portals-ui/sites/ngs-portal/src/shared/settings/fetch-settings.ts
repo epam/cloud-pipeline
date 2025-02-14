@@ -26,9 +26,7 @@ type SettingsFieldValidationCallback = SettingsFieldValidationBase & {
   validate: (o: unknown) => unknown;
 };
 
-type SettingsFieldValidation =
-  | SettingsFieldValidationTypes
-  | SettingsFieldValidationCallback;
+type SettingsFieldValidation = SettingsFieldValidationTypes | SettingsFieldValidationCallback;
 
 function checkType(o: unknown, type: SettingFieldType): boolean {
   if (o === undefined || o === null) {
@@ -36,11 +34,7 @@ function checkType(o: unknown, type: SettingFieldType): boolean {
   }
   if (type.startsWith('array[')) {
     const subType = type.slice('array['.length, -1) as SettingFieldType;
-    return (
-      typeof o === 'object' &&
-      Array.isArray(o) &&
-      !o.some((s) => !checkType(s, subType))
-    );
+    return typeof o === 'object' && Array.isArray(o) && !o.some((s) => !checkType(s, subType));
   }
   switch (type) {
     case 'number':
@@ -68,16 +62,12 @@ function identifiersValidation(o: unknown): void {
   if (typeof o === 'object' && Array.isArray(o)) {
     for (let i = 0; i < o.length; i++) {
       if (typeof o[i] !== 'number' && typeof o[i] !== 'string') {
-        throw new Error(
-          `unexpected #${i} element type "${typeof o[i]}" (should be a number or a string)`,
-        );
+        throw new Error(`unexpected #${i} element type "${typeof o[i]}" (should be a number or a string)`);
       }
     }
     return;
   }
-  throw new Error(
-    `unexpected type "${typeof o}" (number, or string, or array of numbers/strings are expected)`,
-  );
+  throw new Error(`unexpected type "${typeof o}" (number, or string, or array of numbers/strings are expected)`);
 }
 
 const validation: SettingsFieldValidation[] = [
@@ -92,6 +82,8 @@ const validation: SettingsFieldValidation[] = [
   { field: 'ngsProject.tagsToDisplay', types: ['string', 'array[string]'] },
   { field: 'ngsProject.tagsToHide', types: ['string', 'array[string]'] },
   { field: 'ngsProject.filterTags', types: ['string', 'array[string]'] },
+  { field: 'ngsProject.dataStorageTag', types: ['string', 'number'] },
+  { field: 'ngsProject.dataStorageTags', types: ['string', 'number', 'array'] },
   { field: 'ngsPipeline.tagsToDisplay', types: ['string', 'array[string]'] },
   { field: 'ngsPipeline.tagsToHide', types: ['string', 'array[string]'] },
   { field: 'ngsPipeline.filterTags', types: ['string', 'array[string]'] },
@@ -106,8 +98,9 @@ function getSettingsFieldValueError(
     const { validate } = validation;
     try {
       validate(value);
-    } catch (e) {
-      return `settings: field "${field}" validation failed: ${e instanceof Error ? e.message : e}`;
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : String(e);
+      return `settings: field "${field}" validation failed: ${error}`;
     }
   } else {
     const { types = ['string'] } = validation;
@@ -124,9 +117,7 @@ function getSettingsFieldError(
   parentField?: string,
 ): string | undefined {
   const { required = false } = validation;
-  const fullFieldName = parentField
-    ? `${parentField}.${validation.field}`
-    : validation.field;
+  const fullFieldName = parentField ? `${parentField}.${validation.field}` : validation.field;
   const [field, ...rest] = validation.field.split('.');
   const subField = rest.length > 0 ? rest.join('.') : undefined;
   if (!(field in obj) && required && !subField) {
@@ -141,13 +132,9 @@ function getSettingsFieldError(
       if (subField === '*') {
         // apply validation to all properties
         const subValidationErrors: string[] = [];
-        for (const [propKey, propValue] of Object.entries(
-          value as Record<string, unknown>,
-        )) {
+        for (const [propKey, propValue] of Object.entries(value as Record<string, unknown>)) {
           const subValidation = getSettingsFieldValueError(
-            parentField
-              ? `${parentField}.${field}.${propKey}`
-              : `${field}.${propKey}`,
+            parentField ? `${parentField}.${field}.${propKey}` : `${field}.${propKey}`,
             propValue,
             validation,
           );
@@ -192,32 +179,30 @@ function castToSettings(obj: unknown): Settings | undefined {
   return obj as Settings;
 }
 
-const fetchSettings = createSingleCallPromise(
-  async function fetchSettings(): Promise<Settings> {
-    try {
-      const settingsUrl = normalizeBaseUrl('settings.json');
-      if (!settingsUrl) {
-        throw new Error('settings url is not defined');
-      }
-      const data = await fetch(settingsUrl, {
-        credentials: 'include',
-        mode: 'cors',
-      });
-      const json = (await data.json()) as Promise<unknown>;
-      console.groupCollapsed('settings validation');
-      const settings = castToSettings(json);
-      console.groupEnd();
-      if (!settings) {
-        throw new Error('wrong settings format');
-      }
-      return settings;
-    } catch (error) {
-      console.warn('error fetching settings');
-      console.warn(error);
-      console.log('using default settings');
-      return defaultSettings;
+const fetchSettings = createSingleCallPromise(async function fetchSettings(): Promise<Settings> {
+  try {
+    const settingsUrl = normalizeBaseUrl('settings.json');
+    if (!settingsUrl) {
+      throw new Error('settings url is not defined');
     }
-  },
-);
+    const data = await fetch(settingsUrl, {
+      credentials: 'include',
+      mode: 'cors',
+    });
+    const json = (await data.json()) as Promise<unknown>;
+    console.groupCollapsed('settings validation');
+    const settings = castToSettings(json);
+    console.groupEnd();
+    if (!settings) {
+      throw new Error('wrong settings format');
+    }
+    return settings;
+  } catch (error) {
+    console.warn('error fetching settings');
+    console.warn(error);
+    console.log('using default settings');
+    return defaultSettings;
+  }
+});
 
 export default fetchSettings;

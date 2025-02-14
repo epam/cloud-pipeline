@@ -1,23 +1,17 @@
-import {
-  DataStorageItemTypes,
-  displaySize,
-  displayDate,
-} from '@cloud-pipeline/core';
+import { DataStorageItemTypes, displaySize, displayDate } from '@cloud-pipeline/core';
 import { DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
+import type { UIStorageItem } from './types';
 
 const columns = [
   {
     dataIndex: 'type',
     key: 'type',
     width: 20,
-    render: (value: DataStorageItemTypes) => {
+    render: (value: UIStorageItem['type']) => {
       if (value === DataStorageItemTypes.file) {
         return <DocumentIcon className="w-4 h-4" />;
       }
-      if (
-        value === DataStorageItemTypes.folder ||
-        value === DataStorageItemTypes.navigateBack
-      ) {
+      if (value === DataStorageItemTypes.folder || value === 'navigateBack') {
         return <FolderIcon className="w-4 h-4" />;
       }
     },

@@ -1,20 +1,9 @@
 import { AclClass, type Project } from '@cloud-pipeline/core';
-import {
-  ProjectDescription,
-  ProjectHeader,
-  ProjectPipelines,
-  ProjectRunsList,
-  ProjectStorages,
-} from './components';
+import { ProjectDescription, ProjectHeader, ProjectPipelines, ProjectRunsList, ProjectStorages } from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
-import {
-  RoutePath,
-  AppRoutes,
-  ProjectTabs,
-  generateProjectRoutePath,
-} from '../../shared/constants/routes';
+import { RoutePath, AppRoutes, ProjectTabs, generateProjectRoutePath } from '../../shared/constants/routes';
 import { ItemLayout } from '../../shared/ui';
 import { useMemo } from 'react';
 import { LayoutCard } from '../../shared/ui/item-layout/layout-card';
@@ -27,23 +16,14 @@ type Props = {
 };
 
 export const ProjectPage = ({ project }: Props) => {
-  const {
-    handleDescriptionSave,
-    projectDescription,
-    projectDescriptionContextHolder,
-  } = useProjectDescription(project);
+  const { handleDescriptionSave, projectDescription, projectDescriptionContextHolder } = useProjectDescription(project);
 
   const tabs = useMemo(
     () => [
       {
         key: ProjectTabs.Info,
         label: <span className="px-4">Info</span>,
-        content: (
-          <ProjectDescription
-            description={projectDescription}
-            onSave={handleDescriptionSave}
-          />
-        ),
+        content: <ProjectDescription description={projectDescription} onSave={handleDescriptionSave} />,
         aside: [
           <LayoutCard key="runs">
             <ProjectRunsList projectId={project.id} />
@@ -56,7 +36,7 @@ export const ProjectPage = ({ project }: Props) => {
       {
         key: ProjectTabs.Storage,
         label: <span className="px-4">Storage</span>,
-        content: <ProjectStorages />,
+        content: <ProjectStorages project={project} />,
       },
       {
         key: ProjectTabs.Pipelines,
@@ -100,14 +80,7 @@ export const ProjectPage = ({ project }: Props) => {
           content: 'overflow-hidden flex grow',
           layoutCard: 'overflow-hidden',
         }}
-        header={
-          <ProjectHeader
-            project={project}
-            tabs={tabs}
-            onChangeTab={handleChangeTab}
-            activeKey={activeTab.key}
-          />
-        }
+        header={<ProjectHeader project={project} tabs={tabs} onChangeTab={handleChangeTab} activeKey={activeTab.key} />}
         main={activeTab.content}
         aside={activeTab.aside}
       />

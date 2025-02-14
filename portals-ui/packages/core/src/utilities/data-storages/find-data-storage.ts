@@ -7,7 +7,7 @@ import {
   FindSingleDataStorageCriteria,
 } from './types';
 
-export function isFindDataStorageOptions(opts: any): opts is FindDataStorageOptions {
+export function isFindDataStorageOptions(opts: unknown): opts is FindDataStorageOptions {
   return (
     opts !== undefined &&
     opts !== null &&
@@ -151,7 +151,7 @@ export function findDataStorages(
   criteria: FindDataStorageCriteria | FindDataStorageOptions | undefined,
 ): DataStorage[] {
   if (!criteria) {
-    return storages;
+    return [];
   }
   const { criteria: storage, exact = false, scope } = castToFindDataStorageOptions(criteria);
   if (storages.length === 0) {
@@ -172,7 +172,7 @@ export function findDataStorages(
     const checkScope = (aScopeToCheck: FindDataStorageScope): boolean => {
       if (matchesFindDataStorageScope(scope, aScopeToCheck)) {
         switch (aScopeToCheck) {
-          case FindDataStorageScope.path:
+          case FindDataStorageScope.path: {
             // for `path` scope, we should check if storage pathMask equals *exactly* provided search criteria,
             // or search criteria is a "nested" path of storage pathMask, i.e.:
             // - search criteria: "s3://some-storage-path-mask/folder/sub-folder/file"
@@ -185,6 +185,7 @@ export function findDataStorages(
             return storageSearches.some(
               (s) => s.toLowerCase() === pathMask || s.toLowerCase().startsWith(`${pathMask}/`),
             );
+          }
           case FindDataStorageScope.name:
           default:
             return storageNameSearch ? storageNameSearch.test(st.name) : false;
