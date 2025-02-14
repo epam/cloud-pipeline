@@ -1,13 +1,12 @@
 import { useCallback, useEffect } from 'react';
-import { message } from 'antd';
+import classNames from 'classnames';
 import { DataStorageItemTypes } from '@cloud-pipeline/core';
-import type { DataStorageItem } from '@cloud-pipeline/core';
 import { StorageContentList } from './storage-content-list';
 import { useStorageNavigation } from './hooks/use-storage-navigation';
 import { ROOT_PLACEHOLDER } from './utils/navigation';
 import HeaderActions from './components/header-actions';
 import type { CommonProps } from '@cloud-pipeline/components';
-import classNames from 'classnames';
+import type { UIStorageItem } from './types';
 
 type Props = CommonProps & {
   storageId: number;
@@ -27,19 +26,9 @@ export function StorageBrowser({ className, style, storageId, path, showHeaderCo
     pending,
     error,
   } = useStorageNavigation(storageId);
-  const [messageApi, contextHolder] = message.useMessage();
-  useEffect(() => {
-    if (error) {
-      messageApi.open({
-        key: 'datastorage-loading-error',
-        type: 'error',
-        content: error,
-      });
-    }
-  }, [error, messageApi]);
   const onRowClick = useCallback(
-    (item: DataStorageItem) => {
-      if (item.type === DataStorageItemTypes.folder || item.type === DataStorageItemTypes.navigateBack) {
+    (item: UIStorageItem) => {
+      if (item.type === DataStorageItemTypes.folder || item.type === 'navigateBack') {
         changePath(item.path || ROOT_PLACEHOLDER);
       }
     },
@@ -52,7 +41,6 @@ export function StorageBrowser({ className, style, storageId, path, showHeaderCo
   }, [changePath, currentPath, path]);
   return (
     <div className={classNames(className, 'inline-flex', 'flex-col', 'gap-2', 'overflow-hidden')} style={style}>
-      {contextHolder}
       {showHeaderControls ? (
         <HeaderActions currentPath={currentPath} storageId={storageId} refreshNavigation={refreshCurrentPath} />
       ) : null}
@@ -65,6 +53,7 @@ export function StorageBrowser({ className, style, storageId, path, showHeaderCo
         onClickPrevPage={navigatePrevPage}
         onResetPaging={refreshCurrentPath}
         paging={paging}
+        error={error}
       />
     </div>
   );

@@ -1,25 +1,26 @@
 import { useMemo } from 'react';
-import { Table } from 'antd';
+import { Alert, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
-import { DataStorageItemTypes, parentPath } from '@cloud-pipeline/core';
+import { parentPath } from '@cloud-pipeline/core';
 import type { DataStorageItem } from '@cloud-pipeline/core';
 import './styles.css';
 import { ROOT_PLACEHOLDER } from './utils/navigation';
 import StoragePagination from './storage-pagination';
 import columns from './columns';
-import type { StoragePaging } from './types';
+import type { StoragePaging, UIStorageItem } from './types';
 
 const ROW_HEIGHT = 40;
 
 type Props = {
   content?: DataStorageItem[];
-  onRowClick?: (item: DataStorageItem) => void;
+  onRowClick?: (item: UIStorageItem) => void;
   currentPath: string | undefined;
   pending?: boolean;
   onClickNextPage: () => void;
   onClickPrevPage: () => void;
   onResetPaging: () => void;
   paging: StoragePaging;
+  error?: string;
 };
 
 export function StorageContentList({
@@ -31,24 +32,34 @@ export function StorageContentList({
   onClickNextPage,
   onResetPaging,
   paging,
+  error,
 }: Props) {
-  const dataSource = useMemo<DataStorageItem[]>(
+  const dataSource = useMemo<UIStorageItem[]>(
     () =>
       [
         currentPath !== ROOT_PLACEHOLDER
           ? {
-              type: DataStorageItemTypes.navigateBack as string,
+              type: 'navigateBack',
               name: '...',
               path: parentPath(currentPath ?? ''),
             }
           : null,
         ...(content ?? []),
-      ].filter((item) => item?.type && item?.name) as DataStorageItem[],
+      ].filter((item) => item?.type && item?.name) as UIStorageItem[],
     [content, currentPath],
   );
+  const errorBodyOverride = useMemo(() => {
+    if (!error) {
+      return undefined;
+    }
+    return {
+      body: () => <Alert type="error" message={error} />,
+    };
+  }, [error]);
   return (
     <div className="flex overflow-hidden h-full">
       <Table
+        components={errorBodyOverride}
         className="storage-content-table"
         rowKey={(record) => `${record.type}_${record.name}`}
         dataSource={dataSource}

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { MenuProps } from 'antd';
-import { Dropdown } from 'antd';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { Button, Dropdown, Space } from 'antd';
+import { ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
 import CreateDataStorageEntityModal from '../modals/create-datastorage-entity-nodal';
 import { DataStorageItemTypes } from '@cloud-pipeline/core';
@@ -25,14 +25,8 @@ type Props = {
   refreshNavigation: () => void;
 };
 
-export default function HeaderActions({
-  currentPath,
-  storageId,
-  refreshNavigation,
-}: Props) {
-  const [createEntity, setCreateEntity] = useState<
-    DataStorageItemTypes | undefined
-  >();
+export default function HeaderActions({ currentPath, storageId, refreshNavigation }: Props) {
+  const [createEntity, setCreateEntity] = useState<DataStorageItemTypes | undefined>();
   const onMenuClick: MenuProps['onClick'] = ({ key }) => {
     setCreateEntity(key as DataStorageItemTypes);
   };
@@ -44,15 +38,13 @@ export default function HeaderActions({
   }, [refreshNavigation]);
   return (
     <div className="flex justify-end">
-      <Dropdown.Button
-        className="w-fit"
-        size="small"
-        type="primary"
-        overlayClassName="w-40"
-        menu={{ items: actions, onClick: onMenuClick }}>
-        <PlusIcon className="w-4 h-4" />
-        Create
-      </Dropdown.Button>
+      <Dropdown menu={{ items: actions, onClick: onMenuClick }}>
+        <Button size="small" type="primary">
+          <PlusIcon className="size-3 stroke-2" />
+          Create
+          <ChevronDownIcon className="w-4 h-4" />
+        </Button>
+      </Dropdown>
       <CreateDataStorageEntityModal
         createEntityType={createEntity}
         onOk={onEntityCreated}
