@@ -4,6 +4,7 @@ import {
   ProjectHeader,
   ProjectPipelines,
   ProjectRunsList,
+  ProjectStorages,
 } from './components';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { Breadcrumb } from 'antd';
@@ -20,7 +21,6 @@ import { LayoutCard } from '../../shared/ui/item-layout/layout-card';
 import { Permissions } from '../../features/permissions';
 import { useNgsTabs } from '../../shared/hooks';
 import { useProjectDescription } from './hooks';
-import { ProjectStorages } from './components/project-storages';
 
 type Props = {
   project: Project;
