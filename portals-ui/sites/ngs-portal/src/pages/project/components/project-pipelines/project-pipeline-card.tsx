@@ -13,16 +13,23 @@ import {
 } from '../../../../shared/constants/routes.ts';
 import { omitClonedPipelinePrefix } from '../../../../shared/helpers';
 import { usePipelineTags } from '../../../../shared/tags/use-pipeline-tags.ts';
+import { useCallback } from 'react';
 
 type Props = CommonProps & {
   project: Project | undefined;
+  onDelete: (id: number) => void;
   pipeline: Pipeline;
   search?: string;
 };
 
 export const ProjectPipelineCard = (props: Props) => {
-  const { className, style, project, pipeline, search } = props;
+  const { className, style, project, pipeline, search, onDelete } = props;
   const tags = usePipelineTags(pipeline?.data);
+
+  const handleDelete = useCallback(() => {
+    onDelete(pipeline.id);
+  }, [onDelete, pipeline.id]);
+
   return (
     <div
       className={classNames(
@@ -69,7 +76,7 @@ export const ProjectPipelineCard = (props: Props) => {
             Run
           </Link>
         </Button>
-        <Button type="primary" danger size="small">
+        <Button type="primary" danger size="small" onClick={handleDelete}>
           <TrashIcon className="w-4 h-4" />
         </Button>
       </div>
