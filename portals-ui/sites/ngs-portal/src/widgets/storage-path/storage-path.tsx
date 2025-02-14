@@ -5,11 +5,7 @@ import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { DataStorage, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
 import { correctPath } from '@cloud-pipeline/core';
 import { findDataStorage, FindDataStorageScope } from '@cloud-pipeline/core';
-import {
-  useDataStorage,
-  useDataStoragesStore,
-  useSearchDataStorages,
-} from '../../state/storages/hooks.ts';
+import { useDataStorage, useDataStoragesStore, useSearchDataStorages } from '../../state/storages/hooks.ts';
 import type { CommonProps } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 
@@ -18,7 +14,7 @@ type Props = CommonProps & {
   path: string | undefined;
   onPathChange?: (value?: string) => void;
   onStorageChange?: (storage: DataStorage, path?: string) => void;
-  storages?: Array<string | number | Partial<DataStorage>>;
+  storages?: Array<string | number | Partial<DataStorage>> | 'all';
 };
 
 export const StoragePath = ({
@@ -34,7 +30,7 @@ export const StoragePath = ({
   const storage = useDataStorage(storageSearchCriteria);
   const searchAllAvailable = useSearchDataStorages();
   const storages = useMemo(
-    () => (storagesCriteria ? searchAllAvailable(storagesCriteria) : []),
+    () => (storagesCriteria ? searchAllAvailable(storagesCriteria === 'all' ? undefined : storagesCriteria) : []),
     [searchAllAvailable, storagesCriteria],
   );
   const [rawValue, setRawValue] = useState('');

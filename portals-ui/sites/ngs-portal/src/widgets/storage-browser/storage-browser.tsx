@@ -11,14 +11,15 @@ import type { UIStorageItem } from './types';
 type Props = CommonProps & {
   storageId: number;
   path?: string;
+  onPathChange?: (path?: string) => void;
   showHeaderControls?: boolean;
 };
 
-export function StorageBrowser({ className, style, storageId, path, showHeaderControls }: Props) {
+export function StorageBrowser({ className, style, storageId, path, onPathChange, showHeaderControls }: Props) {
   const {
     items,
     currentPath,
-    changePath,
+    changePath: navigate,
     navigatePrevPage,
     navigateNextPage,
     refreshCurrentPath,
@@ -26,6 +27,16 @@ export function StorageBrowser({ className, style, storageId, path, showHeaderCo
     pending,
     error,
   } = useStorageNavigation(storageId);
+  const changePath = useCallback(
+    (aPath: string) => {
+      if (onPathChange) {
+        onPathChange(aPath);
+      } else {
+        navigate(aPath);
+      }
+    },
+    [navigate, onPathChange],
+  );
   const onRowClick = useCallback(
     (item: UIStorageItem) => {
       if (item.type === DataStorageItemTypes.folder || item.type === 'navigateBack') {
@@ -36,9 +47,9 @@ export function StorageBrowser({ className, style, storageId, path, showHeaderCo
   );
   useEffect(() => {
     if (path && path !== currentPath) {
-      changePath(path);
+      navigate(path);
     }
-  }, [changePath, currentPath, path]);
+  }, [navigate, currentPath, path]);
   return (
     <div className={classNames(className, 'inline-flex', 'flex-col', 'gap-2', 'overflow-hidden')} style={style}>
       {showHeaderControls ? (

@@ -1,5 +1,6 @@
 import { fetchDataStoragePage } from '@cloud-pipeline/api';
 import type { DataStorageItem } from '@cloud-pipeline/core';
+import { correctPath } from '@cloud-pipeline/core';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { PageMarkers, StoragePaging } from '../types';
 import {
@@ -47,15 +48,19 @@ export function useStorageNavigation(storageId: number) {
   );
 
   const fetchCurrentPage = useCallback(async () => {
+    let pagePath = currentPath === ROOT_PLACEHOLDER ? undefined : currentPath;
+    if (pagePath) {
+      pagePath = correctPath(pagePath, { removeTrailingSlash: true, removeLeadingSlash: true });
+    }
     try {
       setPending(true);
       const response = await fetchDataStoragePage({
         id: storageId,
-        path: currentPath === ROOT_PLACEHOLDER ? undefined : currentPath,
+        path: pagePath,
         marker: currentMarker,
       });
       if (response.nextPageMarker) {
-        const newMarkers = insertNextPageMarker(currentPath, response.nextPageMarker, markers);
+        const newMarkers = insertNextPageMarker(pagePath, response.nextPageMarker, markers);
         setMarkers(newMarkers);
       }
       setItems(response.results);
