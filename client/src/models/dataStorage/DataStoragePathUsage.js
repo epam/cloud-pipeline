@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class DataStoragePathUsage extends Remote {
-  constructor (storage) {
+  constructor (storage, path = '') {
     super();
-    this.url = `/datastorage/path/usage?id=${storage}`;
+    this.url = `/datastorage/path/usage?id=${storage}${path.length > 0 ? `&path=${path}` : ''}`;
   }
 }

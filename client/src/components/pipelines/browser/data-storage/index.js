@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ import {
 import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../../special/metadata/special/request-dav-access';
-import StorageSize from '../../../special/storage-size';
+import StorageSize, {MODE as STORAGE_SIZE_MODE} from '../../../special/storage-size';
 import highlightText from '../../../special/highlightText';
 import {extractFileShareMountList} from '../forms/DataStoragePathInput';
 import SharedItemInfo from '../forms/data-storage-item-sharing/SharedItemInfo';
@@ -190,7 +190,8 @@ export default class DataStorage extends React.Component {
     previewPending: false,
     restorePending: false,
     omicsDialogVisible: false,
-    importedJobs: false
+    importedJobs: false,
+    storageSizeMode: STORAGE_SIZE_MODE.storage
   };
 
   @observable storage = new DataStorageListing({
@@ -2640,6 +2641,10 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  onStorageSizeModeChange = (mode) => {
+    this.setState({storageSizeMode: mode});
+  };
+
   renderPresentationConfiguration = () => {
     const metadataAction = {
       key: 'attributes',
@@ -2764,7 +2769,6 @@ export default class DataStorage extends React.Component {
       mask,
       policySupported
     } = this.storage.info || {};
-
     const restoreClassChangeDisclaimer = (item, operation) => {
       if (!item) {
         return '';
@@ -2977,7 +2981,10 @@ export default class DataStorage extends React.Component {
                 (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                ((!/^nfs$/i.test(type) && !this.state.selectedFile) && !this.isOmicsStore)
+                ((!/^nfs$/i.test(type) && !this.state.selectedFile) &&
+                  !this.isOmicsStore &&
+                  this.state.storageSizeMode === STORAGE_SIZE_MODE.storage
+                )
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
@@ -2993,7 +3000,11 @@ export default class DataStorage extends React.Component {
                     this.userLifeCyclePermissions.write
                   )}
                 />,
-                <StorageSize storage={this.storage.info} />
+                <StorageSize
+                  storage={this.storage.info}
+                  path={this.props.path}
+                  onModeChange={this.onStorageSizeModeChange}
+                />
               ] : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import {
   message,
   Tooltip,
   Icon,
-  Modal
+  Modal,
+  Spin
 } from 'antd';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
@@ -36,6 +37,16 @@ const STORAGE_DESCRIPTION = {
   GLACIER: 'Glacier',
   GLACIER_IR: 'Glacier IR',
   DEEP_ARCHIVE: 'Deep archive'
+};
+
+export const MODE = {
+  storage: 'storage',
+  folder: 'folder'
+};
+
+const modeToggler = {
+  [MODE.storage]: MODE.folder,
+  [MODE.folder]: MODE.storage
 };
 
 const REFRESH_REQUESTED_MESSAGE =
@@ -88,21 +99,24 @@ function InfoTooltip ({sizes, isNFS}) {
 @observer
 class StorageSize extends React.PureComponent {
   state = {
-    showDetailedInfo: false
+    showDetailedInfo: false,
+    mode: MODE.storage,
+    pending: false
   };
 
   @observable info;
 
   componentDidMount () {
-    this.updateStorageSize();
+    this.updateMode();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (
+      prevProps.path !== this.props.path ||
       prevProps.storage !== this.props.storage ||
       prevProps.storageId !== this.props.storageId
     ) {
-      this.updateStorageSize();
+      this.updateMode();
     }
   }
 
@@ -169,26 +183,46 @@ class StorageSize extends React.PureComponent {
     return (storage.type || '').toUpperCase() === 'NFS';
   }
 
-  updateStorageSize = async () => {
+  get isRoot () {
+    return !this.props.path;
+  }
+
+  updateMode = () => {
+    const {path, onModeChange} = this.props;
+    this.setState({mode: path ? MODE.folder : MODE.storage}, () => {
+      this.updateStorageSize();
+      onModeChange && onModeChange(this.state.mode);
+    });
+  };
+
+  updateStorageSize = () => {
+    const {mode} = this.state;
     const {
       storage,
-      storageId
+      storageId,
+      path: pathProp
     } = this.props;
     let id = storageId;
     if (id === undefined && typeof storage === 'object') {
       id = storage.id;
     }
     if (id !== undefined) {
-      const request = new DataStoragePathUsage(id);
-      await request.fetch();
-      if (request.error) {
-        console.warn(request.error);
-        this.info = null;
-      } else if (request.value) {
-        this.info = request.value;
-      } else {
-        this.info = null;
-      }
+      this.setState({pending: true}, async () => {
+        const path = mode === MODE.folder
+          ? pathProp
+          : undefined;
+        const request = new DataStoragePathUsage(id, path);
+        await request.fetch();
+        if (request.error) {
+          console.warn(request.error);
+          this.info = null;
+        } else if (request.value) {
+          this.info = request.value;
+        } else {
+          this.info = null;
+        }
+        this.setState({pending: false});
+      });
     }
   };
 
@@ -226,6 +260,8 @@ class StorageSize extends React.PureComponent {
   };
 
   renderInfo = () => {
+    const {mode} = this.state;
+    const {path, storage} = this.props;
     const {
       size,
       effective,
@@ -249,8 +285,21 @@ class StorageSize extends React.PureComponent {
     const previousVersionsInfo = this.isNFS
       ? ''
       : ` (${previousVersionsSize})`;
+    let header = storage?.name || storage?.path || 'Storage';
+    if (mode === MODE.folder) {
+      header = (path || '').split('/').pop();
+    }
+    const getIcon = () => {
+      if (mode === MODE.storage) {
+        return this.isNFS ? 'hdd' : 'inbox';
+      }
+      return 'folder';
+    };
     return (
       <div className={styles.detailsContainer}>
+        <b className={styles.folderSizeTitle}>
+          <Icon type={getIcon()} /> {header}
+        </b>
         <div className={styles.standardContainer}>
           <div
             className={styles.standardDetailRow}
@@ -261,14 +310,13 @@ class StorageSize extends React.PureComponent {
             </span>
             <InfoTooltip isNFS={this.isNFS} sizes={{size, effective}} />
           </div>
-          {this.isNFS ? this.renderControls() : null}
         </div>
         {this.hasArchivedData ? (
           <span className={styles.detail}>
             Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
           </span>
         ) : null}
-        {this.isNFS ? null : this.renderControls()}
+        {this.renderControls()}
       </div>
     );
   };
@@ -369,8 +417,30 @@ class StorageSize extends React.PureComponent {
   };
 
   renderControls = () => {
+    const {mode} = this.state;
+    const {onModeChange} = this.props;
+    const toggleMode = () => this.setState({mode: modeToggler[mode]}, () => {
+      onModeChange && onModeChange(this.state.mode);
+      this.updateStorageSize();
+    });
     return (
       <div>
+        {!this.isRoot ? (
+          <a
+            className={styles.controlsButton}
+            onClick={toggleMode}
+          >
+            Show {modeToggler[mode]} size
+          </a>
+        ) : null}
+        {this.isRoot || mode === MODE.storage ? (
+          <a
+            className={styles.controlsButton}
+            onClick={this.refreshSize}
+          >
+            Re-index
+          </a>
+        ) : null}
         {this.hasArchivedData && this.usageInfo?.details?.length > 0 ? (
           <a
             className={styles.controlsButton}
@@ -379,36 +449,33 @@ class StorageSize extends React.PureComponent {
             Show details
           </a>
         ) : null}
-        <a
-          className={styles.controlsButton}
-          onClick={this.refreshSize}
-        >
-          Re-index
-        </a>
       </div>
     );
   };
 
   render () {
+    const {pending} = this.state;
     const {className, style} = this.props;
-    if (
-      this.usageInfo &&
-      (this.usageInfo.size || this.usageInfo.archiveSizeTotal)
-    ) {
+    if (this.usageInfo && (
+      this.usageInfo.size !== undefined ||
+      this.usageInfo.archiveSizeTotal !== undefined
+    )) {
       return (
-        <div
-          className={
-            classNames(
-              styles.storageSizeContainer,
-              'cp-text',
-              className
-            )
-          }
-          style={style}
-        >
-          {this.renderInfo()}
-          {this.renderDetailedInfoModal()}
-        </div>
+        <Spin spinning={pending}>
+          <div
+            className={
+              classNames(
+                styles.storageSizeContainer,
+                'cp-text',
+                className
+              )
+            }
+            style={style}
+          >
+            {this.renderInfo()}
+            {this.renderDetailedInfoModal()}
+          </div>
+        </Spin>
       );
     }
     return (
@@ -436,7 +503,9 @@ StorageSize.propTypes = {
   className: PropTypes.string,
   storage: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  style: PropTypes.object
+  style: PropTypes.object,
+  path: PropTypes.string,
+  onModeChange: PropTypes.func
 };
 
 export default StorageSize;
