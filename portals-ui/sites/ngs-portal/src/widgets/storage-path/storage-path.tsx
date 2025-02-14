@@ -5,7 +5,11 @@ import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { DataStorage, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
 import { correctPath } from '@cloud-pipeline/core';
 import { findDataStorage, FindDataStorageScope } from '@cloud-pipeline/core';
-import { useDataStorage, useDataStoragesByCriteria, useDataStoragesStore } from '../../state/storages/hooks.ts';
+import {
+  useDataStorage,
+  useDataStoragesStore,
+  useSearchDataStorages,
+} from '../../state/storages/hooks.ts';
 import type { CommonProps } from '@cloud-pipeline/components';
 import classNames from 'classnames';
 
@@ -28,7 +32,11 @@ export const StoragePath = ({
 }: Props) => {
   const { pending: storagesPending } = useDataStoragesStore();
   const storage = useDataStorage(storageSearchCriteria);
-  const storages = useDataStoragesByCriteria(storagesCriteria);
+  const searchAllAvailable = useSearchDataStorages();
+  const storages = useMemo(
+    () => (storagesCriteria ? searchAllAvailable(storagesCriteria) : []),
+    [searchAllAvailable, storagesCriteria],
+  );
   const [rawValue, setRawValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
