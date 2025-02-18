@@ -1,20 +1,21 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Alert, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
 import { parentPath } from '@cloud-pipeline/core';
 import type { DataStorageItem } from '@cloud-pipeline/core';
 import './styles.css';
 import { ROOT_PLACEHOLDER } from './utils/navigation';
-import StoragePagination from './storage-pagination';
 import columns from './columns';
 import type { StoragePaging, UIStorageItem } from './types';
 
 const ROW_HEIGHT = 40;
+const INFINITE_SCROLL_OFFSET = 40;
 
 type Props = {
   content?: DataStorageItem[];
   onRowClick?: (item: UIStorageItem) => void;
   currentPath: string | undefined;
+  prevCurrentPath: string | undefined;
   pending?: boolean;
   onClickNextPage: () => void;
   onClickPrevPage: () => void;
@@ -27,27 +28,25 @@ export function StorageContentList({
   content,
   onRowClick,
   currentPath,
+  prevCurrentPath,
   pending,
-  onClickPrevPage,
   onClickNextPage,
-  onResetPaging,
   paging,
   error,
 }: Props) {
-  const dataSource = useMemo<UIStorageItem[]>(
-    () =>
-      [
-        currentPath !== ROOT_PLACEHOLDER
-          ? {
-              type: 'navigateBack',
-              name: '...',
-              path: parentPath(currentPath ?? ''),
-            }
-          : null,
-        ...(content ?? []),
-      ].filter((item) => item?.type && item?.name) as UIStorageItem[],
-    [content, currentPath],
-  );
+  const dataSource = useMemo<UIStorageItem[]>(() => {
+    const showNavigateBack = prevCurrentPath !== ROOT_PLACEHOLDER;
+    return [
+      showNavigateBack
+        ? {
+            type: 'navigateBack',
+            name: '...',
+            path: parentPath(currentPath ?? ''),
+          }
+        : null,
+      ...(content ?? []),
+    ].filter((item) => item?.type && item?.name) as UIStorageItem[];
+  }, [content, currentPath, prevCurrentPath]);
   const errorBodyOverride = useMemo(() => {
     if (!error) {
       return undefined;
@@ -56,6 +55,16 @@ export function StorageContentList({
       body: () => <Alert type="error" message={error} />,
     };
   }, [error]);
+  const onScroll = useCallback(
+    (event: React.UIEvent) => {
+      const { scrollHeight, scrollTop, clientHeight } = event.target as HTMLElement;
+      const bottom = scrollHeight - scrollTop - INFINITE_SCROLL_OFFSET < clientHeight;
+      if (!pending && bottom && paging.canNavigateNext) {
+        onClickNextPage();
+      }
+    },
+    [onClickNextPage, paging.canNavigateNext, pending],
+  );
   return (
     <div className="flex overflow-hidden h-full">
       <Table
@@ -72,15 +81,7 @@ export function StorageContentList({
         pagination={false}
         rowClassName="cursor-pointer"
         scroll={{ y: DEFAULT_DATASTORAGE_PAGE_SIZE * ROW_HEIGHT }}
-        footer={() => (
-          <StoragePagination
-            onClickPrevPage={onClickPrevPage}
-            onClickNextPage={onClickNextPage}
-            onResetPaging={onResetPaging}
-            paging={paging}
-            pending={pending}
-          />
-        )}
+        onScroll={onScroll}
       />
     </div>
   );
