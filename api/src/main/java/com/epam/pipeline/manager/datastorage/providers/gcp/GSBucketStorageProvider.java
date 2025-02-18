@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -106,18 +107,23 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
-                                       final Integer pageSize, String marker) {
+                                       final Integer pageSize, String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         return getHelper(dataStorage).listItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
     @Override
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         if (Objects.nonNull(restoredListing)) {
             throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
         }
-        return getItems(dataStorage, path, showVersion, pageSize, marker);
+        if (Objects.nonNull(permissionsContainer)) {
+            throw new UnsupportedOperationException("Path permissions are not supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
     }
 
     @Override

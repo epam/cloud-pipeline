@@ -25,6 +25,7 @@ import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.*;
@@ -854,5 +855,35 @@ public class DataStorageController extends AbstractRestController {
     public Result callOffDataStorageDavMount(@PathVariable(value = ID) final Long id) {
         dataStorageApiService.callOffDataStorageDavMount(id);
         return Result.success();
+    }
+
+    @PostMapping("/datastorage/{id}/permissions")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates storage path permissions specified storage and user/group.",
+            notes = "Updates storage path permissions specified storage and user/group.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result registerPathPermissions(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam final String sidName, @RequestParam final boolean isPrincipal,
+            @RequestBody final List<StoragePathPermissions> permissions) {
+        dataStorageApiService.updateStoragePathPermissions(id, sidName, isPrincipal, permissions);
+        return Result.success();
+    }
+
+    @GetMapping("/datastorage/{id}/permissions")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads storage path permissions for specified storage and current user.",
+            notes = "Loads storage path permissions for specified storage and current user.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<StoragePathPermissions>> loadStoragePathPermissions(@PathVariable(value = ID) final Long id) {
+        return Result.success(dataStorageApiService.loadStoragePathPermissions(id));
     }
 }

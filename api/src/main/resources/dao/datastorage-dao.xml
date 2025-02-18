@@ -53,7 +53,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -84,7 +85,8 @@
                         :S3_TEMP_CREDS_ROLE,
                         :MOUNT_STATUS,
                         :SOURCE_DATASTORAGE_ID,
-                        to_jsonb(:MASKING_RULES::jsonb)
+                        to_jsonb(:MASKING_RULES::jsonb),
+                        :HAS_PATH_PERMISSIONS
                     )
                 ]]>
             </value>
@@ -104,7 +106,8 @@
                         backup_duration = :BACKUP_DURATION,
                         mount_point = :MOUNT_POINT,
                         mount_options = :MOUNT_OPTIONS,
-                        mount_disabled = :MOUNT_DISABLED
+                        mount_disabled = :MOUNT_DISABLED,
+                        has_path_permissions = :HAS_PATH_PERMISSIONS
                     WHERE
                         datastorage_id = :DATASTORAGE_ID
                 ]]>
@@ -150,7 +153,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -190,7 +194,8 @@
                         s3_temp_creds_role,
                         d.mount_status,
                         d.source_datastorage_id,
-                        d.masking_rules
+                        d.masking_rules,
+                        d.has_path_permissions
                     FROM
                         pipeline.datastorage d
                     LEFT JOIN pipeline.metadata m ON d.datastorage_id = m.entity_id
@@ -232,7 +237,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -274,7 +280,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -316,7 +323,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -357,7 +365,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -398,7 +407,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -439,7 +449,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -480,7 +491,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -522,7 +534,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -563,7 +576,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -622,6 +636,7 @@
                             d.source_datastorage_id,
                             d.mount_exact_path,
                             d.masking_rules,
+                            d.has_path_permissions,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -662,6 +677,7 @@
                             null as mount_status,
                             null as source_datastorage_id,
                             null as masking_rules,
+                            null as has_path_permissions,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -704,6 +720,7 @@
                             d.mount_status,
                             d.source_datastorage_id,
                             d.masking_rules,
+                            d.has_path_permissions,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -740,6 +757,7 @@
                             null as mount_status,
                             null as source_datastorage_id,
                             null as masking_rules,
+                            null as has_path_permissions,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -878,7 +896,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -919,7 +938,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -961,7 +981,8 @@
                         s3_temp_creds_role,
                         mount_status,
                         source_datastorage_id,
-                        masking_rules
+                        masking_rules,
+                        has_path_permissions
                     FROM
                         pipeline.datastorage
                     WHERE

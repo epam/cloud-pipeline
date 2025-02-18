@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -415,5 +416,16 @@ public class DataStorageApiService {
     public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
             final DataStorageObjectSearchByTagRequest request) {
         return dataStorageManager.searchDataStorageItemByTag(request);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public void updateStoragePathPermissions(final Long id, final String sidName, final boolean principal,
+                                             final List<StoragePathPermissions> permissions) {
+        dataStorageManager.updateStoragePathPermissions(id, sidName, principal, permissions);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public List<StoragePathPermissions> loadStoragePathPermissions(final Long id) {
+        return dataStorageManager.loadStoragePathPermissionsHierarchy(id);
     }
 }
