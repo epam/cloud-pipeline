@@ -109,7 +109,6 @@ export function useStorageNavigation(storageId: number | undefined) {
   const changePath = useCallback(
     (path: string) => {
       setCurrentPath(path);
-      // setItems([]);
       resetPageForPath(path ?? ROOT_PLACEHOLDER);
     },
     [resetPageForPath],
@@ -130,6 +129,7 @@ export function useStorageNavigation(storageId: number | undefined) {
   }, [fetchCurrentPage]);
 
   const refreshCurrentPath = useCallback(() => {
+    setItems([]);
     resetPageForPath(currentPath ?? ROOT_PLACEHOLDER);
     setRefreshtoken(refreshToken + 1);
   }, [currentPath, refreshToken, resetPageForPath]);
