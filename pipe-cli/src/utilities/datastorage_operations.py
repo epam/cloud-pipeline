@@ -183,10 +183,13 @@ class DataStorageOperations(object):
                               permission_to_check, include, exclude, force, skip_existing,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         items_iterator = iter(source_wrapper.get_items(quiet=quiet))
-        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                       permission_to_check, include, exclude, force, quiet, skip_existing,
-                                       verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                       on_empty_files)
+        try:
+            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                           permission_to_check, include, exclude, force, quiet, skip_existing,
+                                           verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                           on_empty_files)
+        except StopIteration:
+            return
         if threads:
             cls._multiprocess_transfer_batch(audit_ctx, clean,
                                              destination_wrapper, exclude, force, include, io_threads, items,
