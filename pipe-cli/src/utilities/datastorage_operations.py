@@ -214,10 +214,13 @@ class DataStorageOperations(object):
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         items_iterator = iter(source_wrapper.get_items(quiet=quiet))
-        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                       permission_to_check, include, exclude, force, quiet, skip_existing,
-                                       sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                       on_empty_files)
+        try:
+            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                           permission_to_check, include, exclude, force, quiet, skip_existing,
+                                           sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                           on_empty_files)
+        except StopIteration:
+            return
         if threads:
             cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
                                              destination_wrapper, exclude, force, include, io_threads, items,
@@ -287,6 +290,9 @@ class DataStorageOperations(object):
     def _fetch_batch_items(cls, items_iterator, manager, source_wrapper, destination_wrapper, permission_to_check,
                            include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                            on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
+        # Method may produce StopIteration error (since no hasNext method provided).
+        # This error indicated that iterator has no more elements.
+        # So, it is obligatory to handle it with try-except clause in code that will use this method
         batch_items_iterator = itertools.islice(items_iterator, BATCH_SIZE)
         items_batch = itertools.chain([next(batch_items_iterator)], batch_items_iterator)
         items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper, permission_to_check,
