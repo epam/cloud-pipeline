@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Alert, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
 import { parentPath } from '@cloud-pipeline/core';
@@ -7,6 +7,7 @@ import './styles.css';
 import { ROOT_PLACEHOLDER } from './utils/navigation';
 import columns from './columns';
 import type { StoragePaging, UIStorageItem } from './types';
+import React from 'react';
 
 const ROW_HEIGHT = 40;
 const INFINITE_SCROLL_OFFSET = 40;
@@ -34,6 +35,10 @@ export function StorageContentList({
   paging,
   error,
 }: Props) {
+  const tableRef: Parameters<typeof Table>[0]['ref'] = React.useRef(null);
+  useEffect(() => {
+    tableRef.current?.scrollTo({ index: 0 });
+  }, [currentPath]);
   const dataSource = useMemo<UIStorageItem[]>(() => {
     const showNavigateBack = prevCurrentPath !== ROOT_PLACEHOLDER;
     return [
@@ -77,6 +82,7 @@ export function StorageContentList({
           onClick: () => onRowClick?.(record),
         })}
         loading={pending}
+        ref={tableRef}
         size="small"
         pagination={false}
         rowClassName="cursor-pointer"
