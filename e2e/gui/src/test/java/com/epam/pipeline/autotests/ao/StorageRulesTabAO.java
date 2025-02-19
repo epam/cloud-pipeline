@@ -87,7 +87,8 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
 
     public StorageRulesTabAO shouldContainRulesTable() {
         $("thead").findAll("th")
-                .shouldHave(texts("Mask", "Created", "Move to Short-Term Storage", ""));
+                .shouldHave(texts("Name", "Mask", "Created",
+                        "Move to Short-Term Storage", "Pipeline Results", ""));
         return this;
     }
 
