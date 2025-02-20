@@ -55,7 +55,7 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
 
     public StorageRulesTabAO deleteStorageRule(String fileMaskString) {
         $(byText(fileMaskString)).closest("tr").findAll(tagName("td"))
-                .get(3).find(tagName("a")).shouldHave(text("Delete")).click();
+                .get(5).find(tagName("a")).shouldHave(text("Delete")).click();
         $$(className("ant-confirm-title")).filter(text("Do you want to delete rule")).first()
                 .shouldHave(text("Do you want to delete rule \"" + fileMaskString + "\"?"));
         $(button("OK")).shouldBe(visible).click();
@@ -109,15 +109,15 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
     }
 
     private Function<ElementsCollection, String> toMask() {
-        return columns -> columns.get(0).text();
+        return columns -> columns.get(1).text();
     }
 
     private Consumer<ElementsCollection> validateDeleteButton() {
-        return columns -> columns.get(3).find("a").shouldHave(text("Delete"));
+        return columns -> columns.get(5).find("a").shouldHave(text("Delete"));
     }
 
     private Consumer<ElementsCollection> validateMoveToShortTermStorageFlag() {
-        return columns -> columns.get(2).find("input")
+        return columns -> columns.get(3).find("input")
                 .shouldHave(
                         attribute("type", "checkbox"),
                         attribute("value", "on")
@@ -126,11 +126,11 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
     }
 
     private Consumer<ElementsCollection> validateMaskEqualsTo(String mask) {
-        return columns -> columns.get(0).shouldHave(text(mask));
+        return columns -> columns.get(1).shouldHave(text(mask));
     }
 
     private Consumer<ElementsCollection> validateDate() {
-        return columns -> Utils.validateDateTimeString(columns.get(1).text());
+        return columns -> Utils.validateDateTimeString(columns.get(2).text());
     }
 
     public StorageRulesTabAO rulesCountShouldBe(int size) {
