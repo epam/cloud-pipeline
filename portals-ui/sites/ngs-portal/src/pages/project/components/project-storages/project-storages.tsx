@@ -14,16 +14,20 @@ type Props = CommonProps & {
 
 export function ProjectStorages(props: Props) {
   const { className, style, project } = props;
+
   const { pending, loaded } = useDataStoragesStore();
   const { defaultDataStorage, dataStorages: projectDataStorages } = useProjectDataStoragesConfiguration(project);
+
   const [storage, setStorage] = useState(defaultDataStorage);
   const [path, setPath] = useState('');
+
   const onChangePath = useCallback(
     (newPath?: string) => {
       setPath(newPath ?? '');
     },
     [setPath],
   );
+
   const onStorageChange = useCallback(
     (newStorage: DataStorage, newPath?: string) => {
       setStorage(newStorage);
@@ -31,11 +35,13 @@ export function ProjectStorages(props: Props) {
     },
     [setStorage, onChangePath],
   );
+
   useEffect(() => {
     if (defaultDataStorage) {
       onStorageChange(defaultDataStorage);
     }
   }, [defaultDataStorage, onStorageChange]);
+
   return (
     <div className={classNames(className, 'h-full flex flex-col overflow-hidden')} style={style}>
       {!storage && pending && !loaded && <Spin />}
