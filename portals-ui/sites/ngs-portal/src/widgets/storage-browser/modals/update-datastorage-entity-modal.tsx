@@ -6,17 +6,21 @@ import {
   DataStorageItemTypes,
   noop,
 } from '@cloud-pipeline/core';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { UpdateDataStorageItemPayload } from '@cloud-pipeline/api';
 import { updateDataStorageItem } from '@cloud-pipeline/api';
 import { ROOT_PLACEHOLDER } from '../utils/navigation';
+import { actionWords, NAME_VALIDATION_TEXT, UpdateEntityModalMode } from '../constants';
 
 type Props = {
-  createEntityType: DataStorageItemTypes | undefined;
+  entityType: DataStorageItemTypes | undefined;
   storageId: number;
   path: string | undefined;
   onOk: () => void;
   onCancel: () => void;
+  isOpen: boolean;
+  entityName?: string;
+  mode?: UpdateEntityModalMode;
 };
 
 type FieldType = {
@@ -29,20 +33,22 @@ type FormValues = {
   contents: string;
 };
 
-const NAME_VALIDATION_TEXT =
-  "Name can contain only letters, digits, spaces, '_', '-', '@' and '.'.";
-
-export default function CreateDataStorageEntityModal({
-  createEntityType,
+export function UpdateDataStorageEntityModal({
+  entityType,
   storageId,
   path,
   onOk,
   onCancel,
+  entityName,
+  isOpen,
+  mode = UpdateEntityModalMode.Create,
 }: Props) {
   const [pending, setPending] = useState(false);
   const [hasErrors, setHasErrors] = useState(false);
   const [form] = Form.useForm<FormValues>();
   const [messageApi, contextHolder] = message.useMessage();
+  const actionWord = actionWords[mode];
+
   const onChangeForm = () => {
     void form
       .validateFields()
@@ -56,78 +62,95 @@ export default function CreateDataStorageEntityModal({
         }
       });
   };
+
   const clearState = useCallback(() => {
     setPending(false);
     setHasErrors(false);
   }, []);
+
+  useEffect(() => {
+    form.setFieldsValue({ name: entityName });
+  }, [form, mode, entityName]);
+
   const submitChanges = useCallback(async () => {
-    if (!storageId || !createEntityType) {
+    if (!storageId || !entityType) {
       return;
     }
     const { name, contents = '' } = form.getFieldsValue();
-    const pathToEntity =
-      path && path !== ROOT_PLACEHOLDER ? `${path}/${name}` : name;
+    const pathToEntity = path && path !== ROOT_PLACEHOLDER ? `${path}/${name}` : name;
+    const oldPathToEntity = path && path !== ROOT_PLACEHOLDER ? `${path}/${entityName}` : entityName;
     const base64Content = contents ? btoa(contents) : '';
+
+    const action = mode === UpdateEntityModalMode.Create ? DataStorageItemActions.create : DataStorageItemActions.move;
+
     const payload = [
       {
-        action: DataStorageItemActions.create,
+        action,
         path: correctPath(pathToEntity),
-        type: createEntityType,
-        ...(createEntityType === DataStorageItemTypes.file
-          ? { contents: base64Content }
-          : {}),
+        type: entityType,
+        ...(entityType === DataStorageItemTypes.file ? { contents: base64Content } : {}),
+        ...(mode === UpdateEntityModalMode.Update ? { oldPath: correctPath(oldPathToEntity) } : {}),
       },
     ] as UpdateDataStorageItemPayload[];
+
     try {
       setPending(true);
+
       messageApi.open({
-        key: 'create',
+        key: mode,
         type: 'loading',
-        content: `Creating ${createEntityType} ${name}...`,
+        content: `${actionWord.pending} ${entityType.toLowerCase()} ${name}...`,
         duration: 0,
       });
+
       await updateDataStorageItem(storageId, payload);
+
       messageApi.open({
-        key: 'create',
+        key: mode,
         type: 'success',
-        content: `Successfully created ${createEntityType} ${name}...`,
+        content: `Successfully ${actionWord.success} ${entityType.toLowerCase()} ${name}...`,
         duration: 4,
       });
+
       onOk();
     } catch (error) {
       const errorText =
-        error instanceof Error
-          ? error.message
-          : `Failed to create ${createEntityType.toLowerCase()} ${name}.`;
+        error instanceof Error ? error.message : `Failed to ${actionWord.error} ${entityType.toLowerCase()} ${name}.`;
+
       messageApi.open({
-        key: 'create',
+        key: mode,
         type: 'error',
         content: errorText,
         duration: 4,
       });
+
       onCancel();
     } finally {
       setPending(false);
     }
-  }, [createEntityType, form, messageApi, onCancel, onOk, path, storageId]);
+  }, [actionWord, entityName, entityType, form, messageApi, mode, onCancel, onOk, path, storageId]);
+
   return (
     <div>
       {contextHolder}
       <Modal
-        title={capitalizedString(`Create ${createEntityType?.toLowerCase()}`)}
+        title={capitalizedString(`${actionWord.action} ${entityType?.toLowerCase()}`)}
         onOk={() => void submitChanges()}
         destroyOnClose
-        okText="Create"
+        okText={actionWord.action}
         okButtonProps={{ disabled: hasErrors || pending, loading: pending }}
         onCancel={() => {
           clearState();
           onCancel();
         }}
         onClose={clearState}
-        open={!!createEntityType}>
+        open={isOpen}>
         <Form
           form={form}
           name="basic"
+          initialValues={{
+            name: entityName,
+          }}
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 20 }}
           onChange={onChangeForm}
@@ -147,7 +170,7 @@ export default function CreateDataStorageEntityModal({
             ]}>
             <Input />
           </Form.Item>
-          {createEntityType === DataStorageItemTypes.file ? (
+          {entityType === DataStorageItemTypes.file && mode === UpdateEntityModalMode.Create ? (
             <Form.Item<FieldType> label="Content" name="contents">
               <Input.TextArea />
             </Form.Item>

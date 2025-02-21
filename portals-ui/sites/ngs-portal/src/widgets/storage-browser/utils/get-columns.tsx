@@ -1,8 +1,9 @@
 import { DataStorageItemTypes, displaySize, displayDate } from '@cloud-pipeline/core';
 import { DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
-import type { UIStorageItem } from './types';
+import type { UIStorageItem } from '../types';
+import type { ReactElement } from 'react';
 
-const columns = [
+export const getColumns = (renderRowActions: (item: UIStorageItem) => ReactElement) => [
   {
     dataIndex: 'type',
     key: 'type',
@@ -36,6 +37,9 @@ const columns = [
     width: 200,
     render: (value: string) => displayDate(value),
   },
+  {
+    key: 'actions',
+    width: 80,
+    render: (item: UIStorageItem) => renderRowActions(item),
+  },
 ];
-
-export default columns;
