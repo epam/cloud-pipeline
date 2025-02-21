@@ -99,7 +99,11 @@ export function UpdateDataStorageEntityModal({
       messageApi.open({
         key: mode,
         type: 'loading',
-        content: `${actionWord.pending} ${entityType.toLowerCase()} ${name}...`,
+        content: (
+          <span>
+            {actionWord.pending} ${entityType.toLowerCase()} <b>{name}</b>...
+          </span>
+        ),
         duration: 0,
       });
 
@@ -108,14 +112,24 @@ export function UpdateDataStorageEntityModal({
       messageApi.open({
         key: mode,
         type: 'success',
-        content: `Successfully ${actionWord.success} ${entityType.toLowerCase()} ${name}...`,
+        content: (
+          <span>
+            Successfully {actionWord.success} {entityType.toLowerCase()} <b>{name}</b>.`
+          </span>
+        ),
         duration: 4,
       });
 
       onOk();
     } catch (error) {
       const errorText =
-        error instanceof Error ? error.message : `Failed to ${actionWord.error} ${entityType.toLowerCase()} ${name}.`;
+        error instanceof Error ? (
+          error.message
+        ) : (
+          <span>
+            Failed to {actionWord.error} {entityType.toLowerCase()} <b>{name}</b>.
+          </span>
+        );
 
       messageApi.open({
         key: mode,
