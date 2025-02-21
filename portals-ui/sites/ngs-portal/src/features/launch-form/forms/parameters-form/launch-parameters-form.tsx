@@ -14,25 +14,16 @@ type Props = {
 
 const OTHER_SECTION_NAME = 'other';
 
-export function LaunchParametersForm({
-  parameters,
-  onChange,
-  prettyNameEditable,
-  readOnly,
-}: Props) {
+export function LaunchParametersForm({ parameters, onChange, prettyNameEditable, readOnly }: Props) {
   const [highlightedSection, setHighlightedSection] = useState('');
-  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const sections = useMemo(() => {
     if (parameters?.length) {
       const sections = {} as Record<string, MappedPipelineParameter[]>;
       parameters.forEach((parameter) => {
         if (!parameter.isSystemParameter) {
-          const sectionName = (
-            parameter.section ?? OTHER_SECTION_NAME
-          ).toLowerCase();
+          const sectionName = (parameter.section ?? OTHER_SECTION_NAME).toLowerCase();
           if (!sections[sectionName]) {
             sections[sectionName] = [];
           }
@@ -62,14 +53,9 @@ export function LaunchParametersForm({
       {sections.length > 1 ? (
         <div className="border-r pr-4 min-w-fit flex flex-col sticky top-0">
           {sections.map((section) => {
-            const sectionName = (
-              section[0].section || OTHER_SECTION_NAME
-            ).toLowerCase();
+            const sectionName = (section[0].section || OTHER_SECTION_NAME).toLowerCase();
             return (
-              <a
-                key={sectionName}
-                className="capitalize"
-                onClick={scrollToSection(sectionName)}>
+              <a key={sectionName} className="capitalize" onClick={scrollToSection(sectionName)}>
                 {sectionName}
               </a>
             );
@@ -78,9 +64,7 @@ export function LaunchParametersForm({
       ) : null}
       <div className="flex flex-col w-full">
         {sections.map((section) => {
-          const sectionName = (
-            section[0]?.section ?? OTHER_SECTION_NAME
-          ).toLowerCase();
+          const sectionName = (section[0]?.section ?? OTHER_SECTION_NAME).toLowerCase();
           return (
             <div
               key={sectionName}

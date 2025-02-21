@@ -9,12 +9,16 @@ import HeaderActions from './components/header-actions';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { useDataStorage } from '../../state/storages/hooks.ts';
 import type { UIStorageItem } from './types';
+import { Empty } from 'antd';
 
 type Props = CommonProps & {
   storageId: FindSingleDataStorageCriteria;
   path?: string;
   onPathChange?: (path?: string) => void;
   showHeaderControls?: boolean;
+  selection?: UIStorageItem[];
+  onSelectItem?: (selection: UIStorageItem[]) => void;
+  pending?: boolean;
 };
 
 export function StorageBrowser({
@@ -24,6 +28,9 @@ export function StorageBrowser({
   path,
   onPathChange,
   showHeaderControls,
+  selection,
+  onSelectItem,
+  pending: pendingProp,
 }: Props) {
   const storage = useDataStorage(storageIdCriteria);
   const {
@@ -56,7 +63,7 @@ export function StorageBrowser({
     [changePath],
   );
   useEffect(() => {
-    if (path && path !== currentPath) {
+    if (path !== undefined && path !== currentPath) {
       navigate(path);
     }
   }, [navigate, currentPath, path]);
@@ -65,18 +72,22 @@ export function StorageBrowser({
       {showHeaderControls && storage ? (
         <HeaderActions currentPath={currentPath} storageId={storage.id} refreshNavigation={refreshCurrentPath} />
       ) : null}
-      {storage && (
+      {storage ? (
         <StorageContentList
           content={items}
           onRowClick={onRowClick}
           currentPath={currentPath}
-          pending={pending}
+          pending={pendingProp ?? pending}
           onClickNextPage={navigateNextPage}
           onClickPrevPage={navigatePrevPage}
           onResetPaging={refreshCurrentPath}
           paging={paging}
           error={error}
+          selection={selection}
+          onSelectItem={onSelectItem}
         />
+      ) : (
+        <Empty />
       )}
     </div>
   );

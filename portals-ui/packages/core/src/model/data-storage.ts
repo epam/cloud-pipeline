@@ -6,6 +6,9 @@ export type DataStorage = AclEntry<AclClass.dataStorage> & {
   name: string;
   path: string;
   pathMask?: string;
+  mountPoint?: string;
+  type?: string;
+  storageType?: string;
 };
 
 export type DataStoragePageResponse = {

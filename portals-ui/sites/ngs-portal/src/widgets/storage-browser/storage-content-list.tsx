@@ -3,11 +3,11 @@ import { Alert, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
 import { parentPath } from '@cloud-pipeline/core';
 import type { DataStorageItem } from '@cloud-pipeline/core';
-import './styles.css';
 import { ROOT_PLACEHOLDER } from './utils/navigation';
 import StoragePagination from './storage-pagination';
 import columns from './columns';
 import type { StoragePaging, UIStorageItem } from './types';
+import './styles.css';
 
 const ROW_HEIGHT = 40;
 
@@ -21,6 +21,8 @@ type Props = {
   onResetPaging: () => void;
   paging: StoragePaging;
   error?: string;
+  selection?: UIStorageItem[];
+  onSelectItem?: (selection: UIStorageItem[]) => void;
 };
 
 export function StorageContentList({
@@ -33,6 +35,8 @@ export function StorageContentList({
   onResetPaging,
   paging,
   error,
+  selection,
+  onSelectItem,
 }: Props) {
   const dataSource = useMemo<UIStorageItem[]>(
     () =>
@@ -56,6 +60,26 @@ export function StorageContentList({
       body: () => <Alert type="error" message={error} />,
     };
   }, [error]);
+  const selectionConfig = useMemo(
+    () =>
+      onSelectItem && selection
+        ? {
+            preserveSelectedRowKeys: true,
+            selectedRowKeys: selection.map((record) => `${record.type}_${record.name}`),
+            hideSelectAll: true,
+            onChange: (_: React.Key[], selectedRows: UIStorageItem[]) => {
+              onSelectItem(selectedRows);
+            },
+            renderCell: (_value: boolean, record: UIStorageItem, _index: number, node: React.ReactNode) => {
+              if (record.type === 'navigateBack') {
+                return null;
+              }
+              return node;
+            },
+          }
+        : undefined,
+    [onSelectItem, selection],
+  );
   return (
     <div className="flex overflow-hidden h-full">
       <Table
@@ -72,6 +96,7 @@ export function StorageContentList({
         pagination={false}
         rowClassName="cursor-pointer"
         scroll={{ y: DEFAULT_DATASTORAGE_PAGE_SIZE * ROW_HEIGHT }}
+        rowSelection={selectionConfig}
         footer={() => (
           <StoragePagination
             onClickPrevPage={onClickPrevPage}
