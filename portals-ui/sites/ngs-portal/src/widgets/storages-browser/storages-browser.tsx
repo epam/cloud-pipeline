@@ -52,6 +52,19 @@ export function StoragesBrowser({
     ],
     [search],
   );
+  const selectionConfig = useMemo(
+    () => ({
+      selectedRowKeys: selectedStorage ? [selectedStorage.id] : [],
+      hideSelectAll: true,
+      onChange: (_: React.Key[], selectedRows: DataStorage[]) => {
+        const last = selectedRows.pop();
+        if (last) {
+          onChangeStorage(last);
+        }
+      },
+    }),
+    [onChangeStorage, selectedStorage],
+  );
   return (
     <Splitter className="storages-browser overflow-hidden p-2 h-[60vh]">
       <Splitter.Panel style={{ display: 'flex' }} defaultSize="40%" min="20%" max="70%">
@@ -74,10 +87,7 @@ export function StoragesBrowser({
             pagination={false}
             showHeader={false}
             rowClassName="cursor-pointer"
-            rowSelection={{
-              selectedRowKeys: selectedStorage ? [selectedStorage.id] : [],
-              hideSelectAll: true,
-            }}
+            rowSelection={selectionConfig}
             scroll={{ y: '100vh' }}
             rowKey={(record) => record.id}
             style={{ minWidth: '20%' }}
