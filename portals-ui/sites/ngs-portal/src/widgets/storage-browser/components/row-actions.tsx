@@ -31,12 +31,17 @@ export const RowActions = ({ item, onEdit, onDelete, onDownload }: Props) => {
   };
 
   return (
-    <div className="flex gap-1">
-      <Button type="text" icon={<PencilIcon className="w-4 h-4" />} onClick={handleEdit} />
-      <Button type="text" icon={<TrashIcon className="w-4 h-4" />} onClick={handleDelete} />
+    <div className="flex justify-end gap-1">
       {type === DataStorageItemTypes.file && (
         <Button type="text" icon={<ArrowDownTrayIcon className="w-4 h-4" />} onClick={handleDownload} />
       )}
+      <Button type="text" icon={<PencilIcon className="w-4 h-4" />} onClick={handleEdit} />
+      <Button
+        type="text"
+        className="ml-1"
+        icon={<TrashIcon className="w-4 h-4 stroke-red-500" />}
+        onClick={handleDelete}
+      />
     </div>
   );
 };

@@ -39,7 +39,7 @@ export const getColumns = (renderRowActions: (item: UIStorageItem) => ReactEleme
   },
   {
     key: 'actions',
-    width: 80,
+    width: 90,
     render: (item: UIStorageItem) => renderRowActions(item),
   },
 ];
