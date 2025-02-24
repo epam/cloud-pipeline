@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
+import com.epam.pipeline.entity.user.SidImpl;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -857,7 +858,7 @@ public class DataStorageController extends AbstractRestController {
         return Result.success();
     }
 
-    @PostMapping("/datastorage/{id}/permissions")
+    @PostMapping("/datastorage/{id}/paths/permissions")
     @ResponseBody
     @ApiOperation(
             value = "Updates storage path permissions specified storage and user/group.",
@@ -866,7 +867,7 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result registerPathPermissions(
+    public Result updatePathPermissions(
             @PathVariable(value = ID) final Long id,
             @RequestParam final String sidName, @RequestParam final boolean isPrincipal,
             @RequestBody final List<StoragePathPermissions> permissions) {
@@ -874,7 +875,7 @@ public class DataStorageController extends AbstractRestController {
         return Result.success();
     }
 
-    @GetMapping("/datastorage/{id}/permissions")
+    @GetMapping("/datastorage/{id}/paths/permissions")
     @ResponseBody
     @ApiOperation(
             value = "Loads storage path permissions for specified storage and current user.",
@@ -885,5 +886,34 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result<List<StoragePathPermissions>> loadStoragePathPermissions(@PathVariable(value = ID) final Long id) {
         return Result.success(dataStorageApiService.loadStoragePathPermissions(id));
+    }
+
+    @DeleteMapping("/datastorage/{id}/paths/permissions")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes storage path permissions for specified storage for specified users and groups.",
+            notes = "Deletes storage path permissions for specified storage for specified users and groups. " +
+                    "If no users/groups provided all storage path permissions for specified storage will be deleted.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result deleteStoragePathPermissions(@PathVariable(value = ID) final Long id,
+                                               @RequestBody final List<SidImpl> sids) {
+        dataStorageApiService.deleteStoragePathPermissions(id, sids);
+        return Result.success();
+    }
+
+    @GetMapping("/datastorage/{id}/paths/permissions/sids")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads users and groups that have storage path permissions for specified storage.",
+            notes = "Loads users and groups that have storage path permissions for specified storage.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<SidImpl>> loadStoragePathPermissionsSids(@PathVariable(value = ID) final Long id) {
+        return Result.success(dataStorageApiService.loadStoragePathPermissionsSids(id));
     }
 }

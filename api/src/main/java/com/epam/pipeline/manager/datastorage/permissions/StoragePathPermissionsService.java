@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -64,7 +65,10 @@ public class StoragePathPermissionsService {
     public void batchUpdate(final Long storageId, final String sidId, final boolean principal,
                             final List<StoragePathPermissions> pathPermissions) {
         final String sidName = sidId.toUpperCase(Locale.ROOT);
-        pathPermissionsDao.deleteForStorageAndSid(storageId, sidName, principal);
+        final SidImpl sid = new SidImpl();
+        sid.setName(sidName);
+        sid.setPrincipal(principal);
+        pathPermissionsDao.deleteForStorageAndSids(storageId, Collections.singletonList(sid));
         if (CollectionUtils.isEmpty(pathPermissions)) {
             return;
         }
@@ -87,31 +91,65 @@ public class StoragePathPermissionsService {
      *
      * @param storageId storage ID
      */
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void deleteByStorageId(final Long storageId) {
         pathPermissionsDao.deleteForStorageId(storageId);
     }
 
     /**
-     * Determines closest permission on given folder path and specified storage and current user.
+     * Deletes permissions for specified storage. If sids provided permissions shall be
+     * deleted for specified users/groups only.
      *
      * @param storageId storage ID
-     * @param path path to file
-     * @return permissions if available or throws AccessDeniedException if no permissions exist.
+     * @param sids  users or groups to delete
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void deleteByStorageIdAndSids(final Long storageId, final List<SidImpl> sids) {
+        if (CollectionUtils.isEmpty(sids)) {
+            pathPermissionsDao.deleteForStorageId(storageId);
+        }
+        pathPermissionsDao.deleteForStorageAndSids(storageId, sids);
+    }
+
+    /**
+     * Load users and groups that contains any path permissions for specified storage.
+     *
+     * @param storageId storage ID
+     * @return users and groups list
+     */
+    public List<SidImpl> loadSids(final Long storageId) {
+        return pathPermissionsDao.findSids(storageId);
+    }
+
+    /**
+     * Determines if current user can write to folder by given path.
+     * If no write permissions provided for user directly or one of user's group an AccessDeniedException
+     * shall be occurred.
+     *
+     * @param storageId storage ID
+     * @param path path to folder
      */
     public void canWriteToFolder(final Long storageId, final String path) {
         orThrowAccessDenied(findFolderPermissions(storageId, path).filter(this::hasWritePermissions));
     }
 
+    /**
+     * Determines if current user can read folder by given path.
+     * If no permissions provided for user directly or one of user's group an AccessDeniedException
+     * shall be occurred.
+     *
+     * @param storageId storage ID
+     * @param path path to folder
+     */
     public void canReadFolder(final Long storageId, final String path) {
         orThrowAccessDenied(findFolderPermissions(storageId, path));
     }
 
     /**
-     * Determines nearest permission on given file path for specified storage and current user.
-     * - If permissions granted directly to file returns permission on this file.
-     * - If permissions granted to one of the parent folder, returns permissions on the nearest parent folder if found.
-     * - Otherwise, AccessDeniedException
+     * Determines if current user can write to file by given path.
+     * Write permissions shall be granted directly to file or one of it`s parent folder.
+     * If no write permissions provided for user directly or one of user`s group an AccessDeniedException
+     * shall be occurred.
      *
      * @param storageId storage ID
      * @param path path to file
@@ -120,10 +158,30 @@ public class StoragePathPermissionsService {
         orThrowAccessDenied(findFilePermissions(storageId, path).filter(this::hasWritePermissions));
     }
 
+    /**
+     * Determines if current user can read file by given path.
+     * Permissions shall be granted directly to file or one of it`s parent folder.
+     * If no permissions provided for user directly or one of user`s group an AccessDeniedException shall be occurred.
+     *
+     * @param storageId storage ID
+     * @param path path to file
+     */
     public void canReadFile(final Long storageId, final String path) {
         orThrowAccessDenied(findFilePermissions(storageId, path));
     }
 
+    /**
+     * Determines if current user can see folder by given path. To have such access to folder user may have
+     * permissions to:
+     *  - folder directly
+     *  - one oth parent folders
+     *  - one of the child files or folders
+     * That permission does not indicate that user can read folder content.
+     * If no permissions provided for user directly or one of user`s group an AccessDeniedException shall be occurred.
+     *
+     * @param storageId storage ID
+     * @param path path to folder
+     */
     public void canGetFolder(final Long storageId, final String path) {
         getFolderListPermissions(storageId, path);
     }

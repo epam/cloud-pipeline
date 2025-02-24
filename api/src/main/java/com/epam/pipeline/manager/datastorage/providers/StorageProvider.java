@@ -62,7 +62,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     Stream<DataStorageFile> listDataStorageFiles(T dataStorage, String path);
 
     DataStorageListing getItems(T dataStorage, String path,
-            Boolean showVersion, Integer pageSize, String marker, StorageFolderListPermissionsContainer permissionsContainer);
+            Boolean showVersion, Integer pageSize, String marker,
+                                StorageFolderListPermissionsContainer permissionsContainer);
 
     DataStorageListing getItems(T dataStorage, String path,
                                 Boolean showVersion, Integer pageSize, String marker,

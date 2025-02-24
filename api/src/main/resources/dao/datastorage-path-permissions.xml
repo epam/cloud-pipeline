@@ -50,7 +50,8 @@
                     DELETE FROM
                         pipeline.datastorage_path_permissions p
                     WHERE
-                        p.storage_id = :STORAGE_ID AND p.sid_id = :SID_ID AND p.principal = :PRINCIPAL
+                        p.storage_id = ?
+                    @WHERE@
                 ]]>
             </value>
         </constructor-arg>
@@ -117,6 +118,20 @@
                     WHERE
                         p.storage_id = ?
                     @WHERE@
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--findSidsWithStoragePathPermissionsQuery-->
+                <![CDATA[
+                    SELECT DISTINCT
+                        p.sid_id,
+                        p.principal
+                    FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = ?
                 ]]>
             </value>
         </constructor-arg>

@@ -45,6 +45,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     private final String deleteStoragePathPermissionsByStorageIdQuery;
     private final String findStoragePathPermissionsByPrefixQuery;
     private final String countStoragePathPermissionsQuery;
+    private final String findSidsWithStoragePathPermissionsQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void batchInsert(final List<StoragePathPermissions> entities, final Long storageId,
@@ -56,9 +57,10 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteForStorageAndSid(final Long storageId, final String sidIdentifier, final boolean principal) {
-        getNamedParameterJdbcTemplate().update(deleteStoragePathPermissionsQuery,
-                Parameters.getParameters(storageId, sidIdentifier, principal));
+    public void deleteForStorageAndSids(final Long storageId, final List<SidImpl> sids) {
+        final String query = WHERE_PATTERN.matcher(deleteStoragePathPermissionsQuery)
+                .replaceFirst(buildWhere(sids, null, false));
+        getJdbcTemplate().update(query, storageId);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -109,6 +111,11 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                 .replaceFirst(buildWhere(sids, null, false));
         return getNamedParameterJdbcTemplate()
                 .query(query, parameters, Parameters.getRowMapper());
+    }
+
+    public List<SidImpl> findSids(final Long storageId) {
+        return getJdbcTemplate()
+                .query(findSidsWithStoragePathPermissionsQuery, Parameters.getSidsRowMapper(),  storageId);
     }
 
     private String buildWhere(final List<SidImpl> sids, final List<String> prefixes, final boolean foldersOnly) {
@@ -174,7 +181,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
         STORAGE_ID,
         PATH,
         FILE_NAME,
-        SID_ID,  // TODO: choose better name
+        SID_ID,
         PRINCIPAL,
         MASK;
 
@@ -189,20 +196,21 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                     .addValue(MASK.name(), entity.getMask());
         }
 
-        static MapSqlParameterSource getParameters(final Long storageId, final String sidIdentifier,
-                                                   final boolean principal) {
-            return new MapSqlParameterSource()
-                    .addValue(STORAGE_ID.name(), storageId)
-                    .addValue(SID_ID.name(), sidIdentifier)
-                    .addValue(PRINCIPAL.name(), principal);
-        }
-
         static RowMapper<StoragePathPermissions> getRowMapper() {
             return (rs, rowNum) -> StoragePathPermissions.builder()
                     .folderPath(rs.getString(PATH.name()))
                     .fileName(rs.getString(FILE_NAME.name()))
                     .mask(rs.getInt(MASK.name()))
                     .build();
+        }
+
+        static RowMapper<SidImpl> getSidsRowMapper() {
+            return (rs, rowNum) -> {
+                final SidImpl sid = new SidImpl();
+                sid.setName(rs.getString(SID_ID.name()));
+                sid.setPrincipal(rs.getBoolean(PRINCIPAL.name()));
+                return sid;
+            };
         }
     }
 

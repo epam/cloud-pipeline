@@ -87,7 +87,7 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
                 .findByStorageAndSids(storageId, Collections.singletonList(user));
         assertThat(actual).hasSize(permissions.size());
 
-        storagePathPermissionsDao.deleteForStorageAndSid(storageId, USER, true);
+        storagePathPermissionsDao.deleteForStorageAndSids(storageId, Collections.singletonList(userSid()));
 
         final List<StoragePathPermissions> empty = storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Collections.singletonList(user));
@@ -112,14 +112,14 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
         assertThat(storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Collections.singletonList(group))).hasSize(permissions.size());
 
-        storagePathPermissionsDao.deleteForStorageAndSid(storageId, USER, true);
+        storagePathPermissionsDao.deleteForStorageAndSids(storageId, Collections.singletonList(userSid()));
 
         assertThat(storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Collections.singletonList(user))).isEmpty();
         assertThat(storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Arrays.asList(user, group))).hasSize(permissions.size());
 
-        storagePathPermissionsDao.deleteForStorageAndSid(storageId, GROUP, false);
+        storagePathPermissionsDao.deleteForStorageAndSids(storageId, Collections.singletonList(groupSid()));
         assertThat(storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Arrays.asList(user, group))).isEmpty();
     }
@@ -254,7 +254,22 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
         assertThat(permissionsCountWhenNotGranted).isEqualTo(0);
     }
 
-    //TODO: bucket root cases?
+    @Test
+    @Transactional
+    public void shouldLoadSids() {
+        final List<StoragePathPermissions> permissions = new ArrayList<>(permissions());
+        permissions.add(StoragePathPermissions.builder()
+                .folderPath(PATH0)
+                .mask(READ)
+                .build());
+        final Long storageId = objectStorage.getId();
+
+        storagePathPermissionsDao.batchInsert(permissions, storageId, USER, true);
+        storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
+
+        final List<SidImpl> actual = storagePathPermissionsDao.findSids(storageId);
+        assertThat(actual).hasSize(2).contains(userSid(), groupSid());
+    }
 
     private static List<StoragePathPermissions> permissions() {
         return Arrays.asList(StoragePathPermissions.builder()

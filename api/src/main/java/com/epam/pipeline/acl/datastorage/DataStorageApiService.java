@@ -47,6 +47,7 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -418,7 +419,7 @@ public class DataStorageApiService {
         return dataStorageManager.searchDataStorageItemByTag(request);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
     public void updateStoragePathPermissions(final Long id, final String sidName, final boolean principal,
                                              final List<StoragePathPermissions> permissions) {
         dataStorageManager.updateStoragePathPermissions(id, sidName, principal, permissions);
@@ -427,5 +428,15 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<StoragePathPermissions> loadStoragePathPermissions(final Long id) {
         return dataStorageManager.loadStoragePathPermissionsHierarchy(id);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public void deleteStoragePathPermissions(final Long id, final List<SidImpl> sids) {
+        dataStorageManager.deleteStoragePathPermissions(id, sids);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public List<SidImpl> loadStoragePathPermissionsSids(final Long id) {
+        return dataStorageManager.loadStoragePathPermissionsSids(id);
     }
 }
