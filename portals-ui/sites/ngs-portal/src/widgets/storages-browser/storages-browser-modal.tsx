@@ -53,7 +53,10 @@ export function StoragesBrowserModal({ visible, onOk, onCancel }: Props) {
           <Button onClick={() => onOk(payload)} type="primary" disabled={!payload || pending}>
             {items.length ? `Select (${items.length} item${items.length > 1 ? 's' : ''})` : 'Select'}
           </Button>
-          <Button type="primary" disabled={pending} onClick={() => onOk(selectedStorage?.path ?? '')}>
+          <Button
+            type="primary"
+            disabled={pending}
+            onClick={() => onOk(selectedStorage?.pathMask ?? selectedStorage?.path ?? '')}>
             Select storage
           </Button>
         </div>

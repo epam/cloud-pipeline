@@ -125,7 +125,7 @@ export function LaunchForm({
     });
   };
   const resetForm = () => {
-    setParametersFormData(mapParameters(configuration));
+    setParametersFormData(mapParameters(configuration, runDefaultParameters));
   };
   return (
     <div className={classNames('flex flex-col gap-2 overflow-hidden', className)}>

@@ -56,14 +56,10 @@ export function StoragesBrowser({
     () => ({
       selectedRowKeys: selectedStorage ? [selectedStorage.id] : [],
       hideSelectAll: true,
-      onChange: (_: React.Key[], selectedRows: DataStorage[]) => {
-        const last = selectedRows.pop();
-        if (last) {
-          onChangeStorage(last);
-        }
-      },
+      renderCell: () => null,
+      columnWidth: 0,
     }),
-    [onChangeStorage, selectedStorage],
+    [selectedStorage],
   );
   return (
     <Splitter className="storages-browser overflow-hidden p-2 h-[60vh]">
