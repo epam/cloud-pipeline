@@ -1,0 +1,15 @@
+.storages-browser div[class~="ant-table-wrapper"],
+.storages-browser div[class~="ant-spin-nested-loading"],
+.storages-browser div[class~="ant-spin-container"],
+.storages-browser div[class~="ant-table"],
+.storages-browser div[class~="ant-table-container"] {
+  @apply flex;
+}
+
+.storages-browser div[class~="ant-table-container"] {
+  @apply flex-col;
+}
+
+.storages-browser div[class~="ant-table-wrapper"] {
+  @apply overflow-hidden;
+}

@@ -2,16 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
-import type {
-  PipelineParameter,
-  PipelineParametersTypes,
-  RunDefaultParameter,
-} from '@cloud-pipeline/core';
-import {
-  type PipelineConfiguration,
-  type MappedPipelineParameter,
-  type Pipeline,
-} from '@cloud-pipeline/core';
+import type { PipelineParameter, PipelineParametersTypes, RunDefaultParameter } from '@cloud-pipeline/core';
+import { type PipelineConfiguration, type MappedPipelineParameter, type Pipeline } from '@cloud-pipeline/core';
 import { launchPipeline } from '@cloud-pipeline/api';
 import { generateLaunchPayload } from './utils/generate-launch-payload';
 import { LaunchParametersForm } from './forms/parameters-form';
@@ -41,9 +33,7 @@ export function LaunchForm({
   const [pending, setPending] = useState(false);
   const [modal, launchConfirmContext] = Modal.useModal();
   const navigate = useNavigate();
-  const [parametersFormData, setParametersFormData] = useState<
-    MappedPipelineParameter[] | undefined
-  >();
+  const [parametersFormData, setParametersFormData] = useState<MappedPipelineParameter[] | undefined>();
   const [messageApi, contextHolder] = message.useMessage();
   useEffect(() => {
     if (version && configuration) {
@@ -55,9 +45,7 @@ export function LaunchForm({
       if (!parametersFormData?.length) {
         return;
       }
-      const idx = parametersFormData.findIndex(
-        (parameter) => parameter.key === key,
-      );
+      const idx = parametersFormData.findIndex((parameter) => parameter.key === key);
       const update = parametersFormData.slice();
       update.splice(idx, 1, parameter);
       setParametersFormData(update);
@@ -66,9 +54,7 @@ export function LaunchForm({
   );
   const launchDisabled = useMemo(() => {
     if (parametersFormData && pipelineInfo && configuration && version) {
-      return parametersFormData.some(
-        (parameter) => parameter.error ?? parameter.keyError,
-      );
+      return parametersFormData.some((parameter) => parameter.error ?? parameter.keyError);
     }
     return true;
   }, [configuration, parametersFormData, pipelineInfo, version]);
@@ -76,17 +62,13 @@ export function LaunchForm({
     return parametersFormData?.some((parameter) => parameter.touched);
   }, [parametersFormData]);
   const launchSettings = useLaunchSettings();
-  const predefinedParameters = useMemo<
-    Record<string, PipelineParameter>
-  >(() => {
+  const predefinedParameters = useMemo<Record<string, PipelineParameter>>(() => {
     const { parameters = {} } = launchSettings;
     const result: Record<string, PipelineParameter> = {};
     for (const [param, value] of Object.entries(parameters)) {
       result[param] = {
         value: typeof value === 'boolean' ? value : `${value}`,
-        type: (typeof value === 'boolean'
-          ? 'boolean'
-          : 'string') as PipelineParametersTypes,
+        type: (typeof value === 'boolean' ? 'boolean' : 'string') as PipelineParametersTypes,
         required: true,
       };
     }
@@ -130,9 +112,7 @@ export function LaunchForm({
                 content: (
                   <div className="flex flex-col items-start">
                     <b>Launch failed.</b>
-                    <span>
-                      {error instanceof Error ? error.message : String(error)}
-                    </span>
+                    <span>{error instanceof Error ? error.message : String(error)}</span>
                   </div>
                 ),
                 duration: 4,
@@ -145,11 +125,10 @@ export function LaunchForm({
     });
   };
   const resetForm = () => {
-    setParametersFormData(mapParameters(configuration));
+    setParametersFormData(mapParameters(configuration, runDefaultParameters));
   };
   return (
-    <div
-      className={classNames('flex flex-col gap-2 overflow-hidden', className)}>
+    <div className={classNames('flex flex-col gap-2 overflow-hidden', className)}>
       {contextHolder}
       {launchConfirmContext}
       <LaunchParametersForm
@@ -160,10 +139,7 @@ export function LaunchForm({
       />
       {!readOnly ? (
         <div className="flex items-center gap-1 justify-end">
-          <Button
-            onClick={resetForm}
-            disabled={!formChanged}
-            className="ml-auto">
+          <Button onClick={resetForm} disabled={!formChanged} className="ml-auto">
             Reset
           </Button>
           <Button

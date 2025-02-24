@@ -7,7 +7,7 @@ export const getColumns = (renderRowActions: (item: UIStorageItem) => ReactEleme
   {
     dataIndex: 'type',
     key: 'type',
-    width: 20,
+    width: 25,
     render: (value: UIStorageItem['type']) => {
       if (value === DataStorageItemTypes.file) {
         return <DocumentIcon className="w-4 h-4" />;
