@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import type { UIEvent as ReactUIEvent } from 'react';
 import { Alert, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
 import { parentPath } from '@cloud-pipeline/core';
@@ -11,6 +12,7 @@ import { RowActions } from './row-actions';
 import './styles.css';
 
 const ROW_HEIGHT = 40;
+const INFINITE_SCROLL_OFFSET = 40;
 
 type Props = {
   content?: DataStorageItem[];
@@ -33,7 +35,6 @@ export function StorageContentList({
   onRowClick,
   currentPath,
   pending,
-  onClickPrevPage,
   onClickNextPage,
   onResetPaging,
   paging,
@@ -43,6 +44,10 @@ export function StorageContentList({
   onRowDownloadClick,
   storageId,
 }: Props) {
+  const tableRef: Parameters<typeof Table>[0]['ref'] = useRef(null);
+  useEffect(() => {
+    tableRef.current?.scrollTo({ index: 0 });
+  }, [currentPath]);
   const dataSource = useMemo<UIStorageItem[]>(() => {
     const navigateBack: UIStorageItem | undefined =
       currentPath !== ROOT_PLACEHOLDER
@@ -87,6 +92,16 @@ export function StorageContentList({
 
   const columns = useMemo(() => getColumns(renderRowActions), [renderRowActions]);
 
+  const onScroll = useCallback(
+    (event: ReactUIEvent) => {
+      const { scrollHeight, scrollTop, clientHeight } = event.target as HTMLElement;
+      const bottom = scrollHeight - scrollTop - INFINITE_SCROLL_OFFSET < clientHeight;
+      if (!pending && bottom && paging.canNavigateNext) {
+        onClickNextPage();
+      }
+    },
+    [onClickNextPage, paging.canNavigateNext, pending],
+  );
   return (
     <div className="flex overflow-hidden h-full">
       <Table
@@ -99,19 +114,12 @@ export function StorageContentList({
           onClick: () => onRowClick?.(record),
         })}
         loading={pending}
+        ref={tableRef}
         size="small"
         pagination={false}
         rowClassName="cursor-pointer"
         scroll={{ y: DEFAULT_DATASTORAGE_PAGE_SIZE * ROW_HEIGHT }}
-        footer={() => (
-          <StoragePagination
-            onClickPrevPage={onClickPrevPage}
-            onClickNextPage={onClickNextPage}
-            onResetPaging={onResetPaging}
-            paging={paging}
-            pending={pending}
-          />
-        )}
+        onScroll={onScroll}
       />
     </div>
   );

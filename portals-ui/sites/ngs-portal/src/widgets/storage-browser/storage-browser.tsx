@@ -32,6 +32,7 @@ export function StorageBrowser({
   const {
     items,
     currentPath,
+    prevCurrentPath,
     changePath: navigate,
     navigatePrevPage,
     navigateNextPage,
@@ -117,6 +118,7 @@ export function StorageBrowser({
         content={items}
         onRowClick={onRowClick}
         currentPath={currentPath}
+        prevCurrentPath={prevCurrentPath}
         pending={pending || isDownloading}
         onClickNextPage={navigateNextPage}
         onClickPrevPage={navigatePrevPage}

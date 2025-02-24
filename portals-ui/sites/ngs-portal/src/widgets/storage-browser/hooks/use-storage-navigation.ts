@@ -1,7 +1,7 @@
 import { fetchDataStoragePage } from '@cloud-pipeline/api';
 import type { DataStorageItem } from '@cloud-pipeline/core';
 import { correctPath } from '@cloud-pipeline/core';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { PageMarkers, StoragePaging } from '../types';
 import {
   BLANK_MARKER,
@@ -13,6 +13,7 @@ import {
 
 export function useStorageNavigation(storageId: number | undefined) {
   const [currentPath, setCurrentPath] = useState<string | undefined>(ROOT_PLACEHOLDER);
+  const prevCurrentPath = useRef<string | undefined>(undefined);
   const [markers, setMarkers] = useState<PageMarkers>({});
   const [items, setItems] = useState<DataStorageItem[]>([]);
   const [refreshToken, setRefreshtoken] = useState(0);
@@ -34,22 +35,10 @@ export function useStorageNavigation(storageId: number | undefined) {
     return currentMarker ? currentMarker.markers[currentMarker.currentPage] : undefined;
   }, [currentPath, markers]);
 
-  const setupMarkersForPath = useCallback(
-    (path: string = ROOT_PLACEHOLDER) => {
-      if (!markers[path]) {
-        const updatedMarkers = {
-          ...markers,
-          [path]: BLANK_MARKER,
-        } as PageMarkers;
-        setMarkers(updatedMarkers);
-      }
-    },
-    [markers],
-  );
-
   const fetchCurrentPage = useCallback(async () => {
     if (storageId) {
       let pagePath = currentPath === ROOT_PLACEHOLDER ? undefined : currentPath;
+      const pathChanged = prevCurrentPath.current !== currentPath;
       if (pagePath) {
         pagePath = correctPath(pagePath, { removeTrailingSlash: true, removeLeadingSlash: true });
       }
@@ -64,7 +53,9 @@ export function useStorageNavigation(storageId: number | undefined) {
           const newMarkers = insertNextPageMarker(pagePath, response.nextPageMarker, markers);
           setMarkers(newMarkers);
         }
-        setItems(response.results);
+        if (response.results) {
+          setItems(pathChanged ? response.results : [...items, ...response.results]);
+        }
         if (error) {
           setError(undefined);
         }
@@ -76,6 +67,7 @@ export function useStorageNavigation(storageId: number | undefined) {
         }
       } finally {
         setPending(false);
+        prevCurrentPath.current = currentPath;
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,12 +93,25 @@ export function useStorageNavigation(storageId: number | undefined) {
     }
   }, [currentPath, markers, paging.canNavigatePrev]);
 
+  const resetPageForPath = useCallback(
+    (path: string) => {
+      if (!path) {
+        return;
+      }
+      const newMarkers = setCurrentPage(path, () => 0, markers) as PageMarkers;
+      if (newMarkers) {
+        setMarkers(resetMarkersForPath(currentPath, newMarkers));
+      }
+    },
+    [currentPath, markers],
+  );
+
   const changePath = useCallback(
     (path: string) => {
       setCurrentPath(path);
-      setupMarkersForPath(path);
+      resetPageForPath(path ?? ROOT_PLACEHOLDER);
     },
-    [setupMarkersForPath],
+    [resetPageForPath],
   );
 
   const resetNavigation = useCallback(() => {
@@ -124,17 +129,16 @@ export function useStorageNavigation(storageId: number | undefined) {
   }, [fetchCurrentPage]);
 
   const refreshCurrentPath = useCallback(() => {
-    const newMarkers = setCurrentPage(currentPath ?? ROOT_PLACEHOLDER, () => 0, markers) as PageMarkers;
-    if (newMarkers) {
-      setMarkers(resetMarkersForPath(currentPath, newMarkers));
-    }
+    setItems([]);
+    resetPageForPath(currentPath ?? ROOT_PLACEHOLDER);
     setRefreshtoken(refreshToken + 1);
-  }, [currentPath, markers, refreshToken]);
+  }, [currentPath, refreshToken, resetPageForPath]);
 
   return useMemo(
     () => ({
       changePath,
       currentPath,
+      prevCurrentPath: prevCurrentPath.current,
       navigatePrevPage,
       navigateNextPage,
       items,
