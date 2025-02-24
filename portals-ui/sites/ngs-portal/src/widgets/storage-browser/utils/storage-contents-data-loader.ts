@@ -1,7 +1,7 @@
 import type { DataStorageItem } from '@cloud-pipeline/core';
 import { correctPath } from '@cloud-pipeline/core';
 import { fetchDataStoragePage } from '@cloud-pipeline/api';
-import { ROOT_PLACEHOLDER } from './navigation';
+import { ROOT_PLACEHOLDER } from './misc';
 
 export type StorageContentsPage = {
   page: number;
@@ -12,7 +12,7 @@ type StorageContentsPageWithMarker = StorageContentsPage & {
   marker: string | undefined;
 };
 
-export type StorageContents = {
+export type StorageContentsData = {
   storageId: number;
   path?: string;
   pending: boolean;
@@ -22,13 +22,13 @@ export type StorageContents = {
   hasMoreItems: boolean;
 };
 
-export type StorageDataListener = (data: StorageContents) => void;
+export type StorageContentsDataListener = (data: StorageContentsData) => void;
 
 export type StorageContentsLoaderOptions = {
   storageId: number;
   path?: string;
   pageSize?: number;
-  listeners?: StorageDataListener[];
+  listeners?: StorageContentsDataListener[];
   showVersions?: boolean;
   showArchived?: boolean;
 };
@@ -39,8 +39,8 @@ function pageWithMarkerToPage(pageWithMarker: StorageContentsPageWithMarker): St
   return page;
 }
 
-export class StorageContentsLoader {
-  private listeners: StorageDataListener[];
+export class StorageContentsDataLoader {
+  private listeners: StorageContentsDataListener[];
   private readonly storageId: number;
   private readonly path: string | undefined;
   private readonly pageSize: number;
@@ -79,16 +79,16 @@ export class StorageContentsLoader {
     this.listeners = [];
   }
 
-  addListener(listener: StorageDataListener) {
+  addListener(listener: StorageContentsDataListener) {
     this.removeListener(listener);
     this.listeners.push(listener);
   }
 
-  removeListener(listener: StorageDataListener) {
+  removeListener(listener: StorageContentsDataListener) {
     this.listeners = this.listeners.filter((l) => l !== listener);
   }
 
-  getData(): StorageContents {
+  getData(): StorageContentsData {
     const lastPage = this.pages.length > 0 ? this.pages[this.pages.length - 1] : undefined;
     return {
       storageId: this.storageId,

@@ -1,5 +1,5 @@
 import type { DataStorageItem } from '@cloud-pipeline/core';
-import { StorageModal, UpdateEntityModalMode } from '../../constants';
+import { StorageModal, UpdateEntityModalMode } from '../constants.ts';
 
 type ModalState = {
   openModal: StorageModal | null;

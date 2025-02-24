@@ -18,7 +18,7 @@ const actions = [
   },
 ];
 
-export function HeaderActions() {
+export function StorageActions() {
   const { onCreateItem } = useStorageContext();
   const onMenuClick = useCallback(
     (o: { key: string }) => {

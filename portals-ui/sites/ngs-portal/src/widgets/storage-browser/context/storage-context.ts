@@ -1,16 +1,18 @@
 import { createContext, useContext } from 'react';
 import type { DataStorage, DataStorageItem, DataStorageItemTypes } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
-import type { StorageContents } from '../utils/storage-contents.ts';
-import type { UIStorageItem } from '../types.ts';
+import type { StorageContentsData } from '../utils';
+import type { UIStorageItem } from '../types';
 
 export type StorageContext = {
   storage: DataStorage | undefined;
+  storages: DataStorage[];
+  onStorageChange: (storage: DataStorage, path?: string) => void;
   path: string | undefined;
   onChangePath: (path: string | undefined) => void;
   pending: boolean;
   error: string | undefined;
-  contents: StorageContents | undefined;
+  contents: StorageContentsData | undefined;
   selectionEnabled: boolean;
   selectedItems: DataStorageItem[];
   onSelectionChanged: (selectedItems: DataStorageItem[]) => void;
@@ -25,6 +27,8 @@ export type StorageContext = {
 
 export const storageContext = createContext<StorageContext>({
   storage: undefined,
+  storages: [],
+  onStorageChange: noop,
   path: undefined,
   onChangePath: noop,
   pending: false,

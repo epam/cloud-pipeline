@@ -4,7 +4,6 @@ import type { CommonProps } from '@cloud-pipeline/components';
 import { Alert, Spin } from 'antd';
 import classNames from 'classnames';
 import { StorageBrowser } from '../../../../widgets/storage-browser';
-import { StoragePath } from '../../../../widgets/storage-path';
 import { useProjectDataStoragesConfiguration } from '../../../../shared/hooks/use-project-data-storages.ts';
 import { useDataStoragesStore } from '../../../../state/storages/hooks.ts';
 
@@ -47,24 +46,17 @@ export function ProjectStorages(props: Props) {
       {!storage && pending && !loaded && <Spin />}
       {!storage && !pending && <Alert type="warning" message="Project data storage is not specified" />}
       {storage && (
-        <>
-          <div className="flex-shrink-0">
-            <StoragePath
-              storage={storage}
-              path={path}
-              onPathChange={onChangePath}
-              onStorageChange={onStorageChange}
-              storages={projectDataStorages}
-            />
-          </div>
-          <StorageBrowser
-            storageId={storage}
-            path={path}
-            onPathChange={onChangePath}
-            showHeaderControls
-            className="flex-1 overflow-auto"
-          />
-        </>
+        <StorageBrowser
+          storage={storage}
+          path={path}
+          onPathChange={onChangePath}
+          onStorageChange={onStorageChange}
+          storages={projectDataStorages}
+          showBreadcrumbs
+          showHeaderControls
+          showItemActions
+          className="flex-1 overflow-auto"
+        />
       )}
     </div>
   );

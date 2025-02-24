@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Key, UIEvent as ReactUIEvent, ReactNode } from 'react';
-import { Alert, Table } from 'antd';
+import { Alert, Spin, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
 import { parentPath } from '@cloud-pipeline/core';
 import type { DataStorageItem } from '@cloud-pipeline/core';
-import { ROOT_PLACEHOLDER } from '../utils/navigation';
-import { getColumns } from '../utils';
-import type { UIStorageItem } from '../types';
-import { RowActions } from './row-actions';
-import { useStorageContext } from '../context/storage-context.ts';
-import { isDataStorageItem } from '../utils/misc.ts';
+import type { UIStorageItem } from '../../types';
+import { StorageItemActions } from './storage-item-actions';
+import { useStorageContext } from '../../context/storage-context';
+import { isDataStorageItem, ROOT_PLACEHOLDER } from '../../utils';
+import {
+  storageItemDateChangedColumn,
+  storageItemNameColumn,
+  storageItemSizeColumn,
+  storageItemTypeColumn,
+} from './columns';
 import './styles.css';
 
 const ROW_HEIGHT = 40;
@@ -24,10 +28,13 @@ function getRowKey(storageItem: UIStorageItem): string {
   return `${storageItem.type}_${storageItem.path}`;
 }
 
-export function StorageContentList(props: Props) {
+export function StorageContents(props: Props) {
   const { pending: pendingProps, showItemActions = true } = props;
   const tableRef: Parameters<typeof Table>[0]['ref'] = useRef(null);
   const {
+    storage,
+    pending: storagePending,
+    error,
     onItemClick,
     loadNextPage,
     path: currentPath,
@@ -40,7 +47,7 @@ export function StorageContentList(props: Props) {
     items: content,
     pending: contentsPending,
     hasMoreItems,
-    error,
+    error: contentsError,
   } = useMemo(() => {
     if (contents) {
       return contents;
@@ -55,7 +62,7 @@ export function StorageContentList(props: Props) {
     };
   }, [contents]);
 
-  const pending = contentsPending || pendingProps;
+  const pending = storagePending || pendingProps;
 
   useEffect(() => {
     tableRef.current?.scrollTo({ top: 0 });
@@ -75,39 +82,42 @@ export function StorageContentList(props: Props) {
   }, [content, currentPath]);
 
   const errorBodyOverride = useMemo(() => {
-    if (!error) {
+    if (!contentsError) {
       return undefined;
     }
     return {
-      body: () => <Alert type="error" message={error} />,
+      body: () => <Alert type="error" message={contentsError} />,
     };
-  }, [error]);
+  }, [contentsError]);
 
-  const renderRowActions = useCallback(
-    (item: UIStorageItem) => {
-      if (!showItemActions) {
-        return <div></div>;
-      }
-      if (item.type === 'navigateBack') {
-        return <div></div>;
-      }
-      return <RowActions item={item} />;
-    },
+  const columns = useMemo(
+    () => [
+      storageItemTypeColumn,
+      storageItemNameColumn,
+      storageItemSizeColumn,
+      storageItemDateChangedColumn,
+      ...(showItemActions
+        ? [
+            {
+              key: 'actions',
+              width: 90,
+              render: (item: UIStorageItem) => <StorageItemActions item={item} />,
+            },
+          ]
+        : []),
+    ],
     [showItemActions],
   );
-
-  const columns = useMemo(() => getColumns(renderRowActions), [renderRowActions]);
 
   const onScroll = useCallback(
     (event: ReactUIEvent) => {
       const { scrollHeight, scrollTop, clientHeight } = event.target as HTMLElement;
       const bottom = scrollHeight - scrollTop - INFINITE_SCROLL_OFFSET < clientHeight;
-      if (!pending && bottom && hasMoreItems) {
-        console.log('scroll', pending, bottom, hasMoreItems);
+      if (!contentsPending && bottom && hasMoreItems) {
         loadNextPage();
       }
     },
-    [loadNextPage, hasMoreItems, pending],
+    [loadNextPage, hasMoreItems, contentsPending],
   );
 
   const selectionConfig = useMemo(
@@ -136,18 +146,46 @@ export function StorageContentList(props: Props) {
     [onSelectionChanged, selectedItems, selectionEnabled],
   );
 
+  const onRow = useCallback(
+    (storageItem: UIStorageItem) => ({
+      onClick: () => onItemClick(storageItem),
+    }),
+    [onItemClick],
+  );
+
+  if (!storage && pending) {
+    return (
+      <div className="overflow-hidden h-full">
+        <Spin />
+      </div>
+    );
+  }
+  if (!storage && error) {
+    return (
+      <div className="overflow-hidden h-full">
+        <Alert type="error" message={error} showIcon />
+      </div>
+    );
+  }
+
+  if (!storage) {
+    return (
+      <div className="overflow-hidden h-full">
+        <Alert type="error" message="Storage not found" showIcon />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex overflow-hidden h-full">
+    <div className="overflow-hidden h-full">
       <Table
         components={errorBodyOverride}
         className="storage-content-table"
         rowKey={getRowKey}
         dataSource={dataSource}
         columns={columns}
-        onRow={(record) => ({
-          onClick: () => onItemClick(record),
-        })}
-        loading={pending}
+        onRow={onRow}
+        loading={pending || contentsPending}
         ref={tableRef}
         size="small"
         pagination={false}

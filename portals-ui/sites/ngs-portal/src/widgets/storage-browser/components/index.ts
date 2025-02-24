@@ -1,2 +1,3 @@
-export { HeaderActions } from './header-actions';
-export { StorageContentList } from './storage-content-list';
+export { StorageActions } from './storage-actions.tsx';
+export { StorageContents } from './storage-contents';
+export { StoragePath } from './storage-path';

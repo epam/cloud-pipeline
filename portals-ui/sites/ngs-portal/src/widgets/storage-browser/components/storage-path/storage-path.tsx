@@ -1,38 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { ChangeEvent, MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Input, Button, message, Breadcrumb, Dropdown } from 'antd';
+import classNames from 'classnames';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
-import type { DataStorage, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
 import { correctPath } from '@cloud-pipeline/core';
 import { findDataStorage, FindDataStorageScope } from '@cloud-pipeline/core';
-import { useDataStorage, useDataStoragesStore, useSearchDataStorages } from '../../state/storages/hooks.ts';
+import { useDataStoragesStore } from '../../../../state/storages/hooks.ts';
 import type { CommonProps } from '@cloud-pipeline/components';
-import classNames from 'classnames';
+import { useStorageContext } from '../../context/storage-context.ts';
 
-type Props = CommonProps & {
-  storage: FindSingleDataStorageCriteria | undefined;
-  path: string | undefined;
-  onPathChange?: (value?: string) => void;
-  onStorageChange?: (storage: DataStorage, path?: string) => void;
-  storages?: Array<string | number | Partial<DataStorage>> | 'all';
-};
-
-export const StoragePath = ({
-  className,
-  style,
-  storages: storagesCriteria,
-  onPathChange,
-  storage: storageSearchCriteria,
-  onStorageChange,
-  path = '',
-}: Props) => {
+export const StoragePath = ({ className, style }: CommonProps) => {
+  const { storage, path = '', onChangePath: onPathChange, storages, onStorageChange } = useStorageContext();
   const { pending: storagesPending } = useDataStoragesStore();
-  const storage = useDataStorage(storageSearchCriteria);
-  const searchAllAvailable = useSearchDataStorages();
-  const storages = useMemo(
-    () => (storagesCriteria ? searchAllAvailable(storagesCriteria === 'all' ? undefined : storagesCriteria) : []),
-    [searchAllAvailable, storagesCriteria],
-  );
   const [rawValue, setRawValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();

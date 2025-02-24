@@ -3,34 +3,36 @@ import { useReducer } from 'react';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import type { StorageContext } from './storage-context';
 import { storageContext } from './storage-context';
-import type { DataStorageItem, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
+import type { DataStorage, DataStorageItem, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
 import { DataStorageItemTypes } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
-import { useDataStorage, useDataStoragesStore } from '../../../state/storages/hooks.ts';
-import type { StorageContents } from '../utils/storage-contents.ts';
-import { StorageContentsLoader } from '../utils/storage-contents.ts';
+import { useDataStorage, useDataStoragesStore, useSearchDataStorages } from '../../../state/storages/hooks.ts';
 import { DeleteEntityModal, ModalActionType, modalReducer, UpdateDataStorageEntityModal } from '../modals';
-import { StorageModal, UpdateEntityModalMode } from '../constants.ts';
+import { StorageModal, UpdateEntityModalMode } from '../modals/constants.ts';
 import { useDownloadFile } from '../hooks';
+import type { StorageContentsData } from '../utils';
+import { correctStoragePath, ROOT_PLACEHOLDER, StorageContentsDataLoader } from '../utils';
 import type { UIStorageItem } from '../types.ts';
-import { correctStoragePath, ROOT_PLACEHOLDER } from '../utils/navigation';
 
 export type StorageContextProps = {
-  storageId: FindSingleDataStorageCriteria;
+  storage: FindSingleDataStorageCriteria;
+  onStorageChange?: (storage: DataStorage, path?: string) => void;
+  storages?: Array<string | number | Partial<DataStorage>> | 'all';
   path?: string;
   pageSize?: number;
   showArchived?: boolean;
   showVersions?: boolean;
   onPathChange?: (path?: string) => void;
-  children?: ReactNode;
   selectedItems?: DataStorageItem[];
   onSelectionChanged?: (selection: DataStorageItem[]) => void;
 };
 
-export function StorageContextProvider(props: StorageContextProps) {
+export function StorageContextProvider(props: StorageContextProps & { children?: ReactNode }) {
   const {
     children,
-    storageId: storageIdCriteria,
+    storages: storagesCriteria,
+    onStorageChange,
+    storage: storageIdCriteria,
     path: pathProps,
     pageSize,
     onPathChange,
@@ -39,15 +41,20 @@ export function StorageContextProvider(props: StorageContextProps) {
     selectedItems,
     onSelectionChanged,
   } = props;
+  const searchAllAvailable = useSearchDataStorages();
+  const storages = useMemo(
+    () => (storagesCriteria ? searchAllAvailable(storagesCriteria === 'all' ? undefined : storagesCriteria) : []),
+    [searchAllAvailable, storagesCriteria],
+  );
   const storage = useDataStorage(storageIdCriteria);
   const [path, setPath] = useState(pathProps);
   useEffect(() => {
     setPath(correctStoragePath(pathProps));
   }, [storageIdCriteria, pathProps, setPath]);
   const { pending, error } = useDataStoragesStore();
-  const [loader, setLoader] = useState<StorageContentsLoader | undefined>(undefined);
-  const [contents, setContents] = useState<StorageContents | undefined>(undefined);
-  const onChangePath = useCallback(
+  const [loader, setLoader] = useState<StorageContentsDataLoader | undefined>(undefined);
+  const [contents, setContents] = useState<StorageContentsData | undefined>(undefined);
+  const onPathChangeCallback = useCallback(
     (newPath: string | undefined): void => {
       if (onPathChange) {
         onPathChange(correctStoragePath(newPath));
@@ -56,9 +63,17 @@ export function StorageContextProvider(props: StorageContextProps) {
     },
     [onPathChange, setPath],
   );
+  const onStorageChangeCallback = useCallback(
+    (storage: DataStorage, path?: string) => {
+      if (onStorageChange) {
+        onStorageChange(storage, path);
+      }
+    },
+    [onStorageChange],
+  );
   useEffect(() => {
     if (storage) {
-      const aLoader = new StorageContentsLoader({
+      const aLoader = new StorageContentsDataLoader({
         storageId: storage.id,
         path,
         pageSize,
@@ -66,6 +81,7 @@ export function StorageContextProvider(props: StorageContextProps) {
         showArchived,
         showVersions,
       });
+      setContents(aLoader.getData());
       setLoader(aLoader);
       return () => {
         setLoader(undefined);
@@ -85,7 +101,6 @@ export function StorageContextProvider(props: StorageContextProps) {
 
   const loadNextPage = useCallback(() => {
     if (loader) {
-      console.log('load next', loader);
       void loader.fetchNextPage();
     }
   }, [loader]);
@@ -132,10 +147,10 @@ export function StorageContextProvider(props: StorageContextProps) {
   const onItemClick = useCallback(
     (item: UIStorageItem) => {
       if (item.type === DataStorageItemTypes.folder || item.type === 'navigateBack') {
-        onChangePath(item.path || ROOT_PLACEHOLDER);
+        onPathChangeCallback(item.path || ROOT_PLACEHOLDER);
       }
     },
-    [onChangePath],
+    [onPathChangeCallback],
   );
 
   const selectedStorageItems = useMemo(() => selectedItems ?? [], [selectedItems]);
@@ -153,8 +168,10 @@ export function StorageContextProvider(props: StorageContextProps) {
   const ctx = useMemo<StorageContext>(
     () => ({
       storage,
+      storages,
+      onStorageChange: onStorageChangeCallback,
       path,
-      onChangePath,
+      onChangePath: onPathChangeCallback,
       pending,
       error,
       contents,
@@ -172,10 +189,11 @@ export function StorageContextProvider(props: StorageContextProps) {
     [
       path,
       storage,
+      storages,
       pending,
       error,
       contents,
-      onChangePath,
+      onPathChangeCallback,
       onDownloadItem,
       onDeleteItem,
       onEditItem,
@@ -186,6 +204,7 @@ export function StorageContextProvider(props: StorageContextProps) {
       selectedStorageItems,
       onStorageItemsSelectionChanged,
       selectionEnabled,
+      onStorageChangeCallback,
     ],
   );
   return (

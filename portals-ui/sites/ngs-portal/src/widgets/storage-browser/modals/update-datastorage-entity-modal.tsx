@@ -10,8 +10,8 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import type { UpdateDataStorageItemPayload } from '@cloud-pipeline/api';
 import { updateDataStorageItem } from '@cloud-pipeline/api';
-import { ROOT_PLACEHOLDER } from '../utils/navigation';
-import { actionWords, NAME_VALIDATION_TEXT, UpdateEntityModalMode } from '../constants';
+import { ROOT_PLACEHOLDER } from '../utils';
+import { actionWords, NAME_VALIDATION_TEXT, UpdateEntityModalMode } from './constants';
 
 type Props = {
   storageId: number;

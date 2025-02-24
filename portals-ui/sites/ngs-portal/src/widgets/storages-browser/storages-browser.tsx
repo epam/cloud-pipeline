@@ -120,12 +120,13 @@ export function StoragesBrowser({
       <Splitter.Panel style={{ display: 'flex' }}>
         {selectedStorage ? (
           <StorageBrowser
-            storageId={selectedStorage?.id}
+            storage={selectedStorage}
             path={path}
             onPathChange={onChangePath}
             className="flex-1 overflow-auto"
             selectedItems={storageSelectedItems}
             onSelectionChanged={onSelectionChangedCallback}
+            showHeaderControls={false}
             showItemActions={false}
           />
         ) : (
