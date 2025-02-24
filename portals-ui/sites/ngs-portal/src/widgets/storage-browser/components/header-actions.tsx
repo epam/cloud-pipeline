@@ -1,8 +1,9 @@
-import type { MenuProps } from 'antd';
 import { Button, Dropdown } from 'antd';
 import { ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { DocumentIcon, FolderIcon } from '@heroicons/react/24/outline';
 import { DataStorageItemTypes } from '@cloud-pipeline/core';
+import { useStorageContext } from '../context/storage-context.ts';
+import { useCallback } from 'react';
 
 const actions = [
   {
@@ -17,14 +18,14 @@ const actions = [
   },
 ];
 
-type Props = {
-  onMenuItemClick: (key: DataStorageItemTypes) => void;
-};
-
-export function HeaderActions({ onMenuItemClick }: Props) {
-  const onMenuClick: MenuProps['onClick'] = ({ key }) => {
-    onMenuItemClick(key as DataStorageItemTypes);
-  };
+export function HeaderActions() {
+  const { openCreateModal } = useStorageContext();
+  const onMenuClick = useCallback(
+    (o: { key: string }) => {
+      openCreateModal(o.key as DataStorageItemTypes);
+    },
+    [openCreateModal],
+  );
 
   return (
     <div className="flex justify-end">
