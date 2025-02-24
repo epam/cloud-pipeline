@@ -2,21 +2,21 @@ import { useCallback, useMemo, useState } from 'react';
 import { Empty, Input, Splitter, Table } from 'antd';
 import type { ChangeEvent } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import type { DataStorage } from '@cloud-pipeline/core';
+import type { DataStorage, DataStorageItem } from '@cloud-pipeline/core';
 import { StorageBrowser } from '../storage-browser';
-import type { UIStorageItem } from '../storage-browser/types';
 import HighlightedText from '../../shared/highlight-text';
 import './styles.css';
+import type { DataStorageItemExtended } from './types.ts';
 
 type Props = {
   storages: DataStorage[];
   pending: boolean;
   path: string;
   onChangePath: (path?: string) => void;
-  items: UIStorageItem[];
   selectedStorage: DataStorage | undefined;
   onChangeStorage: (storage: DataStorage) => void;
-  onSelect: (items: UIStorageItem[]) => void;
+  selectedItems: DataStorageItemExtended[];
+  onSelectionChanged: (selectedItems: DataStorageItemExtended[]) => void;
   search?: string;
   onChangeSearch?: (search: string) => void;
 };
@@ -26,10 +26,10 @@ export function StoragesBrowser({
   pending,
   path,
   onChangePath,
-  items,
+  selectedItems,
   selectedStorage,
   onChangeStorage,
-  onSelect,
+  onSelectionChanged,
 }: Props) {
   const [search, setSearch] = useState<string>('');
   const onSearch = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -60,6 +60,33 @@ export function StoragesBrowser({
       columnWidth: 0,
     }),
     [selectedStorage],
+  );
+  const storageSelectedItems = useMemo<DataStorageItem[]>(
+    () =>
+      selectedItems
+        .filter((si) => selectedStorage?.id === si.storage.id)
+        .map((si) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { storage, ...storageItem } = si;
+          return storageItem;
+        }),
+    [selectedStorage, selectedItems],
+  );
+  const onSelectionChangedCallback = useCallback(
+    (newStorageItems: DataStorageItem[]): void => {
+      if (onSelectionChanged && selectedStorage) {
+        const restItems = selectedItems.filter((si) => selectedStorage.id !== si.storage.id);
+        onSelectionChanged(
+          restItems.concat(
+            newStorageItems.map((si) => ({
+              ...si,
+              storage: selectedStorage,
+            })),
+          ),
+        );
+      }
+    },
+    [selectedStorage, selectedItems, onSelectionChanged],
   );
   return (
     <Splitter className="storages-browser overflow-hidden p-2 h-[60vh]">
@@ -97,8 +124,9 @@ export function StoragesBrowser({
             path={path}
             onPathChange={onChangePath}
             className="flex-1 overflow-auto"
-            selection={items}
-            onSelectItem={onSelect}
+            selectedItems={storageSelectedItems}
+            onSelectionChanged={onSelectionChangedCallback}
+            showItemActions={false}
           />
         ) : (
           <Empty className="flex flex-1 flex-col justify-center items-center" />

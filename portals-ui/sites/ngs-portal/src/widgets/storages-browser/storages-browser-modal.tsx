@@ -2,9 +2,9 @@ import type { DataStorage } from '@cloud-pipeline/core';
 import { Modal, Button } from 'antd';
 import { useState, useMemo, useCallback } from 'react';
 import { useDataStoragesStore } from '../../state/storages/hooks';
-import type { UIStorageItem } from '../storage-browser/types';
 import { StoragesBrowser } from './storages-browser';
 import { getItemFullPath } from './utils';
+import type { DataStorageItemExtended } from './types.ts';
 
 type Props = {
   value?: string;
@@ -17,13 +17,8 @@ export function StoragesBrowserModal({ visible, onOk, onCancel }: Props) {
   const { pending, data: storages } = useDataStoragesStore();
   const [path, setPath] = useState('');
   const [selectedStorage, setSelectedStorage] = useState<DataStorage | undefined>();
-  const [items, setItems] = useState<UIStorageItem[]>([]);
-  const payload = useMemo(() => {
-    if (selectedStorage && items) {
-      return items.map((item) => getItemFullPath(selectedStorage, item)).join(',');
-    }
-    return '';
-  }, [selectedStorage, items]);
+  const [selectedItems, setSelectedItems] = useState<DataStorageItemExtended[]>([]);
+  const payload = useMemo(() => selectedItems.map((item) => getItemFullPath(item)).join(','), [selectedItems]);
   const onChangePath = useCallback((newPath?: string) => {
     setPath(newPath ?? '');
   }, []);
@@ -34,7 +29,7 @@ export function StoragesBrowserModal({ visible, onOk, onCancel }: Props) {
   const resetState = () => {
     setPath('');
     setSelectedStorage(undefined);
-    setItems([]);
+    setSelectedItems([]);
   };
   return (
     <Modal
@@ -42,7 +37,7 @@ export function StoragesBrowserModal({ visible, onOk, onCancel }: Props) {
       open={visible}
       onCancel={onCancel}
       okButtonProps={{ disabled: !payload || pending }}
-      okText={items.length ? `Select (${items.length} items)` : 'Select'}
+      okText={selectedItems.length ? `Select (${selectedItems.length} items)` : 'Select'}
       width={'80vw'}
       afterClose={resetState}
       centered
@@ -51,7 +46,9 @@ export function StoragesBrowserModal({ visible, onOk, onCancel }: Props) {
         <div className="flex gap-1 justify-end">
           <Button onClick={onCancel}>Cancel</Button>
           <Button onClick={() => onOk(payload)} type="primary" disabled={!payload || pending}>
-            {items.length ? `Select (${items.length} item${items.length > 1 ? 's' : ''})` : 'Select'}
+            {selectedItems.length
+              ? `Select (${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''})`
+              : 'Select'}
           </Button>
           <Button
             type="primary"
@@ -66,10 +63,10 @@ export function StoragesBrowserModal({ visible, onOk, onCancel }: Props) {
         pending={pending}
         path={path}
         onChangePath={onChangePath}
-        items={items}
+        selectedItems={selectedItems}
         selectedStorage={selectedStorage}
         onChangeStorage={onChangeStorage}
-        onSelect={setItems}
+        onSelectionChanged={setSelectedItems}
       />
     </Modal>
   );

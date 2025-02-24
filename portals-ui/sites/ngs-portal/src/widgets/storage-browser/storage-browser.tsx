@@ -1,18 +1,18 @@
 import classNames from 'classnames';
-import type { FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
+import type { DataStorageItem, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
 import { HeaderActions, StorageContentList } from './components';
 import type { CommonProps } from '@cloud-pipeline/components';
 import { useDataStorage } from '../../state/storages/hooks.ts';
 import { StorageContextProvider } from './context/provider.tsx';
-import type { UIStorageItem } from './types';
 
 type Props = CommonProps & {
   storageId: FindSingleDataStorageCriteria;
   path?: string;
   onPathChange?: (path?: string) => void;
   showHeaderControls?: boolean;
-  selection?: UIStorageItem[];
-  onSelectItem?: (selection: UIStorageItem[]) => void;
+  showItemActions?: boolean;
+  selectedItems?: DataStorageItem[];
+  onSelectionChanged?: (selection: DataStorageItem[]) => void;
   pending?: boolean;
 };
 
@@ -23,8 +23,9 @@ export function StorageBrowser({
   path,
   onPathChange,
   showHeaderControls,
-  selection,
-  onSelectItem,
+  showItemActions,
+  selectedItems,
+  onSelectionChanged,
   pending: pendingProp,
 }: Props) {
   const storage = useDataStorage(storageIdCriteria);
@@ -35,9 +36,14 @@ export function StorageBrowser({
 
   return (
     <div className={classNames(className, 'inline-flex', 'flex-col', 'gap-2', 'overflow-hidden')} style={style}>
-      <StorageContextProvider storageId={storageIdCriteria} path={path} onPathChange={onPathChange}>
+      <StorageContextProvider
+        storageId={storageIdCriteria}
+        path={path}
+        onPathChange={onPathChange}
+        selectedItems={selectedItems}
+        onSelectionChanged={onSelectionChanged}>
         {showHeaderControls ? <HeaderActions /> : null}
-        <StorageContentList pending={pendingProp} selection={selection} onSelectItem={onSelectItem} />
+        <StorageContentList pending={pendingProp} showItemActions={showItemActions} />
       </StorageContextProvider>
     </div>
   );

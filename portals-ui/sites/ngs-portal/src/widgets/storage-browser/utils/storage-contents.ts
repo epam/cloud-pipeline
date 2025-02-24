@@ -1,6 +1,7 @@
 import type { DataStorageItem } from '@cloud-pipeline/core';
+import { correctPath } from '@cloud-pipeline/core';
 import { fetchDataStoragePage } from '@cloud-pipeline/api';
-import { ROOT_PLACEHOLDER } from './navigation.ts';
+import { ROOT_PLACEHOLDER } from './navigation';
 
 export type StorageContentsPage = {
   page: number;
@@ -52,7 +53,7 @@ export class StorageContentsLoader {
   private error: string | undefined;
 
   constructor(options: StorageContentsLoaderOptions) {
-    const { storageId, path, pageSize = 100, listeners = [], showVersions = false, showArchived = false } = options;
+    const { storageId, path, pageSize = 50, listeners = [], showVersions = false, showArchived = false } = options;
     this.storageId = storageId;
     this.path = path;
     this.pageSize = pageSize;
@@ -94,7 +95,7 @@ export class StorageContentsLoader {
       path: this.path,
       pending: this.pending,
       error: this.error,
-      hasMoreItems: lastPage?.marker !== undefined && this.error !== undefined && !this.pending,
+      hasMoreItems: lastPage?.marker !== undefined && !this.pending,
       pages: this.pages.map(pageWithMarkerToPage),
       items: this.pages.reduce<DataStorageItem[]>((res, page) => res.concat(page.items), []),
     };
@@ -135,7 +136,10 @@ export class StorageContentsLoader {
     try {
       const pageData = await fetchDataStoragePage({
         id: this.storageId,
-        path: this.path === ROOT_PLACEHOLDER ? undefined : this.path,
+        path:
+          this.path === ROOT_PLACEHOLDER
+            ? undefined
+            : correctPath(this.path, { removeTrailingSlash: true, removeLeadingSlash: true }),
         marker,
         showVersion: this.showVersions,
         showArchived: this.showArchived,

@@ -3,7 +3,7 @@ import { useReducer } from 'react';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import type { StorageContext } from './storage-context';
 import { storageContext } from './storage-context';
-import type { FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
+import type { DataStorageItem, FindSingleDataStorageCriteria } from '@cloud-pipeline/core';
 import { DataStorageItemTypes } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
 import { useDataStorage, useDataStoragesStore } from '../../../state/storages/hooks.ts';
@@ -13,7 +13,7 @@ import { DeleteEntityModal, ModalActionType, modalReducer, UpdateDataStorageEnti
 import { StorageModal, UpdateEntityModalMode } from '../constants.ts';
 import { useDownloadFile } from '../hooks';
 import type { UIStorageItem } from '../types.ts';
-import { ROOT_PLACEHOLDER } from '../utils/navigation.ts';
+import { correctStoragePath, ROOT_PLACEHOLDER } from '../utils/navigation';
 
 export type StorageContextProps = {
   storageId: FindSingleDataStorageCriteria;
@@ -23,11 +23,9 @@ export type StorageContextProps = {
   showVersions?: boolean;
   onPathChange?: (path?: string) => void;
   children?: ReactNode;
+  selectedItems?: DataStorageItem[];
+  onSelectionChanged?: (selection: DataStorageItem[]) => void;
 };
-
-function correctPath(path: string | undefined): string {
-  return !path || path.trim() === '' ? ROOT_PLACEHOLDER : path;
-}
 
 export function StorageContextProvider(props: StorageContextProps) {
   const {
@@ -38,11 +36,13 @@ export function StorageContextProvider(props: StorageContextProps) {
     onPathChange,
     showVersions,
     showArchived,
+    selectedItems,
+    onSelectionChanged,
   } = props;
   const storage = useDataStorage(storageIdCriteria);
   const [path, setPath] = useState(pathProps);
   useEffect(() => {
-    setPath(correctPath(pathProps));
+    setPath(correctStoragePath(pathProps));
   }, [storageIdCriteria, pathProps, setPath]);
   const { pending, error } = useDataStoragesStore();
   const [loader, setLoader] = useState<StorageContentsLoader | undefined>(undefined);
@@ -50,9 +50,9 @@ export function StorageContextProvider(props: StorageContextProps) {
   const onChangePath = useCallback(
     (newPath: string | undefined): void => {
       if (onPathChange) {
-        onPathChange(correctPath(newPath));
+        onPathChange(correctStoragePath(newPath));
       }
-      setPath(correctPath(newPath));
+      setPath(correctStoragePath(newPath));
     },
     [onPathChange, setPath],
   );
@@ -85,16 +85,15 @@ export function StorageContextProvider(props: StorageContextProps) {
 
   const loadNextPage = useCallback(() => {
     if (loader) {
+      console.log('load next', loader);
       void loader.fetchNextPage();
     }
   }, [loader]);
 
-  const [{ entityName, mode, openModal, pathToDelete, entityType }, dispatch] = useReducer(modalReducer, {
+  const [{ item, openModal, mode }, dispatch] = useReducer(modalReducer, {
     openModal: null,
     mode: UpdateEntityModalMode.Update,
-    entityType: undefined,
-    entityName: '',
-    pathToDelete: '',
+    item: undefined,
   });
 
   const onEntityCreated = useCallback(() => {
@@ -102,22 +101,25 @@ export function StorageContextProvider(props: StorageContextProps) {
     dispatch({ type: ModalActionType.RESET });
   }, [reloadPage]);
 
-  const openCreateModal = useCallback((entityType: DataStorageItemTypes) => {
+  const onCreateItem = useCallback((entityType: DataStorageItemTypes) => {
     dispatch({
       type: ModalActionType.OPEN_UPDATE,
-      payload: { mode: UpdateEntityModalMode.Create, entityType, entityName: '' },
+      payload: { mode: UpdateEntityModalMode.Create, item: { name: '', path: '', type: entityType } },
     });
   }, []);
 
-  const onRowEditClick = useCallback((entityType: DataStorageItemTypes, name: string) => {
+  const onEditItem = useCallback((item: DataStorageItem) => {
     dispatch({
       type: ModalActionType.OPEN_UPDATE,
-      payload: { mode: UpdateEntityModalMode.Update, entityType, entityName: name },
+      payload: { mode: UpdateEntityModalMode.Update, item },
     });
   }, []);
 
-  const onRowDeleteClick = useCallback((entityType: DataStorageItemTypes, entityName: string, path: string) => {
-    dispatch({ type: ModalActionType.OPEN_DELETE, payload: { entityType, entityName, pathToDelete: path } });
+  const onDeleteItem = useCallback((item: DataStorageItem) => {
+    dispatch({
+      type: ModalActionType.OPEN_DELETE,
+      payload: { item },
+    });
   }, []);
 
   const onDeleteSuccess = useCallback(() => {
@@ -125,7 +127,7 @@ export function StorageContextProvider(props: StorageContextProps) {
     reloadPage();
   }, [reloadPage]);
 
-  const { handleDownload, downloadMessageContextHolder } = useDownloadFile(storage?.id);
+  const { onDownloadItem, downloadMessageContextHolder } = useDownloadFile(storage?.id);
 
   const onItemClick = useCallback(
     (item: UIStorageItem) => {
@@ -136,6 +138,18 @@ export function StorageContextProvider(props: StorageContextProps) {
     [onChangePath],
   );
 
+  const selectedStorageItems = useMemo(() => selectedItems ?? [], [selectedItems]);
+  const onStorageItemsSelectionChanged = useCallback(
+    (newItems: DataStorageItem[]) => {
+      if (onSelectionChanged) {
+        onSelectionChanged(newItems);
+      }
+    },
+    [onSelectionChanged],
+  );
+
+  const selectionEnabled = typeof onSelectionChanged === 'function';
+
   const ctx = useMemo<StorageContext>(
     () => ({
       storage,
@@ -144,13 +158,16 @@ export function StorageContextProvider(props: StorageContextProps) {
       pending,
       error,
       contents,
-      onRowEditClick,
-      onRowDeleteClick,
-      handleDownload,
-      openCreateModal,
+      onEditItem,
+      onDeleteItem,
+      onDownloadItem,
+      onCreateItem,
       onItemClick,
       reloadPage,
       loadNextPage,
+      selectedItems: selectedStorageItems,
+      onSelectionChanged: onStorageItemsSelectionChanged,
+      selectionEnabled,
     }),
     [
       path,
@@ -159,13 +176,16 @@ export function StorageContextProvider(props: StorageContextProps) {
       error,
       contents,
       onChangePath,
-      handleDownload,
-      onRowDeleteClick,
-      onRowEditClick,
-      openCreateModal,
+      onDownloadItem,
+      onDeleteItem,
+      onEditItem,
+      onCreateItem,
       onItemClick,
       reloadPage,
       loadNextPage,
+      selectedStorageItems,
+      onStorageItemsSelectionChanged,
+      selectionEnabled,
     ],
   );
   return (
@@ -177,22 +197,19 @@ export function StorageContextProvider(props: StorageContextProps) {
           <UpdateDataStorageEntityModal
             isOpen={openModal === StorageModal.Update}
             mode={mode}
-            entityType={entityType}
             onOk={onEntityCreated}
             onCancel={() => dispatch({ type: ModalActionType.CLOSE })}
             path={path}
             storageId={storage.id}
-            entityName={entityName}
+            item={item}
           />
 
           <DeleteEntityModal
             onDeleteSuccess={onDeleteSuccess}
             isOpen={openModal === StorageModal.Delete}
             onClose={() => dispatch({ type: ModalActionType.CLOSE })}
-            entityName={entityName}
-            entityType={entityType}
             storageId={storage.id}
-            path={pathToDelete}
+            item={item}
           />
         </>
       )}

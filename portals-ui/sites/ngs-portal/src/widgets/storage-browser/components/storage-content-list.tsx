@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { UIEvent as ReactUIEvent } from 'react';
+import type { Key, UIEvent as ReactUIEvent, ReactNode } from 'react';
 import { Alert, Table } from 'antd';
 import { DEFAULT_DATASTORAGE_PAGE_SIZE } from '@cloud-pipeline/api';
 import { parentPath } from '@cloud-pipeline/core';
@@ -9,6 +9,7 @@ import { getColumns } from '../utils';
 import type { UIStorageItem } from '../types';
 import { RowActions } from './row-actions';
 import { useStorageContext } from '../context/storage-context.ts';
+import { isDataStorageItem } from '../utils/misc.ts';
 import './styles.css';
 
 const ROW_HEIGHT = 40;
@@ -16,20 +17,24 @@ const INFINITE_SCROLL_OFFSET = 40;
 
 type Props = {
   pending?: boolean;
-  selection?: UIStorageItem[];
-  onSelectItem?: (selection: UIStorageItem[]) => void;
+  showItemActions?: boolean;
 };
 
+function getRowKey(storageItem: UIStorageItem): string {
+  return `${storageItem.type}_${storageItem.path}`;
+}
+
 export function StorageContentList(props: Props) {
-  const { selection, onSelectItem, pending: pendingProps } = props;
+  const { pending: pendingProps, showItemActions = true } = props;
   const tableRef: Parameters<typeof Table>[0]['ref'] = useRef(null);
   const {
-    onRowEditClick,
-    onRowDeleteClick,
     onItemClick,
     loadNextPage,
     path: currentPath,
     contents,
+    selectedItems,
+    onSelectionChanged,
+    selectionEnabled,
   } = useStorageContext();
   const {
     items: content,
@@ -53,7 +58,7 @@ export function StorageContentList(props: Props) {
   const pending = contentsPending || pendingProps;
 
   useEffect(() => {
-    // tableRef.current?.scrollTo({ index: 0 });
+    tableRef.current?.scrollTo({ top: 0 });
   }, [currentPath]);
 
   const dataSource = useMemo<UIStorageItem[]>(() => {
@@ -80,13 +85,15 @@ export function StorageContentList(props: Props) {
 
   const renderRowActions = useCallback(
     (item: UIStorageItem) => {
+      if (!showItemActions) {
+        return <div></div>;
+      }
       if (item.type === 'navigateBack') {
         return <div></div>;
       }
-
-      return <RowActions onDelete={onRowDeleteClick} onEdit={onRowEditClick} item={item} />;
+      return <RowActions item={item} />;
     },
-    [onRowDeleteClick, onRowEditClick],
+    [showItemActions],
   );
 
   const columns = useMemo(() => getColumns(renderRowActions), [renderRowActions]);
@@ -96,6 +103,7 @@ export function StorageContentList(props: Props) {
       const { scrollHeight, scrollTop, clientHeight } = event.target as HTMLElement;
       const bottom = scrollHeight - scrollTop - INFINITE_SCROLL_OFFSET < clientHeight;
       if (!pending && bottom && hasMoreItems) {
+        console.log('scroll', pending, bottom, hasMoreItems);
         loadNextPage();
       }
     },
@@ -104,15 +112,20 @@ export function StorageContentList(props: Props) {
 
   const selectionConfig = useMemo(
     () =>
-      onSelectItem && selection
+      selectionEnabled
         ? {
             preserveSelectedRowKeys: true,
-            selectedRowKeys: selection.map((record) => `${record.type}_${record.name}`),
+            selectedRowKeys: selectedItems.map(getRowKey),
             hideSelectAll: true,
-            onChange: (_: React.Key[], selectedRows: UIStorageItem[]) => {
-              onSelectItem(selectedRows);
+            onChange: (keys: Key[], selectedRows: UIStorageItem[]) => {
+              const persisted = selectedItems.filter((item) => keys.includes(getRowKey(item)));
+              const persistedKeys = persisted.map(getRowKey);
+              const newSelectedItems = selectedRows
+                .filter(isDataStorageItem)
+                .filter((item) => keys.includes(getRowKey(item)) && !persistedKeys.includes(getRowKey(item)));
+              onSelectionChanged(persisted.concat(newSelectedItems));
             },
-            renderCell: (_value: boolean, record: UIStorageItem, _index: number, node: React.ReactNode) => {
+            renderCell: (_value: boolean, record: UIStorageItem, _index: number, node: ReactNode) => {
               if (record.type === 'navigateBack') {
                 return null;
               }
@@ -120,7 +133,7 @@ export function StorageContentList(props: Props) {
             },
           }
         : undefined,
-    [onSelectItem, selection],
+    [onSelectionChanged, selectedItems, selectionEnabled],
   );
 
   return (
@@ -128,7 +141,7 @@ export function StorageContentList(props: Props) {
       <Table
         components={errorBodyOverride}
         className="storage-content-table"
-        rowKey={(record) => `${record.type}_${record.name}`}
+        rowKey={getRowKey}
         dataSource={dataSource}
         columns={columns}
         onRow={(record) => ({

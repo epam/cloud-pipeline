@@ -1,50 +1,51 @@
 import { Button } from 'antd';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { ArrowDownTrayIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import type { DataStorageItem } from '@cloud-pipeline/core';
 import { DataStorageItemTypes } from '@cloud-pipeline/core';
 import { useStorageContext } from '../context/storage-context.ts';
 import { useCallback } from 'react';
+import type { CommonProps } from '@cloud-pipeline/components';
+import classNames from 'classnames';
 
-type Props = {
+type Props = CommonProps & {
   item: DataStorageItem;
-  onEdit: (key: DataStorageItemTypes, name: string) => void;
-  onDelete: (key: DataStorageItemTypes, name: string, path: string) => void;
 };
 
-export const RowActions = ({ item, onEdit, onDelete }: Props) => {
-  const { type, name, path } = item;
-  const { handleDownload } = useStorageContext();
+export const RowActions = ({ className, style, item }: Props) => {
+  const { onDownloadItem, onDeleteItem, onEditItem } = useStorageContext();
 
-  const handleEdit = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    e.stopPropagation();
-    onEdit(type, name);
-  };
+  const onEdit = useCallback(
+    (e: ReactMouseEvent<HTMLElement, MouseEvent>) => {
+      e.stopPropagation();
+      onEditItem(item);
+    },
+    [onEditItem, item],
+  );
 
-  const handleDelete = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    e.stopPropagation();
-    onDelete(type, name, path);
-  };
+  const onDelete = useCallback(
+    (e: ReactMouseEvent<HTMLElement, MouseEvent>) => {
+      e.stopPropagation();
+      onDeleteItem(item);
+    },
+    [onDeleteItem, item],
+  );
 
   const onDownload = useCallback(
-    (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
+    (e: ReactMouseEvent<HTMLElement, MouseEvent>) => {
       e.stopPropagation();
-      handleDownload(name, path);
+      onDownloadItem(item);
     },
-    [handleDownload, name, path],
+    [onDownloadItem, item],
   );
 
   return (
-    <div className="flex justify-end gap-1">
-      {type === DataStorageItemTypes.file && (
+    <div className={classNames('flex', 'justify-end', 'gap-1', className)} style={style}>
+      {item.type === DataStorageItemTypes.file && (
         <Button type="text" icon={<ArrowDownTrayIcon className="w-4 h-4" />} onClick={onDownload} />
       )}
-      <Button type="text" icon={<PencilIcon className="w-4 h-4" />} onClick={handleEdit} />
-      <Button
-        type="text"
-        className="ml-1"
-        icon={<TrashIcon className="w-4 h-4 stroke-red-500" />}
-        onClick={handleDelete}
-      />
+      <Button type="text" icon={<PencilIcon className="w-4 h-4" />} onClick={onEdit} />
+      <Button type="text" className="ml-1" icon={<TrashIcon className="w-4 h-4 stroke-red-500" />} onClick={onDelete} />
     </div>
   );
 };

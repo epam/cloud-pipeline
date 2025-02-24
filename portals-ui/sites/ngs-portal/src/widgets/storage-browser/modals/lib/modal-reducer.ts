@@ -1,12 +1,10 @@
-import type { DataStorageItemTypes } from '@cloud-pipeline/core';
+import type { DataStorageItem } from '@cloud-pipeline/core';
 import { StorageModal, UpdateEntityModalMode } from '../../constants';
 
 type ModalState = {
   openModal: StorageModal | null;
   mode: UpdateEntityModalMode;
-  entityType?: DataStorageItemTypes;
-  entityName: string;
-  pathToDelete: string;
+  item?: DataStorageItem;
 };
 
 export enum ModalActionType {
@@ -19,11 +17,11 @@ export enum ModalActionType {
 type ModalAction =
   | {
       type: ModalActionType.OPEN_UPDATE;
-      payload: { mode: UpdateEntityModalMode; entityType: DataStorageItemTypes; entityName: string };
+      payload: { mode: UpdateEntityModalMode; item: DataStorageItem };
     }
   | {
       type: ModalActionType.OPEN_DELETE;
-      payload: { entityType: DataStorageItemTypes; entityName: string; pathToDelete: string };
+      payload: { item: DataStorageItem };
     }
   | { type: ModalActionType.CLOSE }
   | { type: ModalActionType.RESET };
@@ -35,16 +33,13 @@ export const modalReducer = (state: ModalState, action: ModalAction): ModalState
         ...state,
         openModal: StorageModal.Update,
         mode: action.payload.mode,
-        entityType: action.payload.entityType,
-        entityName: action.payload.entityName,
+        item: action.payload.item,
       };
     case ModalActionType.OPEN_DELETE:
       return {
         ...state,
         openModal: StorageModal.Delete,
-        entityType: action.payload.entityType,
-        entityName: action.payload.entityName,
-        pathToDelete: action.payload.pathToDelete,
+        item: action.payload.item,
       };
     case ModalActionType.CLOSE:
       return { ...state, openModal: null };
@@ -52,9 +47,7 @@ export const modalReducer = (state: ModalState, action: ModalAction): ModalState
       return {
         openModal: null,
         mode: UpdateEntityModalMode.Create,
-        entityType: undefined,
-        entityName: '',
-        pathToDelete: '',
+        item: undefined,
       };
     default:
       return state;

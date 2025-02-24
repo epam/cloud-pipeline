@@ -1,4 +1,5 @@
 import { Form, Input, message, Modal } from 'antd';
+import type { DataStorageItem } from '@cloud-pipeline/core';
 import {
   capitalizedString,
   correctPath,
@@ -13,13 +14,12 @@ import { ROOT_PLACEHOLDER } from '../utils/navigation';
 import { actionWords, NAME_VALIDATION_TEXT, UpdateEntityModalMode } from '../constants';
 
 type Props = {
-  entityType: DataStorageItemTypes | undefined;
   storageId: number;
   path: string | undefined;
   onOk: () => void;
   onCancel: () => void;
   isOpen: boolean;
-  entityName?: string;
+  item?: DataStorageItem;
   mode?: UpdateEntityModalMode;
 };
 
@@ -34,13 +34,12 @@ type FormValues = {
 };
 
 export function UpdateDataStorageEntityModal({
-  entityType,
   storageId,
   path,
   onOk,
   onCancel,
-  entityName,
   isOpen,
+  item,
   mode = UpdateEntityModalMode.Create,
 }: Props) {
   const [pending, setPending] = useState(false);
@@ -69,16 +68,16 @@ export function UpdateDataStorageEntityModal({
   }, []);
 
   useEffect(() => {
-    form.setFieldsValue({ name: entityName });
-  }, [form, mode, entityName]);
+    form.setFieldsValue({ name: item?.name ?? '' });
+  }, [form, mode, item]);
 
   const submitChanges = useCallback(async () => {
-    if (!storageId || !entityType) {
+    if (!storageId || !item) {
       return;
     }
     const { name, contents = '' } = form.getFieldsValue();
     const pathToEntity = path && path !== ROOT_PLACEHOLDER ? `${path}/${name}` : name;
-    const oldPathToEntity = path && path !== ROOT_PLACEHOLDER ? `${path}/${entityName}` : entityName;
+    const oldPathToEntity = item.path;
     const base64Content = contents ? btoa(contents) : '';
 
     const action = mode === UpdateEntityModalMode.Create ? DataStorageItemActions.create : DataStorageItemActions.move;
@@ -87,8 +86,8 @@ export function UpdateDataStorageEntityModal({
       {
         action,
         path: correctPath(pathToEntity),
-        type: entityType,
-        ...(entityType === DataStorageItemTypes.file ? { contents: base64Content } : {}),
+        type: item.type,
+        ...(item.type === DataStorageItemTypes.file ? { contents: base64Content } : {}),
         ...(mode === UpdateEntityModalMode.Update ? { oldPath: correctPath(oldPathToEntity) } : {}),
       },
     ] as UpdateDataStorageItemPayload[];
@@ -101,7 +100,7 @@ export function UpdateDataStorageEntityModal({
         type: 'loading',
         content: (
           <span>
-            {actionWord.pending} ${entityType.toLowerCase()} <b>{name}</b>...
+            {actionWord.pending} ${item.type.toLowerCase()} <b>{name}</b>...
           </span>
         ),
         duration: 0,
@@ -114,7 +113,7 @@ export function UpdateDataStorageEntityModal({
         type: 'success',
         content: (
           <span>
-            Successfully {actionWord.success} {entityType.toLowerCase()} <b>{name}</b>.`
+            Successfully {actionWord.success} {item.type.toLowerCase()} <b>{name}</b>.`
           </span>
         ),
         duration: 4,
@@ -127,7 +126,7 @@ export function UpdateDataStorageEntityModal({
           error.message
         ) : (
           <span>
-            Failed to {actionWord.error} {entityType.toLowerCase()} <b>{name}</b>.
+            Failed to {actionWord.error} {item.type.toLowerCase()} <b>{name}</b>.
           </span>
         );
 
@@ -142,13 +141,13 @@ export function UpdateDataStorageEntityModal({
     } finally {
       setPending(false);
     }
-  }, [actionWord, entityName, entityType, form, messageApi, mode, onCancel, onOk, path, storageId]);
+  }, [actionWord, item, form, messageApi, mode, onCancel, onOk, path, storageId]);
 
   return (
     <div>
       {contextHolder}
       <Modal
-        title={capitalizedString(`${actionWord.action} ${entityType?.toLowerCase()}`)}
+        title={item ? capitalizedString(`${actionWord.action} ${item.type.toLowerCase()}`) : undefined}
         onOk={() => void submitChanges()}
         destroyOnClose
         okText={actionWord.action}
@@ -163,7 +162,7 @@ export function UpdateDataStorageEntityModal({
           form={form}
           name="basic"
           initialValues={{
-            name: entityName,
+            name: item?.name ?? '',
           }}
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 20 }}
@@ -184,7 +183,7 @@ export function UpdateDataStorageEntityModal({
             ]}>
             <Input />
           </Form.Item>
-          {entityType === DataStorageItemTypes.file && mode === UpdateEntityModalMode.Create ? (
+          {item?.type === DataStorageItemTypes.file && mode === UpdateEntityModalMode.Create ? (
             <Form.Item<FieldType> label="Content" name="contents">
               <Input.TextArea />
             </Form.Item>

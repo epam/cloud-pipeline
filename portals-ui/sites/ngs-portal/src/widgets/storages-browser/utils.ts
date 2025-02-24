@@ -1,13 +1,13 @@
-import type { DataStorage } from '@cloud-pipeline/core';
-import type { UIStorageItem } from '../storage-browser/types';
+import type { DataStorageItemExtended } from './types.ts';
 
 const NFS = 'NFS';
 const OMICS_REF_BUCKET_TYPE = 'AWS_OMICS_REF';
 const OMICS_SEQ_BUCKET_TYPE = 'AWS_OMICS_SEQ';
 
-export function getItemFullPath(storage: DataStorage, item: UIStorageItem) {
+export function getItemFullPath(item: DataStorageItemExtended) {
+  const { storage } = item;
   const type = storage.storageType ?? storage.type ?? '';
-  const buildPath = (root: string) => (item && item.path ? `${root}/${item.path}` : root);
+  const buildPath = (root: string) => (item?.path ? `${root}/${item.path}` : root);
   if (type === NFS) {
     const storagePath = storage.path.replace(':', '');
     const mountPoint = storage.mountPoint

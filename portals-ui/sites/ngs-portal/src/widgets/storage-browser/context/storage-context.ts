@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { DataStorage, DataStorageItemTypes } from '@cloud-pipeline/core';
+import type { DataStorage, DataStorageItem, DataStorageItemTypes } from '@cloud-pipeline/core';
 import { noop } from '@cloud-pipeline/core';
 import type { StorageContents } from '../utils/storage-contents.ts';
 import type { UIStorageItem } from '../types.ts';
@@ -11,12 +11,15 @@ export type StorageContext = {
   pending: boolean;
   error: string | undefined;
   contents: StorageContents | undefined;
-  loadNextPage: () => void;
+  selectionEnabled: boolean;
+  selectedItems: DataStorageItem[];
+  onSelectionChanged: (selectedItems: DataStorageItem[]) => void;
+  onCreateItem: (type: DataStorageItemTypes) => void;
   onItemClick: (item: UIStorageItem) => void;
-  openCreateModal: (entityType: DataStorageItemTypes) => void;
-  onRowEditClick: (entityType: DataStorageItemTypes, name: string) => void;
-  onRowDeleteClick: (entityType: DataStorageItemTypes, entityName: string, path: string) => void;
-  handleDownload: (name: string, path: string) => void;
+  onEditItem: (item: DataStorageItem) => void;
+  onDeleteItem: (item: DataStorageItem) => void;
+  onDownloadItem: (item: DataStorageItem) => void;
+  loadNextPage: () => void;
   reloadPage: () => void;
 };
 
@@ -27,10 +30,13 @@ export const storageContext = createContext<StorageContext>({
   pending: false,
   error: undefined,
   contents: undefined,
-  openCreateModal: noop,
-  onRowEditClick: noop,
-  onRowDeleteClick: noop,
-  handleDownload: noop,
+  selectionEnabled: false,
+  selectedItems: [],
+  onSelectionChanged: noop,
+  onCreateItem: noop,
+  onEditItem: noop,
+  onDeleteItem: noop,
+  onDownloadItem: noop,
   onItemClick: noop,
   reloadPage: noop,
   loadNextPage: noop,

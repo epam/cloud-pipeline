@@ -19,12 +19,12 @@ const actions = [
 ];
 
 export function HeaderActions() {
-  const { openCreateModal } = useStorageContext();
+  const { onCreateItem } = useStorageContext();
   const onMenuClick = useCallback(
     (o: { key: string }) => {
-      openCreateModal(o.key as DataStorageItemTypes);
+      onCreateItem(o.key as DataStorageItemTypes);
     },
-    [openCreateModal],
+    [onCreateItem],
   );
 
   return (
