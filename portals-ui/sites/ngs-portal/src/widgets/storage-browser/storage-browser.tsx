@@ -5,7 +5,6 @@ import type { CommonProps } from '@cloud-pipeline/components';
 import { useDataStorage } from '../../state/storages/hooks.ts';
 import { StorageContextProvider } from './context/provider.tsx';
 import type { UIStorageItem } from './types';
-import { Empty } from 'antd';
 
 type Props = CommonProps & {
   storageId: FindSingleDataStorageCriteria;
@@ -38,8 +37,7 @@ export function StorageBrowser({
     <div className={classNames(className, 'inline-flex', 'flex-col', 'gap-2', 'overflow-hidden')} style={style}>
       <StorageContextProvider storageId={storageIdCriteria} path={path} onPathChange={onPathChange}>
         {showHeaderControls ? <HeaderActions /> : null}
-        <StorageContentList selection={selection}
-                            onSelectItem={onSelectItem} />
+        <StorageContentList pending={pendingProp} selection={selection} onSelectItem={onSelectItem} />
       </StorageContextProvider>
     </div>
   );

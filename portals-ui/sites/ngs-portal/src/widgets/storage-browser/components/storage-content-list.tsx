@@ -14,7 +14,14 @@ import './styles.css';
 const ROW_HEIGHT = 40;
 const INFINITE_SCROLL_OFFSET = 40;
 
-export function StorageContentList() {
+type Props = {
+  pending?: boolean;
+  selection?: UIStorageItem[];
+  onSelectItem?: (selection: UIStorageItem[]) => void;
+};
+
+export function StorageContentList(props: Props) {
+  const { selection, onSelectItem, pending: pendingProps } = props;
   const tableRef: Parameters<typeof Table>[0]['ref'] = useRef(null);
   const {
     onRowEditClick,
@@ -26,7 +33,7 @@ export function StorageContentList() {
   } = useStorageContext();
   const {
     items: content,
-    pending,
+    pending: contentsPending,
     hasMoreItems,
     error,
   } = useMemo(() => {
@@ -42,6 +49,8 @@ export function StorageContentList() {
       hasMoreItems: false,
     };
   }, [contents]);
+
+  const pending = contentsPending || pendingProps;
 
   useEffect(() => {
     // tableRef.current?.scrollTo({ index: 0 });
@@ -92,6 +101,28 @@ export function StorageContentList() {
     },
     [loadNextPage, hasMoreItems, pending],
   );
+
+  const selectionConfig = useMemo(
+    () =>
+      onSelectItem && selection
+        ? {
+            preserveSelectedRowKeys: true,
+            selectedRowKeys: selection.map((record) => `${record.type}_${record.name}`),
+            hideSelectAll: true,
+            onChange: (_: React.Key[], selectedRows: UIStorageItem[]) => {
+              onSelectItem(selectedRows);
+            },
+            renderCell: (_value: boolean, record: UIStorageItem, _index: number, node: React.ReactNode) => {
+              if (record.type === 'navigateBack') {
+                return null;
+              }
+              return node;
+            },
+          }
+        : undefined,
+    [onSelectItem, selection],
+  );
+
   return (
     <div className="flex overflow-hidden h-full">
       <Table
@@ -110,6 +141,7 @@ export function StorageContentList() {
         rowClassName="cursor-pointer"
         scroll={{ y: DEFAULT_DATASTORAGE_PAGE_SIZE * ROW_HEIGHT }}
         onScroll={onScroll}
+        rowSelection={selectionConfig}
       />
     </div>
   );
