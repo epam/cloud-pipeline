@@ -54,7 +54,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -86,7 +86,7 @@
                         :MOUNT_STATUS,
                         :SOURCE_DATASTORAGE_ID,
                         to_jsonb(:MASKING_RULES::jsonb),
-                        :HAS_PATH_PERMISSIONS
+                        :PATH_PERMISSIONS_ENABLED
                     )
                 ]]>
             </value>
@@ -107,7 +107,7 @@
                         mount_point = :MOUNT_POINT,
                         mount_options = :MOUNT_OPTIONS,
                         mount_disabled = :MOUNT_DISABLED,
-                        has_path_permissions = :HAS_PATH_PERMISSIONS
+                        path_permissions_enabled = :PATH_PERMISSIONS_ENABLED
                     WHERE
                         datastorage_id = :DATASTORAGE_ID
                 ]]>
@@ -154,7 +154,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -195,7 +195,7 @@
                         d.mount_status,
                         d.source_datastorage_id,
                         d.masking_rules,
-                        d.has_path_permissions
+                        d.path_permissions_enabled
                     FROM
                         pipeline.datastorage d
                     LEFT JOIN pipeline.metadata m ON d.datastorage_id = m.entity_id
@@ -238,7 +238,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -281,7 +281,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -324,7 +324,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -366,7 +366,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -408,7 +408,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -450,7 +450,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -492,7 +492,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -535,7 +535,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -577,7 +577,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -636,7 +636,7 @@
                             d.source_datastorage_id,
                             d.mount_exact_path,
                             d.masking_rules,
-                            d.has_path_permissions,
+                            d.path_permissions_enabled,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -677,7 +677,7 @@
                             null as mount_status,
                             null as source_datastorage_id,
                             null as masking_rules,
-                            null as has_path_permissions,
+                            null as path_permissions_enabled,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -720,7 +720,7 @@
                             d.mount_status,
                             d.source_datastorage_id,
                             d.masking_rules,
-                            d.has_path_permissions,
+                            d.path_permissions_enabled,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -757,7 +757,7 @@
                             null as mount_status,
                             null as source_datastorage_id,
                             null as masking_rules,
-                            null as has_path_permissions,
+                            null as path_permissions_enabled,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -897,7 +897,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -939,7 +939,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -982,7 +982,7 @@
                         mount_status,
                         source_datastorage_id,
                         masking_rules,
-                        has_path_permissions
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE

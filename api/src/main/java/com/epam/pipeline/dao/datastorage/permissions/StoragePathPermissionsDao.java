@@ -106,7 +106,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                                                      final String prefix) {
         final MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue(Parameters.STORAGE_ID.name(), storageId)
-                .addValue(Parameters.PATH.name(), prefix + DaoHelper.POSTGRES_LIKE_CHARACTER);
+                .addValue(Parameters.FOLDER_PATH.name(), prefix + DaoHelper.POSTGRES_LIKE_CHARACTER);
         final String query = WHERE_PATTERN.matcher(findStoragePathPermissionsByPrefixQuery)
                 .replaceFirst(buildWhere(sids, null, false));
         return getNamedParameterJdbcTemplate()
@@ -155,7 +155,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
 
     private void filePathExactMatchClause(final String folderPath, final String fileName,
                                           final StringBuilder whereBuilder) {
-        whereBuilder.append("p.path = '")
+        whereBuilder.append("p.folder_path = '")
                 .append(folderPath)
                 .append("' AND p.file_name = '")
                 .append(fileName)
@@ -163,7 +163,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     }
 
     private void andPathInClause(final List<String> prefixes, final StringBuilder whereBuilder) {
-        whereBuilder.append(" AND p.path IN (")
+        whereBuilder.append(" AND p.folder_path IN (")
                 .append(prefixes.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")))
                 .append(')');
     }
@@ -171,7 +171,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     private void andSidsInClause(final List<SidImpl> sids, final StringBuilder whereBuilder) {
         whereBuilder.append(" AND (")
                 .append(sids.stream()
-                        .map(sid -> "p.sid_id = '" + sid.getName() +
+                        .map(sid -> "p.sid_name = '" + sid.getName() +
                                 "' AND p.principal = " + (sid.isPrincipal() ? "TRUE" : "FALSE"))
                         .collect(Collectors.joining(" OR ")))
                 .append(')');
@@ -179,9 +179,9 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
 
     public enum Parameters {
         STORAGE_ID,
-        PATH,
+        FOLDER_PATH,
         FILE_NAME,
-        SID_ID,
+        SID_NAME,
         PRINCIPAL,
         MASK;
 
@@ -189,16 +189,16 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                                                    final String sidId, final boolean principal) {
             return new MapSqlParameterSource()
                     .addValue(STORAGE_ID.name(), storageId)
-                    .addValue(PATH.name(), entity.getFolderPath())
+                    .addValue(FOLDER_PATH.name(), entity.getFolderPath())
                     .addValue(FILE_NAME.name(), entity.getFileName())
-                    .addValue(SID_ID.name(), sidId)
+                    .addValue(SID_NAME.name(), sidId)
                     .addValue(PRINCIPAL.name(), principal)
                     .addValue(MASK.name(), entity.getMask());
         }
 
         static RowMapper<StoragePathPermissions> getRowMapper() {
             return (rs, rowNum) -> StoragePathPermissions.builder()
-                    .folderPath(rs.getString(PATH.name()))
+                    .folderPath(rs.getString(FOLDER_PATH.name()))
                     .fileName(rs.getString(FILE_NAME.name()))
                     .mask(rs.getInt(MASK.name()))
                     .build();
@@ -207,7 +207,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
         static RowMapper<SidImpl> getSidsRowMapper() {
             return (rs, rowNum) -> {
                 final SidImpl sid = new SidImpl();
-                sid.setName(rs.getString(SID_ID.name()));
+                sid.setName(rs.getString(SID_NAME.name()));
                 sid.setPrincipal(rs.getBoolean(PRINCIPAL.name()));
                 return sid;
             };

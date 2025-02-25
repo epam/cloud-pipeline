@@ -26,17 +26,17 @@
                 <![CDATA[
                     INSERT INTO pipeline.datastorage_path_permissions (
                         storage_id,
-                        path,
+                        folder_path,
                         file_name,
-                        sid_id,
+                        sid_name,
                         principal,
                         mask
                     )
                     VALUES (
                         :STORAGE_ID,
-                        :PATH,
+                        :FOLDER_PATH,
                         :FILE_NAME,
-                        :SID_ID,
+                        :SID_NAME,
                         :PRINCIPAL,
                         :MASK
                     )
@@ -61,9 +61,9 @@
                 <![CDATA[
                     SELECT
                         p.storage_id,
-                        p.path,
+                        p.folder_path,
                         p.file_name,
-                        p.sid_id,
+                        p.sid_name,
                         p.principal,
                         p.mask
                     FROM
@@ -71,7 +71,7 @@
                     WHERE
                         p.storage_id = ?
                     @WHERE@
-                    ORDER BY LENGTH(p.path) DESC, p.file_name DESC NULLS LAST
+                    ORDER BY LENGTH(p.folder_path) DESC, p.file_name DESC NULLS LAST
                     @LIMIT@
                 ]]>
             </value>
@@ -93,17 +93,17 @@
                 <![CDATA[
                     SELECT
                         p.storage_id,
-                        p.path,
+                        p.folder_path,
                         p.file_name,
-                        p.sid_id,
+                        p.sid_name,
                         p.principal,
                         p.mask
                     FROM
                         pipeline.datastorage_path_permissions p
                     WHERE
-                        p.storage_id = :STORAGE_ID AND p.path LIKE :PATH
+                        p.storage_id = :STORAGE_ID AND p.folder_path LIKE :FOLDER_PATH
                     @WHERE@
-                    ORDER BY LENGTH(p.path) ASC
+                    ORDER BY LENGTH(p.folder_path) ASC
                 ]]>
             </value>
         </constructor-arg>
@@ -126,7 +126,7 @@
                 <!--findSidsWithStoragePathPermissionsQuery-->
                 <![CDATA[
                     SELECT DISTINCT
-                        p.sid_id,
+                        p.sid_name,
                         p.principal
                     FROM
                         pipeline.datastorage_path_permissions p
