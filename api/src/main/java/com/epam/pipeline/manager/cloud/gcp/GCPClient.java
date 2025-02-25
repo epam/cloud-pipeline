@@ -98,12 +98,28 @@ public class GCPClient {
         }
     }
 
+    public String generateToken(final GCPRegion region) throws IOException {
+        GoogleCredentials credential = createCredentials(region).createScoped(BILLING_SCOPES);
+        credential.refreshIfExpired();
+        return credential.getAccessToken().getTokenValue();
+    }
+
+    @Deprecated
     private GoogleCredential buildCredentials(final GCPRegion region) throws IOException {
         if (StringUtils.isBlank(region.getAuthFile())) {
             return GoogleCredential.getApplicationDefault();
         }
         try (InputStream stream = new FileInputStream(region.getAuthFile())) {
             return GoogleCredential.fromStream(stream);
+        }
+    }
+
+    private GoogleCredentials createCredentials(final GCPRegion region) throws IOException {
+        if (StringUtils.isBlank(region.getAuthFile())) {
+            return GoogleCredentials.getApplicationDefault();
+        }
+        try (InputStream stream = new FileInputStream(region.getAuthFile())) {
+            return GoogleCredentials.fromStream(stream);
         }
     }
 }

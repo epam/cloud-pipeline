@@ -34,7 +34,8 @@
                         pipeline_auth,
                         external_url,
                         owner,
-                        security_scan_enabled)
+                        security_scan_enabled,
+                        provider)
                     VALUES (
                         :REGISTRY_ID,
                         :REGISTRY_PATH,
@@ -46,7 +47,8 @@
                         :PIPELINE_AUTH,
                         :EXTERNAL_URL,
                         :OWNER,
-                        :SECURITY_SCAN_ENABLED)
+                        :SECURITY_SCAN_ENABLED,
+                        :PROVIDER)
                 ]]>
             </value>
         </property>
@@ -83,6 +85,7 @@
                       dr.external_url,
                       dr.owner,
                       dr.security_scan_enabled,
+                      dr.provider as provider,
                       g.id as group_id,
                       g.group_name as group_name,
                       g.description as group_description,
@@ -129,6 +132,7 @@
                       dr.external_url,
                       dr.owner,
                       dr.security_scan_enabled,
+                      dr.provider as provider,
                       g.id as group_id,
                       g.group_name as group_name,
                       g.description as group_description,
@@ -178,6 +182,7 @@
                         dr.external_url,
                         dr.owner,
                         dr.security_scan_enabled,
+                        dr.provider as provider,
                         t.id as tool_id,
                         t.image as tool_image,
                         t.link as tool_link,
@@ -226,6 +231,7 @@
                         dr.external_url,
                         dr.owner,
                         dr.security_scan_enabled,
+                        dr.provider as provider,
                         t.id as tool_id,
                         t.image as tool_image,
                         t.link as tool_link,
@@ -267,6 +273,7 @@
                         dr.external_url,
                         dr.owner,
                         dr.security_scan_enabled,
+                        dr.provider as provider,
                         t.id as tool_id,
                         t.image as tool_image,
                         t.link as tool_link,
@@ -308,6 +315,7 @@
                         dr.external_url,
                         dr.owner,
                         dr.security_scan_enabled,
+                        dr.provider as provider,
                         t.id as tool_id,
                         t.image as tool_image,
                         t.link as tool_link,
@@ -349,6 +357,7 @@
                       dr.external_url,
                       dr.owner,
                       dr.security_scan_enabled,
+                      dr.provider as provider,
                       g.id as group_id,
                       g.group_name as group_name,
                       g.description as group_description,
@@ -395,6 +404,7 @@
                         dr.external_url,
                         dr.owner,
                         dr.security_scan_enabled,
+                        dr.provider as provider,
                         t.id as tool_id,
                         t.image as tool_image,
                         t.link as tool_link,

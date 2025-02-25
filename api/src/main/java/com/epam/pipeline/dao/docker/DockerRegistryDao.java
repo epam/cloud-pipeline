@@ -25,12 +25,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolOSVersion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
@@ -40,6 +42,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.epam.pipeline.entity.region.CloudProvider.LOCAL;
 
 public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
 
@@ -164,7 +168,8 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         GROUP_DESCRIPTION,
         GROUP_OWNER,
         TOOL_OS_NAME,
-        TOOL_OS_VERSION;
+        TOOL_OS_VERSION,
+        PROVIDER;
 
         static MapSqlParameterSource getParameters(DockerRegistry repository) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -179,6 +184,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PIPELINE_AUTH.name(), repository.isPipelineAuth());
             params.addValue(EXTERNAL_URL.name(), repository.getExternalUrl());
             params.addValue(SECURITY_SCAN_ENABLED.name(), repository.isSecurityScanEnabled());
+            params.addValue(PROVIDER.name(), Optional.ofNullable(repository.getProvider()).orElse(LOCAL).name());
             return params;
         }
 
@@ -313,6 +319,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             registry.setExternalUrl(rs.getString(EXTERNAL_URL.name()));
             registry.setPassword(rs.getString(PASSWORD.name()));
             registry.setSecurityScanEnabled(rs.getBoolean(SECURITY_SCAN_ENABLED.name()));
+            registry.setProvider(CloudProvider.valueOf(rs.getString(PROVIDER.name())));
             return registry;
         }
     }

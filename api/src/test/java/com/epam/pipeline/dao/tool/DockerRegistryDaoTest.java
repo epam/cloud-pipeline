@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryGroups;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryTools;
+import static com.epam.pipeline.entity.region.CloudProvider.GCP;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -96,6 +98,8 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         Assert.assertEquals(created.getId(), loaded.getId());
         Assert.assertEquals(created.getDescription(), loaded.getDescription());
         Assert.assertEquals(created.getPath(), loaded.getPath());
+        // check default for docker_registry.provider column
+        Assert.assertEquals(CloudProvider.LOCAL, loaded.getProvider());
 
         ToolGroup library = createToolGroup(created);
         toolGroupDao.createToolGroup(library);
@@ -114,6 +118,21 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         Assert.assertNotEquals(loadedTool.getImage(), loadedTool2.getImage());
         Assert.assertEquals(loaded.getPath(), loadedTool.getRegistry());
         Assert.assertEquals(loaded.getPath(), loadedTool2.getRegistry());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void createAndLoadDockerRegistryWithGcpProvider() {
+        DockerRegistry created = getDockerRegistry();
+        created.setProvider(GCP);
+        registryDao.createDockerRegistry(created);
+
+        DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
+
+        Assert.assertEquals(created.getId(), loaded.getId());
+        Assert.assertEquals(created.getDescription(), loaded.getDescription());
+        Assert.assertEquals(created.getPath(), loaded.getPath());
+        Assert.assertEquals(GCP, loaded.getProvider());
     }
 
     private ToolGroup createToolGroup(DockerRegistry created) {

@@ -22,6 +22,7 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -37,11 +38,16 @@ import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.AuthenticationException;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
@@ -78,6 +84,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.entity.region.CloudProvider.GCP;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -130,6 +138,12 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     @Autowired
     private CloudFacade cloudFacade;
+
+    @Autowired
+    private GCPClient gcpClient;
+
+    @Autowired
+    private CloudRegionDao cloudRegionDao;
 
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -631,10 +645,23 @@ public class DockerRegistryManager implements SecuredEntityManager {
     private String getToken(DockerRegistry registry, DockerRegistryClaim claim) {
         String token = null;
         if (registry.isPipelineAuth()) {
-            List<DockerRegistryClaim> claims = claim == null ? Collections.emptyList() :
-                    Collections.singletonList(claim);
-            token = dockerAuthService.issueDockerToken(
-                    authManager.getUserContext(), registry.getPath(), claims).getToken();
+            if (GCP == registry.getProvider()) {
+                AbstractCloudRegion gcpRegion = cloudRegionDao
+                        .loadDefaultRegion()
+                        .filter(r -> GCP == r.getProvider())
+                        .orElseThrow(() -> new ObjectNotFoundException("No Default Region for GCP"));
+                try {
+                    token = gcpClient.generateToken((GCPRegion) gcpRegion);
+                } catch (IOException e) {
+                    LOGGER.error(e.getMessage());
+                    throw new AuthenticationException(e.getMessage());
+                }
+            } else {
+                List<DockerRegistryClaim> claims = claim == null ? Collections.emptyList() :
+                        Collections.singletonList(claim);
+                token = dockerAuthService.issueDockerToken(
+                        authManager.getUserContext(), registry.getPath(), claims).getToken();
+            }
         }
         return token;
     }

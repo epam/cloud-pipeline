@@ -16,22 +16,36 @@
 
 package com.epam.pipeline.manager.docker;
 
+import static com.epam.pipeline.entity.region.CloudProvider.GCP;
+import static com.epam.pipeline.entity.region.CloudProvider.LOCAL;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.entity.region.LocalRegion;
+import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.AbstractManagerTest;
+import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.util.TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,6 +74,9 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
     private static final String TEST_TAG = "tag";
     private static final String TEST_GROUP_NAME = "test";
 
+    private static final String TEST_GCP_TOKEN = "REFUQV9VU0VSUyJdLCJncm91cHMiOlsiUk9MRV9BRE1JTiJdLCJleHAiOjE3";
+    private static final String TEST_LOCAL_TOKEN = "Vy4F5-Ld4dmBclqQTqXYSLjZMaC30rPc47rsQiQiy6JPcQLFU_XmheJNo9";
+
     @Autowired
     private DockerRegistryDao registryDao;
 
@@ -79,6 +96,15 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
 
     @Mock
     private DockerClient dockerClient;
+
+    @MockBean
+    private GCPClient gcpClientMock;
+
+    @MockBean
+    private CloudRegionDao cloudRegionDaoMock;
+
+    @MockBean
+    private DockerAuthService dockerAuthService;
 
     @Before
     public void setup() {
@@ -116,7 +142,7 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadingImageDescription() {
-        DockerRegistry registry = generateRegistry();
+        DockerRegistry registry = generateRegistry(LOCAL);
         Date date = new Date();
         registryDao.createDockerRegistry(registry);
 
@@ -137,7 +163,7 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadingImageTags() {
-        DockerRegistry registry = generateRegistry();
+        DockerRegistry registry = generateRegistry(LOCAL);
         registryDao.createDockerRegistry(registry);
 
         ToolGroup group = generateToolGroup(registry);
@@ -166,7 +192,7 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
     public void testDelete() {
         TestUtils.configureDockerClientMock(Mockito.mock(DockerClient.class), dockerClientFactoryMock);
 
-        DockerRegistry registry = generateRegistry();
+        DockerRegistry registry = generateRegistry(LOCAL);
         registryDao.createDockerRegistry(registry);
 
         ToolGroup group = generateToolGroup(registry);
@@ -179,10 +205,61 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
         dockerRegistryManager.delete(registry.getId(), true);
     }
 
-    private DockerRegistry generateRegistry() {
+    @Test
+    public void testGetImageTokenGeneratesTokenForGCP() throws IOException {
+        GCPRegion gcpRegion = new GCPRegion();
+        when(cloudRegionDaoMock.loadDefaultRegion()).thenReturn(Optional.of(gcpRegion));
+        when(gcpClientMock.generateToken(gcpRegion)).thenReturn(TEST_GCP_TOKEN);
+
+        DockerRegistry registry = generateRegistry(GCP);
+        registry.setPipelineAuth(true);
+        String token = dockerRegistryManager.getImageToken(registry, TEST_IMAGE);
+
+        Assert.assertEquals(TEST_GCP_TOKEN, token);
+        verify(cloudRegionDaoMock).loadDefaultRegion();
+        verify(gcpClientMock).generateToken(gcpRegion);
+    }
+
+    @Test
+    public void testGetImageTokenGeneratesTokenForLocal() {
+        when(dockerAuthService.issueDockerToken(any(), any(), any())).thenReturn(new JwtRawToken(TEST_LOCAL_TOKEN));
+
+        DockerRegistry registry = generateRegistry(LOCAL);
+        registry.setPipelineAuth(true);
+        String token = dockerRegistryManager.getImageToken(registry, TEST_IMAGE);
+
+        Assert.assertEquals(TEST_LOCAL_TOKEN, token);
+        verify(dockerAuthService).issueDockerToken(any(), any(), any());
+    }
+
+    @Test
+    public void testGetImageTokenThrowsExceptionWhenNoGCPRegionFound() throws IOException {
+        LocalRegion localRegion = new LocalRegion();
+        when(cloudRegionDaoMock.loadDefaultRegion()).thenReturn(Optional.of(localRegion));
+        DockerRegistry registry = generateRegistry(GCP);
+        registry.setPipelineAuth(true);
+        assertThrows(ObjectNotFoundException.class, () -> dockerRegistryManager.getImageToken(registry, TEST_IMAGE));
+
+        verify(cloudRegionDaoMock).loadDefaultRegion();
+        verify(gcpClientMock, never()).generateToken(any(GCPRegion.class));
+    }
+
+    @Test
+    public void testGetImageTokenThrowsExceptionWhenNonGCPRegionFound() throws IOException {
+        when(cloudRegionDaoMock.loadDefaultRegion()).thenReturn(Optional.empty());
+        DockerRegistry registry = generateRegistry(GCP);
+        registry.setPipelineAuth(true);
+        assertThrows(ObjectNotFoundException.class, () -> dockerRegistryManager.getImageToken(registry, TEST_IMAGE));
+
+        verify(cloudRegionDaoMock).loadDefaultRegion();
+        verify(gcpClientMock, never()).generateToken(any(GCPRegion.class));
+    }
+
+    private DockerRegistry generateRegistry(CloudProvider provider) {
         DockerRegistry registry = new DockerRegistry();
         registry.setPath(ANOTHER_PATH);
         registry.setOwner(TEST_USER);
+        registry.setProvider(provider);
         return registry;
     }
 
