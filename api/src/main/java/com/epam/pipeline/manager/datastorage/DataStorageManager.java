@@ -879,7 +879,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public DataStorageStreamingContent getStreamingContent(long dataStorageId, String path, String version) {
         AbstractDataStorage dataStorage = load(dataStorageId);
-        checkReadPermissionsOnFile(dataStorage, path); // TODO: check parent methods
+        checkReadPermissionsOnFile(dataStorage, path);
         return storageProviderManager.getFileStream(dataStorage, path, version);
     }
 

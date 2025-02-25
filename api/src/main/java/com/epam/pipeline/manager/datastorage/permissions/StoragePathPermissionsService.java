@@ -20,6 +20,7 @@ import com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao;
 import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.user.UserManager;
@@ -43,6 +44,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -93,6 +95,7 @@ public class StoragePathPermissionsService {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteByStorageId(final Long storageId) {
+        log.debug("Deleting all path storage permissions for storage '{}'", storageId);
         pathPermissionsDao.deleteForStorageId(storageId);
     }
 
@@ -108,7 +111,11 @@ public class StoragePathPermissionsService {
         if (CollectionUtils.isEmpty(sids)) {
             pathPermissionsDao.deleteForStorageId(storageId);
         }
-        pathPermissionsDao.deleteForStorageAndSids(storageId, sids);
+        log.debug("Deleting path storage permissions for storage '{}' for sids: {}", storageId,
+                sids.stream()
+                        .map(SidImpl::getName)
+                        .collect(Collectors.joining(", ")));
+        pathPermissionsDao.deleteForStorageAndSids(storageId, normalizeSids(sids));
     }
 
     /**
@@ -130,6 +137,7 @@ public class StoragePathPermissionsService {
      * @param path path to folder
      */
     public void canWriteToFolder(final Long storageId, final String path) {
+        log.debug("Checking write permissions on folder '{}' for storage '{}'", path, storageId);
         orThrowAccessDenied(findFolderPermissions(storageId, path).filter(this::hasWritePermissions));
     }
 
@@ -142,6 +150,7 @@ public class StoragePathPermissionsService {
      * @param path path to folder
      */
     public void canReadFolder(final Long storageId, final String path) {
+        log.debug("Checking permissions on folder '{}' for storage '{}'", path, storageId);
         orThrowAccessDenied(findFolderPermissions(storageId, path));
     }
 
@@ -155,6 +164,7 @@ public class StoragePathPermissionsService {
      * @param path path to file
      */
     public void canWriteToFile(final Long storageId, final String path) {
+        log.debug("Checking write permissions on file '{}' for storage '{}'", path, storageId);
         orThrowAccessDenied(findFilePermissions(storageId, path).filter(this::hasWritePermissions));
     }
 
@@ -167,6 +177,7 @@ public class StoragePathPermissionsService {
      * @param path path to file
      */
     public void canReadFile(final Long storageId, final String path) {
+        log.debug("Checking permissions on file '{}' for storage '{}'", path, storageId);
         orThrowAccessDenied(findFilePermissions(storageId, path));
     }
 
@@ -183,6 +194,7 @@ public class StoragePathPermissionsService {
      * @param path path to folder
      */
     public void canGetFolder(final Long storageId, final String path) {
+        log.debug("Checking current user can get folder '{}' for storage '{}'", path, storageId);
         getFolderListPermissions(storageId, path);
     }
 
@@ -199,8 +211,11 @@ public class StoragePathPermissionsService {
 
         if (hasPermissionsOnFolder(folderPath, storageId, sids)) {
             // has permissions on current folder or it's parents
+            log.debug("Current user can list folder '{}' for storage '{}'", path, storageId);
             return StorageFolderListPermissionsContainer.builder().hasListPermissions(true).build();
         }
+        log.debug("Current user cannot list folder '{}' for storage '{}'. Checking any permissions on child paths...",
+                path, storageId);
 
         final List<StoragePathPermissions> childPaths = pathPermissionsDao.findByPrefix(storageId, sids, folderPath);
         if (CollectionUtils.isEmpty(childPaths)) {
@@ -265,18 +280,29 @@ public class StoragePathPermissionsService {
     private List<SidImpl> getSids() {
         final PipelineUser user = userManager.getCurrentUser();
         final List<SidImpl> sids = new ArrayList<>();
-        sids.add(getSid(user.getUserName(), true));
-        sids.addAll(ListUtils.emptyIfNull(user.getRoles()).stream()
-                .map(role -> getSid(role.getName(), false))
-                .collect(Collectors.toList())); // TODO: do we need to add groups?
+        sids.add(buildSid(user.getUserName(), true));
+        sids.addAll(Stream.concat(
+                ListUtils.emptyIfNull(user.getRoles()).stream().map(Role::getName),
+                        ListUtils.emptyIfNull(user.getGroups()).stream())
+                .map(item -> item.toUpperCase(Locale.ROOT))
+                .distinct()
+                .map(item -> buildSid(item, false))
+                .collect(Collectors.toList()));
         return sids;
     }
 
-    private SidImpl getSid(final String sidName, final boolean isPrincipal) {
+    private SidImpl buildSid(final String sidName, final boolean isPrincipal) {
         final SidImpl sid = new SidImpl();
         sid.setName(sidName.toUpperCase(Locale.ROOT));
         sid.setPrincipal(isPrincipal);
         return sid;
+    }
+
+    private List<SidImpl> normalizeSids(final List<SidImpl> sids) {
+        return ListUtils.emptyIfNull(sids).stream()
+                .filter(sid -> StringUtils.isNotBlank(sid.getName()))
+                .peek(sid -> sid.setName(sid.getName().toUpperCase(Locale.ROOT)))
+                .collect(Collectors.toList());
     }
 
     private String extractFolderName(final String dbPath, final String rootPath) {
