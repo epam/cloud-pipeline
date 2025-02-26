@@ -23,6 +23,7 @@ repo_upgrade_exclude:
  - nvidia*
  - cuda*
  - kubernetes*
+ - docker*
 EOF
 
 fi
