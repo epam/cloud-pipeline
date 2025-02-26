@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM rockylinux:8
+ARG BASE_IMG=library/rockylinux:8.7
+FROM $BASE_IMG
 
+# Install common dependencies
 RUN yum install -y wget \
+                   tmux \
                    bzip2 \
                    gcc \
                    zlib-devel \
@@ -24,10 +27,33 @@ RUN yum install -y wget \
                    ncurses-devel \
                    unzip \
                    git \
-                   curl \
-                   procps \
-                   epel-release && \
-    yum clean all && \
-    yum install -y python2 && \
-    ln -sf python2 /usr/bin/python && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+                   python2 \
+                   fuse \
+                   tzdata \
+                   acl \
+                   openssh-server \
+                   yum-utils \
+                   findutils \
+                   rsync && \
+    yum clean all
+
+RUN dnf install -y --allowerasing coreutils
+
+# Install pip
+RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 && \
+    python2 -m pip install \
+    --index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple \
+    --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com \
+    -I -q setuptools==44.1.1
+
+# Install NFS/SMB/Lustre clients
+RUN yum install nfs-utils cifs-utils -y
+RUN cd /tmp && \
+    yum install nfs-utils cifs-utils -y && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.10.8-2.el8.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    (package-cleanup --cleandupes -y || true) && \
+    rm -rf lustre-client*
