@@ -25,7 +25,7 @@ function get_pipe_binaries() {
   mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
 }
 
-source ~/venv2.7.18/bin/activate
+source ~/venv2.7/bin/activate
 pip install PyYAML==3.12
 pip install mkdocs==1.0.4
 
@@ -53,7 +53,7 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
 
 deactivate
 
-source ~/venv3.8.17/bin/activate
+source ~/venv3.8/bin/activate
 pip install awscli
 
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
