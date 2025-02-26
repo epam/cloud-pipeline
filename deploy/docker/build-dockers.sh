@@ -306,14 +306,10 @@ docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
 
 BASE_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/base
 
-# Centos
+# Rocky
 # - Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_REPO_NAME:tools-base-centos-7-${DOCKERS_VERSION}" "library/centos:7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_REPO_NAME:tools-base-centos-7-${DOCKERS_VERSION}" "library/centos:latest"
-# - CUDA
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda9-${DOCKERS_VERSION}" "library/centos-cuda:7-cuda9" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda10-${DOCKERS_VERSION}" "library/centos-cuda:7-cuda10" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda-${DOCKERS_VERSION}" "library/centos-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rockylinux/vanilla "$CP_DIST_REPO_NAME:tools-base-rockylinux-8-${DOCKERS_VERSION}" "library/rockylinux:8"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rockylinux/vanilla "$CP_DIST_REPO_NAME:tools-base-rockylinux-8-${DOCKERS_VERSION}" "library/rockylinux:latest"
 
 # Ubuntu
 # - Vanilla
