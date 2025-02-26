@@ -1,0 +1,13 @@
+.show-more-path-button {
+  background-color: white;
+  color: #1890ff;
+  border-color: #1890ff;
+  border-radius: 50px;
+  display: inline-block;
+}
+
+.paths-popover-content {
+  max-height: 45vh;
+  overflow: auto;
+  padding-right: 20px;
+}

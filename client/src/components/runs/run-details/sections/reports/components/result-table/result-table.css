@@ -1,0 +1,14 @@
+.table-row-light {
+  background-color: #ffffff; /* Белый цвет фона */
+}
+
+.table-row-dark {
+  background-color: #f7f7f7; /* Серый цвет фона */
+}
+
+.path-search-input {
+  width: 20%;
+  margin-left: 5px;
+  margin-bottom: 5px;
+  display: inline-block;
+}

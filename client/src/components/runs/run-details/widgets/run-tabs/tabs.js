@@ -3,6 +3,7 @@ import {Icon} from 'antd';
 import {isNextflowEngine} from '../../utilities/helpers';
 import NextflowEngineTasks from '../../sections/nextflow-engine/tasks';
 import RunParametersSection from '../../sections/parameters';
+import Reports from '../../sections/reports';
 import RunLogsSection from '../../sections/logs';
 import RunLaunchCommandSection from '../../sections/launch-command';
 
@@ -20,6 +21,13 @@ export const nextflowTasksTab = {
   title: 'Tasks',
   icon: <Icon type="bars" style={iconStyle} />,
   render: ({run}) => (<NextflowEngineTasks run={run} />)
+};
+
+export const reportTab = {
+  tab: 'reports',
+  title: 'Reports',
+  icon: <Icon type="copy" style={iconStyle} />,
+  render: ({run}) => (<Reports runId={run.id} />)
 };
 
 export const logsTab = {
@@ -69,15 +77,20 @@ export function getRunTabs (run) {
   if (!run) {
     return [logsTab];
   }
+
   const tabs = [];
+
   if (isNextflowEngine(run)) {
     tabs.push(nextflowTasksTab);
     tabs.push(parametersTab);
     tabs.push(logsTab);
+    tabs.push(reportTab);
   } else {
     tabs.push(logsTab);
     tabs.push(parametersTab);
   }
+
   tabs.push(launchCommandTab);
+
   return tabs;
 }
