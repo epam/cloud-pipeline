@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.exist;
@@ -31,7 +32,7 @@ import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_KEY;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROLE;
 import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE;
@@ -48,7 +49,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.GROUPS_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.IMPERSONATE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
+import static com.epam.pipeline.autotests.ao.Primitive.PERMISSIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.PROFILE;
 import static com.epam.pipeline.autotests.ao.Primitive.ROLE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.SEARCH;
 import static com.epam.pipeline.autotests.ao.Primitive.SEARCH_INPUT;
@@ -64,6 +67,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
+import static org.openqa.selenium.By.xpath;
 import static org.testng.Assert.assertTrue;
 
 import com.codeborne.selenide.Condition;
@@ -299,6 +303,11 @@ public class UserManagementAO extends SettingsPageAO {
                 return new EditUserPopup(parentAO);
             }
 
+            public EditUserPopup openEditUserPopUp() {
+                $(className("user-management-form__line-break")).click();
+                return new EditUserPopup(parentAO);
+            }
+
             public UserEntry validateUserStatus(final String status) {
                 get(STATUS).shouldBe(visible).shouldHave(cssClass(format("cp-status-%s", status)));
                 return this;
@@ -333,7 +342,7 @@ public class UserManagementAO extends SettingsPageAO {
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(SEARCH, element),
                         entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
-                        entry(ADD_KEY, context().find(By.id("add-role-button"))),
+                        entry(ADD_ROLE, context().find(By.id("add-role-button"))),
                         entry(OK, context().find(By.id("close-edit-user-form"))),
                         entry(CANCEL, context().$(button("CANCEL"))),
                         entry(BLOCK, context().$(button("BLOCK"))),
@@ -343,7 +352,9 @@ public class UserManagementAO extends SettingsPageAO {
                                 format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                         entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
                         entry(IMPERSONATE, context().$(button("IMPERSONATE"))),
-                        entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
+                        entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
+                        entry(PROFILE, $(byText("PROFILE"))),
+                        entry(PERMISSIONS, $(byText("PERMISSIONS")))
                 );
 
                 public EditUserPopup(UsersTabAO parentAO) {
@@ -353,11 +364,6 @@ public class UserManagementAO extends SettingsPageAO {
                 @Override
                 public Map<Primitive, SelenideElement> elements() {
                     return elements;
-                }
-
-                public EditUserPopup switchToTab(TabHeader tabHeader) {
-                    context().find(byText(tabHeader.header)).click();
-                    return this;
                 }
 
                 @Override
@@ -392,13 +398,15 @@ public class UserManagementAO extends SettingsPageAO {
                 public EditUserPopup addRoleOrGroup(final String value) {
                     click(SEARCH);
                     $$(byClassName("ant-select-dropdown-menu-item")).findBy(exactText(value)).click();
-                    click(ADD_KEY);
+                    click(ADD_ROLE);
                     return this;
                 }
 
                 public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
                     $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
-                    if ($(By.className(format("role-%s", value))).exists()) {
+                    String className = value.startsWith("ROLE_") ? format("role-%s", value)
+                            : format("role-ROLE_%s", value);
+                    if ($(By.className(className)).exists()) {
                         return this;
                     }
                     return addRoleOrGroup(value);
@@ -419,6 +427,20 @@ public class UserManagementAO extends SettingsPageAO {
                         return this;
                     }
                     return deleteRoleOrGroup(value);
+                }
+
+                public boolean isUserHasRoleOrGroup(final String value) {
+                    $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    return  $(By.className(format("role-%s", value))).exists();
+                }
+
+                public EditUserPopup isListOfRolesBlocked() {
+                    $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(byClassName("edit-user-roles-dialog__table"))
+                            .$$(xpath(".//tr"))
+                            .stream()
+                            .forEach(role -> ensure(role.$(byId("delete-role-button")), disabled));
+                    return this;
                 }
 
                 public EditUserPopup blockUser(final String user) {
@@ -446,7 +468,14 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
-                    addAllowedLaunchOptions(option, mask);
+                    UserManagementAO.this.addAllowedLaunchOptions(option, mask);
+                    return this;
+                }
+
+                public EditUserPopup isAllowedLaunchOptionsDisable(final String option) {
+                    $(byText("Allowed price types")).shouldBe(visible, enabled);
+                    final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+                    ensure(optionField, disabled);
                     return this;
                 }
 
@@ -510,7 +539,29 @@ public class UserManagementAO extends SettingsPageAO {
                     return this;
                 }
 
+                public UserPermissionsTabAO getUserPermissionsTab() {
+                    click(PERMISSIONS);
+                    return new UserPermissionsTabAO(this);
+                }
 
+                public MetadataSectionAO showMetadata() {
+                    return new MetadataSectionAO(this);
+                }
+
+                public class UserPermissionsTabAO extends PermissionTabAO {
+                    public UserPermissionsTabAO(ClosableAO parentAO) {
+                        super(parentAO);
+                    }
+
+                    @Override
+                    public void closeAll() {
+                        final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+                        if (applyButton.isEnabled()) {
+                            applyButton.click();
+                        }
+                        $(className("ant-modal-close-x")).click();
+                    }
+                }
             }
         }
 
@@ -783,17 +834,5 @@ public class UserManagementAO extends SettingsPageAO {
             return;
         }
         setValue(optionField, mask);
-    }
-
-    public enum TabHeader {
-        PROFILE("PROFILE"),
-        STATISTICS("STATISTICS"),
-        PERMISSIONS("PERMISSIONS");
-
-        public final String header;
-
-        TabHeader(final String header) {
-            this.header = header;
-        }
     }
 }
