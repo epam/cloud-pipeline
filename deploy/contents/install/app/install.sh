@@ -882,11 +882,15 @@ if is_service_requested cp-git; then
                 idp_register_app "https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}" \
                                  "$CP_GITLAB_CERT_DIR/sso-public-cert.pem"
 
-                print_info "-> Registering DataTransfer pipeline"
-                api_register_data_transfer_pipeline
+                if [ "$CP_DEPLOY_DATA_TRANSFER_PIPELINE" != "false" ]; then
+                    print_info "-> Registering DataTransfer pipeline"
+                    api_register_data_transfer_pipeline
+                fi
 
-                print_info "-> Registering System Jobs pipeline"
-                api_register_system_jobs_pipeline
+                if [ "$CP_DEPLOY_SYSTEM_JOBS_PIPELINE" != "false" ]; then
+                    print_info "-> Registering System Jobs pipeline"
+                    api_register_system_jobs_pipeline
+                fi
 
                 if [ "$CP_DEPLOY_DEMO" ]; then
                     print_info "-> Registering Demo pipelines"
