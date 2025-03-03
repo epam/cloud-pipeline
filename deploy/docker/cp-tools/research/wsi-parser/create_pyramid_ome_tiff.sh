@@ -69,10 +69,16 @@ function build_binary_zarr() {
 function generate_ome_tiff() {
     _src_img="$1"
     _ome_tiff_location="$2"
-    raw2ometiff "$_src_img" "$_ome_tiff_location"
+
+    if [[ "$_src_img" = *.indica.tiff ]] || [[ "$_src_img" = *.indica.tif ]]; then
+      python3 indica_tif_to_ome_tiff.py --input "$_src_img" --output "$_ome_tiff_location"
+    else
+      raw2ometiff "$_src_img" "$_ome_tiff_location"
+    fi
+
     if [ $? -ne 0 ]; then
-        log_warn "Errors during ome tiff generation, exiting..."
-        exit 1
+      log_warn "Errors during ome tiff generation, exiting..."
+      exit 1
     fi
 }
 
