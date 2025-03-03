@@ -41,30 +41,22 @@ export enum PipelineTabs {
 export enum RunLogsTabs {
   Logs = 'logs',
   Parameters = 'parameters',
+  Tasks = 'tasks',
 }
 
-export function generateProjectRoutePath(
-  projectId: string | number,
-  tabId?: ProjectTabs,
-): string {
+export function generateProjectRoutePath(projectId: string | number, tabId?: ProjectTabs): string {
   const tabPath = tabId ? `/${tabId}` : '';
 
   return `/projects/${projectId}${tabPath}`;
 }
 
-export function generatePipelineRoutePath(
-  pipelineId: string | number,
-  tabId?: PipelineTabs,
-): string {
+export function generatePipelineRoutePath(pipelineId: string | number, tabId?: PipelineTabs): string {
   const tabPath = tabId ? `/${tabId}` : '';
 
   return `/pipelines/${pipelineId}${tabPath}`;
 }
 
-export function generateRunLogsRoutePath(
-  runId: string | number,
-  tabId?: RunLogsTabs,
-): string {
+export function generateRunLogsRoutePath(runId: string | number, tabId?: RunLogsTabs): string {
   const tabPath = tabId ? `/${tabId}` : '';
   return `/runs/${runId}${tabPath}`;
 }

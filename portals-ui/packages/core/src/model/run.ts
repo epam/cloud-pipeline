@@ -138,3 +138,16 @@ export type RunTask = {
   started: string;
   status: RunStatuses;
 };
+
+export enum EngineTaskStatus {
+  CREATED = 'CREATED',
+  SUBMITTED = 'SUBMITTED',
+  RUNNING = 'RUNNING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  ABORTED = 'ABORTED',
+  CACHED = 'CACHED',
+}
+
+export type EngineTask = Partial<Record<EngineTaskStatus, number>>;
+export type EngineTasks = Record<string, EngineTask>;

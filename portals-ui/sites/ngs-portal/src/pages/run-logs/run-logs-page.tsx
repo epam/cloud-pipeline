@@ -12,28 +12,19 @@ import useRunBreadcrumbs from './hooks/use-run-breadcrumbs.tsx';
 export function RunLogsPage() {
   const { runId } = useParams();
   const { pending: projectsPending, getProjectById } = useProjectsStore();
-  const {
-    pending: runPending,
-    error,
-    run,
-    logs,
-    refreshRun,
-  } = useRunWithLogsInfo(Number(runId));
+  const { pending: runPending, error, run, logs, refreshRun } = useRunWithLogsInfo(Number(runId));
   const parentProject = getProjectById(Number(run?.projectId));
   const { activeTab, tabs, handleChangeTab } = useRunLogsTabs(run, logs);
   const breadcrumbs = useRunBreadcrumbs(run, parentProject);
+
   if (error) {
     return <Alert message={error} type="error" />;
   }
+
   return (
     <div className="overflow-hidden h-full w-full flex flex-col">
-      <NgsBreadcrumbs
-        items={breadcrumbs}
-        showSkeleton={runPending || projectsPending}
-      />
-      <Spin
-        wrapperClassName="spin-container"
-        spinning={runPending || projectsPending || !run}>
+      <NgsBreadcrumbs items={breadcrumbs} showSkeleton={runPending || projectsPending} />
+      <Spin wrapperClassName="spin-container" spinning={runPending || projectsPending || !run}>
         <ItemLayout
           classes={{
             content: 'overflow-hidden flex grow',
