@@ -28,8 +28,12 @@ export class ResultTable extends Component {
 
   render () {
     let {sortedInfo, searchText} = this.state;
-    const filteredData = this.props.resultItems.filter(entry => entry.items.some(path => {
-      return path.toLowerCase().includes(searchText.toLowerCase());
+    const filteredData = this.props.resultItems.filter(entry =>
+      (entry.name && entry.name.toLowerCase().includes(searchText.toLowerCase())) ||
+      entry.items.some(path => path.toLowerCase().includes(searchText.toLowerCase()))
+    ).map((item, index) => ({
+      ...item,
+      ruleId: item.ruleId || `${item.name}-${item.fileMask}-${index}`
     }));
 
     return (
@@ -64,14 +68,15 @@ export class ResultTable extends Component {
             title: 'Path',
             dataIndex: 'items',
             key: 'items',
-            render: (paths) => {
-              return <PathCell paths={paths} />;
-            }
+            render: (paths, rule) => (
+              <PathCell paths={paths} rule={rule} />
+            )
           }]}
+          rowKey="ruleId"
           showSorterTooltip={{target: 'sorter-icon'}}
           pagination={false}
           size="small" />
       </div>
     );
   }
-};
+}

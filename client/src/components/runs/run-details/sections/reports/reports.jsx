@@ -6,7 +6,7 @@ import PipelineRunResults from '../../../../../models/pipelines/PipelineRunResul
 
 export class Reports extends Component {
   static propTypes = {
-    runId: PropTypes.string.isRequired
+    runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
   };
 
   state = {
