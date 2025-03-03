@@ -135,7 +135,7 @@ class ObjectStorage {
     if (request.error) {
       throw new Error(request.error);
     }
-    return base64toString((request.value || {}).url);
+    return (request.value || {}).url;
   }
 
   async getFileContent (file, options = {}) {

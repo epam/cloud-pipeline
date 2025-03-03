@@ -1,0 +1,44 @@
+.show-more-path-button {
+  display: inline-block;
+}
+
+.paths-popover-content {
+  max-height: 45vh;
+  overflow: auto;
+  padding-right: 20px;
+}
+
+.report-file-preview-header {
+  display: flex;
+  align-items: flex-start;
+}
+
+.report-file-preview-header-table {
+  flex: 1;
+  padding: 0;
+  border-collapse: collapse;
+}
+
+.report-file-preview-header-actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  flex-direction: column;
+  padding-right: 10px;
+}
+
+.report-file-preview-header-action {
+  line-height: 1;
+}
+
+.report-file-preview-header-action + .report-file-preview-header-action {
+  margin-top: 5px;
+}
+
+.report-file-preview-header-table .key-cell {
+  text-align: left;
+  padding: 2px 0;
+}
+
+.report-file-preview-header-table .value-cell {
+  padding: 2px;
+}
