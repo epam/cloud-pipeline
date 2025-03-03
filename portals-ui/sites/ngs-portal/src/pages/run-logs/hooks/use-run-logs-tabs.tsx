@@ -55,18 +55,6 @@ export const useRunLogsTabs = (run?: Run, logs?: RunLog[]) => {
   const { tabId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!run) {
-      return;
-    }
-
-    const isValidTab = !tabId || Object.values(RunLogsTabs).includes(tabId as RunLogsTabs);
-
-    if (!isValidTab) {
-      navigate(generateRunLogsRoutePath(run.id, RunLogsTabs.Logs));
-    }
-  }, [navigate, run, run?.id, tabId]);
-
   const handleChangeTab = useCallback(
     (key: string) => {
       if (run) {
@@ -103,6 +91,18 @@ export const useRunLogsTabs = (run?: Run, logs?: RunLog[]) => {
       },
     ];
   }, [logs, run]);
+
+  useEffect(() => {
+    if (!run) {
+      return;
+    }
+
+    const isValidTab = !tabId || tabs.find(({ key }) => key === (tabId as RunLogsTabs));
+
+    if (!isValidTab) {
+      navigate(generateRunLogsRoutePath(run.id, RunLogsTabs.Logs));
+    }
+  }, [navigate, run, run?.id, tabId, tabs]);
 
   const activeTab = useMemo(() => tabs.find((tab) => tab.key === tabId) ?? tabs[0], [tabId, tabs]);
 
