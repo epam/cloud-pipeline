@@ -23,8 +23,6 @@ if [ "$_WITH_BCL2FASTQ" != "true" ]; then
     exit 0
 fi
 
-apt install -y build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev zlib1g-dev unzip libboost-all-dev=1.58.0.1ubuntu1
-
 _BCL2FASTQ_VERSION="v2-20-0"
 export TMP=/tmp
 cd $TMP
