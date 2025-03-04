@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import {alphabeticalSorter, defaultSorter} from '../../../../utils/sorting';
+
 function parse (queryString) {
   const {
     query,
@@ -39,9 +41,9 @@ function parse (queryString) {
 function build (query, filters, advanced = false) {
   const filtersKeys = Object.keys(filters || {})
     .filter(key => !!filters[key] && filters[key].length)
-    .sort();
+    .sort(alphabeticalSorter);
   const filtersParts = filtersKeys
-    .map(key => `${key}:${(filters[key] || []).sort().join(',')}`)
+    .map(key => `${key}:${(filters[key] || []).sort(defaultSorter).join(',')}`)
     .join(';');
   const parts = [
     query ? `query=${encodeURIComponent(query)}` : false,

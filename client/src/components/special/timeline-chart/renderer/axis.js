@@ -161,9 +161,7 @@ class RendererAxis {
   }
 
   get minimumRatio () {
-    if (this._minimumRatio !== undefined) {
-      return this._minimumRatio;
-    }
+    return this._minimumRatio;
   }
 
   set minimumRatio (minimumRatio) {

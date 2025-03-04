@@ -417,7 +417,7 @@ class PreferencesLoad extends Remote {
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
             capabilities: Object.entries(capabilities)
-              .map(c => mapCapability(c, entry)),
+              .map(c => mapCapability([c, entry])),
             multiple: Boolean(entry?.multiple)
           };
         };

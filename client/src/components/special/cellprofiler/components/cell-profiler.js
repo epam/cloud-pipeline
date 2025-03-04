@@ -28,6 +28,7 @@ import SavePipelineModal from './modals/save-pipeline-modal';
 import CorrectInputsModal from './modals/correct-inputs-modal';
 import SelectionInfo from './selection-info';
 import SimilarJobWarning from './components/similar-job-warning';
+import {defaultSorter} from '../../../../utils/sorting';
 import styles from './cell-profiler.css';
 
 class CellProfiler extends React.Component {
@@ -133,7 +134,7 @@ class CellProfiler extends React.Component {
           const inputs = [...new Set([
             ...missingInputs,
             ...analysis.pipeline.channels
-          ])].sort();
+          ])].sort(defaultSorter);
           this.setState({
             missingInputsCorrection: {
               inputs,

@@ -18,6 +18,7 @@ import React from 'react';
 import {Collapse} from 'antd';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {defaultSorter} from '../../../../utils/sorting';
 import styles from './hcs-sequence-selector.css';
 
 function sequenceArraysAreEqual (a, b) {
@@ -27,8 +28,8 @@ function sequenceArraysAreEqual (a, b) {
   if (!a || !b || a.length !== b.length) {
     return false;
   }
-  const aSorted = a.slice().sort();
-  const bSorted = b.slice().sort();
+  const aSorted = a.slice().sort(defaultSorter);
+  const bSorted = b.slice().sort(defaultSorter);
   for (let i = 0; i < aSorted.length; i++) {
     if (aSorted[i] !== bSorted[i]) {
       return false;
