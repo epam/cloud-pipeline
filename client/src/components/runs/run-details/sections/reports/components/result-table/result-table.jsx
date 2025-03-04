@@ -27,7 +27,7 @@ export class ResultTable extends Component {
   }
 
   render () {
-    let {sortedInfo, searchText} = this.state;
+    const {sortedInfo, searchText} = this.state;
     const filteredData = this.props.resultItems.filter(entry =>
       (entry.name && entry.name.toLowerCase().includes(searchText.toLowerCase())) ||
       entry.items.some(path => path.toLowerCase().includes(searchText.toLowerCase()))
@@ -49,20 +49,18 @@ export class ResultTable extends Component {
           dataSource={filteredData}
           rowClassName={this.computeRowClassName}
           columns={[{
-            title: (
-              <span>
-                Name
-              </span>
-            ),
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            sorter: (a, b) => a.name.localeCompare(b.name),
+            sortOrder: sortedInfo.columnKey === 'name' ? sortedInfo.order : undefined
+          },
+          {
+            title: 'Mask',
             dataIndex: 'fileMask',
             key: 'fileMask',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            sortOrder: sortedInfo.columnKey === 'fileMask' && sortedInfo.order,
-            render: (text) => (
-              <div>
-                {text}
-              </div>
-            )
+            sortOrder: sortedInfo.columnKey === 'fileMask' ? sortedInfo.order : undefined
           },
           {
             title: 'Path',
