@@ -70,6 +70,18 @@ export default (cfg: ConfigEnv) => {
           ])
         : undefined,
     ],
+    resolve: {
+      alias: {
+        "@cwl-svg": "cwl-svg/index.js",
+      },
+    },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          includePaths: ['node_modules'],
+        },
+      },
+    },
     build: {
       rollupOptions: {
         output: {

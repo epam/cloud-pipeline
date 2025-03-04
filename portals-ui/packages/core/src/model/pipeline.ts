@@ -91,3 +91,13 @@ export type PipelineFile = {
 export type PipelineInfo = Pipeline & {
   currentVersion: PipelineVersion;
 };
+
+export type PipelineVersionParameters = {
+  cmd_template?: string;
+  docker_image?: string;
+  instance_disk?: string;
+  instance_size?: string;
+  language?: string;
+  main_file?: string;
+  nonPause?: boolean;
+};

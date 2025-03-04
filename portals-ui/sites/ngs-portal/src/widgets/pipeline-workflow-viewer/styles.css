@@ -1,0 +1,73 @@
+.cwl-container {
+  @apply bg-white h-full w-full flex flex-col flex-grow relative;
+}
+
+.cwl-resizer {
+  @apply flex w-full h-full;
+}
+
+.cwl-resizer.full-screen {
+  @apply fixed min-w-[100vw] min-h-[100vh] z-[100] top-[0] left-[0];
+}
+
+.expand-button {
+  @apply absolute right-px;
+  top: calc(100% - 20px);
+}
+
+.expand-button.full-screen {
+  @apply absolute right-[20px];
+  top: calc(100% - 40px);
+}
+
+svg.cwl-workflow .label {
+  fill: #3e3e3e;
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node .outer {
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node .inner {
+  stroke: rgb(154, 154, 154);
+  stroke-width: 2px;
+}
+
+svg.cwl-workflow .node.input .outer {
+  stroke: #35763fd4;
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node.output .inner {
+  fill: #c3c3c3;
+  stroke: #35763fd4;
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node.step .inner {
+  fill: #35763fd4;
+  stroke-width: 0px;
+}
+
+svg.cwl-workflow .node:hover .port .label{
+  fill: rgb(248, 136, 16);
+}
+
+svg.cwl-workflow .node .port {
+  fill: rgb(248, 136, 16);
+}
+
+svg.cwl-workflow .edge:hover .inner {
+  stroke: #35763fd4;
+}
+
+svg.cwl-workflow .edge .inner {
+  stroke-width: 2px;
+  stroke: rgb(154, 154, 154);
+}
+
+svg.cwl-workflow .edge .outer {
+  stroke-width: 5px;
+  stroke: white;
+}

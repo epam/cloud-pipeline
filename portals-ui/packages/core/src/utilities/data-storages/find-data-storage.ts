@@ -1,5 +1,5 @@
 import { DataStorage } from '../../model';
-import { escapeRegExp } from '../misc';
+import { escapeRegExp } from '../string';
 import {
   FindDataStorageCriteria,
   FindDataStorageOptions,

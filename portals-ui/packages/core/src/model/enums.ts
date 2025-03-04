@@ -29,6 +29,10 @@ export enum RepositoryType {
   bitBucketCloud = 'BITBUCKET_CLOUD',
 }
 
+export enum PipelineLanguages {
+  cwl = 'cwl',
+}
+
 export enum PipelineType {
   pipeline = 'PIPELINE',
   versionedStorage = 'VERSIONED_STORAGE',

@@ -36,6 +36,7 @@ export enum PipelineTabs {
   Code = 'code',
   Configuration = 'configuration',
   RunHistory = 'run-history',
+  Workflow = 'workflow',
 }
 
 export enum RunLogsTabs {
