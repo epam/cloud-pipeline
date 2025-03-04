@@ -72,7 +72,7 @@ export default (cfg: ConfigEnv) => {
     ],
     resolve: {
       alias: {
-        'alias-cwl-svg': 'cwl-svg/index.js',
+        '@cwl-svg': 'cwl-svg/index.js',
       },
     },
     css: {

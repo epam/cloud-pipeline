@@ -14,7 +14,7 @@ import {
   SelectionPlugin,
   ZoomPlugin,
   DeletionPlugin,
-} from 'alias-cwl-svg';
+} from '@cwl-svg';
 import type { Workflow as WorkflowClass } from 'cwl-svg';
 import CWLProperties from './components/cwl-properties';
 import { CWLCommandLineTool } from './components/cwl-command-line-tool';
