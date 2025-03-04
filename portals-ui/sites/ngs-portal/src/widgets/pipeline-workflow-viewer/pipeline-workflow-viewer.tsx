@@ -14,7 +14,7 @@ import {
   SelectionPlugin,
   ZoomPlugin,
   DeletionPlugin,
-} from '@cwl-svg';
+} from 'cwl-svg/index.js';
 import type { Workflow as WorkflowClass } from 'cwl-svg';
 import CWLProperties from './components/cwl-properties';
 import { CWLCommandLineTool } from './components/cwl-command-line-tool';
@@ -108,7 +108,7 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
         /* eslint-disable */
         const workflow = new Workflow({
           svgRoot: svgRef.current,
-          model: model,
+          model: model as WorkflowModel,
           plugins: [
             new SVGArrangePlugin(),
             new SVGPortDragPlugin(),
