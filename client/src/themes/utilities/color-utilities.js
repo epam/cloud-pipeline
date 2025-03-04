@@ -14,50 +14,77 @@
  *  limitations under the License.
  */
 
+const namedColors = {
+  white: { r: 255, g: 255, b: 255, a: 1.0 },
+  black: { r: 0, g: 0, b: 0, a: 1.0 },
+  red: { r: 255, g: 0, b: 0, a: 1.0 },
+  blue: { r: 0, g: 0, b: 255, a: 1.0 },
+  green: { r: 0, g: 255, b: 0, a: 1.0 },
+  yellow: { r: 255, g: 255, b: 0, a: 1.0 },
+  pink: { r: 255, g: 0, b: 255, a: 1.0 },
+  cyan: { r: 0, g: 255, b: 255, a: 1.0 },
+  transparent: { r: 0, g: 0, b: 0, a: 0.0 }
+};
+
+/**
+ * Parses a color string and returns an object with RGBA values.
+ * Supports named colors (white, black, transparent), hex codes (#RGB, #RRGGBB, #RRGGBBAA), and rgb(...)/rgba(...) formats.
+ *
+ * @param {string} color - The color string to parse.
+ * @returns {{r: number, g: number, b: number, a: number}} Parsed RGBA values, or undefined if invalid.
+ */
 export function parseColor (color) {
-  if (color === 'white') {
-    color = '#ffffff';
+  if (typeof color !== 'string') {
+    return undefined;
   }
-  if (color === 'black') {
-    color = '#000000';
+
+  color = color.trim().toLowerCase();
+
+  // Handle named colors
+  if (namedColors[color]) {
+    return namedColors[color];
   }
-  if (color === 'transparent') {
-    color = 'rgba(0, 0, 0, 0)';
-  }
-  const minifiedHexExec = /^#([0-9a-f]{3})$/i.exec(color);
-  const hexExec = /^#([0-9a-f]{6})$/i.exec(color);
-  const hexWithAlphaExec = /^#([0-9a-f]{8})$/i.exec(color);
-  const rgbExec = /^rgb\(\s*([\d]+)\s*,\s*([\d]+)\s*,\s*([\d]+)\s*\)$/i.exec(color);
-  const rgbaExec = /^rgba\(\s*([\d]+)\s*,\s*([\d]+)\s*,\s*([\d]+)\s*,\s*(.+)\s*\)$/i.exec(color);
-  let r = 255;
-  let g = 255;
-  let b = 255;
-  let a = 1.0;
-  if (minifiedHexExec) {
-    const rr = minifiedHexExec[1][0];
-    const gg = minifiedHexExec[1][1];
-    const bb = minifiedHexExec[1][2];
-    r = parseInt(`${rr}${rr}`, 16);
-    g = parseInt(`${gg}${gg}`, 16);
-    b = parseInt(`${bb}${bb}`, 16);
-  } else if (hexExec) {
-    r = parseInt(hexExec[1].slice(0, 2), 16);
-    g = parseInt(hexExec[1].slice(2, 4), 16);
-    b = parseInt(hexExec[1].slice(4), 16);
-  } else if (hexWithAlphaExec) {
-    r = parseInt(hexExec[1].slice(0, 2), 16);
-    g = parseInt(hexExec[1].slice(2, 4), 16);
-    b = parseInt(hexExec[1].slice(4, 6), 16);
-    a = parseInt(hexExec[1].slice(6), 16) / 255.0;
-  } else if (rgbExec && rgbExec.length > 3) {
-    r = Number(rgbExec[1]);
-    g = Number(rgbExec[2]);
-    b = Number(rgbExec[3]);
-  } else if (rgbaExec && rgbaExec.length > 4) {
-    r = Number(rgbaExec[1]);
-    g = Number(rgbaExec[2]);
-    b = Number(rgbaExec[3]);
-    a = Number(rgbaExec[4]);
+
+  let r = 255; let g = 255; let b = 255; let a = 1.0;
+
+  if (color.startsWith('#')) {
+    const hex = color.slice(1);
+    if (/^[0-9a-f]{3}$/i.test(hex)) {
+      // Convert shorthand hex (#RGB) to full form (#RRGGBB)
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+    } else if (/^[0-9a-f]{6}$/i.test(hex)) {
+      r = parseInt(hex.slice(0, 2), 16);
+      g = parseInt(hex.slice(2, 4), 16);
+      b = parseInt(hex.slice(4, 6), 16);
+    } else if (/^[0-9a-f]{8}$/i.test(hex)) {
+      r = parseInt(hex.slice(0, 2), 16);
+      g = parseInt(hex.slice(2, 4), 16);
+      b = parseInt(hex.slice(4, 6), 16);
+      a = parseInt(hex.slice(6, 8), 16) / 255;
+    } else {
+      return undefined;
+    }
+  } else if (color.toLowerCase().startsWith('rgb')) {
+    try {
+      const values = color
+        .replace(/rgba?\(/i, '')
+        .replace(/\)/, '')
+        .split(',')
+        .map((val) => Number(val.trim()));
+
+      if (values.length < 3 || values.length > 4 || values.some((v) => Number.isNaN(v))) {
+        return undefined;
+      }
+
+      r = Number(values[0]);
+      g = Number(values[1]);
+      b = Number(values[2]);
+      a = values[3] !== undefined ? Number(values[3]) : 1.0;
+    } catch {
+      return undefined;
+    }
   } else {
     return undefined;
   }
