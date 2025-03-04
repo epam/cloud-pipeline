@@ -1310,7 +1310,7 @@ class WsiFileParser:
         target_series = target_image_details.id
         self.create_tmp_stat_file(target_image_details)
         target_tags_file = self.file_path
-        if self.file_path.endswith('.qptiff'):
+        if self.find_target_format() == "OME_TIFF":
             target_tags_file = self.create_empty_vsi()
         tags_processing_result = self.try_process_tags(target_tags_file, target_image_details,
                                                        self.file_path.endswith('.qptiff'))

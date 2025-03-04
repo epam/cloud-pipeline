@@ -18,6 +18,8 @@ _TILES_SIZE="$3"
 _OME_TIFF_FINAL_LOCATION="$4"
 _PARSER_LOCAL_TMP_DIR="$5"
 
+_SRC_LOCATION="$(dirname "$(realpath $0)")"
+
 WSI_PROCESSING_TASK_NAME="WSI processing"
 
 function log_info() {
@@ -69,16 +71,10 @@ function build_binary_zarr() {
 function generate_ome_tiff() {
     _src_img="$1"
     _ome_tiff_location="$2"
-
-    if [[ "$_src_img" = *.indica.tiff ]] || [[ "$_src_img" = *.indica.tif ]]; then
-      python3 indica_tif_to_ome_tiff.py --input "$_src_img" --output "$_ome_tiff_location"
-    else
-      raw2ometiff "$_src_img" "$_ome_tiff_location"
-    fi
-
+    raw2ometiff "$_src_img" "$_ome_tiff_location"
     if [ $? -ne 0 ]; then
-      log_warn "Errors during ome tiff generation, exiting..."
-      exit 1
+        log_warn "Errors during ome tiff generation, exiting..."
+        exit 1
     fi
 }
 
@@ -102,12 +98,6 @@ function tmp_dir_cleanup() {
 
 log_info "Start processing '$_FILE_PATH'"
 
-build_binary_zarr "$_FILE_PATH" "$_SERIES_NUM"
-if [ $? -ne 0 ]; then
-    log_warn "Unable to create binary zarr image"
-    exit 1
-fi
-
 log_info "Generating ome tiff..."
 _FILE_BASENAME=$(get_file_basename "$_FILE_PATH")
 _ome_tiff_offsets_location_tmp="$_PARSER_LOCAL_TMP_DIR/$_FILE_BASENAME.offsets.json"
@@ -116,8 +106,20 @@ ome_tiff_final="$_OME_TIFF_FINAL_LOCATION"
 
 log_info "Generating OME TIFF in [$_ome_tiff_location_tmp]"
 rm -rf "$_ome_tiff_location_tmp"
-generate_ome_tiff "$_PARSER_LOCAL_TMP_DIR/$_FILE_BASENAME" "$_ome_tiff_location_tmp"
-
+if [[ "$_FILE_PATH" == *.indica.tiff ]] || [[ "$_FILE_PATH" == *.indica.tif ]]; then
+    log_info "File is determined as indica.tif file..."
+    source $ANACONDA_HOME/etc/profile.d/conda.sh
+    conda activate indica_tiff_parser
+    python3 "${_SRC_LOCATION}/indica_tiff_to_ome_tiff.py" --input "$_FILE_PATH" --output "$_ome_tiff_location_tmp"
+    conda deactivate
+else
+    build_binary_zarr "$_FILE_PATH" "$_SERIES_NUM"
+    if [ $? -ne 0 ]; then
+        log_warn "Unable to create binary zarr image"
+        exit 1
+    fi
+    generate_ome_tiff "$_PARSER_LOCAL_TMP_DIR/$_FILE_BASENAME" "$_ome_tiff_location_tmp"
+fi
 log_info "Generating ome.tiff offsets..."
 generate_ome_tiff_offsets "$_ome_tiff_location_tmp"
 

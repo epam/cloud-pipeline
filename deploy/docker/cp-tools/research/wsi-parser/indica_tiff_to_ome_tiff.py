@@ -14,8 +14,6 @@ def tiles(series):
 
 def process_file(file_in, file_out):
     with TiffFile(file_in) as tif:
-        print("Processing indica tif file: " + tif)
-
         tree = ElementTree.fromstring(tif.pages.first.description)
         channel_names = [channel.attrib['name'] for channel in tree.iter('channel')]
 
@@ -67,4 +65,4 @@ if __name__ == '__main__':
     parser.add_argument('--output', required=True)
 
     args = parser.parse_args()
-    process_file(args.input, args.input)
+    process_file(args.input, args.output)
