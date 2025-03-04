@@ -39,11 +39,6 @@ export BUILD=${TMP}/bcl2fastq2-build
 export INSTALL_DIR=$BCL2FASTQ_HOME/bcl2fastq-$_BCL2FASTQ_VERSION
 export C_INCLUDE_PATH=/usr/include
 
-# Patch for the newer version of boost 
-# https://backwardincompatible.com/post/169360794395/compiling-illumina-bcl2fastq-220-on-ubuntu-with
-cd $SOURCE
-patch src/cxx/lib/io/Xml.cpp < /tmp/Xml.cpp.patch
-
 mkdir -p ${BUILD}
 cd ${BUILD}
 chmod ugo+x ${SOURCE}/src/configure

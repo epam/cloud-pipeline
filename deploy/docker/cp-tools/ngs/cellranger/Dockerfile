@@ -81,7 +81,6 @@ RUN bash /tmp/install_cr_versions.sh "$CELLRANGER_URL" "$CELLRANGER_HOME" && \
 ENV BCL2FASTQ_HOME="/opt/bcl2fastq"
 # Install bcl2fastq 2, if required
 ADD install_bcl2fastq2.sh /tmp/install_bcl2fastq2.sh
-ADD Xml.cpp.patch /tmp/Xml.cpp.patch
 ARG WITH_BCL2FASTQ2="false"
 RUN bash /tmp/install_bcl2fastq2.sh "$WITH_BCL2FASTQ2" && \
     rm -f /tmp/install_bcl2fastq2.sh
