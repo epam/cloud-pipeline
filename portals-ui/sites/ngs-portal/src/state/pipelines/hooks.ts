@@ -1,23 +1,9 @@
-import type {
-  PipelineConfigurationsState,
-  PipelineInfoState,
-  PipelinesState,
-  PipelinesStore,
-} from './types.ts';
+import type { PipelineConfigurationsState, PipelineInfoState, PipelinesState, PipelinesStore } from './types.ts';
 import { pipelinesStore } from './store';
 import { useEffect, useMemo } from 'react';
 import { noop } from '@cloud-pipeline/core';
-import type {
-  Pipeline,
-  PipelineConfiguration,
-  PipelineInfo,
-  PipelineVersion,
-} from '@cloud-pipeline/core';
-import {
-  fetchPipelineConfigurations,
-  fetchPipelineInfo,
-  fetchPipelineVersions,
-} from '@cloud-pipeline/api';
+import type { Pipeline, PipelineConfiguration, PipelineInfo, PipelineVersion } from '@cloud-pipeline/core';
+import { fetchPipelineConfigurations, fetchPipelineInfo, fetchPipelineVersions } from '@cloud-pipeline/api';
 import { useLoadableStore } from '../common/loadable-store/hooks';
 import { useLoadableState } from '../../shared/hooks';
 import { useProjectById, useProjectsStore } from '../projects/hooks.ts';
@@ -45,9 +31,7 @@ export function usePipelines(): Pipeline[] {
   return usePipelinesStore().data;
 }
 
-async function fetchPipelineInfoWrapped(
-  pipelineId: string | number | undefined,
-): Promise<PipelineInfo | undefined> {
+async function fetchPipelineInfoWrapped(pipelineId: string | number | undefined): Promise<PipelineInfo | undefined> {
   if (pipelineId === undefined) {
     return undefined;
   }
@@ -57,9 +41,7 @@ async function fetchPipelineInfoWrapped(
   return fetchPipelineInfo(Number(pipelineId));
 }
 
-async function fetchPipelineVersionsWrapped(
-  pipelineId: string | number | undefined,
-): Promise<PipelineVersion[]> {
+async function fetchPipelineVersionsWrapped(pipelineId: string | number | undefined): Promise<PipelineVersion[]> {
   if (pipelineId === undefined) {
     return [];
   }
@@ -69,9 +51,7 @@ async function fetchPipelineVersionsWrapped(
   return fetchPipelineVersions(Number(pipelineId));
 }
 
-async function fetchPipelineInfoDetailedWrapped(
-  pipelineId: string | number | undefined,
-): Promise<
+async function fetchPipelineInfoDetailedWrapped(pipelineId: string | number | undefined): Promise<
   | {
       info: PipelineInfo;
       versions: PipelineVersion[];
@@ -109,10 +89,7 @@ export function usePipeline(pipelineId: string | number | undefined): {
   error: string | undefined;
   pending: boolean;
 } {
-  const { state, pending, error } = useLoadableState(
-    fetchPipelineInfoWrapped,
-    pipelineId,
-  );
+  const { state, pending, error } = useLoadableState(fetchPipelineInfoWrapped, pipelineId);
   return useMemo(
     () => ({
       pipeline: state,
@@ -127,10 +104,7 @@ export const usePipelineInfo = (
   pipelineId: string | number | undefined,
   includeParentProject?: boolean,
 ): PipelineInfoState => {
-  const { state, pending, error } = useLoadableState(
-    fetchPipelineInfoDetailedWrapped,
-    pipelineId,
-  );
+  const { state, pending, error } = useLoadableState(fetchPipelineInfoDetailedWrapped, pipelineId);
   const { pending: projectPending } = useProjectsStore();
   const parentProject = useProjectById(state?.info?.parentFolderId);
   return useMemo(
@@ -141,15 +115,7 @@ export const usePipelineInfo = (
       error,
       pending: includeParentProject ? pending || projectPending : pending,
     }),
-    [
-      error,
-      includeParentProject,
-      pending,
-      parentProject,
-      projectPending,
-      state?.info,
-      state?.versions,
-    ],
+    [error, includeParentProject, pending, parentProject, projectPending, state?.info, state?.versions],
   );
 };
 
@@ -157,11 +123,7 @@ export function usePipelineConfiguration(
   pipelineId: number | undefined,
   version?: string,
 ): PipelineConfigurationsState {
-  const { state, pending, error } = useLoadableState(
-    fetchPipelineConfigurationsWrapped,
-    pipelineId,
-    version,
-  );
+  const { state, pending, error } = useLoadableState(fetchPipelineConfigurationsWrapped, pipelineId, version);
   return useMemo(
     () => ({
       configurations: state ?? [],

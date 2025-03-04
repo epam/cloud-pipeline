@@ -3,6 +3,8 @@ export { fetchPipelineInfo } from './fetch-pipeline-info';
 export { fetchPipelineConfigurations } from './fetch-pipeline-configurations';
 export { fetchPipelineVersions } from './fetch-pipeline-versions';
 export { fetchPipelineFiles } from './fetch-pipeline-files';
+export { fetchPipelineLanguage } from './fetch-pipeline-language';
+export { fetchPipelineVersionParameters } from './fetch-pipeline-version-parameters';
 export { fetchPipelineFileByPath } from './fetch-pipeline-file-by-path';
 export { clonePipeline } from './clone-pipeline';
 export { deletePipeline } from './delete-pipeline';

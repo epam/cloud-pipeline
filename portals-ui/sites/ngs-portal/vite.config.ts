@@ -70,6 +70,13 @@ export default (cfg: ConfigEnv) => {
           ])
         : undefined,
     ],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          includePaths: ['node_modules'],
+        },
+      },
+    },
     build: {
       rollupOptions: {
         output: {

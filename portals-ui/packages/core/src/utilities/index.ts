@@ -5,4 +5,5 @@ export * from './users';
 export * from './dates';
 export * from './runs';
 export * from './files';
-export * from './data-storages'
+export * from './data-storages';
+export * from './string';
