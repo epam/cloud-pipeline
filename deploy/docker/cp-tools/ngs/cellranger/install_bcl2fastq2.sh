@@ -23,6 +23,8 @@ if [ "$_WITH_BCL2FASTQ" != "true" ]; then
     exit 0
 fi
 
+source /opt/rh/gcc-toolset-9/enable
+
 _BCL2FASTQ_VERSION="v2-20-0"
 export TMP=/tmp
 cd $TMP
