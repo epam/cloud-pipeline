@@ -37,7 +37,7 @@ rm -f bcl2fastq2-*.tar.gz
 export SOURCE=${TMP}/bcl2fastq
 export BUILD=${TMP}/bcl2fastq2-build
 export INSTALL_DIR=$BCL2FASTQ_HOME/bcl2fastq-$_BCL2FASTQ_VERSION
-export C_INCLUDE_PATH=/usr/include/x86_64-linux-gnu
+export C_INCLUDE_PATH=/usr/include
 
 # Patch for the newer version of boost 
 # https://backwardincompatible.com/post/169360794395/compiling-illumina-bcl2fastq-220-on-ubuntu-with
