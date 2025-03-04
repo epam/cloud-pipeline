@@ -2,27 +2,27 @@ import { Input } from 'antd';
 import { useMemo } from 'react';
 import { CWLInputPorts } from '../cwl-input-ports';
 import { CWLOutputPorts } from '../cwl-output-ports';
-import type { CommandLineTool } from 'cwlts/mappings/v1.0';
-import type { CWLStep } from '../../types';
+import type { CWLCommandLineToolModel, CWLCommandLineToolModelStep } from '../../types';
 
 type Props = {
   disabled?: boolean;
-  tool: CommandLineTool;
+  tool: CWLCommandLineToolModel;
   step: unknown;
 };
 
 export function CWLCommandLineTool({ tool, disabled = true }: Props) {
+  console.log(tool);
   const currentStep = useMemo(() => {
     if (!tool) {
       return null;
     }
-    let step = tool;
+    let step = tool as CWLCommandLineToolModelStep;
     if (/^workflow$/i.test(tool.class)) {
       // eslint-disable-next-line
       step = (tool.steps || [])[0];
     }
     return step;
-  }, [tool]) as unknown as CWLStep;
+  }, [tool])!;
 
   const renderDockerImage = () => {
     if (!currentStep) {

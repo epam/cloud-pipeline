@@ -23,7 +23,6 @@ type Props = {
 export function PipelinePage({ pipeline, pending, parentProject, versions }: Props) {
   const { onChangeVersion, version } = usePipelineVersions(versions);
   const { language } = usePipelineLanguage(pipeline.id, version);
-  console.log('lang', language);
   const breadcrumbs = usePipelineBreadcrumbs(pipeline, parentProject);
   const tabs = useMemo(
     () =>

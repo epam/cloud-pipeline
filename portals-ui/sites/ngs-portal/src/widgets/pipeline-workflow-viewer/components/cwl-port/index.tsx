@@ -1,7 +1,8 @@
+import type { CommandInputParameterModel, CommandOutputParameterModel } from 'cwlts/models';
 import type { CWLPort } from '../../types';
 
 type Props = {
-  port: CWLPort;
+  port: CommandInputParameterModel | CommandOutputParameterModel;
   disabled?: boolean;
 };
 

@@ -14,18 +14,19 @@ import {
   SelectionPlugin,
   ZoomPlugin,
   DeletionPlugin,
-} from '@cwl-svg';
+} from 'alias-cwl-svg';
 import type { Workflow as WorkflowClass } from 'cwl-svg';
 import CWLProperties from './components/cwl-properties';
 import { CWLCommandLineTool } from './components/cwl-command-line-tool';
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline';
-import type { CommandLineTool, Process } from 'cwlts/mappings/v1.0';
+import type { Workflow as CWLWorkflow } from 'cwlts/mappings/v1.0';
 import type { CommonProps } from '@cloud-pipeline/components';
-import type { ModelJson } from './types';
+import type { CWLCommandLineToolModel, ModelJson } from './types';
 import 'cwl-svg/src/assets/styles/theme.scss';
 import 'cwl-svg/src/plugins/selection/theme.scss';
 import './styles.css';
 import { PageSpinner } from '../../shared/ui';
+import type { Process } from 'cwlts/mappings/d2sb/Process';
 
 type Props = CommonProps & {
   mainFile: string | undefined;
@@ -36,7 +37,7 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [model, setModel] = useState<WorkflowModel | Pick<WorkflowModel, 'cwlVersion'> | undefined>(undefined);
   const [workflow, setWorkflow] = useState<WorkflowClass | undefined>();
-  const [selected, setSelected] = useState<CommandLineTool>();
+  const [selected, setSelected] = useState<CWLCommandLineToolModel>();
   const [fullScreen, setFullScreen] = useState(false);
 
   const initializeModel = (modelJson: ModelJson): WorkflowModel | Pick<WorkflowModel, 'cwlVersion'> => {
@@ -50,7 +51,7 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
         cwlVersion: modelJson.cwlVersion ?? 'v1.0',
         outputs: [],
         inputs: [],
-      } as Process);
+      });
       const step = model.addStepFromProcess(modelJson as unknown as Process);
       if (modelJson.id) {
         model.changeStepId(step, `${modelJson.id}`);
@@ -67,19 +68,23 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
       });
       return model;
     }
-    return WorkflowFactory.from(modelJson as unknown as Process);
+    return WorkflowFactory.from(modelJson as unknown as CWLWorkflow);
   };
 
   const initializeWorkflowEventListeners = (
-    workflow: unknown,
-    model: WorkflowModel | Pick<WorkflowModel, 'cwlVersion'>,
+    workflow: Workflow,
+    model:
+      | WorkflowModel
+      | (Pick<WorkflowModel, 'cwlVersion'> & {
+          findById: (id: string) => void;
+        }),
   ) => {
     if (!workflow) {
       return;
     }
     /* eslint-disable */
     const selectionPlugin = workflow.getPlugin(SelectionPlugin);  
-    selectionPlugin.registerOnSelectionChange((selectedNode: unknown) => {  
+    selectionPlugin.registerOnSelectionChange((selectedNode: any) => {  
       if (model && selectedNode?.dataset?.id) {  
         const selection = model.findById(selectedNode.dataset.id);  
         setSelected(selection);
@@ -87,7 +92,7 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
         setSelected(undefined);
       }
     });
-    /* eslint-enable */
+    // /* eslint-enable */
   };
 
   const initializeGraph = (node: SVGSVGElement) => {
@@ -118,7 +123,7 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
         /* eslint-enable */
         setWorkflow(workflow);
         workflow.fitToViewport();
-        initializeWorkflowEventListeners(workflow, model);
+        initializeWorkflowEventListeners(workflow, model as WorkflowModel);
         workflow.draw();
       }
     } catch (error) {
@@ -128,13 +133,11 @@ export function PipelineWorkflowViewer({ pending, className, mainFile }: Props) 
   };
 
   const commandLineTool = useMemo(() => {
-    /* eslint-disable */
     if (!selected?.run) {
       return undefined;
     }
     return selected.run;
-    /* eslint-enable */
-  }, [selected]) as CommandLineTool;
+  }, [selected]);
 
   const onFullScreenChanged = () => {
     setFullScreen((prev) => !prev);

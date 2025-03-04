@@ -1,8 +1,8 @@
-import type { CWLStep } from '../../types';
+import type { CWLCommandLineToolModelStep } from '../../types';
 import { CWLPort } from '../cwl-port';
 
 type Props = {
-  step: CWLStep;
+  step: CWLCommandLineToolModelStep;
   disabled?: boolean;
 };
 
