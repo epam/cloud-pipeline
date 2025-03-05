@@ -15,19 +15,14 @@
 ARG BASE_IMAGE=golang:1.15-alpine
 FROM $BASE_IMAGE
 
-# BUILD REGISTRY
-RUN apk add git make
+# INSTALL REGISTRY
+RUN apk add wget
 
-# TODO: switch to 2.8.3
-ENV GOPATH=/go
-RUN mkdir -p $GOPATH/src/github.com/docker && \
-    cd $GOPATH/src/github.com/docker && \
-    git clone https://github.com/distribution/distribution && \
-    cd distribution && \
-    git checkout decc64eb5c5e846c9cfae657afe38b1d5df806ad && \
-    make && \
-    mv bin/registry /bin/registry && \
-    rm -rf $GOPATH
+RUN cd /tmp && \
+    wget "https://github.com/distribution/distribution/releases/download/v3.0.0-rc.3/registry_3.0.0-rc.3_linux_amd64.tar.gz" && \
+    tar -zxvf registry_*.tar.gz && \
+    mv registry /bin/registry && \
+    rm -f *
 
 # BASE IMAGE
 RUN apk add --no-cache ca-certificates apache2-utils && \
