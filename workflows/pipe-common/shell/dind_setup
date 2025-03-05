@@ -153,13 +153,29 @@ chmod +x /usr/local/bin/modprobe
 # Setup docker daemon options
 ######################################################
 DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
+DIND_STORAGE_DRIVER="${DIND_STORAGE_DRIVER:-"btrfs"}"
+
+if [ "$CP_CAP_DIND_REGISTRY_MIRRORS" ]; then
+    IFS=',' read -r -a _DIND_REGISTRY_MIRRORS_ARR <<< "$CP_CAP_DIND_REGISTRY_MIRRORS"
+    for _mirror in ${_DIND_REGISTRY_MIRRORS_ARR[@]}; do
+        _DIND_REGISTRY_MIRRORS="\"$_mirror\","
+    done
+    _DIND_REGISTRY_MIRRORS=",\"registry-mirrors\": [${_DIND_REGISTRY_MIRRORS%,}]"
+fi
+
+if [ "$CP_CAP_DIND_DEBUG" == "true" ]; then
+    _DIND_DEBUG=",\"debug\": $CP_CAP_DIND_DEBUG"
+fi
+
 pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
 mkdir -p "$DIND_DATA_ROOT"
 mkdir -p "/etc/docker"
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "$DIND_DATA_ROOT",
-  "storage-driver": "btrfs"
+  "storage-driver": "$DIND_STORAGE_DRIVER"
+  $_DIND_REGISTRY_MIRRORS
+  $_DIND_DEBUG
 }
 EOT
 if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then
