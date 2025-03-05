@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,12 @@ mkdir -p $(dirname "$config_path")
 # Setup certificates trust
 ln -s /usr/local/share/ca-certificates/cp-api/ssl-public-cert.pem  /usr/local/share/ca-certificates/cp-api-ssl-public-cert.pem
 update-ca-certificates
+
+# Generate JWKS file. This is required since registry v3.0.0
+# See https://github.com/distribution/distribution-library-image/issues/179
+jwks_path=$(dirname $config_path)/jwks.json
+echo "Generating JWKS file at $jwks_path"
+python3 /generate_jwks.py /usr/local/share/ca-certificates/cp-api/jwt.key.x509 > $jwks_path
 
 # Setup storage driver configuration (S3 / Azure BLOB / Local FS)
 storage_driver_config=""
@@ -106,6 +112,7 @@ auth:
     service: ${CP_DOCKER_INTERNAL_HOST}:${CP_DOCKER_INTERNAL_PORT}
     issuer: "Cloud pipeline"
     rootcertbundle: /usr/local/share/ca-certificates/cp-api/jwt.key.x509
+    jwks: ${jwks_path}
 notifications:
   endpoints:
     - name: tools_notifications

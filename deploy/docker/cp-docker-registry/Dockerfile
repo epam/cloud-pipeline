@@ -1,4 +1,4 @@
-# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE=golang:1.15-alpine
+ARG BASE_IMAGE=alpine:3.21.3
 FROM $BASE_IMAGE
 
 # INSTALL REGISTRY
-RUN apk add wget
+RUN apk add wget gcc python3 py3-pip && \
+    pip install --break-system-packages cryptography pyhton-jose
 
 RUN cd /tmp && \
     wget "https://github.com/distribution/distribution/releases/download/v3.0.0-rc.3/registry_3.0.0-rc.3_linux_amd64.tar.gz" && \
     tar -zxvf registry_*.tar.gz && \
     mv registry /bin/registry && \
     rm -f *
+
+ADD generate_jwks.py /generate_jwks.py
 
 # BASE IMAGE
 RUN apk add --no-cache ca-certificates apache2-utils && \
