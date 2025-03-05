@@ -17,7 +17,7 @@ FROM $BASE_IMAGE
 
 # INSTALL REGISTRY
 RUN apk add wget gcc python3 py3-pip && \
-    pip install --break-system-packages cryptography pyhton-jose
+    pip install --break-system-packages cryptography python-jose
 
 RUN cd /tmp && \
     wget "https://github.com/distribution/distribution/releases/download/v3.0.0-rc.3/registry_3.0.0-rc.3_linux_amd64.tar.gz" && \
