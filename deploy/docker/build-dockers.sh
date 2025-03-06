@@ -145,11 +145,29 @@ docker build    $DOCKERS_SOURCES_PATH/cp-idp \
                 -t "$CP_IDP_DIST_NAME"
 docker push "$CP_IDP_DIST_NAME"
 
-# Docker registry
-CP_IDP_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry \
-                -t "$CP_IDP_DIST_NAME"
-docker push "$CP_IDP_DIST_NAME"
+# Docker registry DEFAULT is v2.7.0+aws_imds2
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-default"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v2.7.0+aws_imds2 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
+
+# Docker registry v2.7.0+aws_imds2
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-2.7.0-aws-imds2"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v2.7.0+aws_imds2 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
+
+# Docker registry v2.7.1
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-2.7.1"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v2.7.1 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
+
+# Docker registry v3.0.0
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-3.0.0"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/3.0.0 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
 
 # EDGE
 CP_EDGE_DIST_NAME=${CP_EDGE_DIST_NAME:-"$CP_DIST_REPO_NAME:edge-${DOCKERS_VERSION}"}

@@ -98,6 +98,7 @@ CP_DOCKER_CERT_DIR=/opt/docker-registry/pki
 CP_DOCKER_INTERNAL_HOST=cp-docker-registry.default.svc.cluster.local
 CP_DOCKER_INTERNAL_PORT=31443
 CP_DOCKER_EXTERNAL_PORT=31443
+CP_DOCKER_REGISTRY_TYPE=default
 
 # cp-edge config
 CP_EDGE_INTERNAL_HOST=cp-edge.default.svc.cluster.local
