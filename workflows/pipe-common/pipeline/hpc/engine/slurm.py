@@ -24,8 +24,9 @@ class SlurmGridEngine(GridEngine):
     _SCONTROL_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _GET_JOBS = "scontrol -o show job"
 
-    def __init__(self, cmd_executor):
+    def __init__(self, cmd_executor, queue_name):
         self.cmd_executor = cmd_executor
+        self.queue = queue_name
         self.job_state_to_codes = {
             GridEngineJobState.RUNNING: ['RUNNING'],
             GridEngineJobState.PENDING: ['PENDING'],
@@ -115,6 +116,11 @@ class SlurmGridEngine(GridEngine):
 
             root_job_id = job_dict.get('JobId')
             job_name = job_dict.get('JobName')
+            job_partition = job_dict.get('Partition')
+
+            if job_partition != self.queue:
+                continue
+
             job_user = self._parse_user(job_dict.get('UserId'))
             job_hosts = self._parse_nodelist(job_dict.get('NodeList'))
 
