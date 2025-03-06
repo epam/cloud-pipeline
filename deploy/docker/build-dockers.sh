@@ -165,7 +165,7 @@ docker push "$CP_REGISTRY_DIST_NAME"
 
 # Docker registry v3.0.0
 CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-3.0.0"}
-docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/3.0.0 \
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v3.0.0 \
                 -t "$CP_REGISTRY_DIST_NAME"
 docker push "$CP_REGISTRY_DIST_NAME"
 
