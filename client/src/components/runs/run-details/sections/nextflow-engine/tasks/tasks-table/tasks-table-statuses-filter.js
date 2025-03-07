@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import {Checkbox, Icon, Popover} from 'antd';
 import styles from './tasks-table.css';
 import {NextflowTaskStatus, nextflowTaskStatuses} from '../utilities';
+import {defaultSorter} from '../../../../../../../utils/sorting';
 
 function prevent (event) {
   event.stopPropagation();
@@ -11,8 +12,8 @@ function prevent (event) {
 }
 
 function statusesEqual (a, b) {
-  const aa = [...new Set(a || [])].sort();
-  const bb = [...new Set(b || [])].sort();
+  const aa = [...new Set(a || [])].sort(defaultSorter);
+  const bb = [...new Set(b || [])].sort(defaultSorter);
   if (aa.length !== bb.length) {
     return false;
   }

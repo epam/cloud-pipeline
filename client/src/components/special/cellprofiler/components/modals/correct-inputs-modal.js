@@ -17,11 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Modal, Select} from 'antd';
+import {defaultSorter} from '../../../../../utils/sorting';
 import styles from './correct-inputs-modal.css';
 
 function inputsArraysAreEqual (a, b) {
-  const aa = [...(new Set(a || []))].sort();
-  const bb = [...(new Set(b || []))].sort();
+  const aa = [...(new Set(a || []))].sort(defaultSorter);
+  const bb = [...(new Set(b || []))].sort(defaultSorter);
   if (aa.length !== bb.length) {
     return false;
   }
