@@ -23,6 +23,7 @@ import VSDiff from '../../../../../models/versioned-storage/diff';
 import VSConflictDiff from '../../../../../models/versioned-storage/conflict-diff';
 import FileDiffPresenter from './file-diff-presenter';
 import styles from './diff.css';
+import {alphabeticalSorter} from '../../../../../utils/sorting';
 
 const IGNORED = 'ignored';
 
@@ -35,8 +36,8 @@ function mapFileDiffDescriptions (diffs) {
 }
 
 function compareFiles (a, b) {
-  const filesA = mapFileDiffDescriptions(a).sort();
-  const filesB = mapFileDiffDescriptions(b).sort();
+  const filesA = mapFileDiffDescriptions(a).sort(alphabeticalSorter);
+  const filesB = mapFileDiffDescriptions(b).sort(alphabeticalSorter);
   if (filesA.length !== filesB.length) {
     return false;
   }

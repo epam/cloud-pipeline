@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS, getOrdinalSuffix} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 import RunScheduleDialog from './run-scheduling-dialog';
+import {defaultSorter} from '../../../utils/sorting';
 
 function getDayOfWeek (value) {
   const [dayOfWeek] = DAYS.filter(({key: dayValue}) => +dayValue === +value);
@@ -141,7 +142,7 @@ class RunSchedulingList extends React.Component {
         recurrence = `every ${every} day${+every > 1 ? 's' : ''}`;
         break;
       case ruleModes.weekly:
-        recurrence = `on ${dayOfWeek.sort().map((day) => getDayOfWeek(+day)).join(', ')}`;
+        recurrence = `on ${dayOfWeek.sort(defaultSorter).map((day) => getDayOfWeek(+day)).join(', ')}`;
         break;
       case ruleModes.monthly:
         if (!scheduleOrdinal || !scheduleDay) {

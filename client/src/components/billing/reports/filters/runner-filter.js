@@ -20,6 +20,7 @@ import {computed, isObservableArray} from 'mobx';
 import {Row, Select} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import BillingNavigation, {RunnerTypes} from '../../navigation';
+import {defaultSorter} from '../../../../utils/sorting';
 import styles from './runner-filter.css';
 
 function runnersEqual (runnersA, runnersB) {
@@ -34,8 +35,10 @@ function runnersEqual (runnersA, runnersB) {
   if (typeA !== typeB) {
     return false;
   }
-  const idsA = (a && (Array.isArray(a) || isObservableArray(a)) ? a : []).sort();
-  const idsB = (b && (Array.isArray(b) || isObservableArray(b)) ? b : []).sort();
+  const idsA = (a && (Array.isArray(a) || isObservableArray(a)) ? a : [])
+    .sort(defaultSorter);
+  const idsB = (b && (Array.isArray(b) || isObservableArray(b)) ? b : [])
+    .sort(defaultSorter);
   if (idsA.length !== idsB.length) {
     return false;
   }
