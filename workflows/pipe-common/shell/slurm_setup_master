@@ -347,9 +347,10 @@ for slurm_profile_script in "$CP_CAP_SCRIPTS_DIR"/slurm_profile_*_queue.sh; do
     (
         [[ -e "$slurm_profile_script" ]] && source "$slurm_profile_script"
         if [ "$CP_CAP_SLURM_QUEUE_STATIC" == "true" ]; then
-            continue
+            export CP_CAP_SGE_QUEUE_DEFAULT="true"
+        else
+            slurm_setup_queue
         fi
-        slurm_setup_queue
         export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SLURM_QUEUE_NAME
         export CP_CAP_AUTOSCALE_TASK="SLURMAutoscaling"
         nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" > "$LOG_DIR/.nohup.autoscaler.slurm.$CP_CAP_SLURM_QUEUE_NAME.log" 2>&1 &
