@@ -2,6 +2,7 @@ import {message} from 'antd';
 import GrantOwner from '../../../models/grant/GrantOwner';
 import GrantPermission from '../../../models/grant/GrantPermission';
 import GrantRemove from '../../../models/grant/GrantRemove';
+import {alphabeticalSorter} from '../../../utils/sorting';
 
 function getSidHash (sid) {
   const {
@@ -16,7 +17,7 @@ function getPermissionHash (permission) {
 }
 
 export function getPermissionsHash (permissions = []) {
-  return permissions.map(getPermissionHash).sort().join('\n');
+  return permissions.map(getPermissionHash).sort(alphabeticalSorter).join('\n');
 }
 
 export function permissionSidsEqual (sid1, sid2) {

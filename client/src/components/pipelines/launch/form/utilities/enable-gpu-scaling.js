@@ -18,6 +18,7 @@ import React from 'react';
 import {Select} from 'antd';
 import {getSelectOptions} from '../../../../special/instance-type-info';
 import {getInstanceFamily} from '../../../../../utils/instance-family';
+import {alphabeticalSorter} from '../../../../../utils/sorting';
 
 function parseCPUConfiguration (configuration) {
   const {
@@ -249,7 +250,7 @@ const InstanceFamilySelector = (
   const sorted = instanceTypes.filter(t => !gpu || t.gpu);
   const families = [...new Set(sorted.map((i) => getInstanceFamily(i, provider)))]
     .filter(Boolean)
-    .sort();
+    .sort(alphabeticalSorter);
   const onChangeCallback = (newValue) => {
     if (typeof onChange === 'function') {
       if (newValue === emptyValueKey) {

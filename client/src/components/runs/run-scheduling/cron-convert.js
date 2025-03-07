@@ -1,5 +1,6 @@
 import moment from 'moment-timezone';
 import {DAYS, COMPUTED_DAYS, ORDINALS} from './forms';
+import {defaultSorter} from '../../../utils/sorting';
 
 export const ruleModes = {
   daily: 'daily',
@@ -228,7 +229,9 @@ export class CronConvert {
         cron5 = `${minutes} ${hours} */${every} * ?`;
         break;
       case ruleModes.weekly:
-        cron5 = `${minutes} ${hours} ? * ${dayOfWeek.map(convertSunday).sort().join(',')}`;
+        cron5 = `${minutes} ${hours} ? * ${dayOfWeek.map(convertSunday)
+          .sort(defaultSorter)
+          .join(',')}`;
         break;
       case ruleModes.monthly:
         if (daySelectorMode === 'numeric') {
