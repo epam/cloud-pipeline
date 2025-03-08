@@ -88,6 +88,7 @@ public final class DockerParsingUtils {
     public static List<String> getBuildHistory(final RawImageDescription rawImage) {
         final List<String> commandsHistory = getHistoryEntryStream(rawImage)
             .map(HistoryEntryV1::getContainerConfig)
+            .filter(Objects::nonNull)
             .map(ContainerConfig::getCommands)
             .filter(CollectionUtils::isNotEmpty)
             .map(commands -> String.join(SPACE, commands))
