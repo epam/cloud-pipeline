@@ -86,6 +86,14 @@ pipe_log_info "Everything looks OK" "$KUBE_MASTER_SETUP_TASK"
 pipe_log_info "Starting kubernetes setup" "$KUBE_MASTER_SETUP_TASK"
 
 # 1.15.4 and 1.28.2 are tested
+if [ -z "$CP_CAP_KUBE_VERSION" ]; then
+    if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+        export CP_CAP_KUBE_VERSION="1.28.2"
+    else
+        export CP_CAP_KUBE_VERSION="1.15.4"
+    fi
+fi
+
 export CP_CAP_KUBE_VERSION="${CP_CAP_KUBE_VERSION:-1.15.4}"
 export CP_CAP_KUBE_PODS_CIDR="${CP_CAP_KUBE_PODS_CIDR:-172.16.0.0/18}" # Default 16382 IPs:  172.16.0.1 - 172.16.63.254
 export CP_CAP_KUBE_SVC_CIDR="${CP_CAP_KUBE_SVC_CIDR:-172.16.64.0/22}"  # Default 254 IPs:    172.16.64.1 - 172.16.67.254 
