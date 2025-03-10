@@ -109,7 +109,15 @@ export function defaultSorter (a, b) {
     return typeOrder[typeA] - typeOrder[typeB];
   }
 
-  return (typeA in typeOrder) ? -1 : 1;
+  if (typeA in typeOrder) {
+    return -1;
+  }
+
+  if (typeB in typeOrder) {
+    return 1;
+  }
+
+  return 0;
 }
 
 /**
@@ -137,5 +145,13 @@ export function defaultSorterDesc (a, b) {
     return typeOrder[typeB] - typeOrder[typeA];
   }
 
-  return (typeA in typeOrder) ? -1 : 1;
+  if (typeA in typeOrder) {
+    return -1;
+  }
+
+  if (typeB in typeOrder) {
+    return 1;
+  }
+
+  return 0;
 }
