@@ -25,15 +25,29 @@ import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
-import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StorageMountPath;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
-import com.epam.pipeline.entity.user.SidImpl;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -856,64 +870,5 @@ public class DataStorageController extends AbstractRestController {
     public Result callOffDataStorageDavMount(@PathVariable(value = ID) final Long id) {
         dataStorageApiService.callOffDataStorageDavMount(id);
         return Result.success();
-    }
-
-    @PostMapping("/datastorage/{id}/paths/permissions")
-    @ResponseBody
-    @ApiOperation(
-            value = "Updates storage path permissions specified storage and user/group.",
-            notes = "Updates storage path permissions specified storage and user/group.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result updatePathPermissions(
-            @PathVariable(value = ID) final Long id,
-            @RequestParam final String sidName, @RequestParam final boolean isPrincipal,
-            @RequestBody final List<StoragePathPermissions> permissions) {
-        dataStorageApiService.updateStoragePathPermissions(id, sidName, isPrincipal, permissions);
-        return Result.success();
-    }
-
-    @GetMapping("/datastorage/{id}/paths/permissions")
-    @ResponseBody
-    @ApiOperation(
-            value = "Loads storage path permissions for specified storage and current user.",
-            notes = "Loads storage path permissions for specified storage and current user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<StoragePathPermissions>> loadStoragePathPermissions(@PathVariable(value = ID) final Long id) {
-        return Result.success(dataStorageApiService.loadStoragePathPermissions(id));
-    }
-
-    @DeleteMapping("/datastorage/{id}/paths/permissions")
-    @ResponseBody
-    @ApiOperation(
-            value = "Deletes storage path permissions for specified storage for specified users and groups.",
-            notes = "Deletes storage path permissions for specified storage for specified users and groups. " +
-                    "If no users/groups provided all storage path permissions for specified storage will be deleted.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result deleteStoragePathPermissions(@PathVariable(value = ID) final Long id,
-                                               @RequestBody final List<SidImpl> sids) {
-        dataStorageApiService.deleteStoragePathPermissions(id, sids);
-        return Result.success();
-    }
-
-    @GetMapping("/datastorage/{id}/paths/permissions/sids")
-    @ResponseBody
-    @ApiOperation(
-            value = "Loads users and groups that have storage path permissions for specified storage.",
-            notes = "Loads users and groups that have storage path permissions for specified storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<SidImpl>> loadStoragePathPermissionsSids(@PathVariable(value = ID) final Long id) {
-        return Result.success(dataStorageApiService.loadStoragePathPermissionsSids(id));
     }
 }

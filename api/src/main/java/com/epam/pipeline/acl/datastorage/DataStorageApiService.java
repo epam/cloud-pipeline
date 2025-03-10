@@ -22,7 +22,6 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -47,7 +46,6 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -417,26 +415,5 @@ public class DataStorageApiService {
     public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
             final DataStorageObjectSearchByTagRequest request) {
         return dataStorageManager.searchDataStorageItemByTag(request);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public void updateStoragePathPermissions(final Long id, final String sidName, final boolean principal,
-                                             final List<StoragePathPermissions> permissions) {
-        dataStorageManager.updateStoragePathPermissions(id, sidName, principal, permissions);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<StoragePathPermissions> loadStoragePathPermissions(final Long id) {
-        return dataStorageManager.loadStoragePathPermissionsHierarchy(id);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public void deleteStoragePathPermissions(final Long id, final List<SidImpl> sids) {
-        dataStorageManager.deleteStoragePathPermissions(id, sids);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public List<SidImpl> loadStoragePathPermissionsSids(final Long id) {
-        return dataStorageManager.loadStoragePathPermissionsSids(id);
     }
 }

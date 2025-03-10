@@ -16,9 +16,14 @@
 
 package com.epam.pipeline.manager.datastorage.permissions;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao;
 import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.SidImpl;
@@ -34,6 +39,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,32 +58,9 @@ import java.util.stream.Stream;
 public class StoragePathPermissionsService {
 
     private final StoragePathPermissionsDao pathPermissionsDao;
+    private final DataStorageDao dataStorageDao;
     private final UserManager userManager;
-
-    /**
-     * Updates permissions for specified storage and user/group. If empty list provided - existing permissions
-     * will be deleted.
-     *
-     * @param storageId storage ID
-     * @param sidId user or group name
-     * @param principal indicated user or group flag
-     * @param pathPermissions permissions to insert
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void batchUpdate(final Long storageId, final String sidId, final boolean principal,
-                            final List<StoragePathPermissions> pathPermissions) {
-        final String sidName = sidId.toUpperCase(Locale.ROOT);
-        final SidImpl sid = new SidImpl();
-        sid.setName(sidName);
-        sid.setPrincipal(principal);
-        pathPermissionsDao.deleteForStorageAndSids(storageId, Collections.singletonList(sid));
-        if (CollectionUtils.isEmpty(pathPermissions)) {
-            return;
-        }
-        pathPermissionsDao.batchInsert(pathPermissions.stream()
-                .map(this::normalizePermissions)
-                .collect(Collectors.toList()), storageId, sidName, principal);
-    }
+    private final MessageHelper messageHelper;
 
     /**
      * Loads all permissions available for storage and current user.
@@ -85,6 +68,7 @@ public class StoragePathPermissionsService {
      * @return permissions
      */
     public List<StoragePathPermissions> loadHierarchyForStorage(final Long storageId) {
+        checkStorageExistsAndPathPermissionsAllowed(storageId);
         return pathPermissionsDao.findByStorageAndSids(storageId, getSids());
     }
 
@@ -100,6 +84,32 @@ public class StoragePathPermissionsService {
     }
 
     /**
+     * Updates permissions for specified storage and user/group. If empty list provided - existing permissions
+     * will be deleted.
+     *
+     * @param storageId storage ID
+     * @param sidId user or group name
+     * @param principal indicated user or group flag
+     * @param pathPermissions permissions to insert
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void batchUpdate(final Long storageId, final String sidId, final boolean principal,
+                            final List<StoragePathPermissions> pathPermissions) {
+        checkStorageExistsAndPathPermissionsAllowed(storageId);
+        final String sidName = sidId.toUpperCase(Locale.ROOT);
+        final SidImpl sid = new SidImpl();
+        sid.setName(sidName);
+        sid.setPrincipal(principal);
+        pathPermissionsDao.deleteForStorageAndSids(storageId, Collections.singletonList(sid));
+        if (CollectionUtils.isEmpty(pathPermissions)) {
+            return;
+        }
+        pathPermissionsDao.batchInsert(pathPermissions.stream()
+                .map(this::normalizePermissions)
+                .collect(Collectors.toList()), storageId, sidName, principal);
+    }
+
+    /**
      * Deletes permissions for specified storage. If sids provided permissions shall be
      * deleted for specified users/groups only.
      *
@@ -108,6 +118,7 @@ public class StoragePathPermissionsService {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteByStorageIdAndSids(final Long storageId, final List<SidImpl> sids) {
+        checkStorageExistsAndPathPermissionsAllowed(storageId);
         if (CollectionUtils.isEmpty(sids)) {
             pathPermissionsDao.deleteForStorageId(storageId);
         }
@@ -125,6 +136,7 @@ public class StoragePathPermissionsService {
      * @return users and groups list
      */
     public List<SidImpl> loadSids(final Long storageId) {
+        checkStorageExistsAndPathPermissionsAllowed(storageId);
         return pathPermissionsDao.findSids(storageId);
     }
 
@@ -359,5 +371,21 @@ public class StoragePathPermissionsService {
 
     private void orThrowAccessDenied(final Optional<StoragePathPermissions> permissions) {
         permissions.orElseThrow(() -> new AccessDeniedException("Access is denied"));
+    }
+
+    private AbstractDataStorage findStorage(final Long storageId) {
+        return Optional.ofNullable(dataStorageDao.loadDataStorage(storageId))
+                .orElseThrow(() -> new IllegalStateException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, storageId)));
+    }
+
+    private boolean pathPermissionsAllowed(final AbstractDataStorage storage) {
+        return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType());
+    }
+
+    private void checkStorageExistsAndPathPermissionsAllowed(final Long storageId) {
+        final AbstractDataStorage storage = findStorage(storageId);
+        Assert.state(pathPermissionsAllowed(storage),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_PERMISSIONS_NOT_ALLOWED));
     }
 }

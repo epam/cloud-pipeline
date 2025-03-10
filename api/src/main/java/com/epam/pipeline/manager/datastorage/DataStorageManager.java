@@ -27,7 +27,6 @@ import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
-import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
@@ -76,7 +75,6 @@ import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ObjectNotFoundException;
@@ -1003,27 +1001,6 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadDataStoragesByMountId(fsMountId);
     }
 
-    public void updateStoragePathPermissions(final Long id, final String sidName, final boolean principal,
-                                             final List<StoragePathPermissions> permissions) {
-        checkStorageExistsAndPathPermissionsAllowed(id);
-        storagePathPermissionsService.batchUpdate(id, sidName, principal, permissions);
-    }
-
-    public List<StoragePathPermissions> loadStoragePathPermissionsHierarchy(final Long id) {
-        checkStorageExistsAndPathPermissionsAllowed(id);
-        return storagePathPermissionsService.loadHierarchyForStorage(id);
-    }
-
-    public void deleteStoragePathPermissions(final Long id, final List<SidImpl> sids) {
-        checkStorageExistsAndPathPermissionsAllowed(id);
-        storagePathPermissionsService.deleteByStorageIdAndSids(id, sids);
-    }
-
-    public List<SidImpl> loadStoragePathPermissionsSids(final Long id) {
-        checkStorageExistsAndPathPermissionsAllowed(id);
-        return storagePathPermissionsService.loadSids(id);
-    }
-
     private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,
                                                         final Map<Long, FileShareMount> fsMounts) {
         return Optional.ofNullable(storage.getFileShareMountId()).map(fsMounts::get);
@@ -1367,13 +1344,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                            final String version) {
         final AbstractDataStorage storage = load(id);
         final DataStorageItemType itemType = storageProviderManager.getItemType(storage, path, version);
-        if (needToLoadPathPermissions(storage)) {
-            switch (itemType) {
-                case Folder: storagePathPermissionsService.canGetFolder(id, path);
-                case File: storagePathPermissionsService.canReadFile(id, path);
-                default: break;
-            }
-        }
+        checkGetPermissionsOnItem(storage, path, itemType);
         return itemType;
     }
 
@@ -1537,7 +1508,7 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private StorageFolderListPermissionsContainer getPermissionsContainer(final AbstractDataStorage storage,
-                                                                          final String path) {
+                                                                         final String path) {
         return needToLoadPathPermissions(storage)
                 ? storagePathPermissionsService.getFolderListPermissions(storage.getId(), path)
                 : null;
@@ -1575,6 +1546,17 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
+    private void checkGetPermissionsOnItem(final AbstractDataStorage storage, final String path,
+                                           final DataStorageItemType itemType) {
+        if (needToLoadPathPermissions(storage)) {
+            switch (itemType) {
+                case Folder: storagePathPermissionsService.canGetFolder(storage.getId(), path);
+                case File: storagePathPermissionsService.canReadFile(storage.getId(), path);
+                default: break;
+            }
+        }
+    }
+
     private void checkWritePermissionsOnFile(final AbstractDataStorage storage, final String path) {
         if (needToLoadPathPermissions(storage)) {
             storagePathPermissionsService.canWriteToFile(storage.getId(), path);
@@ -1587,18 +1569,8 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
-    private boolean pathPermissionsAllowed(final AbstractDataStorage storage) {
-        return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType());
-    }
-
     private boolean needToLoadPathPermissions(final AbstractDataStorage storage) {
-        return pathPermissionsAllowed(storage) && !authManager.isAdmin()
-                && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
-    }
-
-    private void checkStorageExistsAndPathPermissionsAllowed(final Long storageId) {
-        final AbstractDataStorage storage = load(storageId);
-        Assert.state(pathPermissionsAllowed(storage),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_PERMISSIONS_NOT_ALLOWED));
+        return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
+                && !authManager.isAdmin() && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
     }
 }

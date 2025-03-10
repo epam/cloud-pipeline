@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.datastorage.permissions;
 
+import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao;
 import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
@@ -78,10 +80,14 @@ public class StoragePathPermissionsServiceTest {
     private static final List<SidImpl> SIDS = Arrays.asList(userSid(), roleSid(ROLE1), roleSid(ROLE2));
 
     private final StoragePathPermissionsDao pathPermissionsDao = mock(StoragePathPermissionsDao.class);
+    private final DataStorageDao dataStorageDao = mock(DataStorageDao.class);
     private final UserManager userManager = mock(UserManager.class);
+    private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final StoragePathPermissionsService service = new StoragePathPermissionsService(
             pathPermissionsDao,
-            userManager);
+            dataStorageDao,
+            userManager,
+            messageHelper);
 
     @Test
     public void shouldNormalizeFolderPaths() {
