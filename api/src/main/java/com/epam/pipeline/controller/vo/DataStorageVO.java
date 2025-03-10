@@ -65,4 +65,5 @@ public class DataStorageVO {
 
     private Long sourceStorageId;
     private Set<String> linkingMasks;
+    private Boolean pathPermissionsEnabled;
 }

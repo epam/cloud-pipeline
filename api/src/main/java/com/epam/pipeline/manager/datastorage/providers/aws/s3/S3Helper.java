@@ -67,6 +67,7 @@ import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -362,7 +363,8 @@ public class S3Helper {
     public DataStorageListing getItems(final String bucket, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker, final String prefix,
                                        final Set<String> masks,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_STRING);
         AmazonS3 client = getDefaultS3Client();
         if (!StringUtils.isNullOrEmpty(requestPath)) {
@@ -372,8 +374,10 @@ public class S3Helper {
             }
         }
         DataStorageListing result = showVersion
-                ? listVersions(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing)
-                : listFiles(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing);
+                ? listVersions(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing,
+                permissionsContainer)
+                : listFiles(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing,
+                permissionsContainer);
         result.getResults().sort(AbstractDataStorageItem.getStorageItemComparator());
         return result;
     }
@@ -786,7 +790,8 @@ public class S3Helper {
     private DataStorageListing listFiles(final AmazonS3 client, final String bucket, final String requestPath,
                                          final Integer pageSize, final String marker, final String prefix,
                                          final Set<String> masks,
-                                         final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                         final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                         final StorageFolderListPermissionsContainer permissionsContainer) {
         ListObjectsV2Request req = new ListObjectsV2Request();
         req.setBucketName(bucket);
         req.setPrefix(requestPath);
@@ -829,7 +834,10 @@ public class S3Helper {
                     }
                 }
                 previous = getPreviousKey(previous, name);
-                items.add(parseFolder(requestPath, name, prefix));
+                final DataStorageFolder folder = parseFolder(requestPath, name, prefix, permissionsContainer);
+                if (Objects.nonNull(folder)) {
+                    items.add(folder);
+                }
             }
             for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
                 DataStorageFile file =
@@ -845,6 +853,9 @@ public class S3Helper {
                         if (!ProviderUtils.matchingMasks(fileName, resolvedMasks)) {
                             continue;
                         }
+                    }
+                    if (filterNotAllowedFiles(file.getName(), permissionsContainer)) {
+                        continue;
                     }
                     if (filterNotRestored(file, fileName, restoredListing)) {
                         continue;
@@ -869,12 +880,16 @@ public class S3Helper {
         return key.compareTo(previous) > 0 ? key : previous;
     }
 
-    private DataStorageFolder parseFolder(String requestPath, String name, String prefix) {
+    private DataStorageFolder parseFolder(final String requestPath, final String name, final String prefix,
+                                          final StorageFolderListPermissionsContainer permissionsContainer) {
         String relativePath = name;
         if (relativePath.endsWith(ProviderUtils.DELIMITER)) {
             relativePath = relativePath.substring(0, relativePath.length() - 1);
         }
         String folderName = relativePath.substring(requestPath.length());
+        if (Objects.nonNull(permissionsContainer) && permissionsContainer.folderNotAllowed(folderName)) {
+            return null;
+        }
         DataStorageFolder folder = new DataStorageFolder();
         folder.setName(folderName);
         folder.setPath(ProviderUtils.removePrefix(relativePath, prefix));
@@ -884,7 +899,8 @@ public class S3Helper {
     private DataStorageListing listVersions(final AmazonS3 client, final String bucket, final String requestPath,
                                             final Integer pageSize, final String marker, final String prefix,
                                             final Set<String> masks,
-                                            final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                            final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                            final StorageFolderListPermissionsContainer permissionsContainer) {
         ListVersionsRequest request = new ListVersionsRequest()
                 .withBucketName(bucket).withPrefix(requestPath).withDelimiter(ProviderUtils.DELIMITER);
         if (StringUtils.hasValue(marker)) {
@@ -929,8 +945,10 @@ public class S3Helper {
                     return new DataStorageListing(previous, items);
                 }
                 previous = getPreviousKey(previous, commonPrefix);
-                AbstractDataStorageItem folder = parseFolder(requestPath, commonPrefix, prefix);
-                items.add(folder);
+                final DataStorageFolder folder = parseFolder(requestPath, commonPrefix, prefix, permissionsContainer);
+                if (Objects.nonNull(folder)) {
+                    items.add(folder);
+                }
             }
             for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
                 if (!pathMatch(requestPath, versionSummary.getKey())) {
@@ -939,6 +957,9 @@ public class S3Helper {
                 DataStorageFile file =
                         AbstractS3ObjectWrapper.getWrapper(versionSummary).convertToStorageFile(requestPath, prefix);
                 if (file == null) {
+                    continue;
+                }
+                if (filterNotAllowedFiles(file.getPath(), permissionsContainer)) {
                     continue;
                 }
                 if (filterNotRestored(file, file.getPath(), restoredListing)) {
@@ -1358,6 +1379,11 @@ public class S3Helper {
     private boolean filterNotRestored(final DataStorageFile file, final String fileName,
                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
         return Objects.nonNull(restoredListing) && isArchived(file) && !restoredListing.containsPath(fileName);
+    }
+
+    private boolean filterNotAllowedFiles(final String fileName,
+                                          final StorageFolderListPermissionsContainer permissionsContainer) {
+        return Objects.nonNull(permissionsContainer) && permissionsContainer.fileNotAllowed(fileName);
     }
 
     private boolean isArchived(final DataStorageFile item) {

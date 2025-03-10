@@ -66,6 +66,7 @@ import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManag
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -622,6 +623,9 @@ public class AclTestBeans {
 
     @MockBean
     protected EngineRunTaskService engineRunTaskService;
+
+    @MockBean
+    protected StoragePathPermissionsService storagePathPermissionsService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

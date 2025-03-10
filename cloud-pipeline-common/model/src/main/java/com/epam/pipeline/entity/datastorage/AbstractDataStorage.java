@@ -86,6 +86,11 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
     private Long sourceStorageId;
     private Set<String> linkingMasks;
 
+    /**
+     * Indicates that permissions can be granted for particular paths in this storage.
+     */
+    private boolean pathPermissionsEnabled;
+
     public AbstractDataStorage(final Long id, final String name,
                                final String path, final DataStorageType type) {
         this(id, name, path, type, DEFAULT_POLICY, "");
