@@ -491,7 +491,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         ALL_TOOL_VERSIONS,
         TOOL_VERSION_ID,
         TOOL_VERSION,
-        MOUNT_STATUS;
+        MOUNT_STATUS,
+        PATH_PERMISSIONS_ENABLED;
 
         static MapSqlParameterSource getParameters(final AbstractDataStorage dataStorage,
                                                    final boolean setStorageMountStatus) {
@@ -512,6 +513,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
             params.addValue(MOUNT_EXACT_PATH.name(), dataStorage.isMountExactPath());
             params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
+            params.addValue(PATH_PERMISSIONS_ENABLED.name(), dataStorage.isPathPermissionsEnabled());
 
             if (dataStorage instanceof AbstractAWSDataStorage) {
                 AbstractAWSDataStorage awsStorage = ((AbstractAWSDataStorage) dataStorage);
@@ -624,6 +626,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
             dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
+            dataStorage.setPathPermissionsEnabled(rs.getBoolean(PATH_PERMISSIONS_ENABLED.name()));
             return dataStorage;
         }
 

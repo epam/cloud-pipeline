@@ -60,4 +60,5 @@ public class DataStorageVO {
     private String tempCredentialsRole;
     private String kmsKeyArn;
     private boolean useAssumedCredentials;
+    private Boolean pathPermissionsEnabled;
 }

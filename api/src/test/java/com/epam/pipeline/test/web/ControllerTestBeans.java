@@ -23,6 +23,7 @@ import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
+import com.epam.pipeline.acl.datastorage.permissions.StoragePathPermissionsApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
@@ -262,4 +263,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected AWSOmicsStoreApiService awsOmicsStoreApiService;
+
+    @MockBean
+    protected StoragePathPermissionsApiService storagePathPermissionsApiService;
 }

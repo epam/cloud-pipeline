@@ -49,7 +49,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -76,7 +77,8 @@
                         :S3_KMS_KEY_ARN,
                         :S3_USE_ASSUMED_CREDS,
                         :S3_TEMP_CREDS_ROLE,
-                        :MOUNT_STATUS
+                        :MOUNT_STATUS,
+                        :PATH_PERMISSIONS_ENABLED
                     )
                 ]]>
             </value>
@@ -137,7 +139,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -153,7 +156,6 @@
                         d.description,
                         d.datastorage_type,
                         d.path,
-                        d.datastorage_root_id,
                         d.sts_duration,
                         d.lts_duration,
                         d.incomplete_upload_cleanup_days,
@@ -176,7 +178,8 @@
                         s3_temp_creds_role,
                         d.mount_status,
                         d.source_datastorage_id,
-                        d.masking_rules
+                        d.masking_rules,
+                        d.path_permissions_enabled
                     FROM
                         pipeline.datastorage d
                     LEFT JOIN pipeline.metadata m ON d.datastorage_id = m.entity_id
@@ -214,7 +217,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -253,7 +257,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -291,7 +296,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -328,7 +334,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -365,7 +372,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -402,7 +410,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -439,7 +448,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -477,7 +487,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -514,7 +525,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -569,6 +581,7 @@
                             d.s3_temp_creds_role,
                             d.mount_status,
                             d.mount_exact_path,
+                            d.path_permissions_enabled,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -605,6 +618,7 @@
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
                             null as mount_status,
+                            null as path_permissions_enabled,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -643,6 +657,7 @@
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
                             d.mount_status,
+                            d.path_permissions_enabled,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -675,6 +690,7 @@
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
                             null as mount_status,
+                            null as path_permissions_enabled,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -790,7 +806,8 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status
+                        mount_status,
+                        path_permissions_enabled
                     FROM
                         pipeline.datastorage
                     WHERE

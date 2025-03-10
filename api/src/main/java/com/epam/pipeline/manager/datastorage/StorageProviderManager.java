@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -102,9 +103,11 @@ public class StorageProviderManager {
         getStorageProvider(dataStorage).restoreFileVersion(dataStorage, path, version);
     }
 
-    public DataStorageListing getItems(AbstractDataStorage dataStorage, String path,
-            Boolean showVersion, Integer pageSize, String marker) {
-        return getStorageProvider(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
+    public DataStorageListing getItems(final AbstractDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
+        return getStorageProvider(dataStorage)
+                .getItems(dataStorage, path, showVersion, pageSize, marker, permissionsContainer);
     }
 
     @SensitiveStorageOperation
@@ -229,8 +232,9 @@ public class StorageProviderManager {
 
     public DataStorageListing getRestoredItems(final AbstractDataStorage dataStorage, final String path,
                                                final Boolean showVersion, final Integer pageSize, final String marker,
-                                               final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                               final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                               final StorageFolderListPermissionsContainer permissionsContainer) {
         return getStorageProvider(dataStorage)
-                .getItems(dataStorage, path, showVersion, pageSize, marker, restoredListing);
+                .getItems(dataStorage, path, showVersion, pageSize, marker, restoredListing, permissionsContainer);
     }
 }

@@ -115,7 +115,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     public Stream<DataStorageFile> listDataStorageFiles(final AWSOmicsSequenceDataStorage dataStorage,
                                                         final String path) {
         final Spliterator<List<DataStorageFile>> spliterator = Spliterators.spliteratorUnknownSize(
-                new OmicsPageIterator(t -> getItems(dataStorage, path, false, null, t)), 0
+                new OmicsPageIterator(t -> getItems(dataStorage, path, false, null, t, null)), 0
         );
         return StreamSupport.stream(spliterator, false).flatMap(List::stream);
     }

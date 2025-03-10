@@ -23,6 +23,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -190,19 +191,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
-            Boolean showVersion, Integer pageSize, String marker) {
-        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
+    public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null, permissionsContainer);
     }
 
     @Override
     public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         return getS3Helper(dataStorage).getItems(datastoragePath.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()), restoredListing);
+                ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()), restoredListing, permissionsContainer);
     }
 
     @Override
