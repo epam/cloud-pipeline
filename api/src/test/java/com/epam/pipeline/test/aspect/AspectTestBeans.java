@@ -28,6 +28,7 @@ import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
 import com.epam.pipeline.dao.datastorage.StorageQuotaTriggersDao;
+import com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.dts.DtsRegistryDao;
@@ -466,4 +467,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected KubernetesMapper kubernetesMapper;
+
+    @MockBean
+    protected StoragePathPermissionsDao storagePathPermissionsDao;
 }
