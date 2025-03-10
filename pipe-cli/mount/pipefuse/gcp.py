@@ -260,7 +260,8 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
                     ctime=None,
                     contenttype='',
                     is_dir=False,
-                    storage_class=None)
+                    storage_class=None,
+                    mask=None)
 
     def _get_folder_object(self, name, prefix, recursive):
         return File(name=self._get_object_name(name, prefix, recursive),
@@ -269,7 +270,8 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
                     ctime=None,
                     contenttype='',
                     is_dir=True,
-                    storage_class=None)
+                    storage_class=None,
+                    mask=None)
 
     def _get_object_name(self, name, prefix, recursive):
         return name if recursive else fuseutils.get_item_name(name, prefix=prefix)
