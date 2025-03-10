@@ -23,6 +23,7 @@ import java.util.Set;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -54,11 +55,13 @@ public interface StorageProvider<T extends AbstractDataStorage> {
             throws DataStorageException;
 
     DataStorageListing getItems(T dataStorage, String path,
-            Boolean showVersion, Integer pageSize, String marker);
+            Boolean showVersion, Integer pageSize, String marker,
+                                StorageFolderListPermissionsContainer permissionsContainer);
 
     DataStorageListing getItems(T dataStorage, String path,
                                 Boolean showVersion, Integer pageSize, String marker,
-                                DataStorageLifecycleRestoredListingContainer restoredListing);
+                                DataStorageLifecycleRestoredListingContainer restoredListing,
+                                StorageFolderListPermissionsContainer permissionsContainer);
 
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);

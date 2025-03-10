@@ -22,6 +22,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -98,7 +99,8 @@ public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage
 
     @Override
     public DataStorageListing getItems(final T dataStorage, final String path,
-                                       final Boolean showVersion, final Integer pageSize, final String marker) {
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         if (BooleanUtils.isTrue(showVersion)) {
             log.warn(messageHelper.getMessage(MessageConstants.AWS_OMICS_STORE_DOESNT_SUPPORT_VERSIONING));
         }
@@ -115,8 +117,9 @@ public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage
     @Override
     public DataStorageListing getItems(final T dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
-        return getItems(dataStorage, path, showVersion, pageSize, marker);
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
+        return getItems(dataStorage, path, showVersion, pageSize, marker, permissionsContainer);
     }
 
     @Override

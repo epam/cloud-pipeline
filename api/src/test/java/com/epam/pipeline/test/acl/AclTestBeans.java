@@ -63,6 +63,7 @@ import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManag
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -565,6 +566,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PodsManager podsManager;
+
+    @MockBean
+    protected StoragePathPermissionsService storagePathPermissionsService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -160,7 +161,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
-                                       Integer pageSize, String marker) {
+                                       Integer pageSize, String marker,
+                                       StorageFolderListPermissionsContainer permissionsContainer) {
         File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
 
@@ -211,11 +213,15 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public DataStorageListing getItems(final NFSDataStorage dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         if (Objects.nonNull(restoredListing)) {
             throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
         }
-        return getItems(dataStorage, path, showVersion, pageSize, marker);
+        if (Objects.nonNull(permissionsContainer)) {
+            throw new UnsupportedOperationException("Path permissions are not supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
     }
 
     @Override
