@@ -194,7 +194,8 @@ class CachingListingFileSystemClient(FileSystemClientDecorator):
                     ctime=None,
                     contenttype=None,
                     is_dir=True,
-                    storage_class=None)
+                    storage_class=None,
+                    mask=None)
 
     def ls(self, path, depth=1):
         return self._ls_as_dict(path, depth).values()
