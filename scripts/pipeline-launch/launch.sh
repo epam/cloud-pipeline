@@ -65,13 +65,16 @@ function clone_repository {
             done
       fi
 
+      _REPOSITORY_URL_SANITIZED=$(echo "$_REPOSITORY_URL" | sed 's|https://.*@|https://xxx@|g')
+
       for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT"); do
-            echo "[INFO] Cloning ${_REPOSITORY_URL} to ${_REPOSITORY_LOCAL_PATH} with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
+            echo "[INFO] Cloning ${_REPOSITORY_URL_SANITIZED} to ${_REPOSITORY_LOCAL_PATH} with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
+            
             git $CP_GIT_CLONE_EXTRA_ARGS -c http.sslVerify=false clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" -q
             _CLONE_RESULT=$?
 
             if [ $_CLONE_RESULT -ne 0 ]; then
-                  echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL} to ${_REPOSITORY_LOCAL_PATH} with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
+                  echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL_SANITIZED} to ${_REPOSITORY_LOCAL_PATH} with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
                   sleep "$_RETRIES_TIMEOUT"
             else
                   cd $SCRIPTS_DIR
