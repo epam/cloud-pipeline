@@ -30,7 +30,7 @@ export default function getPipelineFilePath (filePath, currentPath = '') {
   if (!/^(\.\/|\.\.\/)/.test(relativePath)) {
     relativePath = './'.concat(relativePath);
   }
-  const root = codePath.length ? `http://root/${codePath}/` : 'http://root/';
+  const root = codePath.length ? `https://root/${codePath}/` : 'https://root/';
   try {
     const url = new URL(relativePath, root);
     let result = url.pathname;
