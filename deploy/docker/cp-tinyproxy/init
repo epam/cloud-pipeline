@@ -61,8 +61,42 @@ if [ "$CP_TP_ALLOWED_PORTS" ]; then
     echo "ConnectPort $CP_TP_ALLOWED_PORTS" >> "$CP_TP_CONFIG_PATH"
 fi
 
+# destination1+type1+upstream1,destination2+type2+upstream2
+# E.g.:
+#   s3.amazonaws.com+none+none,ec2.amazonaws.com+http+proxy1.epam.com,none+http+proxy2.epam.com
+# Will produce:
+#   Upstream none s3.amazonaws.com
+#   Upstream http proxy1.epam.com ec2.amazonaws.com
+#   Upstream http proxy2.epam.com
 if [ "$CP_TP_UPSTREAM" ]; then
-    echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
+    if [[ $CP_TP_UPSTREAM == *"+"* ]]; then
+        echo "Upstream is a complex list: $CP_TP_UPSTREAM"
+        IFS=',' read -ra _upstream_configs_list <<< "$CP_TP_UPSTREAM"
+        for _uc in "${_upstream_configs_list[@]}"; do
+            IFS='+' read -ra _upstream_config <<< "$_uc"
+
+            _uc_destination="${_upstream_config[0]}"
+            if [ "$_uc_destination" == "none" ]; then
+                _uc_destination=""
+            else
+                _uc_destination="\"$_uc_destination\""
+            fi
+
+            _uc_type="${_upstream_config[1]}"
+
+            _uc_upstream="${_upstream_config[2]}"
+            if [ "$_uc_upstream" == "none" ]; then
+                _uc_upstream=""
+            fi
+
+            _uc_value="Upstream $_uc_type $_uc_upstream $_uc_destination"
+            echo "- Writing upstream entry: $_uc_value"
+            echo "$_uc_value" >> "$CP_TP_CONFIG_PATH"
+        done
+    else
+        echo "Upstream is a scalar value: $CP_TP_UPSTREAM"
+        echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
+    fi
 fi
 
 if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
