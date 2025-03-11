@@ -1,1 +1,1 @@
-export { StatusTasks } from './status-tasks';
+export { StatusTasks } from './components/status-tasks';

@@ -151,3 +151,25 @@ export enum EngineTaskStatus {
 
 export type EngineTask = Partial<Record<EngineTaskStatus, number>>;
 export type EngineTasks = Record<string, EngineTask>;
+
+export type RunTasksData = {
+  elements: {
+    attributes?: string;
+    endDateTime?: string;
+    engineType?: string;
+    runId?: number;
+    startDateTime?: string;
+    status?: string;
+    taskGroup?: string;
+    taskId?: string;
+    taskKey?: string;
+    taskName?: string;
+    taskTag?: string;
+  }[];
+  totalCount: number;
+};
+
+export type Sorting = {
+  column: string;
+  descending: boolean;
+};

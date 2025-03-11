@@ -1,7 +1,6 @@
 import type { EngineTasks } from '@cloud-pipeline/core';
 
 export const calculateStatusTotals = (data: EngineTasks) => {
-  console.log(data);
   const totalsByStatus: Record<string, number> = {};
   const totalsByTask: Record<string, number> = {};
   let totalTasks = 0;

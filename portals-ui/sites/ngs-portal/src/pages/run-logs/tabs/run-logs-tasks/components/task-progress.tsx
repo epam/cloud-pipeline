@@ -1,6 +1,6 @@
 import cn from 'classnames';
 import type { ReactNode } from 'react';
-import { orderedStatuses, statusColors, statusIcons } from './constants';
+import { orderedStatuses, statusColors, statusIcons } from '../constants';
 import type { EngineTask } from '@cloud-pipeline/core';
 
 type Props = {
@@ -8,12 +8,12 @@ type Props = {
   statuses: EngineTask;
   isSelected: boolean;
   total: number;
-  onTaskSelect: (taskName: string | null) => void;
+  onTaskSelect: (taskName?: string) => void;
 };
 
 export const TaskProgress = ({ taskName, statuses, isSelected, total, onTaskSelect }: Props) => {
   const handleTaskSelect = () => {
-    onTaskSelect(isSelected ? null : taskName);
+    onTaskSelect(isSelected ? undefined : taskName);
   };
 
   const getProgressElements = () => {

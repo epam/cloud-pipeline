@@ -4,4 +4,5 @@ export * from './fetch-run-default-parameters';
 export * from './fetch-run-logs';
 export * from './fetch-run-tasks';
 export * from './stop-run';
+export * from './fetch-run-engine-stats';
 export * from './fetch-run-engine-tasks';

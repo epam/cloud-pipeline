@@ -2,6 +2,6 @@
   @apply flex h-full w-full;
 }
 
-.spin-container div[class~="ant-spin-container"] {
-  @apply flex flex-col grow;
+.spin-container div[class~='ant-spin-container'] {
+  @apply flex flex-col grow w-full;
 }
