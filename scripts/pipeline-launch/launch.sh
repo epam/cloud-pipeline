@@ -1863,46 +1863,8 @@ if [ "$CP_GPUSTAT_ENABLED" != "false" ]; then
       echo
 fi
 
-######################################################
-echo "Setting up Gitlab credentials"
-echo "-"
-######################################################
-set_git_credentials
-
-_GIT_CREDS_RESULT=$?
-
-if [ ${_GIT_CREDS_RESULT} -ne 0 ];
-then
-    echo "Failed to get user's Gitlab credentials"
-fi
-echo "------"
-
-# check whether we shall get code from repository before executing a command or not
-if [ -z "$GIT_REPO" ] ;
-then
-      echo "GIT_REPO is not defined, skipping clone"
-elif  [ "$RESUMED_RUN" == true ] ;
-then
-      echo "Skipping pipeline repository clone for a resumed run"
-else
-      # clone current pipeline repo
-      clone_repository $GIT_REPO $SCRIPTS_DIR ${CP_GIT_CLONE_RETRIES_COUNT:-3} ${CP_GIT_CLONE_RETRIES_TIMEOUT_SEC:-10}
-      _CLONE_RESULT=$?
-      if [ "$_CLONE_RESULT" -ne 0 ];
-      then
-            echo "[ERROR] Pipeline repository clone failed. Exiting"
-            exit_init "$_CLONE_RESULT"
-      fi
-      cd -
-fi
-
 # Apply MAC/networking tweaks if requested
 change_mac
-
-echo "------"
-echo
-######################################################
-
 
 ######################################################
 echo "Setting up general motd config"
@@ -2010,6 +1972,44 @@ else
 fi
 # Double check that root's SSH permissions are correct
 ssh_fix_permissions /root/.ssh
+
+echo "------"
+echo
+######################################################
+
+
+######################################################
+echo "Setting up Gitlab credentials"
+echo "-"
+######################################################
+set_git_credentials
+
+_GIT_CREDS_RESULT=$?
+
+if [ ${_GIT_CREDS_RESULT} -ne 0 ];
+then
+    echo "Failed to get user's Gitlab credentials"
+fi
+echo "------"
+
+# check whether we shall get code from repository before executing a command or not
+if [ -z "$GIT_REPO" ] ;
+then
+      echo "GIT_REPO is not defined, skipping clone"
+elif  [ "$RESUMED_RUN" == true ] ;
+then
+      echo "Skipping pipeline repository clone for a resumed run"
+else
+      # clone current pipeline repo
+      clone_repository $GIT_REPO $SCRIPTS_DIR ${CP_GIT_CLONE_RETRIES_COUNT:-3} ${CP_GIT_CLONE_RETRIES_TIMEOUT_SEC:-10}
+      _CLONE_RESULT=$?
+      if [ "$_CLONE_RESULT" -ne 0 ];
+      then
+            echo "[ERROR] Pipeline repository clone failed. Exiting"
+            exit_init "$_CLONE_RESULT"
+      fi
+      cd -
+fi
 
 echo "------"
 echo
