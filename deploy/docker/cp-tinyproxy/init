@@ -188,6 +188,7 @@ export CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE="${CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE:
 mkdir -p $(dirname $CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE)
 
 export CP_TP_NGINX_SMTP_AUTH_SRV_PORT="${CP_TP_NGINX_SMTP_AUTH_SRV_PORT:-8000}"
+export CP_TP_NGINX_WORKER_CONNECTIONS="${CP_TP_NGINX_WORKER_CONNECTIONS:-1024}"
 
 if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ] || [ "$CP_TP_SMTP_DEST" ]; then
 
@@ -201,7 +202,7 @@ pid /run/nginx.pid;
 include /usr/share/nginx/modules/*.conf;
 
 events {
-    worker_connections 1024;
+    worker_connections $CP_TP_NGINX_WORKER_CONNECTIONS;
 }
 
 mail {
