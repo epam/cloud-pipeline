@@ -16,12 +16,13 @@
 
 import moment from 'moment-timezone';
 import attachDocumentVisibilityHandlers from './document-visibility-handler';
+import {safeRandom} from '../primitives';
 
 const SECOND = 1000;
 const DEFAULT_INTERVAL = 5 * SECOND;
 const MAX_INTERVAL_FN = defaultInterval => defaultInterval * 12;
 const INCREASE_FACTOR = 1.5;
-const NOISE = range => Math.random() * range;
+const NOISE = range => safeRandom() * range;
 const NOOP = () => {};
 
 function log (...messages) {
