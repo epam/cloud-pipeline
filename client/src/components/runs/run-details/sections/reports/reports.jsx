@@ -26,7 +26,7 @@ export class Reports extends Component {
       this.setState({pending: true});
       await pipelineResults.fetch();
 
-      this.setState({results: pipelineResults.value});
+      this.setState({results: pipelineResults.value ?? []});
     } catch (error) {
       // No handler
     }
