@@ -78,5 +78,5 @@ export type Settings = {
   /**
    * NGS Run tasks dynamic attributes columns
    */
-  runTasksAttributesColumns: string[];
+  runTasksAttributesColumns?: string[];
 };

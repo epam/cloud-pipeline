@@ -1,13 +1,14 @@
 import type { TableProps } from 'antd';
 import { Table } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { calculateMinColWidth, prepareTaskData } from '../helpers';
+import { calculateMinColWidth, getColumns, prepareTaskData } from '../helpers';
 import type { EngineTaskStatus, RunTasksData } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import cn from 'classnames';
 import { StatusPill } from './status-pill';
 import type { SortingState } from '../types';
 import './style.css';
+import { DEFAULT_DYNAMIC_COLUMNS } from '../constants';
 
 type Pagination = {
   pageSize: number;
@@ -23,7 +24,11 @@ type Props = CommonProps & {
   onPageSelect: (page: number) => void;
   onSortChange: (sorting?: SortingState) => void;
   sorting?: SortingState;
+  dynamicColumns?: string[];
 };
+
+const headerHeight = 39;
+const paginationHeight = 42;
 
 export const TasksTable = ({
   data,
@@ -33,13 +38,12 @@ export const TasksTable = ({
   sorting,
   onPageSelect,
   onSortChange,
+  dynamicColumns = DEFAULT_DYNAMIC_COLUMNS,
   className,
   style,
 }: Props) => {
   const [scrollY, setScrollY] = useState(0);
   const tableContainerRef = useRef<HTMLDivElement>(null);
-
-  const { processedData, dynamicKeys } = useMemo(() => prepareTaskData(data), [data]);
 
   const renderStatus = (status: EngineTaskStatus) => {
     return (
@@ -53,68 +57,26 @@ export const TasksTable = ({
     const updateScrollY = () => {
       if (tableContainerRef.current) {
         const containerHeight = tableContainerRef.current.clientHeight;
-        const headerHeight = 39;
-        const paginationHeight = 42;
         setScrollY(containerHeight - headerHeight - paginationHeight);
       }
     };
 
     updateScrollY();
+    window.addEventListener('resize', updateScrollY);
+
+    return () => window.removeEventListener('resize', updateScrollY);
   }, []);
 
   const minColWidth = useMemo(() => {
-    return calculateMinColWidth(dynamicKeys);
-  }, [dynamicKeys]);
+    return calculateMinColWidth(dynamicColumns);
+  }, [dynamicColumns]);
 
-  const columns: TableProps<RunTasksData['elements'][number]>['columns'] = [
-    {
-      title: 'ID',
-      dataIndex: 'taskId',
-      key: 'taskId',
-      sorter: true,
-      sortOrder: sorting?.column === 'taskId' ? sorting?.order : undefined,
-      width: 50,
-    },
-    {
-      title: 'Process',
-      dataIndex: 'taskGroup',
-      key: 'taskGroup',
-      sorter: true,
-      sortOrder: sorting?.column === 'taskGroup' ? sorting?.order : undefined,
-    },
-    {
-      title: 'Tag',
-      dataIndex: 'taskTag',
-      key: 'taskTag',
-      sorter: true,
-      sortOrder: sorting?.column === 'taskTag' ? sorting?.order : undefined,
-      width: 50,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      sorter: true,
-      sortOrder: sorting?.column === 'status' ? sorting?.order : undefined,
-      render: renderStatus,
-    },
-    {
-      title: 'Started',
-      dataIndex: 'started',
-      key: 'started',
-    },
-    {
-      title: 'Finished',
-      dataIndex: 'finished',
-      key: 'finished',
-    },
-    ...dynamicKeys.map((key) => ({
-      title: key,
-      dataIndex: key,
-      key: key,
-      width: minColWidth,
-    })),
-  ];
+  const processedData = useMemo(() => prepareTaskData(data), [data]);
+
+  const columns: TableProps<RunTasksData['elements'][number]>['columns'] = useMemo(
+    () => getColumns({ dynamicColumns, minColWidth, sorting, renderStatus }),
+    [dynamicColumns, minColWidth, sorting],
+  );
 
   const handleTableChange: TableProps<RunTasksData['elements'][number]>['onChange'] = (
     _pagination,

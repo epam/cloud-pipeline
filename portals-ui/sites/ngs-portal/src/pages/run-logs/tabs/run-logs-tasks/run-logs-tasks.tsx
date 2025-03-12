@@ -16,8 +16,17 @@ export const RunLogsTasksTab = ({ run }: Props) => {
   const [selectedTask, setSelectedTask] = useState<string>();
   const [sorting, setSorting] = useState<SortingState | undefined>();
 
-  const { isTasksLoading, isStatsLoading, taskStats, tasks, tasksError, statsError, tasksCount, fetchTasks } =
-    useRunEngineTasks(run?.id);
+  const {
+    isTasksLoading,
+    isStatsLoading,
+    taskStats,
+    tasks,
+    tasksError,
+    statsError,
+    tasksCount,
+    runTasksAttributesColumns,
+    fetchTasks,
+  } = useRunEngineTasks(run?.id);
 
   const [activePage, setActivePage] = useState(1);
 
@@ -99,6 +108,7 @@ export const RunLogsTasksTab = ({ run }: Props) => {
 
       {!!tasks.length && (
         <TasksTable
+          dynamicColumns={runTasksAttributesColumns}
           data={tasks}
           onPageSelect={handleSelectPage}
           className="mt-4 grow"

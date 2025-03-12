@@ -9,30 +9,11 @@ type BaseAttributes = {
   finished?: string;
 };
 
-const KEYS = [
-  'cpus',
-  'memory',
-  'disk',
-  'time',
-  'duration',
-  'realtime',
-  '%cpu',
-  '%mem',
-  'vmem',
-  'rss',
-  'peak_vmem',
-  'peak_rss',
-  'read_bytes',
-  'write_bytes',
-];
-
 type TaskAttributes = Record<string, string | number | null>;
 type ProcessedDataEntry = BaseAttributes & TaskAttributes;
 
 export const prepareTaskData = (data: RunTasksData['elements']) => {
-  const dynamicKeys = new Set<string>();
-
-  const processedData = data.map((item): ProcessedDataEntry => {
+  return data.map((item): ProcessedDataEntry => {
     let parsedAttributes: TaskAttributes = {};
 
     try {
@@ -41,12 +22,6 @@ export const prepareTaskData = (data: RunTasksData['elements']) => {
       console.error('Failed to parse attributes:', error);
       parsedAttributes = {};
     }
-
-    Object.keys(parsedAttributes).forEach((key) => {
-      if (KEYS.includes(key)) {
-        dynamicKeys.add(key);
-      }
-    });
 
     return {
       taskId: item.taskId,
@@ -58,8 +33,4 @@ export const prepareTaskData = (data: RunTasksData['elements']) => {
       ...parsedAttributes,
     } as ProcessedDataEntry;
   });
-
-  const includedDynamicKeys = Array.from(dynamicKeys);
-
-  return { processedData, dynamicKeys: includedDynamicKeys };
 };

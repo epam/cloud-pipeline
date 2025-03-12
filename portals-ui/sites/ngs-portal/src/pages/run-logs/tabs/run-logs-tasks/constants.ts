@@ -42,3 +42,20 @@ export const statusIcons: Record<EngineTaskStatus, ComponentType<SVGProps<SVGSVG
   [EngineTaskStatus.ABORTED]: XCircleIcon,
   [EngineTaskStatus.CACHED]: MinusCircleIcon,
 };
+
+export const DEFAULT_DYNAMIC_COLUMNS = [
+  'cpus',
+  'memory',
+  'disk',
+  'time',
+  'duration',
+  'realtime',
+  '%cpu',
+  '%mem',
+  'vmem',
+  'rss',
+  'peak_vmem',
+  'peak_rss',
+  'read_bytes',
+  'write_bytes',
+];

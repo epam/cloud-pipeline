@@ -3,10 +3,12 @@ import type { EngineTasks, RunTasksData } from '@cloud-pipeline/core';
 import { useState, useEffect, useCallback } from 'react';
 import { TASKS_PAGE_SIZE } from '../constants';
 import type { SortingState } from '../types';
+import fetchSettings from '../../../../../shared/settings/fetch-settings';
 
 export const useRunEngineTasks = (runId?: number) => {
   const [taskStats, setTaskStats] = useState<EngineTasks>({});
   const [tasks, setTasks] = useState<RunTasksData['elements']>([]);
+  const [runTasksAttributesColumns, setRunTasksAttributesColumns] = useState<string[]>();
   const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [isTasksLoading, setIsTasksLoading] = useState(false);
   const [statsError, setStatsError] = useState<Error | null>(null);
@@ -54,8 +56,9 @@ export const useRunEngineTasks = (runId?: number) => {
       setStatsError(null);
 
       try {
-        const [taskStats] = await Promise.all([fetchRunEngineStats(runId), fetchTasks()]);
+        const [taskStats, settings] = await Promise.all([fetchRunEngineStats(runId), fetchSettings(), fetchTasks()]);
         setTaskStats(taskStats);
+        setRunTasksAttributesColumns(settings.runTasksAttributesColumns);
       } catch (err) {
         setStatsError(err instanceof Error ? err : new Error('Error fetching run stats'));
       } finally {
@@ -74,6 +77,7 @@ export const useRunEngineTasks = (runId?: number) => {
     tasks,
     taskStats,
     tasksCount,
+    runTasksAttributesColumns,
     fetchTasks,
   };
 };
