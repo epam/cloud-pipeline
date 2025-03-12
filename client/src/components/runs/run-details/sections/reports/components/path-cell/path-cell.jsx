@@ -38,6 +38,12 @@ class PathCell extends React.PureComponent {
       : this.filteredPaths;
   }
 
+  get restPaths () {
+    return this.hasMoreToShow
+      ? this.filteredPaths.slice(DISPLAY_LIMIT, this.filteredPaths.length)
+      : [];
+  }
+
   render () {
     const {
       paths = [],
@@ -45,7 +51,7 @@ class PathCell extends React.PureComponent {
       search
     } = this.props;
     const {moreVisible} = this.state;
-    const showMoreAmount = this.filteredPaths.length - DISPLAY_LIMIT;
+    const showMoreAmount = this.restPaths.length;
     const filreredAmount = paths.length - this.filteredPaths.length;
     const filteredCountText = `+${filreredAmount} filtered`;
     const showMoreText = `+${showMoreAmount} more`;
@@ -62,7 +68,7 @@ class PathCell extends React.PureComponent {
             content={(
               <div className={styles.pathsPopoverContent}>
                 <PathList
-                  paths={this.filteredPaths}
+                  paths={this.restPaths}
                   rule={rule}
                   onPreviewVisibilityChanged={this.onCloseMorePaths}
                   search={search}
