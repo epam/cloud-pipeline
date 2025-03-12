@@ -5,6 +5,10 @@ import highlightText from '../../../../../../special/highlightText';
 
 import styles from './result-table.css';
 
+function searchSatisfied (text, search) {
+  return (text || '').toLowerCase().includes(search.toLowerCase());
+}
+
 export class ResultTable extends Component {
   state = {
     sortedInfo: {},
@@ -30,8 +34,9 @@ export class ResultTable extends Component {
   render () {
     const {sortedInfo, searchText} = this.state;
     const filteredData = this.props.resultItems.filter(entry =>
-      (entry.name && entry.name.toLowerCase().includes(searchText.toLowerCase())) ||
-      entry.items.some(path => path.toLowerCase().includes(searchText.toLowerCase()))
+      searchSatisfied(entry.name, searchText) ||
+      searchSatisfied(entry.fileMask, searchText) ||
+      entry.items.some(path => searchSatisfied(path, searchText))
     ).map((item, index) => ({
       ...item,
       ruleId: item.ruleId || `${item.name}-${item.fileMask}-${index}`
