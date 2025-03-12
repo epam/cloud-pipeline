@@ -302,7 +302,7 @@ public class DockerClient {
         String url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), imageName, tag);
         try {
             URI uri = new URI(url);
-            HttpEntity httpEntity = GCP == registry.getProvider() ? getV1AuthHeaders() : headers;
+            final HttpEntity httpEntity = GCP == registry.getProvider() ? getV1AuthHeaders() : headers;
             ResponseEntity<RawImageDescription>
                 response = getRestTemplate().exchange(uri, HttpMethod.GET, httpEntity,
                                                       new ParameterizedTypeReference<RawImageDescription>() {});

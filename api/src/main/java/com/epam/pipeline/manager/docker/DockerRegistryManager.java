@@ -646,7 +646,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
         String token = null;
         if (registry.isPipelineAuth()) {
             if (GCP == registry.getProvider()) {
-                AbstractCloudRegion gcpRegion = cloudRegionDao
+                final AbstractCloudRegion gcpRegion = cloudRegionDao
                         .loadDefaultRegion()
                         .filter(r -> GCP == r.getProvider())
                         .orElseThrow(() -> new ObjectNotFoundException("No Default Region for GCP"));

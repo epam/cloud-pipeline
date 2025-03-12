@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool_version_scan ALTER COLUMN layer_reference TYPE VARCHAR(2048);
