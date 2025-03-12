@@ -63,7 +63,6 @@ export const useRunEngineTasks = (runId?: number) => {
       }
     };
 
-    console.log('bla');
     void fetchTasksInfo();
   }, [fetchTasks, runId]);
 

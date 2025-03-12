@@ -25,7 +25,8 @@ export const ItemLayout = ({ aside, header, main, style, classes = {} }: Props) 
     <div className={cn('flex flex-col space-y-4 h-full overflow-hidden', classes.container)} style={style}>
       <LayoutCard>{header}</LayoutCard>
       <div className={cn('flex flex-1 space-x-4 flex-grow', classes.content)}>
-        <LayoutCard className={classNames('overflow-auto', classes.layoutCard, hasAsidePanels ? 'w-2/3' : 'w-full')}>
+        <LayoutCard
+          className={classNames('overflow-auto h-full', classes.layoutCard, hasAsidePanels ? 'w-2/3' : 'w-full')}>
           {main}
         </LayoutCard>
         {asidePanels.length > 0 && <div className="item-layout-aside">{asidePanels}</div>}

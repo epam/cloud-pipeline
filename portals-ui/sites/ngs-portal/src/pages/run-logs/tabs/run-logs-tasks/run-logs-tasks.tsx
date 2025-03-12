@@ -34,9 +34,10 @@ export const RunLogsTasksTab = ({ run }: Props) => {
   const handleSelectTask = useCallback(
     (task?: string) => {
       setSelectedTask(task);
-      void fetchTasks(task, activePage, sorting);
+      setActivePage(1);
+      void fetchTasks(task, 1, sorting);
     },
-    [activePage, fetchTasks, sorting],
+    [fetchTasks, sorting],
   );
 
   const handleSelectPage = useCallback(
@@ -64,7 +65,7 @@ export const RunLogsTasksTab = ({ run }: Props) => {
   const total = selectedTask ? (totalsByTask[selectedTask] ?? 0) : totalTasks;
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto flex flex-col">
       <div className="flex gap-4">
         <div className="flex-1">
           {Object.entries(taskStats).map(([taskName, statuses]) => (
@@ -78,6 +79,7 @@ export const RunLogsTasksTab = ({ run }: Props) => {
             />
           ))}
         </div>
+
         <div className="flex-1">
           <h3 className="font-bold">Tasks statuses</h3>
 
@@ -99,7 +101,7 @@ export const RunLogsTasksTab = ({ run }: Props) => {
         <TasksTable
           data={tasks}
           onPageSelect={handleSelectPage}
-          className="mt-4"
+          className="mt-4 grow"
           isLoading={isTasksLoading}
           pagination={pagination}
           error={tasksError?.message}

@@ -59,7 +59,7 @@ export const prepareTaskData = (data: RunTasksData['elements']) => {
     } as ProcessedDataEntry;
   });
 
-  const includedDynamicKeys = Array.from(dynamicKeys).filter((key) => processedData.some((item) => item[key] !== null));
+  const includedDynamicKeys = Array.from(dynamicKeys);
 
   return { processedData, dynamicKeys: includedDynamicKeys };
 };

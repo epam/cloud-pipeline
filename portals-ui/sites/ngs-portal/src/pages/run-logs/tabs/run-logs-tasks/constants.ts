@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import type { ComponentType, SVGProps } from 'react';
 
-export const TASKS_PAGE_SIZE = 10;
+export const TASKS_PAGE_SIZE = 20;
 
 export const orderedStatuses: EngineTaskStatus[] = [
   EngineTaskStatus.CREATED,

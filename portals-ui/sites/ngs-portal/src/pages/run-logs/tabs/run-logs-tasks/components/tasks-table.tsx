@@ -1,12 +1,13 @@
 import type { TableProps } from 'antd';
 import { Table } from 'antd';
-import { useMemo } from 'react';
-import { prepareTaskData } from '../helpers';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { calculateMinColWidth, prepareTaskData } from '../helpers';
 import type { EngineTaskStatus, RunTasksData } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import cn from 'classnames';
 import { StatusPill } from './status-pill';
 import type { SortingState } from '../types';
+import './style.css';
 
 type Pagination = {
   pageSize: number;
@@ -29,12 +30,15 @@ export const TasksTable = ({
   isLoading,
   error,
   pagination,
-  onPageSelect,
   sorting,
+  onPageSelect,
   onSortChange,
   className,
   style,
 }: Props) => {
+  const [scrollY, setScrollY] = useState(0);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
   const { processedData, dynamicKeys } = useMemo(() => prepareTaskData(data), [data]);
 
   const renderStatus = (status: EngineTaskStatus) => {
@@ -45,6 +49,23 @@ export const TasksTable = ({
     );
   };
 
+  useEffect(() => {
+    const updateScrollY = () => {
+      if (tableContainerRef.current) {
+        const containerHeight = tableContainerRef.current.clientHeight;
+        const headerHeight = 39;
+        const paginationHeight = 42;
+        setScrollY(containerHeight - headerHeight - paginationHeight);
+      }
+    };
+
+    updateScrollY();
+  }, []);
+
+  const minColWidth = useMemo(() => {
+    return calculateMinColWidth(dynamicKeys);
+  }, [dynamicKeys]);
+
   const columns: TableProps<RunTasksData['elements'][number]>['columns'] = [
     {
       title: 'ID',
@@ -52,6 +73,7 @@ export const TasksTable = ({
       key: 'taskId',
       sorter: true,
       sortOrder: sorting?.column === 'taskId' ? sorting?.order : undefined,
+      width: 50,
     },
     {
       title: 'Process',
@@ -66,6 +88,7 @@ export const TasksTable = ({
       key: 'taskTag',
       sorter: true,
       sortOrder: sorting?.column === 'taskTag' ? sorting?.order : undefined,
+      width: 50,
     },
     {
       title: 'Status',
@@ -79,20 +102,17 @@ export const TasksTable = ({
       title: 'Started',
       dataIndex: 'started',
       key: 'started',
-      sorter: true,
-      sortOrder: sorting?.column === 'started' ? sorting?.order : undefined,
     },
     {
       title: 'Finished',
       dataIndex: 'finished',
       key: 'finished',
-      sorter: true,
-      sortOrder: sorting?.column === 'finished' ? sorting?.order : undefined,
     },
     ...dynamicKeys.map((key) => ({
       title: key,
       dataIndex: key,
       key: key,
+      width: minColWidth,
     })),
   ];
 
@@ -122,16 +142,24 @@ export const TasksTable = ({
   }
 
   return (
-    <Table
-      loading={isLoading}
-      className={cn('w-full', className)}
-      style={style}
-      pagination={{ onChange: onPageSelect, ...pagination }}
-      dataSource={processedData}
-      columns={columns}
-      rowKey="id"
-      scroll={{ x: 'max-content' }}
-      onChange={handleTableChange}
-    />
+    <div ref={tableContainerRef} className={cn('w-full overflow-auto', className)}>
+      <Table
+        loading={isLoading}
+        className={'tasks-table'}
+        style={style}
+        pagination={{
+          onChange: onPageSelect,
+          style: { marginBottom: 0 },
+          size: 'small',
+          current: pagination.page,
+          ...pagination,
+        }}
+        dataSource={processedData}
+        columns={columns}
+        rowKey="id"
+        scroll={{ x: 'max-content', y: scrollY }}
+        onChange={handleTableChange}
+      />
+    </div>
   );
 };
