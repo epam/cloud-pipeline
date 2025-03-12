@@ -2,7 +2,7 @@ import React from 'react';
 import {FilePreviewLink} from '../../../../../../special/file-preview';
 import {ReportFilePreviewHeader} from './report-file-preview-header';
 
-export const PathList = ({paths, rule, onPreviewVisibilityChanged}) => {
+export const PathList = ({paths, rule, search, onPreviewVisibilityChanged}) => {
   return (
     <ul>
       {
@@ -15,6 +15,7 @@ export const PathList = ({paths, rule, onPreviewVisibilityChanged}) => {
               header={(<ReportFilePreviewHeader filePath={path} rule={rule} />)}
               preventDefault={false}
               onPreviewVisibilityChanged={onPreviewVisibilityChanged}
+              search={search}
             />
           </li>
         ))

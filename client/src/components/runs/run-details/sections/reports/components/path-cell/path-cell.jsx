@@ -1,6 +1,7 @@
 import React from 'react';
 import {Popover} from 'antd';
 import {PathList} from './path-list';
+import classNames from 'classnames';
 
 import styles from './path-cell.css';
 
@@ -15,32 +16,56 @@ class PathCell extends React.PureComponent {
 
   onShowMoreVisibilityChanged = (visible) => this.setState({moreVisible: visible});
 
+  get filteredPaths () {
+    const {paths, search} = this.props;
+    if (!search) {
+      return paths;
+    }
+    const filtered = paths.filter(path => path
+      .toLowerCase()
+      .includes((search || '').toLowerCase())
+    );
+    return filtered.length === 0 ? paths : filtered;
+  }
+
+  get hasMoreToShow () {
+    return this.filteredPaths.length > DISPLAY_LIMIT;
+  }
+
+  get visiblePaths () {
+    return this.hasMoreToShow
+      ? this.filteredPaths.slice(0, DISPLAY_LIMIT)
+      : this.filteredPaths;
+  }
+
   render () {
     const {
       paths = [],
-      rule
+      rule,
+      search
     } = this.props;
     const {moreVisible} = this.state;
-    const hasMoreToShow = paths.length > DISPLAY_LIMIT;
-    const visiblePaths = hasMoreToShow ? paths.slice(0, DISPLAY_LIMIT) : paths;
-    const showMoreAmount = paths.length - DISPLAY_LIMIT;
-    const showMoreText = `+ ${showMoreAmount} more`;
-
+    const showMoreAmount = this.filteredPaths.length - DISPLAY_LIMIT;
+    const filreredAmount = paths.length - this.filteredPaths.length;
+    const filteredCountText = `+${filreredAmount} filtered`;
+    const showMoreText = `+${showMoreAmount} more`;
     return (
       <div>
         <PathList
-          paths={visiblePaths}
+          paths={this.visiblePaths}
           rule={rule}
           onPreviewVisibilityChanged={this.onCloseMorePaths}
+          search={search}
         />
-        {hasMoreToShow && (
+        {this.hasMoreToShow && (
           <Popover
             content={(
               <div className={styles.pathsPopoverContent}>
                 <PathList
-                  paths={paths}
+                  paths={this.filteredPaths}
                   rule={rule}
                   onPreviewVisibilityChanged={this.onCloseMorePaths}
+                  search={search}
                 />
               </div>)}
             trigger="click"
@@ -52,6 +77,13 @@ class PathCell extends React.PureComponent {
             </a>
           </Popover>
         )}
+        {filreredAmount > 0 ? (
+          <span
+            className={classNames('cp-text-not-important', styles.filteredCount)}
+          >
+            {filteredCountText}
+          </span>
+        ) : null}
       </div>
     );
   }

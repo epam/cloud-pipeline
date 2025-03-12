@@ -1,5 +1,10 @@
 .show-more-path-button {
   display: inline-block;
+  margin-right: 5px;
+}
+
+.filtered-count {
+  display: inline-block;
 }
 
 .paths-popover-content {

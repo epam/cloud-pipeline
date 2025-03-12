@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import {Input, Table} from 'antd';
 import PathCell from '../path-cell';
+import highlightText from '../../../../../../special/highlightText';
 
 import styles from './result-table.css';
 
@@ -40,7 +41,7 @@ export class ResultTable extends Component {
       <div>
         <Input
           className={styles.pathSearchInput}
-          placeholder="Filter by path"
+          placeholder="Filter reports"
           value={searchText}
           onChange={this.onSearch}
         />
@@ -53,21 +54,23 @@ export class ResultTable extends Component {
             dataIndex: 'name',
             key: 'name',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            sortOrder: sortedInfo.columnKey === 'name' ? sortedInfo.order : undefined
+            sortOrder: sortedInfo.columnKey === 'name' ? sortedInfo.order : undefined,
+            render: (value) => highlightText(value, searchText)
           },
           {
             title: 'Mask',
             dataIndex: 'fileMask',
             key: 'fileMask',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            sortOrder: sortedInfo.columnKey === 'fileMask' ? sortedInfo.order : undefined
+            sortOrder: sortedInfo.columnKey === 'fileMask' ? sortedInfo.order : undefined,
+            render: (value) => highlightText(value, searchText)
           },
           {
             title: 'Path',
             dataIndex: 'items',
             key: 'items',
             render: (paths, rule) => (
-              <PathCell paths={paths} rule={rule} />
+              <PathCell paths={paths} rule={rule} search={searchText} />
             )
           }]}
           rowKey="ruleId"
