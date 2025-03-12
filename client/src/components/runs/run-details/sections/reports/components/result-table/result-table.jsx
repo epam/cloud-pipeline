@@ -1,8 +1,13 @@
 import React, {Component} from 'react';
 import {Input, Table} from 'antd';
 import PathCell from '../path-cell';
+import highlightText from '../../../../../../special/highlightText';
 
 import styles from './result-table.css';
+
+function searchSatisfied (text, search) {
+  return (text || '').toLowerCase().includes(search.toLowerCase());
+}
 
 export class ResultTable extends Component {
   state = {
@@ -29,8 +34,9 @@ export class ResultTable extends Component {
   render () {
     const {sortedInfo, searchText} = this.state;
     const filteredData = this.props.resultItems.filter(entry =>
-      (entry.name && entry.name.toLowerCase().includes(searchText.toLowerCase())) ||
-      entry.items.some(path => path.toLowerCase().includes(searchText.toLowerCase()))
+      searchSatisfied(entry.name, searchText) ||
+      searchSatisfied(entry.fileMask, searchText) ||
+      entry.items.some(path => searchSatisfied(path, searchText))
     ).map((item, index) => ({
       ...item,
       ruleId: item.ruleId || `${item.name}-${item.fileMask}-${index}`
@@ -40,7 +46,7 @@ export class ResultTable extends Component {
       <div>
         <Input
           className={styles.pathSearchInput}
-          placeholder="Filter by path"
+          placeholder="Filter reports"
           value={searchText}
           onChange={this.onSearch}
         />
@@ -53,21 +59,23 @@ export class ResultTable extends Component {
             dataIndex: 'name',
             key: 'name',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            sortOrder: sortedInfo.columnKey === 'name' ? sortedInfo.order : undefined
+            sortOrder: sortedInfo.columnKey === 'name' ? sortedInfo.order : undefined,
+            render: (value) => highlightText(value, searchText)
           },
           {
             title: 'Mask',
             dataIndex: 'fileMask',
             key: 'fileMask',
             sorter: (a, b) => a.name.localeCompare(b.name),
-            sortOrder: sortedInfo.columnKey === 'fileMask' ? sortedInfo.order : undefined
+            sortOrder: sortedInfo.columnKey === 'fileMask' ? sortedInfo.order : undefined,
+            render: (value) => highlightText(value, searchText)
           },
           {
             title: 'Path',
             dataIndex: 'items',
             key: 'items',
             render: (paths, rule) => (
-              <PathCell paths={paths} rule={rule} />
+              <PathCell paths={paths} rule={rule} search={searchText} />
             )
           }]}
           rowKey="ruleId"

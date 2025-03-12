@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {FilePreviewModal} from './file-preview-modal';
+import highlightText from '../highlightText';
 
 class FilePreviewLink extends React.PureComponent {
   state = {
@@ -47,14 +48,15 @@ class FilePreviewLink extends React.PureComponent {
       filePath,
       title,
       header,
-      footer
+      footer,
+      search
     } = this.props;
     const {
       visible
     } = this.state;
     return (
       <a className={className} style={style} onClick={this.onLinkClick}>
-        {filePath}
+        {highlightText(filePath, search)}
         <FilePreviewModal
           filePath={filePath}
           visible={visible}
@@ -77,7 +79,8 @@ FilePreviewLink.propTypes = {
   header: PropTypes.node,
   footer: PropTypes.node,
   preventDefault: PropTypes.bool,
-  onPreviewVisibilityChanged: PropTypes.func
+  onPreviewVisibilityChanged: PropTypes.func,
+  search: PropTypes.string
 };
 
 export {FilePreviewLink};
