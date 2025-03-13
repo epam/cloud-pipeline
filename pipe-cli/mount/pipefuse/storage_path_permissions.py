@@ -20,6 +20,7 @@ import pygtrie
 import logging
 
 from pipefuse import fuseutils
+from pipefuse.api import CloudPipelineClient, DataStorage
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import FileSystemClientDecorator, File, ForbiddenOperationException
 from pipefuse.lock import synchronized
@@ -203,6 +204,12 @@ class StoragePathPermissionsFileSystemClient(FileSystemClientDecorator):
         self._inner = inner
         self._manager = permissions_manager
 
+    def mkdir(self, path):
+        logging.debug("[%s] Checking access before folder creation" % path)
+        self._manager.can_write_to_path(path)
+        logging.debug("[%s] Access to create folder granted" % path)
+        self._inner.mkdir(path)
+
     def mv(self, old, new):
         logging.debug("[%s] Checking access before creation" % new)
         self._manager.can_write_to_path(new)
@@ -320,27 +327,41 @@ class StoragePathWritePermissionsFilterFS(ChainingService):
             if method_name == 'access':
                 path = args[0]
                 mode = args[1]
-                self._inner.access(path, mode)
-                if path == self._root:
-                    if self._permissions_manager and mode & os.W_OK:
-                        logging.debug("[%s] Request root write permissions: %s" % (path, mode))
-                        self._permissions_manager.can_write_to_root()
-                    return attr(*args, **kwargs)
-                if self._permissions_manager is None:
-                    logging.debug("[%s] Permissions check not required: %s" % (path, mode))
-                    return attr(*args, **kwargs)
-                item = self._client.attrs(path)
-                logging.debug("[%s] Loading permissions for item: %s" % (path, item))
-                if not item:
-                    return attr(*args, **kwargs)
-                if mode & os.W_OK:
-                    logging.debug("[%s] Request write permissions: %s" % (path, mode))
-                    self._permissions_manager.check_path_access(path, item)
+                self._check_access(path, mode, method_name)
+                return attr(*args, **kwargs)
+            elif method_name == 'create':
+                path = args[0] or kwargs.get('path')
+                self._permissions_manager.can_write_to_path(path)
+                return attr(*args, **kwargs)
+            elif method_name == 'open':
+                path = args[0] or kwargs.get('path')
+                flags = args[1] or kwargs.get('flags')
+                if flags & os.O_CREAT:
+                    self._permissions_manager.can_write_to_path(path)
+                if (flags & os.O_WRONLY) or (flags & os.O_RDWR) or (flags & os.O_APPEND) or (flags & os.O_TRUNC):
+                    self._check_access(path, os.W_OK, method_name)
                 return attr(*args, **kwargs)
             else:
                 return attr(*args, **kwargs)
 
         return _wrapped_attr
+
+    def _check_access(self, path, mode, method):
+        if path == self._root:
+            if self._permissions_manager and mode & os.W_OK:
+                logging.debug("[%s] Request root write permissions to %s: %s" % (path, method, mode))
+                self._permissions_manager.can_write_to_root()
+            return
+        if self._permissions_manager is None:
+            logging.debug("[%s] Permissions check not required to %s: %s" % (path, method, mode))
+            return
+        item = self._client.attrs(path)
+        logging.debug("[%s] Loading permissions for item to %s: %s" % (path, method, item))
+        if not item:
+            return
+        if mode & os.W_OK:
+            logging.debug("[%s] Request write permissions to %s: %s" % (path, method, mode))
+            self._permissions_manager.check_path_access(path, item)
 
 
 class StoragePathPermissionsRefresherDaemon:
