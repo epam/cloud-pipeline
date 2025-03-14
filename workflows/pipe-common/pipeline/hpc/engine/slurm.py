@@ -244,22 +244,15 @@ class SlurmDemandSelector(GridEngineDemandSelector):
         self.grid_engine = grid_engine
 
     def select(self, jobs):
-        _provisioned_root_jobs = set()
-        # Check if root_job was already provisioned with resources on a prev yield and if so - return empty demand.
-        #
-        # We are doing so because all jobs with the same rood_id is a "secondary" jobs, that were created by splitting
-        # resources of main real job on number of jobs = root_job["NumNodes"] (see SlurmGridEngine._parse_jobs),
-        # so requesting for all "secondary" jobs the same amount of resources will lead to requesting a big node
-        # but will not allow to utilize it fully, because actually we need several small nodes.
-        #
-        # For more details see Slurm sbatch docs (-N option particular),
-        # GridEngineAutoscaler.scale() method and how resources demand are calculated
+        # Currently, in _parse_jobs we don't take into account -N option (when job required minimum number of jobs to run)
+        # So this code currently works well when job was run with only -n (number of tasks), in this case for each task
+        # we will return its own demand with resources == resources per task (f.e. -c cpu-per-tasks)
+        # But in case when we have -N option provided, current behaviour can lead to over-provisioning of the resources
+        # (we can scale big node with resource enough to run the whole job, but job still will be waiting for necessary number of nodes)
+        # TODO: So we need to fix approach here and in GridEngineScaleUpOrchestrator.scale_up and InstanceSelector
+        # TODO: to understand that resources should be explicitly spreaded to several nodes
         for job in jobs:
-            if job.root_id not in _provisioned_root_jobs:
-                _provisioned_root_jobs.add(job.root_id)
-                yield IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
-            else:
-                yield IntegralDemand()
+            yield IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
 
 
 class SlurmJobValidator(GridEngineJobValidator):
