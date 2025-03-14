@@ -33,6 +33,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROLE;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_USER;
 import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE;
@@ -656,6 +657,16 @@ public class UserManagementAO extends SettingsPageAO {
             return new EditGroupPopup(this);
         }
 
+        public EditGroupPopup openEditGroupPopUp(final String group) {
+            sleep(1, SECONDS);
+            searchGroupBySubstring(group);
+            context().$$(byText(group))
+                    .filterBy(visible)
+                    .first()
+                    .click();
+            return new EditGroupPopup(this);
+        }
+
         public class CreateGroupPopup extends PopupAO<CreateGroupPopup, GroupsTabAO> implements AccessObject<CreateGroupPopup> {
             private final GroupsTabAO parentAO;
 
@@ -701,10 +712,14 @@ public class UserManagementAO extends SettingsPageAO {
                 implements AccessObject<EditGroupPopup> {
             private final GroupsTabAO parentAO;
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                    entry(SEARCH, context().find(byText("Search user")).parent().$x(".//input")),
+                    entry(ADD_USER, context().find(By.id("add-user-button"))),
                     entry(OK, context().find(By.id("close-edit-user-form"))),
                     entry(CANCEL, context().$(button("CANCEL"))),
                     entry(PRICE_TYPE, context().find(byXpath(
-                            format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                            format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                    entry(PERMISSIONS, $(byText("PERMISSIONS"))),
+                    entry(PROFILE, context().$x(".//div[@role='tab']", 0))
             );
 
             public EditGroupPopup(final GroupsTabAO parentAO) {
@@ -727,8 +742,23 @@ public class UserManagementAO extends SettingsPageAO {
                 return parentAO;
             }
 
+            public EditGroupPopup addUser(final String userName) {
+                setValue(SEARCH, userName);
+                $$(byClassName("ant-select-dropdown-menu-item"))
+                        .filterBy(text(userName)).first().click();
+                click(ADD_USER);
+                return this;
+            }
+
+            public EditGroupPopup addUserIfNonExist(final String userName) {
+                if ($(className("user-management__table")).$$(byText(userName)).size() > 0) {
+                    return this;
+                }
+                return addUser(userName);
+            }
+
             public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
-                addAllowedLaunchOptions(option, mask);
+                UserManagementAO.this.addAllowedLaunchOptions(option, mask);
                 return this;
             }
 
@@ -750,6 +780,46 @@ public class UserManagementAO extends SettingsPageAO {
                 }
                 click(byText("Allowed price types"));
                 return this;
+            }
+
+            public EditGroupPopup isListOfUsersBlocked() {
+                $(byClassName("user-management__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                $(byClassName("user-management__table"))
+                        .$$(xpath(".//tr"))
+                        .stream()
+                        .forEach(role -> ensure(role.$(byId("delete-user-button")), not(exist)));
+                return this;
+            }
+
+            public EditGroupPopup isAllowedLaunchOptionsDisable(final String option) {
+                $(byText("Allowed price types")).shouldBe(visible, enabled);
+                final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+                ensure(optionField, disabled);
+                return this;
+            }
+
+            public GroupPermissionsTabAO getGroupPermissionsTab() {
+                click(PERMISSIONS);
+                return new GroupPermissionsTabAO(this);
+            }
+
+            public MetadataSectionAO showMetadata() {
+                return new MetadataSectionAO(this);
+            }
+
+            public class GroupPermissionsTabAO extends PermissionTabAO {
+                public GroupPermissionsTabAO(ClosableAO parentAO) {
+                    super(parentAO);
+                }
+
+                @Override
+                public void closeAll() {
+                    final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+                    if (applyButton.isEnabled()) {
+                        applyButton.click();
+                    }
+                    $(className("ant-modal-close-x")).click();
+                }
             }
         }
     }

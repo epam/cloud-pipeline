@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.utils.*;
 
 import java.util.stream.Stream;
@@ -203,6 +202,11 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         public UserPermissionsTableAO set(Privilege privilege, PrivilegeValue value) {
             privilege.setTo(value);
+            return this;
+        }
+
+        public UserPermissionsTableAO set(Privilege privilege, boolean isAllowed) {
+            privilege.setToAllow(isAllowed);
             return this;
         }
 
