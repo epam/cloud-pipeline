@@ -153,6 +153,7 @@ import {
   getFsConfigFromParameters,
   getParametersFromFsConfig
 } from './utilities/configure-fs/utilities';
+import ConditionalParameters from './ConditionalParameters';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -273,6 +274,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    conditionalParameters: [],
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -491,6 +493,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
     this.props.onModified && this.props.onModified(this.modified);
     this.rebuildLaunchCommand();
+    this.rebuildConditionalParameters();
     if (this.forceValidation) {
       this.forceValidation = false;
       this.props.form.validateFields(undefined, {force: true}, () => {});
@@ -1413,6 +1416,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return value === 'true';
       }
     };
+    const conditionalParameters = (this.state.conditionalParameters || [])
+      .filter(p => !p.markAsDeleted);
+    if (conditionalParameters.length) {
+      for (let i = 0; i < conditionalParameters.length; i++) {
+        const parameter = conditionalParameters[i];
+        payload.params[parameter.name] = {
+          type: parameter.type,
+          value: (parameter.type || '').toLowerCase() === 'boolean'
+            ? getBooleanValue(parameter.value)
+            : (parameter.value || ''),
+          required: `${parameter.required || false}`.toLowerCase() === 'true',
+          enum: parameter.initialEnumeration,
+          visible: parameter.visible,
+          validation: parameter.validation,
+          no_override: parameter.noOverride,
+          section: parameter.section
+        };
+      }
+    }
     if (values[PARAMETERS] && values[PARAMETERS].keys) {
       for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
         const key = values[PARAMETERS].keys[i];
@@ -2843,6 +2865,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   validateParameterName = (sectionName, key, isSystemParameter) => (rule, value, callback) => {
+    const {conditionalParameters = []} = this.state;
     const parametersValues = this.getSectionValue(sectionName);
     let error = false;
     if (value && value.length > 0) {
@@ -2863,6 +2886,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             break;
           }
         }
+      }
+      if (conditionalParameters.find(p => !p.markAsDeleted && p.name === value)) {
+        error = true;
       }
     }
     if (error) {
@@ -2948,6 +2974,39 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase()).length > 0;
     }
     return false;
+  };
+
+  rebuildConditionalParameters = () => {
+    const {form, parameters} = this.props;
+    const {conditionalParameters} = this.state;
+    const formParameters = form.getFieldValue(PARAMETERS);
+    const normalizedParameters = parameterUtilities.normalizeParameters(formParameters);
+    const rawConditional = this.props.parameters['conditional_parameters'];
+    if (parameters && rawConditional && typeof rawConditional === 'object') {
+      const params = Object
+        .entries(rawConditional)
+        .reduce((acc, [visibilityCondition, parameters]) => {
+          const isVisible = parameterUtilities
+            .isVisible({visible: visibilityCondition}, normalizedParameters);
+          if (!isVisible) {
+            return acc;
+          }
+          const params = Object.entries(parameters).map(([name, param]) => {
+            const currentStateParameter = (conditionalParameters || [])
+              .find(p => p.visibilityCondition === visibilityCondition && p.name === name);
+            return {
+              ...param,
+              name,
+              visibilityCondition,
+              value: currentStateParameter?.value || param.value,
+              markAsDeleted: currentStateParameter?.markAsDeleted || false
+            };
+          });
+          acc = [...acc, ...params];
+          return acc;
+        }, []).filter(Boolean);
+      this.setState({conditionalParameters: params});
+    }
   };
 
   @computed
@@ -3779,6 +3838,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   ) : null}
                 </div>
               </div>
+              <ConditionalParameters
+                dependentName={name}
+                conditionalParameters={this.state.conditionalParameters}
+                onChange={value => this.setState({conditionalParameters: value})}
+                readOnly={this.props.readOnly ||
+                  this.props.editConfigurationMode ||
+                  !this.state.pipeline ||
+                  this.props.detached
+                }
+              />
             </FormItem>
           );
         }).filter(parameter => !!parameter);

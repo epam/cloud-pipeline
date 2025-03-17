@@ -199,7 +199,124 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     }
     return {
       allowedInstanceTypes: this.props.allowedInstanceTypes,
-      ...configuration.configuration
+      ...configuration.configuration,
+      'conditional_parameters': {
+        'genome == "GRCh38"': {
+          'fasta': {
+            'value': 's3://bucket/test-datasets/fasta.GRCh38.fa',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'bwa_index': {
+            'value': 's3://bucket/test-datasets/bwa/GRCh38/',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'annotation_version': {
+            'value': '1.2',
+            'type': 'string',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          }
+        },
+        'genome == "GRCh37"': {
+          'fasta': {
+            'value': 's3://bucket/test-datasets/fasta.GRCh37.fa',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'bwa_index': {
+            'value': 's3://bucket/test-datasets/bwa/GRCh37/',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'annotation_version': {
+            'value': '1.3',
+            'type': 'string',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          }
+        },
+        'genomeq == "GRCh38"': {
+          'fasta2': {
+            'value': 's3://bucket/test-datasets/fasta.GRCh38.fa',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'bwa_index2': {
+            'value': 's3://bucket/test-datasets/bwa/GRCh38/',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'annotation_version2': {
+            'value': '1.2',
+            'type': 'string',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          }
+        },
+        'genomeq == "GRCh37"': {
+          'fasta2': {
+            'value': 's3://bucket/test-datasets/fasta.GRCh37.fa',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'bwa_index2': {
+            'value': 's3://bucket/test-datasets/bwa/GRCh37/',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'annotation_version2': {
+            'value': '1.3',
+            'type': 'string',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          }
+        },
+        'genome == "mm10"': {
+          'fasta': {
+            'value': 's3://bucket/test-datasets/fasta.mm10.fa',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'bwa_index': {
+            'value': 's3://bucket/test-datasets/bwa/mm10/',
+            'type': 'input',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          },
+          'annotation_version': {
+            'value': '0.2',
+            'type': 'string',
+            'section': 'other',
+            'required': false,
+            'no_override': false
+          }
+        }
+      }
     };
   };
 

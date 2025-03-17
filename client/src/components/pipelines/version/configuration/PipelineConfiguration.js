@@ -357,6 +357,77 @@ export default class PipelineConfiguration extends React.Component {
     if (!configuration) {
       return {parameters: {}};
     }
+    configuration.configuration['conditional_parameters'] = {
+      'genome == "GRCh38"': {
+        'fasta': {
+          'value': 's3://bucket/test-datasets/fasta.GRCh38.fa',
+          'type': 'input',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        },
+        'bwa_index': {
+          'value': 's3://bucket/test-datasets/bwa/GRCh38/',
+          'type': 'input',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        },
+        'annotation_version': {
+          'value': '1.2',
+          'type': 'string',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        }
+      },
+      'genome == "GRCh37"': {
+        'fasta': {
+          'value': 's3://bucket/test-datasets/fasta.GRCh37.fa',
+          'type': 'input',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        },
+        'bwa_index': {
+          'value': 's3://bucket/test-datasets/bwa/GRCh37/',
+          'type': 'input',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        },
+        'annotation_version': {
+          'value': '1.3',
+          'type': 'string',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        }
+      },
+      'genome == "mm10"': {
+        'fasta': {
+          'value': 's3://bucket/test-datasets/fasta.mm10.fa',
+          'type': 'input',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        },
+        'bwa_index': {
+          'value': 's3://bucket/test-datasets/bwa/mm10/',
+          'type': 'input',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        },
+        'annotation_version': {
+          'value': '0.2',
+          'type': 'string',
+          'section': 'other',
+          'required': false,
+          'no_override': false
+        }
+      }
+    };
     return configuration.configuration || {parameters: {}};
   };
 
@@ -365,7 +436,7 @@ export default class PipelineConfiguration extends React.Component {
       this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
       if (this.props.configurations.value
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
         return false;
@@ -530,6 +601,7 @@ export default class PipelineConfiguration extends React.Component {
             toolInstanceTypes={names.allowedInstanceTypes}
             version={this.props.version}
             parameters={this.getParameters()}
+            conditionalParameters={this.getParameters()}
             configurations={this.getConfigurations()}
             onLaunch={this.onSaveConfiguration}
             isDetachedConfiguration={false}
@@ -546,5 +618,4 @@ export default class PipelineConfiguration extends React.Component {
       </div>
     );
   }
-
 }
