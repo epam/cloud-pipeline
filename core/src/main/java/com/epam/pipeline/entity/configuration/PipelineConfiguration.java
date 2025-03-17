@@ -168,6 +168,9 @@ public class PipelineConfiguration implements Cloneable {
     @JsonProperty(value = RAW_EDIT)
     private Boolean rawEdit;
 
+    @JsonProperty(value = "conditional_parameters")
+    private Map<String, Object> conditionalParameters;
+
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {
         this.parameters = parameters;
