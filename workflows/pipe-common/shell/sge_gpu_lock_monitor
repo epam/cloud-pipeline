@@ -1,0 +1,65 @@
+#!/bin/bash
+
+function send_notification() {
+    local _msg="$1"
+    
+    if [ -z "$_msg" ]; then
+        return
+    fi
+
+    _recipients_array=""
+    IFS=, read -ra _roles_arr <<< "$CP_CAP_SGE_GPU_LOCK_MONITOR_COPY_USERS_ROLES_NAMES"
+    for _role in "${_roles_arr[@]}"; do
+        _users_names=$(curl "${API}role?name=$_role" \
+                        -sk \
+                        --header 'Accept: application/json' \
+                        --header "Authorization: Bearer $API_TOKEN" \
+                    | jq -r '.payload.users[] | select(.attributes.Email != null).userName')
+        _users_json_array=""
+        for _user in $_users_names; do
+            if [ -z "$_user" ] || [ "$_user" == null ]; then
+                continue
+            fi
+            _users_json_array="\"$_user\",$_users_json_array"
+        done
+
+        _users_json_array=$(echo $_users_json_array | sed 's/,*$//g')
+        _recipients_array="${_users_json_array},${_recipients_array}"
+    done
+    _recipients_array=$(echo $_recipients_array | sed 's/,*$//g')
+
+
+    if [ -z "$CP_CAP_SGE_GPU_LOCK_MONITOR_TO_USER_NAME" ]; then
+         CP_CAP_SGE_GPU_LOCK_MONITOR_TO_USER_NAME="$_user"
+    fi
+
+    curl "${API}notification/message" \
+        -sk \
+        -X POST \
+        --header 'Content-Type: application/json' \
+        --header 'Accept: application/json' \
+        --header "Authorization: Bearer $API_TOKEN" \
+        --data "{ \"subject\": \"$CP_CAP_SGE_GPU_LOCK_MONITOR_SUBJECT\", \"body\": \"$_msg\", \"toUser\": \"$CP_CAP_SGE_GPU_LOCK_MONITOR_TO_USER_NAME\", \"copyUsers\": [ $_recipients_array ] }"
+}
+
+CP_CAP_SGE_GPU_LOCK_MONITOR_SUBJECT="${CP_CAP_SGE_GPU_LOCK_MONITOR_SUBJECT:-GPU locks are held by non-existing jobs in #${RUN_ID}}"
+CP_CAP_SGE_GPU_LOCK_MONITOR_COPY_USERS_ROLES_NAMES="${CP_CAP_SGE_GPU_LOCK_MONITOR_COPY_USERS_ROLES_NAMES:-ROLE_ADMIN}"
+CP_CAP_SGE_GPU_LOCK_MONITOR_TIMEOUT_SEC="${CP_CAP_SGE_GPU_LOCK_MONITOR_TIMEOUT_SEC:-300}"
+
+while true; do
+    msg=""
+    for gpu_id_path in /tmp/sge-gpus-locks/inuse/*; do
+        job_id=$(ls ${gpu_id_path})
+        job_exist=$(qstat | grep $job_id)
+        if [ -z "$job_exist" ]; then
+            msg="${msg}${gpu_id_path} lock is used by a job ${job_id}, which does not exist. Lock will be removed.<br/>"
+            msg="${msg}qstat output: ${job_exist}<br/>---<br/>"
+            echo "$msg"
+            rm -rf "$gpu_id_path"
+        fi
+    done
+
+    send_notification "$msg"
+    
+    sleep "${CP_CAP_SGE_GPU_LOCK_MONITOR_TIMEOUT_SEC}"
+done
