@@ -51,7 +51,7 @@ _gpu_in_use_dir="/tmp/sge-gpus-locks/inuse"
 while true; do
     msg=""
     gpu_in_use_count=$(find ${_gpu_in_use_dir} -maxdepth 1 -type d | wc -l)
-    if (( "$subdircount" >= 2 )); then
+    if (( "$gpu_in_use_count" >= 2 )); then
 
         for gpu_id_path in ${_gpu_in_use_dir}/*; do
             job_id=$(ls ${gpu_id_path})
