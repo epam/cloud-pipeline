@@ -2986,8 +2986,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const params = Object
         .entries(rawConditional)
         .reduce((acc, [visibilityCondition, parameters]) => {
-          const isVisible = parameterUtilities
-            .isVisible({visible: visibilityCondition}, normalizedParameters);
+          const isVisible = parameterUtilities.isVisible(
+            {visible: visibilityCondition},
+            normalizedParameters,
+            false
+          );
           if (!isVisible) {
             return acc;
           }
