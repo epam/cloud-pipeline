@@ -153,10 +153,13 @@ import {
   getFsConfigFromParameters,
   getParametersFromFsConfig
 } from './utilities/configure-fs/utilities';
+import ConditionalParameters from './ConditionalParameters';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
 const RUN_CLUSTER_KEY = 'run cluster';
+
+const CONDITIONAL_PARAMETERS_KEY = 'conditional_parameters';
 
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
@@ -273,6 +276,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    conditionalParameters: [],
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -490,7 +494,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
-    this.rebuildLaunchCommand();
+    this.rebuildConditionalParameters(this.rebuildLaunchCommand);
     if (this.forceValidation) {
       this.forceValidation = false;
       this.props.form.validateFields(undefined, {force: true}, () => {});
@@ -1157,6 +1161,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       notifications: (values[ADVANCED].notifications || []).slice(),
       raw: this.state.isRawEditEnabled
     };
+    if (this.props.parameters && this.props.parameters[CONDITIONAL_PARAMETERS_KEY]) {
+      payload[CONDITIONAL_PARAMETERS_KEY] = this.props.parameters[CONDITIONAL_PARAMETERS_KEY];
+    }
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
     }
@@ -1413,6 +1420,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return value === 'true';
       }
     };
+    const conditionalParameters = (this.state.conditionalParameters || [])
+      .filter(p => !p.markAsDeleted);
+    if (conditionalParameters.length) {
+      for (let i = 0; i < conditionalParameters.length; i++) {
+        const parameter = conditionalParameters[i];
+        payload.params[parameter.name] = {
+          type: parameter.type,
+          value: (parameter.type || '').toLowerCase() === 'boolean'
+            ? getBooleanValue(parameter.value)
+            : (parameter.value || ''),
+          required: `${parameter.required || false}`.toLowerCase() === 'true',
+          enum: parameter.initialEnumeration,
+          visible: parameter.visible,
+          validation: parameter.validation,
+          no_override: parameter.noOverride,
+          section: parameter.section
+        };
+      }
+    }
     if (values[PARAMETERS] && values[PARAMETERS].keys) {
       for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
         const key = values[PARAMETERS].keys[i];
@@ -2843,6 +2869,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   validateParameterName = (sectionName, key, isSystemParameter) => (rule, value, callback) => {
+    const {conditionalParameters = []} = this.state;
     const parametersValues = this.getSectionValue(sectionName);
     let error = false;
     if (value && value.length > 0) {
@@ -2863,6 +2890,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             break;
           }
         }
+      }
+      if (conditionalParameters.find(p => !p.markAsDeleted && p.name === value)) {
+        error = true;
       }
     }
     if (error) {
@@ -2950,6 +2980,48 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return false;
   };
 
+  rebuildConditionalParameters = (cb = undefined) => {
+    const {form, parameters} = this.props;
+    const {conditionalParameters} = this.state;
+    const formParameters = form.getFieldValue(PARAMETERS);
+    const normalizedParameters = parameterUtilities.normalizeParameters(formParameters);
+    const rawConditional = this.props.parameters[CONDITIONAL_PARAMETERS_KEY];
+    if (parameters && rawConditional && typeof rawConditional === 'object') {
+      const params = Object
+        .entries(rawConditional)
+        .reduce((acc, [visibilityCondition, parameters]) => {
+          const isVisible = parameterUtilities.isVisible(
+            {visible: visibilityCondition},
+            normalizedParameters,
+            false
+          );
+          if (!isVisible) {
+            return acc;
+          }
+          const params = Object.entries(parameters).map(([name, param]) => {
+            const currentStateParameter = (conditionalParameters || [])
+              .find(p => p.visibilityCondition === visibilityCondition && p.name === name);
+            return {
+              ...param,
+              name,
+              visibilityCondition,
+              value: currentStateParameter?.value || param.value,
+              markAsDeleted: currentStateParameter?.markAsDeleted || false
+            };
+          });
+          acc = [...acc, ...params];
+          return acc;
+        }, []).filter(Boolean);
+      this.setState(
+        {conditionalParameters: params},
+        typeof cb === 'function' ? () => cb() : undefined
+      );
+    }
+    if (typeof cb === 'function') {
+      cb();
+    }
+  };
+
   @computed
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
@@ -3019,6 +3091,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   closeSystemParameterBrowser = () => {
     this.setState({systemParameterBrowserVisible: false});
+  };
+
+  onConditionalParametersChanged = (value) => {
+    this.setState({conditionalParameters: value}, this.formFieldsChanged);
   };
 
   renderParameters = (isSystemParametersSection) => {
@@ -3889,6 +3965,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   })
                   : renderParametersGroup(keys, params)
                 }
+                <ConditionalParameters
+                  conditionalParameters={this.state.conditionalParameters}
+                  onChange={this.onConditionalParametersChanged}
+                  readOnly={this.props.readOnly ||
+                    this.props.editConfigurationMode ||
+                    !this.state.pipeline ||
+                    this.props.detached
+                  }
+                />
               </div>
             </div>
           );

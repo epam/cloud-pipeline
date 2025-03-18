@@ -63,8 +63,8 @@ function getParameterDependencies (parameter, normalizedParameters) {
   return [];
 }
 
-function isVisible (parameter, normalizedParameters) {
-  return buildVisibilityFn(parameter)(normalizedParameters);
+function isVisible (parameter, normalizedParameters, defaultVisibility = true) {
+  return buildVisibilityFn(parameter, defaultVisibility)(normalizedParameters);
 }
 
 /**
@@ -106,14 +106,14 @@ function mapKey (normalizedParameters) {
   };
 }
 
-function buildVisibilityFn (element) {
+function buildVisibilityFn (element, defaultVisibility = true) {
   if (
     !element ||
     !element.hasOwnProperty('visible') ||
     element.visible === undefined ||
     element.visible === null
   ) {
-    return () => true;
+    return () => defaultVisibility;
   }
   return (normalizedParameters) => {
     const keys = Object.keys(normalizedParameters || {});
@@ -123,7 +123,7 @@ function buildVisibilityFn (element) {
       // eslint-disable-next-line no-eval
       return eval(`"use strict"; ${fnStr};${fnExecutionStr}`);
     } catch (_) {
-      return true;
+      return defaultVisibility;
     }
   };
 }
