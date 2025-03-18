@@ -14,40 +14,42 @@
  * limitations under the License.
  */
 
-import {Icon, Input} from 'antd';
 import React from 'react';
+import LaunchFormParameter from './parameters/parameter';
 
 export default class ConditionalParameters extends React.Component {
   get visibleParameters () {
     const {conditionalParameters, dependentName} = this.props;
     const linkedConditionalParameters = (conditionalParameters || [])
       .filter(param => {
+        if (!dependentName) {
+          return true;
+        }
         const [parameterName] = param.visibilityCondition.split(/===|==/);
-        return dependentName && parameterName
+        return parameterName
           ? parameterName.trim() === dependentName
           : false;
       });
     return linkedConditionalParameters.filter(p => !p.markAsDeleted);
   }
 
-  onChange = parameter => (event) => {
+  onChange = (parameter) => {
     const {onChange, conditionalParameters, readOnly} = this.props;
     if (readOnly) {
       return;
     }
-    const {value} = event.target;
     const idx = conditionalParameters.findIndex((p) => p.name === parameter.name);
     if (idx >= 0) {
       const newState = [...conditionalParameters];
       newState.splice(idx, 1, {
         ...conditionalParameters[idx],
-        value
+        ...parameter
       });
       onChange(newState);
     }
   };
 
-  removeParameter = parameter => () => {
+  removeParameter = (parameter) => {
     const {onChange, conditionalParameters, readOnly} = this.props;
     if (readOnly) {
       return;
@@ -76,8 +78,8 @@ export default class ConditionalParameters extends React.Component {
         alignItems: 'center'
       }}>
         {this.visibleParameters.map((parameter, index) => (
-          <div
-            key={index}
+          <LaunchFormParameter
+            key={`parameter-${parameter.name || ''}-${index}`}
             className="launch-form-pipeline-name-form-item"
             style={{
               display: 'flex',
@@ -85,43 +87,11 @@ export default class ConditionalParameters extends React.Component {
               width: '50%',
               gap: '1px'
             }}
-          >
-            <span className="ant-form-item-title" style={{textWrap: 'nowrap'}}>
-              {parameter.name}
-            </span>
-            <div style={{display: 'flex', flexWrap: 'nowrap', fontSize: 'larger'}}>
-              <Input
-                style={{flex: 1, minHeight: 32}}
-                value={parameter.value}
-                onChange={this.onChange(parameter)}
-                disabled={readOnly}
-              />
-              {!readOnly ? (
-                <Icon
-                  id="remove-conditional-parameter-button"
-                  className="dynamic-delete-button"
-                  type="minus-circle-o"
-                  onClick={this.removeParameter(parameter)}
-                  style={{
-                    verticalAlign: 'middle',
-                    marginTop: '2px',
-                    fontSize: 'larger',
-                    cursor: 'pointer',
-                    alignSelf: 'flex-start',
-                    margin: 'auto -2px auto 15px',
-                    height: '100%'
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    marginLeft: 15,
-                    width: 15,
-                    display: 'inline-block'
-                  }}>{'\u00A0'}</div>
-              )}
-            </div>
-          </div>
+            parameter={parameter}
+            onChange={this.onChange}
+            readOnly={readOnly}
+            onRemoveParameter={this.removeParameter}
+          />
         ))}
       </div>
     );

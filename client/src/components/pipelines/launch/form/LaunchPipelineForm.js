@@ -494,8 +494,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
-    this.rebuildLaunchCommand();
-    this.rebuildConditionalParameters();
+    this.rebuildConditionalParameters(this.rebuildLaunchCommand);
     if (this.forceValidation) {
       this.forceValidation = false;
       this.props.form.validateFields(undefined, {force: true}, () => {});
@@ -2981,7 +2980,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return false;
   };
 
-  rebuildConditionalParameters = () => {
+  rebuildConditionalParameters = (cb = undefined) => {
     const {form, parameters} = this.props;
     const {conditionalParameters} = this.state;
     const formParameters = form.getFieldValue(PARAMETERS);
@@ -3013,7 +3012,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           acc = [...acc, ...params];
           return acc;
         }, []).filter(Boolean);
-      this.setState({conditionalParameters: params});
+      this.setState(
+        {conditionalParameters: params},
+        typeof cb === 'function' ? () => cb() : undefined
+      );
+    }
+    if (typeof cb === 'function') {
+      cb();
     }
   };
 
@@ -3086,6 +3091,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   closeSystemParameterBrowser = () => {
     this.setState({systemParameterBrowserVisible: false});
+  };
+
+  onConditionalParametersChanged = (value) => {
+    this.setState({conditionalParameters: value}, this.formFieldsChanged);
   };
 
   renderParameters = (isSystemParametersSection) => {
@@ -3846,16 +3855,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   ) : null}
                 </div>
               </div>
-              <ConditionalParameters
-                dependentName={name}
-                conditionalParameters={this.state.conditionalParameters}
-                onChange={value => this.setState({conditionalParameters: value})}
-                readOnly={this.props.readOnly ||
-                  this.props.editConfigurationMode ||
-                  !this.state.pipeline ||
-                  this.props.detached
-                }
-              />
             </FormItem>
           );
         }).filter(parameter => !!parameter);
@@ -3966,6 +3965,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   })
                   : renderParametersGroup(keys, params)
                 }
+                <ConditionalParameters
+                  conditionalParameters={this.state.conditionalParameters}
+                  onChange={this.onConditionalParametersChanged}
+                  readOnly={this.props.readOnly ||
+                    this.props.editConfigurationMode ||
+                    !this.state.pipeline ||
+                    this.props.detached
+                  }
+                />
               </div>
             </div>
           );
