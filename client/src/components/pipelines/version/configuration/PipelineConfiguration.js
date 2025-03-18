@@ -530,7 +530,6 @@ export default class PipelineConfiguration extends React.Component {
             toolInstanceTypes={names.allowedInstanceTypes}
             version={this.props.version}
             parameters={this.getParameters()}
-            conditionalParameters={this.getParameters()}
             configurations={this.getConfigurations()}
             onLaunch={this.onSaveConfiguration}
             isDetachedConfiguration={false}
