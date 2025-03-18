@@ -50,22 +50,24 @@ _gpu_in_use_dir="/tmp/sge-gpus-locks/inuse"
 
 while true; do
     msg=""
-    gpu_in_use_count=$(find ${_gpu_in_use_dir} -maxdepth 1 -type d | wc -l)
-    if (( "$gpu_in_use_count" >= 2 )); then
+    if [ -d "$_gpu_in_use_dir" ]; then
+        gpu_in_use_count=$(find ${_gpu_in_use_dir} -maxdepth 1 -type d | wc -l)
+        if (( "$gpu_in_use_count" >= 2 )); then
 
-        for gpu_id_path in ${_gpu_in_use_dir}/*; do
-            job_id=$(ls ${gpu_id_path})
-            job_exist=$(qstat | grep $job_id)
-            if [ -z "$job_exist" ]; then
-                msg="${msg}${gpu_id_path} lock is used by a job ${job_id}, which does not exist. Lock will be removed.<br/>"
-                msg="${msg}qstat output: ${job_exist}<br/>---<br/>"
-                echo "$msg"
-                rm -rf "$gpu_id_path"
-            fi
-        done
+            for gpu_id_path in ${_gpu_in_use_dir}/*; do
+                job_id=$(ls ${gpu_id_path})
+                job_exist=$(qstat | grep $job_id)
+                if [ -z "$job_exist" ]; then
+                    msg="${msg}${gpu_id_path} lock is used by a job ${job_id}, which does not exist. Lock will be removed.<br/>"
+                    msg="${msg}qstat output: ${job_exist}<br/>---<br/>"
+                    echo "$msg"
+                    rm -rf "$gpu_id_path"
+                fi
+            done
 
-        send_notification "$msg"
+            send_notification "$msg"
 
+        fi
     fi
     
     sleep "${CP_CAP_SGE_GPU_LOCK_MONITOR_TIMEOUT_SEC}"
