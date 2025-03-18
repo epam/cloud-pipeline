@@ -159,6 +159,8 @@ const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
 const RUN_CLUSTER_KEY = 'run cluster';
 
+const CONDITIONAL_PARAMETERS_KEY = 'conditional_parameters';
+
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1160,6 +1162,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       notifications: (values[ADVANCED].notifications || []).slice(),
       raw: this.state.isRawEditEnabled
     };
+    if (this.props.parameters && this.props.parameters[CONDITIONAL_PARAMETERS_KEY]) {
+      payload[CONDITIONAL_PARAMETERS_KEY] = this.props.parameters[CONDITIONAL_PARAMETERS_KEY];
+    }
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
     }
@@ -2981,7 +2986,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {conditionalParameters} = this.state;
     const formParameters = form.getFieldValue(PARAMETERS);
     const normalizedParameters = parameterUtilities.normalizeParameters(formParameters);
-    const rawConditional = this.props.parameters['conditional_parameters'];
+    const rawConditional = this.props.parameters[CONDITIONAL_PARAMETERS_KEY];
     if (parameters && rawConditional && typeof rawConditional === 'object') {
       const params = Object
         .entries(rawConditional)
