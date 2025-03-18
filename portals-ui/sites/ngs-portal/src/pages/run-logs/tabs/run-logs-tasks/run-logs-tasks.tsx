@@ -77,16 +77,20 @@ export const RunLogsTasksTab = ({ run }: Props) => {
     <div className="h-full overflow-auto flex flex-col">
       <div className="flex gap-4">
         <div className="flex-1">
-          {Object.entries(taskStats).map(([taskName, statuses]) => (
-            <TaskProgress
-              key={taskName}
-              total={totalsByTask[taskName] ?? 0}
-              taskName={taskName}
-              isSelected={selectedTask === taskName}
-              onTaskSelect={handleSelectTask}
-              statuses={statuses}
-            />
-          ))}
+          <h3 className="font-bold">Tasks statuses</h3>
+
+          <div className="max-h-[186px] overflow-scroll">
+            {Object.entries(taskStats).map(([taskName, statuses]) => (
+              <TaskProgress
+                key={taskName}
+                total={totalsByTask[taskName] ?? 0}
+                taskName={taskName}
+                isSelected={selectedTask === taskName}
+                onTaskSelect={handleSelectTask}
+                statuses={statuses}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="flex-1">

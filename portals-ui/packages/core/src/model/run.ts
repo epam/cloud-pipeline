@@ -173,3 +173,22 @@ export type Sorting = {
   column: string;
   descending: boolean;
 };
+
+export enum RunTaskDetailsContentType {
+  Command = 'command',
+  Trace = 'trace',
+  Log = 'log',
+}
+
+export enum RunTaskDetailsType {
+  NF_TASK = 'NF_TASK',
+  NF_TRACE = 'NF_TRACE',
+}
+
+export type RunTaskDetails = {
+  data: {
+    content: string;
+    type: RunTaskDetailsContentType;
+  };
+  type: RunTaskDetailsType;
+};

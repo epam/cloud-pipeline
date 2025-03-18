@@ -5,3 +5,8 @@
 .tasks-table.ant-table-wrapper .ant-table-thead > tr > th {
   @apply py-2 px-2;
 }
+
+.task-details-modal .ant-modal-body {
+  height: calc(90vh - 70px);
+  overflow-y: auto;
+}

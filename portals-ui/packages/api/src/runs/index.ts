@@ -6,3 +6,4 @@ export * from './fetch-run-tasks';
 export * from './stop-run';
 export * from './fetch-run-engine-stats';
 export * from './fetch-run-engine-tasks';
+export * from './fetch-run-engine-task-details';

@@ -1,14 +1,15 @@
 import type { TableProps } from 'antd';
 import { Table } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { calculateMinColWidth, getColumns, prepareTaskData } from '../helpers';
+import { calculateMinColWidth, getColumns, prepareTaskData } from '../../helpers';
 import type { EngineTaskStatus, RunTasksData } from '@cloud-pipeline/core';
 import type { CommonProps } from '@cloud-pipeline/components';
 import cn from 'classnames';
-import { StatusPill } from './status-pill';
-import type { SortingState } from '../types';
+import { StatusPill } from '../status-pill';
+import type { ProcessedDataEntry, SelectedTask, SortingState } from '../../types';
 import './style.css';
-import { DEFAULT_DYNAMIC_COLUMNS } from '../constants';
+import { DEFAULT_DYNAMIC_COLUMNS } from '../../constants';
+import { TaskDetailsModal } from './task-details-modal';
 
 type Pagination = {
   pageSize: number;
@@ -43,6 +44,7 @@ export const TasksTable = ({
   style,
 }: Props) => {
   const [scrollY, setScrollY] = useState(0);
+  const [selectedTask, setSelectedTask] = useState<SelectedTask>();
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const renderStatus = (status: EngineTaskStatus) => {
@@ -99,6 +101,12 @@ export const TasksTable = ({
     }
   };
 
+  const handleRowClick = ({ taskKey, taskName }: ProcessedDataEntry) => {
+    if (taskKey && taskName) {
+      setSelectedTask({ taskKey, taskName });
+    }
+  };
+
   if (error) {
     return <div className="text-red-500">{error}</div>;
   }
@@ -107,7 +115,7 @@ export const TasksTable = ({
     <div ref={tableContainerRef} className={cn('w-full overflow-auto', className)}>
       <Table
         loading={isLoading}
-        className={'tasks-table'}
+        className="tasks-table"
         style={style}
         pagination={{
           onChange: onPageSelect,
@@ -116,12 +124,17 @@ export const TasksTable = ({
           current: pagination.page,
           ...pagination,
         }}
+        rowClassName={'cursor-pointer'}
         dataSource={processedData}
         columns={columns}
         rowKey="id"
         scroll={{ x: 'max-content', y: scrollY }}
         onChange={handleTableChange}
+        onRow={(record) => ({
+          onClick: () => handleRowClick(record),
+        })}
       />
+      <TaskDetailsModal isOpen={!!selectedTask} onClose={() => setSelectedTask(undefined)} task={selectedTask} />
     </div>
   );
 };

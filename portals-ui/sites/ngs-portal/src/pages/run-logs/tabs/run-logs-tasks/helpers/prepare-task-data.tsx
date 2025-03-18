@@ -1,16 +1,5 @@
 import { displayDate, type RunTasksData } from '@cloud-pipeline/core';
-
-type BaseAttributes = {
-  taskId?: string;
-  taskGroup?: string;
-  taskTag?: string;
-  status?: string;
-  started?: string;
-  finished?: string;
-};
-
-type TaskAttributes = Record<string, string | number | null>;
-type ProcessedDataEntry = BaseAttributes & TaskAttributes;
+import type { ProcessedDataEntry, TaskAttributes } from '../types';
 
 export const prepareTaskData = (data: RunTasksData['elements']) => {
   return data.map((item): ProcessedDataEntry => {
@@ -24,6 +13,8 @@ export const prepareTaskData = (data: RunTasksData['elements']) => {
     }
 
     return {
+      taskName: item.taskName,
+      taskKey: item.taskKey,
       taskId: item.taskId,
       taskGroup: item.taskGroup,
       taskTag: item.taskTag,
