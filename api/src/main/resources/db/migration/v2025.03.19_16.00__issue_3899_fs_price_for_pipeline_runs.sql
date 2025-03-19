@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.PIPELINE_RUN ADD COLUMN fs_price_per_hour NUMERIC(100, 7) DEFAULT 0;

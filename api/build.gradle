@@ -199,6 +199,7 @@ dependencies {
     compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.770'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.880'
     compile group: "com.amazonaws", name: "aws-java-sdk-omics", version: "1.12.717"
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: '1.12.780'
 
 
     // https://mvnrepository.com/artifact/com.microsoft.azure/azure-mgmt-resources
