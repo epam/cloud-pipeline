@@ -5,7 +5,6 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
-    - issue-3919_0.16-uat
 
 skip_tags: true
 max_jobs: 1
