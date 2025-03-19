@@ -1245,7 +1245,10 @@ fi
 
 # Get general run information from the API
 CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
-export CP_API_POD_IP=$(echo "$CP_API_RUN_INFO_JSON" | jq -r '.podIP')
+export CP_API_POD_IP=$(echo "$CP_API_RUN_INFO_JSON" | jq -r '.payload.podIP')
+if [ "$CP_API_POD_IP" == "null" ]; then
+      unset CP_API_POD_IP
+fi
 
 echo "------"
 echo
