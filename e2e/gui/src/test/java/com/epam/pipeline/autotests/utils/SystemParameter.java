@@ -24,7 +24,7 @@ public class SystemParameter {
     private String type;
     private String description;
     private String defaultValue;
-    private String passToWorkers;
+    private boolean passToWorkers;
     @JsonProperty("roles")
     private String[] roles;
 
@@ -52,11 +52,11 @@ public class SystemParameter {
         this.defaultValue = defaultValue;
     }
 
-    public String getPassToWorkers() {
+    public boolean getPassToWorkers() {
         return passToWorkers;
     }
 
-    public void setPassToWorkers(String passToWorkers) {
+    public void setPassToWorkers(boolean passToWorkers) {
         this.passToWorkers = passToWorkers;
     }
 
