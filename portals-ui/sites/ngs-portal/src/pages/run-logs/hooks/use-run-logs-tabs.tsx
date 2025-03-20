@@ -1,18 +1,15 @@
 import { useMemo, useCallback, useEffect, useState } from 'react';
 import type { Run, RunLog } from '@cloud-pipeline/core';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  generateRunLogsRoutePath,
-  RunLogsTabs,
-} from '../../../shared/constants/routes';
+import { generateRunLogsRoutePath, RunLogsTabs } from '../../../shared/constants/routes';
 import { RunLogsTab } from '../tabs/run-logs-tab';
 import { RunLogsParametersTab } from '../tabs/run-logs-parameters';
 import { fetchRunTasks } from '@cloud-pipeline/api';
 import type { RunTasksState } from '../../../shared/hooks/use-run-tasks';
+import { RunLogsTasksTab } from '../tabs/run-logs-tasks/run-logs-tasks';
+import { isNextflowEngine } from '../../../shared/helpers';
 
-export const useRunTasks = (
-  runId: string | number | undefined,
-): RunTasksState & { refresh: () => Promise<void> } => {
+export const useRunTasks = (runId: string | number | undefined): RunTasksState & { refresh: () => Promise<void> } => {
   const [state, setState] = useState<RunTasksState>({
     pending: true,
     error: undefined,
@@ -32,10 +29,7 @@ export const useRunTasks = (
         tasks,
       });
     } catch (err) {
-      const errorText =
-        err instanceof Error
-          ? err.message
-          : `Failed to load run ${runId} tasks.`;
+      const errorText = err instanceof Error ? err.message : `Failed to load run ${runId} tasks.`;
       setState({
         pending: false,
         error: errorText,
@@ -60,16 +54,7 @@ export const useRunTasks = (
 export const useRunLogsTabs = (run?: Run, logs?: RunLog[]) => {
   const { tabId } = useParams();
   const navigate = useNavigate();
-  useEffect(() => {
-    if (!run) {
-      return;
-    }
-    const isValidTab =
-      !tabId || Object.values(RunLogsTabs).includes(tabId as RunLogsTabs);
-    if (!isValidTab) {
-      navigate(generateRunLogsRoutePath(run.id, RunLogsTabs.Logs));
-    }
-  }, [navigate, run, run?.id, tabId]);
+
   const handleChangeTab = useCallback(
     (key: string) => {
       if (run) {
@@ -78,8 +63,9 @@ export const useRunLogsTabs = (run?: Run, logs?: RunLog[]) => {
     },
     [navigate, run],
   );
-  const tabs = useMemo(
-    () => [
+
+  const tabs = useMemo(() => {
+    const defaultTabs = [
       {
         key: RunLogsTabs.Logs,
         label: <span className="px-4">Logs</span>,
@@ -90,13 +76,36 @@ export const useRunLogsTabs = (run?: Run, logs?: RunLog[]) => {
         label: <span className="px-4">Parameters</span>,
         content: <RunLogsParametersTab run={run} />,
       },
-    ],
-    [logs, run],
-  );
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.key === tabId) ?? tabs[0],
-    [tabId, tabs],
-  );
+    ];
+
+    if (!isNextflowEngine(run)) {
+      return defaultTabs;
+    }
+
+    return [
+      ...defaultTabs,
+      {
+        key: RunLogsTabs.Tasks,
+        label: <span className="px-4">Tasks</span>,
+        content: <RunLogsTasksTab run={run} />,
+      },
+    ];
+  }, [logs, run]);
+
+  useEffect(() => {
+    if (!run) {
+      return;
+    }
+
+    const isValidTab = !tabId || tabs.find(({ key }) => key === (tabId as RunLogsTabs));
+
+    if (!isValidTab) {
+      navigate(generateRunLogsRoutePath(run.id, RunLogsTabs.Logs));
+    }
+  }, [navigate, run, run?.id, tabId, tabs]);
+
+  const activeTab = useMemo(() => tabs.find((tab) => tab.key === tabId) ?? tabs[0], [tabId, tabs]);
+
   return {
     activeTab,
     tabs,

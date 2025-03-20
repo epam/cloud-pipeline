@@ -138,3 +138,57 @@ export type RunTask = {
   started: string;
   status: RunStatuses;
 };
+
+export enum EngineTaskStatus {
+  CREATED = 'CREATED',
+  SUBMITTED = 'SUBMITTED',
+  RUNNING = 'RUNNING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  ABORTED = 'ABORTED',
+  CACHED = 'CACHED',
+}
+
+export type EngineTask = Partial<Record<EngineTaskStatus, number>>;
+export type EngineTasks = Record<string, EngineTask>;
+
+export type RunTasksData = {
+  elements: {
+    attributes?: string;
+    endDateTime?: string;
+    engineType?: string;
+    runId?: number;
+    startDateTime?: string;
+    status?: string;
+    taskGroup?: string;
+    taskId?: string;
+    taskKey?: string;
+    taskName?: string;
+    taskTag?: string;
+  }[];
+  totalCount: number;
+};
+
+export type Sorting = {
+  column: string;
+  descending: boolean;
+};
+
+export enum RunTaskDetailsContentType {
+  Command = 'command',
+  Trace = 'trace',
+  Log = 'log',
+}
+
+export enum RunTaskDetailsType {
+  NF_TASK = 'NF_TASK',
+  NF_TRACE = 'NF_TRACE',
+}
+
+export type RunTaskDetails = {
+  data: {
+    content: string;
+    type: RunTaskDetailsContentType;
+  };
+  type: RunTaskDetailsType;
+};

@@ -75,4 +75,8 @@ export type Settings = {
    * NGS Pipeline display configuration
    */
   ngsPipeline?: NgsPipelineSettings;
+  /**
+   * NGS Run tasks dynamic attributes columns
+   */
+  runTasksAttributesColumns?: string[];
 };
