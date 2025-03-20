@@ -140,9 +140,9 @@ nav:
 - Cloud Pipeline Installation:
   - Prerequisites:
     - General requirements: 'installation/self-hosted/prerequisites/common.md'
-    - AWS: 'installation/prerequisites/self-hosted/aws.md'
-    - Azure: 'installation/prerequisites/self-hosted/azure.md'
-    - GCP: 'installation/prerequisites/self-hosted/gcp.md'
+    - AWS: 'installation/self-hosted/prerequisites/aws.md'
+    - Azure: 'installation/self-hosted/prerequisites/azure.md'
+    - GCP: 'installation/self-hosted/prerequisites/gcp.md'
   - Deployment:
     - Cloud native:
       - AWS:
