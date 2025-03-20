@@ -127,7 +127,7 @@ export const TasksTable = ({
         rowClassName={'cursor-pointer'}
         dataSource={processedData}
         columns={columns}
-        rowKey="id"
+        rowKey="taskId"
         scroll={{ x: 'max-content', y: scrollY }}
         onChange={handleTableChange}
         onRow={(record) => ({

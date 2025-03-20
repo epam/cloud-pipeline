@@ -54,7 +54,7 @@ export const getColumns = ({ dynamicColumns, minColWidth, sorting, renderStatus 
     ...dynamicColumns.map((key) => ({
       title: key,
       dataIndex: key,
-      key: key,
+      key,
       width: minColWidth,
     })),
   ];
