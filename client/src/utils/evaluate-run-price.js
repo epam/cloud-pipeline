@@ -56,15 +56,13 @@ export default function evaluateRunPrice (
   const {
     computePricePerHour = 0,
     workersPrice = 0,
-    fsPricePerHour = 0,
     pricePerHour = 0
   } = run;
   const format = (value) => Math.ceil(value * 100.0) / 100.0;
-  const compute = computePricePerHour * (totalBillableRunningDuration / SECONDS_IN_HOUR);
-  const disk = (pricePerHour - computePricePerHour - fsPricePerHour) *
-    (totalBillableDuration / SECONDS_IN_HOUR);
-  const fs = fsPricePerHour * (totalBillableDuration / SECONDS_IN_HOUR);
-  const master = compute + disk + fs;
+  const hours = totalBillableDuration / SECONDS_IN_HOUR;
+  const computedHours = totalBillableRunningDuration / SECONDS_IN_HOUR;
+  const master = (computedHours * computePricePerHour) +
+    hours * (pricePerHour - computePricePerHour);
   return {
     master: format(master),
     workers: format(workersPrice),
