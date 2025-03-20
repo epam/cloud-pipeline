@@ -562,7 +562,11 @@ public class DockerRegistryManager implements SecuredEntityManager {
             toolGroup.setOwner(event.getActor().getName());
             toolGroupManager.create(toolGroup);
         } else {
-            toolGroup = toolGroupManager.loadByNameOrId(registry.getPath() + Constants.PATH_DELIMITER + group);
+            if (registry.getProvider() == GCP) {
+                toolGroup = toolGroupManager.loadByRegistryAndName(registry.getPath(), group);
+            } else {
+                toolGroup = toolGroupManager.loadByNameOrId(registry.getPath() + Constants.PATH_DELIMITER + group);
+            }
         }
         return toolGroup;
     }

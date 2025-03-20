@@ -149,6 +149,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected String[] getUnsecuredResources() {
         final List<String> excludePaths = Arrays.asList(
                 "/restapi/dockerRegistry/oauth",
+                "/restapi/gcpRegistry/notify",
                 "/restapi/proxy/**",
                 "/error",
                 "/error/**");
