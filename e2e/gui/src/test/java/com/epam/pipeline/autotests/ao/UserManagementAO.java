@@ -791,6 +791,11 @@ public class UserManagementAO extends SettingsPageAO {
                 return this;
             }
 
+            public EditGroupPopup checkUserExistsInGroup(final String userName) {
+                $(byClassName("user-management__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                return ensure($(className("user-management__table")).$(byText(userName)), exist);
+            }
+
             public EditGroupPopup isAllowedLaunchOptionsDisable(final String option) {
                 $(byText("Allowed price types")).shouldBe(visible, enabled);
                 final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));

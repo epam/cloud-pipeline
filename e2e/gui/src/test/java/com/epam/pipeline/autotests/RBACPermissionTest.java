@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMPERSONATE;
@@ -24,6 +28,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.PROFILE;
 import static com.epam.pipeline.autotests.ao.Primitive.USER_MANAGEMENT_TAB;
 import com.epam.pipeline.autotests.ao.UserManagementAO.GroupsTabAO.EditGroupPopup;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -54,7 +59,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
 
     @BeforeClass
     public void prepareTestGroups() {
-        createTestGroup(testGroup1, admin);
+        createTestGroup(testGroup1, null);
         createTestGroup(testGroup2, user);
         initialMiscMetadataSensitiveKeys = navigationMenu()
                 .settings()
@@ -75,6 +80,28 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                          .searchGroupBySubstring(group)
                          .deleteGroupIfPresent(group);
                 });
+    }
+
+    @AfterClass
+    public void cleanUpUserPermissions() {
+        loginAsUser(admin);
+        UserEntry testUser = navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(admin.login);
+        testUser
+                .edit()
+                .getUserPermissionsTab()
+                .deleteIfPresent(user.login)
+                .deleteIfPresent(testGroup2)
+                .closeAll();
+        testUser
+                .edit()
+                .addAllowedLaunchOptions(toolInstanceTypesMask, "")
+                .showMetadata()
+                .deleteKeys(attr[0][0], attr[1][0], attr[2][0], attr[3][0])
+                .ok();
     }
 
     @Test(priority = 1)
@@ -154,46 +181,41 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     @Test(priority = 1, dependsOnMethods = "wtiteGrantPermissionsToUserAccount")
     @TestCase(value = "3229_3")
     public void executeGrantPermissionsToUserAccount() {
-        try {
-            loginAsUser(admin);
-            navigationMenu()
-                    .settings()
-                    .switchToUserManagement()
-                    .switchToUsers().searchUserEntry(admin.login)
-                    .edit()
-                    .getUserPermissionsTab()
-                    .selectByName(testGroup2)
-                    .showPermissions()
-                    .set(EXECUTE, ALLOW)
-                    .set(READ, INHERIT)
-                    .set(WRITE, INHERIT)
-                    .savePermissions()
-                    .closeAll();
-            loginAsUser(user);
-            navigationMenu()
-                    .settings()
-                    .ensure(USER_MANAGEMENT_TAB, visible)
-                    .switchToUserManagement()
-                    .switchToUsers()
-                    .searchUserEntry(admin.login)
-                    .openEditUserPopUp()
-                    .ensureVisible(IMPERSONATE)
-                    .ensureDisable(DELETE, BLOCK)
-                    .isListOfRolesBlocked()
-                    .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
-                    .showMetadata()
-                    .assertKeysArePresent(attr[2][0], attr[3][0])
-                    .assertKeysAreDisabled(attr[2][0], attr[3][0])
-                    .ok()
-                    .click(IMPERSONATE);
-            navigationMenu()
-                    .settings()
-                    .switchToMyProfile()
-                    .validateUserName(admin.login);
-        } finally {
-            cleanUpUserPermissions();
-        }
-
+        loginAsUser(admin);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers().searchUserEntry(admin.login)
+                .edit()
+                .getUserPermissionsTab()
+                .selectByName(testGroup2)
+                .showPermissions()
+                .set(EXECUTE, ALLOW)
+                .set(READ, INHERIT)
+                .set(WRITE, INHERIT)
+                .savePermissions()
+                .closeAll();
+        loginAsUser(user);
+        navigationMenu()
+                .settings()
+                .ensure(USER_MANAGEMENT_TAB, visible)
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(admin.login)
+                .openEditUserPopUp()
+                .ensureVisible(IMPERSONATE)
+                .ensureDisable(DELETE, BLOCK)
+                .isListOfRolesBlocked()
+                .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
+                .showMetadata()
+                .assertKeysArePresent(attr[2][0], attr[3][0])
+                .assertKeysAreDisabled(attr[2][0], attr[3][0])
+                .ok()
+                .click(IMPERSONATE);
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(admin.login);
     }
 
     @Test(priority = 2)
@@ -232,19 +254,18 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .addNewGroup(testGroup2)
                 .selectByName(testGroup2)
                 .showPermissions()
-                .set(WRITE, ALLOW)
+                .set(WRITE, true)
                 .savePermissions()
                 .closeAll();
         setMiscMetadataSensitiveKeys(miscMetadataSensitiveKeysTestValue);
         loginAsUser(user);
-        EditGroupPopup editGroupPopup = navigationMenu()
+        navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
                 .switchToUserManagement()
                 .switchToGroups()
-                .openEditGroupPopUp(testGroup1);
-        editGroupPopup
-                .isListOfUsersBlocked()
+                .openEditGroupPopUp(testGroup1)
+                .addUserIfNonExist(admin.login)
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
                 .assertKeyNotPresent(attr[0][0])
@@ -256,11 +277,13 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .close()
                 .addKeyWithValue(attr[3][0], attr[3][1])
                 .ok();
-        navigationMenu()
+        EditGroupPopup editGroupPopup = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToGroups()
-                .openEditGroupPopUp(testGroup1)
+                .openEditGroupPopUp(testGroup1);
+        editGroupPopup
+                .checkUserExistsInGroup(admin.login)
                 .showMetadata()
                 .assertKeysAreNotPresent(attr[0][0], attr[1][0])
                 .assertKeysArePresent(attr[3][0], attr[2][0])
@@ -270,6 +293,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
 
     private void loginAsUser(Account account) {
         logoutIfNeeded();
+        $(byId("navigation-button-stop-impersonation")).waitUntil(not(exist), DEFAULT_TIMEOUT);
         loginAs(account)
                 .settings()
                 .switchToMyProfile()
@@ -301,27 +325,6 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .ok();
     }
 
-    private void cleanUpUserPermissions() {
-        loginAsUser(admin);
-        UserEntry testUser = navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchUserEntry(admin.login);
-        testUser
-                .edit()
-                .getUserPermissionsTab()
-                .deleteIfPresent(user.login)
-                .deleteIfPresent(testGroup2)
-                .closeAll();
-        testUser
-                .edit()
-                .addAllowedLaunchOptions(toolInstanceTypesMask, "")
-                .showMetadata()
-                .deleteKeys(attr[0][0], attr[1][0], attr[2][0], attr[3][0])
-                .ok();
-    }
-
     private void groupPermissionsPreparations() {
         loginAsUser(admin);
         EditGroupPopup editGroupPopup = navigationMenu()
@@ -348,7 +351,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     }
 
     private void createTestGroup(String groupName, Account account) {
-        navigationMenu()
+        EditGroupPopup editGroupPopup = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToGroups()
@@ -356,9 +359,11 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .enterGroupName(groupName)
                 .create()
                 .searchGroupBySubstring(groupName)
-                .editGroup(groupName)
-                .addUserIfNonExist(account.login)
-                .ok();
+                .editGroup(groupName);
+        if(account != null) {
+            editGroupPopup.addUserIfNonExist(account.login);
+        }
+        editGroupPopup.ok();
     }
 
     private void setMiscMetadataSensitiveKeys(String value) {
