@@ -59,19 +59,41 @@
             <value>
                 <!--loadStoragePathPermissionsQuery-->
                 <![CDATA[
+                    WITH ranked_permissions AS (
+                        SELECT
+                            p.storage_id,
+                            p.folder_path,
+                            p.file_name,
+                            p.sid_name,
+                            p.principal,
+                            p.mask,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY p.storage_id, p.folder_path, p.file_name
+                                ORDER BY
+                                    CASE
+                                        WHEN p.principal = true THEN 0
+                                        ELSE 1
+                                    END,
+                                    p.mask
+                            ) AS rn
+                        FROM
+                            pipeline.datastorage_path_permissions p
+                        WHERE
+                            p.storage_id = ?
+                        @WHERE@
+                    )
                     SELECT
-                        p.storage_id,
-                        p.folder_path,
-                        p.file_name,
-                        p.sid_name,
-                        p.principal,
-                        p.mask
+                        rp.storage_id,
+                        rp.folder_path,
+                        rp.file_name,
+                        rp.sid_name,
+                        rp.principal,
+                        rp.mask
                     FROM
-                        pipeline.datastorage_path_permissions p
+                        ranked_permissions rp
                     WHERE
-                        p.storage_id = ?
-                    @WHERE@
-                    ORDER BY LENGTH(p.folder_path) DESC, p.file_name DESC NULLS LAST
+                        rp.rn = 1
+                    ORDER BY LENGTH(rp.folder_path) DESC, rp.file_name DESC NULLS LAST
                     @LIMIT@
                 ]]>
             </value>
