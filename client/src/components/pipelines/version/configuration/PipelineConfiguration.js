@@ -79,7 +79,12 @@ export default class PipelineConfiguration extends React.Component {
           this.navigationBlocker = null;
         }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker && location.pathname !== this.allowedNavigation) {
+      if (
+        !this.isBitBucket &&
+        this.configurationModified &&
+        !this.navigationBlocker &&
+        location.pathname !== this.allowedNavigation
+      ) {
         const cancel = () => {
           if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
             this.props.history.replace(locationBefore);
@@ -176,8 +181,19 @@ export default class PipelineConfiguration extends React.Component {
     return undefined;
   }
 
+  @computed
+  get isBitBucket () {
+    const {pipeline} = this.props;
+    if (!pipeline || !pipeline.loaded) {
+      return false;
+    }
+    const {repositoryType} = pipeline.value || {};
+    return /^bitbucket$/i.test(repositoryType);
+  }
+
+  @computed
   get canModifySources () {
-    if (this.props.pipeline.pending) {
+    if (this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
@@ -349,7 +365,7 @@ export default class PipelineConfiguration extends React.Component {
       this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
       if (this.props.configurations.value
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
         return false;
@@ -524,5 +540,4 @@ export default class PipelineConfiguration extends React.Component {
       </div>
     );
   }
-
 }
