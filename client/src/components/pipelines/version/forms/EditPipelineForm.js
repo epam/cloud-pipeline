@@ -35,6 +35,7 @@ import localization from '../../../../utils/localization';
 import {RepositoryTypes} from '../../../special/git-repository-control';
 import EnabledPath from './enabled-path';
 import {getPipelineDefaultPaths} from './default-paths';
+import RepositoryTypeSelector from './repository-type';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
@@ -71,8 +72,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       mask: PropTypes.number,
       locked: PropTypes.bool,
       repository: PropTypes.string,
+      repositoryType: PropTypes.string,
       repositoryToken: PropTypes.string,
       pipelineType: PropTypes.string,
+      branch: PropTypes.string,
+      configurationPath: PropTypes.string,
       visibility: PropTypes.string,
       codePath: PropTypes.string,
       docsPath: PropTypes.string
@@ -105,12 +109,18 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
    */
   get pipelineDefaultPaths () {
     const {
+      form,
       preferences,
       pipeline
     } = this.props;
     let repositoryType = RepositoryTypes.GitLab;
     if (pipeline) {
       repositoryType = pipeline.repositoryType || RepositoryTypes.GitLab;
+    } else {
+      try {
+        repositoryType = form.getFieldValue('repositoryType');
+      } catch (_) { /* empty */
+      }
     }
     return getPipelineDefaultPaths(preferences)[repositoryType] || {
       src: 'src',
@@ -165,6 +175,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         if (!this.state.editRepositorySettings) {
           values.repository = undefined;
           values.token = undefined;
+          values.repositoryType = undefined;
+          values.branch = undefined;
+          values.configurationPath = undefined;
         } else {
           values.token = values.token || '';
         }
@@ -175,6 +188,19 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
 
   displayRepositorySettings = () => {
     this.setState({editRepositorySettings: true});
+  };
+
+  onRepositoryTypeChanged = (repositoryType) => {
+    if (!this.props.pipeline) {
+      const defaultPaths = getPipelineDefaultPaths(this.props.preferences)[repositoryType] || {
+        src: 'src',
+        docs: 'docs'
+      };
+      this.props.form.setFieldsValue({
+        codePath: defaultPaths.src,
+        docsPath: defaultPaths.docs
+      });
+    }
   };
 
   renderForm = () => {
@@ -266,6 +292,30 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       }
       formItems.push((
         <Form.Item
+          key="repositoryType"
+          className="edit-pipeline-form-repository-type-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Repository Type"
+        >
+          {getFieldDecorator('repositoryType',
+            {
+              initialValue: this.props.pipeline && this.props.pipeline.repositoryType
+                ? this.props.pipeline.repositoryType
+                : RepositoryTypes.GitLab
+            })(
+            <RepositoryTypeSelector
+              disabled={!!this.props.pipeline || this.props.pending}
+              onRepositoryTypeChanged={this.onRepositoryTypeChanged}
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
           key="repository"
           className="edit-pipeline-form-repository-container"
           {...this.formItemLayout}
@@ -287,6 +337,29 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       ));
       formItems.push((
         <Form.Item
+          key="branch"
+          className="edit-pipeline-form-branch-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Branch"
+        >
+          {getFieldDecorator('branch',
+            {
+              initialValue: this.props.pipeline && this.props.pipeline.branch
+                ? this.props.pipeline.branch
+                : undefined
+            })(
+            <Input
+              disabled={this.props.pending || readOnly}
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
           key="token"
           className="edit-pipeline-form-repository-token-container"
           {...this.formItemLayout}
@@ -301,6 +374,29 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           })(
             <Input
               onPressEnter={this.handleSubmit}
+              type="password"
+              disabled={this.props.pending || readOnly} />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="configurationPath"
+          className="edit-pipeline-form-configuration-path-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Configuration path"
+        >
+          {getFieldDecorator('configurationPath',
+            {
+              initialValue: this.props.pipeline && this.props.pipeline.configurationPath
+                ? this.props.pipeline.configurationPath
+                : undefined
+            })(
+            <Input
               disabled={this.props.pending || readOnly}
             />
           )}

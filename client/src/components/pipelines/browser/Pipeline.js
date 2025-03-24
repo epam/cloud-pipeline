@@ -115,6 +115,16 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     return !!this.state.metadata;
   }
 
+  @computed
+  get repositoryType () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return repositoryType;
+    }
+    return undefined;
+  }
+
   columns = [
     {
       key: 'type',
@@ -422,6 +432,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       name,
       description,
       token,
+      branch,
+      configurationPath,
       visibility,
       codePath,
       docsPath
@@ -432,6 +444,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       name: name,
       description: description,
       parentFolderId: this.props.pipeline.value.parentFolderId,
+      branch,
+      configurationPath,
       visibility,
       codePath,
       docsPath
@@ -468,6 +482,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       name: name,
       description: this.props.pipeline.value.description,
       parentFolderId: this.props.pipeline.value.parentFolderId,
+      branch: this.props.pipeline.value.branch,
+      configurationPath: this.props.pipeline.value.configurationPath,
       visibility: this.props.pipeline.value.visibility,
       codePath: this.props.pipeline.value.codePath,
       docsPath: this.props.pipeline.value.docsPath
@@ -811,6 +827,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                       overlayClassName={styles.gitRepositoryPopover}
                       https={this.props.pipeline.value.repository}
                       ssh={this.props.pipeline.value.repositorySsh}
+                      repositoryType={this.repositoryType}
                     />
                   ) : undefined
               }

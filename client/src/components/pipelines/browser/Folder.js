@@ -984,7 +984,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       name,
       description,
       repository,
+      repositoryType,
+      branch,
       token,
+      configurationPath,
       visibility,
       codePath,
       docsPath
@@ -996,7 +999,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this._currentFolder.folder.id,
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
+      repositoryType,
       repositoryToken: token,
+      branch,
+      configurationPath,
       visibility,
       codePath,
       docsPath
@@ -1094,11 +1100,13 @@ export default class Folder extends localization.LocalizedReactComponent {
   checkRequest = new CheckPipelineRepository();
 
   checkRepositoryExistence = async (pipelineOpts, callback) => {
-    const {repository, token} = pipelineOpts;
+    const {repository, repositoryType, branch, token} = pipelineOpts;
     if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
       await this.checkRequest.send({
         repository,
+        type: repositoryType,
+        branch,
         token
       });
       hide();
@@ -1168,6 +1176,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       name,
       description,
       token,
+      branch,
+      configurationPath,
       visibility,
       codePath,
       docsPath
@@ -1183,6 +1193,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       name: name,
       description: description,
       parentFolderId: this._currentFolder.folder.id,
+      branch,
+      configurationPath,
       visibility,
       codePath,
       docsPath

@@ -117,13 +117,31 @@ export default class PipelineCode extends Component {
     this.reloadCodeIfFolderChanged();
   }
 
+  @computed
+  get isBitBucket () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return /^bitbucket$/i.test(repositoryType);
+    }
+    return false;
+  }
+
+  @computed
   get configurationPath () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {configurationPath} = pipeline.value || {};
+      if (configurationPath) {
+        return removeSlashes(configurationPath);
+      }
+    }
     return 'config.json';
   }
 
   @computed
   get canModifySources () {
-    if (!this.props.pipeline.loaded) {
+    if (!this.props.pipeline.loaded || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&

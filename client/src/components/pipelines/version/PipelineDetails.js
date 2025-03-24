@@ -65,6 +65,16 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   state = {isModalVisible: false, updating: false, deleting: false};
 
   @computed
+  get repositoryType () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return repositoryType;
+    }
+    return undefined;
+  }
+
+  @computed
   get codePath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -155,15 +165,25 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       title: 'Storage rules',
       link: `/${id}/${version}/storage`
     };
-    return [
-      workflow,
-      this.docsPath ? documents : false,
-      this.codePath ? code : false,
-      configuration,
-      graph,
-      history,
-      storage
-    ].filter(Boolean);
+    switch (this.repositoryType) {
+      case 'BITBUCKET':
+        return [
+          this.codePath ? code : false,
+          configuration,
+          history,
+          storage
+        ].filter(Boolean);
+      default:
+        return [
+          workflow,
+          this.docsPath ? documents : false,
+          this.codePath ? code : false,
+          configuration,
+          graph,
+          history,
+          storage
+        ].filter(Boolean);
+    }
   }
 
   componentDidMount () {
@@ -236,6 +256,8 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           name: values.name,
           description: values.description,
           parentFolderId: this.props.pipeline.value.parentFolderId,
+          branch: values.branch,
+          configurationPath: values.configurationPath,
           visibility: values.visibility,
           codePath: values.codePath,
           docsPath: values.docsPath
@@ -439,7 +461,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             <GitRepositoryControl
               overlayClassName={browserStyles.gitRepositoryPopover}
               https={this.props.pipeline.value.repository}
-              ssh={this.props.pipeline.value.repositorySsh} />
+              ssh={this.props.pipeline.value.repositorySsh}
+              repositoryType={this.props.pipeline.value.repositoryType}
+            />
           </Col>
         </Row>
         <Row>
