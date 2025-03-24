@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -45,8 +46,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -197,7 +200,7 @@ public class StoragePathPermissionsService {
      * Determines if current user can see folder by given path. To have such access to folder user may have
      * permissions to:
      *  - folder directly
-     *  - one oth parent folders
+     *  - one of the parent folders
      *  - one of the child files or folders
      * That permission does not indicate that user can read folder content.
      * If no permissions provided for user directly or one of user`s group an AccessDeniedException shall be occurred.
@@ -207,7 +210,22 @@ public class StoragePathPermissionsService {
      */
     public void canGetFolder(final Long storageId, final String path) {
         log.debug("Checking current user can get folder '{}' for storage '{}'", path, storageId);
-        getFolderListPermissions(storageId, path);
+        final String folderPath = normalizePath(path);
+        final List<SidImpl> sids = getSids();
+        final List<String> parentFolders = splitPath(folderPath);
+
+        final Optional<StoragePathPermissions> closestFolderPermission = pathPermissionsDao
+                .findClosestParentFolderPermission(storageId, sids, parentFolders);
+        if (closestFolderPermission.isPresent()) {
+            log.debug("Permissions on parent folder found for path '{}' and storage '{}'", path, storageId);
+            return;
+        }
+
+        log.debug("No permissions on parent folders for path '{}' and storage '{}'. Checking children paths..",
+                path, storageId);
+        if (CollectionUtils.isEmpty(pathPermissionsDao.findByPrefix(storageId, sids, folderPath))) {
+            throw new AccessDeniedException("Access is denied");
+        }
     }
 
     /**
@@ -220,20 +238,34 @@ public class StoragePathPermissionsService {
     public StorageFolderListPermissionsContainer getFolderListPermissions(final Long storageId, final String path) {
         final String folderPath = normalizePath(path);
         final List<SidImpl> sids = getSids();
+        final List<String> parentFolders = splitPath(folderPath);
 
-        if (hasPermissionsOnFolder(folderPath, storageId, sids)) {
-            // has permissions on current folder or it's parents
-            log.debug("Current user can list folder '{}' for storage '{}'", path, storageId);
-            return StorageFolderListPermissionsContainer.builder().hasListPermissions(true).build();
-        }
-        log.debug("Current user cannot list folder '{}' for storage '{}'. Checking any permissions on child paths...",
-                path, storageId);
+        final StorageFolderListPermissionsContainer permissionsContainer =
+                StorageFolderListPermissionsContainer.builder().build();
 
-        final List<StoragePathPermissions> childPaths = pathPermissionsDao.findByPrefix(storageId, sids, folderPath);
-        if (CollectionUtils.isEmpty(childPaths)) {
+        final Integer folderMask = pathPermissionsDao.findClosestParentFolderPermission(storageId, sids, parentFolders)
+                .map(StoragePathPermissions::getMask)
+                .orElse(null);
+        permissionsContainer.setFolderMask(folderMask);
+
+        final List<StoragePathPermissions> childPermissions = pathPermissionsDao
+                .findByPrefix(storageId, sids, folderPath);
+        if (Objects.isNull(folderMask) && CollectionUtils.isEmpty(childPermissions)) {
             throw new AccessDeniedException("Access is denied");
         }
-        return buildCurrentFolderPermissionsContainer(childPaths, folderPath);
+        if (CollectionUtils.isEmpty(childPermissions)) {
+            // permissions shall be inherited from folder
+            return permissionsContainer;
+        }
+        final Map<String, Integer> files = getFilesInCurrentFolder(childPermissions, folderPath);
+        if (MapUtils.isNotEmpty(files)) {
+            permissionsContainer.setFiles(files);
+        }
+        final Map<String, Integer> folders = getFoldersInCurrentFolder(childPermissions, folderPath);
+        if (MapUtils.isNotEmpty(folders)) {
+            permissionsContainer.setFolders(folders);
+        }
+        return permissionsContainer;
     }
 
     private Optional<StoragePathPermissions> findFilePermissions(final Long storageId, final String path) {
@@ -251,7 +283,7 @@ public class StoragePathPermissionsService {
         final String folderPath = normalizePath(path);
         final List<String> prefixes = splitPath(folderPath);
         final List<SidImpl> sids = getSids();
-        return pathPermissionsDao.findClosestFolderPermission(storageId, sids, prefixes);
+        return pathPermissionsDao.findClosestParentFolderPermission(storageId, sids, prefixes);
     }
 
     private StoragePathPermissions normalizePermissions(final StoragePathPermissions permissions) {
@@ -323,46 +355,27 @@ public class StoragePathPermissionsService {
         return firstSlashIndex != -1 ? relativePath.substring(0, firstSlashIndex) : relativePath;
     }
 
-    private List<String> getFolderNamesInCurrentFolder(final List<StoragePathPermissions> loadedPaths,
-                                                       final String currentFolder) {
-        return loadedPaths.stream()
-                .map(StoragePathPermissions::getFolderPath)
-                .distinct()
-                .map(folderPath -> extractFolderName(folderPath, currentFolder))
-                .distinct()
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toList());
+    private Map<String, Integer> getFoldersInCurrentFolder(final List<StoragePathPermissions> loadedPaths,
+                                                           final String currentFolder) {
+        final Map<String, Integer> results = new HashMap<>();
+        // Step #1: add permissions that granted on folders directly
+        loadedPaths.stream()
+                .filter(permission -> StringUtils.isBlank(permission.getFileName()))
+                .filter(permission -> !permission.getFolderPath().equals(currentFolder))
+                .forEach(permission -> collectPermissionsInFolder(permission, currentFolder, results));
+        // Step #2: add the rest folders with read-only access level.
+        // If folder already added at Step #1 the lowes permission shall be chosen.
+        loadedPaths
+                .forEach(permission -> collectPermissionsInFolderRecursively(permission, currentFolder, results));
+        return results;
     }
 
-    private List<String> getFileNamesInCurrentFolder(final List<StoragePathPermissions> loadedPaths,
-                                                     final String currentFolder) {
+    private Map<String, Integer> getFilesInCurrentFolder(final List<StoragePathPermissions> loadedPaths,
+                                                         final String currentFolder) {
         return loadedPaths.stream()
                 .filter(permissions -> currentFolder.equals(permissions.getFolderPath()))
-                .map(StoragePathPermissions::getFileName)
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toList());
-    }
-
-    private StorageFolderListPermissionsContainer buildCurrentFolderPermissionsContainer(
-            final List<StoragePathPermissions> loadedPaths, final String currentFolder) {
-        final StorageFolderListPermissionsContainer container = StorageFolderListPermissionsContainer.builder()
-                .hasListPermissions(false)
-                .build();
-        final List<String> fileNames = getFileNamesInCurrentFolder(loadedPaths, currentFolder);
-        if (CollectionUtils.isNotEmpty(fileNames)) {
-            container.setFiles(fileNames);
-        }
-        final List<String> folderNames = getFolderNamesInCurrentFolder(loadedPaths, currentFolder);
-        if (CollectionUtils.isNotEmpty(folderNames)) {
-            container.setFolders(folderNames);
-        }
-        return container;
-    }
-
-    private boolean hasPermissionsOnFolder(final String currentFolder, final Long storageId,
-                                           final List<SidImpl> sids) {
-        final List<String> prefixes = splitPath(currentFolder);
-        return pathPermissionsDao.countParentFoldersByStorageAndSids(storageId, sids, prefixes) > 0;
+                .filter(permissions -> StringUtils.isNotBlank(permissions.getFileName()))
+                .collect(Collectors.toMap(StoragePathPermissions::getFileName, StoragePathPermissions::getMask));
     }
 
     private boolean hasWritePermissions(final StoragePathPermissions permissions) {
@@ -387,5 +400,36 @@ public class StoragePathPermissionsService {
         final AbstractDataStorage storage = findStorage(storageId);
         Assert.state(pathPermissionsAllowed(storage),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_PERMISSIONS_NOT_ALLOWED));
+    }
+
+    private void collectPermissionsInFolder(final StoragePathPermissions permission,
+                                            final String currentFolder,
+                                            final Map<String, Integer> masksByNames) {
+        final String folderPath = permission.getFolderPath();
+        final String folderName = extractFolderName(folderPath, currentFolder);
+        final int mask = permission.getMask();
+        if (folderPath.endsWith(folderName + ProviderUtils.DELIMITER)) {
+            masksByNames.putIfAbsent(folderName, mask);
+        }
+    }
+
+    private void collectPermissionsInFolderRecursively(final StoragePathPermissions permission,
+                                                       final String currentFolder,
+                                                       final Map<String, Integer> masksByNames) {
+        final String folderName = extractFolderName(permission.getFolderPath(), currentFolder);
+        if (StringUtils.isBlank(folderName)) {
+            return;
+        }
+        if (!masksByNames.containsKey(folderName)) {
+            masksByNames.put(folderName, AclPermission.READ.getMask());
+            return;
+        }
+        final int oldMask = Optional.ofNullable(masksByNames.get(folderName)).orElse(0);
+        final int newMask = permission.getMask();
+        // downgrade permission:
+        // if at least one child path has lower permissions parent folder shall respect it
+        if (newMask < oldMask) {
+            masksByNames.put(folderName, newMask);
+        }
     }
 }

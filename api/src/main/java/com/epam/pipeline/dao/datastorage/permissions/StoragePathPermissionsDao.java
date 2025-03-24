@@ -43,9 +43,9 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     private final String deleteStoragePathPermissionsQuery;
     private final String loadStoragePathPermissionsQuery;
     private final String deleteStoragePathPermissionsByStorageIdQuery;
-    private final String findStoragePathPermissionsByPrefixQuery;
-    private final String countStoragePathPermissionsQuery;
     private final String findSidsWithStoragePathPermissionsQuery;
+    private final String findClosestStorageFolderPermissionQuery;
+    private final String loadClosetsStoragePathPermissionsByPrefixQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void batchInsert(final List<StoragePathPermissions> entities, final Long storageId,
@@ -74,16 +74,6 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(query, Parameters.getRowMapper(), storageId);
     }
 
-    public Optional<StoragePathPermissions> findClosestFolderPermission(final Long storageId,
-                                                                        final List<SidImpl> sids,
-                                                                        final List<String> paths) {
-        final String query = limitFirst(
-                WHERE_PATTERN.matcher(loadStoragePathPermissionsQuery)
-                        .replaceFirst(buildWhere(sids, paths, true)));
-        return getJdbcTemplate().query(query, Parameters.getRowMapper(), storageId).stream()
-                .findFirst();
-    }
-
     public Optional<StoragePathPermissions> findClosestFilePermission(final Long storageId,
                                                                       final List<SidImpl> sids,
                                                                       final List<String> tokens,
@@ -95,11 +85,13 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                 .findFirst();
     }
 
-    public int countParentFoldersByStorageAndSids(final Long storageId, final List<SidImpl> sids,
-                                                  final List<String> parentFolders) {
-        final String query = WHERE_PATTERN.matcher(countStoragePathPermissionsQuery)
-                .replaceFirst(buildWhere(sids, parentFolders, true));
-        return getJdbcTemplate().queryForObject(query, Integer.class, storageId);
+    public Optional<StoragePathPermissions> findClosestParentFolderPermission(final Long storageId,
+                                                                              final List<SidImpl> sids,
+                                                                              final List<String> parentFolders) {
+        final String query = limitFirst(WHERE_PATTERN.matcher(findClosestStorageFolderPermissionQuery)
+                .replaceFirst(buildWhere(sids, parentFolders, true)));
+        return getJdbcTemplate().query(query, Parameters.getRowMapper(), storageId).stream()
+                .findFirst();
     }
 
     public List<StoragePathPermissions> findByPrefix(final Long storageId, final List<SidImpl> sids,
@@ -107,7 +99,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
         final MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue(Parameters.STORAGE_ID.name(), storageId)
                 .addValue(Parameters.FOLDER_PATH.name(), prefix + DaoHelper.POSTGRES_LIKE_CHARACTER);
-        final String query = WHERE_PATTERN.matcher(findStoragePathPermissionsByPrefixQuery)
+        final String query = WHERE_PATTERN.matcher(loadClosetsStoragePathPermissionsByPrefixQuery)
                 .replaceFirst(buildWhere(sids, null, false));
         return getNamedParameterJdbcTemplate()
                 .query(query, parameters, Parameters.getRowMapper());
@@ -201,6 +193,8 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                     .folderPath(rs.getString(FOLDER_PATH.name()))
                     .fileName(rs.getString(FILE_NAME.name()))
                     .mask(rs.getInt(MASK.name()))
+                    .sidName(rs.getString(SID_NAME.name()))
+                    .principal(rs.getBoolean(PRINCIPAL.name()))
                     .build();
         }
 

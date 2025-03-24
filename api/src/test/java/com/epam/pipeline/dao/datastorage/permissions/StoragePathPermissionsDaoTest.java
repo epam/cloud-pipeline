@@ -48,6 +48,7 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
     private static final String PATH3 = "/A/B/C/D/E/F/";
     private static final String FILENAME = "file.txt";
     private static final int READ = 1;
+    private static final int WRITE = 1 << 2;
     private static final String USER = "User";
     private static final String GROUP = "Group";
     private static final List<String> NO_PERMISSIONS_PATHS = Arrays.asList("/", "/Y/", "/Y/X/");
@@ -217,14 +218,14 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
         storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
 
         final Optional<StoragePathPermissions> actual = storagePathPermissionsDao
-                .findClosestFolderPermission(storageId, Collections.singletonList(user),
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
                         PATHS_WITH_PERMISSIONS);
         assertThat(actual.isPresent()).isTrue();
         assertThat(actual.get().getFolderPath()).isEqualTo(PATH1);
         assertThat(actual.get().getFileName()).isNull();
 
         final Optional<StoragePathPermissions> noPermissionsResult = storagePathPermissionsDao
-                .findClosestFolderPermission(storageId, Collections.singletonList(user),
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
                         NO_PERMISSIONS_PATHS);
         assertThat(noPermissionsResult.isPresent()).isFalse();
     }
@@ -232,26 +233,38 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional
     public void shouldCountPermissions() {
-        final List<StoragePathPermissions> permissions = new ArrayList<>(permissions());
-        permissions.add(StoragePathPermissions.builder()
+        final List<StoragePathPermissions> userPermission = new ArrayList<>(permissions());
+        userPermission.add(StoragePathPermissions.builder()
                 .folderPath(PATH0)
                 .mask(READ)
                 .build());
+        final List<StoragePathPermissions> groupPermission = new ArrayList<>(permissions());
+        groupPermission.add(StoragePathPermissions.builder()
+                .folderPath(PATH0)
+                .mask(WRITE)
+                .build());
         final Long storageId = objectStorage.getId();
         final SidImpl user = userSid();
+        final SidImpl group = groupSid();
 
-        storagePathPermissionsDao.batchInsert(permissions, storageId, USER, true);
-        storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
+        storagePathPermissionsDao.batchInsert(userPermission, storageId, USER, true);
+        storagePathPermissionsDao.batchInsert(groupPermission, storageId, GROUP, false);
 
-        final int permissionsCountWhenGranted = storagePathPermissionsDao
-                .countParentFoldersByStorageAndSids(storageId, Collections.singletonList(user),
+        final Optional<StoragePathPermissions> actualUserPermission = storagePathPermissionsDao
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
                         PATHS_WITH_PERMISSIONS);
-        assertThat(permissionsCountWhenGranted).isEqualTo(2);
+        assertThat(actualUserPermission.isPresent()).isTrue();
+        assertThat(actualUserPermission.get().getMask()).isEqualTo(READ);
 
-        final int permissionsCountWhenNotGranted = storagePathPermissionsDao
-                .countParentFoldersByStorageAndSids(storageId, Collections.singletonList(user),
-                        NO_PERMISSIONS_PATHS);
-        assertThat(permissionsCountWhenNotGranted).isEqualTo(0);
+        final Optional<StoragePathPermissions> actualPermission = storagePathPermissionsDao
+                .findClosestParentFolderPermission(storageId, Arrays.asList(user, group),
+                        PATHS_WITH_PERMISSIONS);
+        assertThat(actualPermission.isPresent()).isTrue();
+        assertThat(actualPermission.get().getMask()).isEqualTo(READ);
+
+        assertThat(storagePathPermissionsDao
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
+                        NO_PERMISSIONS_PATHS).isPresent()).isFalse();
     }
 
     @Test

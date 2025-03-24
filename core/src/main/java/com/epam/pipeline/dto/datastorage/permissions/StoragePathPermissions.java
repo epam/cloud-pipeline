@@ -11,4 +11,6 @@ public class StoragePathPermissions {
     private String folderPath;
     private String fileName;
     private int mask;
+    private String sidName;
+    private boolean principal;
 }
