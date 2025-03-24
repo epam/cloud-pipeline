@@ -794,7 +794,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
         checkDataStorageObjectExists(dataStorage, path, version);
-        checkReadPermissionsOnFile(dataStorage, path);
+        checkWritePermissionsOnFile(dataStorage, path);
         tagProviderManager.deleteFileTags(dataStorage, path, version, tags);
         return tagProviderManager.loadFileTags(dataStorage, path, version);
     }
@@ -871,7 +871,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
         checkDataStorageObjectExists(dataStorage, path, version);
-        checkReadPermissionsOnFile(dataStorage, path);
+        checkWritePermissionsOnFile(dataStorage, path);
         return tagProviderManager.updateFileTags(dataStorage, path, version, tagsToAdd, rewrite);
     }
 
