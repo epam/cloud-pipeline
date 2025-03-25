@@ -31,6 +31,9 @@ ENV NXF_VER="24.10.4"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 
+ENV CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM="mem_free"
+ENV CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_RAM="JOB"
+
 # Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
 ENV ANALYSIS_DIR="/common/analysis"
 ENV INPUT_DIR="/common/input"
