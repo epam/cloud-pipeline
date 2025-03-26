@@ -107,7 +107,7 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
         storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
 
         assertThat(storagePathPermissionsDao
-                .findByStorageAndSids(storageId, Arrays.asList(user, group))).hasSize(permissions.size() * 2);
+                .findByStorageAndSids(storageId, Arrays.asList(user, group))).hasSize(permissions.size());
         assertThat(storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Collections.singletonList(user))).hasSize(permissions.size());
         assertThat(storagePathPermissionsDao
