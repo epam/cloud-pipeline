@@ -372,9 +372,7 @@ public class GSBucketStorageHelper {
 
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         events.put(new DataAccessEvent(path, DataAccessType.READ, storage));
-        try (ReadChannel reader = blob.reader()) {
-            return new DataStorageStreamingContent(Channels.newInputStream(reader), path);
-        }
+        return new DataStorageStreamingContent(Channels.newInputStream(blob.reader()), path);
     }
 
     public DataStorageDownloadFileUrl generateDownloadUrl(final GSBucketStorage storage, final String path,
