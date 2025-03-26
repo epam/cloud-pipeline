@@ -45,7 +45,6 @@ public class DataStorageTagBatchApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_REQUEST_WRITE)
     public List<DataStorageTag> upsert(final Long id, final DataStorageTagUpsertBatchRequest request) {
         return dataStorageTagBatchManager.upsert(id, request);
-
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)

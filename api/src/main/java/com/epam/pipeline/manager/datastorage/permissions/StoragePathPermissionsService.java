@@ -229,6 +229,28 @@ public class StoragePathPermissionsService {
     }
 
     /**
+     * Filters input file paths according to specified permission mask.
+     *
+     * @param storageId storage ID
+     * @param files list of files paths to filter
+     * @param mask target permission mask (1 - read, 4 - write)
+     * @return Filtered files paths
+     */
+    public List<String> filterFiles(final Long storageId, final List<String> files, final int mask) {
+        final List<SidImpl> sids = getSids();
+        final Map<String, Integer> dbMasksByPaths = ListUtils.emptyIfNull(
+                pathPermissionsDao.findByStorageAndSids(storageId, sids)).stream()
+                .collect(Collectors.toMap(permission -> StringUtils.isBlank(permission.getFileName())
+                                ? permission.getFolderPath()
+                                : permission.getFolderPath() + permission.getFileName(),
+                        StoragePathPermissions::getMask));
+
+        return files.stream()
+                .filter(filePath -> isMaskMatch(filePath, mask, dbMasksByPaths))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Returns container with paths that have read permissions on specified folder.
      *
      * @param storageId storage ID
@@ -431,5 +453,28 @@ public class StoragePathPermissionsService {
         if (newMask < oldMask) {
             masksByNames.put(folderName, newMask);
         }
+    }
+
+    private Optional<Integer> findMatchingMask(final String filePath, final Map<String, Integer> masksByPaths) {
+        String currentPath = ProviderUtils.withLeadingDelimiter(filePath);
+
+        // Traverse the folder hierarchy from the file path back to the root
+        while (currentPath.contains(ProviderUtils.DELIMITER)) {
+            final Integer mask = masksByPaths.get(currentPath);
+            if (Objects.nonNull(mask)) {
+                return Optional.of(mask);
+            }
+            currentPath = normalizePath(currentPath.substring(0, currentPath.lastIndexOf(ProviderUtils.DELIMITER)));
+            if (currentPath.equals(ProviderUtils.DELIMITER)) {
+                break;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private boolean isMaskMatch(final String filePath, final int mask, final Map<String, Integer> masksByPaths) {
+        return findMatchingMask(filePath, masksByPaths)
+                .map(actualMask -> (actualMask & mask) != 0)
+                .orElse(false);
     }
 }

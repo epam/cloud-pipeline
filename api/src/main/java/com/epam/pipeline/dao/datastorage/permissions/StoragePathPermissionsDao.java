@@ -107,7 +107,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
 
     public List<SidImpl> findSids(final Long storageId) {
         return getJdbcTemplate()
-                .query(findSidsWithStoragePathPermissionsQuery, Parameters.getSidsRowMapper(),  storageId);
+                .query(findSidsWithStoragePathPermissionsQuery, Parameters.getSidsRowMapper(), storageId);
     }
 
     private String buildWhere(final List<SidImpl> sids, final List<String> prefixes, final boolean foldersOnly) {
