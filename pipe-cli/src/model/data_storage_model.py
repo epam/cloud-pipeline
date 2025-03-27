@@ -31,6 +31,7 @@ class DataStorageModel(DataStorageItemModel):
         self.tools_to_mount = set()
         self.owner = None
         self.root = None
+        self.path_permissions_enabled = False
 
     @classmethod
     def load(cls, json):
@@ -78,6 +79,8 @@ class DataStorageModel(DataStorageItemModel):
             instance.parent_folder_id = json['parentFolderId']
         if 'mask' in json:
             instance.mask = json['mask']
+        if 'pathPermissionsEnabled' in json:
+            instance.path_permissions_enabled = json['pathPermissionsEnabled']
         if 'regionId' in json:
             instance.region = cls._find_region_code(json['regionId'], region_data)
             instance.endpoint = cls._find_endpoint(json['regionId'], region_data)
