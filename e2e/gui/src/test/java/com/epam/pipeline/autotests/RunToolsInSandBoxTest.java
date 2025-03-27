@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.function.Function;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.exist;
@@ -75,6 +76,13 @@ public class RunToolsInSandBoxTest
                 disk);
     }
 
+    @BeforeMethod
+    public void openApplication() {
+        open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
+    }
+
     @Test
     @TestCase(value = {"EPMCMBIBPC-526"})
     public void prepareForToolInSandbox() {
@@ -119,14 +127,12 @@ public class RunToolsInSandBoxTest
             if (endpointPage != null) {
                 endpointPage.closeTab();
             }
-            open(C.ROOT_ADDRESS);
         }
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-496"})
     public void validateUsernameOnPipelinePage() {
-        open(C.ROOT_ADDRESS);
         runsMenu()
                 .show(getLastRunId())
                 .ensureHasOwner(getUserNameByAccountLogin(admin.login));
@@ -135,7 +141,6 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = "validateUsernameOnPipelinePage")
     @TestCase(value = {"EPMCMBIBPC-500"})
     public void checkToolAccessibilityForAnotherUser() {
-        open(C.ROOT_ADDRESS);
         String pipelineUrl =
                 runsMenu()
                         .show(getLastRunId())
@@ -155,16 +160,11 @@ public class RunToolsInSandBoxTest
                 .sleep(5, SECONDS)
                 .screenshot("test500screenshot")
                 .assertPageTitleIs("401 Authorization Required");
-
-        open(C.ROOT_ADDRESS);
-        logout();
-        loginAs(admin);
     }
 
     @Test(dependsOnMethods = {"checkToolAccessibilityForAnotherUser"})
     @TestCase(value = {"EPMCMBIBPC-501"})
     public void validateStopToolInSandbox() {
-        open(C.ROOT_ADDRESS);
         nodeName = clusterMenu()
                 .waitForTheNode(nameWithoutGroup(tool), getLastRunId())
                 .getNodeName(getLastRunId());
@@ -181,8 +181,6 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = {"validateStopToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-503"})
     public void validateNodeReusage() {
-        open(C.ROOT_ADDRESS);
-
         tools().perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
                 .launchTool(this, nameWithoutGroup(tool));
