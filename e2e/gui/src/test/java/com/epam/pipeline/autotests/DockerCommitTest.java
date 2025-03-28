@@ -62,7 +62,7 @@ public class DockerCommitTest
     private final String testFileContent = "This is a test file " + suffix;
     private final String personalGroup = "Personal";
     private final String toolInPersonalGroup = personalGroupActualName(login) + "/" + exactToolName(tool);
-    private final String customTag = "test_tag";
+    private final String customTag = "test_tag" + Utils.randomSuffix();
 
     @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
     @Override
