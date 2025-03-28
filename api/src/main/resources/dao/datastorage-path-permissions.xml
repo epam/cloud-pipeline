@@ -208,5 +208,45 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteStoragePathPermissionsByFilePathQuery-->
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = :STORAGE_ID AND p.folder_path = :FOLDER_PATH AND p.file_name = :FILE_NAME
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteStoragePathPermissionsByFolderPathQuery-->
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = :STORAGE_ID AND p.folder_path = :FOLDER_PATH AND p.file_name IS NULL
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadStoragePathPermissionsByPathQuery-->
+                <![CDATA[
+                    SELECT
+                        p.storage_id,
+                        p.folder_path,
+                        p.file_name,
+                        p.sid_name,
+                        p.principal,
+                        p.mask
+                    FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = :STORAGE_ID AND p.folder_path = :FOLDER_PATH AND @WHERE@
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>
