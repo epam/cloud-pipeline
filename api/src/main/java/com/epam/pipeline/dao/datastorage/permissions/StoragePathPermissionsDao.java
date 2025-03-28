@@ -70,7 +70,7 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void batchDelete(final List<StoragePathPermissions> entities, final Long storageId) {
+    public void batchDeleteByPath(final List<StoragePathPermissions> entities, final Long storageId) {
         final MapSqlParameterSource[] filesParams = entities.stream()
                 .filter(entity -> StringUtils.isNotBlank(entity.getFileName()))
                 .map(entity ->  new MapSqlParameterSource()
@@ -233,13 +233,6 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                     .addValue(MASK.name(), entity.getMask());
         }
 
-        static MapSqlParameterSource getPathParameters(final StoragePathPermissions entity, final Long storageId) {
-            return new MapSqlParameterSource()
-                    .addValue(STORAGE_ID.name(), storageId)
-                    .addValue(FOLDER_PATH.name(), entity.getFolderPath())
-                    .addValue(FILE_NAME.name(), entity.getFileName());
-        }
-
         static RowMapper<StoragePathPermissions> getRowMapper() {
             return (rs, rowNum) -> StoragePathPermissions.builder()
                     .folderPath(rs.getString(FOLDER_PATH.name()))
@@ -270,6 +263,6 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
 
     private String pathWhere(final String query, final String fileName) {
         return WHERE_PATTERN.matcher(query).replaceFirst(" p.file_name " +
-                (StringUtils.isNotBlank(fileName) ? "= '" + fileName + " '" : "IS NULL "));
+                (StringUtils.isNotBlank(fileName) ? "= '" + fileName + "' " : "IS NULL "));
     }
 }

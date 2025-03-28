@@ -145,7 +145,7 @@ public class StoragePathPermissionsService {
         toDelete.addAll(toUpdate);
         if (CollectionUtils.isNotEmpty(toDelete)) {
             log.debug("Deleting '{}' storage path permissions for storage '{}'", toDelete.size(), storageId);
-            pathPermissionsDao.batchDelete(toDelete, storageId);
+            pathPermissionsDao.batchDeleteByPath(toDelete, storageId);
         }
         if (CollectionUtils.isNotEmpty(toUpdate)) {
             log.debug("Inserting '{}' storage path permissions for storage '{}'", toUpdate.size(), storageId);
