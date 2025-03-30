@@ -129,7 +129,7 @@ import {
   CP_CAP_RESCHEDULE_RUN
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
-import AllowedInstancesCountWarning from
+import AllowedInstancesCountWarning from 
 './utilities/allowed-instances-count-warning';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
 import JobNotifications from '../dialogs/job-notifications';
@@ -154,6 +154,7 @@ import {
   getParametersFromFsConfig
 } from './utilities/configure-fs/utilities';
 import ConditionalParameters from './ConditionalParameters';
+import CustomTagsEditor from './LaunchPipelineFormComponents/CustomTagsDialog';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -277,6 +278,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   state = {
     conditionalParameters: [],
+    tagsModalVisible: false,
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -517,6 +519,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   showLaunchCommands = () => {
     this.setState({showLaunchCommands: true});
+  };
+
+  showTagsModal = () => {
+    this.setState({tagsModalVisible: true});
+  };
+
+  hideTagsModal = () => {
+    this.setState({tagsModalVisible: false});
   };
 
   hideLaunchCommands = () => {
@@ -1388,6 +1398,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
+      tags: Object.fromEntries(
+        this.props.preferences.uiRunsUserTags.map(({tag, display}) => [tag, display])
+      ),
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -4487,7 +4500,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       slurmEnabled,
       kubeEnabled,
       autoScaledPriceType,
-      fsConfig,
+      fsConfig
     } = configuration;
     let {runCapabilities} = this.state;
     if (kubeEnabled) {
@@ -5083,6 +5096,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
+
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
@@ -5103,6 +5117,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
           {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
         </Col>
+      </FormItem>
+    );
+  };
+
+  renderCustomTagsConfigurationItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    const userTags = this.props.preferences.uiRunsUserTags;
+
+    return (
+      <FormItem
+        className={styles.formItemRow}
+        {...this.leftFormItemLayout}
+        label="Custom Tags"
+      >
+        <Col span={10}>
+          <Button type="ghost" onClick={this.showTagsModal}>
+            Update tags
+          </Button>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.props.localizedStringWithSpotDictionaryFn, hints.customTagsHint)}
+        </Col>
+        <CustomTagsEditor
+          visible={this.state.tagsModalVisible}
+          onCancel={this.hideTagsModal}
+          onSave={(tags) => this.props.preferences.updateUiRunsTags(tags)}
+          initialTags={userTags}
+        />
       </FormItem>
     );
   };
@@ -5997,7 +6045,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   initialValue: this.props.currentConfigurationName
                 }
               )(
-                <Input disabled={this.props.readOnly && !this.props.canExecute}/>
+                <Input disabled={this.props.readOnly && !this.props.canExecute} />
               )}
             </FormItem>
           </div>
@@ -6109,7 +6157,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         );
       }
 
-      let pipelineVersionPicker
+      let pipelineVersionPicker;
       if (this.props.pipeline) {
         if (!this.props.editConfigurationMode && !this.props.detached) {
           pipelineVersionPicker = (
@@ -6165,7 +6213,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {renderSubmitButton()}
             </div>
             <div
-              style={{width: '100%', display: 'flex', alignItems: 'center', margin: 5, flexWrap: 'wrap'}}>
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', margin: 5, flexWrap: 'wrap'
+              }}>
               {this.renderEstimatedPriceInfo()}
             </div>
           </div>
@@ -6176,7 +6226,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             !this.props.detached
               ? (
                 <Row>
-                <Alert
+                  <Alert
                     type="warning"
                     message={`You have no permissions to launch ${this.props.pipeline.name}`} />
                   <br />
@@ -6191,7 +6241,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               id="launch-pipeline-exec-environment-panel"
               key={EXEC_ENVIRONMENT}
               className={
-                classNames(styles.section, {[styles.hidden]: !this.executionEnvironmentSectionVisible})
+                classNames(styles.section, {
+                  [styles.hidden]: !this.executionEnvironmentSectionVisible
+                })
               }
               header={this.getPanelHeader(EXEC_ENVIRONMENT)}>
               <Row type="flex" justify="space-between">
@@ -6311,6 +6363,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
               {this.renderHostedAppConfigurationItem()}
+              {this.renderCustomTagsConfigurationItem()}
               {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
               {this.renderEndpointNameFormItem()}

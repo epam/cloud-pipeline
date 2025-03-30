@@ -186,6 +186,12 @@ const hostedApplicationHint = (localizedStringFn) => (
   </Row>
 );
 
+const customTagsHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    You can specify custom tags for the job
+  </Row>
+);
+
 const jobNotificationsHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     Allows to enable job status notifications over the email.<br />
@@ -217,7 +223,8 @@ const hints = {
   endpointNameHint,
   stopAfterHint,
   hostedApplicationHint,
-  jobNotificationsHint
+  jobNotificationsHint,
+  customTagsHint
 };
 
 export default hints;

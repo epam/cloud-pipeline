@@ -15,7 +15,7 @@
  */
 
 import Remote from '../basic/Remote';
-import {computed, isObservableArray} from 'mobx';
+import {action, computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import roleModel from '../../utils/roleModel';
 import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
@@ -68,6 +68,21 @@ class PreferencesLoad extends Remote {
       });
     }
     return value.payload;
+  }
+
+  @action updateUiRunsTags (newTags) {
+    const tagPreferenceKey = 'ui.runs.tags';
+    const preference = (this.value || []).find(p => p.name === tagPreferenceKey);
+    const serializedTags = JSON.stringify(newTags);
+
+    if (preference) {
+      preference.value = serializedTags;
+    } else {
+      (this.value = this.value || []).push({
+        name: tagPreferenceKey,
+        value: serializedTags
+      });
+    }
   }
 
   @computed
@@ -822,6 +837,11 @@ class PreferencesLoad extends Remote {
       }
     }
     return [];
+  }
+
+  @computed
+  get uiRunsUserTags () {
+    return this.uiRunsTags.filter(tag => tag.user_tag === true);
   }
 
   @computed
