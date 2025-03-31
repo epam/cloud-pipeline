@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +49,7 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
     private static final String PATH3 = "/A/B/C/D/E/F/";
     private static final String FILENAME = "file.txt";
     private static final int READ = 1;
+    private static final int WRITE = 1 << 2;
     private static final String USER = "User";
     private static final String GROUP = "Group";
     private static final List<String> NO_PERMISSIONS_PATHS = Arrays.asList("/", "/Y/", "/Y/X/");
@@ -106,7 +108,7 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
         storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
 
         assertThat(storagePathPermissionsDao
-                .findByStorageAndSids(storageId, Arrays.asList(user, group))).hasSize(permissions.size() * 2);
+                .findByStorageAndSids(storageId, Arrays.asList(user, group))).hasSize(permissions.size());
         assertThat(storagePathPermissionsDao
                 .findByStorageAndSids(storageId, Collections.singletonList(user))).hasSize(permissions.size());
         assertThat(storagePathPermissionsDao
@@ -143,6 +145,110 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
 
         // do not fail if no records available
         storagePathPermissionsDao.deleteForStorageId(storageId);
+    }
+
+    @Test
+    @Transactional
+    public void shouldLoadAndDeletePathPermissionsByPathForFilesAndFolders() {
+        final List<StoragePathPermissions> permissions = permissions();
+        final Long storageId = objectStorage.getId();
+
+        storagePathPermissionsDao.batchInsert(permissions.stream()
+                .peek(p -> p.setSidName(USER))
+                .peek(p -> p.setPrincipal(true))
+                .collect(Collectors.toList()), storageId);
+        storagePathPermissionsDao.batchInsert(permissions.stream()
+                .peek(p -> p.setSidName(GROUP))
+                .peek(p -> p.setPrincipal(false))
+                .collect(Collectors.toList()), storageId);
+
+        final List<StoragePathPermissions> folderPermissions = storagePathPermissionsDao
+                .loadByPath(storageId, PATH1, null);
+        assertThat(folderPermissions).hasSize(2);
+        assertThat(folderPermissions.stream()
+                .peek(p -> assertThat(p.getFolderPath()).isEqualTo(PATH1))
+                .peek(p -> assertThat(p.getFileName()).isNull())
+                .map(StoragePathPermissions::getSidName)
+                .collect(Collectors.toList())).contains(USER, GROUP);
+
+        final List<StoragePathPermissions> filePermissions = storagePathPermissionsDao
+                .loadByPath(storageId, PATH1, FILENAME);
+        assertThat(filePermissions).hasSize(2);
+        assertThat(filePermissions.stream()
+                .peek(p -> assertThat(p.getFolderPath()).isEqualTo(PATH1))
+                .peek(p -> assertThat(p.getFileName()).isEqualTo(FILENAME))
+                .map(StoragePathPermissions::getSidName)
+                .collect(Collectors.toList())).contains(USER, GROUP);
+
+        final List<StoragePathPermissions> toDelete = Arrays.asList(
+                StoragePathPermissions.builder()
+                        .folderPath(PATH1)
+                        .build(),
+                StoragePathPermissions.builder()
+                        .folderPath(PATH1)
+                        .fileName(FILENAME)
+                        .build()
+        );
+
+        storagePathPermissionsDao.batchDeleteByPath(toDelete, storageId);
+
+        assertThat(storagePathPermissionsDao.loadByPath(storageId, PATH1, null)).isNullOrEmpty();
+        assertThat(storagePathPermissionsDao.loadByPath(storageId, PATH1, FILENAME)).isNullOrEmpty();
+    }
+
+    @Test
+    @Transactional
+    public void shouldDeletePathPermissionsByPathForFiles() {
+        final List<StoragePathPermissions> permissions = permissions();
+        final Long storageId = objectStorage.getId();
+
+        storagePathPermissionsDao.batchInsert(permissions.stream()
+                .peek(p -> p.setSidName(USER))
+                .peek(p -> p.setPrincipal(true))
+                .collect(Collectors.toList()), storageId);
+        storagePathPermissionsDao.batchInsert(permissions.stream()
+                .peek(p -> p.setSidName(GROUP))
+                .peek(p -> p.setPrincipal(false))
+                .collect(Collectors.toList()), storageId);
+
+        final List<StoragePathPermissions> toDelete = Collections.singletonList(
+                StoragePathPermissions.builder()
+                        .folderPath(PATH1)
+                        .fileName(FILENAME)
+                        .build()
+        );
+
+        storagePathPermissionsDao.batchDeleteByPath(toDelete, storageId);
+
+        assertThat(storagePathPermissionsDao.loadByPath(storageId, PATH1, FILENAME)).isNullOrEmpty();
+        assertThat(storagePathPermissionsDao.loadByPath(storageId, PATH1, null)).hasSize(2);
+    }
+
+    @Test
+    @Transactional
+    public void shouldDeletePathPermissionsByPathForFolders() {
+        final List<StoragePathPermissions> permissions = permissions();
+        final Long storageId = objectStorage.getId();
+
+        storagePathPermissionsDao.batchInsert(permissions.stream()
+                .peek(p -> p.setSidName(USER))
+                .peek(p -> p.setPrincipal(true))
+                .collect(Collectors.toList()), storageId);
+        storagePathPermissionsDao.batchInsert(permissions.stream()
+                .peek(p -> p.setSidName(GROUP))
+                .peek(p -> p.setPrincipal(false))
+                .collect(Collectors.toList()), storageId);
+
+        final List<StoragePathPermissions> toDelete = Collections.singletonList(
+                StoragePathPermissions.builder()
+                        .folderPath(PATH1)
+                        .build()
+        );
+
+        storagePathPermissionsDao.batchDeleteByPath(toDelete, storageId);
+
+        assertThat(storagePathPermissionsDao.loadByPath(storageId, PATH1, null)).isNullOrEmpty();
+        assertThat(storagePathPermissionsDao.loadByPath(storageId, PATH1, FILENAME)).hasSize(2);
     }
 
     @Test
@@ -217,14 +323,14 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
         storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
 
         final Optional<StoragePathPermissions> actual = storagePathPermissionsDao
-                .findClosestFolderPermission(storageId, Collections.singletonList(user),
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
                         PATHS_WITH_PERMISSIONS);
         assertThat(actual.isPresent()).isTrue();
         assertThat(actual.get().getFolderPath()).isEqualTo(PATH1);
         assertThat(actual.get().getFileName()).isNull();
 
         final Optional<StoragePathPermissions> noPermissionsResult = storagePathPermissionsDao
-                .findClosestFolderPermission(storageId, Collections.singletonList(user),
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
                         NO_PERMISSIONS_PATHS);
         assertThat(noPermissionsResult.isPresent()).isFalse();
     }
@@ -232,26 +338,38 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional
     public void shouldCountPermissions() {
-        final List<StoragePathPermissions> permissions = new ArrayList<>(permissions());
-        permissions.add(StoragePathPermissions.builder()
+        final List<StoragePathPermissions> userPermission = new ArrayList<>(permissions());
+        userPermission.add(StoragePathPermissions.builder()
                 .folderPath(PATH0)
                 .mask(READ)
                 .build());
+        final List<StoragePathPermissions> groupPermission = new ArrayList<>(permissions());
+        groupPermission.add(StoragePathPermissions.builder()
+                .folderPath(PATH0)
+                .mask(WRITE)
+                .build());
         final Long storageId = objectStorage.getId();
         final SidImpl user = userSid();
+        final SidImpl group = groupSid();
 
-        storagePathPermissionsDao.batchInsert(permissions, storageId, USER, true);
-        storagePathPermissionsDao.batchInsert(permissions, storageId, GROUP, false);
+        storagePathPermissionsDao.batchInsert(userPermission, storageId, USER, true);
+        storagePathPermissionsDao.batchInsert(groupPermission, storageId, GROUP, false);
 
-        final int permissionsCountWhenGranted = storagePathPermissionsDao
-                .countParentFoldersByStorageAndSids(storageId, Collections.singletonList(user),
+        final Optional<StoragePathPermissions> actualUserPermission = storagePathPermissionsDao
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
                         PATHS_WITH_PERMISSIONS);
-        assertThat(permissionsCountWhenGranted).isEqualTo(2);
+        assertThat(actualUserPermission.isPresent()).isTrue();
+        assertThat(actualUserPermission.get().getMask()).isEqualTo(READ);
 
-        final int permissionsCountWhenNotGranted = storagePathPermissionsDao
-                .countParentFoldersByStorageAndSids(storageId, Collections.singletonList(user),
-                        NO_PERMISSIONS_PATHS);
-        assertThat(permissionsCountWhenNotGranted).isEqualTo(0);
+        final Optional<StoragePathPermissions> actualPermission = storagePathPermissionsDao
+                .findClosestParentFolderPermission(storageId, Arrays.asList(user, group),
+                        PATHS_WITH_PERMISSIONS);
+        assertThat(actualPermission.isPresent()).isTrue();
+        assertThat(actualPermission.get().getMask()).isEqualTo(READ);
+
+        assertThat(storagePathPermissionsDao
+                .findClosestParentFolderPermission(storageId, Collections.singletonList(user),
+                        NO_PERMISSIONS_PATHS).isPresent()).isFalse();
     }
 
     @Test

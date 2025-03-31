@@ -33,6 +33,7 @@ public abstract class AbstractDataStorageItem {
     private Map<String, String> tags;
     @Setter(AccessLevel.PACKAGE)
     private DataStorageItemType type;
+    private Integer mask;
 
     @JsonIgnore
     public static Comparator<AbstractDataStorageItem> getStorageItemComparator() {

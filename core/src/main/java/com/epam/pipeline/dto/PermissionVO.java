@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.datastorage.permissions;
+package com.epam.pipeline.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Map;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StorageFolderListPermissionsContainer {
-    /**
-     * Contains requested folder permission mask. If null no permissions found for parent folders.
-     */
-    private Integer folderMask;
-    /**
-     * Map of file names to permission masks that current folder may contain
-     */
-    private Map<String, Integer> files;
-    /**
-     * Map of folder names to permission masks that current folder may contain
-     */
-    private Map<String, Integer> folders;
+public class PermissionVO {
+    private Boolean principal = true;
+    private String name;
+    private Integer mask;
 }

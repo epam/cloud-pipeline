@@ -91,7 +91,6 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadToolsToMountsForAllStoragesQuery;
     private String deleteToolsToMountQuery;
     private String addToolVersionToMountQuery;
-    private String loadDataStoragesByRootIdsQuery;
     private String loadDataStoragesFilterQuery;
     private String loadDataStorageByTypeQuery;
 
