@@ -19,34 +19,23 @@ package com.epam.pipeline.dto.datastorage.permissions;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.apache.commons.collections4.ListUtils;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @Builder
 public class StorageFolderListPermissionsContainer {
     /**
-     * Indicates whether list permissions are granted for the requested folder.
-     * If so, files/folders fields will be ignored.
-     * If no permissions are granted, only items that exactly match the names of the files or folders will be listed.
+     * Contains requested folder permission mask. If null no permissions found for parent folders.
      */
-    private boolean hasListPermissions;
+    private Integer folderMask;
     /**
-     * List of file names that folder may contain
+     * Map of file names to permission masks that current folder may contain
      */
-    private List<String> files;
+    private Map<String, Integer> files;
     /**
-     * List of folder names that folder may contain
+     * Map of folder names to permission masks that current folder may contain
      */
-    private List<String> folders;
-
-    public boolean folderNotAllowed(final String folderName) {
-        return !hasListPermissions && !ListUtils.emptyIfNull(folders).contains(folderName);
-    }
-
-    public boolean fileNotAllowed(final String fileName) {
-        return !hasListPermissions && !ListUtils.emptyIfNull(files).contains(fileName);
-    }
+    private Map<String, Integer> folders;
 }

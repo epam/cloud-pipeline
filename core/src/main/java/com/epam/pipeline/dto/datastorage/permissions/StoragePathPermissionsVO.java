@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage;
+package com.epam.pipeline.dto.datastorage.permissions;
 
+import com.epam.pipeline.dto.PermissionVO;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.List;
 
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-@EqualsAndHashCode
-public class DataStorageListing {
-    private String nextPageMarker;
-    private Integer parentFolderMask;
-    private List<AbstractDataStorageItem> results;
+@Builder
+public class StoragePathPermissionsVO {
+    /**
+     * Full path for storage item from storage root.
+     */
+    private String path;
+    /**
+     * Indicates file or folder.
+     */
+    private DataStorageItemType type;
+    /**
+     * List of permissions for storage item.
+     */
+    private List<PermissionVO> permissions;
 }

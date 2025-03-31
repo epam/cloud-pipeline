@@ -101,6 +101,7 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -580,10 +581,12 @@ public class DataStorageManager implements SecuredEntityManager {
         final StorageFolderListPermissionsContainer permissionsContainer = getPermissionsContainer(dataStorage, path);
         if (!showArchived && DataStorageType.S3.equals(dataStorage.getType())) {
             final DataStorageLifecycleRestoredListingContainer restoredListing = loadRestoredPaths(dataStorage, path);
-            return storageProviderManager.getRestoredItems(dataStorage, path, showVersion, pageSize, marker,
-                    restoredListing, permissionsContainer);
+            return addPathsMasks(dataStorage, permissionsContainer, storageProviderManager
+                    .getRestoredItems(dataStorage, path, showVersion, pageSize, marker, restoredListing,
+                            permissionsContainer));
         }
-        return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker, permissionsContainer);
+        return addPathsMasks(dataStorage, permissionsContainer, storageProviderManager
+                .getItems(dataStorage, path, showVersion, pageSize, marker, permissionsContainer));
     }
 
     public DataStorageListing filterDataStorageItems(final Long storageId, final String path,
@@ -794,7 +797,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
         checkDataStorageObjectExists(dataStorage, path, version);
-        checkReadPermissionsOnFile(dataStorage, path);
+        checkWritePermissionsOnFile(dataStorage, path);
         tagProviderManager.deleteFileTags(dataStorage, path, version, tags);
         return tagProviderManager.loadFileTags(dataStorage, path, version);
     }
@@ -871,7 +874,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final AbstractDataStorage dataStorage = load(id);
         checkDataStorageVersioning(dataStorage, version);
         checkDataStorageObjectExists(dataStorage, path, version);
-        checkReadPermissionsOnFile(dataStorage, path);
+        checkWritePermissionsOnFile(dataStorage, path);
         return tagProviderManager.updateFileTags(dataStorage, path, version, tagsToAdd, rewrite);
     }
 
@@ -1572,5 +1575,22 @@ public class DataStorageManager implements SecuredEntityManager {
     private boolean needToLoadPathPermissions(final AbstractDataStorage storage) {
         return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
                 && !authManager.isAdmin() && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
+    }
+
+    private DataStorageListing addPathsMasks(final AbstractDataStorage storage,
+                                             final StorageFolderListPermissionsContainer permissionsContainer,
+                                             final DataStorageListing listing) {
+        if (!DataStorageType.S3.equals(storage.getType()) || !storage.isPathPermissionsEnabled()) {
+            return listing;
+        }
+        if (Objects.isNull(permissionsContainer)) {
+            listing.setParentFolderMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
+            ListUtils.emptyIfNull(listing.getResults())
+                    .forEach(r -> r.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK));
+            return listing;
+        }
+        listing.setParentFolderMask(Optional.ofNullable(permissionsContainer.getFolderMask())
+                .orElse(AclPermission.READ.getMask()));
+        return listing;
     }
 }
