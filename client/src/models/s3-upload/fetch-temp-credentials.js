@@ -35,9 +35,36 @@ function timeout (ms, promise) {
   });
 }
 
-export default function fetchTempCredentials (id, permissions, timeoutMs = TIMEOUT) {
+/**
+ * @typedef {Object} TempCredentialsStorageObject
+ * @property {string} storagePath
+ * @property {boolean} [isFolder]
+ */
+
+/**
+ * @typedef {Object} TempCredentialsPermissions
+ * @property {boolean} [read]
+ * @property {boolean} [write]
+ */
+
+/**
+ * @param id
+ * @param permissions {TempCredentialsPermissions}
+ * @param storageObject {TempCredentialsStorageObject}
+ * @param timeoutMs
+ * @returns {Promise<unknown>}
+ */
+export default function fetchTempCredentials (
+  id,
+  permissions,
+  storageObject = undefined,
+  timeoutMs = TIMEOUT
+) {
   const prefix = SERVER + API_PATH;
   const url = `${prefix}/datastorage/tempCredentials/`;
+  const itemPayload = storageObject
+    ? {itemPath: storageObject.storagePath, itemType: storageObject.isFolder ? 'Folder' : 'File'}
+    : {};
   return new Promise((resolve, reject) => {
     try {
       timeout(
@@ -51,7 +78,7 @@ export default function fetchTempCredentials (id, permissions, timeoutMs = TIMEO
             headers: {
               'Content-Type': 'application/json; charset=UTF-8;'
             },
-            body: JSON.stringify([{id, ...permissions}])
+            body: JSON.stringify([{id, ...itemPayload, ...permissions}])
           }
         )
       )

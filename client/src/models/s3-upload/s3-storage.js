@@ -74,13 +74,22 @@ AWS.config.update({
 class S3Storage {
   _s3;
   _storage;
+  /**
+   * @private {TempCredentialsStorageObject}
+   */
+  _storageObject;
   _prefix;
   _credentials;
 
-  constructor (storage) {
+  /**
+   * @param {Object} [storage]
+   * @param {TempCredentialsStorageObject} [storageObject]
+   */
+  constructor (storage, storageObject) {
     if (storage) {
       this.storage = storage;
     }
+    this._storageObject = storageObject;
   };
 
   get storage () {
@@ -111,7 +120,14 @@ class S3Storage {
           return Promise.reject(error || new Error('credentials API is not available'));
         }
         return new Promise((resolve, reject) => {
-          fetchTempCredentials(this._storage.id, {write: true})
+          fetchTempCredentials(
+            this._storage.id,
+            {
+              read: this._storage.read === undefined ? true : this._storage.read,
+              write: this._storage.write === undefined ? true : this._storage.write
+            },
+            this._storageObject
+          )
             .then(resolve)
             .catch((e) => {
               updateCredentialsAttempt(attempt + 1, e)
@@ -153,7 +169,16 @@ class S3Storage {
     return success;
   };
 
-  completeMultipartUploadStorageObject = (name, parts, uploadId) => {
+  refreshCredentialsIfNeeded = async () => {
+    if (this._credentials) {
+      this._credentials.get();
+    }
+    if (!this._s3 || !this._credentials || this._credentials.needsRefresh()) {
+      await this.updateCredentials();
+    }
+  }
+
+  completeMultipartUploadStorageObject = async (name, parts, uploadId) => {
     const params = {
       Bucket: this._storage.path,
       Key: this.prefix + name,
@@ -162,21 +187,29 @@ class S3Storage {
       },
       UploadId: uploadId
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     const upload = this._s3.completeMultipartUpload(params);
     return upload.promise();
   };
 
-  abortMultipartUploadStorageObject = (name, uploadId) => {
+  abortMultipartUploadStorageObject = async (name, uploadId) => {
     const params = {
       Bucket: this._storage.path,
       Key: this.prefix + name,
       UploadId: uploadId
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     const upload = this._s3.abortMultipartUpload(params);
     return upload.promise();
   };
 
-  createMultipartUpload = (name, tags) => {
+  createMultipartUpload = async (name, tags) => {
     const tagging = Object.entries(tags)
       .filter(([, value]) => !!value)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
@@ -186,10 +219,14 @@ class S3Storage {
       Key: this.prefix + name,
       Tagging: tagging.length > 0 ? tagging.join('&') : undefined
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     return this._s3.createMultipartUpload(params).promise();
   };
 
-  multipartUploadStorageObject = (name, body, partNumber, uploadId, uploadProgress) => {
+  multipartUploadStorageObject = async (name, body, partNumber, uploadId, uploadProgress) => {
     const params = {
       Body: body,
       Bucket: this._storage.path,
@@ -197,6 +234,10 @@ class S3Storage {
       PartNumber: partNumber,
       UploadId: uploadId
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     const upload = this._s3.uploadPart(params);
     upload.on('httpUploadProgress', uploadProgress);
     return upload;
@@ -214,7 +255,8 @@ class S3Storage {
       uploadID: currentUploadID,
       partNumber: currentPartNumber,
       multipartParts = [],
-      owner
+      owner,
+      fileName = file.name
     } = options;
     const {
       onPartError,
@@ -232,7 +274,7 @@ class S3Storage {
       Math.ceil(file.size / chunkSizePreference) > chunkCountPreference
         ? Math.ceil(file.size / chunkCountPreference)
         : chunkSizePreference;
-    const upload = (uploadID, part = 0) => {
+    const upload = async (uploadID, part = 0) => {
       const chunks = [];
       let last = false;
       const startPosition = part * chunkSize;
@@ -257,9 +299,9 @@ class S3Storage {
         }));
       }
       const next = last ? null : part + UPLOAD_CONCURRENCY_LIMIT;
-      const promises = chunks.map(chunk => {
-        const uploadStorageObject = this.multipartUploadStorageObject(
-          file.name,
+      const promises = await Promise.all(chunks.map(async (chunk) => {
+        const uploadStorageObject = await this.multipartUploadStorageObject(
+          fileName,
           chunk.body,
           chunk.partNumber + 1,
           uploadID,
@@ -289,7 +331,7 @@ class S3Storage {
             });
         });
         return {abort, promise};
-      });
+      }));
       const abort = promises
         .map(promise => promise.abort)
         .filter(Boolean)
@@ -315,48 +357,41 @@ class S3Storage {
         }
       });
     };
-    const finishUpload = (uploadID, parts, done) => {
-      this.completeMultipartUploadStorageObject(
-        file.name,
-        parts,
-        uploadID
-      )
-        .then(
-          () => done(),
-          (error) => {
-            onPartError && onPartError(parts.length, error.message);
-            done(error.message);
-          }
+    const finishUpload = async (uploadID, parts) => {
+      try {
+        await this.completeMultipartUploadStorageObject(
+          fileName,
+          parts,
+          uploadID
         );
+        return undefined;
+      } catch (error) {
+        onPartError && onPartError(parts.length, error.message);
+        return error.message;
+      }
     };
-    const continueUpload = (uploadID, part = 0) => {
+    const continueUpload = async (uploadID, part = 0) => {
       const {
         abort,
         next,
         promise
-      } = upload(uploadID, part);
+      } = await upload(uploadID, part);
       setAbort && setAbort(abort);
-      return new Promise((resolve) => {
-        promise
-          .then((parts) => {
-            const errorParts = parts.filter(part => !!part.error);
-            if (errorParts.length > 0) {
-              const partNumber = Math.min(...errorParts.map(p => p.partNumber));
-              const errorPart = errorParts.find(p => p.partNumber === partNumber);
-              onPartError && onPartError(partNumber, errorPart.error);
-              resolve(errorPart.error);
-            } else {
-              multipartParts.push(...parts.map(part => part.payload));
-              setMultipartUploadParts && setMultipartUploadParts(uploadID, multipartParts);
-              if (next !== null) {
-                continueUpload(uploadID, next)
-                  .then(resolve);
-              } else {
-                finishUpload(uploadID, multipartParts, resolve);
-              }
-            }
-          });
-      });
+      const parts = await promise;
+      const errorParts = parts.filter(part => !!part.error);
+      if (errorParts.length > 0) {
+        const partNumber = Math.min(...errorParts.map(p => p.partNumber));
+        const errorPart = errorParts.find(p => p.partNumber === partNumber);
+        onPartError && onPartError(partNumber, errorPart.error);
+        return errorPart.error;
+      }
+      multipartParts.push(...parts.map(part => part.payload));
+      setMultipartUploadParts && setMultipartUploadParts(uploadID, multipartParts);
+      if (next !== null) {
+        return continueUpload(uploadID, next);
+      } else {
+      }
+      return finishUpload(uploadID, multipartParts);
     };
     if (currentUploadID && currentPartNumber !== undefined && currentPartNumber !== null) {
       return continueUpload(currentUploadID, currentPartNumber);
