@@ -15,10 +15,10 @@
  */
 
 import React from 'react';
-import {Popover, Row} from 'antd';
-import {inject, observer} from 'mobx-react';
+import { Popover, Row } from 'antd';
+import { inject, observer } from 'mobx-react';
 import classNames from 'classnames';
-import {Link} from 'react-router';
+import { Link } from 'react-router';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
 import RunTagPopover from './run-tag-popover';
@@ -268,7 +268,8 @@ function RunTagsComponent (
     run,
     theme,
     preferences,
-    excludeTags = []
+    excludeTags = [],
+    excludeCustomUserTags = false
   }
 ) {
   if (!run) {
@@ -290,6 +291,9 @@ function RunTagsComponent (
       tagName.toLowerCase().endsWith(suffix.toLowerCase()) &&
       Object.prototype.hasOwnProperty.call(tags, tagName.slice(0, tagName.length - suffix.length));
   };
+
+  const customUserTags = preferences.uiRunsUserTags.map(({tag}) => tag);
+
   for (let tagName in tags) {
     if (
       Object.prototype.hasOwnProperty.call(tags, tagName) &&
@@ -298,7 +302,8 @@ function RunTagsComponent (
     ) {
       if (
         timestampTagHasCounterpart(tagName) ||
-        excludeTags.includes(tagName.toLowerCase())
+        excludeTags.includes(tagName.toLowerCase()) ||
+        (excludeCustomUserTags && customUserTags.includes(tagName))
       ) {
         continue;
       }

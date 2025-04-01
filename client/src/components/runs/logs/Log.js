@@ -16,9 +16,9 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Link} from 'react-router';
+import { inject, observer } from 'mobx-react';
+import { computed, observable } from 'mobx';
+import { Link } from 'react-router';
 import FileSaver from 'file-saver';
 import {
   Alert,
@@ -44,7 +44,7 @@ import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBr
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
-import PipelineRunUpdateSids, {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
+import PipelineRunUpdateSids, { AccessTypes } from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
   canCommitRun,
@@ -57,28 +57,28 @@ import {
 } from '../actions';
 import connect from '../../../utils/connect';
 import displayDate from '../../../utils/displayDate';
-import displayDuration, {displayDurationInSeconds} from '../../../utils/displayDuration';
+import displayDuration, { displayDurationInSeconds } from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import parseQueryParameters from '../../../utils/queryParameters';
 import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
-import {getRunSpotTypeName} from '../../special/spot-instance-names';
-import {TaskLink} from './tasks/TaskLink';
+import { getRunSpotTypeName } from '../../special/spot-instance-names';
+import { TaskLink } from './tasks/TaskLink';
 import RunTaskLogs from '../run-task-logs';
-import StatusIcon, {Statuses} from '../../special/run-status-icon';
+import StatusIcon, { Statuses } from '../../special/run-status-icon';
 import runStatusTooltips from '../../special/run-status-icon/run-status-tooltips';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
-import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
+import { graphIsSupportedForLanguage } from '../../pipelines/version/graph/visualization';
 import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
+import ShareWithForm, { ROLE_ALL, shouldCombineRoles } from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
-import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
-import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
+import { getResumeFailureReason } from '../utilities/map-resume-failure-reason';
+import RunTags, { KNOWN_TAG_NAMES, networkLimitValueRender } from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
@@ -86,11 +86,11 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import { CP_CAP_LIMIT_MOUNTS } from '../../pipelines/launch/form/utilities/parameters';
 import RunName from '../run-name';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
-import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
+import { parseRunServiceUrlConfiguration } from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 import confirmPause from '../actions/pause-confirmation';
 import getRunDurationInfo from '../../../utils/run-duration';
@@ -100,9 +100,9 @@ import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
-import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
-import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
-import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import RunStatuses, { isRunStatusNodePending } from '../../special/run-status-icon/run-statuses';
+import { confirmRunContinuation, continueRun, runSupportsContinue } from '../actions/continue-run';
+import { checkRunActionAvailable, runActions } from '../actions/actions-availability';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -737,6 +737,7 @@ class Logs extends localization.LocalizedReactComponent {
               run={run}
               onlyKnown
               excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+              excludeCustomUserTags
             />
           ),
           additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}

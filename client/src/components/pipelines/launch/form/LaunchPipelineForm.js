@@ -16,9 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import { inject, observer } from 'mobx-react';
 import classNames from 'classnames';
-import {action, computed, observable} from 'mobx';
+import { action, computed, observable } from 'mobx';
 import {
   Alert,
   Button,
@@ -36,7 +36,7 @@ import {
   Spin
 } from 'antd';
 import styles from './LaunchPipelineForm.css';
-import Menu, {MenuItem} from 'rc-menu';
+import Menu, { MenuItem } from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
@@ -48,7 +48,7 @@ import CodeEditor from '../../../special/CodeEditor';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
-import {LimitMountsInput} from './LimitMountsInput';
+import { LimitMountsInput } from './LimitMountsInput';
 import RunName from '../../../runs/run-name';
 
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
@@ -61,12 +61,10 @@ import SystemParametersBrowser from '../dialogs/SystemParametersBrowser';
 import localization from '../../../../utils/localization';
 
 import hints from './hints';
-import FireCloudMethodSnapshotConfigurationsRequest
-from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
-import FireCloudMethodParameters
-from '../../../../models/firecloud/FireCloudMethodParameters';
+import FireCloudMethodSnapshotConfigurationsRequest from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
+import FireCloudMethodParameters from '../../../../models/firecloud/FireCloudMethodParameters';
 import LoadingView from '../../../special/LoadingView';
-import {getSpotTypeName} from '../../../special/spot-instance-names';
+import { getSpotTypeName } from '../../../special/spot-instance-names';
 import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
@@ -95,7 +93,7 @@ import * as parameterUtilities from './utilities/parameter-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
-import {names} from '../../../../models/utils/ContextualPreference';
+import { names } from '../../../../models/utils/ContextualPreference';
 import {
   SubmitButton,
   getInputPaths,
@@ -129,26 +127,25 @@ import {
   CP_CAP_RESCHEDULE_RUN
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
-import AllowedInstancesCountWarning from 
-'./utilities/allowed-instances-count-warning';
+import AllowedInstancesCountWarning from './utilities/allowed-instances-count-warning';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
 import JobNotifications from '../dialogs/job-notifications';
-import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
+import { withCurrentUserAttributes } from '../../../../utils/current-user-attributes';
 import {
   applyParameters as applyGPUScalingParameters,
   readGPUScalingPreference
 } from './utilities/enable-gpu-scaling';
-import {mapObservableNotification} from '../dialogs/job-notifications/job-notification';
+import { mapObservableNotification } from '../dialogs/job-notifications/job-notification';
 import EnumerationParameter from './enumeration-parameter';
 import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
-import {getSelectOptions} from '../../../special/instance-type-info';
+import { getSelectOptions } from '../../../special/instance-type-info';
 import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import PipelineVersionPicker from './pipeline-version-picker';
-import {generateContinueRunParameters} from '../../../runs/actions/continue-run';
+import { generateContinueRunParameters } from '../../../runs/actions/continue-run';
 import {
   getFsConfigFromParameters,
   getParametersFromFsConfig
@@ -5148,7 +5145,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <CustomTagsEditor
           visible={this.state.tagsModalVisible}
           onCancel={this.hideTagsModal}
-          onSave={(tags) => this.props.preferences.updateUiRunsTags(tags)}
+          onSave={(tags) => {
+            this.props.preferences.updateUiRunsTags(tags);
+            this.hideTagsModal();
+          }}
           initialTags={userTags}
         />
       </FormItem>
