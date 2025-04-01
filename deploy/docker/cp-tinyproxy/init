@@ -293,5 +293,12 @@ fi
 
 fi
 
+if [ "$CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED" == "true" ]; then
+    echo "Starting network-event-scrapper"
+    nohup python3 /opt/network-event-scrapper/app.py &> "${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_FILE:-/var/log/cp-network-event-scrapper.log}" &
+else
+    echo "CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED is set to $CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED, network-event-scrapper is disabled"
+fi
+
 # Just wait on
 sleep infinity

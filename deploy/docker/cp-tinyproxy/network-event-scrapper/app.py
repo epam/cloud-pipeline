@@ -4,7 +4,7 @@ import platform
 
 from elasticsearch_client import ElasticSearchClient
 from host_cache import InMemoryRunHostsCache, KubeEventWatcher
-from tinyproxy_log_watcher import TinyproxyLogWatcher
+from tinyproxy_log_scrapper import TinyproxyLogScrapper
 
 if __name__ == '__main__':
     """
@@ -28,13 +28,13 @@ if __name__ == '__main__':
     
     Then sends it to the configured ELK server.
     """
-    tinyproxy_host = os.getenv('CP_TINYPROXY_HOSTNAME', platform.node())
-    log_file_to_read = os.getenv('CP_TINYPROXY_NETWORK_EVENT_WATCHER_LOG_SOURCE_FILE', None)
-    sync_error_delay = int(os.getenv('CP_TINYPROXY_NETWORK_EVENT_WATCHER_SYNC_ERROR_DELAY', '10'))
-    sync_log_level = os.getenv('CP_TINYPROXY_NETWORK_EVENT_WATCHER_LOG_LEVEL', 'INFO')
-    elasticsearch_host = os.getenv('CP_TINYPROXY_NETWORK_EVENT_WATCHER_ELASTICSEARCH_HOST', None)
-    elasticsearch_index = os.getenv('CP_TINYPROXY_NETWORK_EVENT_WATCHER_ELASTICSEARCH_INDEX_NAME', None)
-    elasticsearch_batch_size = int(os.getenv('CP_TINYPROXY_NETWORK_EVENT_WATCHER_ELASTICSEARCH_BATCH_SIZE', "16"))
+    tinyproxy_host = os.getenv('CP_TP_HOSTNAME', platform.node())
+    log_file_to_read = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE', None)
+    sync_error_delay = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_SYNC_ERROR_DELAY', '10'))
+    sync_log_level = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_LEVEL', 'INFO')
+    elasticsearch_host = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST', None)
+    elasticsearch_index = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_INDEX_NAME', None)
+    elasticsearch_batch_size = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_BATCH_SIZE', "16"))
 
 
     logging.basicConfig(level=sync_log_level,
@@ -42,14 +42,14 @@ if __name__ == '__main__':
 
     if not log_file_to_read:
         logging.error(
-            "Parameter CP_TINYPROXY_NETWORK_EVENT_WATCHER_LOG_SOURCE_FILE is required. Exiting."
+            "Parameter CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE is required. Exiting."
         )
         exit(1)
 
     if not elasticsearch_host or not elasticsearch_index:
         logging.error(
-            "Parameters CP_TINYPROXY_NETWORK_EVENT_WATCHER_ELASTICSEARCH_HOST and "
-            "CP_TINYPROXY_NETWORK_EVENT_WATCHER_ELASTICSEARCH_INDEX_NAME"
+            "Parameters CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST and "
+            "CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_INDEX_NAME"
             "are required. Exiting."
         )
         exit(1)
@@ -57,9 +57,9 @@ if __name__ == '__main__':
     run_host_cache = InMemoryRunHostsCache()
     elasticsearch = ElasticSearchClient(elasticsearch_host, elasticsearch_index, elasticsearch_batch_size)
     kube_watcher = KubeEventWatcher(run_host_cache, error_delay=sync_error_delay)
-    log_watcher = TinyproxyLogWatcher(tinyproxy_host, log_file_to_read, run_host_cache, elasticsearch)
+    log_scrapper = TinyproxyLogScrapper(tinyproxy_host, log_file_to_read, run_host_cache, elasticsearch)
 
     kube_watcher.start()
-    log_watcher.start()
+    log_scrapper.start()
     kube_watcher.join()
-    log_watcher.join()
+    log_scrapper.join()

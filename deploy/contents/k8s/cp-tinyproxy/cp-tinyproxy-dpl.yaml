@@ -36,9 +36,15 @@ spec:
           volumeMounts:
             - mountPath: /opt/tinyproxy/logs
               name: tinyproxy-logs
+            - mountPath: /root/.kube
+              name: kube-config
+              readOnly: true
       volumes:
         - name: tinyproxy-logs
           hostPath:
             path: /opt/tinyproxy/logs
+        - name: kube-config
+          hostPath:
+            path: /root/.kube
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

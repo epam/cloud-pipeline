@@ -7,7 +7,7 @@ import datetime
 
 from common import NetworkEvent
 
-class TinyproxyLogWatcher(threading.Thread):
+class TinyproxyLogScrapper(threading.Thread):
 
     LOG_LINE_REGEXP = "CONNECT[\s\t]+(\w+\s\d{1,2}\s\d{2}:\d{2}:\d{2}.\d{3})[\s\t]\[.*\]:[\s\t](Request|Connect)[\s\t]\(file descriptor (\d+)\):[\s\t](.+)"
     CONNECT_PAYLOAD_REGEXP = "(\d+\.\d+\.\d+.\d+) at \[\d+\.\d+\.\d+\.\d+\]"
@@ -27,7 +27,7 @@ class TinyproxyLogWatcher(threading.Thread):
             if not line.startswith("CONNECT"):
                 continue
 
-            parsed_event = re.search(TinyproxyLogWatcher.LOG_LINE_REGEXP, line)
+            parsed_event = re.search(TinyproxyLogScrapper.LOG_LINE_REGEXP, line)
             if parsed_event:
                 date = parsed_event.group(1)
                 action = parsed_event.group(2)
@@ -63,7 +63,7 @@ class TinyproxyLogWatcher(threading.Thread):
         self._elastichsearch_client.send_event(network_event)
 
     def parse_event(self, date, payload):
-        parsed_payload = re.search(TinyproxyLogWatcher.CONNECT_PAYLOAD_REGEXP, payload)
+        parsed_payload = re.search(TinyproxyLogScrapper.CONNECT_PAYLOAD_REGEXP, payload)
 
         timestamp = self.parse_date_str(date)
 
