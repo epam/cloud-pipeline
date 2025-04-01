@@ -30,12 +30,12 @@ if __name__ == '__main__':
     
     Then sends it to the configured ELK server.
     """
-    tinyproxy_host = os.getenv('CP_TP_HOSTNAME', platform.node())
+    tinyproxy_host = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_HOSTNAME', platform.node())
     log_file_to_read = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE', None)
     sync_error_delay = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_SYNC_ERROR_DELAY', '10'))
     sync_log_level = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_LEVEL', 'INFO')
     elasticsearch_host = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST', None)
-    elasticsearch_index = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_INDEX_NAME', None)
+    elasticsearch_index = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_INDEX_NAME', "cp-network-events")
     elasticsearch_batch_size = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_BATCH_SIZE', "16"))
     log_dir = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR', "/var/log/cp-network-event-scrapper")
 

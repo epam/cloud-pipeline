@@ -18,6 +18,7 @@ CP_TP_STREAM_PROXY_ENABLED="${CP_TP_STREAM_PROXY_ENABLED:-true}"
 
 CP_TP_NODE_NAME="${MY_NODE_NAME:-$(hostname)}"
 CP_TP_LOGS_DIR="/opt/tinyproxy/logs/$CP_TP_NODE_NAME"
+CP_TP_LOGS_FILE="$CP_TP_LOGS_DIR/tinyproxy.log"
 
 mkdir -p "$CP_TP_LOGS_DIR"
 mkdir -p /var/run/tinyproxy
@@ -46,7 +47,7 @@ Timeout $CP_TP_TIMEOUT
 
 DefaultErrorFile "$CP_TP_LOGS_DIR/default.html"
 StatFile "/opt/tinyproxy/stats.json"
-Logfile "$CP_TP_LOGS_DIR/tinyproxy.log"
+Logfile "$CP_TP_LOGS_FILE"
 LogLevel $CP_TP_LOG_LEVEL
 PidFile "/var/run/tinyproxy/tinyproxy.pid"
 
@@ -295,8 +296,13 @@ fi
 
 if [ "$CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED" == "true" ]; then
     echo "Starting network-event-scrapper"
-    CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR=${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR:-/var/log/cp-network-event-scrapper}
+    export CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR=${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR:-/var/log/cp-network-event-scrapper}
     mkdir -p "${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR}"
+    export CP_TP_HOSTNAME="${CP_TP_NODE_NAME}"
+    export CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE="${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE:-${CP_TP_LOGS_FILE}}"
+    if [ -z "${CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST}" ]; then
+        export CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST="http://${CP_HEAPSTER_ELK_INTERNAL_HOST}:${CP_HEAPSTER_ELK_INTERNAL_PORT}"
+    fi
     nohup python3 /opt/network-event-scrapper/app.py &
 else
     echo "CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED is set to $CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED, network-event-scrapper is disabled"
