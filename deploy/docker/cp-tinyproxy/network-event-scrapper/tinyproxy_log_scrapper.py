@@ -70,11 +70,12 @@ class TinyproxyLogScrapper(threading.Thread):
         if parsed_payload:
             host_ip = parsed_payload.group(1)
             host = self._run_host_cache.get_host_by_ip(host_ip)
-            return NetworkEvent(
-                reporter=self._tinyproxy_host, timestamp=timestamp,
-                host_name=host.host_name, host_ip=host_ip,
-                run_id=host.run_id, method=None, resource=None, resource_host=None
-            )
+            if host:
+                return NetworkEvent(
+                    reporter=self._tinyproxy_host, timestamp=timestamp,
+                    host_name=host.host_name, host_ip=host_ip,
+                    run_id=host.run_id, method=None, resource=None, resource_host=None
+                )
         return None
 
     def update_event(self, network_event, date, payload):

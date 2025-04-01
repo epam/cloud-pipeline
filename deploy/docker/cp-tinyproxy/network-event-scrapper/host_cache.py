@@ -26,7 +26,7 @@ class InMemoryRunHostsCache:
         self._run_to_host[host_action.run_id] = host
 
     def get_host_by_ip(self, ip):
-        return self._ip_to_host.get(ip, {})
+        return self._ip_to_host.get(ip, None)
 
 class KubeEventWatcher(threading.Thread):
 
