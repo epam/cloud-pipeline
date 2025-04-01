@@ -269,7 +269,8 @@ function RunTagsComponent (
     theme,
     preferences,
     excludeTags = [],
-    excludeCustomUserTags = false
+    excludeCustomUserTags = false,
+    showOnlyCustomUserTags = false
   }
 ) {
   if (!run) {
@@ -303,7 +304,8 @@ function RunTagsComponent (
       if (
         timestampTagHasCounterpart(tagName) ||
         excludeTags.includes(tagName.toLowerCase()) ||
-        (excludeCustomUserTags && customUserTags.includes(tagName))
+        (excludeCustomUserTags && customUserTags.includes(tagName)) ||
+        (showOnlyCustomUserTags && !customUserTags.includes(tagName))
       ) {
         continue;
       }

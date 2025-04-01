@@ -1970,6 +1970,20 @@ class Logs extends localization.LocalizedReactComponent {
         </tr>
       );
 
+      const userTags = (
+        <tr>
+          <th>User tags: </th>
+          <td>
+            <RunTags
+              run={run}
+              onlyKnown
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+              showOnlyCustomUserTags
+            />
+          </td>
+        </tr>
+      );
+
       if (runningDate && runTasks.length) {
         startedTime = (
           <tr>
@@ -2079,6 +2093,7 @@ class Logs extends localization.LocalizedReactComponent {
                     </tr>
                   ) : undefined
               }
+              {userTags}
               {scheduledTime}
               {startedTime}
               {finishTime}
