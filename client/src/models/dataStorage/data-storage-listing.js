@@ -31,6 +31,17 @@ const mbToBytes = mb => {
   return Math.round(mb * (1024 ** 2));
 };
 
+function generateStorageItemMapper (storageMask) {
+  const mapper = (o) => ({
+    ...o,
+    mask: o.mask ?? storageMask,
+    versions: Object.entries(o.versions || {}).map(([version, versionData]) => ({
+      [version]: mapper(versionData)
+    })).reduce((acc, curr) => ({...acc, ...curr}), {})
+  });
+  return mapper;
+}
+
 /**
  * @typedef {Object} CorrectPathOptions
  * @property {string} [delimiter=/]
@@ -242,6 +253,7 @@ class DataStorageListing {
   @observable pageLoaded = false;
   @observable pageError = undefined;
   @observable pageElements = [];
+  @observable _pageInfo = undefined;
   /**
    * Current page path. Leading & trailing slashes are removed.
    * "undefined" is returned if current path is root
@@ -387,6 +399,11 @@ class DataStorageListing {
     return this.token;
   };
 
+  @computed
+  get pageInfo () {
+    return this._pageInfo;
+  }
+
   @action
   clearMarkersForPath = (path, including = true) => {
     this.markers = resetMarkersForPath(
@@ -453,6 +470,7 @@ class DataStorageListing {
     }
     this._increaseUniqueToken();
     this.pageElements = [];
+    this._pageInfo = undefined;
     this.pagePath = undefined;
     this.pageError = undefined;
     this.pagePending = false;
@@ -551,6 +569,12 @@ class DataStorageListing {
       ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
       : undefined;
     try {
+      await Promise.all([
+        this.storageRequest.fetchIfNeededOrWait()
+      ]);
+      const {
+        mask: storageMask
+      } = this.info ?? {};
       const request = new DataStorageFilter(
         this.storageId,
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined,
@@ -577,14 +601,25 @@ class DataStorageListing {
       if (!request.loaded) {
         throw new Error('Error loading page');
       }
-      const {results = [], nextPageMarker} = request.value || {};
+      const {
+        results = [],
+        nextPageMarker,
+        parentFolderMask
+      } = request.value || {};
       this.resultsTruncated = !!nextPageMarker;
       this.filtersApplied = true;
-      this.pageElements = results;
+      const mapper = generateStorageItemMapper(storageMask);
+      this.pageElements = results.map(mapper);
+      this._pageInfo = {
+        path: pathCorrected ?? '/',
+        name: (pathCorrected ?? '/').split('/').pop(),
+        mask: parentFolderMask ?? storageMask
+      };
       this.pageLoaded = true;
       this.pagePath = pathCorrected;
     } catch (error) {
       this.pageElements = [];
+      this._pageInfo = undefined;
       this.pageError = error.message;
       this.pageLoaded = false;
       this.pagePath = pathCorrected;
@@ -631,11 +666,21 @@ class DataStorageListing {
         throw new Error('Error loading page');
       }
       const {
+        mask: storageMask
+      } = this.info ?? {};
+      const {
         results = [],
+        parentFolderMask,
         nextPageMarker
       } = request.value || {};
       submitChanges(() => {
-        this.pageElements = results;
+        const mapper = generateStorageItemMapper(storageMask);
+        this.pageElements = results.map(mapper);
+        this._pageInfo = {
+          path: pathCorrected ?? '/',
+          name: (pathCorrected ?? '/').split('/').pop(),
+          mask: parentFolderMask ?? storageMask
+        };
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
         this.markers = insertNextPageMarker(this.path, nextPageMarker, this.markers);
@@ -644,6 +689,7 @@ class DataStorageListing {
     } catch (error) {
       submitChanges(() => {
         this.pageElements = [];
+        this._pageInfo = undefined;
         this.pageError = error.message;
         this.pageLoaded = false;
         this.pagePath = pathCorrected;
