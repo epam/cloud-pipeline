@@ -14,16 +14,16 @@ CP_ES_NETEVENT_MAPPING = {
     "netevent": {
         "properties": {
             "reporter": {
-                "type": "text"
+                "type": "keyword"
             },
             "timestamp": {
                 "type": "date"
             },
             "host_name": {
-                "type": "text"
+                "type": "keyword"
             },
             "host_ip": {
-                "type": "text"
+                "type": "keyword"
             },
             "runid": {
                 "type": "integer"
@@ -32,10 +32,10 @@ CP_ES_NETEVENT_MAPPING = {
                 "type": "text"
             },
             "resource_host": {
-                "type": "text"
+                "type": "keyword"
             },
             "method": {
-                "type": "text"
+                "type": "keyword"
             }
         }
     }
