@@ -18,16 +18,16 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -46,14 +46,20 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
     private final Map<DataStorageType, TemporaryCredentialsGenerator> credentialsGenerators;
     private final MessageHelper messageHelper;
     private final DataStorageManager dataStorageManager;
+    private final StoragePathPermissionsService storagePathPermissionsService;
+    private final AuthManager authManager;
 
     public TemporaryCredentialsManagerImpl(final List<TemporaryCredentialsGenerator> credentialsGenerators,
                                            final MessageHelper messageHelper,
-                                           final DataStorageManager dataStorageManager) {
+                                           final DataStorageManager dataStorageManager,
+                                           final StoragePathPermissionsService storagePathPermissionsService,
+                                           final AuthManager authManager) {
         this.credentialsGenerators = CommonUtils.groupByKey(credentialsGenerators,
                 TemporaryCredentialsGenerator::getStorageType);
         this.messageHelper = messageHelper;
         this.dataStorageManager = dataStorageManager;
+        this.storagePathPermissionsService = storagePathPermissionsService;
+        this.authManager = authManager;
     }
 
     @SensitiveStorageOperation
@@ -71,9 +77,12 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
 
         final Map<Long, AbstractDataStorage> storagesById = storages.stream()
                 .collect(Collectors.toMap(AbstractDataStorage::getId, Function.identity()));
-        actions.forEach(action -> prepareAction(action, storagesById));
+        final List<DataStorageAction> preparedActions = actions.stream()
+                .peek(action -> validatePathAction(action, storagesById.get(action.getId())))
+                .filter(action -> filterNotAllowedAction(storagesById.get(action.getId()), action))
+                .map(action -> prepareAction(action, storagesById)).collect(Collectors.toList());
 
-        return credentialsGenerator.generate(actions, storages);
+        return credentialsGenerator.generate(preparedActions, storages);
     }
 
     private TemporaryCredentialsGenerator getCredentialsGenerator(final List<AbstractDataStorage> storages) {
@@ -84,10 +93,12 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
                                 storage.getName(), storage.getType())));
     }
 
-    private void prepareAction(final DataStorageAction action, final Map<Long, AbstractDataStorage> storagesById) {
+    private DataStorageAction prepareAction(final DataStorageAction action,
+                                            final Map<Long, AbstractDataStorage> storagesById) {
         final AbstractDataStorage loadedDataStorage = storagesById.get(action.getId());
         action.setBucketName(loadedDataStorage.getRoot());
         action.setPath(loadedDataStorage.getPath());
+        return action;
     }
 
     private AbstractDataStorage verifyAllTypesAreSameAngGetStorage(final List<AbstractDataStorage> storages) {
@@ -103,5 +114,44 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
             log.debug("Storage ID was not specified for action. This action will be skipped.");
         }
         return Objects.nonNull(action.getId());
+    }
+
+    private void validatePathAction(final DataStorageAction action, final AbstractDataStorage storage) {
+        Assert.state(DataStorageType.S3.equals(storage.getType()) || StringUtils.isBlank(action.getItemPath()),
+                String.format("Item path not supported for %s storage yet.", storage.getType()));
+        if (!DataStorageType.S3.equals(storage.getType()) || StringUtils.isBlank(action.getItemPath())) {
+            // no path action check need
+            return;
+        }
+        Assert.state(Objects.nonNull(action.getItemType()), "Item type is required for specified item path.");
+    }
+
+    private boolean filterNotAllowedAction(final AbstractDataStorage storage, final DataStorageAction action) {
+        if (StringUtils.isBlank(action.getItemPath())) {
+            return true;
+        }
+        if (!storage.isPathPermissionsEnabled()) {
+            action.setItemPath(null);
+            action.setItemType(null);
+            return true;
+        }
+        if (authManager.isAdmin() || storage.getOwner().equalsIgnoreCase(authManager.getAuthorizedUser())) {
+            return true;
+        }
+        return DataStorageItemType.File.equals(action.getItemType())
+                ? isActionAllowedForFilePath(storage.getId(), action)
+                : isActionAllowedForFolderPath(storage.getId(), action);
+    }
+
+    private boolean isActionAllowedForFilePath(final Long storageId, final DataStorageAction action) {
+        return action.isWrite()
+                ? storagePathPermissionsService.isWriteAllowedToFile(storageId, action.getItemPath())
+                : storagePathPermissionsService.isReadAllowedToFile(storageId, action.getItemPath());
+    }
+
+    private boolean isActionAllowedForFolderPath(final Long storageId, final DataStorageAction action) {
+        return action.isWrite()
+                ? storagePathPermissionsService.isWriteAllowedToFolder(storageId, action.getItemPath())
+                : storagePathPermissionsService.isReadAllowedToFolder(storageId, action.getItemPath());
     }
 }
