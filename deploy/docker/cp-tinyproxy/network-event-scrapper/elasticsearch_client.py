@@ -1,6 +1,14 @@
+import datetime
+
 from elasticsearch5 import Elasticsearch
 from elasticsearch5 import helpers
 import logging
+
+ES_INDEX_ROLLOVER_CONDITION = {
+  "conditions": {
+    "max_age": "1d"
+  }
+}
 
 CP_ES_NETEVENT_MAPPING = {
     "netevent": {
@@ -45,6 +53,7 @@ class ElasticSearchClient:
         self.elasticsearch_host = elasticsearch_host
         self.client = Elasticsearch(elasticsearch_host)
         self.crete_index_if_not_exists()
+        self.last_rollover = self.try_to_rollover_index()
 
     def crete_index_if_not_exists(self):
         if not self.client.cat.aliases(name=self.index_alias):
@@ -61,10 +70,19 @@ class ElasticSearchClient:
                 }
             )
 
+    def try_to_rollover_index(self):
+        if self.client.indices.rollover(alias=self.index_alias, body=ES_INDEX_ROLLOVER_CONDITION):
+            return datetime.datetime.now()
+        return None
+
     def send_event(self, network_event):
         if len(self.batch) < self.batch_size:
             self.batch.append(network_event)
             return
+
+        if not self.last_rollover or datetime.datetime.now() - self.last_rollover > datetime.timedelta(hours=1):
+            self.last_rollover = self.try_to_rollover_index()
+
         helpers.bulk(self.client, self.generate_elk_docs())
         self.batch = []
 

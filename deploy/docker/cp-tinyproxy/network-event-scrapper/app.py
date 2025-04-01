@@ -1,6 +1,8 @@
+import datetime
 import logging
 import os
 import platform
+from logging.handlers import TimedRotatingFileHandler
 
 from elasticsearch_client import ElasticSearchClient
 from host_cache import InMemoryRunHostsCache, KubeEventWatcher
@@ -35,10 +37,15 @@ if __name__ == '__main__':
     elasticsearch_host = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST', None)
     elasticsearch_index = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_INDEX_NAME', None)
     elasticsearch_batch_size = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_BATCH_SIZE', "16"))
+    log_dir = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR', "/var/log/cp-network-event-scrapper")
 
-
-    logging.basicConfig(level=sync_log_level,
-                        format='%(asctime)s [%(levelname)s] %(message)s')
+    log_handler = [
+        TimedRotatingFileHandler(
+            os.path.join(log_dir, "cp-network-event-scrapper.log"),
+            backupCount=20, atTime=datetime.time(0, 0)
+        )
+    ]
+    logging.basicConfig(level=sync_log_level, handlers=log_handler, format='%(asctime)s [%(levelname)s] %(message)s')
 
     if not log_file_to_read:
         logging.error(

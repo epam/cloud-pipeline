@@ -295,7 +295,9 @@ fi
 
 if [ "$CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED" == "true" ]; then
     echo "Starting network-event-scrapper"
-    nohup python3 /opt/network-event-scrapper/app.py &> "${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_FILE:-/var/log/cp-network-event-scrapper.log}" &
+    CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR=${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR:-/var/log/cp-network-event-scrapper}
+    mkdir -p "${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR}"
+    nohup python3 /opt/network-event-scrapper/app.py &
 else
     echo "CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED is set to $CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED, network-event-scrapper is disabled"
 fi
