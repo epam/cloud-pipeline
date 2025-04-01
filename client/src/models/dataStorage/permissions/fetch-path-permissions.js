@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-.path-components-container {
-  cursor: text;
-  width: 100%;
-}
+import Remote from '../../basic/Remote';
 
-.breadcrumb-item {
-  padding: 5px 0;
+export default class FetchPathPermissions extends Remote {
+  constructor (storageId, storagePath, type = 'File') {
+    super();
+    let path = storagePath;
+    if (!path || path === '') {
+      path = '/';
+    }
+    // eslint-disable-next-line max-len
+    this.url = `datastorage/${storageId}/paths/permissions/sids?path=${encodeURIComponent(path)}&type=${type}`;
+  }
 }

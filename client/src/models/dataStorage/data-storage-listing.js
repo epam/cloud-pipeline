@@ -308,6 +308,7 @@ class DataStorageListing {
   @observable pageLoaded = false;
   @observable pageError = undefined;
   @observable _pageElements = [];
+  @observable _pageInfo = undefined;
   /**
    * Current page path. Leading & trailing slashes are removed.
    * "undefined" is returned if current path is root
@@ -507,6 +508,11 @@ class DataStorageListing {
   }
 
   @computed
+  get pageInfo () {
+    return this._pageInfo;
+  }
+
+  @computed
   get currentSorter () {
     return this._sorter;
   }
@@ -601,6 +607,7 @@ class DataStorageListing {
     this._increaseUniqueToken();
     this._increaseUniqueNgbSettingsToken();
     this._pageElements = [];
+    this._pageInfo = undefined;
     this.pagePath = undefined;
     this.pageError = undefined;
     this.pagePending = false;
@@ -854,14 +861,24 @@ class DataStorageListing {
       if (!request.loaded) {
         throw new Error('Error loading page');
       }
-      const {results = [], nextPageMarker} = request.value || {};
+      const {
+        results = [],
+        nextPageMarker,
+        parentFolderMask = 0b1111
+      } = request.value || {};
       this.resultsTruncated = !!nextPageMarker;
       this.filtersApplied = true;
       this._pageElements = results;
+      this._pageInfo = {
+        path: pathCorrected ?? '/',
+        name: (pathCorrected ?? '/').split('/').pop(),
+        mask: parentFolderMask
+      };
       this.pageLoaded = true;
       this.pagePath = pathCorrected;
     } catch (error) {
       this._pageElements = [];
+      this._pageInfo = undefined;
       this.pageError = error.message;
       this.pageLoaded = false;
       this.pagePath = pathCorrected;
@@ -915,10 +932,16 @@ class DataStorageListing {
       }
       const {
         results = [],
+        parentFolderMask = 0b1111,
         nextPageMarker
       } = request.value || {};
       submitChanges(() => {
         this._pageElements = results;
+        this._pageInfo = {
+          path: pathCorrected ?? '/',
+          name: (pathCorrected ?? '/').split('/').pop(),
+          mask: parentFolderMask
+        };
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
         if (this.sortingApplied) {
@@ -933,6 +956,7 @@ class DataStorageListing {
     } catch (error) {
       submitChanges(() => {
         this._pageElements = [];
+        this._pageInfo = undefined;
         this.pageError = error.message;
         this.pageLoaded = false;
         this.pagePath = pathCorrected;
@@ -964,7 +988,7 @@ class DataStorageListing {
     );
     ngbSettingsFile = ngbSettingsFile.concat('ngb.settings');
     const fileExistsOnPage = !!this.pageElements
-      .find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+      .find((o) => (o.path || '').toLowerCase() === ngbSettingsFile.toLowerCase());
     if (fileExistsOnPage) {
       submitChanges(() => {
         this.ngbSettingsFileExists = true;

@@ -111,6 +111,10 @@ import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
 import {getNgbFileName, isNgbFile, openNgbFile} from './ngb-files';
+import {
+  StorageItemPermissionsButton,
+  StorageItemPermissionsModal
+} from './components/storage-item-permissions';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -179,6 +183,7 @@ export default class DataStorage extends React.Component {
     selectedItems: [],
     itemsToShare: [],
     shareDialogVisible: false,
+    itemsPermissionsDialogVisible: false,
     renameItem: null,
     createFolder: false,
     createFile: false,
@@ -250,6 +255,13 @@ export default class DataStorage extends React.Component {
         this.props.authenticatedUserInfo.value.admin ||
         this.props.preferences.storageAllowSignedUrls
       )
+      : false;
+  }
+
+  @computed
+  get isAdmin () {
+    return this.props.authenticatedUserInfo.loaded
+      ? this.props.authenticatedUserInfo.value.admin
       : false;
   }
 
@@ -439,14 +451,14 @@ export default class DataStorage extends React.Component {
       roleModel.isManager.storage(this) ||
       roleModel.isManager.storageTag(this) ||
       roleModel.isManager.storageAdmin(this);
-    const storageFileTagsEditable = this.storageTagRestrictedAccess
-      ? restrictedAccessCheck
-      // If restricted tag access mode is off, all users with WRITE permissions are
-      // allowed to edit file's tags.
-      : this.storage.writeAllowed;
-    return this.state.selectedFile
-      ? storageFileTagsEditable
-      : this.storage.writeAllowed;
+    if (this.state.selectedFile) {
+      return this.storageTagRestrictedAccess
+        ? restrictedAccessCheck
+        // If restricted tag access mode is off, all users with WRITE permissions are
+        // allowed to edit file's tags.
+        : this.storage.writeAllowed && roleModel.writeAllowed(this.state.selectedFile);
+    }
+    return this.storage.writeAllowed;
   }
 
   get isReferenceStorage () {
@@ -485,7 +497,8 @@ export default class DataStorage extends React.Component {
       mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
       mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
       sensitive: storage.sensitive,
-      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
+      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined,
+      pathPermissionsEnabled: storage.pathPermissionsEnabled
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
@@ -614,9 +627,13 @@ export default class DataStorage extends React.Component {
           const versionRestored = restoreStatus.restoreVersions &&
             restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
+          const itemPermissions = {
+            mask: versions[version].mask ?? 0b1111
+          };
           childList.push({
             key: `${item.type}_${item.path}_${version}`,
             ...versions[version],
+            ...itemPermissions,
             downloadable: item.type.toLowerCase() === 'file' &&
               !versions[version].deleteMarker &&
               !sensitive &&
@@ -624,7 +641,8 @@ export default class DataStorage extends React.Component {
               downloadable,
             editable: versions[version].version === item.version &&
               writeAllowed &&
-              !versions[version].deleteMarker,
+              !versions[version].deleteMarker &&
+              roleModel.writeAllowed(itemPermissions),
             deletable: writeAllowed,
             selectable: false,
             shareAvailable: false,
@@ -669,11 +687,15 @@ export default class DataStorage extends React.Component {
           (active || restored) &&
           downloadable
         );
+      const itemPermissions = {
+        mask: i.mask ?? 0b1111
+      };
       return {
         key: `${i.type}_${i.path}`,
         ...i,
+        ...itemPermissions,
         downloadable: isDownloadable,
-        editable: writeAllowed && !i.deleteMarker,
+        editable: writeAllowed && !i.deleteMarker && roleModel.writeAllowed(itemPermissions),
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
         deletable: writeAllowed,
         children: getChildList(i, i.versions, sensitive),
@@ -1265,20 +1287,6 @@ export default class DataStorage extends React.Component {
 
   actionsRenderer = (type, item) => {
     const actions = [];
-    let separatorIndex = 0;
-    const separator = () => {
-      separatorIndex += 1;
-      return (
-        <div
-          key={`separator_${separatorIndex}`}
-          style={{
-            marginLeft: 5,
-            width: 3,
-            height: 12,
-            display: 'inline-block'
-          }} />
-      );
-    };
     if (item.downloadable) {
       if (!this.isOmicsStore) {
         actions.push((
@@ -1343,12 +1351,15 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if ((item.isVersion
-      ? item.deletable && this.versionControlsEnabled
-      : item.deletable) &&
+    if (
+      roleModel.writeAllowed(item) &&
+      (
+        item.isVersion
+          ? item.deletable && this.versionControlsEnabled
+          : item.deletable
+      ) &&
       (!this.isOmicsStore || this.isOmicsFolder)
     ) {
-      actions.push(separator());
       actions.push(
         <Button
           id={`remove ${item.name}`}
@@ -1430,6 +1441,10 @@ export default class DataStorage extends React.Component {
       shareDialogVisible: false
     });
   };
+
+  openItemsPermissionsDialog = () => this.setState({itemsPermissionsDialogVisible: true});
+
+  closeItemsPermissionsDialog = () => this.setState({itemsPermissionsDialogVisible: false});
 
   openEditFileForm = async (item) => {
     if (!this.storage.infoLoaded) {
@@ -1978,9 +1993,21 @@ export default class DataStorage extends React.Component {
     return this.state.selectedItems.length > 0;
   }
 
+  get userCanChangeStorageItemsPermissions () {
+    const info = this.storage.info;
+    if (!info) {
+      return false;
+    }
+    const {
+      pathPermissionsEnabled,
+      mask
+    } = info;
+    return pathPermissionsEnabled && (this.isAdmin || roleModel.isOwner({mask}));
+  }
+
   selectAll = (type) => {
     const selectedItems = this.items.filter(item => {
-      if (!item.editable && !item.downloadable) {
+      if (!item.editable && !item.downloadable && !item.shareAvailable) {
         return false;
       }
       if (type) {
@@ -2220,7 +2247,8 @@ export default class DataStorage extends React.Component {
       removeAll: 'remove-all',
       download: 'download',
       restoreOmics: 'restoreOmics',
-      downloadOmics: 'downloadOmics'
+      downloadOmics: 'downloadOmics',
+      permissions: 'permissions'
     };
     const clearAction = {
       key: Keys.clear,
@@ -2253,6 +2281,12 @@ export default class DataStorage extends React.Component {
       available: this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
+    };
+    const permissionsAction = {
+      key: Keys.permissions,
+      title: 'Manage permissions',
+      available: this.userCanChangeStorageItemsPermissions && selectedItems.length > 0,
+      icon: 'setting'
     };
     const getShareActionTitle = () => {
       if (itemsAvailableForShare.length === 1) {
@@ -2314,6 +2348,9 @@ export default class DataStorage extends React.Component {
     appendAction(generateURLAction);
     appendAction(downloadAction);
     appendAction(downloadOmicsAction);
+    if (this.userCanChangeStorageItemsPermissions) {
+      appendAction(permissionsAction);
+    }
     appendDivider();
     appendAction(clearAction);
     appendDivider();
@@ -2352,6 +2389,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.downloadOmics:
           handleDownloadOmicsItems(preferences, omicsItemsForDownload, omicsDownloadConfig);
+          break;
+        case Keys.permissions:
+          this.openItemsPermissionsDialog();
           break;
         default:
           break;
@@ -2461,6 +2501,7 @@ export default class DataStorage extends React.Component {
     const {
       type
     } = this.storage.info || {};
+    const currentPageInfo = this.storage.pageInfo ?? {mask: 0b1111};
     const folderKey = 'folder';
     const fileKey = 'file';
     const onCreateActionSelect = ({key}) => {
@@ -2503,6 +2544,7 @@ export default class DataStorage extends React.Component {
             {this.renderShareCurrentFolderButton()}
             {
               this.storage.writeAllowed &&
+              roleModel.writeAllowed(currentPageInfo) &&
               !this.isOmicsStore && (
                 <Dropdown
                   placement="bottomRight"
@@ -2538,6 +2580,7 @@ export default class DataStorage extends React.Component {
             }
             {
               this.storage.writeAllowed &&
+              roleModel.writeAllowed(currentPageInfo) &&
               !this.isOmicsStore && (
                 <UploadButton
                   multiple
@@ -2566,6 +2609,7 @@ export default class DataStorage extends React.Component {
             }
             {
               this.storage.writeAllowed &&
+              roleModel.writeAllowed(currentPageInfo) &&
               this.isSequenceStorage && (
                 <UploadOmicsButton
                   storageInfo={this.storage.info}
@@ -2576,6 +2620,7 @@ export default class DataStorage extends React.Component {
             }
             {
               this.storage.writeAllowed &&
+              roleModel.writeAllowed(currentPageInfo) &&
               this.isOmicsStore &&
               this.isOmicsFolder && (
                 <Button
@@ -2982,6 +3027,20 @@ export default class DataStorage extends React.Component {
                   : false
               ].filter(Boolean)}
               extraInfo={!this.isOmicsStore ? [
+                this.userCanChangeStorageItemsPermissions ? (
+                  <StorageItemPermissionsButton
+                    key="storage-item-permission"
+                    style={{marginLeft: 6}}
+                    storageId={Number(this.props.storageId)}
+                    storagePaths={
+                      this.state.selectedFile
+                        ? [this.state.selectedFile]
+                        : [{path: this.props.path ?? '/', type: 'folder'}]
+                    }
+                    size="small"
+                    asLink
+                  />
+                ) : false,
                 <LifeCycleCounter
                   storage={this.storage.info}
                   path={this.props.path}
@@ -2994,7 +3053,7 @@ export default class DataStorage extends React.Component {
                   )}
                 />,
                 <StorageSize storage={this.storage.info} />
-              ] : []}
+              ].filter(Boolean) : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
                 storageMask: mask,
@@ -3137,6 +3196,16 @@ export default class DataStorage extends React.Component {
           shareItems={this.state.itemsToShare}
           close={this.closeShareItemDialog}
         />
+        {
+          this.userCanChangeStorageItemsPermissions && (
+            <StorageItemPermissionsModal
+              visible={this.state.itemsPermissionsDialogVisible}
+              storageId={Number(this.props.storageId)}
+              storagePaths={(this.state.selectedItems || [])}
+              onClose={this.closeItemsPermissionsDialog}
+            />
+          )
+        }
         <Modal
           visible={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
