@@ -28,5 +28,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class DataStorageListing {
     private String nextPageMarker;
+    private Integer parentFolderMask;
     private List<AbstractDataStorageItem> results;
 }

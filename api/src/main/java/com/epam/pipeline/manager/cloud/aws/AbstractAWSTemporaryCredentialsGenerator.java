@@ -56,6 +56,8 @@ public abstract class AbstractAWSTemporaryCredentialsGenerator<T extends Abstrac
     private static final String KMS_DESCRIBE_KEY_ACTION = "kms:DescribeKey";
     static final String ACTION = "Action";
     static final String RESOURCE = "Resource";
+    static final String CONDITION = "Condition";
+    static final String STRING_LIKE = "StringLike";
 
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;

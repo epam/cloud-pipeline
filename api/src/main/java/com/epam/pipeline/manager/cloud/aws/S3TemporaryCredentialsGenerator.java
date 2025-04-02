@@ -18,13 +18,16 @@ package com.epam.pipeline.manager.cloud.aws;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,7 +50,9 @@ public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredent
     private static final String DELETE_OBJECT_VERSION_TAGGING_ACTION = "s3:DeleteObjectVersionTagging";
     private static final String PUT_OBJECT_VERSION_TAGGING_ACTION = "s3:PutObjectVersionTagging";
     private static final String GET_OBJECT_VERSION_TAGGING_ACTION = "s3:GetObjectVersionTagging";
+    private static final String S3_CONDITION_PREFIX = "s3:prefix";
     private static final String ARN_AWS_S3_PREFIX = "arn:aws:s3:::";
+    private static final String ALL_PATHS = "/*";
 
     public S3TemporaryCredentialsGenerator(final CloudRegionManager cloudRegionManager,
                                            final PreferenceManager preferenceManager,
@@ -70,6 +75,12 @@ public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredent
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
         resource.add(buildS3Arn(action, true));
+
+        if (StringUtils.isNotBlank(action.getItemPath())) {
+            // listing shall be restricted by specified path
+            statement.set(CONDITION, buildPathConditionNode(action));
+        }
+
         statements.add(statement);
     }
 
@@ -106,8 +117,33 @@ public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredent
     }
 
     private String buildS3Arn(final DataStorageAction action, final boolean list) {
-        return list ? ARN_AWS_S3_PREFIX + ProviderUtils.withoutTrailingDelimiter(action.getBucketName())
-                : ARN_AWS_S3_PREFIX + ProviderUtils.withoutTrailingDelimiter(action.getPath()) + "/*";
+        return ARN_AWS_S3_PREFIX + (
+                list ? ProviderUtils.withoutTrailingDelimiter(action.getBucketName()) : buildPathForS3Arn(action));
     }
 
+    private String buildPathForS3Arn(final DataStorageAction action) {
+        final String rootPath = ProviderUtils.withoutTrailingDelimiter(action.getPath());
+        if (StringUtils.isBlank(action.getItemPath())) {
+            return rootPath + ALL_PATHS;
+        }
+        final String itemPath = rootPath + ProviderUtils.withLeadingDelimiter(action.getItemPath());
+        return DataStorageItemType.File.equals(action.getItemType())
+                ? itemPath
+                : ProviderUtils.withoutTrailingDelimiter(itemPath) + ALL_PATHS;
+    }
+
+    private ObjectNode buildPathConditionNode(final DataStorageAction action) {
+        final String itemPath = ProviderUtils.withoutLeadingDelimiter(action.getItemPath());
+        final String prefix = DataStorageItemType.File.equals(action.getItemType())
+                ? itemPath
+                : ProviderUtils.withoutTrailingDelimiter(itemPath) + ALL_PATHS;
+
+        final ObjectNode stringLike = JsonNodeFactory.instance.objectNode();
+        stringLike.put(S3_CONDITION_PREFIX, prefix);
+
+        final ObjectNode condition = JsonNodeFactory.instance.objectNode();
+        condition.set(STRING_LIKE, stringLike);
+
+        return condition;
+    }
 }
