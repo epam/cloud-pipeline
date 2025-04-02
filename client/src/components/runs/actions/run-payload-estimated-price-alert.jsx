@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import PipelineRunEstimatedPrice from "../../../models/pipelines/PipelineRunEstimatedPrice";
-import {Alert, Icon} from "antd";
-import JobEstimatedPriceInfo from "../../special/job-estimated-price-info";
+import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
+import {Alert, Icon} from 'antd';
+import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 
 class RunPayloadEstimatedPriceAlert extends React.PureComponent {
   state = {
@@ -103,7 +103,9 @@ class RunPayloadEstimatedPriceAlert extends React.PureComponent {
       error,
       pricePerHour = 0
     } = this.state;
-    const pricePerHourValue = (Math.ceil(pricePerHour * 100.0) / 100.0 * (this.nodeCount + 1)).toFixed(2);
+    const pricePerHourValue = (
+      Math.ceil(pricePerHour * 100.0) / 100.0 * (this.nodeCount + 1)
+    ).toFixed(2);
     return (
       <Alert
         className={className}
