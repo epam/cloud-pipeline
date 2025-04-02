@@ -608,7 +608,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run, this.props.preferences, true)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, true, true)) {
         details.push({
           key: 'tags',
           value: (
@@ -616,6 +616,7 @@ class Logs extends localization.LocalizedReactComponent {
               run={run}
               onlyKnown
               excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+              excludeCustomUserTags
             />
           ),
           additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
@@ -814,7 +815,7 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance && run) {
-      if (RunTags.shouldDisplayTags(run, this.props.preferences)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, false, false)) {
         const {routing: {location}} = this.props;
         details.push({
           key: 'Tags',
@@ -1811,6 +1812,15 @@ class Logs extends localization.LocalizedReactComponent {
         </tr>
       );
 
+      const userTags = RunTags.shouldDisplayTags(run, this.props.preferences, true) && (
+        <RunTags
+          run={run}
+          onlyKnown
+          excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+          showOnlyCustomUserTags
+        />
+      );
+
       if (runningDate && runTasks.length) {
         startedTime = (
           <tr>
@@ -1891,6 +1901,7 @@ class Logs extends localization.LocalizedReactComponent {
 
       Details =
         <div>
+          {userTags}
           <table className={styles.runDetailsTable}>
             <tbody>
               {

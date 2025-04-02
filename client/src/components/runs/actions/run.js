@@ -73,6 +73,8 @@ import {
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
 import RunModal from '../../main/RunModal';
 import checkToolVersionErrors from '../utilities/check-tool-version-errors';
+import CustomTagsControl from "../../pipelines/launch/form/components/custom-tags/control";
+import RunPayloadEstimatedPriceAlert from "./run-payload-estimated-price-alert";
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -472,6 +474,7 @@ function runFn (
             skipCheck={skipCheck}
             dockerImage={payload.dockerImage}
             authenticatedUserInfo={authenticatedUserInfo}
+            tags={payload.tags}
           />
         ),
         style: {
@@ -505,6 +508,7 @@ function runFn (
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
+            payload.tags = component.state.tags;
             if (component.state.limitMounts !== component.props.limitMounts) {
               const {limitMounts} = component.state;
               if (limitMounts) {
@@ -623,7 +627,12 @@ export class RunConfirmation extends React.Component {
     usersInfo: PropTypes.object,
     runCapabilities: PropTypes.array,
     onChangeRunCapabilities: PropTypes.func,
-    showRunCapabilities: PropTypes.bool
+    showRunCapabilities: PropTypes.bool,
+    tags: PropTypes.object,
+    onChangeTags: PropTypes.func,
+    pipelineId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    pipelineVersion: PropTypes.string,
+    pipelineConfiguration: PropTypes.string
   };
 
   static defaultProps = {
@@ -1227,6 +1236,24 @@ export class RunConfirmation extends React.Component {
             showIcon
           />
         </Provider>
+        <RunPayloadEstimatedPriceAlert
+          style={{margin: 2}}
+          pipelineId={this.props.pipelineId}
+          pipelineVersion={this.props.pipelineVersion}
+          pipelineConfiguration={this.props.pipelineConfiguration}
+          instanceType={this.state.instanceType}
+          instanceDisk={this.props.hddSize}
+          spot={this.state.isSpot}
+          regionId={this.props.cloudRegionId}
+        />
+        <div
+          style={{margin: 2, padding: '10px 0'}}
+        >
+          <CustomTagsControl
+            tags={this.props.tags}
+            onChange={this.props.onChangeTags}
+          />
+        </div>
       </div>
     );
   }
@@ -1313,14 +1340,13 @@ class RunSpotConfirmationWithPrice extends React.Component {
     }),
     skipCheck: PropTypes.bool,
     authenticatedUserInfo: PropTypes.object,
-    dockerImage: PropTypes.string
+    dockerImage: PropTypes.string,
+    tags: PropTypes.object
   };
 
   static defaultProps = {
     onDemandSelectionAvailable: true
   };
-
-  @observable _estimatedPriceType = null;
 
   state = {
     isSpot: false,
@@ -1328,7 +1354,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
     instanceType: null,
     limitMounts: null,
     runNameAlias: null,
-    runCapabilities: null
+    runCapabilities: null,
+    tags: {}
   };
 
   get runCapabilitiesError () {
@@ -1344,26 +1371,12 @@ class RunSpotConfirmationWithPrice extends React.Component {
   onChangeSpotType = (isSpot) => {
     this.setState({
       isSpot
-    }, async () => {
-      await this._estimatedPriceType.send({
-        instanceType: this.state.instanceType,
-        instanceDisk: this.state.hddSize,
-        spot: this.state.isSpot,
-        regionId: this.props.cloudRegionId
-      });
     });
   };
 
   onChangeInstanceType = (instanceType) => {
     this.setState({
       instanceType
-    }, async () => {
-      await this._estimatedPriceType.send({
-        instanceType: this.state.instanceType,
-        instanceDisk: this.state.hddSize,
-        spot: this.state.isSpot,
-        regionId: this.props.cloudRegionId
-      });
     });
   };
 
@@ -1378,13 +1391,6 @@ class RunSpotConfirmationWithPrice extends React.Component {
   onChangeHddSize = (hddSize) => {
     this.setState({
       hddSize
-    }, async () => {
-      await this._estimatedPriceType.send({
-        instanceType: this.state.instanceType,
-        instanceDisk: this.state.hddSize,
-        spot: this.state.isSpot,
-        regionId: this.props.cloudRegionId
-      });
     });
   };
 
@@ -1395,6 +1401,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
   onChangeRunCapabilities = (capabilities) => {
     this.setState({runCapabilities: (capabilities || []).slice()});
   };
+
+  onChangeTags = (tags) => this.setState({tags});
 
   renderModalTitle = () => {
     const {
@@ -1477,24 +1485,13 @@ class RunSpotConfirmationWithPrice extends React.Component {
             dockerImage={this.props.dockerImage}
             dockerRegistries={this.props.dockerRegistries}
             usersInfo={this.props.usersInfo}
+            tags={this.state.tags}
+            onChangeTags={this.onChangeTags}
+            pipelineId={this.props.pipelineId}
+            pipelineVersion={this.props.pipelineVersion}
+            pipelineConfiguration={this.props.pipelineConfiguration}
           />
         </Row>
-        {
-          this._estimatedPriceType &&
-          this._estimatedPriceType.loaded &&
-          !!this._estimatedPriceType.value.pricePerHour &&
-          <Alert
-            type="success"
-            style={{margin: 2}}
-            message={
-              this._estimatedPriceType.pending
-                ? <Row>Estimated price: <Icon type="loading" /></Row>
-                : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
-                  (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
-                    .toFixed(2)
-                }$</b> per hour.</JobEstimatedPriceInfo></Row>
-            } />
-        }
         <Provider authenticatedUserInfo={this.props.authenticatedUserInfo}>
           <AllowedInstancesCountWarning
             payload={this.props.runInfo.payload}
@@ -1516,7 +1513,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
       prevProps.instanceType !== this.props.instanceType ||
       prevProps.hddSize !== this.props.hddSize ||
       prevProps.limitMounts !== this.props.limitMounts ||
-      prevProps.parameters !== this.props.parameters
+      prevProps.parameters !== this.props.parameters ||
+      prevProps.tags !== this.props.tags
     ) {
       this.updateFromProps();
     }
@@ -1529,19 +1527,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
       instanceType: this.props.instanceType,
       hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts,
-      runCapabilities: getEnabledCapabilities(this.props.parameters)
-    }, async () => {
-      this._estimatedPriceType = new PipelineRunEstimatedPrice(
-        this.props.pipelineId,
-        this.props.pipelineVersion,
-        this.props.pipelineConfiguration
-      );
-      await this._estimatedPriceType.send({
-        instanceType: this.state.instanceType,
-        instanceDisk: this.state.hddSize,
-        spot: this.state.isSpot,
-        regionId: this.props.cloudRegionId
-      });
+      runCapabilities: getEnabledCapabilities(this.props.parameters),
+      tags: this.props.tags || {},
     });
   }
 }

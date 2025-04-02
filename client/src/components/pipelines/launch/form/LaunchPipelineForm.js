@@ -144,6 +144,7 @@ import {getSelectOptions} from '../../../special/instance-type-info';
 import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
+import CustomTagsControl from './components/custom-tags/control';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -261,6 +262,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    userTags: {},
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -1265,6 +1267,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
+      tags: this.state.userTags,
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -4463,6 +4466,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
+
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
@@ -4483,6 +4487,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
           {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
         </Col>
+      </FormItem>
+    );
+  };
+
+  renderCustomTagsConfigurationItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customTags')}
+        {...this.leftFormItemLayout}
+        label="Tags"
+      >
+        <CustomTagsControl
+          tags={this.state.userTags}
+          onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
+          buttonText="Configure"
+        />
       </FormItem>
     );
   };
@@ -5525,6 +5553,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key={ADVANCED}
               className={styles.section}
               header={this.getPanelHeader(ADVANCED)}>
+              {this.renderCustomTagsConfigurationItem()}
               {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}

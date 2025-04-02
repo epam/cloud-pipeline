@@ -25,12 +25,10 @@ import ToolImage from '../../../../models/tools/ToolImage';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../../../models/tools/LoadToolScanPolicy';
-import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import {getVersionRunningInfo} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
-import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
 import {
   getInputPaths,
@@ -532,13 +530,6 @@ export default class PersonalToolsPanel extends React.Component {
           this.isAdmin(),
           this.props.preferences,
           registry);
-        const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-        await estimatedPriceRequest.send({
-          instanceType: defaultPayload.instanceType,
-          instanceDisk: defaultPayload.hddSize,
-          spot: defaultPayload.isSpot,
-          regionId: defaultPayload.cloudRegionId
-        });
         if (allowedToExecute) {
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
           this.setState({
@@ -549,9 +540,6 @@ export default class PersonalToolsPanel extends React.Component {
               tag: defaultTag,
               payload: defaultPayload,
               warning: launchTooltip,
-              pricePerHour: estimatedPriceRequest.loaded
-                ? estimatedPriceRequest.value.pricePerHour
-                : false,
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
@@ -709,18 +697,6 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
       runToolInfo.isSpot = isSpot;
-      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-      await estimatedPriceRequest.send({
-        instanceType: runToolInfo.instanceType !== undefined
-          ? runToolInfo.instanceType
-          : runToolInfo.payload.instanceType,
-        instanceDisk: runToolInfo.hddSize !== undefined
-          ? runToolInfo.hddSize
-          : runToolInfo.payload.hddSize,
-        spot: isSpot,
-        regionId: runToolInfo.payload.cloudRegionId
-      });
-      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
         runToolInfo
       });
@@ -731,18 +707,6 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
       runToolInfo.instanceType = instanceType;
-      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-      await estimatedPriceRequest.send({
-        instanceType: instanceType,
-        instanceDisk: runToolInfo.hddSize !== undefined
-          ? runToolInfo.hddSize
-          : runToolInfo.payload.hddSize,
-        spot: runToolInfo.isSpot !== undefined
-          ? runToolInfo.isSpot
-          : runToolInfo.payload.isSpot,
-        regionId: runToolInfo.payload.cloudRegionId
-      });
-      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
         runToolInfo
       });
@@ -753,20 +717,6 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
       runToolInfo.hddSize = diskSize;
-      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-      await estimatedPriceRequest.send({
-        instanceType: runToolInfo.instanceType !== undefined
-          ? runToolInfo.instanceType
-          : runToolInfo.payload.instanceType,
-        instanceDisk: runToolInfo.hddSize !== undefined
-          ? runToolInfo.hddSize
-          : runToolInfo.payload.hddSize,
-        spot: runToolInfo.isSpot !== undefined
-          ? runToolInfo.isSpot
-          : runToolInfo.payload.isSpot,
-        regionId: runToolInfo.payload.cloudRegionId
-      });
-      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
         runToolInfo
       });
@@ -783,6 +733,20 @@ export default class PersonalToolsPanel extends React.Component {
       };
       this.setState({
         runToolInfo
+      });
+    }
+  };
+
+  onChangeUserTags = (tags) => {
+    if (this.state.runToolInfo) {
+      this.setState({
+        runToolInfo: {
+          ...this.state.runToolInfo,
+          payload: {
+            ...(this.state.runToolInfo.payload || {}),
+            tags,
+          }
+        }
       });
     }
   };
@@ -927,6 +891,8 @@ export default class PersonalToolsPanel extends React.Component {
                     : undefined
                 }
                 onChangeLimitMounts={this.onChangeLimitMounts}
+                tags={this.state.runToolInfo.payload.tags}
+                onChangeTags={this.onChangeUserTags}
                 onChangeHddSize={this.onChangeDiskSize}
                 nodeCount={+this.state.runToolInfo.payload.nodeCount || 0}
                 hddSize={this.state.runToolInfo.payload.hddSize}
@@ -940,21 +906,6 @@ export default class PersonalToolsPanel extends React.Component {
                 dockerRegistries={this.props.dockerRegistries}
                 usersInfo={this.props.usersInfo}
               />
-          }
-          {
-            this.state.runToolInfo && this.state.runToolInfo.pricePerHour &&
-            <Alert
-              type="success"
-              style={{margin: 2}}
-              message={
-                <Row>
-                  <JobEstimatedPriceInfo>
-                    Estimated price: <b>{
-                      Math.ceil(this.state.runToolInfo.pricePerHour * (this.state.runToolInfo.nodeCount + 1) * 100.0) / 100.0
-                    }$</b> per hour.
-                  </JobEstimatedPriceInfo>
-                </Row>
-              } />
           }
         </Modal>
       </div>
