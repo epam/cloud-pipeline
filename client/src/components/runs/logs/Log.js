@@ -1970,18 +1970,13 @@ class Logs extends localization.LocalizedReactComponent {
         </tr>
       );
 
-      const userTags = (
-        <tr>
-          <th>User tags: </th>
-          <td>
-            <RunTags
-              run={run}
-              onlyKnown
-              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
-              showOnlyCustomUserTags
-            />
-          </td>
-        </tr>
+      const userTags = RunTags.shouldDisplayTags(run, this.props.preferences, true) && (
+        <RunTags
+          run={run}
+          onlyKnown
+          excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+          showOnlyCustomUserTags
+        />
       );
 
       if (runningDate && runTasks.length) {
@@ -2081,6 +2076,7 @@ class Logs extends localization.LocalizedReactComponent {
               {endpoints}
               {kubeServices}
               {share}
+              {userTags}
               <tr>
                 <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
@@ -2093,7 +2089,6 @@ class Logs extends localization.LocalizedReactComponent {
                     </tr>
                   ) : undefined
               }
-              {userTags}
               {scheduledTime}
               {startedTime}
               {finishTime}
