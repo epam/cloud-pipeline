@@ -59,4 +59,4 @@ function TaskRuntimeMetrics (props) {
 
 TaskRuntimeMetrics.propTypes = TaskRuntimeDataDetailsProps;
 
-export default injectRuntimeData('trace', 'Error loading task metrics')(TaskRuntimeMetrics);
+export default injectRuntimeData('trace')(TaskRuntimeMetrics);

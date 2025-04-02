@@ -4,6 +4,11 @@ import classNames from 'classnames';
 import GetRunTaskRuntimeData from '../../../../../../../models/run-engines/fetch-task-runtime-data';
 import styles from './runtime-data.css';
 import {Alert, Icon} from 'antd';
+import {
+  isRunCompleted,
+  NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,
+  NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE
+} from '../../../../utilities/helpers';
 
 class TaskRuntimeDataDetails extends React.Component {
   state = {
@@ -120,11 +125,14 @@ class TaskRuntimeDataDetails extends React.Component {
       style,
       task,
       component,
-      errorMessage
+      errorMessage = NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,
+      errorMessageRunning = NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE,
+      run
     } = this.props;
     if (!task) {
       return null;
     }
+    const completed = isRunCompleted(run);
     const {
       pending,
       error,
@@ -157,8 +165,8 @@ class TaskRuntimeDataDetails extends React.Component {
           <div className={styles.runtimeDataStateContainer}>
             <div style={{display: 'flex', alignItems: 'center'}}>
               <Alert
-                type={error ? 'error' : 'warning'}
-                message={errorMessage || error || 'Data not available'}
+                type="warning"
+                message={completed ? errorMessage : errorMessageRunning}
               />
             </div>
           </div>
@@ -192,12 +200,16 @@ const TaskRuntimeDataDetailsProps = {
 TaskRuntimeDataDetails.propTypes = {
   ...TaskRuntimeDataDetailsProps,
   component: PropTypes.func,
-  errorMessage: PropTypes.string
+  errorMessage: PropTypes.string,
+  errorMessageRunning: PropTypes.string
 };
 
 export {TaskRuntimeDataDetails, TaskRuntimeDataDetailsProps};
 
-export function injectRuntimeData (detailsType, errorMessage = undefined) {
+export function injectRuntimeData (
+  detailsType,
+  errorMessage = undefined,
+  errorMessageRunning = undefined) {
   function WrappedComponent (component) {
     return (props) => (
       <TaskRuntimeDataDetails
@@ -205,6 +217,7 @@ export function injectRuntimeData (detailsType, errorMessage = undefined) {
         detailsType={detailsType}
         component={component}
         errorMessage={errorMessage}
+        errorMessageRunning={errorMessageRunning}
       />
     );
   }

@@ -4,6 +4,11 @@ import classNames from 'classnames';
 import {Alert, Icon, Input} from 'antd';
 import styles from './nextflow-engine-tasks.css';
 import TasksGroup from './tasks-group';
+import {
+  isRunCompleted,
+  NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,
+  NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE
+} from '../../../utilities/helpers';
 
 class TasksGroupList extends React.Component {
   state = {filter: ''};
@@ -20,11 +25,13 @@ class TasksGroupList extends React.Component {
       active,
       onActiveChange,
       pending,
-      error
+      error,
+      run
     } = this.props;
     const {
       filter
     } = this.state;
+    const completed = isRunCompleted(run);
     const filtered = tasksGroups
       .filter((t) => !filter ||
         filter.trim().length === 0 ||
@@ -83,21 +90,56 @@ class TasksGroupList extends React.Component {
           }
           {
             tasksGroups.length === 0 && !pending && !error && (
-              <span className="cp-text-not-important">
-                Processes not found
-              </span>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <span className="cp-text-not-important">
+                  {
+                    completed
+                      ? NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE
+                      : NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE
+                  }
+                </span>
+              </div>
             )
           }
           {
             tasksGroups.length === 0 && !pending && error && (
-              <Alert message={error} type="warning" showIcon />
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Alert message={error} type="warning" showIcon />
+              </div>
             )
           }
           {
             tasksGroups.length === 0 && pending && (
-              <span className="cp-text-not-important">
-                Loading processes...
-              </span>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <span className="cp-text-not-important">
+                  <Icon type="loading" style={{marginRight: 5}} />
+                  <span>Loading processes...</span>
+                </span>
+              </div>
             )
           }
         </div>
@@ -113,7 +155,8 @@ TasksGroupList.propTypes = {
   active: PropTypes.string,
   onActiveChange: PropTypes.func,
   pending: PropTypes.bool,
-  error: PropTypes.string
+  error: PropTypes.string,
+  run: PropTypes.object
 };
 
 export default TasksGroupList;

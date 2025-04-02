@@ -1,12 +1,16 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import {Spin, Row} from 'antd';
+import {Spin} from 'antd';
+import classNames from 'classnames';
 import ResultTable from './components/result-table';
 import PipelineRunResults from '../../../../../models/pipelines/PipelineRunResults';
+import styles from './reports.css';
 
 export class Reports extends Component {
   static propTypes = {
-    runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+    runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    className: PropTypes.string,
+    style: PropTypes.object
   };
 
   state = {
@@ -15,7 +19,7 @@ export class Reports extends Component {
   }
 
   componentDidMount () {
-    this.fetchRunResults();
+    (this.fetchRunResults)();
   }
 
   fetchRunResults = async () => {
@@ -35,16 +39,34 @@ export class Reports extends Component {
   }
 
   render () {
+    const {
+      className,
+      style
+    } = this.props;
     if (this.state.pending) {
       return (
-        <Row type={'flex'} style={{marginTop: 40}} justify="center" >
+        <div
+          className={classNames(
+            className,
+            styles.runReportsContainer,
+            styles.runReportsContainerLoading
+          )}
+          style={style}
+        >
           <Spin spinning={this.state.pending} />
-        </Row>
+        </div>
       );
     }
 
     return (
-      <ResultTable resultItems={this.state.results} />
+      <ResultTable
+        className={classNames(
+          className,
+          styles.runReportsContainer
+        )}
+        style={style}
+        resultItems={this.state.results}
+      />
     );
   }
 }

@@ -43,7 +43,8 @@ class TaskDetails extends React.Component {
       className,
       style,
       task,
-      reload
+      reload,
+      run
     } = this.props;
     const {
       tabs
@@ -90,7 +91,8 @@ class TaskDetails extends React.Component {
                 'cp-panel-no-hover',
                 'cp-panel-borderless'
               ),
-              reload
+              reload,
+              run
             })
             : undefined
         }
@@ -103,6 +105,7 @@ TaskDetails.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   task: PropTypes.object,
+  run: PropTypes.object,
   reload: PropTypes.oneOfType([PropTypes.bool, PropTypes.number])
 };
 

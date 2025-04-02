@@ -14,7 +14,7 @@ const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 
 class RunParametersSection extends React.Component {
   state = {
-    resolvedValues: false
+    resolvedValues: true
   }
 
   switchResolvedValues = () => {
