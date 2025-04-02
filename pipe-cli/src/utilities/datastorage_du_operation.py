@@ -23,6 +23,7 @@ from src.model.datastorage_usage_model import StorageUsage
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_wrapper import DataStorageWrapper
+from src.utilities.storage_path_permissions import verify_storage_path_permissions_allowed
 from src.utilities.user_operations_manager import UserOperationsManager
 
 
@@ -152,6 +153,8 @@ class DataUsageHelper(object):
     @classmethod
     def __get_summary_with_depth(cls, root_bucket, relative_path, depth):
         wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
+        if root_bucket.type.lower() == 's3':
+            verify_storage_path_permissions_allowed(root_bucket)
         manager = wrapper.get_list_manager(show_versions=False)
         return manager.get_summary_with_depth(depth, relative_path)
 
@@ -161,12 +164,16 @@ class DataUsageHelper(object):
             manager = ApiStorageListingManager(root_bucket)
         else:
             wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
+            if root_bucket.type.lower() == 's3':
+                verify_storage_path_permissions_allowed(root_bucket)
             manager = wrapper.get_list_manager(show_versions=False)
         return manager.get_listing_with_depth(depth, relative_path)
 
     @classmethod
     def __get_summary(cls, root_bucket, relative_path):
         wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
+        if root_bucket.type.lower() == 's3':
+            verify_storage_path_permissions_allowed(root_bucket)
         manager = wrapper.get_list_manager(show_versions=False)
         return manager.get_summary(relative_path)
 
