@@ -36,7 +36,7 @@
 
 .nextflow-engine-tasks .nextflow-processes .nextflow-processes-chart {
   flex-shrink: 0;
-  min-width: max(200px, 40%);
+  width: 40%;
   padding: 5px 0 5px 5px;
 }
 

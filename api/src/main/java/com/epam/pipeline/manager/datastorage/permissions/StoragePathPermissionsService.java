@@ -20,9 +20,12 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao;
+import com.epam.pipeline.dto.PermissionVO;
+import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissionsVO;
 import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
@@ -30,6 +33,7 @@ import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
+import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -113,6 +117,43 @@ public class StoragePathPermissionsService {
     }
 
     /**
+     * Updated permissions for specified storage and paths.
+     * If no permissions provided all permissions will be deleted for certain path.
+     *
+     * @param storageId storage ID
+     * @param rawPermissions the list of permissions for storage item path.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateByStorageIdAndPaths(final Long storageId,
+                                          final List<StoragePathPermissionsVO> rawPermissions) {
+        checkStorageExistsAndPathPermissionsAllowed(storageId);
+        if (CollectionUtils.isEmpty(rawPermissions)) {
+            log.debug("No permissions found to update for storage '{}'", storageId);
+            return;
+        }
+        final List<StoragePathPermissions> toUpdate = rawPermissions.stream()
+                .peek(this::verifyRawPermissionsVO)
+                .flatMap(pathPermissions -> ListUtils.emptyIfNull(pathPermissions.getPermissions()).stream()
+                        .map(permissionVO -> toEntity(pathPermissions.getPath(),
+                                pathPermissions.getType(), permissionVO)))
+                .collect(Collectors.toList());
+        // collect permissions to delete if permissions were not provided for path
+        final List<StoragePathPermissions> toDelete = rawPermissions.stream()
+                .filter(vo -> CollectionUtils.isEmpty(vo.getPermissions()))
+                .map(vo -> toEntity(vo.getPath(), vo.getType()))
+                .collect(Collectors.toList());
+        toDelete.addAll(toUpdate);
+        if (CollectionUtils.isNotEmpty(toDelete)) {
+            log.debug("Deleting '{}' storage path permissions for storage '{}'", toDelete.size(), storageId);
+            pathPermissionsDao.batchDeleteByPath(toDelete, storageId);
+        }
+        if (CollectionUtils.isNotEmpty(toUpdate)) {
+            log.debug("Inserting '{}' storage path permissions for storage '{}'", toUpdate.size(), storageId);
+            pathPermissionsDao.batchInsert(toUpdate, storageId);
+        }
+    }
+
+    /**
      * Deletes permissions for specified storage. If sids provided permissions shall be
      * deleted for specified users/groups only.
      *
@@ -138,9 +179,39 @@ public class StoragePathPermissionsService {
      * @param storageId storage ID
      * @return users and groups list
      */
-    public List<SidImpl> loadSids(final Long storageId) {
+    public List<PermissionVO> loadSids(final Long storageId) {
         checkStorageExistsAndPathPermissionsAllowed(storageId);
-        return pathPermissionsDao.findSids(storageId);
+        return pathPermissionsDao.findSids(storageId).stream()
+                .map(sid -> PermissionVO.builder()
+                        .name(sid.getName())
+                        .principal(sid.isPrincipal())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all user/groups with masks for specified storage item.
+     *
+     * @param storageId storage ID
+     * @param path full path from storage root to item
+     * @param type indicated file or folder
+     * @return the list of granted permissions
+     */
+    public List<PermissionVO> loadSidsByPath(final Long storageId, final String path, final DataStorageItemType type) {
+        checkStorageExistsAndPathPermissionsAllowed(storageId);
+        verifyStorageItemType(type);
+        final List<StoragePathPermissions> entities = loadPermissionsForItem(storageId, path, type);
+        if (CollectionUtils.isEmpty(entities)) {
+            log.debug("No permissions found for {} '{}' for storage '{}'", type.name(), path, storageId);
+            return Collections.emptyList();
+        }
+        return entities.stream()
+                .map(entity -> PermissionVO.builder()
+                        .name(entity.getSidName())
+                        .principal(entity.isPrincipal())
+                        .mask(entity.getMask())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -476,5 +547,60 @@ public class StoragePathPermissionsService {
         return findMatchingMask(filePath, masksByPaths)
                 .map(actualMask -> (actualMask & mask) != 0)
                 .orElse(false);
+    }
+
+    private StoragePathPermissions toEntity(final String path, final DataStorageItemType type,
+                                            final PermissionVO permission) {
+        final StoragePathPermissions entity = toEntity(path, type);
+
+        entity.setMask(permission.getMask());
+        entity.setPrincipal(permission.getPrincipal());
+        entity.setSidName(permission.getName().toUpperCase(Locale.ROOT));
+
+        return entity;
+    }
+
+    private StoragePathPermissions toEntity(final String path, final DataStorageItemType type) {
+        final StoragePathPermissions entity = new StoragePathPermissions();
+        if (DataStorageItemType.Folder.equals(type)) {
+            entity.setFolderPath(normalizePath(path));
+        } else {
+            final int lastSeparatorIndex = path.lastIndexOf(ProviderUtils.DELIMITER);
+            entity.setFolderPath(normalizePath(extractFolderPath(path, lastSeparatorIndex)));
+            entity.setFileName(extractFileName(path, lastSeparatorIndex));
+        }
+        return entity;
+    }
+
+    private List<StoragePathPermissions> loadPermissionsForItem(final Long storageId, final String path,
+                                                                final DataStorageItemType type) {
+        if (DataStorageItemType.Folder.equals(type)) {
+            final String folderPath = normalizePath(path);
+            return pathPermissionsDao.loadByPath(storageId, folderPath, null);
+        } else {
+            final int lastSeparatorIndex = path.lastIndexOf(ProviderUtils.DELIMITER);
+            final String folderPath = normalizePath(extractFolderPath(path, lastSeparatorIndex));
+            final String fileName = extractFileName(path, lastSeparatorIndex);
+            return pathPermissionsDao.loadByPath(storageId, folderPath, fileName);
+        }
+    }
+
+    private void verifyRawPermissionsVO(final StoragePathPermissionsVO vo) {
+        Assert.state(Objects.nonNull(vo), "Permissions shall be specified");
+        Assert.state(StringUtils.isNotBlank(vo.getPath()), "Item path shall be specified");
+        verifyStorageItemType(vo.getType());
+    }
+
+    private void verifyStorageItemType(final DataStorageItemType type) {
+        Assert.state(Objects.nonNull(type), "Item type shall be specified");
+    }
+
+    private String extractFileName(final String path, final int lastSeparatorIndex) {
+        return ProviderUtils.withoutLeadingDelimiter(
+                lastSeparatorIndex == -1 ? path : path.substring(lastSeparatorIndex));
+    }
+
+    private String extractFolderPath(final String path, final int lastSeparatorIndex) {
+        return lastSeparatorIndex == -1 ? Strings.EMPTY : path.substring(0, lastSeparatorIndex + 1);
     }
 }

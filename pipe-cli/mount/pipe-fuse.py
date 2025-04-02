@@ -23,6 +23,8 @@ import errno
 import future.utils
 import sys
 from cachetools import TTLCache
+from pipefuse.storage_path_permissions import StoragePathPermissionsFileSystemClient, PermissionsManager, \
+    StoragePathWritePermissionsFilterFS, StoragePathPermissionsRefresherDaemon
 
 
 def is_windows():
@@ -116,12 +118,15 @@ def start(mountpoint, webdav, bucket,
     read_disk_buffer_ttl_delay = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL_DELAY', read_disk_buffer_ttl_delay))
     audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
     audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
+    path_permissions_disabled = os.getenv('CP_PIPE_FUSE_PATH_PERMISSIONS_DISABLED', 'false').lower() == 'true'
+    path_permissions_refreshing_delay = int(os.getenv('CP_PIPE_FUSE_PATH_PERMISSIONS_REFRESHING_DELAY', '86400'))
     fs_name = os.getenv('CP_PIPE_FUSE_FS_NAME', 'PIPE_FUSE')
     bucket_type = None
     bucket_path = None
     daemons = []
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
+    permissions_manager = None
     if webdav:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -137,7 +142,12 @@ def start(mountpoint, webdav, bucket,
         bucket_type = bucket_object.type
         bucket_name = bucket_object.root
         bucket_path = '/'.join(bucket_object.path.split('/')[1:])
+        user = pipe.whoami()
         if bucket_type == CloudType.S3:
+            if need_to_load_path_permissions(user, bucket_object, path_permissions_disabled):
+                permissions_manager = PermissionsManager(pipe, bucket_object)
+                daemons.append(StoragePathPermissionsRefresherDaemon(permissions_manager,
+                                                                     delay=path_permissions_refreshing_delay))
             client = S3StorageLowLevelClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
             if not show_archived:
                 client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
@@ -148,7 +158,7 @@ def start(mountpoint, webdav, bucket,
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
         if audit_buffer_ttl > 0:
             logging.info('Auditing is enabled.')
-            client, daemon = get_audit_client(client, pipe, bucket_object, audit_buffer_ttl, audit_buffer_size)
+            client, daemon = get_audit_client(client, pipe, bucket_object, audit_buffer_ttl, audit_buffer_size, user)
             daemons.append(daemon)
         else:
             logging.info('Auditing is disabled.')
@@ -159,6 +169,8 @@ def start(mountpoint, webdav, bucket,
         client = RecordingFileSystemClient(client)
     if bucket_type in [CloudType.S3, CloudType.GS]:
         client = PathExpandingStorageFileSystemClient(client, root_path=bucket_path)
+    if bucket_type == CloudType.S3 and permissions_manager:
+        client = StoragePathPermissionsFileSystemClient(client, permissions_manager)
     if listing_cache_ttl > 0 and listing_cache_size > 0:
         listing_cache_implementation = TTLCache(maxsize=listing_cache_size, ttl=listing_cache_ttl)
         listing_cache = ListingCache(listing_cache_implementation)
@@ -222,6 +234,8 @@ def start(mountpoint, webdav, bucket,
 
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
     if bucket_type == CloudType.S3:
+        if permissions_manager:
+            fs = StoragePathWritePermissionsFilterFS(fs, permissions_manager, client)
         if xattrs_include_prefixes:
             if xattrs_include_prefixes[0] == '*':
                 logging.info('All extended attributes will be processed.')
@@ -256,8 +270,22 @@ def start(mountpoint, webdav, bucket,
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, fsname=fs_name, **mount_options)
 
 
-def get_audit_client(client, pipe, storage, audit_buffer_ttl, audit_buffer_size):
-    user = pipe.whoami()
+def need_to_load_path_permissions(user, storage, path_permissions_disabled):
+    if path_permissions_disabled:
+        return False
+    if user.get('admin', False):
+        return False
+    if [r for r in user.get('roles', []) if r.get('name', '').upper() == 'ROLE_ADMIN']:
+        return False
+    if [g for g in user.get('groups', []) if g.upper() == 'ROLE_ADMIN']:
+        return False
+    if user.get('userName').upper() == storage.owner.upper():
+        return False
+    logging.info('Storage path permissions processing enabled.')
+    return storage.path_permissions_enabled
+
+
+def get_audit_client(client, pipe, storage, audit_buffer_ttl, audit_buffer_size, user):
     container = SetAuditContainer()
     container = DelayingAuditContainer(container, delay=audit_buffer_ttl)
     consumer = CloudPipelineAuditConsumer(consumer_func=pipe.create_system_logs,

@@ -811,7 +811,7 @@ public class S3Helper {
             maskingEnabled = true;
             latestMarker = resolveStartAndLastTokens(req.getStartAfter(), resolvedMasks, req::setStartAfter);
             if (latestMarker == null) {
-                return new DataStorageListing(null, Collections.emptyList());
+                return new DataStorageListing(null, null, Collections.emptyList());
             }
         } else {
             maskingEnabled = false;
@@ -872,7 +872,7 @@ public class S3Helper {
             }
         } while(listing.isTruncated() && (pageSize == null || items.size() < pageSize));
         String returnToken = listing.isTruncated() ? previous : null;
-        return new DataStorageListing(returnToken, items);
+        return new DataStorageListing(returnToken, null, items);
     }
 
     private String getPreviousKey(String previous, String key) {
@@ -920,7 +920,7 @@ public class S3Helper {
             maskingEnabled = true;
             latestMarker = resolveStartAndLastTokens(request.getKeyMarker(), resolvedMasks, request::setKeyMarker);
             if (latestMarker == null) {
-                return new DataStorageListing(null, Collections.emptyList());
+                return new DataStorageListing(null, null, Collections.emptyList());
             }
         } else {
             maskingEnabled = false;
@@ -945,7 +945,7 @@ public class S3Helper {
                 }
                 if (checkListingSize(pageSize, items, itemKeys)) {
                     items.addAll(itemKeys.values());
-                    return new DataStorageListing(previous, items);
+                    return new DataStorageListing(previous, null, items);
                 }
                 previous = getPreviousKey(previous, commonPrefix);
                 final DataStorageFolder folder = parseFolder(requestPath, commonPrefix, prefix, permissionsContainer);
@@ -983,7 +983,7 @@ public class S3Helper {
                 if (!itemKeys.containsKey(fileName)) {
                     if (checkListingSize(pageSize, items, itemKeys)) {
                         items.addAll(itemKeys.values());
-                        return new DataStorageListing(previous, items);
+                        return new DataStorageListing(previous, null, items);
                     }
                     previous = getPreviousKey(previous, versionSummary.getKey());
                     Map<String, AbstractDataStorageItem> versions = new LinkedHashMap<>();
@@ -1005,7 +1005,7 @@ public class S3Helper {
         } while (versionListing.isTruncated());
         items.addAll(itemKeys.values());
         String returnToken = versionListing.isTruncated() ? previous : null;
-        return new DataStorageListing(returnToken, items);
+        return new DataStorageListing(returnToken, null, items);
     }
 
     private boolean checkListingSize(Integer pageSize, List<AbstractDataStorageItem> items,

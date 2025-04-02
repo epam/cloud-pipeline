@@ -221,7 +221,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     ctime=None,
                     contenttype='',
                     is_dir=True,
-                    storage_class=None)
+                    storage_class=None,
+                    mask=None)
 
     def get_file_name(self, file, prefix, recursive):
         return file['Key'] if recursive else fuseutils.get_item_name(file['Key'], prefix=prefix)
@@ -233,7 +234,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     ctime=None,
                     contenttype='',
                     is_dir=False,
-                    storage_class=file['StorageClass'])
+                    storage_class=file['StorageClass'],
+                    mask=None)
 
     def upload(self, buf, path):
         with io.BytesIO(bytearray(buf)) as body:

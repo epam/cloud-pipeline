@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Icon} from 'antd';
 import {FileExternalPreview} from '../../../../../../special/file-preview';
-import DataStorageFileDownloadButton from '../../../../../../special/data-storage-file-download-button';
+import DataStorageFileDownloadButton
+from '../../../../../../special/data-storage-file-download-button';
 import styles from './path-cell.css';
 
 export const ReportFilePreviewHeader = (

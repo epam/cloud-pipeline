@@ -1,12 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Pagination} from 'antd';
+import {Alert, Icon, Pagination} from 'antd';
 import displayDate from '../../../../../../../utils/displayDate';
 import {NextflowTaskStatus} from '../utilities';
 import TasksTableTagFilter from './tasks-table-tag-filter';
 import TasksTableStatusesFilter from './tasks-table-statuses-filter';
 import styles from './tasks-table.css';
+import {
+  isRunCompleted,
+  NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,
+  NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE
+} from '../../../../utilities/helpers';
 
 export const TASKS_TABLE_PAGE_SIZE = 25;
 
@@ -25,6 +30,7 @@ const columns = [
   {
     key: 'taskId',
     title: '##',
+    size: '100px',
     render: (o) => {
       const {
         name,
@@ -35,12 +41,14 @@ const columns = [
   },
   {
     key: 'taskGroup',
+    size: '400px',
     dataIndex: 'taskGroup',
     title: 'Process',
     sorting: true
   },
   {
     key: 'taskTag',
+    size: '200px',
     dataIndex: 'taskTag',
     title: 'Tag',
     sorting: true,
@@ -52,6 +60,7 @@ const columns = [
   },
   {
     key: 'status',
+    size: '100px',
     dataIndex: 'status',
     title: 'Status',
     sorting: true,
@@ -108,6 +117,10 @@ const columns = [
 
 function getTableColumnName (field) {
   return field.replace(/[^A-Za-z0-9_-]/g, '_');
+}
+
+function getTableColumnSize (size) {
+  return size ?? 'minmax(min-content,max-content)';
 }
 
 function TasksTableColumn (props) {
@@ -261,6 +274,8 @@ class TasksTable extends React.PureComponent {
       style,
       tasks = [],
       pending,
+      error,
+      run,
       total = 0,
       totalFiltered = 0,
       page = 0,
@@ -277,6 +292,7 @@ class TasksTable extends React.PureComponent {
     const {
       hovered
     } = this.state;
+    const completed = isRunCompleted(run);
     const onClick = (task) => {
       if (onTaskClick) {
         onTaskClick(task);
@@ -314,8 +330,11 @@ class TasksTable extends React.PureComponent {
     };
     const tableStyle = {
       gridTemplateColumns: columns
-        .map(column => `[${getTableColumnName(column.key)}] auto`).join(' '),
-      gridTemplateRows: `[header] 30px repeat(${tasks.length}, 30px)`
+        // eslint-disable-next-line max-len
+        .map(column => `[${getTableColumnName(column.key)}] ${getTableColumnSize(column.size)}`).join(' '),
+      gridTemplateRows: tasks.length > 0
+        ? `[header] 30px repeat(${tasks.length}, 30px)`
+        : '[header] 30px'
     };
     return (
       <div
@@ -368,20 +387,6 @@ class TasksTable extends React.PureComponent {
             ))
           }
           {
-            tasks.length === 0 && pending && (
-              <div
-                style={{
-                  gridArea: '2 / 1 / 2 / -1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <span className="cp-text-not-important">Loading...</span>
-              </div>
-            )
-          }
-          {
             tasks.map((task, row) => columns.map((column) => (
               <div
                 key={`${task.taskKey}-${column.key}`}
@@ -424,6 +429,38 @@ class TasksTable extends React.PureComponent {
             </div>
           )
         }
+        {
+          tasks.length === 0 && (
+            <div
+              className={styles.tasksInfo}
+            >
+              {
+                error && (
+                  <Alert message={error} showIcon type="warning" />
+                )
+              }
+              {
+                pending && !error && (
+                  <div className="cp-text-not-important">
+                    <Icon type="loading" style={{marginRight: 5}} />
+                    <span>Loading tasks...</span>
+                  </div>
+                )
+              }
+              {
+                !pending && !error && (
+                  <span className="cp-text-not-important">
+                    {
+                      completed || total > 0
+                        ? NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE
+                        : NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE
+                    }
+                  </span>
+                )
+              }
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -435,6 +472,7 @@ TasksTable.propTypes = {
   tasks: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   total: PropTypes.number,
   totalFiltered: PropTypes.number,
+  run: PropTypes.object,
   page: PropTypes.number,
   onPageChange: PropTypes.func,
   pageSize: PropTypes.number,
@@ -445,6 +483,7 @@ TasksTable.propTypes = {
   onSortingChange: PropTypes.func,
   multipleSorting: PropTypes.bool,
   pending: PropTypes.bool,
+  error: PropTypes.string,
   onTaskClick: PropTypes.func
 };
 

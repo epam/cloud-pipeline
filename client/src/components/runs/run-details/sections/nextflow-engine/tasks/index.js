@@ -209,7 +209,8 @@ class NextflowEngineTasks extends React.Component {
       tasksSorting,
       totalTasksCount,
       filteredTasksCount,
-      taskDetails
+      taskDetails,
+      tasksError
     } = this.state;
     const {
       status
@@ -233,6 +234,7 @@ class NextflowEngineTasks extends React.Component {
             onActiveChange={this.onActiveTasksGroupChange}
             pending={pending}
             error={error}
+            run={run}
           />
           <TasksStatuses
             className={classNames(styles.nextflowProcessesChart, cardClassNames)}
@@ -244,7 +246,9 @@ class NextflowEngineTasks extends React.Component {
           className={classNames(styles.nextflowTasks, cardClassNames)}
           tasks={tasks}
           pending={pending}
+          error={tasksError}
           page={page}
+          run={run}
           total={totalTasksCount}
           totalFiltered={filteredTasksCount}
           taskGroupFilter={loadedTasksGroup}
@@ -270,6 +274,7 @@ class NextflowEngineTasks extends React.Component {
                 <TaskDetails
                   task={taskDetails}
                   reload={/^running$/i.test(status)}
+                  run={run}
                 />
               )
             }

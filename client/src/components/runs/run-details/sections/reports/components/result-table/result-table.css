@@ -1,14 +1,17 @@
-.table-row-light {
-  background-color: #ffffff; /* Белый цвет фона */
-}
-
-.table-row-dark {
-  background-color: #f7f7f7; /* Серый цвет фона */
+.reports-result-table-container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  gap: 5px;
 }
 
 .path-search-input {
-  width: 20%;
-  margin-left: 5px;
-  margin-bottom: 5px;
+  flex-shrink: 0;
+  width: 100%;
   display: inline-block;
+}
+
+.reports-result-table {
+  flex: 1;
+  overflow: auto;
 }

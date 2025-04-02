@@ -3,8 +3,10 @@ import {Input, Table} from 'antd';
 import PathCell from '../path-cell';
 
 import styles from './result-table.css';
+import PropTypes from 'prop-types';
+import classNames from 'classnames';
 
-export class ResultTable extends Component {
+class ResultTable extends Component {
   state = {
     sortedInfo: {},
     searchText: ''
@@ -22,13 +24,14 @@ export class ResultTable extends Component {
     this.setState({searchText: value});
   };
 
-  computeRowClassName = (record, index) => {
-    return index % 2 === 0 ? styles.tableRowDark : styles.tableRowLight;
-  }
-
   render () {
+    const {
+      className,
+      style,
+      resultItems = []
+    } = this.props;
     const {sortedInfo, searchText} = this.state;
-    const filteredData = this.props.resultItems.filter(entry =>
+    const filteredData = resultItems.filter(entry =>
       (entry.name && entry.name.toLowerCase().includes(searchText.toLowerCase())) ||
       entry.items.some(path => path.toLowerCase().includes(searchText.toLowerCase()))
     ).map((item, index) => ({
@@ -37,7 +40,13 @@ export class ResultTable extends Component {
     }));
 
     return (
-      <div>
+      <div
+        className={classNames(
+          className,
+          styles.reportsResultTableContainer
+        )}
+        style={style}
+      >
         <Input
           className={styles.pathSearchInput}
           placeholder="Filter by path"
@@ -45,9 +54,9 @@ export class ResultTable extends Component {
           onChange={this.onSearch}
         />
         <Table
+          className={styles.reportsResultTable}
           onChange={this.handleChange}
           dataSource={filteredData}
-          rowClassName={this.computeRowClassName}
           columns={[{
             title: 'Name',
             dataIndex: 'name',
@@ -78,3 +87,11 @@ export class ResultTable extends Component {
     );
   }
 }
+
+ResultTable.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  resultItems: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+};
+
+export {ResultTable};

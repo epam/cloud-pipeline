@@ -33,6 +33,15 @@
   position: relative;
 }
 
+.tasks-table-container .tasks-info {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
 .tasks-table-container .tasks-table-pagination {
   flex-shrink: 0;
   text-align: right;
@@ -44,10 +53,13 @@
   justify-content: start;
   padding: 5px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tasks-grid .cell.task-cell {
   cursor: pointer;
+  display: block;
 }
 
 .tasks-grid .cell.task-cell.hovered {

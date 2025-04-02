@@ -235,7 +235,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         // If we list file - just return it as result
         if (startingPath.isFile()) {
             return new DataStorageListing(
-                    null,
+                    null, null,
                     Collections.singletonList(mapFileToDataStorageFile(dataStorageRoot, startingPath))
             );
         }

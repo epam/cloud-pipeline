@@ -6,6 +6,7 @@ import RunParametersSection from '../../sections/parameters';
 import Reports from '../../sections/reports';
 import RunLogsSection from '../../sections/logs';
 import RunLaunchCommandSection from '../../sections/launch-command';
+import InitializeWrapper from '../../sections/common/initialize-wrapper';
 
 const iconStyle = {fontSize: '1.1rem'};
 
@@ -20,14 +21,22 @@ export const nextflowTasksTab = {
   tab: 'engine',
   title: 'Tasks',
   icon: <Icon type="bars" style={iconStyle} />,
-  render: ({run}) => (<NextflowEngineTasks run={run} />)
+  render: ({run}) => (
+    <InitializeWrapper run={run}>
+      <NextflowEngineTasks run={run} />
+    </InitializeWrapper>
+  )
 };
 
 export const reportTab = {
   tab: 'reports',
   title: 'Reports',
   icon: <Icon type="copy" style={iconStyle} />,
-  render: ({run}) => (<Reports runId={run.id} />)
+  render: ({run}) => (
+    <InitializeWrapper run={run}>
+      <Reports runId={run.id} />
+    </InitializeWrapper>
+  )
 };
 
 export const logsTab = {

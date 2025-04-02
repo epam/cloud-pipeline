@@ -19,7 +19,6 @@ export const taskDetailsCommand = {
       task={task}
       detailsType="command"
       asCommand
-      errorMessage="Error loading task command"
     />
   )
 };
@@ -36,7 +35,6 @@ export const taskDetailsRun = {
       task={task}
       detailsType="run"
       asCommand
-      errorMessage="Error loading task run command"
     />
   )
 };
@@ -64,7 +62,6 @@ export const taskDetailsLog = {
       className={classNames(props?.className, styles.noPadding)}
       task={task}
       detailsType="log"
-      errorMessage="Error loading task logs"
     />
   )
 };

@@ -22,6 +22,8 @@ import com.epam.pipeline.entity.user.SidImpl;
 import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -46,6 +48,9 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     private final String findSidsWithStoragePathPermissionsQuery;
     private final String findClosestStorageFolderPermissionQuery;
     private final String loadClosetsStoragePathPermissionsByPrefixQuery;
+    private final String deleteStoragePathPermissionsByFilePathQuery;
+    private final String deleteStoragePathPermissionsByFolderPathQuery;
+    private final String loadStoragePathPermissionsByPathQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void batchInsert(final List<StoragePathPermissions> entities, final Long storageId,
@@ -54,6 +59,37 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
                 .map(entity -> Parameters.getParameters(entity, storageId, sidId, principal))
                 .toArray(MapSqlParameterSource[]::new);
         getNamedParameterJdbcTemplate().batchUpdate(insertStoragePathPermissionsQuery, parameters);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void batchInsert(final List<StoragePathPermissions> entities, final Long storageId) {
+        final MapSqlParameterSource[] parameters = entities.stream()
+                .map(entity -> Parameters.getParameters(entity, storageId, entity.getSidName(), entity.isPrincipal()))
+                .toArray(MapSqlParameterSource[]::new);
+        getNamedParameterJdbcTemplate().batchUpdate(insertStoragePathPermissionsQuery, parameters);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void batchDeleteByPath(final List<StoragePathPermissions> entities, final Long storageId) {
+        final MapSqlParameterSource[] filesParams = entities.stream()
+                .filter(entity -> StringUtils.isNotBlank(entity.getFileName()))
+                .map(entity ->  new MapSqlParameterSource()
+                        .addValue(Parameters.STORAGE_ID.name(), storageId)
+                        .addValue(Parameters.FOLDER_PATH.name(), entity.getFolderPath())
+                        .addValue(Parameters.FILE_NAME.name(), entity.getFileName()))
+                .toArray(MapSqlParameterSource[]::new);
+        if (ArrayUtils.isNotEmpty(filesParams)) {
+            getNamedParameterJdbcTemplate().batchUpdate(deleteStoragePathPermissionsByFilePathQuery, filesParams);
+        }
+        final MapSqlParameterSource[] foldersParams = entities.stream()
+                .filter(entity -> StringUtils.isBlank(entity.getFileName()))
+                .map(entity ->  new MapSqlParameterSource()
+                        .addValue(Parameters.STORAGE_ID.name(), storageId)
+                        .addValue(Parameters.FOLDER_PATH.name(), entity.getFolderPath()))
+                .toArray(MapSqlParameterSource[]::new);
+        if (ArrayUtils.isNotEmpty(foldersParams)) {
+            getNamedParameterJdbcTemplate().batchUpdate(deleteStoragePathPermissionsByFolderPathQuery, foldersParams);
+        }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -66,6 +102,15 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteForStorageId(final Long storageId) {
         getJdbcTemplate().update(deleteStoragePathPermissionsByStorageIdQuery, storageId);
+    }
+
+    public List<StoragePathPermissions> loadByPath(final Long storageId, final String folderPath,
+                                                   final String fileName) {
+        final MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue(Parameters.STORAGE_ID.name(), storageId)
+                .addValue(Parameters.FOLDER_PATH.name(), folderPath);
+        final String query = pathWhere(loadStoragePathPermissionsByPathQuery, fileName);
+        return getNamedParameterJdbcTemplate().query(query, params, Parameters.getRowMapper());
     }
 
     public List<StoragePathPermissions> findByStorageAndSids(final Long storageId, final List<SidImpl> sids) {
@@ -214,5 +259,10 @@ public class StoragePathPermissionsDao extends NamedParameterJdbcDaoSupport {
 
     private String limitFirst(final String query) {
         return LIMIT_PATTERN.matcher(query).replaceFirst(" LIMIT 1");
+    }
+
+    private String pathWhere(final String query, final String fileName) {
+        return WHERE_PATTERN.matcher(query).replaceFirst(" p.file_name " +
+                (StringUtils.isNotBlank(fileName) ? "= '" + fileName + "' " : "IS NULL "));
     }
 }
