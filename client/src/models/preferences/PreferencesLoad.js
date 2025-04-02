@@ -15,10 +15,10 @@
  */
 
 import Remote from '../basic/Remote';
-import { computed, isObservableArray } from 'mobx';
-import escapeRegExp, { ESCAPE_CHARACTERS } from '../../utils/escape-reg-exp';
+import {computed, isObservableArray} from 'mobx';
+import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import roleModel from '../../utils/roleModel';
-import { parseRunActionCriteria } from '../../components/runs/actions/actions-availability/utilities';
+import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -822,6 +822,7 @@ class PreferencesLoad extends Remote {
         }
         return result.map((o) => {
           const {
+            // eslint-disable-next-line camelcase
             user_tag = false,
             userTag = user_tag,
             ...rest
@@ -829,7 +830,7 @@ class PreferencesLoad extends Remote {
           return {
             ...rest,
             userTag: `${userTag}`.toLowerCase() === 'true'
-          }
+          };
         });
       } catch (e) {
         console.warn('Error parsing "ui.runs.tags" preference:', e.message);
