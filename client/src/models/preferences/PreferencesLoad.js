@@ -816,7 +816,21 @@ class PreferencesLoad extends Remote {
     const value = this.getPreferenceValue('ui.runs.tags');
     if (value) {
       try {
-        return JSON.parse(value);
+        const result = JSON.parse(value);
+        if (!Array.isArray(result)) {
+          throw new Error(`array expected, got ${typeof result}`);
+        }
+        return result.map((o) => {
+          const {
+            user_tag = false,
+            userTag = user_tag,
+            ...rest
+          } = o;
+          return {
+            ...rest,
+            userTag: `${userTag}`.toLowerCase() === 'true'
+          }
+        });
       } catch (e) {
         console.warn('Error parsing "ui.runs.tags" preference:', e.message);
       }
@@ -826,7 +840,7 @@ class PreferencesLoad extends Remote {
 
   @computed
   get uiRunsUserTags () {
-    return this.uiRunsTags.filter(tag => tag.user_tag === true);
+    return this.uiRunsTags.filter((tag) => tag.userTag);
   }
 
   @computed

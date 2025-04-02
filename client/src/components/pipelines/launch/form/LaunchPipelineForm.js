@@ -151,7 +151,7 @@ import {
   getParametersFromFsConfig
 } from './utilities/configure-fs/utilities';
 import ConditionalParameters from './ConditionalParameters';
-import CustomTagsEditor from './LaunchPipelineFormComponents/CustomTagsDialog';
+import CustomTagsControl from './components/custom-tags/control';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -276,7 +276,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   state = {
     userTags: {},
     conditionalParameters: [],
-    tagsModalVisible: false,
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -517,14 +516,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   showLaunchCommands = () => {
     this.setState({showLaunchCommands: true});
-  };
-
-  showTagsModal = () => {
-    this.setState({tagsModalVisible: true});
-  };
-
-  hideTagsModal = () => {
-    this.setState({tagsModalVisible: false});
   };
 
   hideLaunchCommands = () => {
@@ -5117,7 +5108,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderCustomTagsConfigurationItem = () => {
+  renderCustomTagsConfiguration = () => {
     if (
       this.props.detached ||
       this.props.isDetachedConfiguration ||
@@ -5125,35 +5116,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
-    const allowedUserTags = this.props.preferences.uiRunsUserTags.reduce((acc, {tag}) => {
-      acc[tag] = '';
-      return acc;
-    }, {});
 
     return (
-      <FormItem
-        className={styles.formItemRow}
-        {...this.leftFormItemLayout}
-        label="Custom Tags"
-      >
-        <Col span={10}>
-          <Button type="ghost" onClick={this.showTagsModal}>
-            Update tags
-          </Button>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.props.localizedStringWithSpotDictionaryFn, hints.customTagsHint)}
-        </Col>
-        <CustomTagsEditor
-          visible={this.state.tagsModalVisible}
-          onCancel={this.hideTagsModal}
-          onSave={(tags) => {
-            this.setState({userTags: tags});
-            this.hideTagsModal();
-          }}
-          allowedTags={allowedUserTags}
+      <div style={{margin: '10px 5px'}}>
+        <CustomTagsControl
+          tags={this.state.userTags}
+          onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
         />
-      </FormItem>
+      </div>
     );
   };
 
@@ -6220,6 +6190,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }}>
               {this.renderEstimatedPriceInfo()}
             </div>
+            {this.renderCustomTagsConfiguration()}
           </div>
           {this.renderAlerts()}
           {
@@ -6365,7 +6336,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
               {this.renderHostedAppConfigurationItem()}
-              {this.renderCustomTagsConfigurationItem()}
               {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
               {this.renderEndpointNameFormItem()}

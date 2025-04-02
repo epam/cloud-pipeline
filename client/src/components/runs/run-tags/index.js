@@ -15,10 +15,10 @@
  */
 
 import React from 'react';
-import { Popover, Row } from 'antd';
-import { inject, observer } from 'mobx-react';
+import {Popover, Row} from 'antd';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import { Link } from 'react-router';
+import {Link} from 'react-router';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
 import RunTagPopover from './run-tag-popover';
@@ -161,6 +161,11 @@ const skipTag = (tag, tags, preferences) => {
     isKnownTagWithDateSuffix(tag, preferences);
 };
 
+const isUserTag = (tag, preferences) => {
+  const userTags = preferences.uiRunsTags || [];
+  return userTags.some((t) => t.tag === tag);
+};
+
 const getTagColors = (color = '') => {
   if (!color.length) {
     return [];
@@ -181,7 +186,9 @@ function Tag (
     onMouseEnter,
     onMouseLeave,
     onFocus,
-    predefinedTags
+    predefinedTags,
+    interactive = true,
+    small = true
   }
 ) {
   let display = value;
@@ -196,17 +203,24 @@ function Tag (
     .find(({tag}) => tag.toLowerCase() === tagName.toLowerCase()) || {};
   const isInstanceLink = instance &&
     instance.nodeName &&
-    `${tagOptions.instanceLink}` !== 'false';
+    `${tagOptions.instanceLink}` !== 'false' &&
+    !tagOptions.userTag;
   const handleClick = event => {
     if (tagOptions.link || isInstanceLink) {
       event && event.stopPropagation();
     }
   };
+  let valueToDisplay = tagOptions.display || (display || '').toUpperCase();
+  if (tagOptions.userTag && `${value}`.toLowerCase() !== 'true' && `${value}`.trim().length > 0) {
+    const v = `${value}`.trim();
+    valueToDisplay = `${tagOptions.display || tagOptions.tag}: ${v}`;
+  }
   const element = (
     <span
       className={
         classNames(
           styles.runTag,
+          {[styles.small]: small},
           className,
           'cp-tag',
           'accent',
@@ -217,22 +231,22 @@ function Tag (
           }
         )
       }
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={handleClick}
-      onFocus={onFocus}
+      onMouseEnter={interactive ? onMouseEnter : undefined}
+      onMouseLeave={interactive ? onMouseLeave : undefined}
+      onClick={interactive ? handleClick : undefined}
+      onFocus={interactive ? onFocus : undefined}
     >
-      {tagOptions.display || (display || '').toUpperCase()}
+      {valueToDisplay}
     </span>
   );
   if (tagOptions.link) {
     return (
       <a
         className={styles.link}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={handleClick}
-        onFocus={onFocus}
+        onMouseEnter={interactive ? onMouseEnter : undefined}
+        onMouseLeave={interactive ? onMouseLeave : undefined}
+        onClick={interactive ? handleClick : undefined}
+        onFocus={interactive ? onFocus : undefined}
         href={tagOptions.link}
         target="_blank"
       >
@@ -247,10 +261,10 @@ function Tag (
         id={tagName}
         to={instanceLink}
         className={styles.link}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={handleClick}
-        onFocus={onFocus}
+        onMouseEnter={interactive ? onMouseEnter : undefined}
+        onMouseLeave={interactive ? onMouseLeave : undefined}
+        onClick={interactive ? handleClick : undefined}
+        onFocus={interactive ? onFocus : undefined}
       >
         {element}
       </Link>
@@ -262,6 +276,7 @@ function Tag (
 function RunTagsComponent (
   {
     className,
+    style = {display: 'inline'},
     onlyKnown,
     overflow,
     tagClassName,
@@ -270,14 +285,17 @@ function RunTagsComponent (
     preferences,
     excludeTags = [],
     excludeCustomUserTags = false,
-    showOnlyCustomUserTags = false
+    showOnlyCustomUserTags: showOnlyCustomUserTagsProps = false,
+    interactive = true,
+    small = true
   }
 ) {
   if (!run) {
     return null;
   }
   const {status, tags, instance} = run;
-  if (!tags || !activeRunStatuses.includes(status)) {
+  const showOnlyCustomUserTags = showOnlyCustomUserTagsProps || !activeRunStatuses.includes(status);
+  if (!tags) {
     return null;
   }
   const result = [];
@@ -327,6 +345,8 @@ function RunTagsComponent (
               instance={instance}
               theme={theme}
               predefinedTags={predefinedTags}
+              interactive={interactive}
+              small={small}
             />
           </RunTagPopover>
         )
@@ -341,7 +361,7 @@ function RunTagsComponent (
     return (
       <div
         className={className}
-        style={{display: 'inline'}}
+        style={style}
       >
         {result.map(r => r.element)}
       </div>
@@ -355,7 +375,7 @@ function RunTagsComponent (
     return (
       <div
         className={className}
-        style={{display: 'inline'}}
+        style={style}
       >
         {result.map(r => r.element)}
       </div>
@@ -378,7 +398,7 @@ function RunTagsComponent (
   return (
     <div
       className={className}
-      style={{display: 'inline'}}
+      style={style}
     >
       {result.slice(0, tagsToDisplayCount).map(r => r.element)}
       {popover}
@@ -388,24 +408,36 @@ function RunTagsComponent (
 
 const RunTags = inject('preferences')(observer(RunTagsComponent));
 
-RunTags.shouldDisplayTags = function (run, preferences, onlyKnown = false) {
+RunTags.shouldDisplayTags = function (
+  run,
+  preferences,
+  onlyKnown = false,
+  excludeUserTags = false
+) {
   if (!run) {
     return false;
   }
   const {status, tags} = run;
-  if (!tags || !activeRunStatuses.includes(status)) {
+  const onlyUserTags = !activeRunStatuses.includes(status);
+  if (!tags) {
     return false;
   }
+  let tagsCount = 0;
   for (let tag in tags) {
+    const userTag = isUserTag(tag, preferences);
+    if (excludeUserTags && userTag) {
+      continue;
+    }
     if (
       Object.prototype.hasOwnProperty.call(tags, tag) &&
       !skipTag(tag, tags, preferences) &&
-      (!onlyKnown || isKnownTag(tag, preferences))
+      (!onlyKnown || isKnownTag(tag, preferences)) &&
+      (!onlyUserTags || isUserTag(tag, preferences))
     ) {
-      return true;
+      tagsCount += 1;
     }
   }
-  return false;
+  return tagsCount > 0;
 };
 
 export {KNOWN_TAG_NAMES};

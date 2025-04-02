@@ -729,7 +729,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run, this.props.preferences, true)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, true, true)) {
         details.push({
           key: 'tags',
           value: (
@@ -936,7 +936,7 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance && run) {
-      if (RunTags.shouldDisplayTags(run, this.props.preferences)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, false, false)) {
         const {routing: {location}} = this.props;
         details.push({
           key: 'Tags',
@@ -2059,6 +2059,7 @@ class Logs extends localization.LocalizedReactComponent {
 
       Details =
         <div>
+          {userTags}
           <table className={styles.runDetailsTable}>
             <tbody>
               {
@@ -2076,7 +2077,6 @@ class Logs extends localization.LocalizedReactComponent {
               {endpoints}
               {kubeServices}
               {share}
-              {userTags}
               <tr>
                 <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
