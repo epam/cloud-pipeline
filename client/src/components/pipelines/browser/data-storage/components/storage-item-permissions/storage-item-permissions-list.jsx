@@ -7,7 +7,6 @@ import PickUserModal from './pick-user-modal';
 import PickGroupsModal from './pick-group-modal';
 import GroupName from './group-name';
 import {alphabeticalSorter} from '../../../../../../utils/sorting';
-import roleModel from "../../../../../../utils/roleModel";
 
 /**
  * `StorageItemPermissionsList` is used for rendering a permissions list modifications controls.
@@ -238,6 +237,7 @@ class StorageItemPermissionsList extends React.PureComponent {
           </div>
         )}
         columns={columns}
+        rowKey="sidKey"
         dataSource={data}
         pagination={false}
         showHeader={false}

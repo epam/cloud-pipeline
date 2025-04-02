@@ -101,13 +101,14 @@ function convertFromPayloadMask (mask) {
 export async function saveStorageItemPermissions (storageId, permissions, initial = []) {
   const uniquePaths = new Set();
   for (const permission of [...permissions, ...initial]) {
-    uniquePaths.add(`${permission.type}|${permission.storagePath || '/'}`);
+    const sp = permission.storagePath || '/';
+    uniquePaths.add(`${permission.type}|${sp}`);
   }
   const payloads = [...uniquePaths].map((up) => {
     const [type, ...pathComponents] = up.split('|');
     const path = pathComponents.join('|');
     const pathPermissions = permissions
-      .filter(p => p.storagePath === path && p.type === type);
+      .filter(p => (p.storagePath || '/') === path && p.type === type);
     if (pathPermissions.length > 0) {
       return {
         path,

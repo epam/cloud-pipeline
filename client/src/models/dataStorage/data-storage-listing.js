@@ -69,6 +69,28 @@ const mbToBytes = mb => {
 };
 
 /**
+ * This function converts extended mask of the storage items to the collapsed mask
+ * used everywhere in the cloud application.
+ * @param permissionMask
+ * @returns {undefined|*}
+ */
+function storageItemPermissionMaskMapper (permissionMask) {
+  if (permissionMask === undefined) {
+    return undefined;
+  }
+  return roleModel.collapseMask(permissionMask);
+}
+
+function generateStorageItemMapper (storageMask) {
+  const mapper = (o) => ({
+    ...o,
+    mask: storageItemPermissionMaskMapper(o.mask) ?? storageMask,
+    versions: (o.versions || []).map(mapper)
+  });
+  return mapper;
+}
+
+/**
  * Returns true if user is allowed to download from storage according to the
  * `download.enabled` attribute value
  * @param value
@@ -835,6 +857,12 @@ class DataStorageListing {
       ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
       : undefined;
     try {
+      await Promise.all([
+        this.storageRequest.fetchIfNeededOrWait()
+      ]);
+      const {
+        mask: storageMask
+      } = this.info ?? {};
       const request = new DataStorageFilter(
         this.storageId,
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined,
@@ -864,15 +892,16 @@ class DataStorageListing {
       const {
         results = [],
         nextPageMarker,
-        parentFolderMask = 0b1111
+        parentFolderMask
       } = request.value || {};
       this.resultsTruncated = !!nextPageMarker;
       this.filtersApplied = true;
-      this._pageElements = results;
+      const mapper = generateStorageItemMapper(storageMask);
+      this._pageElements = results.map(mapper);
       this._pageInfo = {
         path: pathCorrected ?? '/',
         name: (pathCorrected ?? '/').split('/').pop(),
-        mask: parentFolderMask
+        mask: storageItemPermissionMaskMapper(parentFolderMask) ?? storageMask
       };
       this.pageLoaded = true;
       this.pagePath = pathCorrected;
@@ -931,16 +960,21 @@ class DataStorageListing {
         throw new Error('Error loading page');
       }
       const {
+        mask: storageMask
+      } = this.info ?? {};
+      const {
         results = [],
-        parentFolderMask = 0b1111,
+        parentFolderMask,
         nextPageMarker
       } = request.value || {};
       submitChanges(() => {
-        this._pageElements = results;
+        const mapper = generateStorageItemMapper(storageMask);
+        this._pageElements = results.map(mapper);
+        console.log(storageMask, this._pageElements);
         this._pageInfo = {
           path: pathCorrected ?? '/',
           name: (pathCorrected ?? '/').split('/').pop(),
-          mask: parentFolderMask
+          mask: storageItemPermissionMaskMapper(parentFolderMask) ?? storageMask
         };
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
@@ -1021,7 +1055,7 @@ class DataStorageListing {
       } = request.value || {};
       submitChanges(() => {
         this.ngbSettingsFileExists = !!results
-          .find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+          .find((o) => (o.path || '').toLowerCase() === ngbSettingsFile.toLowerCase());
       });
     } catch (error) {
       submitChanges(() => {

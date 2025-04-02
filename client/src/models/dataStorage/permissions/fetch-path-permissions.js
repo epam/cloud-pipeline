@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,32 @@
  */
 
 import Remote from '../../basic/Remote';
+import {getStorageItemPermissionType, getStorageItemType} from "./utilities";
 
 export default class FetchPathPermissions extends Remote {
-  constructor (storageId, storagePath, type = 'File') {
+  constructor (storageId, storagePath, type = 'file') {
     super();
     let path = storagePath;
     if (!path || path === '') {
       path = '/';
     }
+    const typeCorrected = getStorageItemPermissionType(type);
     // eslint-disable-next-line max-len
-    this.url = `datastorage/${storageId}/paths/permissions/sids?path=${encodeURIComponent(path)}&type=${type}`;
+    this.url = `/datastorage/${storageId}/paths/permissions/sids?path=${encodeURIComponent(path)}&type=${typeCorrected}`;
+  }
+
+  postprocess (value) {
+    const results = value.payload || [];
+    console.log(results);
+    return results.map((o) => {
+      const {
+        type,
+        ...rest
+      } = o;
+      return {
+        ...rest,
+        type: getStorageItemType(type)
+      }
+    });
   }
 }

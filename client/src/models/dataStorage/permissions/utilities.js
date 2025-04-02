@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-import UpdatePathPermissions from './update-path-permissions';
-
-/*
- This is the same method as UpdatePathPermissions; to remove permissions, we shall NOT include
- `permissions` array as a payload.
- If permissions field was not provided all granted permissions for specified path shall be removed
- */
-
-export default class RemovePathPermissions extends UpdatePathPermissions {
-  async send (body, abortSignal) {
-    const modifiedBody = body.map((o) => {
-      const {path, type} = o;
-      return {path, type};
-    });
-    return super.send(modifiedBody, abortSignal);
+export function getStorageItemType (permissionStorageItemType) {
+  if (!permissionStorageItemType || typeof permissionStorageItemType !== 'string') {
+    return 'file';
   }
+  return permissionStorageItemType.toLowerCase();
+}
+
+export function getStorageItemPermissionType (storageItemType) {
+  if (storageItemType.toLowerCase() === 'file') {
+    return 'File';
+  }
+  return 'Folder';
 }

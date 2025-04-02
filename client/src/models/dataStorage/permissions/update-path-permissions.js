@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 import RemotePost from '../../basic/RemotePost';
+import {getStorageItemPermissionType} from './utilities';
 
 export default class UpdatePathPermissions extends RemotePost {
   constructor (storageId) {
@@ -27,6 +28,15 @@ export default class UpdatePathPermissions extends RemotePost {
       credentials: 'include',
       method: 'PUT'
     };
-    this.url = `datastorage/${storageId}/paths/permissions`;
+    this.url = `/datastorage/${storageId}/paths/permissions`;
+  }
+
+  async send (body, abortSignal) {
+    console.log('send', body);
+    const modifiedBody = body.map((o) => {
+      const {type, ...rest} = o;
+      return {...rest, type: getStorageItemPermissionType(type)};
+    });
+    return super.send(modifiedBody, abortSignal);
   }
 }

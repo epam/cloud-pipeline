@@ -456,9 +456,9 @@ export default class DataStorage extends React.Component {
         ? restrictedAccessCheck
         // If restricted tag access mode is off, all users with WRITE permissions are
         // allowed to edit file's tags.
-        : this.storage.writeAllowed && roleModel.writeAllowed(this.state.selectedFile);
+        : this.selectedFileWriteAllowed;
     }
-    return this.storage.writeAllowed;
+    return this.currentFolderWriteAllowed;
   }
 
   get isReferenceStorage () {
@@ -590,8 +590,15 @@ export default class DataStorage extends React.Component {
     if (!info) {
       return [];
     }
-    const writeAllowed = this.storage.writeAllowed;
-    const {sensitive} = info;
+    const {sensitive, mask: storageMask, pathPermissionsEnabled} = info;
+    let defaultMask = storageMask;
+    if (this.isAdmin || roleModel.isOwner(storageMask)) {
+      defaultMask = 0b1111;
+    } else if (pathPermissionsEnabled) {
+      defaultMask = 0b0;
+    } else {
+      defaultMask = storageMask;
+    }
     const items = [];
     const documentPreviewAvailable = (item) => {
       const {preferences} = this.props;
@@ -614,7 +621,7 @@ export default class DataStorage extends React.Component {
       });
     }
     const getChildList = (item, versions, sensitive) => {
-      if (!versions || !this.showVersions) {
+      if (!versions || versions.length === 0 || !this.showVersions) {
         return undefined;
       }
       const childList = [];
@@ -627,23 +634,18 @@ export default class DataStorage extends React.Component {
           const versionRestored = restoreStatus.restoreVersions &&
             restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
-          const itemPermissions = {
-            mask: versions[version].mask ?? 0b1111
-          };
           childList.push({
             key: `${item.type}_${item.path}_${version}`,
             ...versions[version],
-            ...itemPermissions,
             downloadable: item.type.toLowerCase() === 'file' &&
               !versions[version].deleteMarker &&
               !sensitive &&
               (!archived || (latest ? fileRestored : versionRestored)) &&
               downloadable,
             editable: versions[version].version === item.version &&
-              writeAllowed &&
               !versions[version].deleteMarker &&
-              roleModel.writeAllowed(itemPermissions),
-            deletable: writeAllowed,
+              roleModel.writeAllowed(versions[version]),
+            deletable: roleModel.writeAllowed(versions[version]),
             selectable: false,
             shareAvailable: false,
             latest,
@@ -687,17 +689,13 @@ export default class DataStorage extends React.Component {
           (active || restored) &&
           downloadable
         );
-      const itemPermissions = {
-        mask: i.mask ?? 0b1111
-      };
       return {
         key: `${i.type}_${i.path}`,
         ...i,
-        ...itemPermissions,
         downloadable: isDownloadable,
-        editable: writeAllowed && !i.deleteMarker && roleModel.writeAllowed(itemPermissions),
+        editable: !i.deleteMarker && roleModel.writeAlloweљљd(i),
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
-        deletable: writeAllowed,
+        deletable: roleModel.writeAllowed(i),
         children: getChildList(i, i.versions, sensitive),
         selectable: !i.deleteMarker,
         miew: !i.deleteMarker &&
@@ -900,7 +898,7 @@ export default class DataStorage extends React.Component {
   showGenerateFolderDownloadUrlsModalFn = () => {
     if (this.storage.infoLoaded && this.generateFolderURLAvailable) {
       this.setState({
-        generateFolderUrlWriteAccess: this.storage.writeAllowed,
+        generateFolderUrlWriteAccess: this.currentFolderWriteAllowed,
         downloadUrlModalVisible: true,
         downloadFolderUrlModal: true
       }, this.generateFolderDownloadUrl);
@@ -2005,6 +2003,40 @@ export default class DataStorage extends React.Component {
     return pathPermissionsEnabled && (this.isAdmin || roleModel.isOwner({mask}));
   }
 
+  get currentFolderWriteAllowed () {
+    const info = this.storage.info;
+    if (!info) {
+      return false;
+    }
+    const currentPage = this.storage.pageInfo;
+    const {
+      pathPermissionsEnabled
+    } = info;
+    if (pathPermissionsEnabled) {
+      return this.isAdmin ||
+        roleModel.isOwner(info) ||
+        (currentPage && roleModel.writeAllowed(currentPage));
+    }
+    return this.storage.writeAllowed;
+  }
+
+  get selectedFileWriteAllowed () {
+    const info = this.storage.info;
+    const {selectedFile} = this.state;
+    if (!info || !selectedFile) {
+      return false;
+    }
+    const {
+      pathPermissionsEnabled
+    } = info;
+    if (pathPermissionsEnabled) {
+      return this.isAdmin ||
+        roleModel.isOwner(info) ||
+        roleModel.writeAllowed(selectedFile);
+    }
+    return this.storage.writeAllowed;
+  }
+
   selectAll = (type) => {
     const selectedItems = this.items.filter(item => {
       if (!item.editable && !item.downloadable && !item.shareAvailable) {
@@ -2501,7 +2533,6 @@ export default class DataStorage extends React.Component {
     const {
       type
     } = this.storage.info || {};
-    const currentPageInfo = this.storage.pageInfo ?? {mask: 0b1111};
     const folderKey = 'folder';
     const fileKey = 'file';
     const onCreateActionSelect = ({key}) => {
@@ -2543,8 +2574,7 @@ export default class DataStorage extends React.Component {
           <div style={{paddingRight: 8}}>
             {this.renderShareCurrentFolderButton()}
             {
-              this.storage.writeAllowed &&
-              roleModel.writeAllowed(currentPageInfo) &&
+              this.currentFolderWriteAllowed &&
               !this.isOmicsStore && (
                 <Dropdown
                   placement="bottomRight"
@@ -2579,8 +2609,7 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              this.storage.writeAllowed &&
-              roleModel.writeAllowed(currentPageInfo) &&
+              this.currentFolderWriteAllowed &&
               !this.isOmicsStore && (
                 <UploadButton
                   multiple
@@ -2608,8 +2637,7 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              this.storage.writeAllowed &&
-              roleModel.writeAllowed(currentPageInfo) &&
+              this.currentFolderWriteAllowed &&
               this.isSequenceStorage && (
                 <UploadOmicsButton
                   storageInfo={this.storage.info}
@@ -2619,8 +2647,7 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              this.storage.writeAllowed &&
-              roleModel.writeAllowed(currentPageInfo) &&
+              this.currentFolderWriteAllowed &&
               this.isOmicsStore &&
               this.isOmicsFolder && (
                 <Button
@@ -2637,7 +2664,6 @@ export default class DataStorage extends React.Component {
         </Row>
       );
     };
-
     return (
       <Table
         className={styles.table}
@@ -2835,7 +2861,6 @@ export default class DataStorage extends React.Component {
         ? disclaimer.filter(Boolean).join('')
         : '';
     };
-
     return (
       <div style={{
         display: 'flex',
@@ -3137,7 +3162,7 @@ export default class DataStorage extends React.Component {
               <Row style={{marginTop: 10}}>
                 <Checkbox
                   checked={this.state.generateFolderUrlWriteAccess}
-                  disabled={!this.storage.writeAllowed}
+                  disabled={!this.currentFolderWriteAllowed}
                   onChange={
                     (e) => this.setState({
                       generateFolderUrlWriteAccess: e.target.checked
