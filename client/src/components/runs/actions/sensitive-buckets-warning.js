@@ -34,7 +34,6 @@ function getSensitiveBuckets (parameters, dataStoragesStore) {
     return [];
   }
   const selection = getLimitMountsStorages(value || '', dataStoragesStore.value || []);
-  console.log(selection);
   return selection
     .filter(storage => storage.sensitive);
 }
