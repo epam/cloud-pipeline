@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
+import {Input} from 'antd';
 import styles from './custom-tags.css';
-import classNames from "classnames";
-import {Input} from "antd";
 
 function UIRunUserTag (props) {
   const {
@@ -10,7 +10,7 @@ function UIRunUserTag (props) {
     style,
     tagConfiguration,
     tagValue,
-    onChange,
+    onChange
   } = props;
   const onTagValueChange = (event) => {
     if (typeof onChange === 'function') {
@@ -33,7 +33,7 @@ function UIRunUserTag (props) {
         onChange={onTagValueChange}
       />
     </div>
-  )
+  );
 }
 
 UIRunUserTag.propTypes = {

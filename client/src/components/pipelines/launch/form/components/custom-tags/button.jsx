@@ -1,10 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Icon} from 'antd';
+import classNames from 'classnames';
+import RunTags from '../../../../../runs/run-tags';
 import styles from './custom-tags.css';
-import {Icon} from "antd";
-import classNames from "classnames";
-import RunTags from "../../../../../runs/run-tags";
-
 
 function CustomTagsButton (props) {
   const {
@@ -17,7 +16,7 @@ function CustomTagsButton (props) {
 
   let component = (
     <span>
-      <Icon type="setting"/>
+      <Icon type="setting" />
       <span className={styles.configure}>Configure custom tags</span>
     </span>
   );
@@ -39,7 +38,7 @@ function CustomTagsButton (props) {
       <span className={classNames(className, styles.link, 'cp-text')} style={style}>
         {component}
       </span>
-    )
+    );
   }
   return (
     <a className={classNames(className, styles.link, 'cp-text')} style={style} onClick={onClick}>
