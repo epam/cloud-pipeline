@@ -15,10 +15,10 @@
  */
 
 import Remote from '../basic/Remote';
-import {action, computed, isObservableArray} from 'mobx';
-import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
+import { computed, isObservableArray } from 'mobx';
+import escapeRegExp, { ESCAPE_CHARACTERS } from '../../utils/escape-reg-exp';
 import roleModel from '../../utils/roleModel';
-import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
+import { parseRunActionCriteria } from '../../components/runs/actions/actions-availability/utilities';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -68,21 +68,6 @@ class PreferencesLoad extends Remote {
       });
     }
     return value.payload;
-  }
-
-  @action updateUiRunsTags (newTags) {
-    const tagPreferenceKey = 'ui.runs.tags';
-    const preference = (this.value || []).find(p => p.name === tagPreferenceKey);
-    const serializedTags = JSON.stringify(newTags);
-
-    if (preference) {
-      preference.value = serializedTags;
-    } else {
-      (this.value = this.value || []).push({
-        name: tagPreferenceKey,
-        value: serializedTags
-      });
-    }
   }
 
   @computed

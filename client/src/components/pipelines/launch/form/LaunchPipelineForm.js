@@ -274,6 +274,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    userTags: {},
     conditionalParameters: [],
     tagsModalVisible: false,
     openedPanels: [PARAMETERS],
@@ -1395,9 +1396,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
-      tags: Object.fromEntries(
-        this.props.preferences.uiRunsUserTags.map(({tag, display}) => [tag, display])
-      ),
+      tags: this.state.userTags,
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -5126,7 +5125,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
-    const userTags = this.props.preferences.uiRunsUserTags;
+    const allowedUserTags = this.props.preferences.uiRunsUserTags.reduce((acc, {tag}) => {
+      acc[tag] = '';
+      return acc;
+    }, {});
+
+    console.log(this.state.userTags)
 
     return (
       <FormItem
@@ -5146,10 +5150,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           visible={this.state.tagsModalVisible}
           onCancel={this.hideTagsModal}
           onSave={(tags) => {
-            this.props.preferences.updateUiRunsTags(tags);
+            this.setState({userTags: tags});
             this.hideTagsModal();
           }}
-          initialTags={userTags}
+          allowedTags={allowedUserTags}
         />
       </FormItem>
     );
