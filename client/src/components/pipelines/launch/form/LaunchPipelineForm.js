@@ -5130,8 +5130,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return acc;
     }, {});
 
-    console.log(this.state.userTags)
-
     return (
       <FormItem
         className={styles.formItemRow}

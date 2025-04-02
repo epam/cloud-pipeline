@@ -10,11 +10,11 @@ class CustomTagsEditor extends React.Component {
     };
   }
 
-  updateDisplay = (updatedTag, newDisplay) => {
+  updateTags = (updatedTag, newValue) => {
     this.setState(({tags}) => ({
       tags: {
         ...tags,
-        [updatedTag]: newDisplay
+        [updatedTag]: newValue
       }
     }));
   };
@@ -63,7 +63,7 @@ class CustomTagsEditor extends React.Component {
               <Input
                 value={tags[tag]}
                 placeholder="Enter value"
-                onChange={(e) => this.updateDisplay(tag, e.target.value)}
+                onChange={(e) => this.updateTags(tag, e.target.value)}
               />
             </Col>
           </Row>
