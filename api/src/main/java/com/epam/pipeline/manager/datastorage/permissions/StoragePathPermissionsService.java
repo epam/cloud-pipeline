@@ -227,6 +227,10 @@ public class StoragePathPermissionsService {
         orThrowAccessDenied(findFolderPermissions(storageId, path).filter(this::hasWritePermissions));
     }
 
+    public boolean isWriteAllowedToFolder(final Long storageId, final String path) {
+        return findFolderPermissions(storageId, path).filter(this::hasWritePermissions).isPresent();
+    }
+
     /**
      * Determines if current user can read folder by given path.
      * If no permissions provided for user directly or one of user's group an AccessDeniedException
@@ -238,6 +242,10 @@ public class StoragePathPermissionsService {
     public void canReadFolder(final Long storageId, final String path) {
         log.debug("Checking permissions on folder '{}' for storage '{}'", path, storageId);
         orThrowAccessDenied(findFolderPermissions(storageId, path));
+    }
+
+    public boolean isReadAllowedToFolder(final Long storageId, final String path) {
+        return findFolderPermissions(storageId, path).isPresent();
     }
 
     /**
@@ -254,6 +262,10 @@ public class StoragePathPermissionsService {
         orThrowAccessDenied(findFilePermissions(storageId, path).filter(this::hasWritePermissions));
     }
 
+    public boolean isWriteAllowedToFile(final Long storageId, final String path) {
+        return findFilePermissions(storageId, path).filter(this::hasWritePermissions).isPresent();
+    }
+
     /**
      * Determines if current user can read file by given path.
      * Permissions shall be granted directly to file or one of it`s parent folder.
@@ -265,6 +277,10 @@ public class StoragePathPermissionsService {
     public void canReadFile(final Long storageId, final String path) {
         log.debug("Checking permissions on file '{}' for storage '{}'", path, storageId);
         orThrowAccessDenied(findFilePermissions(storageId, path));
+    }
+
+    public boolean isReadAllowedToFile(final Long storageId, final String path) {
+        return findFilePermissions(storageId, path).isPresent();
     }
 
     /**

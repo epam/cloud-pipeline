@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
+import com.epam.pipeline.manager.security.AuthManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -51,9 +53,11 @@ public class TemporaryCredentialsManagerImplTest {
     private final List<TemporaryCredentialsGenerator> credentialsGenerators = Collections.singletonList(generator);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final DataStorageManager dataStorageManager = mock(DataStorageManager.class);
+    private final StoragePathPermissionsService pathPermissionsService = mock(StoragePathPermissionsService.class);
+    private final AuthManager authManager = mock(AuthManager.class);
 
     private final TemporaryCredentialsManagerImpl manager = new TemporaryCredentialsManagerImpl(credentialsGenerators,
-            messageHelper,  dataStorageManager);
+            messageHelper, dataStorageManager, pathPermissionsService, authManager);
 
     @Before
     public void setUp() {
