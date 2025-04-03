@@ -1590,7 +1590,7 @@ public class DataStorageManager implements SecuredEntityManager {
             return listing;
         }
         listing.setParentFolderMask(Optional.ofNullable(permissionsContainer.getFolderMask())
-                .orElse(AclPermission.READ.getMask()));
+                .orElse(new AclPermission(AclPermission.READ.getMask()).getSimpleMask()));
         return listing;
     }
 }
