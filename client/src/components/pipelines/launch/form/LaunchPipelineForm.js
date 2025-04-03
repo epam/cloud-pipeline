@@ -5111,7 +5111,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderCustomTagsConfiguration = () => {
+  renderCustomTagsConfigurationItem = () => {
     if (
       this.props.detached ||
       this.props.isDetachedConfiguration ||
@@ -5121,12 +5121,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
 
     return (
-      <div style={{margin: '10px 5px'}}>
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customTags')}
+        {...this.leftFormItemLayout}
+        label="Tags"
+      >
         <CustomTagsControl
           tags={this.state.userTags}
           onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
+          buttonText="Configure"
         />
-      </div>
+      </FormItem>
     );
   };
 
@@ -6193,7 +6198,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }}>
               {this.renderEstimatedPriceInfo()}
             </div>
-            {this.renderCustomTagsConfiguration()}
           </div>
           {this.renderAlerts()}
           {
@@ -6334,6 +6338,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 classNames(styles.section, {[styles.hidden]: !this.advancedSectionVisible})
               }
               header={this.getPanelHeader(ADVANCED)}>
+              {this.renderCustomTagsConfigurationItem()}
               {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}

@@ -11,13 +11,14 @@ function CustomTagsButton (props) {
     style,
     disabled,
     tags,
-    onClick
+    onClick,
+    buttonText = 'Configure tags'
   } = props;
 
   let component = (
     <span>
       <Icon type="setting" />
-      <span className={styles.configure}>Configure custom tags</span>
+      <span className={styles.configure}>{buttonText}</span>
     </span>
   );
 
@@ -52,7 +53,8 @@ CustomTagsButton.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   tags: PropTypes.object,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  buttonText: PropTypes.node
 };
 
 export default CustomTagsButton;

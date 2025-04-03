@@ -67,7 +67,7 @@ class CustomTagsEditor extends React.Component {
     return (
       <Modal
         visible={visible}
-        title="Specify job custom tags"
+        title="Specify job tags"
         onCancel={this.handleCancel}
         footer={[
           <Button key="back" onClick={this.handleCancel}>Cancel</Button>,

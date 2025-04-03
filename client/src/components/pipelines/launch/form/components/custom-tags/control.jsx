@@ -23,7 +23,8 @@ class CustomTagsControl extends React.PureComponent {
       className,
       style,
       disabled,
-      tags = {}
+      tags = {},
+      buttonText
     } = this.props;
 
     const {visible} = this.state;
@@ -37,6 +38,7 @@ class CustomTagsControl extends React.PureComponent {
           tags={tags}
           disabled={disabled}
           onClick={this.onOpen}
+          buttonText={buttonText}
         />
         <CustomTagsEditor
           visible={visible}
@@ -54,7 +56,8 @@ CustomTagsControl.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   tags: PropTypes.object,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  buttonText: PropTypes.node
 };
 
 export default CustomTagsControl;
