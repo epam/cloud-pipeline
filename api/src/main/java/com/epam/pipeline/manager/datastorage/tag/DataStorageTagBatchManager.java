@@ -82,7 +82,7 @@ public class DataStorageTagBatchManager {
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> allowedPaths = getAllowedPaths(root.get(), request.getRequests(),
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
                 DataStorageTagInsertRequest::getPath, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to insert tags.", storageId);
@@ -110,7 +110,7 @@ public class DataStorageTagBatchManager {
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> allowedPaths = getAllowedPaths(root.get(), request.getRequests(),
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
                 DataStorageTagUpsertRequest::getPath, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to upsert tags.", storageId);
@@ -137,7 +137,7 @@ public class DataStorageTagBatchManager {
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> readAllowedPaths = getAllowedPaths(root.get(), request.getRequests().stream()
+        final List<String> readAllowedPaths = getAllowedPaths(storageId, request.getRequests().stream()
                         .map(DataStorageTagCopyRequest::getSource).collect(Collectors.toList()),
                 DataStorageTagCopyRequest.DataStorageTagCopyRequestObject::getPath, AclPermission.READ.getMask());
         if (Objects.nonNull(readAllowedPaths) && CollectionUtils.isEmpty(readAllowedPaths)) {
@@ -151,7 +151,7 @@ public class DataStorageTagBatchManager {
                         .filter(o -> isPathAllowed(o.getPath(), readAllowedPaths))
                         .collect(Collectors.toMap(Function.identity(),
                             it -> tagDao.load(root.get(), new DataStorageObject(it.getPath(), it.getVersion()))));
-        final List<String> writeAllowedPaths = getAllowedPaths(root.get(), request.getRequests().stream()
+        final List<String> writeAllowedPaths = getAllowedPaths(storageId, request.getRequests().stream()
                         .map(DataStorageTagCopyRequest::getDestination).collect(Collectors.toList()),
                 DataStorageTagCopyRequest.DataStorageTagCopyRequestObject::getPath, AclPermission.WRITE.getMask());
         if (Objects.nonNull(writeAllowedPaths) && CollectionUtils.isEmpty(writeAllowedPaths)) {
@@ -179,7 +179,7 @@ public class DataStorageTagBatchManager {
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> allowedPaths = getAllowedPaths(root.get(), request.getRequests(),
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
                 DataStorageTagLoadRequest::getPath, AclPermission.READ.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to load tags.", storageId);
@@ -200,7 +200,7 @@ public class DataStorageTagBatchManager {
         if (!root.isPresent()) {
             return;
         }
-        final List<String> allowedPaths = getAllowedPaths(root.get(), request.getRequests(),
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
                 DataStorageTagDeleteRequest::getPath, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to delete tags.", storageId);
@@ -220,7 +220,7 @@ public class DataStorageTagBatchManager {
         if (!root.isPresent()) {
             return;
         }
-        final List<String> allowedPaths = getAllowedPaths(root.get(), request.getRequests(),
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
                 DataStorageTagDeleteAllRequest::getPath, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to delete all tags.", storageId);
@@ -241,9 +241,16 @@ public class DataStorageTagBatchManager {
     private <T> List<String> getAllowedPaths(final Long storageId, final List<T> requests,
                                              final Function<T, String> getPathFunction,
                                              final int mask) {
+        if (authManager.isAdmin()) {
+            return null;
+        }
         final AbstractDataStorage storage = storageDao.loadDataStorage(storageId);
+        if (Objects.isNull(storage)) {
+            log.debug("Storage '{}' was not found.", storageId);
+            return Collections.emptyList();
+        }
         if (!(storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
-                && !authManager.isAdmin() && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner()))) {
+                && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner()))) {
             return null;
         }
         return storagePathPermissionsService.filterFiles(storageId, requests.stream()
