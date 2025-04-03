@@ -22,7 +22,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.iamcredentials.v1.IAMCredentials;
@@ -53,7 +53,7 @@ public class GCPClient {
 
     public GCPClient() throws GeneralSecurityException, IOException {
         this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        this.jsonFactory = JacksonFactory.getDefaultInstance();
+        this.jsonFactory = GsonFactory.getDefaultInstance();
     }
 
     public Compute buildComputeClient(final GCPRegion region) throws IOException {

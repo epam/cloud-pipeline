@@ -269,6 +269,18 @@ public class ToolGroupManager implements SecuredEntityManager {
         }
         return loadResult.orElse(null);
     }
+    public ToolGroup loadByRegistryAndName(final String registry, final String groupName) {
+        final List<ToolGroup> groups = toolGroupDao.loadToolGroupsByNameAndRegistryName(groupName, registry);
+        Assert.isTrue(groups.size() <= 1, messageHelper.getMessage(MessageConstants.ERROR_TOO_MANY_RESULTS,
+                registry + Constants.PATH_DELIMITER + groupName));
+        Assert.isTrue(!groups.isEmpty(), messageHelper.getMessage(MessageConstants.ERROR_TOOL_GROUP_NOT_FOUND,
+                registry + Constants.PATH_DELIMITER + groupName));
+        final ToolGroup result = groups.get(0);
+        result.setTools(toolManager.loadToolsByGroup(result.getId()));
+        result.setPrivateGroup(result.getName().equalsIgnoreCase(makePrivateGroupName()));
+
+        return result;
+    }
 
     /**
      * Splits image into group and image name,

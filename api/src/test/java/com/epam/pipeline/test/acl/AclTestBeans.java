@@ -30,6 +30,7 @@ import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
 import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
@@ -156,6 +157,7 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.security.jwt.GCPJwtTokenVerifier;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -622,6 +624,12 @@ public class AclTestBeans {
 
     @MockBean
     protected EngineRunTaskService engineRunTaskService;
+
+    @MockBean
+    protected CloudRegionDao mockCloudRegionDao;
+
+    @SpyBean
+    protected GCPJwtTokenVerifier spyGcpJwtTokenVerifier;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

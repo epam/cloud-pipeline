@@ -213,4 +213,10 @@ public class AuthManager {
         }
         return authentication.getPrincipal();
     }
+
+    public void setAdminContext() {
+        final UserContext userContext = getAdminContext();
+        JwtAuthenticationToken token = new JwtAuthenticationToken(userContext, userContext.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(token);
+    }
 }

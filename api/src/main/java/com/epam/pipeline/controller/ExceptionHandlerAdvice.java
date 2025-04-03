@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.exception.GCPAuthorizationException;
 import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.exception.StorageForbiddenOperationException;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
@@ -73,7 +74,8 @@ public class ExceptionHandlerAdvice {
             } else {
                 message = messageHelper.getMessage("error.sql");
             }
-        } else if (exception instanceof DockerAuthorizationException) {
+        } else if (exception instanceof DockerAuthorizationException ||
+                exception instanceof GCPAuthorizationException) {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.UNAUTHORIZED);
         } else if (exception instanceof StorageForbiddenOperationException) {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.FORBIDDEN);

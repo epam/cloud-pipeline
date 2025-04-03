@@ -121,6 +121,13 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
+    @SneakyThrows
+    public <T> void assertResponseEntity(final MvcResult mvcResult, final T payload) {
+        final String actual = mvcResult.getResponse().getContentAsString();
+        assertTrue(StringUtils.isNotBlank(actual));
+        assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(payload));
+    }
+
     public void assertResponse(final MvcResult mvcResult) {
         assertResponse(mvcResult, null, new TypeReference<Result<Object>>() {});
     }
