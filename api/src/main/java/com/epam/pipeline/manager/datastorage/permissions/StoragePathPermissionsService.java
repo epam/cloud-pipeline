@@ -354,6 +354,7 @@ public class StoragePathPermissionsService {
 
         final Integer folderMask = pathPermissionsDao.findClosestParentFolderPermission(storageId, sids, parentFolders)
                 .map(StoragePathPermissions::getMask)
+                .map(this::toSimpleMask)
                 .orElse(null);
         permissionsContainer.setFolderMask(folderMask);
 
@@ -484,7 +485,7 @@ public class StoragePathPermissionsService {
         return loadedPaths.stream()
                 .filter(permissions -> currentFolder.equals(permissions.getFolderPath()))
                 .filter(permissions -> StringUtils.isNotBlank(permissions.getFileName()))
-                .collect(Collectors.toMap(StoragePathPermissions::getFileName, StoragePathPermissions::getMask));
+                .collect(Collectors.toMap(StoragePathPermissions::getFileName, p -> toSimpleMask(p.getMask())));
     }
 
     private boolean hasWritePermissions(final StoragePathPermissions permissions) {
@@ -518,7 +519,7 @@ public class StoragePathPermissionsService {
         final String folderName = extractFolderName(folderPath, currentFolder);
         final int mask = permission.getMask();
         if (folderPath.endsWith(folderName + ProviderUtils.DELIMITER)) {
-            masksByNames.putIfAbsent(folderName, mask);
+            masksByNames.putIfAbsent(folderName, toSimpleMask(mask));
         }
     }
 
@@ -530,11 +531,11 @@ public class StoragePathPermissionsService {
             return;
         }
         if (!masksByNames.containsKey(folderName)) {
-            masksByNames.put(folderName, AclPermission.READ.getMask());
+            masksByNames.put(folderName, new AclPermission(AclPermission.READ.getMask()).getSimpleMask());
             return;
         }
         final int oldMask = Optional.ofNullable(masksByNames.get(folderName)).orElse(0);
-        final int newMask = permission.getMask();
+        final int newMask = toSimpleMask(permission.getMask());
         // downgrade permission:
         // if at least one child path has lower permissions parent folder shall respect it
         if (newMask < oldMask) {
@@ -618,5 +619,16 @@ public class StoragePathPermissionsService {
 
     private String extractFolderPath(final String path, final int lastSeparatorIndex) {
         return lastSeparatorIndex == -1 ? Strings.EMPTY : path.substring(0, lastSeparatorIndex + 1);
+    }
+
+    private int toSimpleMask(final int extendedMask) {
+        int simpleMask = 0;
+        for (final AclPermission p : AclPermission.getBasicPermissions()) {
+            if ((extendedMask & p.getMask()) == p.getMask()) {
+                simpleMask = simpleMask | p.getSimpleMask();
+            }
+        }
+
+        return simpleMask;
     }
 }

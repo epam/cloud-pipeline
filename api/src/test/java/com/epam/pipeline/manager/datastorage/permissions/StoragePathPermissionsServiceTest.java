@@ -57,6 +57,7 @@ public class StoragePathPermissionsServiceTest {
     private static final String FILE_PATH1 = PATH1 + FILENAME1;
     private static final int READ = 1;
     private static final int WRITE = 4;
+    private static final int SIMPLE_WRITE = 2;
     private static final Long STORAGE_ID = 1L;
     private static final List<String> SPLIT_TO_PATH0 = Arrays.asList(ROOT_PATH, PATH0);
     private static final List<String> SPLIT_TO_PATH1 = Arrays.asList(ROOT_PATH, PATH0, "/A/B/", PATH2, PATH1);
@@ -263,7 +264,7 @@ public class StoragePathPermissionsServiceTest {
 
         final StorageFolderListPermissionsContainer permissionsContainer = service
                 .getFolderListPermissions(STORAGE_ID, PATH1);
-        assertThat(permissionsContainer.getFolderMask()).isEqualTo(WRITE);
+        assertThat(permissionsContainer.getFolderMask()).isEqualTo(SIMPLE_WRITE);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
     }
 
