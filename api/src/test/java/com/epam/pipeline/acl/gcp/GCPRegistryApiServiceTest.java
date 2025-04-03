@@ -43,15 +43,11 @@ public class GCPRegistryApiServiceTest extends AbstractAclTest {
     private static final String GCP_REPOSITORY = "gcp-repo";
     private static final String DOCKER_IMAGE = "docker-image";
     private static final String DOCKER_IMAGE_DIGEST = "sha256:f6c859b589b72e67c05d";
-    private static final String GCP_JWT_EXPIRED_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkxNGZiOWIwODcxODBiYzAzMDMyO" +
-            "DQ1MDBjNWY1NDBjNmQ0ZjVlMmYiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwczovL3B1YnN1Yi10dXRvcmlhbC02MTU2MTE3Njc" +
-            "0MDkuZXVyb3BlLXdlc3QzLnJ1bi5hcHAvIiwiYXpwIjoiMTA5OTkyMTgwODIyMDQ3NDg2Nzc4IiwiZW1haWwiOiJnY2ZhLXBpcGVs" +
-            "aW5lLWduYWkxMC1zYS1kZXZAaGwyLWVwbS1nbmFpMTAtdDFpeWx1LmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiZW1haWxfdmVya" +
-            "WZpZWQiOnRydWUsImV4cCI6MTc0MjM3NjcwMiwiaWF0IjoxNzQyMzczMTAyLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS" +
-            "5jb20iLCJzdWIiOiIxMDk5OTIxODA4MjIwNDc0ODY3NzgifQ.iINc0FWK6iXVuujeHWwsCQbHONClZpqS2Ab_YT9fQ65OHg9nkszg" +
-            "tO7-C3Jx6M0QwXCyFKVv7lrzGLjBbs7ioKloeG27DmpYgCzgKtUwkPWxuhoivBfIl9GwhbLH1z73LRGK5fJjZVkfP8P1PN6QA8swO" +
-            "yn9eQg2n7w7OofguwAmb2Qi4Raa4F5OjH-YjdTAGhHl16L-eciofV7wU8i_JRKJOWMSehw3fN4EPv0OYz1FY_5pkafrGQY7XG4DgX" +
-            "u9-UbKLVvUQ-IaglEbvDo-u5utbYpIlGeezn_PRV9rXN93hhYRBW4OLzN5xpnBpNuQAN7kOKkSCPfnNuCtaFQGhg";
+    private static final String GCP_JWT_EXPIRED_TOKEN = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiYX" +
+            "VkIjoidGVzdCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJleHAiOjE3M" +
+            "TIxNTE2NTgsImlhdCI6MTcxMjA2NTI1OCwianRpIjoiY2IwZWJkNjAtZTBjZi00ODIxLWIxN2EtZjg5YTlkODJlNjIxIiwiZW1haWwi" +
+            "OiJ0ZXN0QHRlc3QuY29tIn0.Kvt-ZFEYgbtgpuvsdn7vY0W-agftCPXpfV_09l88ok-P-dOOnfsq1pp4FmlBQK87QluERCUGE3WSZk_" +
+            "RqithWc6yeWxbEUAaaPPSlUl0XAcskntGDEloOB0_tcg0ZB9RautC2x9LDp5o6sIgCqaeEwnzzpBN9sUejZOjEqH8NBc";
     private static final String GCP_JWT_EXPIRED_TOKEN_BEARER = "Bearer " + GCP_JWT_EXPIRED_TOKEN;
     @Autowired
     private GCPRegistryApiService gcpRegistryApiService;
