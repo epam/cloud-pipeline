@@ -485,8 +485,7 @@ public class StoragePathPermissionsService {
         return loadedPaths.stream()
                 .filter(permissions -> currentFolder.equals(permissions.getFolderPath()))
                 .filter(permissions -> StringUtils.isNotBlank(permissions.getFileName()))
-                .peek(permissions -> permissions.setMask(permissions.getMask()))
-                .collect(Collectors.toMap(StoragePathPermissions::getFileName, StoragePathPermissions::getMask));
+                .collect(Collectors.toMap(StoragePathPermissions::getFileName, p -> toSimpleMask(p.getMask())));
     }
 
     private boolean hasWritePermissions(final StoragePathPermissions permissions) {
