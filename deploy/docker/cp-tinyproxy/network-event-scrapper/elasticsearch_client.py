@@ -25,7 +25,7 @@ CP_ES_NETEVENT_MAPPING = {
             "host_ip": {
                 "type": "keyword"
             },
-            "runid": {
+            "run_id": {
                 "type": "integer"
             },
             "resource": {

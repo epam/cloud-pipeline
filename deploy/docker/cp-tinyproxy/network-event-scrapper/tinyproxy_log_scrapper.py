@@ -7,6 +7,9 @@ import datetime
 
 from common import NetworkEvent
 
+MILLS = 1000
+
+
 class TinyproxyLogScrapper(threading.Thread):
 
     LOG_LINE_REGEXP = "CONNECT[\s\t]+(\w+\s\d{1,2}\s\d{2}:\d{2}:\d{2}.\d{3})[\s\t]\[.*\]:[\s\t](Request|Connect)[\s\t]\(file descriptor (\d+)\):[\s\t](.+)"
@@ -97,21 +100,30 @@ class TinyproxyLogScrapper(threading.Thread):
         if date:
             date_obj = datetime.datetime.strptime(date, "%b %d %H:%M:%S.%f")
             date_obj = date_obj.replace(year=datetime.datetime.now().year)
-            timestamp = int(datetime.datetime.timestamp(date_obj))
+            timestamp = int(datetime.datetime.timestamp(date_obj)) * MILLS
         else:
             timestamp = None
         return timestamp
 
     @staticmethod
-    def follow(file):
+    def follow(file, sleep_time=0.1):
         file_size = os.stat(file.name).st_size
         file.seek(0, os.SEEK_END)
+        line = ''
         while True:
             if os.stat(file.name).st_size < file_size:
+                yield line
+                line = ''
                 file.seek(0)
-            line = file.readline()
-            if not line:
-                time.sleep(0.1)
+                file_size = os.stat(file.name).st_size
+                continue
+            tmp = file.readline()
+            if tmp is not None and tmp != "":
+                line += tmp
+                if line.endswith("\n"):
+                    yield line
+                    line = ''
+            elif sleep_time:
+                time.sleep(sleep_time)
                 continue
             file_size = os.stat(file.name).st_size
-            yield line
