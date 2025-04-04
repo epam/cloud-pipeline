@@ -582,7 +582,7 @@ public class RoleModelTest
         logout();
         loginAs(user)
                 .clusterNodes()
-                .assertNodesTableIsEmpty();
+                .validateThereIsNoNode(getLastRunId());
     }
 
     @Test(priority = 22, enabled = false)
