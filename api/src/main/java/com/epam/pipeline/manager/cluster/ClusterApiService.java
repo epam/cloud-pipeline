@@ -26,6 +26,9 @@ import com.epam.pipeline.entity.cluster.*;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -141,5 +144,18 @@ public class ClusterApiService {
     @PreAuthorize(ADMIN_ONLY)
     public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
         return podsManager.getContainerLogs(podId, containerId, limit);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public NetworkEventFilter getPlatformNetworkEventFilter() {
+        return usageMonitoringManager.getPlatformNetworkStatsFilters();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<HistogramBin> filterPlatformNetworkEvents(final HistogramType histogramType,
+                                                          final LocalDateTime from, final LocalDateTime to,
+                                                          final Integer intervals,
+                                                          final NetworkEventFilter filter) {
+        return usageMonitoringManager.getPlatformNetworkStats(histogramType, from, to, intervals, filter);
     }
 }
