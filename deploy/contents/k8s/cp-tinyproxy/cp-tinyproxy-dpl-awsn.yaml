@@ -19,6 +19,7 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      serviceAccountName: cp-main-service
       containers:
         - name: cp-tinyproxy
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:tinyproxy-$CP_VERSION
