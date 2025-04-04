@@ -37,6 +37,7 @@ if __name__ == '__main__':
     elasticsearch_host = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST', None)
     elasticsearch_index = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_INDEX_NAME', "cp-network-events")
     elasticsearch_batch_size = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_BATCH_SIZE', "16"))
+    elasticsearch_rollover_index_count = int(os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_ROLLOVER_INDEX_COUNT', "30"))
     log_dir = os.getenv('CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR', "/var/log/cp-network-event-scrapper")
 
     log_handler = [
@@ -62,7 +63,7 @@ if __name__ == '__main__':
         exit(1)
 
     run_host_cache = InMemoryRunHostsCache()
-    elasticsearch = ElasticSearchClient(elasticsearch_host, elasticsearch_index, elasticsearch_batch_size)
+    elasticsearch = ElasticSearchClient(elasticsearch_host, elasticsearch_index, elasticsearch_batch_size, elasticsearch_rollover_index_count)
     kube_watcher = KubeEventWatcher(run_host_cache, error_delay=sync_error_delay)
     log_scrapper = TinyproxyLogScrapper(tinyproxy_host, log_file_to_read, run_host_cache, elasticsearch)
 

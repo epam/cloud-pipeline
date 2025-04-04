@@ -26,7 +26,7 @@ CP_ES_NETEVENT_MAPPING = {
                 "type": "keyword"
             },
             "run_id": {
-                "type": "integer"
+                "type": "keyword"
             },
             "resource": {
                 "type": "text"
@@ -46,12 +46,13 @@ CP_ES_NETEVENT_INDEX_POSTFIX = "-{now/m{yyyy.MM.dd}}-000001"
 
 class ElasticSearchClient:
 
-    def __init__(self, elasticsearch_host, index_alias, batch_size=16):
+    def __init__(self, elasticsearch_host, index_alias, batch_size=16, rollover_index_count=30):
         self.batch = []
         self.batch_size = batch_size
         self.index_alias = index_alias
         self.elasticsearch_host = elasticsearch_host
         self.client = Elasticsearch(elasticsearch_host)
+        self.rollover_index_count = rollover_index_count
         self.crete_index_if_not_exists()
         self.last_rollover = self.try_to_rollover_index()
 
@@ -69,9 +70,23 @@ class ElasticSearchClient:
                     }
                 }
             )
+            self.client.indices.put_template(
+                name=self.index_alias,
+                body={
+                    "template": "{}-*".format(self.index_alias),
+                    "mappings": mappings
+                }
+            )
 
     def try_to_rollover_index(self):
         if self.client.indices.rollover(alias=self.index_alias, body=ES_INDEX_ROLLOVER_CONDITION):
+            existing = self.client.indices.get(index=self.index_alias + "-*")
+            if existing and len(existing) > self.rollover_index_count:
+                logging.debug("Removing old indexes...")
+                count_to_delete = len(existing) - self.rollover_index_count
+                indexes_to_remove = sorted(existing.keys())[:count_to_delete]
+                logging.debug("Removing: {} indexes".format(indexes_to_remove))
+                self.client.indices.delete(index=",".join(indexes_to_remove))
             return datetime.datetime.now()
         return None
 

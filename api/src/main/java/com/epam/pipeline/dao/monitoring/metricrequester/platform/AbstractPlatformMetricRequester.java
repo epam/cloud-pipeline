@@ -46,14 +46,14 @@ import java.util.stream.Stream;
 @Slf4j
 public abstract class AbstractPlatformMetricRequester {
 
-    private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
+    protected static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
     protected static final IndicesOptions INDICES_OPTIONS = IndicesOptions.STRICT_EXPAND_OPEN_CLOSED;
-    private static final String ES_WILDCARD = "*";
+    protected static final String ES_WILDCARD = "*";
 
     private static final String ORDER_FIELD = "order";
 
-    private final HeapsterElasticRestHighLevelClient client;
-    private final String indexNamePattern;
+    protected final HeapsterElasticRestHighLevelClient client;
+    protected final String indexNamePattern;
 
     public AbstractPlatformMetricRequester(final HeapsterElasticRestHighLevelClient client,
                                            final String indexNamePattern) {

@@ -26,18 +26,23 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.*;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class NetworkEventRequester extends AbstractPlatformMetricRequester {
@@ -127,8 +132,22 @@ public class NetworkEventRequester extends AbstractPlatformMetricRequester {
                 .indicesOptions(INDICES_OPTIONS);
     }
 
+    @Override
     protected HistogramBin toHistogramBin(final MultiBucketsAggregation.Bucket bucket) {
         return HistogramBin.builder().value(bucket.getKeyAsString()).count(bucket.getDocCount()).build();
+    }
+
+    @Override
+    protected String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+        // Getting - 1 day because some of the logs can be in prev day index due to rollover logic
+        final LocalDate fromDate = from.toLocalDate().minusDays(1);
+        final LocalDate toDate = to.toLocalDate();
+        return Stream.iterate(fromDate, date -> date.plusDays(1))
+                .limit(Period.between(fromDate, toDate).getDays() + 1)
+                .map(date -> date.format(DATE_FORMATTER))
+                .map(dateStr -> dateStr + "-*")
+                .map(str -> String.format(indexNamePattern, str))
+                .toArray(String[]::new);
     }
 
     private AggregationBuilder getAggregation(final HistogramType histogramType,
