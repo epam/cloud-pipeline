@@ -33,6 +33,9 @@ import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
@@ -360,5 +363,40 @@ public class ClusterController extends AbstractRestController {
                                             @RequestParam final String containerId,
                                             @RequestParam(required = false) final Integer limit) {
         return Result.success(clusterApiService.getContainerLogs(podId, containerId, limit));
+    }
+
+    @RequestMapping(value = "/cluster/network/usage", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns available filters to filter network usage of the platform.",
+            notes = "Returns available filters to filter network usage of the platform.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<NetworkEventFilter> getPlatformNetworkEventFilter() {
+        return Result.success(clusterApiService.getPlatformNetworkEventFilter());
+    }
+
+    @RequestMapping(value = "/cluster/network/usage", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns histogram for platform network usage, filtered by specified filter object",
+            notes = "Returns histogram for platform network usage, filtered by specified filter object",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<HistogramBin>> filterPlatformNetworkEvents(
+            @RequestParam final HistogramType histogramType,
+            @RequestParam(required = false, defaultValue = "10") final Integer intervals,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = FROM) final LocalDateTime from,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = TO) final LocalDateTime to,
+            @RequestBody final NetworkEventFilter filter) {
+        return Result.success(
+                clusterApiService.filterPlatformNetworkEvents(histogramType, from, to, intervals, filter)
+        );
     }
 }
