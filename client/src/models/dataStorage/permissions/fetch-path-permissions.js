@@ -31,7 +31,6 @@ export default class FetchPathPermissions extends Remote {
 
   postprocess (value) {
     const results = value.payload || [];
-    console.log(results);
     return results.map((o) => {
       const {
         type,
