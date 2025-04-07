@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {AutoComplete, Button, Modal} from 'antd';
 import GroupFind from '../../../../../../models/user/GroupFind';
 import Roles from '../../../../../../models/user/Roles';
-import GroupName from './group-name';
+import GroupName, {getGroupName} from './group-name';
 
 class PickGroupsModal extends React.PureComponent {
   state = {
@@ -226,7 +226,7 @@ class PickGroupsModal extends React.PureComponent {
           onSearch={this.onSearchChanged}
           onSelect={this.onGroupChanged}
           onBlur={this.onClearSearch}
-          optionLabelProp="value"
+          optionLabelProp="title"
         >
           <AutoComplete.OptGroup label="Roles">
             {
@@ -234,9 +234,9 @@ class PickGroupsModal extends React.PureComponent {
                 <AutoComplete.Option
                   key={r.name}
                   value={r.name}
-                  title={r.name}
+                  title={getGroupName(r.name)}
                 >
-                  <GroupName group={r.name} showWithPrefix />
+                  <GroupName group={r.name} />
                 </AutoComplete.Option>
               ))
             }
@@ -249,9 +249,9 @@ class PickGroupsModal extends React.PureComponent {
                     <AutoComplete.Option
                       key={r.name}
                       value={r.name}
-                      title={r.name}
+                      title={getGroupName(r.name)}
                     >
-                      <GroupName group={r.name} showWithPrefix />
+                      <GroupName group={r.name} />
                     </AutoComplete.Option>
                   ))
                 }
