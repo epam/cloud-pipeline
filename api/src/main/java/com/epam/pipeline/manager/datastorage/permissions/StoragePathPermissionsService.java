@@ -544,19 +544,26 @@ public class StoragePathPermissionsService {
     }
 
     private Optional<Integer> findMatchingMask(final String filePath, final Map<String, Integer> masksByPaths) {
-        String currentPath = ProviderUtils.withLeadingDelimiter(filePath);
+        final String normalizedFilePath = ProviderUtils.withLeadingDelimiter(filePath);
+        final Integer fileMask = masksByPaths.get(normalizedFilePath);
+        if (Objects.nonNull(fileMask)) {
+            return Optional.of(fileMask);
+        }
 
+        String currentPath = normalizedFilePath.substring(0, normalizedFilePath.lastIndexOf(ProviderUtils.DELIMITER));
         // Traverse the folder hierarchy from the file path back to the root
-        while (currentPath.contains(ProviderUtils.DELIMITER)) {
-            final Integer mask = masksByPaths.get(currentPath);
+        while (StringUtils.isNotBlank(currentPath)) {
+            final Integer mask = masksByPaths.get(normalizePath(currentPath));
             if (Objects.nonNull(mask)) {
                 return Optional.of(mask);
             }
-            currentPath = normalizePath(currentPath.substring(0, currentPath.lastIndexOf(ProviderUtils.DELIMITER)));
-            if (currentPath.equals(ProviderUtils.DELIMITER)) {
-                break;
+            final int lastDelimiterIndex = currentPath.lastIndexOf(ProviderUtils.DELIMITER);
+            if (lastDelimiterIndex <= 0) {
+                return Optional.ofNullable(masksByPaths.get(ProviderUtils.DELIMITER));
             }
+            currentPath = currentPath.substring(0, lastDelimiterIndex);
         }
+
         return Optional.empty();
     }
 
