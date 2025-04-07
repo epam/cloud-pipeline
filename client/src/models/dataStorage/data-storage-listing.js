@@ -72,7 +72,9 @@ function generateStorageItemMapper (storageMask) {
   const mapper = (o) => ({
     ...o,
     mask: o.mask ?? storageMask,
-    versions: (o.versions || []).map(mapper)
+    versions: Object.entries(o.versions || {}).map(([version, versionData]) => ({
+      [version]: mapper(versionData)
+    })).reduce((acc, curr) => ({...acc, ...curr}), {})
   });
   return mapper;
 }

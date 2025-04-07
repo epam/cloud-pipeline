@@ -15,7 +15,7 @@
  */
 
 import Remote from '../../basic/Remote';
-import {getStorageItemPermissionType, getStorageItemType} from "./utilities";
+import {getStorageItemPermissionType, getStorageItemType} from './utilities';
 
 export default class FetchPathPermissions extends Remote {
   constructor (storageId, storagePath, type = 'file') {
@@ -39,7 +39,7 @@ export default class FetchPathPermissions extends Remote {
       return {
         ...rest,
         type: getStorageItemType(type)
-      }
+      };
     });
   }
 }
