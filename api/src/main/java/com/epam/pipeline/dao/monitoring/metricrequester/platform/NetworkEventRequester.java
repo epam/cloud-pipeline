@@ -174,8 +174,7 @@ public class NetworkEventRequester extends AbstractPlatformMetricRequester {
                 return AggregationBuilders.dateHistogram(TIME_HISTOGRAM_NAME)
                         .field(TIMESTAMP_FIELD)
                         .order(BucketOrder.key(true))
-                        .interval(interval.toMillis())
-                        .minDocCount(1L);
+                        .interval(interval.toMillis());
         }
     }
 
