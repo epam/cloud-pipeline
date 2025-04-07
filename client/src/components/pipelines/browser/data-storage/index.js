@@ -693,7 +693,7 @@ export default class DataStorage extends React.Component {
         key: `${i.type}_${i.path}`,
         ...i,
         downloadable: isDownloadable,
-        editable: !i.deleteMarker && roleModel.writeAlloweљљd(i),
+        editable: !i.deleteMarker && roleModel.writeAllowed(i),
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
         deletable: roleModel.writeAllowed(i),
         children: getChildList(i, i.versions, sensitive),

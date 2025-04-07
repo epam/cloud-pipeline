@@ -68,23 +68,10 @@ const mbToBytes = mb => {
   return Math.round(mb * (1024 ** 2));
 };
 
-/**
- * This function converts extended mask of the storage items to the collapsed mask
- * used everywhere in the cloud application.
- * @param permissionMask
- * @returns {undefined|*}
- */
-function storageItemPermissionMaskMapper (permissionMask) {
-  if (permissionMask === undefined) {
-    return undefined;
-  }
-  return roleModel.collapseMask(permissionMask);
-}
-
 function generateStorageItemMapper (storageMask) {
   const mapper = (o) => ({
     ...o,
-    mask: storageItemPermissionMaskMapper(o.mask) ?? storageMask,
+    mask: o.mask ?? storageMask,
     versions: (o.versions || []).map(mapper)
   });
   return mapper;
@@ -901,7 +888,7 @@ class DataStorageListing {
       this._pageInfo = {
         path: pathCorrected ?? '/',
         name: (pathCorrected ?? '/').split('/').pop(),
-        mask: storageItemPermissionMaskMapper(parentFolderMask) ?? storageMask
+        mask: parentFolderMask ?? storageMask
       };
       this.pageLoaded = true;
       this.pagePath = pathCorrected;
@@ -970,11 +957,10 @@ class DataStorageListing {
       submitChanges(() => {
         const mapper = generateStorageItemMapper(storageMask);
         this._pageElements = results.map(mapper);
-        console.log(storageMask, this._pageElements);
         this._pageInfo = {
           path: pathCorrected ?? '/',
           name: (pathCorrected ?? '/').split('/').pop(),
-          mask: storageItemPermissionMaskMapper(parentFolderMask) ?? storageMask
+          mask: parentFolderMask ?? storageMask
         };
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
