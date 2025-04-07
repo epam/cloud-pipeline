@@ -148,6 +148,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
@@ -619,8 +621,8 @@ To create your own scenario the default template of the main file shall be edite
 <p><strong><em>Example</em></strong>: below is the piece of the <strong>main_file</strong> of the Gromacs pipeline:<br />
 <img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_04.png" /></p>
 <h5 id="configjson">config.json</h5>
-<p>This file contains pipeline execution parameters. You can not rename or delete it because of it's used in pipeline scripts and they will not work without it.<br />
-<strong><em>Note</em></strong>: it is advised that pipeline execution settings are modified via <a href="#configuration">CONFIGURATION tab</a> (e.g. if you want to change default settings for pipeline execution) or via <a href="../6.2._Launch_a_pipeline/">Launch pipeline page</a> (e.g. if you want to change pipeline settings for a current run). Manual <strong><code>config.json</code></strong> editing should be used only for advanced users (primarily developers) since json format is not validated in this case.<br />
+<p>This file contains pipeline execution parameters and settings.</p>
+<p><strong><em>Note</em></strong>: it is advised that pipeline execution settings are modified via <a href="#configuration">CONFIGURATION tab</a> (e.g. if you want to change default settings for pipeline execution) or via <a href="../6.2._Launch_a_pipeline/">Launch pipeline page</a> (e.g. if you want to change pipeline settings for a current run). Manual <strong><code>config.json</code></strong> editing should be used only for advanced users (primarily developers) since json format is not validated in this case.<br />
 <strong><em>Note</em></strong>: all attributes from <strong><code>config.json</code></strong> are available as environment variables for pipeline execution.</p>
 <p>The <strong><code>config.json</code></strong> file for every pipeline template have the following settings:</p>
 <table>
