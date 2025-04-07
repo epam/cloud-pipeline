@@ -119,19 +119,19 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Enables autoscaling.')
         self.autoscaling_hosts_number = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_WORKERS', type=PARAM_INT, default=3,
-            help='Specifies a maximum number of autoscaling workers.')
+            help='Specifies a maximum number of autoscaling workers.', nullable=False)
         self.instance_type = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_TYPE', type=PARAM_STR, default=os.environ['instance_size'],
             help='Specifies worker instance type.', nullable=False)
         self.instance_disk = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_DISK', type=PARAM_INT, default=os.environ['instance_disk'],
-            help='Specifies worker disk size.')
+            help='Specifies worker disk size.', nullable=False)
         self.instance_image = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_IMAGE', type=PARAM_STR, default=os.environ['docker_image'],
-            help='Specifies worker docker image.')
+            help='Specifies worker docker image.', nullable=False)
         self.price_type = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_PRICE_TYPE', type=PARAM_STR, default=os.environ['price_type'],
-            help='Specifies worker price type.')
+            help='Specifies worker price type.', nullable=False)
         self.cmd_template = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_CMD_TEMPLATE', type=PARAM_STR, default='sleep infinity',
             help='Specifies worker cmd template.')
