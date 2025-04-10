@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.acl.datastorage.permissions;
 
+import com.epam.pipeline.dto.PermissionVO;
+import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissionsVO;
 import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -25,6 +28,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +53,16 @@ public class StoragePathPermissionsApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public List<SidImpl> loadStoragePathPermissionsSids(final Long id) {
-        return storagePathPermissionsService.loadSids(id);
+    public List<PermissionVO> loadStoragePathPermissionsSids(final Long id, final String path,
+                                                             final DataStorageItemType type) {
+        return Objects.isNull(path)
+                ? storagePathPermissionsService.loadSids(id)
+                : storagePathPermissionsService.loadSidsByPath(id, path, type);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public void updateStoragePathPermissionsForItems(final Long id,
+                                                     final List<StoragePathPermissionsVO> permissions) {
+        storagePathPermissionsService.updateByStorageIdAndPaths(id, permissions);
     }
 }

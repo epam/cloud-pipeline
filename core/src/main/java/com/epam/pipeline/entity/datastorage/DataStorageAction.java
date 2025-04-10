@@ -37,6 +37,9 @@ public class DataStorageAction {
     @JsonIgnore
     private String path;
 
+    private String itemPath;
+    private DataStorageItemType itemType;
+
     @JsonIgnore
     public boolean isListOnly() {
         return list || listVersion && (!read && !readVersion && !write && !writeVersion);

@@ -139,7 +139,7 @@ public class GSBucketStorageHelper {
         final List<AbstractDataStorageItem> items = showVersion
                 ? listItemsWithVersions(blobs)
                 : listItemsWithoutVersions(blobs);
-        return new DataStorageListing(blobs.getNextPageToken(), items);
+        return new DataStorageListing(blobs.getNextPageToken(), null, items);
     }
 
     public DataStorageFile createFile(final GSBucketStorage storage, final String path,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage;
+package com.epam.pipeline.dto;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,8 +26,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DataStorageListing {
-    private String nextPageMarker;
-    private Integer parentFolderMask;
-    private List<AbstractDataStorageItem> results;
+@Builder
+public class PermissionVO {
+    private Boolean principal = true;
+    private String name;
+    private Integer mask;
 }
