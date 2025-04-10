@@ -16,26 +16,28 @@
 
 package com.epam.pipeline.dto.datastorage.permissions;
 
+import com.epam.pipeline.dto.PermissionVO;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 @Builder
-public class StorageFolderListPermissionsContainer {
+public class StoragePathPermissionsVO {
     /**
-     * Contains requested folder permission mask. If null no permissions found for parent folders.
+     * Full path for storage item from storage root.
      */
-    private Integer folderMask;
+    private String path;
     /**
-     * Map of file names to permission masks that current folder may contain
+     * Indicates file or folder.
      */
-    private Map<String, Integer> files;
+    private DataStorageItemType type;
     /**
-     * Map of folder names to permission masks that current folder may contain
+     * List of permissions for storage item.
      */
-    private Map<String, Integer> folders;
+    private List<PermissionVO> permissions;
 }

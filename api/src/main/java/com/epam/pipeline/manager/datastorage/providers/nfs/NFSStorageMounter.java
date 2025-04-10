@@ -164,13 +164,4 @@ public class NFSStorageMounter {
     private String getStorageName(String path) {
         return path.replace(getNfsRootPath(path), "");
     }
-
-    private String normalizePath(String nfsPath) {
-        return nfsPath.replace(":", "/");
-    }
-
-    private String normalizeLustrePath(final String nfsPath) {
-        return nfsPath.replaceAll(":/", "/").replace(":", "_");
-    }
-
 }

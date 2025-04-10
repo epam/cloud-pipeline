@@ -57,6 +57,7 @@ public class StoragePathPermissionsServiceTest {
     private static final String FILE_PATH1 = PATH1 + FILENAME1;
     private static final int READ = 1;
     private static final int WRITE = 4;
+    private static final int SIMPLE_WRITE = 2;
     private static final Long STORAGE_ID = 1L;
     private static final List<String> SPLIT_TO_PATH0 = Arrays.asList(ROOT_PATH, PATH0);
     private static final List<String> SPLIT_TO_PATH1 = Arrays.asList(ROOT_PATH, PATH0, "/A/B/", PATH2, PATH1);
@@ -93,13 +94,14 @@ public class StoragePathPermissionsServiceTest {
     public void shouldNormalizeFolderPaths() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
         doReturn(Optional.of(WRITE_ROOT)).when(pathPermissionsDao)
-                .findClosestFolderPermission(any(), any(), any());
+                .findClosestParentFolderPermission(any(), any(), any());
 
         service.canWriteToFolder(STORAGE_ID, "A/B/C/D");
-        verify(pathPermissionsDao).findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
 
         service.canWriteToFolder(STORAGE_ID, "");
-        verify(pathPermissionsDao).findClosestFolderPermission(STORAGE_ID, SIDS, Collections.singletonList(ROOT_PATH));
+        verify(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, Collections.singletonList(ROOT_PATH));
     }
 
     @Test
@@ -179,168 +181,170 @@ public class StoragePathPermissionsServiceTest {
     public void shouldNotThrowIfUserCanWriteToFolder() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
         doReturn(Optional.of(WRITE_FOLDER_PATH1)).when(pathPermissionsDao)
-                .findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
 
         service.canWriteToFolder(STORAGE_ID, PATH1);
-        verify(pathPermissionsDao).findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
     }
 
     @Test
     public void shouldThrowIfUserCanNotWriteToFolder() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
         doReturn(Optional.empty()).when(pathPermissionsDao)
-                .findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
 
         assertThrows(AccessDeniedException.class, () -> service.canWriteToFolder(STORAGE_ID, PATH1));
-        verify(pathPermissionsDao).findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
     }
 
     @Test
     public void shouldNotThrowIfUserCanReadFolderContent() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
         doReturn(Optional.of(READ_FOLDER_PATH1)).when(pathPermissionsDao)
-                .findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
 
         service.canReadFolder(STORAGE_ID, PATH1);
-        verify(pathPermissionsDao).findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
     }
 
     @Test
     public void shouldThrowIfUserCanNotReadFolderContent() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
         doReturn(Optional.empty()).when(pathPermissionsDao)
-                .findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
 
         assertThrows(AccessDeniedException.class, () -> service.canReadFolder(STORAGE_ID, PATH1));
-        verify(pathPermissionsDao).findClosestFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
     }
 
     @Test
     public void shouldNotThrowIfUserCanGetFolderWhenPermissionsGrantedOnParentFolder() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(1).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        doReturn(Optional.of(WRITE_ROOT)).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
 
         service.canGetFolder(STORAGE_ID, PATH1);
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         CustomAssertions.notInvoked(pathPermissionsDao).findByPrefix(any(), any(), any());
     }
 
     @Test
     public void shouldNotThrowIfUserCanGetFolderWhenPermissionsGrantedOnChildFile() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         doReturn(Collections.singletonList(WRITE_FILE_PATH1))
                 .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
 
         service.canGetFolder(STORAGE_ID, PATH1);
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
     }
 
     @Test
     public void shouldThrowIfUserCanNotGetFolder() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         doReturn(Collections.emptyList())
                 .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
 
         assertThrows(AccessDeniedException.class, () -> service.canGetFolder(STORAGE_ID, PATH1));
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
     }
 
     @Test
     public void shouldGetFolderListPermissionsForUserWhenPermissionsOnRequestedFolderGranted() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(1).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        doReturn(Optional.of(WRITE_ROOT)).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        doReturn(Collections.emptyList())
+                .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
 
         final StorageFolderListPermissionsContainer permissionsContainer = service
                 .getFolderListPermissions(STORAGE_ID, PATH1);
-        assertThat(permissionsContainer.isHasListPermissions()).isEqualTo(true);
-        CustomAssertions.notInvoked(pathPermissionsDao).findByPrefix(any(), any(), any());
+        assertThat(permissionsContainer.getFolderMask()).isEqualTo(SIMPLE_WRITE);
+        verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
     }
 
     @Test
     public void shouldGetFolderListPermissionsForUserWhenPermissionsOnFilesGranted() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         doReturn(Arrays.asList(WRITE_FILE_PATH1, WRITE_FILE_PATH12))
                 .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
 
         final StorageFolderListPermissionsContainer permissionsContainer = service
                 .getFolderListPermissions(STORAGE_ID, PATH1);
-        assertThat(permissionsContainer.isHasListPermissions()).isEqualTo(false);
-        assertThat(permissionsContainer.getFiles()).hasSize(2).contains(FILENAME1, FILENAME2);
+        assertThat(permissionsContainer.getFolderMask()).isNull();
+        assertThat(permissionsContainer.getFiles()).hasSize(2).containsKeys(FILENAME1, FILENAME2);
         assertThat(permissionsContainer.getFolders()).isNull();
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH1);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH1);
     }
 
     @Test
     public void shouldGetFolderListPermissionsForUserWhenPermissionsOnFoldersGranted() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
         doReturn(Arrays.asList(WRITE_FOLDER_PATH1, WRITE_FOLDER_PATH3))
                 .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH2);
 
         final StorageFolderListPermissionsContainer permissionsContainer = service
                 .getFolderListPermissions(STORAGE_ID, PATH2);
-        assertThat(permissionsContainer.isHasListPermissions()).isEqualTo(false);
-        assertThat(permissionsContainer.getFolders()).hasSize(2).contains("D", "E");
+        assertThat(permissionsContainer.getFolderMask()).isNull();
+        assertThat(permissionsContainer.getFolders()).hasSize(2).containsKeys("D", "E");
         assertThat(permissionsContainer.getFiles()).isNull();
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH2);
     }
 
     @Test
     public void shouldGetFolderListPermissionsForUserWhenPermissionsOnFolderAndFileGranted() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
         doReturn(Arrays.asList(WRITE_FOLDER_PATH1, READ_FILE_PATH2))
                 .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH2);
 
         final StorageFolderListPermissionsContainer permissionsContainer = service
                 .getFolderListPermissions(STORAGE_ID, PATH2);
-        assertThat(permissionsContainer.isHasListPermissions()).isEqualTo(false);
-        assertThat(permissionsContainer.getFolders()).hasSize(1).contains("D");
-        assertThat(permissionsContainer.getFiles()).hasSize(1).contains(FILENAME1);
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
+        assertThat(permissionsContainer.getFolderMask()).isNull();
+        assertThat(permissionsContainer.getFolders()).hasSize(1).containsKeys("D");
+        assertThat(permissionsContainer.getFiles()).hasSize(1).containsKeys(FILENAME1);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH2);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH2);
     }
 
     @Test
     public void shouldGetFolderListPermissionsForUserWhenNestedPermissionsGranted() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
         doReturn(Arrays.asList(WRITE_FOLDER_PATH1, READ_FILE_PATH2))
                 .when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH0);
 
         final StorageFolderListPermissionsContainer permissionsContainer = service
                 .getFolderListPermissions(STORAGE_ID, PATH0);
-        assertThat(permissionsContainer.isHasListPermissions()).isEqualTo(false);
-        assertThat(permissionsContainer.getFolders()).hasSize(1).contains("B");
+        assertThat(permissionsContainer.getFolderMask()).isNull();
+        assertThat(permissionsContainer.getFolders()).hasSize(1).containsKeys("B");
         assertThat(permissionsContainer.getFiles()).isNull();
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH0);
     }
 
     @Test
     public void shouldThrowWhenGetFolderListPermissionsForUserIfNoPermissionsGranted() {
         doReturn(pipelineUser()).when(userManager).getCurrentUser();
-        doReturn(0).when(pathPermissionsDao)
-                .countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
+        doReturn(Optional.empty()).when(pathPermissionsDao)
+                .findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
         doReturn(Collections.emptyList()).when(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH0);
 
         assertThrows(AccessDeniedException.class, () -> service.getFolderListPermissions(STORAGE_ID, PATH0));
-        verify(pathPermissionsDao).countParentFoldersByStorageAndSids(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
+        verify(pathPermissionsDao).findClosestParentFolderPermission(STORAGE_ID, SIDS, SPLIT_TO_PATH0);
         verify(pathPermissionsDao).findByPrefix(STORAGE_ID, SIDS, PATH0);
     }
 

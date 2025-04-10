@@ -40,6 +40,7 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
+from src.utilities.storage_path_permissions import verify_storage_path_permissions_allowed
 from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
@@ -464,6 +465,8 @@ class DataStorageOperations(object):
             if root_bucket is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
+            if root_bucket.type == 'S3':
+                verify_storage_path_permissions_allowed(root_bucket)
             if show_archive and root_bucket.type != 'S3':
                 click.echo('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)

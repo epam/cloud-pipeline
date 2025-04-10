@@ -193,6 +193,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_S3_USE_ASSUMED_CREDS,
         DATASTORAGE_S3_TEMP_CREDS_ROLE,
         DATASTORAGE_MOUNT_STATUS,
+        DATASTORAGE_PATH_PERMISSIONS_ENABLED,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
@@ -326,6 +327,8 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
                         dataStorage.setOwner(rs.getString(OWNER.name()));
+                        dataStorage.setPathPermissionsEnabled(
+                                rs.getBoolean(DATASTORAGE_PATH_PERMISSIONS_ENABLED.name()));
                         folder.getStorages().add(dataStorage);
                     }
                     rs.getLong(CONFIG_ID.name());

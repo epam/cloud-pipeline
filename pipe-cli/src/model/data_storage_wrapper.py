@@ -20,6 +20,7 @@ from ftplib import FTP, error_temp
 from future.standard_library import install_aliases
 
 from ..utilities.encoding_utilities import to_unicode, to_string
+from ..utilities.storage_path_permissions import verify_storage_path_permissions_allowed
 
 install_aliases()
 
@@ -147,6 +148,8 @@ class DataStorageWrapper(object):
     @classmethod
     def get_cloud_wrapper(cls, uri, versioning=False):
         root_bucket, original_path, _ = DataStorage.load_from_uri(uri)
+        if str(root_bucket.type).upper() == 'S3':
+            verify_storage_path_permissions_allowed(root_bucket)
         relative_path = original_path if original_path != '/' else ''
         return cls.__get_storage_wrapper(root_bucket, relative_path, versioning=versioning)
 

@@ -165,7 +165,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
                 }));
 
         Assert.notEmpty(results, String.format("Path '%s' not found!", path));
-        return new DataStorageListing(null, results);
+        return new DataStorageListing(null, null, results);
     }
 
     @Override
@@ -174,6 +174,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
         final ListReadSetsResult result = getOmicsHelper(dataStorage).listReadSets(dataStorage, pageSize, marker);
         return new DataStorageListing(
                 result.getNextToken(),
+                null,
                 Optional.ofNullable(result.getReadSets()).orElse(Collections.emptyList()).stream()
                         .map(readSet -> {
                             final DataStorageFolder file = new DataStorageFolder();
