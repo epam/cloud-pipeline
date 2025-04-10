@@ -191,7 +191,7 @@ class PickGroupsModal extends React.PureComponent {
         className={className}
         style={style}
         visible={visible}
-        title="Select user"
+        title="Select group"
         onCancel={onClose}
         footer={(
           <div
@@ -234,9 +234,9 @@ class PickGroupsModal extends React.PureComponent {
                 <AutoComplete.Option
                   key={r.name}
                   value={r.name}
-                  title={getGroupName(r.name)}
+                  title={getGroupName(r.name, !r.predefined)}
                 >
-                  <GroupName group={r.name} />
+                  <GroupName group={r.name} removePrefix={!r.predefined} />
                 </AutoComplete.Option>
               ))
             }
@@ -249,7 +249,7 @@ class PickGroupsModal extends React.PureComponent {
                     <AutoComplete.Option
                       key={r.name}
                       value={r.name}
-                      title={getGroupName(r.name)}
+                      title={getGroupName(r.name, false)}
                     >
                       <GroupName group={r.name} />
                     </AutoComplete.Option>

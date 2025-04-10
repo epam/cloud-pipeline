@@ -239,12 +239,13 @@ export function storagePathsAreEqual (a, b) {
 
 /**
  * @param storagePaths {StorageItemInfo[]}
+ * @param [lowercased] {boolean}
  * @returns {string}
  */
-export function getStoragePathsDescription (storagePaths) {
+export function getStoragePathsDescription (storagePaths, lowercased = false) {
   const paths = storagePaths.map((p) => {
     if (!p.path || p.path === '' || p.path === '/') {
-      return 'Root folder';
+      return lowercased ? 'root folder' : 'Root folder';
     }
     return p.path.split('/').pop();
   });

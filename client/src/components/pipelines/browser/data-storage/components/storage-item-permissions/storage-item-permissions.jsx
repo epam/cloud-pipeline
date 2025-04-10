@@ -158,7 +158,7 @@ class StorageItemPermissions extends React.PureComponent {
     const titleComponent = (
       <span>
         <b style={{marginRight: 5}}>
-          {getStoragePathsDescription(storagePaths).toLowerCase()}
+          {getStoragePathsDescription(storagePaths, true)}
         </b>
         <span>permissions</span>
       </span>

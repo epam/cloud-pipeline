@@ -458,7 +458,7 @@ export default class DataStorage extends React.Component {
         // allowed to edit file's tags.
         : this.selectedFileWriteAllowed;
     }
-    return this.currentFolderWriteAllowed;
+    return this.storage.writeAllowed;
   }
 
   get isReferenceStorage () {
@@ -590,15 +590,7 @@ export default class DataStorage extends React.Component {
     if (!info) {
       return [];
     }
-    const {sensitive, mask: storageMask, pathPermissionsEnabled} = info;
-    let defaultMask = storageMask;
-    if (this.isAdmin || roleModel.isOwner(storageMask)) {
-      defaultMask = 0b1111;
-    } else if (pathPermissionsEnabled) {
-      defaultMask = 0b0;
-    } else {
-      defaultMask = storageMask;
-    }
+    const {sensitive} = info;
     const items = [];
     const documentPreviewAvailable = (item) => {
       const {preferences} = this.props;
@@ -1325,7 +1317,8 @@ export default class DataStorage extends React.Component {
         : item.editable
       ) && (
         !item.archived || item.restored
-      ) && !this.isOmicsStore
+      ) && !this.isOmicsStore &&
+      this.currentFolderWriteAllowed
     ) {
       actions.push(
         <Button

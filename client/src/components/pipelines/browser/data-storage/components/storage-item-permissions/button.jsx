@@ -28,7 +28,7 @@ class StorageItemPermissionsButton extends React.PureComponent {
       content = (
         <span>
           <span style={{marginRight: 5}}>Manage</span>
-          <b style={{marginRight: 5}}>{getStoragePathsDescription(storagePaths).toLowerCase()}</b>
+          <b style={{marginRight: 5}}>{getStoragePathsDescription(storagePaths, true)}</b>
           <span>permissions</span>
         </span>
       );

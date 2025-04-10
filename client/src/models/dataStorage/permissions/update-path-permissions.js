@@ -32,7 +32,6 @@ export default class UpdatePathPermissions extends RemotePost {
   }
 
   async send (body, abortSignal) {
-    console.log('send', body);
     const modifiedBody = body.map((o) => {
       const {type, ...rest} = o;
       return {...rest, type: getStorageItemPermissionType(type)};
