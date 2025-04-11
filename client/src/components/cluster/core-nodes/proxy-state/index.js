@@ -145,13 +145,16 @@ class ProxyState extends React.Component {
   };
 
   onEntryClick = (chartEntry, dataEntry) => {
+    if (!chartEntry) {
+      return;
+    }
     if (dataEntry.type === HISTOGRAM_TYPES.run) {
       this.setState({
         filters: {
           ...this.state.filters,
           runId: chartEntry
         }
-      }, this.fetchData);
+      }, () => this.fetchData(true));
     }
     if (dataEntry.type === HISTOGRAM_TYPES.resource) {
       this.setState({
@@ -159,7 +162,7 @@ class ProxyState extends React.Component {
           ...this.state.filters,
           resourceHost: chartEntry
         }
-      }, this.fetchData);
+      }, () => this.fetchData(true));
     }
   };
 
