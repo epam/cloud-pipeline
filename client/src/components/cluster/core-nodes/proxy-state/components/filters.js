@@ -137,6 +137,7 @@ export default class Filters extends React.Component {
           </Select>
         ) : null}
         <DatePicker
+          allowClear={false}
           format="YYYY-MM-DD HH:mm"
           placeholder="Start"
           onChange={this.onDateChanged('from')}
@@ -145,7 +146,7 @@ export default class Filters extends React.Component {
           disabledDate={this.disabledStartDate}
         />
         <DatePicker
-          allowClear
+          allowClear={false}
           format="YYYY-MM-DD HH:mm"
           placeholder="End"
           onChange={this.onDateChanged('to')}
