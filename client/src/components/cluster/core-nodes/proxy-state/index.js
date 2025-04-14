@@ -28,6 +28,7 @@ import ThemedReport from '../../../billing/reports/themed-report';
 import Filters from './components/filters';
 import {getDatasetOptions, getDatasetStyles, formatLabel} from './utils';
 import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
+import { toJS } from 'mobx';
 
 const FETCH_DELAY = 500;
 
@@ -73,7 +74,7 @@ class ProxyState extends React.Component {
       return;
     }
     this.setState({
-      availableFilters: request.value
+      availableFilters: toJS(request.value)
     });
   };
 

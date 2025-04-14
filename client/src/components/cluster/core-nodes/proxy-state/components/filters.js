@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Input, Select, DatePicker} from 'antd';
 import {checkDateInRange} from '../utils';
 import moment from 'moment-timezone';
@@ -161,3 +162,31 @@ export default class Filters extends React.Component {
     );
   }
 }
+
+Filters.propTypes = {
+  onChange: PropTypes.func,
+  availableFilters: PropTypes.shape({
+    method: PropTypes.arrayOf(PropTypes.string),
+    reporter: PropTypes.arrayOf(PropTypes.string)
+  }),
+  filters: PropTypes.shape({
+    hostname: PropTypes.string,
+    hostIp: PropTypes.string,
+    runId: PropTypes.string,
+    resourceHost: PropTypes.string,
+    method: PropTypes.arrayOf(PropTypes.string),
+    reporter: PropTypes.arrayOf(PropTypes.string),
+    from: PropTypes.instanceOf(moment),
+    to: PropTypes.instanceOf(moment)
+  }),
+  defaultFilters: PropTypes.shape({
+    hostname: PropTypes.string,
+    hostIp: PropTypes.string,
+    runId: PropTypes.string,
+    resourceHost: PropTypes.string,
+    method: PropTypes.arrayOf(PropTypes.string),
+    reporter: PropTypes.arrayOf(PropTypes.string),
+    from: PropTypes.instanceOf(moment),
+    to: PropTypes.instanceOf(moment)
+  })
+};

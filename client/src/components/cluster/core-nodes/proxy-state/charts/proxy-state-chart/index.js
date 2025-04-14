@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Icon, Spin} from 'antd';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
@@ -228,6 +229,16 @@ class ProxyStateChart extends React.Component {
     );
   }
 }
+
+ProxyStateChart.propTypes = {
+  loading: PropTypes.bool,
+  data: PropTypes.object,
+  options: PropTypes.object,
+  title: PropTypes.string,
+  displayEmptyTitleRow: PropTypes.bool,
+  onEntryClick: PropTypes.func,
+  type: PropTypes.string
+};
 
 const ProxyStateChartWithThemes = (props) => {
   return (
