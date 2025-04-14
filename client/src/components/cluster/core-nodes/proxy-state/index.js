@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {toJS} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {message, Spin} from 'antd';
@@ -28,9 +29,9 @@ import ThemedReport from '../../../billing/reports/themed-report';
 import Filters from './components/filters';
 import {getDatasetOptions, getDatasetStyles, formatLabel} from './utils';
 import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
-import {toJS} from 'mobx';
 
 const FETCH_DELAY = 500;
+const TOP_ITEMS_COUNT = 10;
 
 @inject('reportThemes', 'usersInfo')
 @observer
@@ -188,7 +189,9 @@ class ProxyState extends React.Component {
       const sorted =
         dataEntry.type === HISTOGRAM_TYPES.time
           ? value
-          : [...value].sort((a, b) => b.count - a.count);
+          : [...value]
+            .sort((a, b) => b.count - a.count)
+            .slice(0, TOP_ITEMS_COUNT);
       const labels = sorted.map((item) => formatLabel(dataEntry.type, item.value, filters));
       const datasets = [
         {
