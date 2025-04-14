@@ -102,7 +102,9 @@ class ProxyState extends React.Component {
               runId: formatStringFilter(filters.runId),
               hostname: formatStringFilter(filters.hostname),
               hostIp: formatStringFilter(filters.hostIp),
-              resourceHost: formatStringFilter(filters.resourceHost)
+              resourceHost: formatStringFilter(filters.resourceHost),
+              reporter: filters.reporter,
+              method: filters.method
             });
             if (request.error) {
               resolve({
