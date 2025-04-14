@@ -27,6 +27,7 @@ import ProxyStateChart from './charts/proxy-state-chart';
 import ThemedReport from '../../../billing/reports/themed-report';
 import Filters from './components/filters';
 import {getDatasetOptions, getDatasetStyles, formatLabel} from './utils';
+import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
 
 const FETCH_DELAY = 500;
 
@@ -146,7 +147,7 @@ class ProxyState extends React.Component {
     });
   };
 
-  onEntryClick = (chartEntry, dataEntry) => {
+  onEntryClick = (chartEntry, dataEntry, scaleHovered) => {
     if (!chartEntry) {
       return;
     }
@@ -159,6 +160,16 @@ class ProxyState extends React.Component {
       }, () => this.fetchData(true));
     }
     if (dataEntry.type === HISTOGRAM_TYPES.resource) {
+      if (scaleHovered) {
+        return copyTextToClipboard(chartEntry).then(() => {
+          message.info(
+            <span>
+              <b>{chartEntry}</b> copied to clipboard.
+            </span>, 5);
+        }).catch((error) => {
+          console.error(error.message);
+        });
+      }
       this.setState({
         filters: {
           ...this.state.filters,
@@ -231,7 +242,9 @@ class ProxyState extends React.Component {
                 marginBottom: 10
               }}
               options={getDatasetOptions(dataEntry.type)}
-              onEntryClick={(entry, index) => this.onEntryClick(entry, dataEntry, index)}
+              onEntryClick={(entry, _i, scaleHovered) => {
+                this.onEntryClick(entry, dataEntry, scaleHovered);
+              }}
             />
           );
         })}

@@ -133,25 +133,19 @@ class ProxyStateChart extends React.Component {
             }
           ]
         },
-        onClick: (e, activeElements) => {
-          const label = activeElements[0]?._model?.label;
-          if (label && type === HISTOGRAM_TYPES.resource) {
-            onEntryClick(label);
-          }
-        },
         maintainAspectRatio: false,
         plugins: {
           [BarchartDataLabelPlugin.id]: {
             valueFormatter: (value) => value
           },
           [ChartClickPlugin.id]: {
-            handler: index => {
+            handler: (index, scaleHovered) => {
               const {entries = []} = data || {};
               if (typeof onEntryClick === 'function') {
-                onEntryClick(entries[index], index);
+                onEntryClick(entries[index], index, scaleHovered);
               }
             },
-            axis: 'x-axis'
+            axis: type === HISTOGRAM_TYPES.resource ? 'y-axis-0' : 'x-axis'
           }
         },
         hover: {
