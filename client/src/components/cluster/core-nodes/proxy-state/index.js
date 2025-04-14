@@ -45,8 +45,8 @@ class ProxyState extends React.Component {
     runId: undefined,
     resourceHost: undefined,
     method: [],
-    from: moment('2025-04-04 17:03:00'),
-    to: moment('2025-04-04 17:04:00')
+    from: moment().subtract(24, 'hours'),
+    to: moment()
   };
 
   state = {
