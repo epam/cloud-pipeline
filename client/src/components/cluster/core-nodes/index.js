@@ -18,6 +18,7 @@ import React from 'react';
 import CoreNodesTable from './core-nodes-table';
 import CoreServicesTable from './core-services-table';
 import SubSettings from '../../settings/sub-settings';
+import ProxyState from './proxy-state';
 
 export default class CoreNodes extends React.Component {
   state = {
@@ -34,6 +35,11 @@ export default class CoreNodes extends React.Component {
       key: 'services',
       title: 'Core services',
       render: () => <CoreServicesTable />
+    },
+    {
+      key: 'proxy-state',
+      title: 'Proxy state',
+      render: () => <ProxyState />
     }
   ];
 
