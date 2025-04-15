@@ -28,6 +28,7 @@ import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import com.epam.pipeline.autotests.utils.Parameter;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.removeStorages;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -426,6 +427,7 @@ public class LaunchLimitMountsTest
                 }))
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
