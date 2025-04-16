@@ -125,6 +125,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .createFolder(folder)
+                .validateElementIsPresent(folder)
                 .uploadFile(file)
                 .cd(folder)
                 .createFolder(subfolder)
@@ -167,6 +168,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .delete()
                 .validateElementNotPresent(folder)
                 .createFolder(folder)
+                .validateElementIsPresent(folder)
                 .cd(folder)
                 .createFolder(subfolder);
     }

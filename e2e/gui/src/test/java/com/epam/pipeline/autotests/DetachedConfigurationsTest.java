@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class DetachedConfigurationsTest
     private final String pipelineDefaultProfile = "default";
     private final String defaultDisk = "21";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
-    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
 
     private final String pipelineCustomProfile = "custom-pipe-conf";
     private final String customDisk = "22";
@@ -294,6 +294,7 @@ public class DetachedConfigurationsTest
                         .sleep(2, SECONDS)
                         .click(SAVE)
                         .sleep(2, SECONDS)
+                        .ensureDisable(SAVE)
             )
             .configurationWithin(mainConfiguration, configuration ->
                 configuration.expandTabs(execEnvironmentTab, advancedTab)
@@ -330,6 +331,7 @@ public class DetachedConfigurationsTest
                 configuration.sleep(1, SECONDS)
                     .setValue(NAME, customProfile)
                     .click(SAVE)
+                    .ensureDisable(SAVE)
             )
             .configurationWithin(mainConfiguration, configuration ->
                 configuration.ensure(NAME, value(customProfile))
@@ -339,6 +341,7 @@ public class DetachedConfigurationsTest
                     .setValue(NAME, defaultConfigurationProfile)
                     .click(SAVE)
                     .ensure(NAME, value(defaultConfigurationProfile))
+                    .ensureDisable(SAVE)
             );
     }
 
@@ -383,6 +386,7 @@ public class DetachedConfigurationsTest
                     .expandTabs(execEnvironmentTab, advancedTab)
                     .selectPipeline(pipeline2)
                     .click(SAVE)
+                    .ensureDisable(SAVE)
             )
             .refresh()
             .configurationWithin(mainConfiguration, configuration ->
@@ -405,6 +409,7 @@ public class DetachedConfigurationsTest
                     .expandTabs(execEnvironmentTab, advancedTab)
                     .setValue(DISK, configurationProfile1DiskSize)
                     .click(SAVE)
+                    .ensureDisable(SAVE)
                     .click(SET_AS_DEFAULT)
                     .addProfile(profile ->
                         profile.setName(configurationProfile2).ensure(TEMPLATE, text(configurationProfile1)).ok())
@@ -504,6 +509,7 @@ public class DetachedConfigurationsTest
                     .selectValue(PRICE_TYPE, priceType)
                     .click(SAVE)
                     .sleep(2, SECONDS)
+                    .ensureDisable(SAVE)
             )
             .configurationWithin(configuration1544, configuration ->
                 configuration
@@ -612,6 +618,7 @@ public class DetachedConfigurationsTest
                                 .sleep(2, SECONDS)
                                 .ensure(SAVE, enabled)
                                 .click(SAVE)
+                                .ensureDisable(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .getParameterByIndex(parameterByName(stringParameterName).index())
                                 .validateParameter(stringParameterName, "")
@@ -655,6 +662,7 @@ public class DetachedConfigurationsTest
                 .removeParameter(parameterByName(stringParameterName))
                 .removeParameter(parameterByName(pathParameterName))
                 .click(SAVE)
+                .ensureDisable(SAVE)
             );
         refresh();
         library()
@@ -694,6 +702,7 @@ public class DetachedConfigurationsTest
                     .expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, configurationDefaultProfileDiskSize)
                     .click(SAVE)
+                    .ensureDisable(SAVE)
                     .runSelected(this, pipeline1)
                     .showLog(getLastRunId())
                     .expandTab(INSTANCE)
@@ -714,6 +723,7 @@ public class DetachedConfigurationsTest
                     .expandTab(EXEC_ENVIRONMENT)
                     .selectPipeline(pipeline2)
                     .click(SAVE)
+                    .ensureDisable(SAVE)
                     .runCluster(this, pipeline2)
                     .showLog(getLastRunId())
                     .validateRunTitle(pipeline2);
@@ -744,6 +754,7 @@ public class DetachedConfigurationsTest
                     .selectPipeline(pipeline1)
                     .selectValue(PRICE_TYPE, onDemandPriceType)
                     .click(SAVE)
+                    .ensureDisable(SAVE)
                     .runCluster(this, pipeline1)
                     .showLog(getLastRunId())
                     .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceType))));

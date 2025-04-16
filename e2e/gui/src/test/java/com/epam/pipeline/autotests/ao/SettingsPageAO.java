@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -774,6 +774,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             return this;
                         }
                         return deleteRoleOrGroup(value);
+                    }
+
+                    public boolean isUserHasRoleOrGroup(final String value) {
+                        $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                        return  $(By.className(format("role-%s", value))).exists();
                     }
 
                     public EditUserPopup blockUser(final String user) {

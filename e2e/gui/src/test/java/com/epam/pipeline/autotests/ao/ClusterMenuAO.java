@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
@@ -165,6 +166,15 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         }
         $$(byText("OK")).find(visible).click();
 
+        return this;
+    }
+
+    public ClusterMenuAO filterByHasRunId() {
+        $$("th").findBy(cssClass(LABEL.cssClass))
+            .find(byAttribute("title", "Filter menu")).click();
+        $(byText("Has run id"))
+                .parent().find(byClassName("ant-checkbox")).click();
+        $$(byText("OK")).find(visible).click();
         return this;
     }
 
