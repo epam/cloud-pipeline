@@ -300,7 +300,7 @@ class ExportButton extends React.Component {
       if (uploadToBucket) {
         await saveExport(template, payload);
       } else {
-        await downloadExport(template, payload);
+        await downloadExport(template);
       }
     } catch (e) {
       message.error(e.message, 5);

@@ -164,6 +164,13 @@ public class MetadataManager {
         return metadataDao.loadMetadataItems(entities);
     }
 
+    public List<MetadataEntry> listMetadataItemsByKey(final String key, final List<EntityVO> entities) {
+        if (CollectionUtils.isEmpty(entities)) {
+            return Collections.emptyList();
+        }
+        return metadataDao.loadMetadataItemsByKey(key, entities);
+    }
+
     public boolean hasMetadata(EntityVO entityVO) {
         return metadataDao.hasMetadata(entityVO);
     }

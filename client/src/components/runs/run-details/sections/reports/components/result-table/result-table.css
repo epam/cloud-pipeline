@@ -1,0 +1,17 @@
+.reports-result-table-container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  gap: 5px;
+}
+
+.path-search-input {
+  flex-shrink: 0;
+  width: 100%;
+  display: inline-block;
+}
+
+.reports-result-table {
+  flex: 1;
+  overflow: auto;
+}

@@ -102,6 +102,7 @@ import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
+import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -136,6 +137,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 
   return {
     runId: params.runId,
+    mode: params.mode || 'plain',
     taskName: params.taskName,
     runSSH: pipelineRunSSHCache.getPipelineRunSSH(params.runId),
     runFSBrowser: pipelineRunFSBrowserCache.getPipelineRunFSBrowser(params.runId),
@@ -267,7 +269,7 @@ class Logs extends localization.LocalizedReactComponent {
       // there is a task to be navigated to (`taskToNavigate`)
       // and current selected task either is missing or differs from the `taskToNavigate`
       const taskUrl = this.getTaskUrl(taskToNavigate);
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      const url = `/run/${this.props.runId}/${this.props.mode}/${taskUrl}`;
       this.props.router.push(url);
     }
   };
@@ -588,7 +590,7 @@ class Logs extends localization.LocalizedReactComponent {
           <td>
             <AdaptedLink
               className={styles.taskParameterValue}
-              to={`/run/${valueSelector()}/${this.props.params.mode}`}
+              to={`/run/${valueSelector()}/${this.props.mode}`}
               location={this.props.router.location}>
               {valueSelector()}
             </AdaptedLink>
@@ -727,7 +729,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run, this.props.preferences, true)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, true, true)) {
         details.push({
           key: 'tags',
           value: (
@@ -735,6 +737,7 @@ class Logs extends localization.LocalizedReactComponent {
               run={run}
               onlyKnown
               excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+              excludeCustomUserTags
             />
           ),
           additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
@@ -933,7 +936,7 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance && run) {
-      if (RunTags.shouldDisplayTags(run, this.props.preferences)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, false, false)) {
         const {routing: {location}} = this.props;
         details.push({
           key: 'Tags',
@@ -1038,10 +1041,10 @@ class Logs extends localization.LocalizedReactComponent {
         return;
       }
       const taskUrl = this.getTaskUrl(task);
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      const url = `/run/${this.props.runId}/${this.props.mode}/${taskUrl}`;
       this.props.router.push(url);
     } else {
-      const url = `/run/${this.props.params.runId}/${this.props.params.mode}`;
+      const url = `/run/${this.props.runId}/${this.props.mode}`;
       this.props.router.push(url);
     }
   };
@@ -1215,7 +1218,7 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   renderContentPlainMode () {
-    const {runId} = this.props.params;
+    const {runId} = this.props;
     const {
       timings,
       run,
@@ -1241,7 +1244,7 @@ class Logs extends localization.LocalizedReactComponent {
         ).map((task, index) => (
           <Menu.Item key={this.getTaskUrl(task, index)}>
             <TaskLink
-              to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
+              to={`/run/${runId}/${this.props.mode}/${this.getTaskUrl(task)}`}
               location={location}
               task={task}
               searchText={searchTasks}
@@ -1327,7 +1330,7 @@ class Logs extends localization.LocalizedReactComponent {
       );
     }
     if (graphIsSupportedForLanguage(language)) {
-      if (this.props.params.mode.toLowerCase() === 'plain') {
+      if (this.props.mode.toLowerCase() === 'plain') {
         return this.renderContentPlainMode();
       } else {
         return this.renderContentGraphMode();
@@ -1489,7 +1492,8 @@ class Logs extends localization.LocalizedReactComponent {
       }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(run) &&
-        podIP;
+        podIP &&
+        checkRunActionAvailable(run, runActions.browse);
     }
     return false;
   }
@@ -1878,7 +1882,7 @@ class Logs extends localization.LocalizedReactComponent {
       const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
-      const {runId} = this.props.params;
+      const {runId} = this.props;
 
       const resumeFailureReason = getResumeFailureReason(run);
       if (resumeFailureReason) {
@@ -1966,6 +1970,15 @@ class Logs extends localization.LocalizedReactComponent {
         </tr>
       );
 
+      const userTags = RunTags.shouldDisplayTags(run, this.props.preferences, true) && (
+        <RunTags
+          run={run}
+          onlyKnown
+          excludeTags={[KNOWN_TAG_NAMES.network_limit]}
+          showOnlyCustomUserTags
+        />
+      );
+
       if (runningDate && runTasks.length) {
         startedTime = (
           <tr>
@@ -2046,6 +2059,7 @@ class Logs extends localization.LocalizedReactComponent {
 
       Details =
         <div>
+          {userTags}
           <table className={styles.runDetailsTable}>
             <tbody>
               {
@@ -2199,7 +2213,8 @@ class Logs extends localization.LocalizedReactComponent {
         case 'success':
           if (
             roleModel.executeAllowed(run) &&
-            !isRemovedPipeline
+            !isRemovedPipeline &&
+            checkRunActionAvailable(run, runActions.rerun)
           ) {
             ActionButton = (
               <a
@@ -2243,9 +2258,11 @@ class Logs extends localization.LocalizedReactComponent {
             }
             break;
           case 'paused':
-            PauseResumeButton = this.maintenanceMode
-              ? getMaintenanceDisabledButton('RESUME')
-              : (<a onClick={this.showResumeConfirmDialog}>RESUME</a>);
+            if (checkRunActionAvailable(run, runActions.resume)) {
+              PauseResumeButton = this.maintenanceMode
+                ? getMaintenanceDisabledButton('RESUME')
+                : (<a onClick={this.showResumeConfirmDialog}>RESUME</a>);
+            }
             break;
           case 'pausing':
             PauseResumeButton = (<span>PAUSING</span>);
@@ -2333,13 +2350,13 @@ class Logs extends localization.LocalizedReactComponent {
         }
       }
 
-      if (status !== 'RUNNING') {
+      if (status !== 'RUNNING' && checkRunActionAvailable(run, runActions.exportLogs)) {
         ExportLogsButton = (<a onClick={this.exportLog}>EXPORT LOGS</a>);
       }
 
       let switchModeUrl;
       if (graphIsSupportedForLanguage(language)) {
-        if (this.props.params.mode.toLowerCase() === 'graph') {
+        if (this.props.mode.toLowerCase() === 'graph') {
           switchModeUrl = `/run/${this.props.runId}/plain`;
         } else {
           switchModeUrl = `/run/${this.props.runId}/graph`;
@@ -2361,10 +2378,10 @@ class Logs extends localization.LocalizedReactComponent {
 
       SwitchModeButton = switchModeUrl &&
         <AdaptedLink to={switchModeUrl} location={location}>
-          {this.props.params.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
+          {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
-      if (instance && instance.nodeName) {
+      if (instance && instance.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
         const parts = [
           startDate && `from=${encodeURIComponent(startDate)}`,
           endDate && `to=${encodeURIComponent(endDate)}`

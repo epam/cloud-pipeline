@@ -64,21 +64,8 @@ class UploadButton extends React.Component {
   uploadButton;
 
   componentDidMount () {
-    this.createS3Storage();
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
-  }
-
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      this.props.storageId !== prevProps.storageId ||
-      this.props.uploadToS3 !== prevProps.uploadToS3 ||
-      this.props.path !== prevProps.path ||
-      this.props.storageInfo !== prevProps.storageInfo ||
-      this.props.region !== prevProps.region
-    ) {
-      this.createS3Storage();
-    }
   }
 
   triggerClick = () => {
@@ -94,7 +81,7 @@ class UploadButton extends React.Component {
     }
   };
 
-  createS3Storage = () => {
+  createS3StorageForUpload = async (file) => {
     const {storageId, uploadToS3, path: prefix, storageInfo, region} = this.props;
     if (uploadToS3 && storageId && storageInfo) {
       const {delimiter, path} = storageInfo;
@@ -105,25 +92,16 @@ class UploadButton extends React.Component {
         region,
         read: false
       };
-      if (this.s3Storage) {
-        this.s3Storage.storage = storage;
-      } else {
-        this.s3Storage = new S3Storage(storage);
+      let root = prefix || '';
+      if (!root.endsWith('/')) {
+        root = root.concat('/');
       }
-      if (this.s3Storage.prefix !== prefix) {
-        this.s3Storage.prefix = prefix;
-      }
-      this.s3Storage.updateCredentials()
-        .then(() => {
-          this.s3StorageError = undefined;
-        })
-        .catch((e) => {
-          this.s3Storage = undefined;
-          this.s3StorageError = e.toString();
-        });
-    } else {
-      this.s3Storage = undefined;
+      const storagePath = root.concat(file);
+      const s3Storage = new S3Storage(storage, {storagePath, isFolder: false});
+      s3Storage.prefix = prefix;
+      return s3Storage;
     }
+    return undefined;
   };
 
   showUploadInfo = (files) => {
@@ -492,9 +470,14 @@ class UploadButton extends React.Component {
       setMultipartUploadParts
     };
 
-    const doUpload = (uploadID = undefined, partNumber = 0, multipartParts = []) => {
-      return new Promise((resolve) => {
-        this.s3Storage.doUpload(
+    let s3Storage;
+
+    const doUpload = async (uploadID = undefined, partNumber = 0, multipartParts = []) => {
+      try {
+        if (!s3Storage) {
+          s3Storage = await this.createS3StorageForUpload(file.name);
+        }
+        const uploadError = await s3Storage.doUpload(
           file,
           {
             uploadID,
@@ -503,27 +486,21 @@ class UploadButton extends React.Component {
             owner: this.props.owner
           },
           callbacks
-        )
-          .then((error) => {
-            if (error) {
-              onError(error);
-              resolve();
-            } else {
-              onDone();
-              resolve();
-            }
-          })
-          .catch(error => {
-            onError(error);
-            resolve();
-          });
-      });
+        );
+        if (uploadError) {
+          onError(uploadError);
+        } else {
+          onDone();
+        }
+      } catch (error) {
+        onError(error);
+      }
     };
 
     uploadingFile.retryCb = () => {
       const {uploadingFiles} = this.state;
       const uFile = uploadingFiles.find(f => f.uid === file.uid);
-      if (uFile && this.s3Storage) {
+      if (uFile) {
         const {uploadID, partNumber, parts: multipartParts} = uFile;
         uFile.error = undefined;
         uFile.done = false;
@@ -531,7 +508,7 @@ class UploadButton extends React.Component {
         uFile.status = 'uploading...';
         uFile.percent = 0;
         this.setState({uploadingFiles}, () => {
-          doUpload(uploadID, partNumber, multipartParts);
+          void doUpload(uploadID, partNumber, multipartParts);
         });
       }
     };

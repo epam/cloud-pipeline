@@ -17,10 +17,10 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree} from 'antd';
+import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree, message} from 'antd';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DTSRequest from '../../../../models/dts/DTSItemsPage';
@@ -42,6 +42,9 @@ import {
 
 import styles from './Browser.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
+import UploadFilesArea from './upload-files-area';
+import FileUploadList from '../../../../utils/files-upload/file-upload-list';
+import UploadFilesList from './upload-files-list';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -57,7 +60,7 @@ const OMICS_SEQ_BUCKET_TYPE = 'AWS_OMICS_SEQ';
 @connect({
   pipelinesLibrary
 })
-@inject('dtsList', 'preferences')
+@inject('dtsList', 'preferences', 'uiLaunchParametersConfiguration')
 @inject(() => ({
   storages: dataStorages,
   library: pipelinesLibrary
@@ -85,7 +88,8 @@ export default class BucketBrowser extends React.Component {
         OMICS_REF_BUCKET_TYPE,
         OMICS_SEQ_BUCKET_TYPE
       ])
-    )
+    ),
+    uploadFilesAllowed: PropTypes.bool
   };
 
   @observable
@@ -101,10 +105,20 @@ export default class BucketBrowser extends React.Component {
     currentPage: 0,
     pageMarkers: [null],
     pagePerformed: false,
-    search: null
+    search: null,
+    uploadedFiles: [],
+    uploading: undefined
   };
 
   tableData = [];
+
+  @computed
+  get uploadFilesEnabled () {
+    const {uiLaunchParametersConfiguration, uploadFilesAllowed} = this.props;
+    return uploadFilesAllowed &&
+      uiLaunchParametersConfiguration &&
+      uiLaunchParametersConfiguration.localFiles.enabled;
+  }
 
   get storageIsFetching () {
     if (this.storage) {
@@ -477,9 +491,59 @@ export default class BucketBrowser extends React.Component {
   };
 
   onSelectClicked = () => {
-    if (this.props.onSelect) {
-      this.props.onSelect(this.state.selectedItems.map(item => item.name).join(', '));
-      this.setState({selectedItems: []});
+    const {
+      uploadedFiles,
+      selectedItems
+    } = this.state;
+    const result = selectedItems.slice().map((item) => item.name);
+    const onFinish = (uploaded = []) => {
+      if (this.props.onSelect) {
+        this.props.onSelect(result.concat(uploaded).join(', '));
+        this.setState({selectedItems: []});
+      }
+    };
+    const {uiLaunchParametersConfiguration} = this.props;
+    if (
+      uploadedFiles.length > 0 &&
+      uiLaunchParametersConfiguration &&
+      uiLaunchParametersConfiguration.localFiles &&
+      uiLaunchParametersConfiguration.localFiles.enabled &&
+      uiLaunchParametersConfiguration.localFiles.dataStorage &&
+      uiLaunchParametersConfiguration.localFiles.dataStoragePathGenerator
+    ) {
+      const session = new FileUploadList(
+        uploadedFiles,
+        uiLaunchParametersConfiguration.localFiles.dataStorage.id,
+        uiLaunchParametersConfiguration.localFiles.dataStoragePathGenerator()
+      );
+      this.setState({uploading: session}, async () => {
+        const hide = message.loading('Uploading files...', 0);
+        try {
+          await session.upload();
+          const {
+            done,
+            aborted,
+            hasErrors,
+            files = []
+          } = session.getState();
+          if (aborted) {
+            return;
+          }
+          if (!done || hasErrors) {
+            throw new Error('Error uploading files');
+          }
+          session.destroy();
+          this.setState({
+            uploading: undefined
+          }, () => onFinish(files.map((f) => f.resolvedPath).filter(Boolean)));
+        } catch (error) {
+          message.error(error.message, 5);
+        } finally {
+          hide();
+        }
+      });
+    } else {
+      onFinish();
     }
   };
 
@@ -672,7 +736,42 @@ export default class BucketBrowser extends React.Component {
     this.setState({expandedKeys, search: e});
   };
 
+  onUploadedFilesChanged = (uploadedFiles = []) => {
+    this.setState({uploadedFiles});
+  };
+
+  onAbortUpload = () => {
+    const {uploading} = this.state;
+    if (uploading) {
+      (uploading.abort)();
+      this.setState({uploading: undefined});
+      this.onCancelClicked();
+    }
+  };
+
   render () {
+    const {
+      uploadFilesEnabled
+    } = this;
+    const {
+      uploading
+    } = this.state;
+    if (uploading) {
+      return (
+        <Modal
+          width="80%"
+          title="Uploading files..."
+          closable={false}
+          footer={
+            <Row type="flex" justify="end">
+              <Button onClick={this.onAbortUpload}>Cancel</Button>
+            </Row>
+          }
+          visible={this.props.visible}>
+          <UploadFilesList session={uploading} />
+        </Modal>
+      );
+    }
     let content = <LoadingView />;
     if (!this.props.storages.pending && this.props.storages.error) {
       content = <Alert message="Error retrieving data storages" type="error" />;
@@ -740,9 +839,9 @@ export default class BucketBrowser extends React.Component {
 
     let itemsSelectedCount = 0;
     if (this.props.multiple && this.state.selectedItems) {
-      itemsSelectedCount = this.state.selectedItems.length;
+      itemsSelectedCount += this.state.selectedItems.length;
     }
-
+    itemsSelectedCount += this.state.uploadedFiles.length;
     return (
       <Modal
         width="80%"
@@ -759,7 +858,10 @@ export default class BucketBrowser extends React.Component {
                 onClick={() => this.onCancelClicked()}>Cancel</Button>
               <Button
                 type="primary"
-                disabled={this.state.selectedItems.length === 0}
+                disabled={
+                  this.state.selectedItems.length === 0 &&
+                  this.state.uploadedFiles.length === 0
+                }
                 onClick={() => this.onSelectClicked()}>
                 OK{
                   itemsSelectedCount > 0
@@ -784,9 +886,29 @@ export default class BucketBrowser extends React.Component {
           </Row>
         }
         visible={this.props.visible}>
-        <Row style={{height: 450}}>
-          {content}
-        </Row>
+        <div style={{height: 450, display: 'flex'}}>
+          <div
+            style={{
+              flex: 1,
+              height: '100%',
+              overflow: 'auto',
+              display: 'flex',
+              position: 'relative'
+            }}
+          >
+            {content}
+          </div>
+          {
+            uploadFilesEnabled && (
+              <UploadFilesArea
+                style={{width: 300, height: '100%', overflow: 'auto', marginLeft: 5}}
+                files={this.state.uploadedFiles}
+                onFilesChange={this.onUploadedFilesChanged}
+                multiple={this.props.multiple}
+              />
+            )
+          }
+        </div>
       </Modal>
     );
   }
@@ -996,6 +1118,13 @@ export default class BucketBrowser extends React.Component {
       this.setState({
         search: null
       });
+      this.resetUploadedFilesList();
     }
   }
+
+  resetUploadedFilesList = () => {
+    this.setState({
+      uploadedFiles: []
+    });
+  };
 }

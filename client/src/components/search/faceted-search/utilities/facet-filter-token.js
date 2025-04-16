@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import {alphabeticalSorter, defaultSorter} from '../../../../utils/sorting';
+
 function getFacetFilterToken ({
   query,
   filters,
@@ -21,8 +23,9 @@ function getFacetFilterToken ({
   pageSize,
   scrollingParameters
 }) {
-  const filtersKeys = Object.keys(filters || {}).sort();
-  const filtersParts = filtersKeys.map(key => `${key}:${(filters[key] || []).sort().join(',')}`);
+  const filtersKeys = Object.keys(filters || {}).sort(alphabeticalSorter);
+  const filtersParts = filtersKeys
+    .map(key => `${key}:${(filters[key] || []).sort(defaultSorter).join(',')}`);
   const sortingParts = (sortingOrder || [])
     .map(({field, asc}) => `${field}:${asc ? 'ASC' : 'DESC'}`).join(',');
   const {

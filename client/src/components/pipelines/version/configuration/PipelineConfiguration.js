@@ -365,7 +365,7 @@ export default class PipelineConfiguration extends React.Component {
       this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
       if (this.props.configurations.value
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
         return false;
@@ -546,5 +546,4 @@ export default class PipelineConfiguration extends React.Component {
       </div>
     );
   }
-
 }

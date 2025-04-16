@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import roleModel from '../../utils/roleModel';
+import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -416,7 +417,7 @@ class PreferencesLoad extends Remote {
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
             capabilities: Object.entries(capabilities)
-              .map(c => mapCapability(c, entry)),
+              .map(c => mapCapability([c, entry])),
             multiple: Boolean(entry?.multiple)
           };
         };
@@ -815,12 +816,32 @@ class PreferencesLoad extends Remote {
     const value = this.getPreferenceValue('ui.runs.tags');
     if (value) {
       try {
-        return JSON.parse(value);
+        const result = JSON.parse(value);
+        if (!Array.isArray(result)) {
+          throw new Error(`array expected, got ${typeof result}`);
+        }
+        return result.map((o) => {
+          const {
+            // eslint-disable-next-line camelcase
+            user_tag = false,
+            userTag = user_tag,
+            ...rest
+          } = o;
+          return {
+            ...rest,
+            userTag: `${userTag}`.toLowerCase() === 'true'
+          };
+        });
       } catch (e) {
         console.warn('Error parsing "ui.runs.tags" preference:', e.message);
       }
     }
     return [];
+  }
+
+  @computed
+  get uiRunsUserTags () {
+    return this.uiRunsTags.filter((tag) => tag.userTag);
   }
 
   @computed
@@ -1029,6 +1050,40 @@ class PreferencesLoad extends Remote {
   get uiClusterMonitoringAdminsAllowRange () {
     const value = this.getPreferenceValue('ui.cluster.monitoring.admins.allow.range');
     return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get uiLaunchParameters () {
+    const value = this.getPreferenceValue('ui.launch.parameters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.launch.parameters" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get uiRunActions () {
+    const value = this.getPreferenceValue('ui.run.actions');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          const result = {};
+          for (const [key, value] of Object.entries(cfg)) {
+            result[key] = parseRunActionCriteria(key, value);
+          }
+          return result;
+        }
+        throw Error(`unsupported ui.run.actions format. expected object, got ${typeof cfg}`);
+      } catch (e) {
+        console.warn('Error parsing "ui.run.actions" preference:', e.message);
+      }
+    }
+    return {};
   }
 
   toolScanningEnabledForRegistry (registry) {

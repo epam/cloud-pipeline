@@ -152,6 +152,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadRunsChartsQuery;
     private String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
     private String deleteRunsByIdInQuery;
+    private String checkIfRunExistsQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -1007,6 +1008,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         return runs;
     }
 
+    public boolean runExists(final Long runId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.RUN_ID.name(), runId);
+        return getNamedParameterJdbcTemplate().queryForObject(checkIfRunExistsQuery, params, Integer.class) > 0;
+    }
+
     public MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
@@ -1092,6 +1099,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         PRICE_PER_HOUR,
         COMPUTE_PRICE_PER_HOUR,
         DISK_PRICE_PER_HOUR,
+        FS_PRICE_PER_HOUR,
         STATE_REASON,
         NON_PAUSE,
         NODE_REAL_DISK,
@@ -1103,7 +1111,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         KUBE_SERVICE_ENABLED,
         CLUSTER_PRICE,
         NODE_POOL_ID,
-        NODE_START_DATE;
+        NODE_START_DATE,
+        PROJECT_ID;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1115,6 +1124,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(VERSION.name(), run.getVersion());
             params.addValue(START_DATE.name(), run.getStartDate());
             params.addValue(NODE_START_DATE.name(), run.getInstanceStartDate());
+            params.addValue(PROJECT_ID.name(), run.getProjectId());
             params.addValue(END_DATE.name(), run.getEndDate());
             params.addValue(PARAMETERS.name(), run.getParams());
             params.addValue(STATUS.name(), run.getStatus().getId());
@@ -1150,6 +1160,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
             params.addValue(COMPUTE_PRICE_PER_HOUR.name(), run.getComputePricePerHour());
             params.addValue(DISK_PRICE_PER_HOUR.name(), run.getDiskPricePerHour());
+            params.addValue(FS_PRICE_PER_HOUR.name(), run.getFsPricePerHour());
             params.addValue(CLUSTER_PRICE.name(), run.getWorkersPrice());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
@@ -1250,6 +1261,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));
             run.setSensitive(rs.getBoolean(SENSITIVE.name()));
             run.setKubeServiceEnabled(rs.getBoolean(KUBE_SERVICE_ENABLED.name()));
+            Long projectId = rs.getLong(PROJECT_ID.name());
+            if (!rs.wasNull()) {
+                run.setProjectId(projectId);
+            }
             RunInstance instance = new RunInstance();
             instance.setNodeDisk(rs.getInt(NODE_DISK.name()));
             instance.setEffectiveNodeDisk(rs.getInt(NODE_REAL_DISK.name()));
@@ -1309,6 +1324,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             run.setPricePerHour(rs.getBigDecimal(PRICE_PER_HOUR.name()));
             run.setComputePricePerHour(rs.getBigDecimal(COMPUTE_PRICE_PER_HOUR.name()));
             run.setDiskPricePerHour(rs.getBigDecimal(DISK_PRICE_PER_HOUR.name()));
+            run.setFsPricePerHour(rs.getBigDecimal(FS_PRICE_PER_HOUR.name()));
             run.setWorkersPrice(rs.getBigDecimal(CLUSTER_PRICE.name()));
             String stateReasonMessage = rs.getString(STATE_REASON.name());
             if (!rs.wasNull()) {
@@ -1693,5 +1709,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Required
     public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
         this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
+    }
+
+    @Required
+    public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
+        this.checkIfRunExistsQuery = checkIfRunExistsQuery;
     }
 }

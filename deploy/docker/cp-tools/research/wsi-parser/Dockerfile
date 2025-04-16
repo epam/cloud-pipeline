@@ -80,6 +80,13 @@ RUN source $ANACONDA_HOME/etc/profile.d/conda.sh && \
     pip3 install generate-tiff-offsets==0.1.7 && \
     conda deactivate
 
+RUN source $ANACONDA_HOME/etc/profile.d/conda.sh && \
+    conda create -y -n indica_tiff_parser && \
+    conda activate indica_tiff_parser && \
+    conda install python -y && \
+    pip3 install tifffile[all]==2025.2.18 && \
+    conda deactivate
+
 # Install AWS CLI
 ARG AWS_CLI_DISTR_URL="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
 RUN cd $PARSER_HOME && \
@@ -108,6 +115,7 @@ ENV PATH="$WSI_PARSER_HOME/bftools:$WSI_PARSER_HOME/bioformats2raw/bioformats2ra
 
 ADD create_deepzoom.sh "$WSI_PARSER_HOME/create_deepzoom.sh"
 ADD create_pyramid_ome_tiff.sh "$WSI_PARSER_HOME/create_pyramid_ome_tiff.sh"
+ADD indica_tiff_to_ome_tiff.py "$WSI_PARSER_HOME/indica_tiff_to_ome_tiff.py"
 ADD process_files.py "$WSI_PARSER_HOME/process_files.py"
 ADD start.sh /start.sh
 RUN chmod +x $WSI_PARSER_HOME/*.sh

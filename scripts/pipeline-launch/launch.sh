@@ -55,27 +55,37 @@ function clone_repository {
       local _RETRIES_TIMEOUT=$4
       local _CLONE_RESULT=0
 
-      for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT");
-      do
-            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" -q
+      if [ "$CP_GIT_EXTRA_CONFIG" ]; then
+            IFS=',' read -ra _GIT_EXTRA_CONFIG_ARR <<< "$CP_GIT_EXTRA_CONFIG"
+            for _GIT_EXTRA_CONFIG_ITEM in "${_GIT_EXTRA_CONFIG_ARR[@]}"; do
+                  _GIT_EXTRA_CONFIG_ITEM_NAME=$(echo "$_GIT_EXTRA_CONFIG_ITEM" | cut -f1 -d'=' )
+                  _GIT_EXTRA_CONFIG_ITEM_VALUE=$(echo "$_GIT_EXTRA_CONFIG_ITEM" | cut -f2 -d'=' )
+                  echo "[INFO] Setting git parameters: $_GIT_EXTRA_CONFIG_ITEM_NAME = $_GIT_EXTRA_CONFIG_ITEM_VALUE"
+                  git config --global "$_GIT_EXTRA_CONFIG_ITEM_NAME" "$_GIT_EXTRA_CONFIG_ITEM_VALUE"
+            done
+      fi
+
+      _REPOSITORY_URL_SANITIZED=$(echo "$_REPOSITORY_URL" | sed 's|https://.*@|https://xxx@|g')
+
+      for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT"); do
+            echo "[INFO] Cloning ${_REPOSITORY_URL_SANITIZED} to ${_REPOSITORY_LOCAL_PATH} with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
+            
+            git $CP_GIT_CLONE_EXTRA_ARGS -c http.sslVerify=false clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" -q
             _CLONE_RESULT=$?
 
-            if [ $_CLONE_RESULT -ne 0 ]; 
-            then
-                  echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL} to ${_REPOSITORY_LOCAL_PATH}"
+            if [ $_CLONE_RESULT -ne 0 ]; then
+                  echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL_SANITIZED} to ${_REPOSITORY_LOCAL_PATH} with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
                   sleep "$_RETRIES_TIMEOUT"
             else
                   cd $SCRIPTS_DIR
 
-                  if [ -z "$BRANCH" ];
-                  then
+                  if [ -z "$BRANCH" ]; then
                         git -c http.sslVerify=false checkout $REPO_REVISION -q
                   else
                         git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
                   fi
 
-                  if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ];
-                  then
+                  if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ]; then
                         git -c http.sslVerify=false submodule init
                         git -c http.sslVerify=false submodule update
                   fi
@@ -1543,7 +1553,10 @@ fi
 
 # Get general run information from the API
 CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
-export CP_API_POD_IP=$(echo "$CP_API_RUN_INFO_JSON" | jq -r '.podIP')
+export CP_API_POD_IP=$(echo "$CP_API_RUN_INFO_JSON" | jq -r '.payload.podIP')
+if [ "$CP_API_POD_IP" == "null" ]; then
+      unset CP_API_POD_IP
+fi
 
 echo "------"
 echo
@@ -1853,46 +1866,8 @@ if [ "$CP_GPUSTAT_ENABLED" != "false" ]; then
       echo
 fi
 
-######################################################
-echo "Setting up Gitlab credentials"
-echo "-"
-######################################################
-set_git_credentials
-
-_GIT_CREDS_RESULT=$?
-
-if [ ${_GIT_CREDS_RESULT} -ne 0 ];
-then
-    echo "Failed to get user's Gitlab credentials"
-fi
-echo "------"
-
-# check whether we shall get code from repository before executing a command or not
-if [ -z "$GIT_REPO" ] ;
-then
-      echo "GIT_REPO is not defined, skipping clone"
-elif  [ "$RESUMED_RUN" == true ] ;
-then
-      echo "Skipping pipeline repository clone for a resumed run"
-else
-      # clone current pipeline repo
-      clone_repository $GIT_REPO $SCRIPTS_DIR 3 10
-      _CLONE_RESULT=$?
-      if [ "$_CLONE_RESULT" -ne 0 ];
-      then
-            echo "[ERROR] Pipeline repository clone failed. Exiting"
-            exit_init "$_CLONE_RESULT"
-      fi
-      cd -
-fi
-
 # Apply MAC/networking tweaks if requested
 change_mac
-
-echo "------"
-echo
-######################################################
-
 
 ######################################################
 echo "Setting up general motd config"
@@ -2000,6 +1975,44 @@ else
 fi
 # Double check that root's SSH permissions are correct
 ssh_fix_permissions /root/.ssh
+
+echo "------"
+echo
+######################################################
+
+
+######################################################
+echo "Setting up Gitlab credentials"
+echo "-"
+######################################################
+set_git_credentials
+
+_GIT_CREDS_RESULT=$?
+
+if [ ${_GIT_CREDS_RESULT} -ne 0 ];
+then
+    echo "Failed to get user's Gitlab credentials"
+fi
+echo "------"
+
+# check whether we shall get code from repository before executing a command or not
+if [ -z "$GIT_REPO" ] ;
+then
+      echo "GIT_REPO is not defined, skipping clone"
+elif  [ "$RESUMED_RUN" == true ] ;
+then
+      echo "Skipping pipeline repository clone for a resumed run"
+else
+      # clone current pipeline repo
+      clone_repository $GIT_REPO $SCRIPTS_DIR ${CP_GIT_CLONE_RETRIES_COUNT:-3} ${CP_GIT_CLONE_RETRIES_TIMEOUT_SEC:-10}
+      _CLONE_RESULT=$?
+      if [ "$_CLONE_RESULT" -ne 0 ];
+      then
+            echo "[ERROR] Pipeline repository clone failed. Exiting"
+            exit_init "$_CLONE_RESULT"
+      fi
+      cd -
+fi
 
 echo "------"
 echo

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.BaseEntity;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -32,10 +34,12 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
+import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -65,8 +69,10 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIME
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getPipelineConfiguration;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.VERSION;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRunWithInstance;
@@ -81,6 +87,8 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -121,6 +129,8 @@ public class PipelineRunManagerLaunchTest {
             TEST_PERIOD.plusHours(HOURS_18));
     private static final RunStatus TEST_STATUS_3 = new RunStatus(ID_2, TaskStatus.RUNNING, null,
             TEST_PERIOD.plusHours(HOURS_18));
+    private static final long PIPELINE_ID = 1L;
+    private static final long FOLDER_ID = 1L;
 
     @InjectMocks
     private final PipelineRunManager pipelineRunManager = new PipelineRunManager();
@@ -171,7 +181,13 @@ public class PipelineRunManagerLaunchTest {
     private PipelineVersionManager pipelineVersionManager;
 
     @Mock
+    private GitManager gitManager;
+
+    @Mock
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @Mock
+    private FolderApiService folderApiService;
 
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
@@ -269,6 +285,28 @@ public class PipelineRunManagerLaunchTest {
 
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE),
                 eq(defaultRegionResources), eq(REGION_ID), eq(true));
+    }
+
+    @Test
+    public void launchPipelineFromProjectShouldSetUpProjectId() {
+        final FolderWithMetadata folder = new FolderWithMetadata();
+        final Pipeline pipeline = new Pipeline(PIPELINE_ID);
+        pipeline.setName(TEST_NAME);
+        folder.setId(FOLDER_ID);
+        doReturn(folder).when(folderApiService).getProject(eq(PIPELINE_ID), eq(AclClass.PIPELINE));
+        doReturn(Optional.of(VERSION)).when(pipelineVersionManager).resolvePipelineVersion(eq(pipeline), any());
+        doReturn(VERSION).when(gitManager).getRevisionName(any());
+
+        final PipelineRun run = launchPipeline(configuration, pipeline, null, null, null);
+        assertNotNull(run.getProjectId());
+        assertEquals(FOLDER_ID, run.getProjectId().longValue());
+    }
+
+    @Test
+    public void launchPipelineWithoutProjectShouldSetProjectIdAsNull() {
+        doReturn(null).when(folderApiService).getProject(PIPELINE_ID, AclClass.PIPELINE);
+        final PipelineRun run = launchPipeline(configuration, new Pipeline(PIPELINE_ID), null, null, null);
+        assertNull(run.getProjectId());
     }
 
     @Test

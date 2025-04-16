@@ -40,6 +40,7 @@ from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.printing.storage import print_storage_items, init_items_table
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
+from src.utilities.storage_path_permissions import verify_storage_path_permissions_allowed
 from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
@@ -184,6 +185,16 @@ class DataStorageOperations(object):
                                       permission_to_check, include, exclude, force, skip_existing, sync_newer,
                                       verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
             sys.exit(0)
+
+        # TODO: rewrite tuple to object
+        # items - collection of items (tuples), each item represents file + additional information about this file
+        # item structure:
+        #  object_type = item[0]
+        #  full_path = item[1]
+        #  relative_path = item[2]
+        #  source_size = item[3]
+        #  source_timestamp = item[4]
+        #  destination_relative_path = item[5]
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -204,10 +215,13 @@ class DataStorageOperations(object):
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         items_iterator = iter(source_wrapper.get_items(quiet=quiet))
-        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                       permission_to_check, include, exclude, force, quiet, skip_existing,
-                                       sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                       on_empty_files)
+        try:
+            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                           permission_to_check, include, exclude, force, quiet, skip_existing,
+                                           sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                           on_empty_files)
+        except StopIteration:
+            return
         if threads:
             cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
                                              destination_wrapper, exclude, force, include, io_threads, items,
@@ -277,6 +291,9 @@ class DataStorageOperations(object):
     def _fetch_batch_items(cls, items_iterator, manager, source_wrapper, destination_wrapper, permission_to_check,
                            include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                            on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
+        # Method may produce StopIteration error (since no hasNext method provided).
+        # This error indicated that iterator has no more elements.
+        # So, it is obligatory to handle it with try-except clause in code that will use this method
         batch_items_iterator = itertools.islice(items_iterator, BATCH_SIZE)
         items_batch = itertools.chain([next(batch_items_iterator)], batch_items_iterator)
         items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -294,6 +311,8 @@ class DataStorageOperations(object):
             full_path = item[1]
             relative_path = item[2]
             source_size = item[3]
+
+            destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
 
             logging.debug(u'Preprocessing path {}...'.format(full_path))
 
@@ -339,7 +358,7 @@ class DataStorageOperations(object):
                 filtered_items.append(item)
                 continue
 
-            destination_key = manager.get_destination_key(destination_wrapper, relative_path)
+            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path)
             if skip_existing and sync_newer:
                 destination_size, destination_modification_datetime = \
                     manager.get_destination_object_head(destination_wrapper, destination_key)
@@ -494,6 +513,8 @@ class DataStorageOperations(object):
             if root_bucket is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
+            if root_bucket.type == 'S3':
+                verify_storage_path_permissions_allowed(root_bucket)
             if show_archive and root_bucket.type != 'S3':
                 click.echo('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
@@ -686,7 +707,14 @@ class DataStorageOperations(object):
                 splitted = line.split('\t')
                 path = splitted[0]
                 size = long(float(splitted[1]))
-                yield ('File', os.path.join(source_path, path), path, size)
+
+                # Ability to overwrite destination path of the file, by forming --file-list file as:
+                # <path>\t<size>\t<destination_path>
+                if len (splitted) > 2:
+                    destination_path = splitted[2]
+                    yield ('File', os.path.join(source_path, path), path, size, None, destination_path)
+                else:
+                    yield ('File', os.path.join(source_path, path), path, size, None)
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
@@ -802,11 +830,14 @@ class DataStorageOperations(object):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
+
+        destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
+
         fail_after_exception = None
         try:
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, io_threads=io_threads, lock=lock,
+                                               relative_path=destination_relative_path, clean=clean, quiet=quiet,
+                                               size=size, tags=tags, io_threads=io_threads, lock=lock,
                                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
@@ -940,3 +971,9 @@ class DataStorageOperations(object):
                     click.echo(msg)
                 return None
         return item
+
+    @classmethod
+    def _get_tuple_item(cls, collection, index, default=None):
+        if len(collection) > index:
+            return collection[index]
+        return default

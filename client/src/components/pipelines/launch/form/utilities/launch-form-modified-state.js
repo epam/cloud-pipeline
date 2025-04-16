@@ -38,6 +38,10 @@ import {
   isCustomCapability
 } from './run-capabilities';
 import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
+import {
+  fsConfigsAreEqual,
+  getFsConfigFromParameters
+} from './configure-fs/utilities';
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -312,6 +316,10 @@ export default function (props, state, options) {
   const {
     defaultCloudRegionId
   } = options;
+  const {parameters: initialParameters} = parameters || {};
+  const initialFsConfig = getFsConfigFromParameters(initialParameters);
+  const {fsConfig} = state;
+  const fsConfigModified = !fsConfigsAreEqual(fsConfig, initialFsConfig);
   // configuration name check
   return modified(form, props, 'configuration.name', 'currentConfigurationName') ||
     // pipeline check
@@ -326,6 +334,8 @@ export default function (props, state, options) {
     modified(form, parameters, `${EXEC_ENVIRONMENT}.disk`, 'instance_disk') ||
     // cluster state check
     clusterModified(parameters, state) ||
+    // cluster file system check
+    fsConfigModified ||
     // cloud region check
     modified(
       form,

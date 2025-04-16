@@ -58,6 +58,7 @@ public abstract class AbstractDataStorageFactory {
         storage.setSensitive(vo.isSensitive());
         storage.setMountDisabled(storage.isMountDisabled() || BooleanUtils.isTrue(vo.getMountDisabled()));
         storage.setToolsToMount(vo.getToolsToMount());
+        storage.setPathPermissionsEnabled(BooleanUtils.isTrue(vo.getPathPermissionsEnabled()));
         return storage;
     }
 

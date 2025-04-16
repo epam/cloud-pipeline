@@ -79,6 +79,7 @@ export class DataStorageEditDialog extends React.Component {
     activeTab: 'info',
     mountDisabled: false,
     versioningEnabled: false,
+    pathPermissionsEnabled: false,
     sharingEnabled: false,
     sensitive: false,
     restrictedAccess: true,
@@ -152,6 +153,12 @@ export class DataStorageEditDialog extends React.Component {
           values.backupDuration = undefined;
           values.versioningEnabled = false;
         }
+        values.pathPermissionsEnabled = (
+          !this.isNfsMount &&
+          !this.omicsStore &&
+          this.currentRegionSupportsStoragePermissions &&
+          this.state.pathPermissionsEnabled
+        );
         if (!this.isNfsMount) {
           values.sensitive = this.state.sensitive;
         }
@@ -259,6 +266,11 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get currentRegionSupportsPolicy () {
     return this.currentRegion && ['AWS', 'GCP'].indexOf(this.currentRegion.provider) >= 0;
+  }
+
+  @computed
+  get currentRegionSupportsStoragePermissions () {
+    return this.currentRegion && ['AWS'].indexOf(this.currentRegion.provider) >= 0;
   }
 
   @computed
@@ -422,6 +434,10 @@ export class DataStorageEditDialog extends React.Component {
     }
     callback();
   }
+
+  onChangePathPermissionsEnabled = (e) => this.setState({
+    pathPermissionsEnabled: e.target.checked
+  });
 
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
@@ -665,6 +681,30 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 )}
+                {
+                  !this.omicsStore &&
+                  !this.isNfsMount &&
+                  this.currentRegionSupportsStoragePermissions && (
+                    <Row>
+                      <Col xs={24} sm={6} />
+                      <Col xs={24} sm={18}>
+                        <Form.Item className={styles.dataStorageFormItem}>
+                          <Checkbox
+                            disabled={
+                              this.props.pending ||
+                              isReadOnly ||
+                              Boolean(this.props.dataStorage)
+                            }
+                            onChange={this.onChangePathPermissionsEnabled}
+                            checked={this.state.pathPermissionsEnabled}
+                          >
+                            Fine-grained permissions
+                          </Checkbox>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  )
+                }
                 {!this.omicsStore &&
                 !this.isNfsMount &&
                 this.props.policySupported &&
@@ -779,13 +819,23 @@ export class DataStorageEditDialog extends React.Component {
       const mountDisabled = this.props.dataStorage ? this.props.dataStorage.mountDisabled : false;
       const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy
         ? this.props.dataStorage.storagePolicy.versioningEnabled : true;
+      const pathPermissionsEnabled = this.props.dataStorage
+        ? this.props.dataStorage.pathPermissionsEnabled
+        : false;
       const sensitive = this.props.dataStorage
         ? this.props.dataStorage.sensitive
         : false;
       const sharingEnabled = !this.isNfsMount && this.props.dataStorage
         ? this.props.dataStorage.shared
         : false;
-      this.setState({mountDisabled, versioningEnabled, sharingEnabled, sensitive, skipPolicy: false});
+      this.setState({
+        mountDisabled,
+        versioningEnabled,
+        sharingEnabled,
+        sensitive,
+        skipPolicy: false,
+        pathPermissionsEnabled
+      });
     }
   };
 
@@ -795,7 +845,15 @@ export class DataStorageEditDialog extends React.Component {
       const versioningEnabled = false;
       const sensitive = false;
       const sharingEnabled = false;
-      this.setState({mountDisabled, versioningEnabled, sharingEnabled, sensitive, skipPolicy: false});
+      const pathPermissionsEnabled = false;
+      this.setState({
+        mountDisabled,
+        versioningEnabled,
+        sharingEnabled,
+        sensitive,
+        skipPolicy: false,
+        pathPermissionsEnabled
+      });
     }
   }
 

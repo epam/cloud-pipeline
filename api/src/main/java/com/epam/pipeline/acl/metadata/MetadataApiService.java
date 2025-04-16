@@ -59,6 +59,11 @@ public class MetadataApiService {
         return metadataManager.listMetadataItems(entities);
     }
 
+    @PostFilter(AclExpressions.METADATA_FILTER)
+    public List<MetadataEntry> listMetadataItemsByKey(final String key, final List<EntityVO> entities) {
+        return metadataManager.listMetadataItemsByKey(key, entities);
+    }
+
     @PreAuthorize(AclExpressions.METADATA_UPDATE_KEY)
     public MetadataEntry deleteMetadataItemKey(EntityVO entityVO, String key) {
         return metadataManager.deleteMetadataItemKey(entityVO, key);

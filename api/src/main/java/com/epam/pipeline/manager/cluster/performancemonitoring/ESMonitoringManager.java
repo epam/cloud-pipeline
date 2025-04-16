@@ -23,11 +23,16 @@ import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.dao.monitoring.metricrequester.GPUAggregationRequester;
 import com.epam.pipeline.dao.monitoring.metricrequester.GPUDetailsRequester;
 import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
+import com.epam.pipeline.dao.monitoring.metricrequester.platform.AbstractPlatformMetricRequester;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.PlatformResource;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
@@ -70,6 +75,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final String SWAP_FILESYSTEM = "tmpfs";
     private static final String HEAPSTER_INDEX_NAME_TOKEN = "heapster-";
     private static final String GPU_STAT_INDEX_NAME_TOKEN = "cp-gpu-monitor-";
+    private static final String NETWORK_EVENTS_INDEX_NAME_PATTERN = "cp-network-events-%s";
 
     private final HeapsterElasticRestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
@@ -169,6 +175,25 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .map(Map.Entry::getValue)
                 .reduce(new MonitoringStats.DisksUsage.DiskStats(), this::merged);
         return diskStats.getCapacity() - diskStats.getUsableSpace();
+    }
+
+    @Override
+    public NetworkEventFilter getPlatformNetworkStatsFilters() {
+        return NetworkEventFilter.fromMap(
+                AbstractPlatformMetricRequester.getRequester(
+                        PlatformResource.NETWORK_EVENT, NETWORK_EVENTS_INDEX_NAME_PATTERN, client
+                ).performHistogramFilterRequest()
+        );
+    }
+
+    @Override
+    public List<HistogramBin> getPlatformNetworkStats(final HistogramType histogramType,
+                                                      final LocalDateTime from, final LocalDateTime to,
+                                                      final Integer intervals,
+                                                      final NetworkEventFilter filter) {
+        return AbstractPlatformMetricRequester.getRequester(
+                PlatformResource.NETWORK_EVENT, NETWORK_EVENTS_INDEX_NAME_PATTERN, client
+        ).performHistogramRequest(histogramType, from, to, intervals, filter.toMap());
     }
 
     private LocalDateTime oldestMonitoringDate(final String... indexPrefixes) {

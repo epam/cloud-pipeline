@@ -954,6 +954,7 @@ RunTaskLogs.propTypes = {
   lineClassName: PropTypes.string,
   style: PropTypes.object,
   runId: PropTypes.number,
+  logs: PropTypes.string,
   taskName: PropTypes.string,
   taskParameters: PropTypes.string,
   taskInstance: PropTypes.string,

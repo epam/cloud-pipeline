@@ -1,0 +1,19 @@
+.run-parameters-section .run-parameters-table td,
+.run-parameters-section .run-parameters-table th {
+  padding: 0;
+  vertical-align: top;
+}
+
+.run-parameters-section .run-parameters-table th.section {
+  font-weight: bold;
+  padding-top: 5px;
+}
+
+.run-parameters-section .run-parameters-table .parameter-name {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.run-parameters-section .run-parameters-table .parameter-value {
+  padding-left: 5px;
+}

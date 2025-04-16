@@ -551,7 +551,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
         // storage linking
         SOURCE_DATASTORAGE_ID,
-        MASKING_RULES;
+        MASKING_RULES,
+        PATH_PERMISSIONS_ENABLED;
 
         static MapSqlParameterSource getParameters(final AbstractDataStorage dataStorage,
                                                    final boolean setStorageMountStatus) {
@@ -574,6 +575,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(MOUNT_EXACT_PATH.name(), dataStorage.isMountExactPath());
             params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
             params.addValue(MOUNT_DISABLED.name(), dataStorage.isMountDisabled());
+            params.addValue(PATH_PERMISSIONS_ENABLED.name(), dataStorage.isPathPermissionsEnabled());
 
             if (dataStorage instanceof AbstractAWSDataStorage) {
                 AbstractAWSDataStorage awsStorage = ((AbstractAWSDataStorage) dataStorage);
@@ -695,12 +697,14 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             Long parentFolderId = rs.getLong(FOLDER_ID.name());
             if (!rs.wasNull()) {
                 dataStorage.setParentFolderId(parentFolderId);
+                dataStorage.setParent(new Folder(parentFolderId));
             }
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
             dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
             dataStorage.setMountDisabled(rs.getBoolean(MOUNT_DISABLED.name()));
             dataStorage.setRootId(rs.getLong(DATASTORAGE_ROOT_ID.name()));
+            dataStorage.setPathPermissionsEnabled(rs.getBoolean(PATH_PERMISSIONS_ENABLED.name()));
             return dataStorage;
         }
 

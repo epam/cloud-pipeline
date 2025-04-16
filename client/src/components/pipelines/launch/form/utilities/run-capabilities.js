@@ -25,6 +25,7 @@ import fetchToolDefaultParameters from './fetch-tool-default-parameters';
 import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
+import {defaultSorter} from '../../../../../utils/sorting';
 
 export {RUN_CAPABILITIES};
 
@@ -920,7 +921,7 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
     );
   const sorted = array => [
     ...(
-      new Set((array || []).sort().filter(o => wellKnownCapabilities.includes(o)))
+      new Set((array || []).sort(defaultSorter).filter(o => wellKnownCapabilities.includes(o)))
     )
   ];
   const sorted1 = sorted(capabilities1 || []);

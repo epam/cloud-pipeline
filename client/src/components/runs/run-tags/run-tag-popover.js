@@ -48,13 +48,10 @@ function getDurationPresentation (duration) {
   if (duration >= 2 * stop.value) {
     return getDurationPresentationByUnit(duration, stop.value, stop.label);
   }
-  if (duration >= stop.value) {
-    parts.push(`1 ${stop.label}`);
-    const rest = duration - stop.value;
-    parts.push(getDurationPresentationByUnit(rest, stop.details, stop.detailsLabel));
-    return parts.filter((part) => !!part && part.length > 0).join(', ');
-  }
-  return getDurationPresentation(duration, SECOND, 'second');
+  parts.push(`1 ${stop.label}`);
+  const rest = duration - stop.value;
+  parts.push(getDurationPresentationByUnit(rest, stop.details, stop.detailsLabel));
+  return parts.filter((part) => !!part && part.length > 0).join(', ');
 }
 
 class RunTagPopover extends React.PureComponent {

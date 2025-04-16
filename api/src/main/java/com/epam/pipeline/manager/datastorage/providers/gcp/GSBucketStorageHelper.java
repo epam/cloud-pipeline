@@ -155,7 +155,7 @@ public class GSBucketStorageHelper {
         final List<AbstractDataStorageItem> items = showVersion
                 ? listItemsWithVersions(blobs)
                 : listItemsWithoutVersions(blobs);
-        return new DataStorageListing(blobs.getNextPageToken(), items);
+        return new DataStorageListing(blobs.getNextPageToken(), null, items);
     }
 
     public DataStorageItemType getItemType(final GSBucketStorage storage,
@@ -372,9 +372,7 @@ public class GSBucketStorageHelper {
 
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         events.put(new DataAccessEvent(path, DataAccessType.READ, storage));
-        try (ReadChannel reader = blob.reader()) {
-            return new DataStorageStreamingContent(Channels.newInputStream(reader), path);
-        }
+        return new DataStorageStreamingContent(Channels.newInputStream(blob.reader()), path);
     }
 
     public DataStorageDownloadFileUrl generateDownloadUrl(final GSBucketStorage storage, final String path,

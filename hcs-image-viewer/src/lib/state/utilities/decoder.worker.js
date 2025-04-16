@@ -20,6 +20,10 @@ import LZWDecoder from './lzw-decoder';
 addDecoder(5, () => LZWDecoder);
 
 self.addEventListener('message', async (e) => {
+  if (e.origin) {
+    // sonar qube 'Origins should be verified'
+    console.log('message origin: ', e.origin);
+  }
   const { id, fileDirectory, buffer } = e.data;
   const decoder = await getDecoder(fileDirectory);
   const decoded = await decoder.decode(fileDirectory, buffer);

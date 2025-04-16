@@ -67,7 +67,7 @@ import Billing, {
 } from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
 import VSIPreviewPage from '../applications/vsi-preview';
-import Log from '../runs/logs/Log';
+import LogsRedirect from '../runs/logs/logs-redirect';
 import App from './App';
 import ToolVersion from '../tools/tool-version';
 import ToolScanningInfo from '../tools/tool-version/scanning-info';
@@ -148,8 +148,7 @@ function AppRouterComponent ({history, uiNavigation}) {
         <Route path="/runs/filter" component={RunsFilter} />
         <Redirect from="/runs" to="runs/active" />
         <Route path="/runs/:status" component={AllRuns} />
-        <Redirect from="/run/:runId" to="/run/:runId/plain" />
-        <Route path="/run/:runId/:mode(/:taskName)" component={Log} />
+        <Route path="/run/:runId(/:mode)(/:taskName)" component={LogsRedirect} />
         <Redirect from="/tool/:id" to="/tool/:id/description" />
         <Route path="/tool/:id/:section" component={Tool} />
         <Redirect from="/tool/:id/info/:version" to="/tool/:id/info/:version/scaninfo" />

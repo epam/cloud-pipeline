@@ -21,6 +21,7 @@ import RunName from '../run-name';
 import roleModel from '../../../utils/roleModel';
 import {PipelineRunner} from '../../../models/pipelines/PipelineRunner';
 import Markdown from '../../special/markdown';
+import {checkRunActionAvailable, runActions} from './actions-availability';
 
 function createRunContinuationConfirmationDialog () {
   let instance;
@@ -205,8 +206,9 @@ export function runSupportsContinue (run) {
     : false;
   return !isRemovedPipeline &&
     roleModel.executeAllowed(run) &&
-    ['SUCCESS', 'FAILURE', 'STOPPED'].includes(status.toUpperCase()) &&
-    cpSupportContinue;
+    ['FAILURE', 'STOPPED'].includes(status.toUpperCase()) &&
+    cpSupportContinue &&
+    checkRunActionAvailable(run, runActions.continue);
 }
 
 export async function confirmRunContinuation (run) {

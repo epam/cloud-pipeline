@@ -84,6 +84,8 @@ class DataStorage:
         self.ro = False
         self.type = None
         self.region_name = None
+        self.owner = None
+        self.path_permissions_enabled = False
 
     @classmethod
     def load(cls, json, region_info=[]):
@@ -94,6 +96,8 @@ class DataStorage:
         instance.mask = json['mask']
         instance.sensitive = json['sensitive']
         instance.type = json['type']
+        instance.owner = json['owner']
+        instance.path_permissions_enabled = json.get('pathPermissionsEnabled', False)
         instance.region_name = cls._find_region_code(json.get('regionId', 0), region_info)
         instance.endpoint = cls._find_endpoint(json.get('regionId', 0), region_info)
         return instance
@@ -196,6 +200,10 @@ class CloudPipelineClient:
 
     def whoami(self):
         return self._retryable_call('GET', 'whoami') or {}
+
+    def get_storage_path_permissions(self, storage_id):
+        request_url = '/datastorage/%s/paths/permissions' % str(storage_id)
+        return self._retryable_call('GET', request_url) or []
 
     def _retryable_call(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self._api, endpoint)

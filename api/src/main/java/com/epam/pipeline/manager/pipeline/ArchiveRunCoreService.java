@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
+import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
@@ -50,6 +51,7 @@ public class ArchiveRunCoreService {
     private final RunServiceUrlDao runServiceUrlDao;
     private final RunStatusDao runStatusDao;
     private final StopServerlessRunDao stopServerlessRunDao;
+    private final EngineRunTaskDao engineRunTaskDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,
@@ -123,7 +125,9 @@ public class ArchiveRunCoreService {
         runStatusDao.deleteRunStatusByRunIdsIn(runIds, dryRun);
         log.debug("Run statuses deleted. Deleting stop serverless runs info...");
         stopServerlessRunDao.deleteByRunIdIn(runIds, dryRun);
-        log.debug("Stop serverless runs info deleted. Deleting runs...");
+        log.debug("Stop serverless runs info deleted. Deleting engine run tasks...");
+        engineRunTaskDao.deleteByRunIdIn(runIds, dryRun);
+        log.debug("Engine run logs deleted. Deleting runs...");
         pipelineRunDao.deleteRunByIdIn(runIds, dryRun);
         log.debug("'{}' runs deleted.", runIds.size());
     }

@@ -90,6 +90,7 @@ function install_nm {
   nm_version=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     os_ver=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
+    CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_RPM:-/usr/bin/startxfce4}"
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
     mkdir -p xfcedesktop && \
     tar -xzvf xfcedesktop.tar.gz -C xfcedesktop && \
@@ -99,9 +100,9 @@ function install_nm {
     /bin/dbus-uuidgen > /etc/machine-id && \
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
     yum install -y nomachine.rpm && \
-    rm -f nomachine.rpm && \
-    sed -i '/DefaultDesktopCommand/c\DefaultDesktopCommand "/usr/bin/startxfce4"' /usr/NX/etc/node.cfg
+    rm -f nomachine.rpm
   else
+    CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_DEB}"
     apt-get install -y --no-upgrade locales && \
     locale-gen en_US.UTF-8 && \
     locale-gen en_US && \
@@ -113,6 +114,10 @@ function install_nm {
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb
+  fi
+  
+  if [ "$CP_NM_DEFAULT_DESKTOP_COMMAND" ]; then
+    sed -i "/DefaultDesktopCommand/c\DefaultDesktopCommand \"$CP_NM_DEFAULT_DESKTOP_COMMAND\"" /usr/NX/etc/node.cfg
   fi
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 # NOT A REAL SCRIPT, BUT A SET OF INSTRUCTION TO PREPARE A DEPS BUNDLE
 # FOR THE `nomachine_setup` SCRIPT
 
+########################################
+# CENTOS
+########################################
 # yum install -y epel-release && \
 # yum install -y --downloadonly --downloaddir=/rpmcache \
 #     adwaita-cursor-theme \
@@ -304,3 +307,26 @@
 # cd /rpmcache
 # tar -zcvf /xfce4-centos-7.tar.gz .
 # aws s3 cp /xfce4-centos-7.tar.gz s3://cloud-pipeline-oss-builds/tools/nomachine/
+
+
+########################################
+# ROCKY
+########################################
+# yum install -y epel-release && \
+# dnf install -y --allowerasing coreutils && \
+# yum groupinstall -y --downloadonly --downloaddir=/rpmcache "Server with GUI" && \
+# yum groupinstall -y --downloadonly --downloaddir=/rpmcache "Xfce" && \
+# yum groupinstall -y --downloadonly --downloaddir=/rpmcache "Fonts" && \
+# yum install -y  --downloadonly --downloaddir=/rpmcache \
+#                 cpp-8.5.0-23.el8_10 \
+#                 gcc-8.5.0-23.el8_10 \
+#                 glibc-devel-2.28-251.el8_10.13 \
+#                 glibc-headers-2.28-251.el8_10.13 \
+#                 libgcc-8.5.0-23.el8_10 \
+#                 p11-kit-server
+
+# os_ver=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
+
+# cd /rpmcache
+# tar -zcvf /xfce4-$os_ver.tar.gz .
+# aws s3 cp /xfce4-$os_ver.tar.gz s3://cloud-pipeline-oss-builds/tools/nomachine/

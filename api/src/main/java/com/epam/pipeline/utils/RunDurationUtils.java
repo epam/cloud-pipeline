@@ -20,7 +20,7 @@ public final class RunDurationUtils {
         return durationBetween(run.getInstanceStartDate(), run.getEndDate());
     }
 
-    private static Duration durationBetween(final Date from, final Date to) {
+    public static Duration durationBetween(final Date from, final Date to) {
         final Date end = Optional.ofNullable(to).orElseGet(DateUtils::now);
         final Date start = Optional.ofNullable(from).orElse(end);
         return Duration.ofMillis(end.getTime() - start.getTime()).abs();

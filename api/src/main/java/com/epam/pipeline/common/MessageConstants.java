@@ -196,6 +196,7 @@ public final class MessageConstants {
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_NUMERIC = "error.archive.run.metadata.not.numeric";
     public static final String ERROR_MAX_PAGE_SIZE_EXCEEDED = "error.max.page.size.exceeded";
+    public static final String ERROR_ENGINE_RUN_TASK_SETTING_NOT_FOUND = "error.engine.run.task.setting.not.found";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -384,6 +385,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_INTELLIGENT_TIERING_ARCHIVE_ACCESS =
             "error.datastorage.intelligent.tiering.archive.access";
     public static final String ERROR_DATASTORAGE_ARCHIVE_ACCESS =  "error.datastorage.archive.access";
+    public static final String ERROR_DATASTORAGE_PATH_PERMISSIONS_NOT_ALLOWED =
+            "error.datastorage.path.permissions.not.allowed";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

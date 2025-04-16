@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import DockerImagesEdit from './DockerImagesEdit';
+import {defaultSorter} from '../../../../../utils/sorting';
 import styles from './RestrictDockerDialog.css';
 
 const KEYS = {
@@ -50,8 +51,10 @@ function compareToolsToMount (a, b) {
     if (tA.id !== tB.id) {
       return false;
     }
-    const vA = [...(new Set(tA.versions || []))].map(v => v.version).sort();
-    const vB = [...(new Set(tB.versions || []))].map(v => v.version).sort();
+    const vA = [...(new Set(tA.versions || []))].map(v => v.version)
+      .sort(defaultSorter);
+    const vB = [...(new Set(tB.versions || []))].map(v => v.version)
+      .sort(defaultSorter);
     if (vA.length !== vB.length) {
       return false;
     }

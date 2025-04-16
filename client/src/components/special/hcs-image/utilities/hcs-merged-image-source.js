@@ -22,12 +22,13 @@ import {createObjectStorageWrapper} from '../../../../utils/object-storage';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 import channelsAreEqual from './channels-are-equal';
 import HCSURLsManager from './hcs-urls-manager';
+import {alphabeticalSorter} from '../../../../utils/sorting';
 
 const DEFAULT_IMAGE_FORMAT = 'tiff';
 
 function imageIdsAreEqual (imageIdsA, imageIdsB) {
-  const a = [...new Set(imageIdsA || [])].sort();
-  const b = [...new Set(imageIdsB || [])].sort();
+  const a = [...new Set(imageIdsA || [])].sort(alphabeticalSorter);
+  const b = [...new Set(imageIdsB || [])].sort(alphabeticalSorter);
   if (a.length !== b.length) {
     return false;
   }
@@ -344,8 +345,12 @@ class HcsMergedImageSource {
     return {
       original: payload.original,
       well: payload.well,
-      cells: payload.imageIds.map((id) => id.split(':').pop()).sort().join(','),
-      zPlanes: payload.zPlanes.map((z) => `${z + 1}`).sort().join(','),
+      cells: payload.imageIds.map((id) => id.split(':').pop())
+        .sort(alphabeticalSorter)
+        .join(','),
+      zPlanes: payload.zPlanes.map((z) => `${z + 1}`)
+        .sort(alphabeticalSorter)
+        .join(','),
       timepoint: payload.timePoint,
       sequenceId: payload.sequenceId,
       path,

@@ -83,9 +83,11 @@ class Tool:
         return json.dumps(fields, sort_keys=True, indent=4)
 
 class DataStorageRule:
-    def __init__(self, file_mask, move_to_sts):
+    def __init__(self, file_mask, move_to_sts, name=None, is_result=False):
+        self.name = name
         self.file_mask = file_mask
         self.move_to_sts = move_to_sts
+        self.is_result = is_result
 
     def match(self, path):
         return fnmatch.fnmatch(path, self.file_mask)
@@ -98,6 +100,13 @@ class DataStorageRule:
         return False
 
     @staticmethod
+    def match_which(rules, path):
+        for rule in rules:
+            if rule.move_to_sts and rule.match(path):
+                return rule
+        return None
+
+    @staticmethod
     def read_from_file(path):
         if not os.path.exists(path):
             return []
@@ -108,7 +117,9 @@ class DataStorageRule:
                 return []
             try:
                 for rule in json.loads(data):
-                    rules.append(DataStorageRule(rule['fileMask'], rule['moveToSts']))
+                    rule_name = rule["name"] if "name" in rule else None
+                    is_result = rule["isResult"] if "isResult" in rule else False
+                    rules.append(DataStorageRule(rule['fileMask'], rule['moveToSts'], rule_name, is_result))
             except ValueError:
                 return rules
         return rules
@@ -261,6 +272,8 @@ class PipelineAPI:
     STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
+    RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
+    RUN_RESULT_URL = '/run/{id}/result'
 
     # Pipeline API default header
 
@@ -1547,3 +1560,35 @@ class PipelineAPI:
             return {} if result is None else FileShareMount.from_json(result)
         except Exception as e:
             raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))
+
+
+    def log_pipeline_run_engine_task_events(self, run_id, events):
+        try:
+            return self._request(
+                endpoint=self.RUN_ENGINE_EVENTS_URL.format(id=str(run_id)),
+                http_method='post',
+                data=events
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to put engine task events for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def add_pipeline_run_results(self, run_id, results):
+        try:
+            return self._request(
+                endpoint=self.RUN_RESULT_URL.format(id=str(run_id)),
+                http_method='post',
+                data=results
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to add run results for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def get_pipeline_run_results(self, run_id):
+        try:
+            return self._request(
+                endpoint=self.RUN_RESULT_URL.format(id=str(run_id)),
+                http_method='get'
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load run results for run ID '{}', error: {}".format(str(run_id), str(e)))

@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Popover, Button, Icon, Select, Checkbox} from 'antd';
+import {defaultSorter} from '../../../../utils/sorting';
 
 function tagsAreEqual (tagsA, tagsB) {
   if (!tagsA && !tagsB) {
@@ -10,8 +11,8 @@ function tagsAreEqual (tagsA, tagsB) {
   if (!tagsA || !tagsB) {
     return false;
   }
-  const a = [...new Set(tagsA)].sort();
-  const b = [...new Set(tagsB)].sort();
+  const a = [...new Set(tagsA)].sort(defaultSorter);
+  const b = [...new Set(tagsB)].sort(defaultSorter);
   if (a.length !== b.length) {
     return false;
   }

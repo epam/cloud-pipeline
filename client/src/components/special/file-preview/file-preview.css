@@ -1,0 +1,35 @@
+.file-preview {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.file-preview-footer,
+.file-preview-header {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.file-preview-content {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
+}
+
+.file-preview-modal {
+
+}
+
+.centered {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-preview-renderer {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}

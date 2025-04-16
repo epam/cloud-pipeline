@@ -55,9 +55,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public static final String DEFAULT_TYPE = C.DEFAULT_INSTANCE;
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(LAUNCH, context().find(byClassName("launch-pipeline-form__layout-header")).find(byText("Launch"))),
-            entry(PIPELINE, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-name"))),
-            entry(VERSION, context().find(byClassName("launch-pipeline-form__layout-header"))
+            entry(LAUNCH, context().find(byId("launch-pipeline-form-header")).find(byText("Launch"))),
+            entry(PIPELINE, context().find(byId("launch-form-pipeline-name"))),
+            entry(VERSION, context().find(byId("launch-pipeline-form-header"))
                     .find(byText("Version:")).parent().find(byClassName("ant-select-selection"))),
             entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-version"))),
             entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header")).find(byText("Estimated price per hour:"))),
@@ -451,10 +451,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkPipelineVersion(final String expectedVersion) {
-        String actualVersion = get(VERSION).$("input").getAttribute("value");
-        assertTrue(actualVersion.equals(expectedVersion),
-                format("Pipeline version corresponds expected version '%s'",
-                        expectedVersion));
+        get(VERSION).$("input").should(attribute("value", expectedVersion));
         return this;
     }
 

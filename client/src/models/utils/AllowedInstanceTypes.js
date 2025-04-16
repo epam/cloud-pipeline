@@ -17,10 +17,11 @@
 import Remote from '../basic/Remote';
 import {action, computed, observable} from 'mobx';
 import cloudRegions from '../cloudRegions/CloudRegions';
+import {defaultSorter} from '../../utils/sorting';
 
 function providersAreEqual (setA, setB) {
-  const a = [...new Set(setA || [])].sort();
-  const b = [...new Set(setB || [])].sort();
+  const a = [...new Set(setA || [])].sort(defaultSorter);
+  const b = [...new Set(setB || [])].sort(defaultSorter);
   if (a.length !== b.length) {
     return false;
   }

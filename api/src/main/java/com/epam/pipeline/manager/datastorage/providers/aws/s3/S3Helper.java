@@ -67,6 +67,7 @@ import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -87,6 +88,7 @@ import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -362,7 +364,8 @@ public class S3Helper {
     public DataStorageListing getItems(final String bucket, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker, final String prefix,
                                        final Set<String> masks,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_STRING);
         AmazonS3 client = getDefaultS3Client();
         if (!StringUtils.isNullOrEmpty(requestPath)) {
@@ -372,8 +375,10 @@ public class S3Helper {
             }
         }
         DataStorageListing result = showVersion
-                ? listVersions(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing)
-                : listFiles(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing);
+                ? listVersions(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing,
+                permissionsContainer)
+                : listFiles(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing,
+                permissionsContainer);
         result.getResults().sort(AbstractDataStorageItem.getStorageItemComparator());
         return result;
     }
@@ -786,7 +791,8 @@ public class S3Helper {
     private DataStorageListing listFiles(final AmazonS3 client, final String bucket, final String requestPath,
                                          final Integer pageSize, final String marker, final String prefix,
                                          final Set<String> masks,
-                                         final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                         final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                         final StorageFolderListPermissionsContainer permissionsContainer) {
         ListObjectsV2Request req = new ListObjectsV2Request();
         req.setBucketName(bucket);
         req.setPrefix(requestPath);
@@ -805,7 +811,7 @@ public class S3Helper {
             maskingEnabled = true;
             latestMarker = resolveStartAndLastTokens(req.getStartAfter(), resolvedMasks, req::setStartAfter);
             if (latestMarker == null) {
-                return new DataStorageListing(null, Collections.emptyList());
+                return new DataStorageListing(null, null, Collections.emptyList());
             }
         } else {
             maskingEnabled = false;
@@ -829,7 +835,10 @@ public class S3Helper {
                     }
                 }
                 previous = getPreviousKey(previous, name);
-                items.add(parseFolder(requestPath, name, prefix));
+                final DataStorageFolder folder = parseFolder(requestPath, name, prefix, permissionsContainer);
+                if (Objects.nonNull(folder)) {
+                    items.add(folder);
+                }
             }
             for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
                 DataStorageFile file =
@@ -846,9 +855,13 @@ public class S3Helper {
                             continue;
                         }
                     }
+                    if (StoragePathPermissionsUtils.filterNotAllowedFiles(permissionsContainer, file.getName())) {
+                        continue;
+                    }
                     if (filterNotRestored(file, fileName, restoredListing)) {
                         continue;
                     }
+                    file.setMask(StoragePathPermissionsUtils.getFileMask(permissionsContainer, file.getName()));
                     previous = getPreviousKey(previous, s3ObjectSummary.getKey());
                     items.add(file);
                 }
@@ -859,7 +872,7 @@ public class S3Helper {
             }
         } while(listing.isTruncated() && (pageSize == null || items.size() < pageSize));
         String returnToken = listing.isTruncated() ? previous : null;
-        return new DataStorageListing(returnToken, items);
+        return new DataStorageListing(returnToken, null, items);
     }
 
     private String getPreviousKey(String previous, String key) {
@@ -869,22 +882,28 @@ public class S3Helper {
         return key.compareTo(previous) > 0 ? key : previous;
     }
 
-    private DataStorageFolder parseFolder(String requestPath, String name, String prefix) {
+    private DataStorageFolder parseFolder(final String requestPath, final String name, final String prefix,
+                                          final StorageFolderListPermissionsContainer permissionsContainer) {
         String relativePath = name;
         if (relativePath.endsWith(ProviderUtils.DELIMITER)) {
             relativePath = relativePath.substring(0, relativePath.length() - 1);
         }
         String folderName = relativePath.substring(requestPath.length());
+        if (StoragePathPermissionsUtils.filterNotAllowedFolders(permissionsContainer, folderName)) {
+            return null;
+        }
         DataStorageFolder folder = new DataStorageFolder();
         folder.setName(folderName);
         folder.setPath(ProviderUtils.removePrefix(relativePath, prefix));
+        folder.setMask(StoragePathPermissionsUtils.getFolderMask(permissionsContainer, folderName));
         return folder;
     }
 
     private DataStorageListing listVersions(final AmazonS3 client, final String bucket, final String requestPath,
                                             final Integer pageSize, final String marker, final String prefix,
                                             final Set<String> masks,
-                                            final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                            final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                            final StorageFolderListPermissionsContainer permissionsContainer) {
         ListVersionsRequest request = new ListVersionsRequest()
                 .withBucketName(bucket).withPrefix(requestPath).withDelimiter(ProviderUtils.DELIMITER);
         if (StringUtils.hasValue(marker)) {
@@ -901,7 +920,7 @@ public class S3Helper {
             maskingEnabled = true;
             latestMarker = resolveStartAndLastTokens(request.getKeyMarker(), resolvedMasks, request::setKeyMarker);
             if (latestMarker == null) {
-                return new DataStorageListing(null, Collections.emptyList());
+                return new DataStorageListing(null, null, Collections.emptyList());
             }
         } else {
             maskingEnabled = false;
@@ -926,11 +945,13 @@ public class S3Helper {
                 }
                 if (checkListingSize(pageSize, items, itemKeys)) {
                     items.addAll(itemKeys.values());
-                    return new DataStorageListing(previous, items);
+                    return new DataStorageListing(previous, null, items);
                 }
                 previous = getPreviousKey(previous, commonPrefix);
-                AbstractDataStorageItem folder = parseFolder(requestPath, commonPrefix, prefix);
-                items.add(folder);
+                final DataStorageFolder folder = parseFolder(requestPath, commonPrefix, prefix, permissionsContainer);
+                if (Objects.nonNull(folder)) {
+                    items.add(folder);
+                }
             }
             for (S3VersionSummary versionSummary : versionListing.getVersionSummaries()) {
                 if (!pathMatch(requestPath, versionSummary.getKey())) {
@@ -939,6 +960,9 @@ public class S3Helper {
                 DataStorageFile file =
                         AbstractS3ObjectWrapper.getWrapper(versionSummary).convertToStorageFile(requestPath, prefix);
                 if (file == null) {
+                    continue;
+                }
+                if (StoragePathPermissionsUtils.filterNotAllowedFiles(permissionsContainer, file.getPath())) {
                     continue;
                 }
                 if (filterNotRestored(file, file.getPath(), restoredListing)) {
@@ -955,10 +979,11 @@ public class S3Helper {
                         continue;
                     }
                 }
+                file.setMask(StoragePathPermissionsUtils.getFileMask(permissionsContainer, file.getName()));
                 if (!itemKeys.containsKey(fileName)) {
                     if (checkListingSize(pageSize, items, itemKeys)) {
                         items.addAll(itemKeys.values());
-                        return new DataStorageListing(previous, items);
+                        return new DataStorageListing(previous, null, items);
                     }
                     previous = getPreviousKey(previous, versionSummary.getKey());
                     Map<String, AbstractDataStorageItem> versions = new LinkedHashMap<>();
@@ -980,7 +1005,7 @@ public class S3Helper {
         } while (versionListing.isTruncated());
         items.addAll(itemKeys.values());
         String returnToken = versionListing.isTruncated() ? previous : null;
-        return new DataStorageListing(returnToken, items);
+        return new DataStorageListing(returnToken, null, items);
     }
 
     private boolean checkListingSize(Integer pageSize, List<AbstractDataStorageItem> items,

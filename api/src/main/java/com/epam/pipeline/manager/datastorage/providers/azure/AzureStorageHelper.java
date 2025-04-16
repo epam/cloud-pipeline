@@ -172,7 +172,7 @@ public class AzureStorageHelper {
                 .filter(this::isNotTokenFile)
                 .limit(page)
                 .collect(Collectors.toList());
-        return new DataStorageListing(iterator.getNextMarker(), items);
+        return new DataStorageListing(iterator.getNextMarker(), null, items);
     }
 
     private boolean isNotTokenFile(final AbstractDataStorageItem item) {

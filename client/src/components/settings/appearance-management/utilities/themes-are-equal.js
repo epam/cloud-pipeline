@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import {defaultSorter} from '../../../../utils/sorting';
+
 function propertiesAreEqual (a, b) {
   if (!a && !b) {
     return true;
@@ -21,8 +23,8 @@ function propertiesAreEqual (a, b) {
   if (!a || !b) {
     return false;
   }
-  const aKeys = Object.keys(a).sort();
-  const bKeys = Object.keys(b).sort();
+  const aKeys = Object.keys(a).sort(defaultSorter);
+  const bKeys = Object.keys(b).sort(defaultSorter);
   if (aKeys.length !== bKeys.length) {
     return false;
   }

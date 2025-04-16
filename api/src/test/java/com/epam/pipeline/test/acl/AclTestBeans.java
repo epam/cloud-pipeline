@@ -25,6 +25,7 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunResultDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
@@ -65,6 +66,7 @@ import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManag
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -103,6 +105,7 @@ import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
@@ -115,6 +118,8 @@ import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -225,6 +230,10 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunManager mockPipelineRunManager;
+
+    @MockBean
+    protected PipelineRunResultManager mockPipelineRunResultManager;
+
 
     @MockBean
     protected InstanceOfferManager mockInstanceOfferManager;
@@ -387,6 +396,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+    protected PipelineRunResultDao mockPipelineRunResultDao;
 
     @MockBean
     protected RestartRunDao mockRestartRunDao;
@@ -605,6 +617,15 @@ public class AclTestBeans {
 
     @MockBean
     protected AWSOmicsStoreManager omicsStoreManager;
+
+    @MockBean
+    protected PipelineRunRuntimeDataManager pipelineRunRuntimeDataManager;
+
+    @MockBean
+    protected EngineRunTaskService engineRunTaskService;
+
+    @MockBean
+    protected StoragePathPermissionsService storagePathPermissionsService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

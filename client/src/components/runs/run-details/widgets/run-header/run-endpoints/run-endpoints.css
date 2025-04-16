@@ -1,0 +1,16 @@
+.run-endpoints {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.run-endpoints .run-endpoint {
+  display: inline-flex;
+  align-items: center;
+  font-size: larger;
+}
+
+.run-endpoints .run-endpoint:not(:last-child) {
+  margin-right: 15px;
+}

@@ -195,13 +195,14 @@ export default function generateProvider (options) {
     if (pending || (result && !checkResultMessage.length)) {
       return null;
     }
+    const message = checkResultMessage.length > 0 ? checkResultMessage : warning;
     return (
       <RunOperationWarningAlert
         className={className}
         style={style}
         type={type}
         showIcon={showIcon}
-        message={checkResultMessage || warning}
+        message={message}
         checkResult={checkResult}
       />
     );

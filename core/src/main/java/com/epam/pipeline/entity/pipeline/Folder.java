@@ -47,6 +47,7 @@ public class Folder extends AbstractHierarchicalEntity {
     private Map<String, Integer> metadata;
     private final AclClass aclClass = AclClass.FOLDER;
     private boolean hasMetadata;
+    private String description;
 
 
     public Folder() {
@@ -77,6 +78,7 @@ public class Folder extends AbstractHierarchicalEntity {
         this.storages = new ArrayList<>(folder.getStorages());
         this.configurations = new ArrayList<>(folder.getConfigurations());
         this.metadata = new HashMap<>(folder.getMetadata());
+        this.description = folder.getDescription();
     }
 
     public Folder copy() {
@@ -159,6 +161,7 @@ public class Folder extends AbstractHierarchicalEntity {
         folder.setParentId(this.getParentId());
         folder.setParent(this.getParent());
         folder.setMetadata(this.getMetadata());
+        folder.setDescription(this.getDescription());
         return folder;
     }
 

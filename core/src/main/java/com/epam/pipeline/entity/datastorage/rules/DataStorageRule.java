@@ -33,6 +33,8 @@ public class DataStorageRule {
     public static final boolean DEFAULT_MOVE_TO_STS = true;
 
     private Long pipelineId;
+    private String name;
+    private Boolean isResult;
     private String fileMask;
     private Boolean moveToSts;
     private Date createdDate;
