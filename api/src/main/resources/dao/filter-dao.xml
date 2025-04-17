@@ -67,6 +67,7 @@
                         r.price_per_hour,
                         r.compute_price_per_hour,
                         r.disk_price_per_hour,
+                        r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
@@ -77,7 +78,8 @@
                         r.pipeline_name,
                         r.cluster_price,
                         r.node_pool_id,
-                        r.node_start_date
+                        r.node_start_date,
+                        r.project_id
                     FROM
                         pipeline.pipeline_run r
                     WHERE @WHERE@

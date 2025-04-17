@@ -443,6 +443,8 @@ public class NodesManager {
                 .orElseGet(regionManager::loadDefaultRegion);
         cloudFacade.attachDisk(region.getId(), run.getId(), request, tags);
         nodeDiskManager.register(nodeId, DiskRegistrationRequest.from(request));
+        pipelineRunManager.adjustRunPricePerHourToDisks(run.getId(),
+                cloudFacade.loadDisks(region.getId(), run.getId()));
     }
 
     private boolean isNodeProtected(NodeInstance nodeInstance) {

@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.folder ADD COLUMN description TEXT;

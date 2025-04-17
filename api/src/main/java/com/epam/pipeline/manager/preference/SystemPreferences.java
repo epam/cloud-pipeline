@@ -983,7 +983,14 @@ public class SystemPreferences {
             "ui.standalone.nodes.allow.terminate", false, UI_GROUP, pass, true);
     public static final BooleanPreference UI_CLUSTER_MONITORING_ADMINS_ALLOW_RANGE = new BooleanPreference(
             "ui.cluster.monitoring.admins.allow.range", false, UI_GROUP, pass, true);
-
+    public static final ObjectPreference<Object> UI_LAUNCH_PARAMETERS = new ObjectPreference<>(
+            "ui.launch.parameters",
+            Collections.emptyMap(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
+    public static final ObjectPreference<Object> UI_RUN_ACTIONS = new ObjectPreference<>(
+            "ui.run.actions",
+            Collections.emptyMap(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(

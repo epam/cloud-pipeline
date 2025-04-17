@@ -117,6 +117,7 @@ class OmicsStorage {
         credentials.accessKey,
         credentials.token,
         credentials.expiration,
+        credentials.region,
         this.getCredentials
       );
     } else if (this._credentials.needsRefresh) {
@@ -124,7 +125,8 @@ class OmicsStorage {
         credentials.keyID,
         credentials.accessKey,
         credentials.token,
-        credentials.expiration
+        credentials.expiration,
+        credentials.region
       );
     }
   }

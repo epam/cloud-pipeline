@@ -1,0 +1,38 @@
+.run-timeline {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+
+.run-timeline:hover .run-timeline-info {
+  text-decoration: underline;
+}
+
+.run-timeline .run-timeline-info {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.run-timeline .run-timeline-info > *:not(:last-child)::after {
+  content: '; ';
+  white-space: pre;
+}
+
+.run-timeline .run-timeline-info > *:last-child::after {
+  content: '.';
+}
+
+.run-timeline .run-timeline-info > *:not(:first-child) {
+  text-transform: lowercase;
+}
+
+.run-timeline .run-timeline-info > * {
+  white-space: nowrap;
+}
+
+.run-timeline-table th,
+.run-timeline-table td {
+  padding: 2px 4px;
+}

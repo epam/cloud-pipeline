@@ -62,6 +62,8 @@ public class FolderDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";
+    private static final String DESCRIPTION = "Description";
+    private static final String NEW_DESCRIPTION = "New Description";
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
     private static final String TEST_DATASTORAGE = "test-datastorage";
@@ -106,6 +108,7 @@ public class FolderDaoTest extends AbstractJdbcTest {
         Folder loaded = folderDao.loadFolder(folder.getId());
         assertEquals(folder.getId(), loaded.getId());
         assertEquals(folder.getName(), loaded.getName());
+        assertEquals(folder.getDescription(), loaded.getDescription());
         assertNull(folder.getParentId());
 
         //update
@@ -120,11 +123,13 @@ public class FolderDaoTest extends AbstractJdbcTest {
 
         folder.setParentId(parent.getId());
         folder.setName("Test2");
+        folder.setDescription(NEW_DESCRIPTION);
         folderDao.updateFolder(folder);
         Folder loaded2 = folderDao.loadFolder(folder.getId());
         assertEquals(folder.getId(), loaded2.getId());
         assertEquals(folder.getName(), loaded2.getName());
         assertEquals(folder.getParentId(), loaded2.getParentId());
+        assertEquals(folder.getDescription(), loaded2.getDescription());
 
         Folder loadedParent = folderDao.loadFolder(parent.getId());
         assertEquals(parent.getId(), loadedParent.getId());
@@ -281,6 +286,7 @@ public class FolderDaoTest extends AbstractJdbcTest {
         Folder folder = new Folder();
         folder.setName(TEST_NAME);
         folder.setOwner(TEST_USER);
+        folder.setDescription(DESCRIPTION);
         //create
         folderDao.createFolder(folder);
         return folder;

@@ -27,6 +27,7 @@ import {getWellRowName} from './utilities';
 import styles from './hcs-cell-selector.css';
 import {parseColor} from '../../../../themes/utilities/color-utilities';
 import {cellsArraysAreEqual} from '../utilities/cells-utilities';
+import {defaultSorter} from '../../../../utils/sorting';
 
 const MESH_MODES = {
   LINES: 'LINES',
@@ -420,7 +421,7 @@ class HcsCellSelector extends React.Component {
         });
     });
     tagGroups.forEach(tagGroup => {
-      tagGroup.values.sort();
+      tagGroup.values.sort(defaultSorter);
     });
     this.setState({
       tags: tagGroups,

@@ -471,7 +471,7 @@ def get_daemon():
         cluster_supply += master_instance_supply + static_instance_supply * static_instance_number
 
     if grid_engine_type == GridEngineType.SLURM:
-        grid_engine = SlurmGridEngine(cmd_executor=cmd_executor)
+        grid_engine = SlurmGridEngine(cmd_executor=cmd_executor, queue_name=os.getenv('CP_CAP_SLURM_QUEUE_NAME'))
         job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                           cluster_max_supply=cluster_supply)

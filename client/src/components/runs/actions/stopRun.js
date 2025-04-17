@@ -27,6 +27,7 @@ import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import getCommitAllowedForTool from './get-commit-allowed-for-tool';
 import {diskSizeAllowsPause} from './warnings/disk-size-warning';
+import {checkRunActionAvailable, runActions} from './actions-availability';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -43,7 +44,9 @@ export function runIsCommittable (run) {
 
 export function canCommitRun (run) {
   // Checks only run state, not user permissions
-  return canStopRun(run) && runIsCommittable(run);
+  return canStopRun(run) &&
+    runIsCommittable(run) &&
+    checkRunActionAvailable(run, runActions.commit);
 }
 
 export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
@@ -94,7 +97,8 @@ export function canPauseRun (run, preferences) {
     diskSizeAllowsPause(
       preferences,
       instance ? instance.nodeDisk : 0
-    );
+    ) &&
+    checkRunActionAvailable(run, runActions.pause);
 }
 
 export function stopRun (parent, callback) {
@@ -125,13 +129,8 @@ export function terminateRun (parent, callback) {
     // eslint-disable-next-line max-len
     throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
   }
-  const {
-    localization,
-    dockerRegistries,
-    hiddenObjects
-  } = parent.props;
   return function (run) {
-    return terminateRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
+    return terminateRunFn(run, callback);
   };
 }
 

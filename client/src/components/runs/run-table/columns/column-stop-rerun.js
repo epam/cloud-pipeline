@@ -28,6 +28,7 @@ import localization from '../../../../utils/localization';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import {inject, observer} from 'mobx-react';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../../actions/continue-run';
+import {checkRunActionAvailable, runActions} from '../../actions/actions-availability';
 
 const getColumnFilter = () => {};
 
@@ -157,7 +158,11 @@ class StopReRunButtonComponent extends localization.LocalizedReactComponent {
         case 'stopped':
         case 'failure':
         case 'success':
-          if (roleModel.executeAllowed(run) && !isPipeline) {
+          if (
+            roleModel.executeAllowed(run) &&
+            !isPipeline &&
+            checkRunActionAvailable(run, runActions.rerun)
+          ) {
             return (
               <a
                 key="rerun"

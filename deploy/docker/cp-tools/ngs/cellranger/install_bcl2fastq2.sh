@@ -23,7 +23,7 @@ if [ "$_WITH_BCL2FASTQ" != "true" ]; then
     exit 0
 fi
 
-apt install -y build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev zlib1g-dev unzip libboost-all-dev=1.58.0.1ubuntu1
+source /opt/rh/gcc-toolset-9/enable
 
 _BCL2FASTQ_VERSION="v2-20-0"
 export TMP=/tmp
@@ -37,12 +37,7 @@ rm -f bcl2fastq2-*.tar.gz
 export SOURCE=${TMP}/bcl2fastq
 export BUILD=${TMP}/bcl2fastq2-build
 export INSTALL_DIR=$BCL2FASTQ_HOME/bcl2fastq-$_BCL2FASTQ_VERSION
-export C_INCLUDE_PATH=/usr/include/x86_64-linux-gnu
-
-# Patch for the newer version of boost 
-# https://backwardincompatible.com/post/169360794395/compiling-illumina-bcl2fastq-220-on-ubuntu-with
-cd $SOURCE
-patch src/cxx/lib/io/Xml.cpp < /tmp/Xml.cpp.patch
+export C_INCLUDE_PATH=/usr/include
 
 mkdir -p ${BUILD}
 cd ${BUILD}

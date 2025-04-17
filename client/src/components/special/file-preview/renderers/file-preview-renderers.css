@@ -1,0 +1,13 @@
+.file-preview-renderer {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.file-preview-tabular-renderer {
+  min-height: 200px;
+}
+
+.file-preview-html-renderer {
+  height: calc(70vh - 210px);
+}

@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.metadata.PipeConfValueType;
@@ -974,6 +975,7 @@ public class PipelineRunManager {
             run.setPipelineId(pipeline.getId());
             run.setVersion(version);
             run.setRevisionName(gitManager.getRevisionName(version));
+            run.setProjectId(getPipelineProjectId(pipeline));
         }
         run.setStatus(TaskStatus.RUNNING);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -1312,11 +1314,36 @@ public class PipelineRunManager {
                 .filter(runInstance -> !runInstance.isEmpty())
                 .map(runInstance -> instanceOfferManager.getInstanceEstimatedPrice(runInstance.getNodeType(),
                         getTotalSize(disks), runInstance.getSpot(), runInstance.getCloudRegionId()))
-                .map(InstancePrice::getPricePerHour)
-                .map(this::scaledForUser)
+                .map(price ->
+                    BigDecimal.valueOf(price.getPricePerHour())
+                            .add(Optional.ofNullable(run.getFsPricePerHour()).orElse(BigDecimal.ZERO))
+                            .setScale(USER_PRICE_SCALE, RoundingMode.HALF_EVEN))
                 .orElse(run.getPricePerHour());
         run.setPricePerHour(pricePerHour);
         LOGGER.debug("Adjusted price per hour for run #{} to {}", runId, run.getPricePerHour());
+        return updateRunInfo(run);
+    }
+
+    /**
+     * Adjusts run price per hour including provided file system price per hour.
+     *
+     * @param runId of {@link PipelineRun} to update price for.
+     * @param fsPricePerHour file system price per hour (including size)
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun adjustRunPricePerHourToFs(final Long runId, final BigDecimal fsPricePerHour) {
+        final PipelineRun run = loadPipelineRun(runId, false);
+
+        // new total price = current total price - current FS price + new FS price
+        final BigDecimal pricePerHour = run.getPricePerHour()
+                .subtract(Optional.ofNullable(run.getFsPricePerHour()).orElse(BigDecimal.ZERO))
+                .add(fsPricePerHour)
+                .setScale(USER_PRICE_SCALE, RoundingMode.HALF_EVEN);
+
+        run.setPricePerHour(pricePerHour);
+        run.setFsPricePerHour(fsPricePerHour);
+        LOGGER.debug("Adjusted price per hour and FS price per hour for run #{}", runId);
         return updateRunInfo(run);
     }
 
@@ -1412,6 +1439,10 @@ public class PipelineRunManager {
         }
         run.setTags(tags);
         pipelineRunDao.updateRunTags(run);
+    }
+
+    public boolean runExists(final Long runId) {
+        return pipelineRunDao.runExists(runId);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
@@ -1521,8 +1552,8 @@ public class PipelineRunManager {
         }
         return normalizePodName(name, runId);
     }
-
     // PodId should contain only a-z 0-9 and -, it also should be smaller then 63 characters
+
     private String normalizePodName(String name, String runId) {
         String podName = name.trim().toLowerCase();
         podName = podName.replaceAll(KubernetesConstants.KUBE_NAME_REGEXP, "-");
@@ -1921,5 +1952,13 @@ public class PipelineRunManager {
         } catch (Exception e) {
             log.error("An error occurred during cloud resource tags removal for run '{}'", run.getId(), e);
         }
+    }
+
+    private Long getPipelineProjectId(final Pipeline pipeline) {
+        if (pipeline == null || pipeline.getId() == null) {
+            return null;
+        }
+        final FolderWithMetadata project = folderApiService.getProject(pipeline.getId(), AclClass.PIPELINE);
+        return project != null ? project.getId() : null;
     }
 }

@@ -76,6 +76,7 @@ fi
 _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
 _NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
+CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_GPU:-JOB}
 pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
 if (( _NODE_GPUS_COUNT > 0 )) && check_cp_cap "CP_CAP_SGE_GPU_EXCLUSIVE_MODE"; then
@@ -99,6 +100,7 @@ fi
 
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
+CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_RAM:-YES}
 pipe_log_info "$_NODE_RAM_COUNT RAM found" "$_SGE_RESOURCES_SETUP_TASK"
 
 if [ -z "$_NODE_CPU_COUNT" ]; then
@@ -116,6 +118,7 @@ fi
 #                       virtual_used=1466.832031M,cpu=100.000000
 # ```
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU:-n_cpu}
+CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_CPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_CPU:-JOB}
 pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
 # "exclusive" resource can be used to schedule jobs which occupy a whole node
@@ -130,9 +133,9 @@ pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_
 # For the "ram" resource, keeping it as "YES", as it makes sense to request this resource per slot
 
 # For the CPU-only nodes, we still add "gpus" resource with value "0", so that the scripts do not fail if the request "-l gpus=N"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB" "<="
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES" "<="
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "$CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_GPU" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "$CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_RAM" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "$CP_CAP_GE_CONSUMABLE_RESOURCE_CONSUMABLE_TYPE_CPU" "<="
 # We also add a predefined value for slots as it is not exposed by default
 # This can be handy when using "fill up" scheduling approach: http://talby.rcs.manchester.ac.uk/~ri/_notes_sge/least_used_vs_fill_up.html
 CP_CAP_GE_CONSUMABLE_RESOURCE_SLOTS_ENABLED="${CP_CAP_GE_CONSUMABLE_RESOURCE_SLOTS_ENABLED:-true}"

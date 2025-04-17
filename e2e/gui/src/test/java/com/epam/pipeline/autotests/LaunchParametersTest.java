@@ -177,6 +177,13 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         library()
                 .removeConfigurationIfExists(configuration)
                 .removePipelineIfExists(pipeline);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void restorePreference() {
+        open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
         navigationMenu()
                 .settings()
                 .switchToPreferences()

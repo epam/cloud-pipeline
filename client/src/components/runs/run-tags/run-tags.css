@@ -16,12 +16,18 @@
 
 .run-tag {
   border-radius: 4px;
-  font-size: x-small;
-  margin-left: 1px;
-  margin-bottom: 1px;
-  padding: 1px 3px;
+  margin-left: 2px;
+  margin-bottom: 2px;
+  padding: 2px 4px;
   line-height: 1;
   white-space: nowrap;
+}
+
+.run-tag.small {
+  font-size: x-small;
+  padding: 1px 3px;
+  margin-left: 1px;
+  margin-bottom: 1px;
 }
 
 .link .run-tag {

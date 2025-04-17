@@ -6,5 +6,6 @@ api/src/main/resources/static/
 *.project
 *.pyc
 .vscode/
+.gnupg/
 docs/site
 dist

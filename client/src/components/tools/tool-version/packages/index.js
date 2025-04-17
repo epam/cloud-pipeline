@@ -28,6 +28,7 @@ import LoadTool from '../../../../models/tools/LoadTool';
 import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
+import {defaultSorter} from '../../../../utils/sorting';
 import styles from './packages.css';
 
 @inject((stores, {params}) => {
@@ -92,7 +93,7 @@ export default class Packages extends React.Component {
       const result = (this.props.versions.value.scanResult.dependencies || [])
         .map(d => d.ecosystem)
         .filter((ecosystem, index, array) => array.indexOf(ecosystem) === index);
-      result.sort();
+      result.sort(defaultSorter);
       return result;
     }
     return [];
@@ -155,27 +156,27 @@ export default class Packages extends React.Component {
       <Row type="flex" style={{margin: 10}}>
         <table style={{width: '100%'}}>
           <tbody>
-          <tr>
-            <td style={{width: '50%'}}>
-              <div
-                className={classNames('cp-divider', 'inline')}
-                style={{
-                  margin: '0 5px',
-                  verticalAlign: 'middle',
-                  height: 1
-                }}>{'\u00A0'}</div>
-            </td>
-            <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
-            <td style={{width: '50%'}}>
-              <div
-                className={classNames('cp-divider', 'inline')}
-                style={{
-                  margin: '0 5px',
-                  verticalAlign: 'middle',
-                  height: 1
-                }}>{'\u00A0'}</div>
-            </td>
-          </tr>
+            <tr>
+              <td style={{width: '50%'}}>
+                <div
+                  className={classNames('cp-divider', 'inline')}
+                  style={{
+                    margin: '0 5px',
+                    verticalAlign: 'middle',
+                    height: 1
+                  }}>{'\u00A0'}</div>
+              </td>
+              <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
+              <td style={{width: '50%'}}>
+                <div
+                  className={classNames('cp-divider', 'inline')}
+                  style={{
+                    margin: '0 5px',
+                    verticalAlign: 'middle',
+                    height: 1
+                  }}>{'\u00A0'}</div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </Row>
@@ -186,7 +187,7 @@ export default class Packages extends React.Component {
     this.setState({filterDependencies: e.target.value});
   };
 
-  renderDependency = (includePackage=false) => (d, index) => {
+  renderDependency = (includePackage = false) => (d, index) => {
     return (
       <li key={index} className={styles.dependency}>
         <b>{highlightText(d.name, this.state.filterDependencies)} v{d.version}</b>

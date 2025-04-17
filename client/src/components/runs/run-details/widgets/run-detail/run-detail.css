@@ -1,0 +1,12 @@
+.run-detail {
+  display: flex;
+  align-items: center;
+}
+
+.run-detail.inline {
+  display: inline-flex;
+}
+
+.run-detail > *:not(:last-child) {
+  margin-right: 5px;
+}

@@ -225,8 +225,8 @@ function buildTimelineCoordinates (options) {
       }
     }
   };
-  iterateWithConfig(mainConfig, true);
-  iterateWithConfig(smallConfig, false);
+  iterateWithConfig(mainConfig);
+  iterateWithConfig(smallConfig);
   releaseContext();
   return result.sort(ticksSorter);
 }
@@ -347,8 +347,8 @@ function buildDefaultCoordinates (options) {
       }
     }
   };
-  iterateWithConfig(mainConfig, true);
-  iterateWithConfig(smallConfig, false);
+  iterateWithConfig(mainConfig);
+  iterateWithConfig(smallConfig);
   releaseContext();
   return result.sort(ticksSorter);
 }

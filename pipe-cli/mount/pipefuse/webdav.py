@@ -237,7 +237,8 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
             self.parse_timestamp(self.prop_value(elem, 'creationdate', ''), self.C_DATE_FORMAT),
             self.prop_value(elem, 'getcontenttype', ''),
             self.prop_exists(elem, 'collection'),
-            storage_class=None
+            storage_class=None,
+            mask=None
         )
 
     def download_range(self, fh, data, remote_path, offset=0, length=0):

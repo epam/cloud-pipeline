@@ -26,6 +26,7 @@ import CellProfilerExternalJob from './cell-profiler-external-job';
 import UserName from '../../../UserName';
 import {compareUserNames, compareUserNamesWithoutDomain} from '../../../../../utils/users-filters';
 import roleModel from '../../../../../utils/roleModel';
+import {defaultSorter} from '../../../../../utils/sorting';
 
 function parseFilters (filters = {}) {
   const {
@@ -52,8 +53,8 @@ function jobArraysAreTheSame (a, b) {
   if (!a || !b) {
     return false;
   }
-  const aIds = [...new Set(a.map(job => job.id))].sort();
-  const bIds = [...new Set(b.map(job => job.id))].sort();
+  const aIds = [...new Set(a.map(job => job.id))].sort(defaultSorter);
+  const bIds = [...new Set(b.map(job => job.id))].sort(defaultSorter);
   if (aIds.length !== bIds.length) {
     return false;
   }

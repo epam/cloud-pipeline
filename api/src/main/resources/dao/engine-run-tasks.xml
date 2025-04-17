@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.pipeline.EngineRunTaskDao" id="engineRunTaskDao" autowire="byName">
+        <property name="upsertEngineRunTaskQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.engine_run_task (
+                        task_id,
+                        task_name,
+                        task_key,
+                        task_tag,
+                        task_group,
+                        parent_id,
+                        engine_type,
+                        status,
+                        data,
+                        start_date,
+                        end_date,
+                        run_id,
+                        duration
+                    ) VALUES (
+                        :TASK_ID,
+                        :TASK_NAME,
+                        :TASK_KEY,
+                        :TASK_TAG,
+                        :TASK_GROUP,
+                        :PARENT_ID,
+                        :ENGINE_TYPE,
+                        :STATUS,
+                        to_jsonb(:DATA::jsonb),
+                        :START_DATE,
+                        :END_DATE,
+                        :RUN_ID,
+                        :DURATION
+                    )
+                    ON CONFLICT (run_id, task_id, engine_type)
+                    DO UPDATE SET
+                        status = :STATUS,
+                        data = to_jsonb(:DATA::jsonb),
+                        end_date = :END_DATE,
+                        duration = :DURATION
+                    WHERE engine_run_task.status NOT IN ('CACHED', 'COMPLETED', 'FAILED', 'ABORTED')
+                ]]>
+            </value>
+        </property>
+        <property name="deleteEngineRunTaskByRunIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.engine_run_task WHERE run_id IN (:list)
+                ]]>
+            </value>
+        </property>
+        <property name="loadEngineRunTasksStatsByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        engine_type,
+                        task_group,
+                        status,
+                        COUNT(*) AS tasks_count
+                    FROM
+                        pipeline.engine_run_task
+                    WHERE run_id = :RUN_ID AND engine_type = :ENGINE_TYPE AND task_group IS NOT NULL
+                    GROUP BY
+                        engine_type,
+                        task_group,
+                        status
+                ]]>
+            </value>
+        </property>
+        <property name="findEngineRunTaskByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.task_id,
+                        r.task_name,
+                        r.task_key,
+                        r.task_tag,
+                        r.task_group,
+                        r.parent_id,
+                        r.engine_type,
+                        r.status,
+                        r.start_date,
+                        r.end_date,
+                        r.run_id,
+                        r.duration,
+                        r.data
+                    FROM pipeline.engine_run_task r
+                    WHERE r.run_id = :RUN_ID AND r.engine_type = :ENGINE_TYPE @WHERE@
+                    @SORT@
+                    LIMIT :LIMIT OFFSET :OFFSET
+                ]]>
+            </value>
+        </property>
+        <property name="countEngineRunTaskByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT count(*)
+                    FROM pipeline.engine_run_task r
+                    WHERE r.run_id = :RUN_ID AND r.engine_type = :ENGINE_TYPE @WHERE@
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

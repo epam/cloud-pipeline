@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public enum ContentDisposition {
     INLINE(filename -> "inline"),
-    ATTACHMENT(filename -> String.format("attachment; filename=%s", filename));
+    ATTACHMENT(filename -> String.format("attachment; filename=\"%s\"", filename));
 
     private final Function<String, String> headerValueFunction;
 

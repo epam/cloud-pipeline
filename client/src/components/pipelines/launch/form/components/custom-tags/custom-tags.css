@@ -1,0 +1,22 @@
+.link {
+  text-decoration: none;
+}
+
+.link .configure {
+  white-space: nowrap;
+  text-decoration: underline;
+}
+
+.ui-run-tag {
+  display: flex;
+  align-items: center;
+}
+
+.ui-run-tag .title {
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.ui-run-tag .value {
+  flex: 1;
+}

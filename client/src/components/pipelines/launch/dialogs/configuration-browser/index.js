@@ -189,9 +189,7 @@ class ConfigurationBrowser extends React.Component {
           throw new Error(request.error);
         }
         const metadataClass = await getProjectEntityTypeByName(folderId, metadataClassName);
-        const filterConfigurations = filterConfigurationsFn(
-          metadataClass ? metadataClass.id : undefined
-        );
+        const filterConfigurations = filterConfigurationsFn();
         const folderStructure = generateTreeData(
           request.value || {},
           {
@@ -213,7 +211,7 @@ class ConfigurationBrowser extends React.Component {
         const {
           selection = [],
           entryName
-        } = getSelectionFromConfiguration(config, metadataClass ? metadataClass.id : undefined);
+        } = getSelectionFromConfiguration(config);
         newState.selection = selection;
         newState.entryName = entryName;
         newState.folderStructure = folderStructure;

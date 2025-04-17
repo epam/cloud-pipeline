@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.EC2Helper;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -46,6 +47,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -78,6 +80,7 @@ public class LustreFSManager {
     private final EC2Helper ec2Helper;
     private final MessageHelper messageHelper;
     private final MetadataManager metadataManager;
+    private final PipelineRunManager runManager;
 
     public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
                                         final String type, final Integer throughput,
@@ -93,7 +96,7 @@ public class LustreFSManager {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
-                .map(fs -> convert(updateSize(fs, size, fsxClient), region))
+                .map(fs -> updateSize(fs, size, fsxClient, region, runId))
                 .orElseThrow(() -> new LustreFSException(
                         messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
     }
@@ -142,16 +145,17 @@ public class LustreFSManager {
         return convert(fs, region);
     }
 
-    private FileSystem updateSize(final FileSystem fileSystem, final Integer size, final AmazonFSx fsxClient) {
+    private LustreFS updateSize(final FileSystem fileSystem, final Integer size, final AmazonFSx fsxClient,
+                                final AwsRegion region, final Long runId) {
         final int effectiveSize = getFSSize(size,
                 LustreDeploymentType.valueOf(fileSystem.getLustreConfiguration().getDeploymentType()));
         if (fileSystem.getStorageCapacity().equals(effectiveSize)) {
             log.debug("Lustre FS {} already has requested size {}", fileSystem.getFileSystemId(), effectiveSize);
-            return fileSystem;
+            return convert(fileSystem, region);
         }
         if (fileSystem.getLifecycle().equals("UPDATING")) {
             log.debug("Luster FS {} size is already being updated", fileSystem.getFileSystemId());
-            return fileSystem;
+            return convert(fileSystem, region);
         }
         final UpdateFileSystemRequest request = new UpdateFileSystemRequest();
         request.setFileSystemId(fileSystem.getFileSystemId());
@@ -159,7 +163,8 @@ public class LustreFSManager {
         final FileSystem result = fsxClient.updateFileSystem(request).getFileSystem();
         log.debug("Size change requested for LustreFS {} from {} to {}",
                 fileSystem.getFileSystemId(), fileSystem.getStorageCapacity(), result.getStorageCapacity());
-        return result;
+
+        return adjustRunPrice(convert(result, region), runId, region);
     }
 
     private LustreFS createLustreFs(final Long runId, final Integer size, final String type,
@@ -189,7 +194,15 @@ public class LustreFSManager {
             log.debug("Lustre fs creation failed: {}", fs);
             throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_CREATED, runId));
         }
-        return convert(fs, regionForRun);
+        return adjustRunPrice(convert(fs, regionForRun), runId, regionForRun);
+    }
+
+    private LustreFS adjustRunPrice(final LustreFS lustre, final Long runId, final AwsRegion region) {
+        final BigDecimal pricePerHour = new LustreFSPriceLoader().getPricePerHour(lustre, region);
+        if (Objects.nonNull(pricePerHour)) {
+            runManager.adjustRunPricePerHourToFs(runId, pricePerHour);
+        }
+        return lustre;
     }
 
     private boolean isPersistent(final LustreDeploymentType deploymentType) {

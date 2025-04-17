@@ -43,7 +43,12 @@ import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
+import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
@@ -83,6 +88,7 @@ public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
     private static final String TRUE = "true";
+    private static final String ENGINE_TYPE = "engineType";
 
     @Autowired
     private RunApiService runApiService;
@@ -665,5 +671,63 @@ public class PipelineRunController extends AbstractRestController {
             @RequestParam final RunSyncRuntimeDataType type,
             @RequestBody(required = false) final Map<String, String> parameters) {
         return Result.success(runApiService.getPipelineRunRuntimeData(runId, type, parameters));
+    }
+
+    @PostMapping("/run/{runId}/engine/tasks")
+    @ApiOperation(
+            value = "Consumes engine task events for run",
+            notes = "Consumes engine task events for run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
+                                                      @RequestBody final List<EngineRunTask> tasks) {
+        return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
+    }
+
+    @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
+    @ApiOperation(
+            value = "Loads engine task statistics for run and engine type",
+            notes = "Loads engine task statistics for run and engine type",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
+        return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
+    }
+
+    @PostMapping("run/{runId}/engine/{engineType}/tasks/filter")
+    @ApiOperation(
+            value = "Loads engine task for run with applied filters",
+            notes = "Loads engine task for run with applied filters",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PagedResult<List<EngineRunTask>>> filterEngineRunTasks(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
+            @RequestBody final EngineRunTaskFilter filter) {
+        return Result.success(runApiService.filterEngineRunTasks(runId, engineType, filter));
+    }
+
+    @PostMapping("/run/{runId}/result")
+    @ApiOperation(
+            value = "Adds set of run result objects for the specified run",
+            notes = "Adds set of run result objects for the specified run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result addPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId,
+                                        @RequestBody final List<PipelineRunResult> results) {
+        runApiService.addPipelineRunResults(runId, results);
+        return Result.success();
+    }
+
+    @GetMapping("/run/{runId}/result")
+    @ApiOperation(
+            value = "Loads run result objects for the specified run",
+            notes = "Loads run result objects for the specified run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRunResult>> loadPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.loadPipelineRunResultsForRun(runId));
     }
 }

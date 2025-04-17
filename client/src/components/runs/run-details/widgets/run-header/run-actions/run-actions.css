@@ -1,0 +1,14 @@
+.run-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+.run-actions > *:not(:last-child) {
+  margin-right: 10px;
+}
+
+.run-action {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
