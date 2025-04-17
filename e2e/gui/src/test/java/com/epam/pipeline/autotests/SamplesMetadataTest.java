@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;

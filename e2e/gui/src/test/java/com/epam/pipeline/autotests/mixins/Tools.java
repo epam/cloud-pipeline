@@ -64,7 +64,6 @@ public interface Tools extends Navigation {
                 description.settings().sleep(1, SECONDS)
                         .also(removeAllEndpoints())
                         .also(addEndpoint(endpoint))
-                        
                         .performIf(DEFAULT_COMMAND, not(text(command)), setDefaultCommand(command))
                         .performIf(INSTANCE_TYPE, not(text(instance)), setInstanceType(instance))
                         .performIf(PRICE_TYPE, not(text(priceType)), setPriceType(priceType))

@@ -468,7 +468,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO clickTaskWithName(final String name) {
         click(taskWithName(name));
         $(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"))
-                .waitUntil(exist, DEFAULT_TIMEOUT);
+                .waitUntil(exist, SSH_LINK_APPEARING_TIMEOUT);
         return this;
     }
 

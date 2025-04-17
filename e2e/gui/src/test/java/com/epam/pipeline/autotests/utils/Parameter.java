@@ -23,9 +23,6 @@ public class Parameter {
     public String value;
     public Boolean required;
 
-    public Parameter() {
-    }
-
     public Parameter(final String type, final String value, final Boolean required) {
         this.type = type;
         this.value = value;
@@ -39,5 +36,4 @@ public class Parameter {
     public static Parameter required(final String type, final String value) {
         return new Parameter(type, value, true);
     }
-
 }

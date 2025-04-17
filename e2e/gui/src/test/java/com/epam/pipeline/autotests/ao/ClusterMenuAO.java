@@ -296,7 +296,6 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 ? $$("span").filterBy(id("label-RUNID"))
                 : $$("td").filterBy(cssClass(column.cssClass));
         List<String> sortedByStrings = new ArrayList<>();
-        screenshot("screenshotName-validateSortedBy");
         for (SelenideElement date : dates) {
             sortedByStrings.add(date.text());
         }

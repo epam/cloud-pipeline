@@ -20,6 +20,7 @@ import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -78,6 +79,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .editFile(configuration -> addInstanceImageToConfig(configuration, testAmi))
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this);
         final Set<String> logMess =
                 runsMenu()
@@ -102,6 +104,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline2)
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
