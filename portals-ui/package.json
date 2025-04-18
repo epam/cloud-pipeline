@@ -14,6 +14,7 @@
   "scripts": {
     "ngs-portal-dev": "lerna run dev --scope=@cloud-pipeline/ngs-portal --verbose",
     "ngs-portal-build": "lerna run build --scope=@cloud-pipeline/ngs-portal --verbose",
-    "ngs-portal-preview": "lerna run preview --scope=@cloud-pipeline/ngs-portal --verbose"
+    "ngs-portal-preview": "lerna run preview --scope=@cloud-pipeline/ngs-portal --verbose",
+    "ngs-portal-cypress": "lerna run cypress --scope=@cloud-pipeline/ngs-portal --verbose"
   }
 }
