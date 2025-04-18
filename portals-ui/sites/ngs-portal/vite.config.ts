@@ -22,9 +22,7 @@ function serveDevFiles(devFiles: DevFile[]): PluginOption {
           if (devFile) {
             if (devFile.pathToFile && fs.existsSync(devFile.pathToFile)) {
               console.log(req.url, 'serving', devFile.pathToFile);
-              const settingsContent = fs
-                .readFileSync(devFile.pathToFile)
-                .toString();
+              const settingsContent = fs.readFileSync(devFile.pathToFile).toString();
               if (/\.json$/i.test(devFile.pathToFile)) {
                 res.setHeader('content-type', 'application/json');
               }
@@ -70,6 +68,10 @@ export default (cfg: ConfigEnv) => {
           ])
         : undefined,
     ],
+    server: {
+      host: '127.0.0.1',
+      port: 5173,
+    },
     css: {
       preprocessorOptions: {
         scss: {
@@ -81,8 +83,7 @@ export default (cfg: ConfigEnv) => {
       rollupOptions: {
         output: {
           assetFileNames(asset) {
-            const check = (regExp: RegExp): boolean =>
-              asset.name ? regExp.test(asset.name) : false;
+            const check = (regExp: RegExp): boolean => (asset.name ? regExp.test(asset.name) : false);
             if (check(/\.js$/i)) {
               return 'js/[name].[hash:10].[ext]';
             }

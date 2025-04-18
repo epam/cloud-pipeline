@@ -56,12 +56,7 @@ export const ProjectCard = ({
       tags.length > 0 && (
         <div className="flex flex-wrap gap-0">
           {tags.map((tag) => (
-            <NgsTag
-              key={tag.key}
-              tag={tag.key}
-              value={tag.value}
-              className="shrink-0 mb-0.5"
-            />
+            <NgsTag key={tag.key} tag={tag.key} value={tag.value} className="shrink-0 mb-0.5" />
           ))}
         </div>
       ),
@@ -85,26 +80,14 @@ export const ProjectCard = ({
   );
 
   return (
-    <div
-      className={cn(
-        mode === 'standard' ? 'ngs-container' : 'ngs-container-extended',
-        className,
-      )}
-      style={style}>
+    <div className={cn(mode === 'standard' ? 'ngs-container' : 'ngs-container-extended', className)} style={style}>
       <div className="flex flex-col gap-1">
-        <Link
-          className="font-semibold truncate"
-          to={generateProjectRoutePath(id)}>
+        <Link data-cy="project-details-link" className="font-semibold truncate" to={generateProjectRoutePath(id)}>
           <HighlightedText search={highlightedText}>{name}</HighlightedText>
         </Link>
         <div className="flex flex-nowrap">
           <Tag className="shrink-0">
-            <NgsUserCard
-              userName={owner}
-              showTooltip={false}
-              showIcon
-              className="h-4"
-            />
+            <NgsUserCard userName={owner} showTooltip={false} showIcon className="h-4" />
           </Tag>
           {showExtraInfo && renderExtraInfo()}
         </div>
@@ -115,11 +98,7 @@ export const ProjectCard = ({
         <div className="text text-sm ml-auto mt-0">
           <div className="flex flex-nowrap items-baseline gap-2">
             <StatusIcon
-              status={
-                randomRunningCount > 0
-                  ? RunStatuses.success
-                  : RunStatuses.paused
-              }
+              status={randomRunningCount > 0 ? RunStatuses.success : RunStatuses.paused}
               className="shrink-0"
             />
             {randomRunningCount} running
@@ -127,9 +106,7 @@ export const ProjectCard = ({
           {lastRun ? (
             <div className="flex flex-nowrap gap-2 w-80 items-baseline">
               <StatusIcon status={RunStatuses.resuming} className="shrink-0" />
-              <span className="break-all">
-                Last finished: {lastRun.name} (latest)
-              </span>
+              <span className="break-all">Last finished: {lastRun.name} (latest)</span>
             </div>
           ) : null}
         </div>
