@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "cypress": "npx cypress open"
+    "cypress": "npx cypress run",
+    "cypress:open": "npx cypress open"
   },
   "dependencies": {
     "@cloud-pipeline/api": "*",
