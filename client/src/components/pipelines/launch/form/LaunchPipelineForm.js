@@ -155,6 +155,7 @@ import {
 } from './utilities/configure-fs/utilities';
 import ConditionalParameters from './ConditionalParameters';
 import CustomTagsControl from './components/custom-tags/control';
+import {ConfigureCustomUIButton} from './components/configure-custom-ui';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -174,6 +175,12 @@ function getFormItemClassName (rootClass, key) {
   }
   return rootClass;
 }
+
+const CUSTOM_UI_CONFIGURATIONS_MOCK = [{
+  basePage: undefined,
+  customUI: undefined,
+  userRoles: undefined
+}];
 
 @inject(
   'runDefaultParameters',
@@ -370,7 +377,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     isRawEditEnabled: false,
     parameterType: undefined,
     selectedParameter: undefined,
-    highlightedParameterSection: undefined
+    highlightedParameterSection: undefined,
+    customUIConfigurations: CUSTOM_UI_CONFIGURATIONS_MOCK
   };
 
   formItemLayout = {
@@ -5164,6 +5172,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     </FormItem>
   );
 
+  renderCustomUIItem = () => {
+    const onChangeCustomUIConfigurations = (configurations) => {
+      this.setState({customUIConfigurations: configurations});
+    };
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customUI')}
+        {...this.leftFormItemLayout}
+        label="Custom UI Pages"
+      >
+        <Col span={24}>
+          <ConfigureCustomUIButton
+            configurations={this.state.customUIConfigurations}
+            onChange={onChangeCustomUIConfigurations}
+            text="Configure"
+          />
+        </Col>
+      </FormItem>
+    );
+  };
+
   renderCmdTemplateFormItem = () => {
     const {isRawEditEnabled} = this.state;
     return (
@@ -6346,6 +6375,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderHostedAppConfigurationItem()}
               {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
+              {this.renderCustomUIItem()}
               {this.renderEndpointNameFormItem()}
               {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}

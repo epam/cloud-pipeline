@@ -111,6 +111,7 @@ import {
   getFsConfigFromParameters,
   getToolParametersFromFsConfig
 } from '../../pipelines/launch/form/utilities/configure-fs/utilities';
+import {ConfigureCustomUIButton} from '../../pipelines/launch/form/components/configure-custom-ui';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -120,6 +121,12 @@ const Panels = {
 };
 
 const regionNotConfiguredValue = 'not_configured';
+
+const CUSTOM_UI_CONFIGURATIONS_MOCK = [{
+  basePage: undefined,
+  customUI: undefined,
+  userRoles: undefined
+}];
 
 @Form.create()
 @inject(
@@ -199,7 +206,8 @@ export default class EditToolForm extends React.Component {
     kubeEnabled: false,
     launchCluster: false,
     rescheduleRun: undefined,
-    runCapabilities: []
+    runCapabilities: [],
+    customUIConfigurations: CUSTOM_UI_CONFIGURATIONS_MOCK
   };
 
   @observable defaultLimitMounts;
@@ -1212,6 +1220,10 @@ export default class EditToolForm extends React.Component {
     rescheduleRun: value
   });
 
+  onChangeCustomUIConfigurations = (configurations) => {
+    this.setState({customUIConfigurations: configurations});
+  }
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
@@ -1331,6 +1343,26 @@ export default class EditToolForm extends React.Component {
                     value={this.state.notifications}
                     onChange={o => this.setState({notifications: o})}
                     linkStyle={{margin: 0}}
+                  />
+                </Col>
+              </Row>
+              <Row style={{marginBottom: 10, marginTop: 10}}>
+                <Col
+                  xs={24}
+                  sm={6}
+                  style={{paddingRight: 10}}
+                  className={classNames(
+                    'cp-accent',
+                    styles.toolSettingsTitle
+                  )}
+                >
+                  Custom UI Pages:
+                </Col>
+                <Col xs={24} sm={12}>
+                  <ConfigureCustomUIButton
+                    configurations={this.state.customUIConfigurations}
+                    onChange={this.onChangeCustomUIConfigurations}
+                    text="Configure"
                   />
                 </Col>
               </Row>
