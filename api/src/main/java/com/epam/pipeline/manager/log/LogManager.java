@@ -5,6 +5,7 @@ import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogRequest;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,8 @@ public interface LogManager {
     String SEVERITY = "level";
     String ID = "event_id";
     String DEFAULT_SEVERITY = "INFO";
+    String STORAGE_ID = "storage_id";
+    DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     LogPagination filter(LogFilter logFilter);
 

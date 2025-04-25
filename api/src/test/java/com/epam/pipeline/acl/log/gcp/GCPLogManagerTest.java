@@ -10,7 +10,12 @@ import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.log.gcp.GCPLogManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.google.cloud.bigquery.*;
+import com.google.cloud.logging.Logging;
+import com.google.cloud.logging.Severity;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +31,16 @@ import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.epam.pipeline.manager.log.LogManager.HOSTNAME;
+import static com.epam.pipeline.manager.log.LogManager.MESSAGE;
 import static com.epam.pipeline.manager.log.LogManager.MESSAGE_TIMESTAMP;
 import static com.epam.pipeline.manager.log.LogManager.ID;
+import static com.epam.pipeline.manager.log.LogManager.SERVICE_ACCOUNT;
+import static com.epam.pipeline.manager.log.LogManager.SERVICE_NAME;
+import static com.epam.pipeline.manager.log.LogManager.SEVERITY;
+import static com.epam.pipeline.manager.log.LogManager.STORAGE_ID;
+import static com.epam.pipeline.manager.log.LogManager.TYPE;
+import static com.epam.pipeline.manager.log.LogManager.USER;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,6 +69,17 @@ public class GCPLogManagerTest {
     public static final String SERVICE_2 = "service2";
     public static final String TYPE_1 = "type1";
     public static final String TYPE_2 = "type2";
+    public static final String SECURITY_LOG = "security_log";
+    public static final String SINK_LABEL = "sink-label";
+    public static final String SINK_LABEL_VALUE = "sink-label-value";
+
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    public static final Long EVENT_ID1 = 1744351501175986176L;
+    public static final Long EVENT_ID2 = 1744351501176002048L;
+    public static final long STORAGE_ID1 = 37943L;
+    public static final long STORAGE_ID2 = 52945L;
+    public static final String INFO = "INFO";
+    public static final String ERROR = "ERROR";
 
     @Mock
     private GCPClient gcpClient;
@@ -73,6 +97,9 @@ public class GCPLogManagerTest {
     private BigQuery bigQuery;
 
     @Mock
+    private Logging logging;
+
+    @Mock
     private TableResult filterTableResult;
 
     @Mock
@@ -83,6 +110,9 @@ public class GCPLogManagerTest {
 
     @Mock
     private TableResult dictionaryTableResult;
+
+    @Mock
+    private AuthManager authManager;
 
     @InjectMocks
     private GCPLogManager gcpLogManager;
@@ -95,6 +125,7 @@ public class GCPLogManagerTest {
         gcpRegion.setProvider(CloudProvider.GCP);
         when(cloudRegionDao.loadDefaultRegion()).thenReturn(Optional.of(gcpRegion));
         when(gcpClient.buildBigQueryClient(eq(gcpRegion), anyInt(), anyInt())).thenReturn(bigQuery);
+        when(gcpClient.buildCloudLoggingClient(eq(gcpRegion))).thenReturn(logging);
         when(preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_BIG_QUERY_TABLE_NAME))
                 .thenReturn(TABLE_NAME);
         when(preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_READ_TIMEOUT_MILLS))
@@ -104,11 +135,16 @@ public class GCPLogManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_BIG_QUERY_MAX_BYTES))
                 .thenReturn(MAX_BYTES_BILLED);
         when(preferenceManager.getPreference(SystemPreferences.SEARCH_LOGS_AGGS_MAX_COUNT)).thenReturn(AGGS_MAX_COUNT);
+        when(preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_LOG_NAME)).thenReturn(SECURITY_LOG);
+        when(preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_SINK_LABEL_KEY)).thenReturn(SINK_LABEL);
+        when(preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_SINK_LABEL_VALUE))
+                .thenReturn(SINK_LABEL_VALUE);
         when(messageHelper.getMessage(anyString())).thenReturn("Error message");
+        doNothing().when(logging).write(anyList(), anyObject());
     }
 
     @Test
-    public void testFilterSuccess() throws InterruptedException {
+    public void shouldFilterSuccess() throws InterruptedException {
         LogFilter logFilter = createFullLogFilter();
         setupFilterTableResult();
         setupCountTableResult(3L);
@@ -169,7 +205,7 @@ public class GCPLogManagerTest {
         assertThat(entry1.getMessageTimestamp()).isEqualTo(
                 LocalDateTime.parse("2023-01-01T12:00:00.000Z", DateTimeFormatter.ISO_DATE_TIME));
         assertThat(entry1.getUser()).isEqualTo(USER_1);
-        assertThat(entry1.getSeverity()).isEqualTo("INFO");
+        assertThat(entry1.getSeverity()).isEqualTo(INFO);
         assertThat(entry1.getServiceName()).isEqualTo(SERVICE_1);
         assertThat(entry1.getType()).isEqualTo(TYPE_1);
         assertThat(entry1.getHostname()).isEqualTo(HOST_1);
@@ -181,7 +217,7 @@ public class GCPLogManagerTest {
         assertThat(entry2.getMessageTimestamp()).isEqualTo(
                 LocalDateTime.parse("2023-01-02T12:00:00.000Z", DateTimeFormatter.ISO_DATE_TIME));
         assertThat(entry2.getUser()).isEqualTo(USER_2);
-        assertThat(entry2.getSeverity()).isEqualTo("ERROR");
+        assertThat(entry2.getSeverity()).isEqualTo(ERROR);
         assertThat(entry2.getServiceName()).isEqualTo(SERVICE_2);
         assertThat(entry2.getType()).isEqualTo(TYPE_2);
         assertThat(entry2.getHostname()).isEqualTo(HOST_2);
@@ -189,7 +225,7 @@ public class GCPLogManagerTest {
     }
 
     @Test(expected = PipelineException.class)
-    public void testFilterWithIOException() throws IOException {
+    public void shouldFilterWithIOException() throws IOException {
         LogFilter logFilter = createLogFilter();
         when(gcpClient.buildBigQueryClient(any(), anyInt(), anyInt())).thenThrow(new IOException("BigQuery failure"));
 
@@ -197,7 +233,7 @@ public class GCPLogManagerTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testFilterInvalidPagination() {
+    public void shouldFilterInvalidPagination() {
         LogFilter logFilter = new LogFilter();
         logFilter.setPagination(LogPaginationRequest.builder().pageSize(0).token(null).build());
 
@@ -205,7 +241,7 @@ public class GCPLogManagerTest {
     }
 
     @Test
-    public void testGroupSuccess() throws InterruptedException {
+    public void shouldGroupSuccess() throws InterruptedException {
         LogRequest logRequest = new LogRequest();
         logRequest.setGroupBy("user");
         setupGroupTableResult();
@@ -231,7 +267,7 @@ public class GCPLogManagerTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGroupWithEmptyGroupBy() {
+    public void shouldGroupWithEmptyGroupBy() {
         // Arrange
         LogRequest logRequest = new LogRequest();
         logRequest.setGroupBy("");
@@ -240,7 +276,7 @@ public class GCPLogManagerTest {
     }
 
     @Test
-    public void testGetFiltersSuccess() throws InterruptedException {
+    public void shouldGetFiltersSuccess() throws InterruptedException {
         setupDictionaryTableResult();
         when(bigQuery.query(any(QueryJobConfiguration.class))).thenReturn(dictionaryTableResult);
         ArgumentCaptor<QueryJobConfiguration> queryCaptor = ArgumentCaptor.forClass(QueryJobConfiguration.class);
@@ -267,7 +303,7 @@ public class GCPLogManagerTest {
     }
 
     @Test
-    public void testGetFiltersWithNullValues() throws InterruptedException {
+    public void shouldGetFiltersWithNullValues() throws InterruptedException {
         setupEmptyDictionaryTableResult();
         when(bigQuery.query(any(QueryJobConfiguration.class))).thenReturn(dictionaryTableResult);
 
@@ -279,6 +315,97 @@ public class GCPLogManagerTest {
         assertTrue(result.getServiceNames().isEmpty());
         assertTrue(result.getHostnames().isEmpty());
         verify(bigQuery, times(1)).query(any(QueryJobConfiguration.class));
+    }
+
+    @Test
+    public void shouldReturnOnEmpty() {
+        gcpLogManager.save(Collections.emptyList());
+
+        verifyZeroInteractions(preferenceManager, cloudRegionDao, gcpClient);
+    }
+
+    @Test
+    public void shouldSaveSuccess() throws IOException {
+        when(authManager.isServiceUser(anyString())).thenReturn(true).thenReturn(false);
+
+        final LogEntry logEntry1 = LogEntry.builder()
+                .eventId(EVENT_ID1)
+                .serviceName("pipe-mount1")
+                .user(USER_1)
+                .messageTimestamp(LocalDateTime.parse("2025-04-15 06:05:01.175", TIMESTAMP_FORMATTER))
+                .storageId(STORAGE_ID1)
+                .message("READ s3://e2e-mount-s3-1-11-04-2025-05-58-39/1KB")
+                .hostname("ip-172-31-4-81")
+                .type("audit")
+                .severity(INFO)
+                .build();
+
+        final LogEntry logEntry2 = LogEntry.builder()
+                .eventId(EVENT_ID2)
+                .serviceName("pipe-mount2")
+                .user(USER_2)
+                .messageTimestamp(LocalDateTime.parse("2025-04-15 06:55:01.435", TIMESTAMP_FORMATTER))
+                .storageId(STORAGE_ID2)
+                .message("WRITE s3://e2e-mount-s3-1-11-04-2025-05-58-39/512MB")
+                .hostname("ip-172-31-4-82")
+                .type("log")
+                .severity(ERROR)
+                .build();
+
+        gcpLogManager.save(Arrays.asList(logEntry1, logEntry2));
+
+        //Assert
+        ArgumentCaptor<Logging.WriteOption> optionArgCaptor = ArgumentCaptor.forClass(Logging.WriteOption.class);
+        ArgumentCaptor<List<com.google.cloud.logging.LogEntry>> argCaptor = ArgumentCaptor.forClass((Class) List.class);
+        verify(logging).write(argCaptor.capture(), optionArgCaptor.capture());
+
+        List<com.google.cloud.logging.LogEntry> logEntries = argCaptor.getValue();
+        assertThat(logEntries).hasSize(2);
+
+        final com.google.cloud.logging.LogEntry gcpLogEntry1 = logEntries.get(0);
+        assertEquals(Severity.INFO, gcpLogEntry1.getSeverity());
+        assertEquals(Collections.singletonMap(SINK_LABEL, SINK_LABEL_VALUE), gcpLogEntry1.getLabels());
+
+        Map<String, Value> payload1 = ((Struct) gcpLogEntry1.getPayload().getData()).getFieldsMap();
+        assertThat(payload1.get(HOSTNAME).getStringValue()).isEqualTo("ip-172-31-4-81");
+        assertThat(payload1.get(ID).getStringValue()).isEqualTo(EVENT_ID1.toString());
+        assertThat(payload1.get(SERVICE_NAME).getStringValue()).isEqualTo("pipe-mount1");
+        assertThat(payload1.get(MESSAGE).getStringValue())
+                .isEqualTo("READ s3://e2e-mount-s3-1-11-04-2025-05-58-39/1KB");
+        assertThat(payload1.get(TYPE).getStringValue()).isEqualTo("audit");
+        assertThat(payload1.get(SEVERITY).getStringValue()).isEqualTo(INFO);
+        assertThat(payload1.get(USER).getStringValue()).isEqualTo(USER_1);
+        assertThat(payload1.get(MESSAGE_TIMESTAMP).getStringValue()).isEqualTo("2025-04-15T06:05:01.175+0000");
+        assertThat(payload1.get(SERVICE_ACCOUNT).getBoolValue()).isEqualTo(true);
+        assertThat(payload1.get(STORAGE_ID).getNumberValue()).isEqualTo(STORAGE_ID1);
+        verify(authManager).isServiceUser(USER_1);
+
+        final com.google.cloud.logging.LogEntry gcpLogEntry2 = logEntries.get(1);
+        assertEquals(Severity.ERROR, gcpLogEntry2.getSeverity());
+        assertEquals(Collections.singletonMap(SINK_LABEL, SINK_LABEL_VALUE), gcpLogEntry2.getLabels());
+
+        Map<String, Value> payload2 = ((Struct) gcpLogEntry2.getPayload().getData()).getFieldsMap();
+        assertThat(payload2.get(HOSTNAME).getStringValue()).isEqualTo("ip-172-31-4-82");
+        assertThat(payload2.get(ID).getStringValue()).isEqualTo(EVENT_ID2.toString());
+        assertThat(payload2.get(SERVICE_NAME).getStringValue()).isEqualTo("pipe-mount2");
+        assertThat(payload2.get(MESSAGE).getStringValue())
+                .isEqualTo("WRITE s3://e2e-mount-s3-1-11-04-2025-05-58-39/512MB");
+        assertThat(payload2.get(TYPE).getStringValue()).isEqualTo("log");
+        assertThat(payload2.get(SEVERITY).getStringValue()).isEqualTo(ERROR);
+        assertThat(payload2.get(USER).getStringValue()).isEqualTo(USER_2);
+        assertThat(payload2.get(MESSAGE_TIMESTAMP).getStringValue()).isEqualTo("2025-04-15T06:55:01.435+0000");
+        assertThat(payload2.get(SERVICE_ACCOUNT).getBoolValue()).isEqualTo(false);
+        assertThat(payload2.get(STORAGE_ID).getNumberValue()).isEqualTo(STORAGE_ID2);
+        verify(authManager).isServiceUser(USER_2);
+
+        Logging.WriteOption writeOption = optionArgCaptor.getValue();
+        assertThat(writeOption).isEqualTo(Logging.WriteOption.logName(SECURITY_LOG));
+
+        verify(cloudRegionDao).loadDefaultRegion();
+        verify(gcpClient).buildCloudLoggingClient(gcpRegion);
+        verify(preferenceManager).getPreference(SystemPreferences.GCP_LOGGING_LOG_NAME);
+        verify(preferenceManager).getPreference(SystemPreferences.GCP_LOGGING_SINK_LABEL_KEY);
+        verify(preferenceManager).getPreference(SystemPreferences.GCP_LOGGING_SINK_LABEL_VALUE);
     }
 
     private LogFilter createLogFilter() {
@@ -311,9 +438,9 @@ public class GCPLogManagerTest {
 
     private void setupFilterTableResult() {
         List<FieldValueList> rows = new ArrayList<>();
-        rows.add(createFieldValueList("1", "2023-01-01T12:00:00.000+0000", USER_1, "INFO",
+        rows.add(createFieldValueList("1", "2023-01-01T12:00:00.000+0000", USER_1, INFO,
                 SERVICE_1, TYPE_1, HOST_1, "msg1"));
-        rows.add(createFieldValueList("2", "2023-01-02T12:00:00.000+0000", USER_2, "ERROR",
+        rows.add(createFieldValueList("2", "2023-01-02T12:00:00.000+0000", USER_2, ERROR,
                 SERVICE_2, TYPE_2, HOST_2, "msg2"));
         rows.add(createFieldValueList("3", "2023-01-03T12:00:00.000+0000", "user3", "WARN",
                 "service3", "type3", "host3", "msg3"));
