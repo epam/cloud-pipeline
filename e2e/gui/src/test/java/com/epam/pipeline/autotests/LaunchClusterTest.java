@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -424,6 +425,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
                 .waitForSshLink()
+                .sleep(1, MINUTES) //time needed for synchronization
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qsub -b y -pe local 150 sleep 5m")
