@@ -992,6 +992,9 @@ public class SystemPreferences {
             Collections.emptyMap(), new TypeReference<Object>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
+    public static final StringPreference UI_PLUGIN_ROOT_FOLDER_PATH = new StringPreference(
+            "ui.plugin.root.folder.path", "/opt/api/etc/ui-plugins", UI_GROUP, pass, true);
+
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
             "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
