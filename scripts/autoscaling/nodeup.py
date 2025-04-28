@@ -120,17 +120,21 @@ def main():
     kube_provider = kubeprovider.KubeProvider()
 
     try:
+        instance_additional_spec = None
+        allowed_instance = get_allowed_instance_image(region_id, ins_type, ins_platform, ins_img)
+        if allowed_instance and allowed_instance["instance_mask"]:
+            pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
+            instance_additional_spec = allowed_instance["additional_spec"]
+            if instance_additional_spec:
+                pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
         if not ins_img or ins_img == 'null':
-            # Redefine default instance image if cloud metadata has specific rules for instance type
-            allowed_instance = utils.get_allowed_instance_image(region_id, ins_type, ins_platform, ins_img)
-            if allowed_instance and allowed_instance["instance_mask"]:
-                utils.pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}\n'
-                               'Image {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
-                                                                 ami=allowed_instance["instance_mask_ami"],
-                                                                 instance_type=ins_type))
+            if allowed_instance and allowed_instance["instance_mask_ami"]:
                 ins_img = allowed_instance["instance_mask_ami"]
+                pipe_log('Instance image was not provided explicitly, {instance_image} will be used (retrieved for {instance_mask}/{instance_type} rule)'.format(instance_image=allowed_instance["instance_mask_ami"],
+                                                                                                                                                                 instance_mask=allowed_instance["instance_mask"],
+                                                                                                                                                                 instance_type=ins_type))
         else:
-            utils.pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
+            pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
@@ -142,8 +146,8 @@ def main():
                                                          pool_id, kms_encyr_key_id, num_rep, time_rep, kube_ip,
                                                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                          global_distribution_url,
-                                                         pre_pull_images, is_dedicated, docker_data_root, docker_storage_driver,
-                                                         skip_system_images_load)
+                                                         pre_pull_images, instance_additional_spec, is_dedicated, docker_data_root,
+                                                         docker_storage_driver, skip_system_images_load)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

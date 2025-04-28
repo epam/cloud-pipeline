@@ -207,6 +207,7 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
         init_script = image_config.get("init_script", default_object["init_script"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
+        additional_spec = image_config.get("additional_spec", None)
         if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
             return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
             "embedded_scripts": embedded_scripts, "fs_type": fs_type}

@@ -23,7 +23,7 @@ class AbstractInstanceProvider(object):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
+                     global_distribution_url, pre_pull_images=[], instance_additional_spec, is_dedicated=False):
         pass
 
     def find_and_tag_instance(self, old_id, new_id):

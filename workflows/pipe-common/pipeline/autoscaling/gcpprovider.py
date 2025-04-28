@@ -53,7 +53,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                     global_distribution_url, pre_pull_images=[], is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
+                     global_distribution_url, pre_pull_images=[], instance_additional_spec, is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
                      skip_system_images_load=''):
         ssh_pub_key = utils.read_ssh_key(ins_key)
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "GCP")
@@ -76,6 +76,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         maintenance_type = 'terminate'
         if ins_type.startswith('e2') and not is_spot:
             maintenance_type = 'migrate'
+
+        additional_args = instance_additional_spec if instance_additional_spec else {}
 
         body = {
             'name': instance_name,
@@ -123,7 +125,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 ]}
             body.update(gpu)
 
-        
+        body.update(additional_args)
 
         try:
             response = self.client.instances().insert(

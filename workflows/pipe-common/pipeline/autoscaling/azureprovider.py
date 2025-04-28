@@ -56,7 +56,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                     global_distribution_url, pre_pull_images=[], is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
+                     global_distribution_url, pre_pull_images=[], instance_additional_spec, is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
                      skip_system_images_load=''):
         try:
             ins_key = utils.read_ssh_key(ins_key)
