@@ -38,6 +38,10 @@ from pipeline.hpc.resource import IntegralDemand, ResourceSupply
 
 
 def get_kube_client():
+    # If REQUESTS_CA_BUNDLE is set - requests does not respect 'session.verify = False' anymore
+    # Thus connection to the kube master fails, as it is self signed
+    if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
+        os.environ['REQUESTS_CA_BUNDLE'] = ''
     try:
         return pykube.HTTPClient(pykube.KubeConfig.from_service_account())
     except Exception:

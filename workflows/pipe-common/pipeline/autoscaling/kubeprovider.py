@@ -17,6 +17,7 @@ from time import sleep
 import pykube
 from pipeline.autoscaling import utils
 import re
+import os
 
 RUN_ID_LABEL = 'runid'
 CLOUD_REGION_LABEL = 'cloud_region'
@@ -26,6 +27,10 @@ LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
 class KubeProvider(object):
 
     def __init__(self):
+        # If REQUESTS_CA_BUNDLE is set - requests does not respect 'session.verify = False' anymore
+        # Thus connection to the kube master fails, as it is self signed
+        if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
+            os.environ['REQUESTS_CA_BUNDLE'] = ''
         try:
             self.api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
         except Exception:

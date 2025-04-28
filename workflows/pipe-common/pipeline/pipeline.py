@@ -220,6 +220,10 @@ class KubernetesTask(PipelineApiTask):
                 raise RuntimeError(e.message)
 
     def _init_kubernetes(self):
+        # If REQUESTS_CA_BUNDLE is set - requests does not respect 'session.verify = False' anymore
+        # Thus connection to the kube master fails, as it is self signed
+        if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
+            os.environ['REQUESTS_CA_BUNDLE'] = ''
         if self.auth_method == "kubeconfig":
             self.__kube_api = HTTPClient(KubeConfig.from_file(self.kubeconfig_path))
         elif self.auth_method == "service-account":
