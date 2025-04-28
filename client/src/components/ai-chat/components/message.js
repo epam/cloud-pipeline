@@ -20,7 +20,7 @@ export default class Message extends React.Component {
   render () {
     const {message} = this.props;
     return (
-      <div>{message}</div>
+      <div style={{background: message.fromUser ? '#e6f4ff' : '#fafafa'}}>{message.value}</div>
     );
   }
 }

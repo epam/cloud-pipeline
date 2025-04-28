@@ -21,7 +21,10 @@ import styles from './ai-chat.css';
 
 export default class AIChat extends React.Component {
   get messages () {
-    return Array.from({length: 50}, (_, i) => `message_${i}`);
+    return Array.from({length: 50}, (_, i) => ({
+      value: `message_${i}`,
+      fromUser: i % 4 === 0
+    }));
   }
 
   render () {
