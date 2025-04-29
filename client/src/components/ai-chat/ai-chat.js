@@ -16,24 +16,65 @@
 
 import React from 'react';
 import {Input} from 'antd';
+import {observer} from 'mobx-react';
 import Message from './components/message';
+import AIChatEngine from './ai-chat-engine';
+import EmptyChatPlaceholder from './components/empty-chat-placeholder';
+import roleModel from '../../utils/roleModel';
+
 import styles from './ai-chat.css';
 
+@roleModel.authenticationInfo
+@observer
 export default class AIChat extends React.Component {
-  get messages () {
-    return Array.from({length: 50}, (_, i) => ({
-      value: `message_${i}`,
-      fromUser: i % 4 === 0
-    }));
+  state = {
+    userInput: ''
+  };
+
+  chat = AIChatEngine;
+
+  componentWillUnmount () {
+    if (this.chat) {
+      this.chat.destroy();
+    }
   }
 
+  get currentUser () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value
+      : undefined;
+  };
+
+  onChangeUserInput = (event) => {
+    this.setState({userInput: event.target.value});
+  };
+
+  onSubmitUserInput = () => {
+    const {userInput} = this.state;
+    if (!userInput) {
+      return;
+    }
+    this.chat.addMessage(userInput, true);
+    this.setState({userInput: ''});
+  };
+
   render () {
+    const {userInput} = this.state;
     return (
       <div className={styles.chatContainer}>
-        {this.messages.map(message => (
-          <Message message={message} />
-        ))}
-        <Input />
+        {this.chat.messages.length
+          ? this.chat.messages.map(message => (
+            <Message key={message.id} message={message} />
+          )) : (
+            <EmptyChatPlaceholder user={this.currentUser} />
+          )}
+        <Input
+          value={userInput}
+          onChange={this.onChangeUserInput}
+          onPressEnter={this.onSubmitUserInput}
+          disabled={this.chat.pending}
+        />
       </div>
     );
   }

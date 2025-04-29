@@ -15,19 +15,9 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
-import Markdown from '../../special/markdown';
 
-@observer
-export default class Message extends React.Component {
-  render () {
-    const {message} = this.props;
-    return (
-      <div
-        style={{background: message.fromUser ? '#e6f4ff' : '#fafafa'}}
-      >
-        <Markdown md={message.text} />
-      </div>
-    );
-  }
+export default function EmptyChatPlaceholder ({user}) {
+  return (
+    <span>Hello {user.userName}, how can i help you?</span>
+  );
 }

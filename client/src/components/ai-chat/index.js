@@ -22,7 +22,6 @@ export default class AIChatPage extends React.Component {
   render () {
     return (
       <div className={styles.pageContainer}>
-        AI Chat page
         <AIChat />
       </div>
     );
