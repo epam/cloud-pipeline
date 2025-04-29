@@ -172,6 +172,7 @@ export default class ToolSetttings extends React.Component {
         allowSensitive={this.props.tool.value.allowSensitive}
         allowCommitVersion={this.allowCommit}
         toolId={this.props.toolId}
+        toolVersion={this.props.version}
         onInitialized={form => { this.versionSettingsForm = form; }}
         readOnly={
           this.state.operationInProgress ||

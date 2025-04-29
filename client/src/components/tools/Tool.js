@@ -1280,6 +1280,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           allowCommitVersion={this.defaultVersionAllowCommit}
           tool={this.props.tool.value}
           toolId={this.props.toolId}
+          toolVersion={this.defaultTag}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           executionEnvironmentDisabled={!this.defaultTag}
           onSubmit={this.updateTool}

@@ -155,6 +155,7 @@ import {
 } from './utilities/configure-fs/utilities';
 import ConditionalParameters from './ConditionalParameters';
 import CustomTagsControl from './components/custom-tags/control';
+import ConfigurePlugins from '../../../plugins/configure';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -5164,6 +5165,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     </FormItem>
   );
 
+  renderCustomUIItem = () => {
+    const {
+      detached,
+      editConfigurationMode,
+      pipeline = {},
+      version: pipelineVersion
+    } = this.props;
+    const {id: pipelineId} = pipeline;
+    if (detached || !editConfigurationMode || !pipelineId || !pipelineVersion) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customUI')}
+        {...this.leftFormItemLayout}
+        label="Custom UI Pages"
+      >
+        <Col span={24}>
+          <ConfigurePlugins
+            pipelineId={pipelineId}
+            pipelineVersion={pipelineVersion}
+          />
+        </Col>
+      </FormItem>
+    );
+  };
+
   renderCmdTemplateFormItem = () => {
     const {isRawEditEnabled} = this.state;
     return (
@@ -6346,6 +6374,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderHostedAppConfigurationItem()}
               {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
+              {this.renderCustomUIItem()}
               {this.renderEndpointNameFormItem()}
               {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}

@@ -111,6 +111,7 @@ import {
   getFsConfigFromParameters,
   getToolParametersFromFsConfig
 } from '../../pipelines/launch/form/utilities/configure-fs/utilities';
+import ConfigurePlugins from '../../plugins/configure';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -143,6 +144,8 @@ export default class EditToolForm extends React.Component {
       defaultCommand: PropTypes.string,
       endpoints: PropTypes.object
     }),
+    toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    toolVersion: PropTypes.string,
     allowSensitive: PropTypes.bool,
     mode: PropTypes.oneOf(['tool', 'version']),
     configuration: PropTypes.object,
@@ -1331,6 +1334,25 @@ export default class EditToolForm extends React.Component {
                     value={this.state.notifications}
                     onChange={o => this.setState({notifications: o})}
                     linkStyle={{margin: 0}}
+                  />
+                </Col>
+              </Row>
+              <Row style={{marginBottom: 10, marginTop: 10}}>
+                <Col
+                  xs={24}
+                  sm={6}
+                  style={{paddingRight: 10}}
+                  className={classNames(
+                    'cp-accent',
+                    styles.toolSettingsTitle
+                  )}
+                >
+                  Custom UI Pages:
+                </Col>
+                <Col xs={24} sm={12}>
+                  <ConfigurePlugins
+                    toolId={this.props.toolId}
+                    toolVersion={this.props.toolVersion}
                   />
                 </Col>
               </Row>
