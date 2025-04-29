@@ -117,6 +117,34 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
+  @computed
+  get permissionsRestrictions () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    const isAdmin = authenticatedUserInfo.loaded && authenticatedUserInfo.value && authenticatedUserInfo.value.admin;
+    if (preferences.loaded && !isAdmin) {
+      const restrictions = preferences.uiStoragesPermissionsRestrictions;
+      const defaultMask = restrictions.map((rule) => ({
+        role: rule.role,
+        mask: rule.defaultMask
+      }));
+      const enabledMask = restrictions.map((rule) => ({
+        role: rule.role,
+        mask: rule.enabledMask
+      }));
+      return {
+        defaultMask,
+        enabledMask
+      };
+    }
+    return {
+      defaultMask: [],
+      enabledMask: []
+    };
+  }
+
   openDeleteDialog = () => {
     this.setState({deleteDialogVisible: true});
   };
@@ -421,6 +449,9 @@ export class DataStorageEditDialog extends React.Component {
       resetFields();
       this.setState({activeTab: 'info'});
     };
+
+    const {defaultMask, enabledMask} = this.permissionsRestrictions;
+
     return (
       <Modal
         maskClosable={!this.props.pending}
@@ -696,7 +727,10 @@ export class DataStorageEditDialog extends React.Component {
                 <PermissionsForm
                   readonly={isReadOnly}
                   objectIdentifier={this.props.dataStorage.id}
-                  objectType="DATA_STORAGE" />
+                  objectType="DATA_STORAGE"
+                  defaultMask={defaultMask}
+                  enabledMask={enabledMask}
+                />
               </Tabs.TabPane>
             }
             {this.transitionRulesAvailable && (
