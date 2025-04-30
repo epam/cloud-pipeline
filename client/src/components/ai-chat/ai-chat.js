@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { observer } from 'mobx-react';
+import {observer} from 'mobx-react';
 import Message from './components/message';
 import AIChatEngine from './ai-chat-engine';
 import EmptyChatPlaceholder from './components/empty-chat-placeholder';
@@ -34,13 +34,13 @@ export default class AIChat extends React.Component {
 
   chat = AIChatEngine;
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     if (this.chat) {
       this.chat.destroy();
     }
   }
 
-  get currentUser() {
+  get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
@@ -60,7 +60,7 @@ export default class AIChat extends React.Component {
     this.setState({userInput: ''});
   };
 
-  render() {
+  render () {
     const {userInput} = this.state;
     return (
       <div className={

@@ -6,7 +6,7 @@
 
   textarea {
     resize: none;
-    padding: 10px 35px 10px 35px;
+    padding: 10px 35px 10px 10px;
   }
 }
 
@@ -20,6 +20,8 @@
   right: 15px;
   top: 50%;
   transform: translateY(-50%);
+  height: 20px;
+  width: 20px;
 
   &[disabled] {
     cursor: not-allowed;

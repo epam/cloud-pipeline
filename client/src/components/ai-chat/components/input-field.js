@@ -1,5 +1,5 @@
 import React from 'react';
-import {Icon, Input} from 'antd';
+import {Input} from 'antd';
 import styles from './input-field.css';
 
 export default class InputField extends React.Component {
@@ -23,11 +23,11 @@ export default class InputField extends React.Component {
           autosize={{minRows: 1, maxRows: 6}}
         />
         <button disabled={disabled} onClick={onClick} className={styles.iconChat}>
-          <Icon type="message" style={{fontSize: 16, color: '#08c'}} />
+          <img src="icons/chat-bot/airplane.svg" width={20} height={20} />
         </button>
-        <button disabled={disabled} onClick={()=> {}} className={styles.iconClip}>
-          <Icon type="paper-clip" style={{fontSize: 16}} />
-        </button>
+        {/*<button disabled={disabled} onClick={()=> {}} className={styles.iconClip}>*/}
+        {/*  <Icon type="paper-clip" style={{fontSize: 16}} />*/}
+        {/*</button>*/}
       </div>
     );
   }
