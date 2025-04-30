@@ -15,15 +15,17 @@
  */
 
 import React from 'react';
-import { observer } from 'mobx-react';
+import {Icon} from 'antd';
+import {observable, computed} from 'mobx';
+import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import Message from './components/message';
 import AIChatEngine from './ai-chat-engine';
 import EmptyChatPlaceholder from './components/empty-chat-placeholder';
 import roleModel from '../../utils/roleModel';
-
-import styles from './ai-chat.css';
 import InputField from './components/input-field';
-import classNames from 'classnames';
+import TypingIndicator from './components/typing-indicator';
+import styles from './ai-chat.css';
 
 @roleModel.authenticationInfo
 @observer
@@ -33,14 +35,37 @@ export default class AIChat extends React.Component {
   };
 
   chat = AIChatEngine;
+  answersContainerRef;
+  scrollPositionRAF;
+  isScrollingTimeout;
 
-  componentWillUnmount() {
+  @observable _scrolledDown = true;
+  @observable _isScrolling = true;
+
+  componentDidMount () {
+    this.arrangeDownButton();
+  }
+
+  componentWillUnmount () {
     if (this.chat) {
       this.chat.destroy();
     }
+    if (this.scrollPositionRAF) {
+      cancelAnimationFrame(this.scrollPositionRAF);
+    }
   }
 
-  get currentUser() {
+  @computed
+  get isScrolling () {
+    return this._isScrolling;
+  }
+
+  @computed
+  get scrolledDown () {
+    return this._scrolledDown;
+  }
+
+  get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
@@ -48,19 +73,70 @@ export default class AIChat extends React.Component {
   };
 
   onChangeUserInput = (event) => {
+    if (this.chat.pending) {
+      return;
+    }
     this.setState({userInput: event.target.value});
   };
 
-  onSubmitUserInput = () => {
+  onSubmitUserInput = (event) => {
     const {userInput} = this.state;
-    if (!userInput) {
+    if (this.chat.pending || event.shiftKey || !userInput) {
       return;
     }
     this.chat.addMessage(userInput, true);
-    this.setState({userInput: ''});
+    this.setState({userInput: ''}, () => {
+      const lastUserMessage = this.chat.messages
+        .findLast(message => message.fromUser);
+      this.scrollToMessage(lastUserMessage.id);
+    });
   };
 
-  render() {
+  scrollToMessage = (id) => {
+    const index = [...this.answersContainerRef.children]
+      .findIndex(node => node?.dataset?.id === `${id}`);
+    if (index >= 0 && this.answersContainerRef.children[index]) {
+      this.blockChecksWhileScrolling();
+      this.answersContainerRef.children[index].scrollIntoView({
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  blockChecksWhileScrolling = () => {
+    if (this.isScrollingTimeout) {
+      clearTimeout(this.isScrollingTimeout);
+    }
+    this._isScrolling = true;
+    this.isScrollingTimeout = setTimeout(() => {
+      this._isScrolling = false;
+    }, 1500);
+  };
+
+  scrollToBottom = (smooth = true) => {
+    if (!this.answersContainerRef) {
+      return;
+    }
+    this.blockChecksWhileScrolling();
+    this.answersContainerRef.scrollTo({
+      top: this.answersContainerRef.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  };
+
+  arrangeDownButton = () => {
+    this.scrollPositionRAF = requestAnimationFrame(this.arrangeDownButton);
+    if (!this.answersContainerRef) {
+      return;
+    }
+    const {scrollTop, clientHeight, scrollHeight} = this.answersContainerRef;
+    const scrolledDown = scrollTop + clientHeight >= scrollHeight - 20;
+    if (!this.isScrolling && scrolledDown !== this.scrolledDown) {
+      this._scrolledDown = scrolledDown;
+    }
+  };
+
+  render () {
     const {userInput} = this.state;
     return (
       <div className={
@@ -70,22 +146,52 @@ export default class AIChat extends React.Component {
           'cp-panel-borderless'
         )
       }>
-        <div className={styles.answerArea}>
-          <div className={styles.container}>
-            {this.chat.messages.length
-              ? this.chat.messages.map(message => (
-                <Message key={message.id} message={message} />
-              )) : (
-                <EmptyChatPlaceholder user={this.currentUser} />
-              )}
-          </div>
+        <div
+          ref={el => { this.answersContainerRef = el; }}
+          className={styles.answerArea}
+        >
+          {this.chat.messages.length
+            ? this.chat.messages.map((message, index) => (
+              <div
+                key={message.id}
+                style={{
+                  minHeight: index === this.chat.messages.length - 1
+                    ? 'calc(100% - 60px)'
+                    : 'auto'
+                }}
+                data-id={message.id}
+              >
+                <Message message={message} />
+              </div>
+            )) : (
+              <EmptyChatPlaceholder user={this.currentUser} />
+            )}
         </div>
         <div className={styles.inputFieldArea}>
+          <Icon
+            type="down-circle-o"
+            className={classNames(
+              'cp-panel',
+              styles.downButton, {
+                [styles.visible]: !this.isScrolling &&
+                  !this.chat.pending &&
+                  !this.scrolledDown
+              }
+            )}
+            onClick={this.scrollToBottom}
+          />
+          <TypingIndicator
+            className={classNames(
+              'cp-not-important',
+              styles.typingIndicator, {
+                [styles.visible]: this.chat.pending
+              }
+            )}
+          />
           <InputField
             value={userInput}
             onChange={this.onChangeUserInput}
             onPressEnter={this.onSubmitUserInput}
-            disabled={this.chat.pending}
             onSubmit={this.onSubmitUserInput}
             onClick={this.onSubmitUserInput}
           />

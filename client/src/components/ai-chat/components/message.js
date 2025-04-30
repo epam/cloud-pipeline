@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import Markdown from '../../special/markdown';
 import styles from './message.css';
 
@@ -25,12 +27,24 @@ export default class Message extends React.Component {
     const {message} = this.props;
     return (
       <div
-        className={message.fromUser ? styles.messageFromUser : styles.messageFromChat}
+        style={this.props.style}
+        className={classNames('cp-panel table-element-selected-background-color',
+          message.fromUser
+            ? styles.messageFromUser
+            : styles.messageFromChat
+        )}
       >
-        <div className={styles.answer}>
-          <Markdown md={message.text} />
-        </div>
+        <Markdown md={message.text} />
       </div>
     );
   }
 }
+
+Message.propTypes = {
+  message: PropTypes.shape({
+    text: PropTypes.strind,
+    id: PropTypes.number,
+    fromUser: PropTypes.bool,
+    pending: PropTypes.bool
+  })
+};

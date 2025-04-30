@@ -15,18 +15,27 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
-import styles from './input-field.css';
+import classNames from 'classnames';
+import styles from './typing-indicator.css';
 
-export default function EmptyChatPlaceholder ({user}) {
+const Dot = ({className, style}) => (
+  <svg className={className} style={style} height="5" width="5">
+    <circle cx="2.5" cy="2.5" r="2"
+      strokeWidth={1}
+    />
+  </svg>
+);
+
+export default function TypingIndicator ({className}) {
   return (
-    <div className={styles.chatPlaceholder}>
-      <span className={styles.chatPlaceholderUserName}>Hello {user.userName},</span>
-      <span className={styles.chatPlaceholderText}> how can i help you?</span>
+    <div className={classNames(styles.indicator, className)}>
+      {Array.from({length: 3}, (_, index) => (
+        <Dot
+          data-animation-offset={index}
+          className={styles.dot}
+          style={{animationDelay: `${index * 0.3}s`}}
+        />
+      ))}
     </div>
   );
 }
-
-EmptyChatPlaceholder.propTypes = {
-  user: PropTypes.object
-};

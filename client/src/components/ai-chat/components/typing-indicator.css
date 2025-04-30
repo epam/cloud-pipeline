@@ -14,19 +14,27 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import PropTypes from 'prop-types';
-import styles from './input-field.css';
-
-export default function EmptyChatPlaceholder ({user}) {
-  return (
-    <div className={styles.chatPlaceholder}>
-      <span className={styles.chatPlaceholderUserName}>Hello {user.userName},</span>
-      <span className={styles.chatPlaceholderText}> how can i help you?</span>
-    </div>
-  );
+.indicator {
+  fill: currentColor;
+  display: flex;
+  gap: 2px;
 }
 
-EmptyChatPlaceholder.propTypes = {
-  user: PropTypes.object
-};
+.indicator > .dot {
+  animation-name: blink;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-duration: 1s;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
