@@ -15,14 +15,15 @@
  */
 
 import React from 'react';
-import {Input} from 'antd';
-import {observer} from 'mobx-react';
+import { observer } from 'mobx-react';
 import Message from './components/message';
 import AIChatEngine from './ai-chat-engine';
 import EmptyChatPlaceholder from './components/empty-chat-placeholder';
 import roleModel from '../../utils/roleModel';
 
 import styles from './ai-chat.css';
+import InputField from './components/input-field';
+import classNames from 'classnames';
 
 @roleModel.authenticationInfo
 @observer
@@ -33,13 +34,13 @@ export default class AIChat extends React.Component {
 
   chat = AIChatEngine;
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     if (this.chat) {
       this.chat.destroy();
     }
   }
 
-  get currentUser () {
+  get currentUser() {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
@@ -59,22 +60,36 @@ export default class AIChat extends React.Component {
     this.setState({userInput: ''});
   };
 
-  render () {
+  render() {
     const {userInput} = this.state;
     return (
-      <div className={styles.chatContainer}>
-        {this.chat.messages.length
-          ? this.chat.messages.map(message => (
-            <Message key={message.id} message={message} />
-          )) : (
-            <EmptyChatPlaceholder user={this.currentUser} />
-          )}
-        <Input
-          value={userInput}
-          onChange={this.onChangeUserInput}
-          onPressEnter={this.onSubmitUserInput}
-          disabled={this.chat.pending}
-        />
+      <div className={
+        classNames(
+          styles.chatContainer,
+          'cp-panel-no-hover',
+          'cp-panel-borderless'
+        )
+      }>
+        <div className={styles.answerArea}>
+          <div className={styles.container}>
+            {this.chat.messages.length
+              ? this.chat.messages.map(message => (
+                <Message key={message.id} message={message} />
+              )) : (
+                <EmptyChatPlaceholder user={this.currentUser} />
+              )}
+          </div>
+        </div>
+        <div className={styles.inputFieldArea}>
+          <InputField
+            value={userInput}
+            onChange={this.onChangeUserInput}
+            onPressEnter={this.onSubmitUserInput}
+            disabled={this.chat.pending}
+            onSubmit={this.onSubmitUserInput}
+            onClick={this.onSubmitUserInput}
+          />
+        </div>
       </div>
     );
   }

@@ -17,6 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import Markdown from '../../special/markdown';
+import styles from './message.css';
 
 @observer
 export default class Message extends React.Component {
@@ -24,9 +25,11 @@ export default class Message extends React.Component {
     const {message} = this.props;
     return (
       <div
-        style={{background: message.fromUser ? '#e6f4ff' : '#fafafa'}}
+        className={message.fromUser ? styles.messageFromUser : styles.messageFromChat}
       >
-        <Markdown md={message.text} />
+        <div className={styles.answer}>
+          <Markdown md={message.text} />
+        </div>
       </div>
     );
   }

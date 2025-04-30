@@ -19,4 +19,33 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  height: 100%;
+}
+
+.input-field-area {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  scrollbar-gutter: stable;
+  overflow: hidden;
+}
+
+.input-field {
+  padding: 10px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  margin: 0 auto;
+  max-width: 720px;
+}
+
+.answer-area {
+  scrollbar-gutter: stable;
+  flex: 1;
+  overflow: auto;
+  margin-bottom: 15px;
 }

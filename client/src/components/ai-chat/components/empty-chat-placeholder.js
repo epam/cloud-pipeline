@@ -15,9 +15,13 @@
  */
 
 import React from 'react';
+import styles from './input-field.css';
 
-export default function EmptyChatPlaceholder ({user}) {
+export default function EmptyChatPlaceholder({user}) {
   return (
-    <span>Hello {user.userName}, how can i help you?</span>
+    <div className={styles.chatPlaceholder}>
+      <span className={styles.chatPlaceholderUserName}>Hello {user.userName},</span>
+      <span className={styles.chatPlaceholderText}> how can i help you?</span>
+    </div>
   );
 }
