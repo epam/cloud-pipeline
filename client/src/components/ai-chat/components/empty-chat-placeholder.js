@@ -21,7 +21,9 @@ import styles from './input-field.css';
 export default function EmptyChatPlaceholder ({user}) {
   return (
     <div className={styles.chatPlaceholder}>
-      <span className={styles.chatPlaceholderUserName}>Hello {user.userName},</span>
+      <span className={styles.chatPlaceholderUserName}>
+        Hello {user?.userName || ''},
+      </span>
       <span className={styles.chatPlaceholderText}> how can i help you?</span>
     </div>
   );
