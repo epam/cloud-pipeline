@@ -28,11 +28,11 @@ export default class Message extends React.Component {
     return (
       <div
         style={this.props.style}
-        className={classNames('cp-panel table-element-selected-background-color',
-          message.fromUser
-            ? styles.messageFromUser
-            : styles.messageFromChat
-        )}
+        className={classNames('cp-panel', {
+          [styles.messageFromUser]: message.fromUser,
+          [styles.messageFromChat]: !message.fromUser,
+          'table-element-selected-background-color-important': message.fromUser
+        })}
       >
         <Markdown md={message.text} />
       </div>

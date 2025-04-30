@@ -681,6 +681,9 @@ export default `
 @THEME .table-element-selected-background-color {
   background-color: @table-element-selected-background-color;
 }
+@THEME .table-element-selected-background-color-important {
+  background-color: @table-element-selected-background-color !important;
+}
 @THEME .ant-tree li .ant-tree-node-content-wrapper {
   color: @application-color;
 }

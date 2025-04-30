@@ -18,6 +18,7 @@
 .message-from-chat {
   flex-shrink: 0;
   border-radius: 10px;
+  max-width: 95%;
 }
 
 .message-from-user {
@@ -27,6 +28,10 @@
   background: #d1e6f3;
   border: 1px solid #b3d8e5;
   padding: 0 10px;
+  width: fit-content;
+  justify-self: flex-end;
+  min-width: 30px;
+  margin-right: 20px;
 }
 
 .message-from-chat {

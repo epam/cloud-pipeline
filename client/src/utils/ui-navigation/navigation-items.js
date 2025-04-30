@@ -108,18 +108,18 @@ export default [
     isLink: true
   },
   {
-    key: Pages.chat,
-    title: 'Chat',
-    icon: 'message',
-    path: '/chat',
-    isDefault: false,
-    isLink: true
-  },
-  {
     key: Pages.notifications,
     title: 'Notifications',
     icon: 'mail',
     path: '/notifications',
+    isDefault: false,
+    isLink: true
+  },
+  {
+    key: Pages.chat,
+    title: 'Chat',
+    icon: 'message',
+    path: '/chat',
     isDefault: false,
     isLink: true
   },
