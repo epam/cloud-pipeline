@@ -19,8 +19,9 @@ import classNames from 'classnames';
 import styles from './typing-indicator.css';
 
 const Dot = ({className, style}) => (
-  <svg className={className} style={style} height="5" width="5">
-    <circle cx="2.5" cy="2.5" r="2"
+  <svg className={className} style={style} height="7" width="7">
+    <circle
+      cx="3.5" cy="3.5" r="3.5"
       strokeWidth={1}
     />
   </svg>
@@ -31,7 +32,7 @@ export default function TypingIndicator ({className}) {
     <div className={classNames(styles.indicator, className)}>
       {Array.from({length: 3}, (_, index) => (
         <Dot
-          data-animation-offset={index}
+          key={index}
           className={styles.dot}
           style={{animationDelay: `${index * 0.3}s`}}
         />

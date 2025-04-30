@@ -42,7 +42,7 @@ export default class Message extends React.Component {
 
 Message.propTypes = {
   message: PropTypes.shape({
-    text: PropTypes.strind,
+    text: PropTypes.string,
     id: PropTypes.number,
     fromUser: PropTypes.bool,
     pending: PropTypes.bool
