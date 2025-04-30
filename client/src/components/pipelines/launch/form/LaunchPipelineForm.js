@@ -4979,7 +4979,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       };
       const defaultValue = correctLimitMountsParameterValue(
         getDefaultValue() || '',
-        dataStorageAvailable.value || []
+        dataStorageAvailable.value || [],
+        {
+          cloudRegion: this.currentCloudRegion,
+          cloudRegions: this.awsRegions
+        }
       );
       let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
       if (currentValue === undefined) {
@@ -5040,6 +5044,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         !!this.state.fireCloudMethodName ||
                         (this.props.readOnly && !this.props.canExecute)
                       }
+                      cloudRegion={this.currentCloudRegion}
                     />
                   )}
                 </FormItem>

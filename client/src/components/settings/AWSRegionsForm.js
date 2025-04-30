@@ -1813,6 +1813,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
@@ -1835,6 +1836,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
@@ -1857,6 +1859,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
