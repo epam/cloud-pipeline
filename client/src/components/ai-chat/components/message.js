@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import Markdown from '../../special/markdown';
+import TypingIndicator from './typing-indicator';
 import styles from './message.css';
 
 @observer
@@ -34,7 +35,14 @@ export default class Message extends React.Component {
           'table-element-selected-background-color-important': message.fromUser
         })}
       >
-        <Markdown md={message.text} />
+        {message.pending ? (
+          <TypingIndicator className={classNames(
+            'cp-not-important',
+            styles.typingIndicator
+          )} />
+        ) : (
+          <Markdown md={message.text} />
+        )}
       </div>
     );
   }

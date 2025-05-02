@@ -73,17 +73,3 @@
   top: -12px;
   opacity: 1;
 }
-
-.typing-indicator {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.typing-indicator.visible {
-  top: -5px;
-  opacity: 1;
-}

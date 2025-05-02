@@ -15,7 +15,7 @@
  */
 
 import {observable, computed, action} from 'mobx';
-import {mockStream} from './mocks';
+import {mockStream, sleep} from './mocks';
 
 let token = 0;
 
@@ -63,11 +63,13 @@ class ChatEngine {
       pending: true
     });
     this._messages.push(responseMessage);
+    await sleep(1500);
+    responseMessage.pending = false;
     await mockStream(message, (chunk, finished) => {
       responseMessage.text += ` ${chunk}`;
-      if (finished) {
-        responseMessage.pending = false;
-      }
+      // if (finished) {
+      //   responseMessage.pending = false;
+      // }
     });
     this._pending = false;
   };

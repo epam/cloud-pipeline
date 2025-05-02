@@ -24,7 +24,6 @@ import AIChatEngine from './ai-chat-engine';
 import EmptyChatPlaceholder from './components/empty-chat-placeholder';
 import roleModel from '../../utils/roleModel';
 import InputField from './components/input-field';
-import TypingIndicator from './components/typing-indicator';
 import styles from './ai-chat.css';
 
 @roleModel.authenticationInfo
@@ -41,7 +40,7 @@ export default class AIChat extends React.Component {
   isScrollingTimeout;
 
   @observable _scrolledDown = true;
-  @observable _isScrolling = true;
+  @observable _isScrolling = false;
 
   componentDidMount () {
     this.arrangeDownButton();
@@ -182,19 +181,10 @@ export default class AIChat extends React.Component {
               'cp-panel',
               styles.downButton, {
                 [styles.visible]: !this.isScrolling &&
-                !this.chat.pending &&
                 !this.scrolledDown
               }
             )}
             onClick={this.scrollToBottom}
-          />
-          <TypingIndicator
-            className={classNames(
-              'cp-not-important',
-              styles.typingIndicator, {
-                [styles.visible]: this.chat.pending
-              }
-            )}
           />
           <InputField
             value={userInput}

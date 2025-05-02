@@ -35,3 +35,7 @@
 .message-from-chat {
   padding: 10px;
 }
+
+.typing-indicator {
+  margin-left: 10px;
+}
