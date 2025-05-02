@@ -36,11 +36,14 @@ export default class Message extends React.Component {
     return (
       <div
         style={this.props.style}
-        className={classNames('cp-panel', {
-          [styles.messageFromUser]: message.fromUser,
-          [styles.messageFromChat]: !message.fromUser,
-          'table-element-selected-background-color-important': message.fromUser
-        })}
+        className={classNames(
+          'cp-panel', {
+            [styles.messageFromUser]: message.fromUser,
+            [styles.messageFromChat]: !message.fromUser,
+            'table-element-selected-background-color-important': message.fromUser,
+            [styles.messagePendingChat]: message.pending && !message.fromUser
+          }
+        )}
       >
         {message.pending ? (
           <TypingIndicator className={classNames(

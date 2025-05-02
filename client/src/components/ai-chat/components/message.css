@@ -36,6 +36,11 @@
   padding: 10px;
 }
 
+.message-pending-chat {
+  width: fit-content;
+  padding-right: 20px;
+}
+
 .typing-indicator {
   margin-left: 10px;
 }
