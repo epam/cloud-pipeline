@@ -14,7 +14,7 @@ async function mockStream (message, cb) {
   const chunks = mdVariants[randomIntFromInterval(0, mdVariants.length - 1)]
     .split(' ');
   for (const [index, chunk] of chunks.entries()) {
-    await sleep(randomIntFromInterval(0, 150));
+    await sleep(randomIntFromInterval(0, 100));
     cb && cb(chunk, index === chunks.length - 1);
   }
 }
