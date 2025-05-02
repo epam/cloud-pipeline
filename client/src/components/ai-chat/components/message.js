@@ -24,6 +24,13 @@ import styles from './message.css';
 
 @observer
 export default class Message extends React.Component {
+  renderContent = () => {
+    const {message} = this.props;
+    if (message.fromUser) {
+      return <span style={{whiteSpace: 'pre-line', margin: 10}}>{message.text}</span>;
+    }
+    return <Markdown md={message.text} />;
+  };
   render () {
     const {message} = this.props;
     return (
@@ -41,7 +48,7 @@ export default class Message extends React.Component {
             styles.typingIndicator
           )} />
         ) : (
-          <Markdown md={message.text} />
+          this.renderContent()
         )}
       </div>
     );
