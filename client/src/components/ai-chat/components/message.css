@@ -32,10 +32,6 @@
   margin-right: 20px;
 }
 
-.message-from-user p {
-  white-space: pre-line;
-}
-
 .message-from-chat {
   padding: 10px;
 }
