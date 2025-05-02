@@ -18,7 +18,7 @@
 .chat-container {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 10px;
   height: 100%;
   width: 100%;
 }
@@ -37,6 +37,12 @@
   padding: 10px;
 }
 
+.overflow-container {
+  height: 100%;
+  scrollbar-gutter: stable;
+  overflow-y: auto;
+}
+
 .answer-area {
   display: flex;
   flex: 1 0;
@@ -46,10 +52,9 @@
   max-width: 1200px;
   height: 100%;
   margin: 0 auto;
-  scrollbar-gutter: stable;
-  overflow-y: auto;
   /* margin-bottom: 15px;
   padding-bottom: 30px; */
+  padding-top: 10px;
 }
 
 .down-button {

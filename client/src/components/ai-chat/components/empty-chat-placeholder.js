@@ -17,14 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import styles from './input-field.css';
+import classNames from 'classnames';
 
 export default function EmptyChatPlaceholder ({user}) {
   return (
     <div className={styles.chatPlaceholder}>
-      <span className={styles.chatPlaceholderUserName}>
+      <span className={classNames(styles.chatPlaceholderUserName, 'cp-text')}>
         Hello {user?.userName || ''},
       </span>
-      <span className={styles.chatPlaceholderText}> how can i help you?</span>
+      <span className={classNames(styles.chatPlaceholderText, 'cp-text')}>
+        how can i help you?
+      </span>
     </div>
   );
 }

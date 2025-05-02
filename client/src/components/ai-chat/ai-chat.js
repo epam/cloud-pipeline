@@ -36,6 +36,7 @@ export default class AIChat extends React.Component {
 
   chat = AIChatEngine;
   answersContainerRef;
+  scrollContainerRef;
   scrollPositionRAF;
   isScrollingTimeout;
 
@@ -114,22 +115,22 @@ export default class AIChat extends React.Component {
   };
 
   scrollToBottom = (smooth = true) => {
-    if (!this.answersContainerRef) {
+    if (!this.scrollContainerRef) {
       return;
     }
     this.blockChecksWhileScrolling();
-    this.answersContainerRef.scrollTo({
-      top: this.answersContainerRef.scrollHeight,
+    this.scrollContainerRef.scrollTo({
+      top: this.scrollContainerRef.scrollHeight,
       behavior: smooth ? 'smooth' : 'auto'
     });
   };
 
   arrangeDownButton = () => {
     this.scrollPositionRAF = requestAnimationFrame(this.arrangeDownButton);
-    if (!this.answersContainerRef) {
+    if (!this.scrollContainerRef) {
       return;
     }
-    const {scrollTop, clientHeight, scrollHeight} = this.answersContainerRef;
+    const {scrollTop, clientHeight, scrollHeight} = this.scrollContainerRef;
     const scrolledDown = scrollTop + clientHeight >= scrollHeight - 20;
     if (!this.isScrolling && scrolledDown !== this.scrolledDown) {
       this._scrolledDown = scrolledDown;
@@ -142,30 +143,37 @@ export default class AIChat extends React.Component {
       <div className={
         classNames(
           styles.chatContainer,
+          'cp-panel',
           'cp-panel-no-hover',
           'cp-panel-borderless'
         )
       }>
-        <div
-          ref={el => { this.answersContainerRef = el; }}
-          className={styles.answerArea}
-        >
-          {this.chat.messages.length
-            ? this.chat.messages.map((message, index) => (
-              <div
-                key={message.id}
-                style={{
-                  minHeight: index === this.chat.messages.length - 1
-                    ? 'calc(100% - 60px)'
-                    : 'auto'
-                }}
-                data-id={message.id}
-              >
-                <Message message={message} />
-              </div>
-            )) : (
-              <EmptyChatPlaceholder user={this.currentUser} />
-            )}
+        <div className={styles.overflowContainer} ref={el => {
+          this.scrollContainerRef = el;
+        }}>
+          <div
+            ref={el => {
+              this.answersContainerRef = el;
+            }}
+            className={styles.answerArea}
+          >
+            {this.chat.messages.length
+              ? this.chat.messages.map((message, index) => (
+                <div
+                  key={message.id}
+                  style={{
+                    minHeight: index === this.chat.messages.length - 1
+                      ? 'calc(100% - 60px)'
+                      : 'auto'
+                  }}
+                  data-id={message.id}
+                >
+                  <Message message={message} />
+                </div>
+              )) : (
+                <EmptyChatPlaceholder user={this.currentUser} />
+              )}
+          </div>
         </div>
         <div className={styles.inputFieldArea}>
           <Icon
@@ -174,8 +182,8 @@ export default class AIChat extends React.Component {
               'cp-panel',
               styles.downButton, {
                 [styles.visible]: !this.isScrolling &&
-                  !this.chat.pending &&
-                  !this.scrolledDown
+                !this.chat.pending &&
+                !this.scrolledDown
               }
             )}
             onClick={this.scrollToBottom}
