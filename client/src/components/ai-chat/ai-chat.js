@@ -192,6 +192,12 @@ export default class AIChat extends React.Component {
             onPressEnter={this.onSubmitUserInput}
             onSubmit={this.onSubmitUserInput}
             onClick={this.onSubmitUserInput}
+            onKeyDown={(event) => {
+              if (!event.shiftKey && event.key.toLowerCase() === 'enter') {
+                event.preventDefault();
+                return false;
+              }
+            }}
           />
         </div>
       </div>

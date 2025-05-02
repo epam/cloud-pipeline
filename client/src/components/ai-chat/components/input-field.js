@@ -11,7 +11,8 @@ export default class InputField extends React.Component {
       onChange,
       onPressEnter,
       disabled,
-      onClick
+      onClick,
+      onKeyDown
     } = this.props;
 
     return (
@@ -20,6 +21,7 @@ export default class InputField extends React.Component {
           style={{height: 20}}
           value={value}
           onChange={onChange}
+          onKeyDown={onKeyDown}
           onPressEnter={onPressEnter}
           disabled={disabled}
           autosize={{minRows: 1, maxRows: 6}}
@@ -37,5 +39,6 @@ InputField.propTypes = {
   onChange: PropTypes.func,
   onPressEnter: PropTypes.func,
   onSubmit: PropTypes.func,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  onKeyDown: PropTypes.func
 };
