@@ -19,12 +19,10 @@ import {Icon} from 'antd';
 import {observable, computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import Message from './components/message/message';
 import AIChatEngine from './ai-chat-engine';
-import EmptyChatPlaceholder from './components/empty-chat-placeholder/empty-chat-placeholder';
 import roleModel from '../../utils/roleModel';
-import InputField from './components/input-field/input-field';
 import styles from './ai-chat.css';
+import {Message, InputField, EmptyChatPlaceholder} from './components';
 
 @roleModel.authenticationInfo
 @observer

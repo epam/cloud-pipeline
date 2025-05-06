@@ -19,8 +19,8 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import Markdown from '../../../special/markdown';
-import TypingIndicator from '../typing-indicator/typing-indicator';
 import styles from './message.css';
+import {TypingIndicator} from '../index';
 
 @observer
 export default class Message extends React.Component {

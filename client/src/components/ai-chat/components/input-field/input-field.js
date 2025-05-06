@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Input} from 'antd';
 import styles from './input-field.css';
-import ChatIconBtn from '../chat-icon-btn/chat-icon-btn';
+import {ChatIconBtn} from '../index';
 
 export default class InputField extends React.Component {
   render () {
