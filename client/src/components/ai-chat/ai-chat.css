@@ -26,7 +26,7 @@
 .input-field-area {
   display: flex;
   justify-content: center;
-  padding: 10px;
+  padding: 10px 10px 10px 0;
   position: relative;
   width: 100%;
   max-width: 1200px;
@@ -58,18 +58,19 @@
 }
 
 .down-button {
-  position: absolute;
-  top: 20px;
-  right: 25px;
-  font-size: large;
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.3s ease;
   border-radius: 50%;
   border: none !important;
+  cursor: pointer;
+  font-size: 25px;
+  opacity: 0;
+  position: absolute;
+  right: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  transition: all 0.3s ease;
 }
 
 .down-button.visible {
-  top: -12px;
+  top: -20px;
   opacity: 1;
 }

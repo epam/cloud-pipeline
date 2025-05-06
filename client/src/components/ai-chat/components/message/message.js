@@ -18,8 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import Markdown from '../../special/markdown';
-import TypingIndicator from './typing-indicator';
+import Markdown from '../../../special/markdown';
+import TypingIndicator from '../typing-indicator/typing-indicator';
 import styles from './message.css';
 
 @observer
@@ -27,7 +27,7 @@ export default class Message extends React.Component {
   renderContent = () => {
     const {message} = this.props;
     if (message.fromUser) {
-      return <span style={{whiteSpace: 'pre-line', margin: 10}}>{message.text}</span>;
+      return <span style={{whiteSpace: 'pre-line'}}>{message.text}</span>;
     }
     return <Markdown md={message.text} />;
   };

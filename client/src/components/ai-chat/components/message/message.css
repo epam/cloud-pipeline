@@ -25,11 +25,10 @@
   display: flex;
   font-size: 13px;
   justify-content: flex-end;
-  padding: 0 10px;
+  padding: 10px;
   width: fit-content;
   justify-self: flex-end;
   min-width: 30px;
-  margin-right: 20px;
 }
 
 .message-from-chat {

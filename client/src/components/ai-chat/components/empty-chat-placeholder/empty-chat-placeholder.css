@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import PropTypes from 'prop-types';
-import styles from './input-field.css';
-import classNames from 'classnames';
-
-export default function EmptyChatPlaceholder ({user}) {
-  return (
-    <div className={styles.chatPlaceholder}>
-      <span className={classNames(styles.chatPlaceholderUserName, 'cp-text')}>
-        Hello {user?.userName || ''},
-      </span>
-      <span className={classNames(styles.chatPlaceholderText, 'cp-text')}>
-        how can i help you?
-      </span>
-    </div>
-  );
+.chat-placeholder {
+  align-items: center;
+  flex-direction: column;
+  display: flex;
+  height: 100%;
+  justify-content: center;
 }
 
-EmptyChatPlaceholder.propTypes = {
-  user: PropTypes.object
-};
+.chat-placeholder-user-name {
+  font-size: 24px;
+}
+
+.chat-placeholder-text {
+  font-size: 16px;
+}

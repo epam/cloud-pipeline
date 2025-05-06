@@ -48,19 +48,3 @@
   right: inherit;
   left: 15px;
 }
-
-.chat-placeholder {
-  align-items: center;
-  flex-direction: column;
-  display: flex;
-  height: 100%;
-  justify-content: center;
-}
-
-.chat-placeholder-user-name {
-  font-size: 24px;
-}
-
-.chat-placeholder-text {
-  font-size: 16px;
-}

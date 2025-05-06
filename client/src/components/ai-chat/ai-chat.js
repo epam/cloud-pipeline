@@ -19,11 +19,11 @@ import {Icon} from 'antd';
 import {observable, computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import Message from './components/message';
+import Message from './components/message/message';
 import AIChatEngine from './ai-chat-engine';
-import EmptyChatPlaceholder from './components/empty-chat-placeholder';
+import EmptyChatPlaceholder from './components/empty-chat-placeholder/empty-chat-placeholder';
 import roleModel from '../../utils/roleModel';
-import InputField from './components/input-field';
+import InputField from './components/input-field/input-field';
 import styles from './ai-chat.css';
 
 @roleModel.authenticationInfo
@@ -178,7 +178,7 @@ export default class AIChat extends React.Component {
           <Icon
             type="down-circle-o"
             className={classNames(
-              'cp-panel',
+              'cp-primary',
               styles.downButton, {
                 [styles.visible]: !this.isScrolling &&
                 !this.scrolledDown
