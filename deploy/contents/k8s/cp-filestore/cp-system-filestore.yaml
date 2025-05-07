@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cp-system-pv
+spec:
+  storageClassName: ""
+  capacity:
+    storage: ${CP_FILESTORE_STORAGE}
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  csi:
+    driver: filestore.csi.storage.gke.io
+    volumeHandle: "modeInstance/${CP_FILESTORE_LOCATION}/${CP_FILESTORE_INSTANCE}/${CP_FILESTORE_SHARE}"
+    volumeAttributes:
+      ip: ${CP_FILESTORE_IP}
+      volume: ${CP_FILESTORE_SHARE}
+  claimRef:
+    name: cp-system-pvc
+    namespace: default
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cp-system-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  resources:
+    requests:
+      storage: ${CP_FILESTORE_STORAGE}
+
