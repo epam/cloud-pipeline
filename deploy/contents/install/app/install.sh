@@ -12,19 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+set -x
 ##########
 # Preflight setup
 ##########
 INSTALL_SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 export K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
-
 source format-utils.sh
 source install-utils.sh
 source configure-utils.sh
 source docker-utils.sh
-
 print_ok "[Running preflight and dependencies checks]"
 run_preflight $# || { print_err "Preflight checks failed, exiting"; exit 1; }
 . install-common.sh
@@ -196,6 +193,17 @@ elif is_deployment_type_requested aws-native; then
   update_config_value "$CP_INSTALL_CONFIG_FILE" \
                       "CP_KUBE_NODE_TOKEN" \
                       "$CP_KUBE_NODE_TOKEN"
+
+elif is_deployment_type_requested gke; then
+	print_info "-> Custom deployment type 'my-custom' selected"
+	#Scale down original kube-dns to 0 
+	print_info "-> Scaling down default kube-dns and autoscaler in GKE"
+	kubectl scale deployment kube-dns-autoscaler --replicas=0 -n kube-system
+	kubectl scale --replicas=0 deployment/kube-dns -n kube-system
+        print_info "-> Deploying custom kube-dns"
+	create_kube_resource $K8S_SPECS_HOME/kube-system/custom-kube-dns.yaml
+	#Need to check if deployed
+        export CP_KUBE_DNS_DEPLOYMENT_NAME="custom-kube-dns"
 fi
 
 if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
@@ -258,6 +266,8 @@ if is_deployment_type_requested classic; then
     KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
 elif is_deployment_type_requested aws-native; then
     KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep "cloud-pipeline/node-group-type=system" | cut -f1 -d' ')
+elif is_deployment_type_requested gke; then
+    KUBE_MASTER_NODE_NAME=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
 fi
 
 # Allow to schedule API DB to the master
@@ -437,9 +447,31 @@ if is_deployment_type_requested aws-native; then
       print_ok "[Starting install FSX CSI driver in AWS EKS deployment]"
       create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-fsx --ktz "delete"
       create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-fsx --ktz
+
    else
       print_err "Unsupported CP_CSI_DRIVER_TYPE was provided."
       exit 1
+   fi
+
+fi
+
+# For gke-native deployment
+if is_deployment_type_requested gke; then
+   if [[ -z "$CP_FILESTORE_INSTANCE" || -z "$CP_FILESTORE_LOCATION" || -z "$CP_FILESTORE_SHARE" || -z "$CP_FILESTORE_IP" || -z "$CP_PROJECT_ID" || -z "$CP_GSA_NAME" ]]; then
+	   print_err "GKE supports only Filestore. please provide valid mount point and filestore address"
+	   exit 1
+   else
+	   export CP_FILESTORE_STORAGE="${CP_FILESTORE_STORAGE:-1Ti}"
+           print_ok "[Deploy persistent volume $CP_FILESTORE_INSTANCE with ip:$CP_FILESTORE_IP and share:$CP_FILESTORE_SHARE in region:$CP_FILESTORE_LOCATION]"
+	   create_kube_resource "$K8S_SPECS_HOME"/cp-filestore/cp-system-filestore.yaml
+	  print_info "[creating k8s user]"
+	  export CP_GSA_EMAIL="${CP_GSA_NAME}@${CP_PROJECT_ID}.iam.gserviceaccount.com"
+	   create_kube_resource "$K8S_SPECS_HOME"/cp-main-service-gke-account/cp-main-service-account.yaml --res "delete"
+	   create_kube_resource "$K8S_SPECS_HOME"/cp-main-service-gke-account/cp-main-service-account.yaml
+	   gcloud iam service-accounts add-iam-policy-binding $CP_GSA_EMAIL \
+           --role roles/iam.workloadIdentityUser \
+           --member "serviceAccount:${CP_PROJECT_ID}.svc.id.goog[default/cp-main-service]"
+
    fi
 
 fi
@@ -505,6 +537,8 @@ if is_service_requested cp-idp; then
                                         $CP_IDP_CERT_DIR/idp-public-cert.pem \
                                         $CP_IDP_EXTERNAL_HOST \
                                         $CP_IDP_INTERNAL_HOST
+
+	print_info "->WARNING!!!!!!!!!!! CP_IDP_CERT_DIR=$CP_IDP_CERT_DIR"
 
         print_info "-> Deploying IdP"
         set_kube_service_external_ip CP_IDP_SVC_EXTERNAL_IP_LIST \

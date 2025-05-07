@@ -875,8 +875,8 @@ function parse_options {
 
 
     export CP_DEPLOYMENT_TYPE="${CP_DEPLOYMENT_TYPE:-classic}"
-    if [ "$CP_DEPLOYMENT_TYPE" != "aws-native" ] && [ "$CP_DEPLOYMENT_TYPE" != "classic" ]; then
-        print_err "-dt / --deployment-type value $CP_DEPLOYMENT_TYPE is not supported! Supported values is: 'aws-native', 'classic'"
+    if [ "$CP_DEPLOYMENT_TYPE" != "aws-native" ] && [ "$CP_DEPLOYMENT_TYPE" != "classic" ] && [ "$CP_DEPLOYMENT_TYPE" != "gke" ]; then
+        print_err "-dt / --deployment-type value $CP_DEPLOYMENT_TYPE is not supported! Supported values is: 'aws-native', 'classic', 'gke'"
         return 1
     fi
     print_info "Deployment type: $CP_DEPLOYMENT_TYPE configured"
@@ -889,6 +889,13 @@ function parse_options {
         fi
         export CP_KUBE_DNS_DEPLOYMENT_NAME="coredns"
         export CP_EDGE_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-elb}"
+    elif is_deployment_type_requested gke ; then
+	 if [[ -z "$CP_FILESTORE_INSTANCE" || -z "$CP_FILESTORE_LOCATION" || -z "$CP_FILESTORE_SHARE" || -z "$CP_FILESTORE_IP" || -z "$CP_PROJECT_ID" || -z "$CP_GSA_NAME" ]]; then
+           print_err "GKE  must set CP_FILESTORE_INSTANCE CP_FILESTORE_LOCATION CP_FILESTORE_SHARE CP_FILESTORE_IP CP_PROJECT_ID CP_GSA_NAM"
+           exit 1
+	 fi
+        export CP_EDGE_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-glb}"
+	export CP_KUBE_DNS_DEPLOYMENT_NAME="kube-dns"
     else
         export CP_KUBE_DNS_DEPLOYMENT_NAME="kube-dns"
     fi
@@ -1000,7 +1007,12 @@ function is_kube_dns_configured_for_custom_entries {
 
 function prepare_kube_dns {
     local static_names="$1"
-
+    #Checking if we are installing inside GKE with custom kube-dns
+    if [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "custom-kube-dns" ]; then
+	    local KUBE_DNS="custom-kube-dns"
+    else
+	    local KUBE_DNS="kube-dns"
+    fi
     if ! is_kube_dns_configured_for_custom_entries; then
         # 1. Grant "kube-dns" permissions to list the pods
         print_info "Granting 'clusterrole view' permissions to 'system:serviceaccount:kube-system:kube-dns'"
@@ -1012,8 +1024,8 @@ function prepare_kube_dns {
         fi
 
         # 2. Mount hosts config map into dnsmasq
-        print_info "Configuring kube-dns for custom entries support"
-        kubectl patch deployment kube-dns \
+        print_info "Configuring $KUBE_DNS for custom entries support"
+        kubectl patch deployment $KUBE_DNS \
             --namespace kube-system \
             --type='json' \
             -p="[
@@ -1103,21 +1115,21 @@ function prepare_kube_dns {
                     }
                 ]"
         if [ $? -ne 0 ]; then
-            print_err "Unable to patch kube-dns deployment"
+            print_err "Unable to patch $KUBE_DNS deployment"
             return 1
         fi
 
         # 3. Wait for the pods restart
-        kubectl rollout status deployment/kube-dns -n kube-system -w
+        kubectl rollout status deployment/$KUBE_DNS -n kube-system -w
         # Just in case...
         sleep 10
         
-        print_ok "kube-dns is configured for custom entries support"
+        print_ok "$KUBE_DNS is configured for custom entries support"
     else
-        print_info "kube-dns seems to be already configured for custom entries support"
+        print_info "$KUBE_DNS seems to be already configured for custom entries support"
     fi
 
-    # 2. Add ${static_names} to the kube-dns
+    # 2. Add ${static_names} to the $KUBE_DNS
     local custom_name_registration_results=0
     IFS="," read -ra static_names_arr <<< "$static_names"
 
@@ -1171,13 +1183,22 @@ function get_kube_resource_spec_file_by_type {
     else
         local resolved_spec_location="$original_spec_location"
         # Here we should be dealing with dpl files
-        if is_deployment_type_requested aws-native; then
+        if is_deployment_type_requested aws-native || is_deployment_type_requested gke; then
             local spec_dir="$(dirname $original_spec_location)"
             local spec_file="$(basename $original_spec_location)"
 
             local spec_ext="${spec_file##*.}"
             local spec_file="${spec_file%.*}"
-            local spec_suffix="awsn"
+	    if is_deployment_type_requested aws-native; then
+              spec_suffix="awsn"
+            elif is_deployment_type_requested gke; then
+              spec_suffix="gke"
+            fi
+	    #check if suffix is empty
+	    if [ -z "$spec_suffix" ]; then
+            print_err " -> Deployment type requires a spec override, but no suffix was set. Check logic."
+            
+            fi
             local resolved_spec_location="${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
             if [ ! -f "${resolved_spec_location}" ]; then
                 resolved_spec_location="$original_spec_location"
@@ -1255,7 +1276,7 @@ function register_custom_name_in_dns {
 
     print_info "Registering DNS entry $custom_name as $custom_target_value (source type: $custom_target_type)"
     print_info "CP_KUBE_DNS_DEPLOYMENT_NAME configured as ${CP_KUBE_DNS_DEPLOYMENT_NAME}."
-    if [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "kube-dns" ]; then
+    if [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "kube-dns" ] || [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "custom-kube-dns" ]; then
         # Check config map with hosts exists
         if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
             # If so - add new/update existing entry
