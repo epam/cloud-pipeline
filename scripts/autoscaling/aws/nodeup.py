@@ -265,6 +265,7 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
                 api_token_data = api_token_data + "="*divmod(len(api_token_data),4)[1]
                 api_token_data = json.loads(base64.urlsafe_b64decode(api_token_data))
                 api_token_roles = set(api_token_data["roles"])
+                api_token_roles.update(set(api_token_data.get('groups', [])))
                 if not (permissions & api_token_roles):
                     continue
         except:
