@@ -818,6 +818,12 @@ export default `
 @THEME .cp-transparent-background {
   background-color: transparent !important;
 }
+@THEME .cp-panel-background-color {
+  background-color: @panel-background-color;
+}
+@THEME .cp-panel-color {
+  color: @panel-background-color;
+}
 @THEME .cp-split-panel-panel {
   color: @application-color;
   background-color: transparent;
@@ -3195,8 +3201,14 @@ export default `
 @THEME .markdown table {
   border-collapse: collapse;
   border: 1px solid @card-border-color;
-}
-@THEME .markdown table td,
+  margin-bottom: 10px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+@THEME }
+
+.markdown table td,
 @THEME .markdown table th {
   border: 1px solid @card-border-color;
   padding: 5px;

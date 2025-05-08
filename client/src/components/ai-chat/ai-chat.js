@@ -172,11 +172,15 @@ export default class AIChat extends React.Component {
               )}
           </div>
         </div>
-        <div className={styles.inputFieldArea}>
+        <div className={classNames(
+          styles.inputFieldArea,
+          'cp-panel-color', {
+            [styles.dropShadow]: !this.scrolledDown
+          })}>
           <Icon
             type="down-circle-o"
             className={classNames(
-              'cp-primary',
+              'cp-panel-background-color cp-primary',
               styles.downButton, {
                 [styles.visible]: !this.isScrolling &&
                 !this.scrolledDown
