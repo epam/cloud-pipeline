@@ -1429,6 +1429,10 @@ public class SystemPreferences {
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
             "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_MAX_FS_SIZE = new IntPreference(
+            "lustre.fs.max.size", 1125900, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_UPDATE_SIZE_PERIOD = new IntPreference(
+            "lustre.fs.update.size.period", 21600, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
