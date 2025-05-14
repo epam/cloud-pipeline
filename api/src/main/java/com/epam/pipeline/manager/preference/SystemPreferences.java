@@ -597,7 +597,7 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
             5, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_AWS_EBS_TYPE = new StringPreference(
-            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank);
+            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank, true);
     public static final StringPreference CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE = new StringPreference(
             "cluster.aws.ec2.pricing.url.template",
             "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv",
