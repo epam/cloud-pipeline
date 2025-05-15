@@ -16,45 +16,36 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input} from 'antd';
-import styles from './input-field.css';
-import {ChatIconBtn} from '../index';
+import {Icon, Input} from 'antd';
+import styles from './styles-components.css';
 
-export default class InputField extends React.Component {
+export default class InputPathParameter extends React.Component {
   render () {
-    const {
-      value,
-      onChange,
-      onPressEnter,
-      disabled,
-      onClick,
-      onKeyDown
-    } = this.props;
-
+    const {value, onChange, label, disabled} = this.props;
     return (
-      <div className={styles.field}>
-        <Input.TextArea
-          style={{height: 20}}
+      <div className={styles.indent}>
+        <label>{label}</label>
+        <Input
           value={value}
-          onChange={onChange}
-          onKeyDown={onKeyDown}
-          onPressEnter={onPressEnter}
+          onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          autosize={{minRows: 1, maxRows: 6}}
+          placeholder="Enter input path"
+          prefix={<Icon type="download" />}
         />
-        <button disabled={disabled} onClick={onClick} className={styles.iconChat}>
-          <ChatIconBtn />
-        </button>
       </div>
     );
   }
 }
 
-InputField.propTypes = {
+InputPathParameter.propTypes = {
   value: PropTypes.string,
-  onChange: PropTypes.func,
-  onPressEnter: PropTypes.func,
-  onSubmit: PropTypes.func,
-  onClick: PropTypes.func,
-  onKeyDown: PropTypes.func
+  onChange: PropTypes.func.isRequired,
+  label: PropTypes.string,
+  disabled: PropTypes.bool
+};
+
+InputPathParameter.defaultProps = {
+  value: '',
+  label: '',
+  disabled: false
 };

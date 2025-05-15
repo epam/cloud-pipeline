@@ -18,18 +18,49 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import Markdown from '../../../special/markdown';
 import styles from './message.css';
 import {TypingIndicator} from '../index';
+import LaunchForm from '../launch-form/launch-form';
+import Markdown from '../../../special/markdown';
+
+const mockData = {
+  toolId: 123,
+  pipelineId: 456,
+  configurationName: 'Default Configuration',
+  version: '1.0.0',
+  image: 'tool/image',
+  registry: 'registry.example.com',
+  dockerImage: 'registry.example.com/tool/image:1.0.0',
+  instanceType: 't2.medium',
+  disk: 100,
+  is_spot: true,
+  description: 'BWA is a bioinformatics software package for ' +
+    'mapping low-divergent sequences against a large reference genome, such as the human genome.',
+  parameters: {
+    reference_path: {type: 'string', value: 'String value'},
+    checkbox: {type: 'boolean', value: true},
+    input: {type: 'path', value: '/path/to/file'},
+    path: {type: 'path', value: '/another/path'}
+  },
+  optionsSelect: [
+    {value: 'option1', label: 'Option 1'},
+    {value: 'option2', label: 'Option 2'},
+    {value: 'option3', label: 'Option 3'}
+  ]
+};
 
 @observer
 export default class Message extends React.Component {
+  state = {
+    parameters: mockData.parameters
+  };
   renderContent = () => {
     const {message} = this.props;
     if (message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{message.text}</span>;
     }
     return <Markdown md={message.text} />;
+    // return <LaunchForm mockData={mockData} />;
   };
   render () {
     const {message} = this.props;
