@@ -994,6 +994,10 @@ public class SystemPreferences {
 
     public static final StringPreference UI_PLUGIN_ROOT_FOLDER_PATH = new StringPreference(
             "ui.plugin.root.folder.path", "/opt/api/etc/ui-plugins", UI_GROUP, pass, true);
+    public static final ObjectPreference<Object> UI_MLFLOW_SETTINGS = new ObjectPreference<>(
+            "ui.mlflow.settings",
+            Collections.emptyMap(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
