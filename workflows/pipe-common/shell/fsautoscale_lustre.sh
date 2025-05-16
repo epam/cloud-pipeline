@@ -101,15 +101,6 @@ function is_filesystem_scalable() {
   return "$?"
 }
 
-function get_current_run_id() {
-  _API="$1"
-  _API_TOKEN="$2"
-  _NODE="$3"
-  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/run" "GET" |
-    jq -r ".payload.runId" |
-    grep -v "^null$"
-}
-
 function is_true() {
   _BOOLEAN="$1"
   LOWER_BOOLEAN=$(echo "$_BOOLEAN" | tr "[:upper:]" "[:lower:]")
@@ -193,10 +184,11 @@ function check_new_capacity() {
   _TIMEOUT="$5"
   _DISK_AVAILABILITY_CHECK_PERIOD="$6"
   DISK_CAPACITY_CHECK_REPEAT=0
+  pipe_log_debug "Checking if new capacity is available..."
   while [[ "$DISK_CAPACITY_CHECK_REPEAT" -lt "$_TIMEOUT" ]]
   do
     NEW_CAPACITY=$(get_capacity "$_API" "$_API_TOKEN" "$_RUN_ID")
-    pipe_log_debug "Disk $MOUNT_POINT capacity is ${NEW_CAPACITY}G."
+    pipe_log_debug "Disk capacity is ${NEW_CAPACITY}G."
     if [[ $NEW_CAPACITY -eq $_SIZE ]]
     then
       break
@@ -209,8 +201,52 @@ function check_new_capacity() {
 ERROR_LOG_LEVEL="ERROR"
 INFO_LOG_LEVEL="INFO"
 DEBUG_LOG_LEVEL="DEBUG"
-NEXT_UPDATE_SIZE_TIME=get_current_timestamp
-LUSTRE_SIZE_STEP=2400
+
+while [[ "$#" -gt "0" ]]
+do
+  case "$1" in
+  -u | --api-url)
+    API="$2"
+    shift
+    shift
+    ;;
+  -t | --api-token)
+    API_TOKEN="$2"
+    shift
+    shift
+    ;;
+  -r | --run-id)
+    RUN_ID="$2"
+    shift
+    shift
+    ;;
+  -m | --mount-point)
+    MOUNT_POINT="$2"
+    shift
+    shift
+    ;;
+  -d | --monitoring-delay)
+    MONITORING_DELAY="$2"
+    shift
+    shift
+    ;;
+  -e | --debug)
+    DEBUG="true"
+    shift
+    ;;
+  *)
+    pipe_log_debug "Unexpected argument $1 will be skipped."
+    shift
+    ;;
+  esac
+done
+
+if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$RUN_ID" ]] || [[ -z "$MOUNT_POINT" ]]
+then
+  pipe_log_error "Some of the required arguments are missing."
+  exit 1
+fi
+
 
 LOG_TASK="${LOG_TASK:-FilesystemAutoscaling}"
 MONITORING_DELAY="${MONITORING_DELAY:-10}"
@@ -222,32 +258,26 @@ DISK_AVAILABILITY_TIMEOUT="${DISK_AVAILABILITY_TIMEOUT:-10}"
 DISK_AVAILABILITY_CHECK_PERIOD="${DISK_AVAILABILITY_CHECK_PERIOD:-300}"
 
 
-AUTOSCALE_PREFERENCE="${AUTOSCALE_PREFERENCE:-cluster.instance.hdd.scale.enabled}"
+AUTOSCALE_PREFERENCE="${AUTOSCALE_PREFERENCE:-lustre.fs.scale.enabled}"
 AUTOSCALE_PREFERENCE_DEFAULT="${AUTOSCALE_PREFERENCE_DEFAULT:-false}"
-MONITORING_DELAY_PREFERENCE="${MONITORING_DELAY_PREFERENCE:-cluster.instance.hdd.scale.monitoring.delay}"
+MONITORING_DELAY_PREFERENCE="${MONITORING_DELAY_PREFERENCE:-lustre.fs.scale.monitoring.delay}"
 MONITORING_DELAY_PREFERENCE_DEFAULT="${MONITORING_DELAY_PREFERENCE_DEFAULT:-10}"
-THRESHOLD_PREFERENCE="${THRESHOLD_PREFERENCE:-cluster.instance.hdd.scale.threshold.ratio}"
+THRESHOLD_PREFERENCE="${THRESHOLD_PREFERENCE:-lustre.fs.scale.threshold.ratio}"
 THRESHOLD_PREFERENCE_DEFAULT="${THRESHOLD_PREFERENCE_DEFAULT:-0.75}"
-DELTA_PREFERENCE="${DELTA_PREFERENCE:-cluster.instance.hdd.scale.delta.ratio}"
+DELTA_PREFERENCE="${DELTA_PREFERENCE:-lustre.fs.scale.delta.ratio}"
 DELTA_PREFERENCE_DEFAULT="${DELTA_PREFERENCE_DEFAULT:-0.5}"
 MAX_FS_SIZE_PREFERENCE="${MAX_FS_SIZE_PREFERENCE:-lustre.fs.max.size}"
 MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-1125900}"
 UPDATE_SIZE_PERIOD_PREFERENCE="${UPDATE_SIZE_PERIOD_PREFERENCE:-lustre.fs.update.size.period}"
 UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT="${UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT:-21600}"
 
-RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-if [[ -z "$RUN_ID" ]]
-then
-  pipe_log_debug "No run is assigned to the node. Filesystem won't be autoscaled."
-  exit 1
-fi
-
-if ! is_filesystem_scalable "$API" "$API_TOKEN" "$NODE" "$NOT_SCALABLE_DEPLOYMENT_TYPE"
+if ! is_filesystem_scalable "$API" "$API_TOKEN" "$RUN_ID" "$NOT_SCALABLE_DEPLOYMENT_TYPE"
 then
   pipe_log_debug "Filesystem autoscaling capability is not available for $NOT_SCALABLE_DEPLOYMENT_TYPE deployment type. Filesystem won't be autoscaled."
   exit 1
 fi
 
+NEXT_UPDATE_SIZE_TIME=get_current_timestamp
 while true
 do
   sleep "$MONITORING_DELAY"
@@ -266,34 +296,31 @@ do
     CURRENT_USAGE=$(get_current_disk_usage "$MOUNT_POINT")
     if [[ "$CURRENT_USAGE" -ge "$THRESHOLD" ]]
     then
-      pipe_log_debug "Scaling filesystem $MOUNT_POINT..."
-
       CURRENT_SIZE=$(get_capacity "$API" "$API_TOKEN" "$RUN_ID")
       if [[ "$CURRENT_SIZE" -ge "$MAX_FS_SIZE" ]]
       then
         pipe_log_debug "Filesystem $MOUNT_POINT cannot be autoscaled even further."
         continue
       fi
-
+      pipe_log_debug "Scaling filesystem $MOUNT_POINT..."
       if [[ "$CURRENT_SIZE" -eq 1200 ]]
       then
         LUSTRE_SIZE_STEP=1200
+      else
+        LUSTRE_SIZE_STEP=2400
       fi
-
       REQUIRED_SIZE=$((CURRENT_SIZE + LUSTRE_SIZE_STEP))
       if [[ "$REQUIRED_SIZE" -ge "$MAX_FS_SIZE" ]]
       then
         pipe_log_debug "Filesystem $MOUNT_POINT requested size has reached its max allowed size of ${MAX_FS_SIZE}G."
         REQUIRED_SIZE="$MAX_FS_SIZE"
       fi
-
       if [[ "$NEXT_UPDATE_SIZE_TIME" -ge $(get_current_timestamp) ]]
       then
         NEXT_UPDATE_SIZE_TIME_FORMATTED=$(date -d "@$NEXT_UPDATE_SIZE_TIME")
         pipe_log_debug "Filesystem autoscaling capability is not available till $NEXT_UPDATE_SIZE_TIME_FORMATTED."
         continue
       fi
-
       if update_lustre_fs_size "$API" "$API_TOKEN" "$RUN_ID" "$REQUIRED_SIZE"
       then
         pipe_log_debug "Request to update disk size ${MOUNT_POINT} has been sent."
@@ -301,7 +328,6 @@ do
         pipe_log_debug "Request to update disk size ${MOUNT_POINT} has not been sent."
         continue
       fi
-
       if check_new_capacity "$API" "$API_TOKEN" "$RUN_ID" "$REQUIRED_SIZE" "$DISK_AVAILABILITY_TIMEOUT" "$DISK_AVAILABILITY_CHECK_PERIOD"
       then
         pipe_log_debug "Filesystem $MOUNT_POINT new capacity is ${REQUIRED_SIZE}G."

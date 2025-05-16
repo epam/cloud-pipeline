@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,3 +37,12 @@ if [ $? -ne 0 ]; then
 else
     pipe_log_success "Successfully mounted Lustre FS to master node" "$FS_SETUP_TASK"
 fi
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+Environment="API_ARGS=--api-url $API--api-token $API_TOKEN"
+Environment="RUN_ARGS=--run-id $RUN_ID"
+Environment="MOUNT_POINT_ARGS=--mount-point $MOUNT_DIR"
+ExecStart=fsautoscale_lustre \$API_ARGS \$RUN_ARGS \$MOUNT_POINT_ARGS
