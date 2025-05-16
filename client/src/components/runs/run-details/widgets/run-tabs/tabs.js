@@ -1,12 +1,14 @@
 import React from 'react';
 import {Icon} from 'antd';
-import {isNextflowEngine} from '../../utilities/helpers';
+import {isMlflowEngine, isNextflowEngine} from '../../utilities/helpers';
 import NextflowEngineTasks from '../../sections/nextflow-engine/tasks';
 import RunParametersSection from '../../sections/parameters';
+import MLFlowEngine from '../../sections/mlflow-engine';
 import Reports from '../../sections/reports';
 import RunLogsSection from '../../sections/logs';
 import RunLaunchCommandSection from '../../sections/launch-command';
 import InitializeWrapper from '../../sections/common/initialize-wrapper';
+import preferencesStore from "../../../../../models/preferences/PreferencesLoad";
 
 const iconStyle = {fontSize: '1.1rem'};
 
@@ -24,6 +26,17 @@ export const nextflowTasksTab = {
   render: ({run}) => (
     <InitializeWrapper run={run}>
       <NextflowEngineTasks run={run} />
+    </InitializeWrapper>
+  )
+};
+
+export const mlflowTab = {
+  tab: 'mlflow',
+  title: 'MLflow',
+  noPadding: true,
+  render: ({run}) => (
+    <InitializeWrapper run={run}>
+      <MLFlowEngine run={run} />
     </InitializeWrapper>
   )
 };
@@ -82,10 +95,12 @@ export const launchCommandTab = {
   asPanel: false
 };
 
-export function getRunTabs (run) {
+export function getRunTabs (run, preferences = preferencesStore) {
   if (!run) {
     return [logsTab];
   }
+
+  const mlFlowSettings = preferences.uiMlflowSettings;
 
   const tabs = [];
 
@@ -94,6 +109,10 @@ export function getRunTabs (run) {
     tabs.push(parametersTab);
     tabs.push(logsTab);
     tabs.push(reportTab);
+  } else if (isMlflowEngine(run) && mlFlowSettings && mlFlowSettings.mlflow_base) {
+    tabs.push(mlflowTab);
+    tabs.push(logsTab);
+    tabs.push(parametersTab);
   } else {
     tabs.push(logsTab);
     tabs.push(parametersTab);

@@ -27,7 +27,6 @@ import styles from './run-details.css';
   'dtsList',
   'multiZoneManager',
   'dockerRegistries',
-  'preferences',
   'uiNavigation'
 )
 @runPipelineActions
@@ -116,7 +115,7 @@ class RunDetails extends React.Component {
               loaded: true,
               runTasksLoaded: true,
               ...data,
-              tabs: data.run ? getRunTabs(data.run) : []
+              tabs: data.run ? getRunTabs(data.run, preferences) : []
             });
           }
         };
@@ -225,6 +224,9 @@ class RunDetails extends React.Component {
           className={classNames(
             styles.runDetailsContent,
             styles.runDetailsSection,
+            {
+              [styles.noPadding]: currentTab.noPadding
+            },
             'cp-panel',
             'cp-panel-no-hover',
             'cp-panel-borderless'

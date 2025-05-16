@@ -1058,6 +1058,19 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get uiMlflowSettings () {
+    const value = this.getPreferenceValue('ui.mlflow.settings');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.mlflow.settings" preference:', e.message);
+      }
+    }
+    return undefined;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

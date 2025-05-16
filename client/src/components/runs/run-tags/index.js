@@ -35,11 +35,15 @@ const KNOWN_TAG_NAMES = {
   proc_out_of_memory: 'proc_out_of_memory',
   network_limit: 'network_limit',
   network_pressure: 'network_pressure',
-  long_running: 'long_running'
+  long_running: 'long_running',
+  mlflow_experiment: 'CP_MLFLOW_EXPERIMENT_ID',
+  mlflow_run: 'CP_MLFLOW_RUN_UUID'
 };
 
 const KNOWN_TAG_RENDER = {
-  [KNOWN_TAG_NAMES.network_limit]: (name) => name
+  [KNOWN_TAG_NAMES.network_limit.toLowerCase()]: (name) => name,
+  [KNOWN_TAG_NAMES.mlflow_experiment.toLowerCase()]: tagSemiValueRenderer,
+  [KNOWN_TAG_NAMES.mlflow_run.toLowerCase()]: tagSemiValueRenderer
 };
 
 export function networkLimitValueRender (value) {
@@ -65,6 +69,26 @@ export function networkLimitValueRender (value) {
 const KNOWN_TAG_VALUE_RENDER = {
   [KNOWN_TAG_NAMES.network_limit]: (name, value) => networkLimitValueRender(value)
 };
+
+const KNOWN_TAG_PRETTY_NAME = {
+  [KNOWN_TAG_NAMES.mlflow_experiment.toLowerCase()]: 'MLFLOW EXPERIMENT',
+  [KNOWN_TAG_NAMES.mlflow_run.toLowerCase()]: 'MLFLOW RUN'
+};
+
+function getTagName (tag) {
+  return KNOWN_TAG_PRETTY_NAME[tag.toLowerCase()] || tag;
+}
+
+function collapseText (text, size = 10) {
+  return text.slice(0, size);
+}
+
+function tagSemiValueRenderer (tag, value) {
+  if (value) {
+    return `${getTagName(tag)}: ${collapseText(String(value), 8)}`;
+  }
+  return getTagName(tag);
+}
 
 const PREDEFINED_TAGS = [{
   tag: KNOWN_TAG_NAMES.idle,
@@ -95,6 +119,14 @@ const PREDEFINED_TAGS = [{
 }, {
   tag: KNOWN_TAG_NAMES.long_running,
   color: 'warning'
+}, {
+  tag: KNOWN_TAG_NAMES.mlflow_experiment,
+  color: 'primary',
+  instanceLink: false
+}, {
+  tag: KNOWN_TAG_NAMES.mlflow_run,
+  color: 'primary',
+  instanceLink: false
 }];
 
 const KNOWN_COLORS = {
@@ -193,7 +225,7 @@ function Tag (
 ) {
   let display = value;
   if (`${value}` === 'true') {
-    display = tagName;
+    display = getTagName(tagName);
   }
   const tagRenderFn = KNOWN_TAG_RENDER[tagName.toLowerCase()];
   if (tagRenderFn && typeof tagRenderFn === 'function') {

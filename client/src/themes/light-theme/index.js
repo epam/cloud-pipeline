@@ -19,6 +19,7 @@
 export default {
   identifier: 'light-theme',
   name: 'Light',
+  dark: false,
   extends: undefined,
   predefined: true,
   configuration: {
