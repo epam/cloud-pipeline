@@ -170,7 +170,7 @@ class MLFlowEngine extends React.Component {
       <a
         href={getStaticResourcePath(`#/run/${deployModel.runId}`)}
         onClick={this.onOpenDeployedModel}
-      >run #{deployModel.runId}
+      >#{deployModel.runId}
       </a>
     ) : undefined;
     if (!mlFlowBase) {
@@ -219,7 +219,7 @@ class MLFlowEngine extends React.Component {
           {
             runLink
               ? (
-                <div>Model deployed to {runLink}</div>)
+                <div>Model deployment has been started.Deployment ID: {runLink}</div>)
               : undefined
           }
 
