@@ -75,6 +75,9 @@ import RunModal from '../../main/RunModal';
 import checkToolVersionErrors from '../utilities/check-tool-version-errors';
 import CustomTagsControl from "../../pipelines/launch/form/components/custom-tags/control";
 import RunPayloadEstimatedPriceAlert from "./run-payload-estimated-price-alert";
+import {
+  getAllowedStoragesForCloudRegion
+} from '../../../utils/limit-mounts/check-cloud-region-rules';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -668,7 +671,10 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get dataStorages () {
-    return (this.props.dataStorages || []).map(d => d);
+    const {cloudRegions = []} = this.props;
+    const cloudRegion = this.currentRegion;
+    const storages = (this.props.dataStorages || []).map(d => d);
+    return getAllowedStoragesForCloudRegion(storages, cloudRegion, cloudRegions);
   }
 
   @computed
