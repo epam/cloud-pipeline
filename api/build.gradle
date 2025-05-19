@@ -143,6 +143,8 @@ dependencies {
     compile "com.google.cloud:google-cloud-storage:1.70.0"
     compile "com.google.code.gson:gson:2.10.1"
     compile "com.google.cloud:google-cloud-logging:3.22.0"
+    compile "com.google.cloud:google-cloud-monitoring:3.44.0"
+    compile "com.google.cloud:google-cloud-compute:1.72.0"
 
     testCompile group: "org.springframework.security", name: "spring-security-test", version: "4.2.2.RELEASE"
     testCompile group: "com.github.tomakehurst", name: "wiremock", version: "2.14.0"
