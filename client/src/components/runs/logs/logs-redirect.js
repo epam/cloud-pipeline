@@ -17,7 +17,6 @@ function getRunDetailsPresentation (run, preferences) {
   if (isNextflowEngine(run)) {
     return runDetailsPresentation.nextflow;
   }
-  console.log(preferences?.uiMlflowSettings?.mlflow_base, isMlflowEngine(run));
   if (
     isMlflowEngine(run) &&
     preferences &&

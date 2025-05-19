@@ -28,7 +28,8 @@ function getStaticResourcePath (url) {
 @observer
 class MLFlowEngine extends React.Component {
   state = {
-    deployModel: undefined
+    deployModel: undefined,
+    confirmation: undefined
   };
 
   get currentThemeIsDark () {
@@ -89,7 +90,8 @@ class MLFlowEngine extends React.Component {
       const {
         messageType,
         runId,
-        error
+        error,
+        confirmation
       } = data;
       if (messageType === 'model-deployed' && runId && typeof runId === 'number') {
         this.setState({deployModel: {runId}});
@@ -101,11 +103,40 @@ class MLFlowEngine extends React.Component {
             : <span>Error deploying model</span>,
           5
         );
+        this.setState({deployModel: {runId: 123}});
+      } else if (messageType === 'model-deploy-confirm' && confirmation) {
+        const {
+          id
+        } = confirmation || {};
+        this.setState({confirmation: {id}});
+        Modal.confirm({
+          title: (
+            <span>
+              Are you sure you want to deploy this model?
+            </span>
+          ),
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk: () => {
+            const {uiMlflowSettings = {}} = this;
+            const {mlflow_base: mlFlowBase} = uiMlflowSettings;
+            if (this.iframe && mlFlowBase) {
+              const url = new URL(mlFlowBase);
+              this.iframe.contentWindow.postMessage(
+                {messageType: 'model-deploy-confirm-done', confirmation: {id}},
+                url.origin
+              );
+            }
+          },
+          okText: 'DEPLOY',
+          cancelText: 'CANCEL'
+        });
       }
     }
   };
 
-  onCancelDeployModel = () => {
+  onCloseDeployedModelAlert = () => {
     this.setState({deployModel: undefined});
   };
 
@@ -144,7 +175,7 @@ class MLFlowEngine extends React.Component {
         routing.push(`/run/${deployModel.runId}`);
       }
     }
-    this.onCancelDeployModel();
+    this.onCloseDeployedModelAlert();
   };
 
   render () {
@@ -161,7 +192,8 @@ class MLFlowEngine extends React.Component {
       mlflow_base: mlFlowBase
     } = uiMlflowSettings;
     const {
-      deployModel
+      deployModel,
+      confirmation
     } = this.state;
     const {
       runId
@@ -208,19 +240,21 @@ class MLFlowEngine extends React.Component {
         }
         <Modal
           visible={deployModel !== undefined}
-          title={false}
-          onCancel={this.onCancelDeployModel}
+          title="Model deployment has been started"
+          onCancel={this.onCloseDeployedModelAlert}
           footer={(
             <div style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-end'}}>
-              <Button type="primary" onClick={this.onCancelDeployModel}>OK</Button>
+              <Button type="primary" onClick={this.onCloseDeployedModelAlert}>OK</Button>
             </div>
           )}
         >
           {
             runLink
               ? (
-                <div>Model deployment has been started.Deployment ID: {runLink}</div>)
-              : undefined
+                <div style={{fontSize: 'larger'}}>
+                  Deployment ID: {runLink}
+                </div>
+              ) : undefined
           }
 
         </Modal>
