@@ -473,6 +473,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableHybridClusterSelect()
                 .ok()
                 .setCommand(String.format("qsub -b y -pe local %s sleep 15m && sleep infinity", Integer.parseInt(cpu) + 1))
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())

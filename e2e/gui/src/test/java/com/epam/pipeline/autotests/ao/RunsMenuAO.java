@@ -125,8 +125,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public LogAO showLog(String runId) {
         sleep(1, SECONDS);
         show(runId);
-        sleep(3, SECONDS);
-        if ($(byClassName("log__run-title")).$(withText("Run")).exists()) {
+        if ($(byClassName("log__run-title")).$(withText("Run"))
+                .waitUntil(appears, DEFAULT_TIMEOUT).exists()) {
             return new LogAO();
         }
         show(runId);

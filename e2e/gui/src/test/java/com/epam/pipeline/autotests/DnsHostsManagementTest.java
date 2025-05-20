@@ -55,8 +55,6 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
     @AfterMethod(alwaysRun = true)
     public void logoutUser() {
         open(C.ROOT_ADDRESS);
-        logoutIfNeeded();
-        loginAs(admin);
     }
 
     @Test
