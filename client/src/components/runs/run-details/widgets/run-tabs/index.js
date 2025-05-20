@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Menu} from 'antd';
+import {Button, Icon, Menu} from 'antd';
 import styles from './run-tabs.css';
 
 function RunTabs (props) {
@@ -10,7 +10,8 @@ function RunTabs (props) {
     style,
     tab: currentTab,
     onTabChange,
-    tabs = []
+    tabs = [],
+    run
   } = props;
   if (tabs.length < 2) {
     return null;
@@ -37,6 +38,11 @@ function RunTabs (props) {
               <div className={styles.runTabsMenuItem}>
                 {tab.icon}
                 <span>{tab.title}</span>
+                {tab.action && (
+                  <div style={{display: 'inline-flex', alignItems: 'center', marginLeft: 10}}>
+                    {typeof tab.action === 'function' ? tab.action({run}) : tab.action}
+                  </div>
+                )}
               </div>
             </Menu.Item>
           ))

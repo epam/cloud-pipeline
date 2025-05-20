@@ -57,15 +57,6 @@ class MLFlowEngine extends React.Component {
     return tags[cpMlFlowExperimentIdTagName];
   }
 
-  get runUuid () {
-    const {run = {}} = this.props;
-    const {tags = {}} = run;
-    const {
-      cp_mlflow_run_uuid_tag_name: cpMlFlowRunUuidTagName = 'CP_MLFLOW_RUN_UUID'
-    } = this.uiMlflowSettings ?? {};
-    return tags[cpMlFlowRunUuidTagName];
-  }
-
   @computed
   get uiMlflowSettings () {
     const {preferences} = this.props;
@@ -103,7 +94,6 @@ class MLFlowEngine extends React.Component {
             : <span>Error deploying model</span>,
           5
         );
-        this.setState({deployModel: {runId: 123}});
       } else if (messageType === 'model-deploy-confirm' && confirmation) {
         const {
           id
@@ -181,19 +171,19 @@ class MLFlowEngine extends React.Component {
   render () {
     const {
       className,
-      style
+      style,
+      run
     } = this.props;
+    const {id: cpRunId} = run || {};
     const {
       uiMlflowSettings = {},
-      experimentId,
-      runUuid
+      experimentId
     } = this;
     const {
       mlflow_base: mlFlowBase
     } = uiMlflowSettings;
     const {
-      deployModel,
-      confirmation
+      deployModel
     } = this.state;
     const {
       runId
@@ -214,7 +204,7 @@ class MLFlowEngine extends React.Component {
         </div>
       );
     }
-    if (!experimentId || !runUuid) {
+    if (!experimentId) {
       return (
         <div className={classNames(className, styles.mlflowEngineContainer)} style={style}>
           <div className={styles.centered}>
@@ -227,7 +217,7 @@ class MLFlowEngine extends React.Component {
         </div>
       );
     }
-    const mlflowUrl = `${mlFlowBase}#/embedded/experiments/${experimentId}/runs/${runUuid}`;
+    const mlflowUrl = `${mlFlowBase}#/embedded/cp/${cpRunId}`;
     return (
       <div className={classNames(className, styles.mlflowEngineContainer)} style={style}>
         {mlflowUrl && (

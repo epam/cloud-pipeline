@@ -8,7 +8,9 @@ import Reports from '../../sections/reports';
 import RunLogsSection from '../../sections/logs';
 import RunLaunchCommandSection from '../../sections/launch-command';
 import InitializeWrapper from '../../sections/common/initialize-wrapper';
-import preferencesStore from "../../../../../models/preferences/PreferencesLoad";
+import preferencesStore from '../../../../../models/preferences/PreferencesLoad';
+import {inject, observer} from 'mobx-react';
+import styles from '../run-header/run-endpoints/run-endpoints.css';
 
 const iconStyle = {fontSize: '1.1rem'};
 
@@ -30,10 +32,37 @@ export const nextflowTasksTab = {
   )
 };
 
+function NavigateToMlFlowActionRenderer ({run, preferences}) {
+  const {id} = run || {};
+  const {mlflow_base: mlFlowBase} = preferences.uiMlflowSettings || {};
+  const mlflowEndpoint = (() => {
+    if (id && mlFlowBase) {
+      return `${mlFlowBase}#/cp/${id}`;
+    }
+    return undefined;
+  })();
+  if (mlflowEndpoint) {
+    const onClick = (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      window.open(mlflowEndpoint, '_blank');
+    };
+    return (
+      <Icon type="export" style={{fontSize: 'large', 'cursor': 'pointer'}} onClick={onClick} />
+    );
+  }
+  return null;
+}
+
+const NavigateToMlFlowAction = inject('preferences')(observer(NavigateToMlFlowActionRenderer));
+
 export const mlflowTab = {
   tab: 'mlflow',
   title: 'MLflow',
   noPadding: true,
+  action: ({run}) => (
+    <NavigateToMlFlowAction run={run} />
+  ),
   render: ({run}) => (
     <InitializeWrapper run={run}>
       <MLFlowEngine run={run} />
