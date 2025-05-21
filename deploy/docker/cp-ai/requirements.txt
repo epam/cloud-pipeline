@@ -1,0 +1,14 @@
+fastapi[standard]==0.115.8
+starlette==0.45.3
+python-socketio==5.12.1
+uvicorn==0.34.0
+nest-asyncio==1.6.0
+llama_index==0.12.42
+llama-index-llms-google-genai==0.2.1
+llama-index-embeddings-google-genai==0.2.0
+llama-index-vector-stores-chroma==0.4.2
+python-dotenv==1.0.1
+pydantic==2.10.3
+chromadb==0.6.3
+requests==2.32.4
+pymongo==4.13.0
