@@ -46,6 +46,7 @@
 | [**3971_1**](3971_cloud_region/3971_1.md) | Mount rules: Mount None Storages located in cloud region |
 | [**3971_2**](3971_cloud_region/3971_2.md) | Mount rules: Mount Storages located in the same cloud region with instance |
 | [**3971_3**](3971_cloud_region/3971_3.md) | Mount rules: check Mount Storages located in the certain region via pipe CLI |
+| [**3971_4**](3971_cloud_region/3971_4.md) | Mount rules: check filter storages for cloud region in Launch confirmation |
 | [**783**](783.md) | Check the configure CPU resource |
 | [**913**](913.md) | Add support for autoscaling filesystem for AWS |
 | [**TC-PARAMETERS-1**](TC-PARAMETERS-1.md) | Check the configure allowed instance types |
