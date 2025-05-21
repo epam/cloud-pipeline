@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Input} from 'antd';
 import styles from './input-field.css';
+import {observer} from 'mobx-react';
 
+@observer
 export default class InputDocker extends React.Component {
   render () {
     const {value, onChange, label, disabled} = this.props;
