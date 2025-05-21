@@ -15,7 +15,7 @@
  */
 
 import {observable, computed, action} from 'mobx';
-import {mockStream, sleep} from './mocks';
+import {io} from 'socket.io-client';
 
 let token = 0;
 
@@ -24,9 +24,17 @@ const getToken = () => {
   return token;
 };
 
+export const LAUNCH_PLACEHOLDER_START = '<<<LAUNCH:';
+export const PLACEHOLDER_END = '>>>';
+
+const base = 'https://edge.aws.cloud-pipeline.com/pipeline-74205-7860-0/';
+const socketIOUrl = new URL('socket.io', base);
+
 class ChatEngine {
   @observable _messages = [];
   @observable _pending = false;
+  @observable _socket;
+  @observable _error = '';
 
   @computed
   get messages () {
@@ -34,44 +42,101 @@ class ChatEngine {
   }
 
   @computed
+  get socket () {
+    return this._socket;
+  }
+
+  @computed
   get pending () {
     return this._pending;
   }
 
+  @computed
+  get error () {
+    return this._error;
+  }
+
   @action
-  addMessage = (text, fromUser = false) => {
+  ask = (text) => {
     const message = {
       text,
       id: getToken(),
-      fromUser,
+      fromUser: true,
       pending: false
     };
     this._messages.push(message);
-    if (fromUser) {
-      this.sendUserMessage(message);
+    this.sendUserMessage();
+  };
+
+  @action
+  sendUserMessage = async () => {
+    this._pending = true;
+    const responseMessage = observable({
+      text: '',
+      id: getToken(),
+      fromUser: false,
+      pending: true,
+      error: ''
+    });
+    this._messages.push(responseMessage);
+    try {
+      await this.createChat(responseMessage);
+      this._socket.emit('assistant', {
+        messages: this.messages
+          .filter(message => message !== responseMessage)
+          .map(message => ({
+            content: message.text,
+            role: message.fromUser ? 'user' : 'assistant'
+          }))
+      });
+    } catch (e) {
+      this._pending = false;
+      this._error = e.message;
     }
   };
 
   @action
-  sendUserMessage = async (message) => {
-    this._pending = true;
-    const id = getToken();
-    const responseMessage = observable({
-      text: '',
-      id,
-      fromUser: false,
-      pending: true
-    });
-    this._messages.push(responseMessage);
-    await sleep(1500);
-    responseMessage.pending = false;
-    await mockStream(message, (chunk, finished) => {
-      responseMessage.text += ` ${chunk}`;
-      // if (finished) {
-      //   responseMessage.pending = false;
-      // }
-    });
+  onDone = () => {
     this._pending = false;
+    if (this._socket) {
+      this._socket.close();
+    }
+  };
+
+  @action
+  onChunk = (responseMessage) => {
+    let prevChunk = '';
+    let temp = '';
+    let streamingPaused = false;
+    const hasPlaceholders = (text) => {
+      return text.includes(LAUNCH_PLACEHOLDER_START);
+    };
+    return (chunk = '') => {
+      if (responseMessage.pending) {
+        responseMessage.pending = false;
+      }
+      if (streamingPaused || hasPlaceholders(prevChunk.concat(chunk))) {
+        streamingPaused = true;
+        temp += chunk;
+        if (chunk.includes(PLACEHOLDER_END) || temp.includes(PLACEHOLDER_END)) {
+          streamingPaused = false;
+          responseMessage.text += temp;
+          temp = '';
+          return;
+        }
+      } else {
+        responseMessage.text += chunk;
+      }
+      prevChunk = chunk;
+    };
+  };
+
+  @action
+  onError = (responseMessage) => (error = '') => {
+    if (responseMessage.pending) {
+      responseMessage.pending = false;
+    }
+    responseMessage.error = error;
   };
 
   @action
@@ -79,6 +144,43 @@ class ChatEngine {
     this._messages = [];
     this._pending = false;
     token = 0;
+    if (this._socket) {
+      this._socket.close();
+      this._socket = null;
+    }
+  }
+
+  createChat = async (responseMessage) => {
+    const waitUntilConnect = () => new Promise((resolve, reject) => {
+      const errorGenerator = (socketError) => () => {
+        reject(new Error(socketError));
+      };
+      this._socket.on('connect', resolve);
+      const onConnectError = errorGenerator('socket connect error');
+      const onDisconnect = errorGenerator('socket disconnected');
+      this._socket.on('connect_error', onConnectError);
+      this._socket.on('disconnect', onDisconnect);
+    });
+    try {
+      if (this._socket) {
+        this._socket.close();
+      }
+      this._socket = io(socketIOUrl.origin, {
+        withCredentials: true,
+        // secure: true,
+        path: socketIOUrl.pathname,
+        transports: ['websocket']
+      });
+      await waitUntilConnect();
+      this._socket.on('done', this.onDone);
+      this._socket.on('error', this.onError(responseMessage));
+      this._socket.on('chunk', this.onChunk(responseMessage));
+      this._socket.on('disconnect', this.onDone);
+    } catch (e) {
+      this._error = e.message;
+      this._socket && this._socket.close();
+      console.error('Error creating chat:', e);
+    }
   }
 }
 

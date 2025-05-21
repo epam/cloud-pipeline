@@ -16,12 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import styles from './message.css';
 import {TypingIndicator} from '../index';
 import LaunchForm from '../launch-form/launch-form';
 import Markdown from '../../../special/markdown';
+import {processMessage} from './message-utils';
+import styles from './message.css';
 
 const mockData = {
   toolId: 123,
@@ -54,29 +56,62 @@ export default class Message extends React.Component {
   state = {
     parameters: mockData.parameters
   };
+
+  @computed
+  get message () {
+    return this.props.message
+      ? processMessage(this.props.message)
+      : undefined;
+  }
+
+  @computed
+  get pending () {
+    return this.props.message.pending;
+  }
+
   renderContent = () => {
-    const {message} = this.props;
-    if (message.fromUser) {
-      return <span style={{whiteSpace: 'pre-line'}}>{message.text}</span>;
+    if (this.message.fromUser) {
+      return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
     }
-    return <Markdown md={message.text} />;
-    // return <LaunchForm mockData={mockData} />;
+    if (this.message.parts.length > 0) {
+      return (
+        <div>
+          {this.message.parts.map((part, index) => {
+            if (part.isText && part.value) {
+              return <Markdown key={index} md={part.value} />;
+            }
+            if (part.isPayload) {
+              return (
+                <LaunchForm
+                  key={index}
+                  mockData={mockData}
+                />
+              );
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+    return (
+      <Markdown md={this.message.text} />
+    );
   };
+
   render () {
-    const {message} = this.props;
     return (
       <div
         style={this.props.style}
         className={classNames(
           'cp-panel', {
-            [styles.messageFromUser]: message.fromUser,
-            [styles.messageFromChat]: !message.fromUser,
-            'table-element-selected-background-color-important': message.fromUser,
-            [styles.messagePendingChat]: message.pending && !message.fromUser
+            [styles.messageFromUser]: this.message.fromUser,
+            [styles.messageFromChat]: !this.message.fromUser,
+            'table-element-selected-background-color-important': this.message.fromUser,
+            [styles.messagePendingChat]: this.message.pending && !this.message.fromUser
           }
         )}
       >
-        {message.pending ? (
+        {this.pending ? (
           <TypingIndicator className={classNames(
             'cp-not-important',
             styles.typingIndicator

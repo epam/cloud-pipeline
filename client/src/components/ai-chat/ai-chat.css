@@ -61,7 +61,7 @@
   gap: 10px;
   width: 100%;
   max-width: 1200px;
-  height: 100%;
+  min-height: 100%;
   margin: 0 auto;
   /* margin-bottom: 15px;
   padding-bottom: 30px; */

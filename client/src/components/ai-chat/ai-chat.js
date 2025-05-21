@@ -70,6 +70,13 @@ export default class AIChat extends React.Component {
       : undefined;
   };
 
+  get scrollContainerHeight () {
+    if (!this.scrollContainerRef) {
+      return 0;
+    }
+    return this.scrollContainerRef.clientHeight;
+  }
+
   onChangeUserInput = (event) => {
     if (this.chat.pending) {
       return;
@@ -82,7 +89,7 @@ export default class AIChat extends React.Component {
     if (this.chat.pending || event.shiftKey || !userInput) {
       return;
     }
-    this.chat.addMessage(userInput, true);
+    this.chat.ask(userInput);
     this.setState({userInput: ''}, () => {
       const lastUserMessage = this.chat.messages
         .findLast(message => message.fromUser);
@@ -160,8 +167,11 @@ export default class AIChat extends React.Component {
                   key={message.id}
                   style={{
                     minHeight: index === this.chat.messages.length - 1
-                      ? 'calc(100% - 60px)'
-                      : 'auto'
+                      ? `calc(${this.scrollContainerHeight}px - 100px)`
+                      : 'auto',
+                    marginBottom: index === this.chat.messages.length - 1
+                      ? '40px'
+                      : 0
                   }}
                   data-id={message.id}
                 >

@@ -45,22 +45,22 @@ export default class LaunchForm extends React.Component {
 
 LaunchForm.propTypes = {
   mockData: PropTypes.shape({
-    toolId: PropTypes.number.isRequired,
-    pipelineId: PropTypes.number.isRequired,
-    configurationName: PropTypes.string.isRequired,
-    version: PropTypes.string.isRequired,
-    image: PropTypes.string.isRequired,
-    registry: PropTypes.string.isRequired,
-    dockerImage: PropTypes.string.isRequired,
-    instanceType: PropTypes.string.isRequired,
-    disk: PropTypes.number.isRequired,
-    is_spot: PropTypes.bool.isRequired,
-    description: PropTypes.string.isRequired,
+    toolId: PropTypes.number,
+    pipelineId: PropTypes.number,
+    configurationName: PropTypes.string,
+    version: PropTypes.string,
+    image: PropTypes.string,
+    registry: PropTypes.string,
+    dockerImage: PropTypes.string,
+    instanceType: PropTypes.string,
+    disk: PropTypes.number,
+    is_spot: PropTypes.bool,
+    description: PropTypes.string,
     parameters: PropTypes.objectOf(
       PropTypes.shape({
-        type: PropTypes.string.isRequired,
-        value: PropTypes.any.isRequired
+        type: PropTypes.string,
+        value: PropTypes.any
       })
-    ).isRequired
-  }).isRequired
+    )
+  })
 };
