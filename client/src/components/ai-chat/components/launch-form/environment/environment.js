@@ -78,8 +78,8 @@ export default class Environment extends React.Component {
             placeholder="Choose"
           />
           <SelectField
-            label="Price type"
             value={selectedPriceType}
+            label="Price type"
             options={mockData.optionsSelect}
             onChange={(value) => this.handleChange('selectedPriceType', value)}
             placeholder="Choose"
