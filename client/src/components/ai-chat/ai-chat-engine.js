@@ -16,6 +16,7 @@
 
 import {observable, computed, action} from 'mobx';
 import {io} from 'socket.io-client';
+import {LAUNCH_PLACEHOLDER_START, PLACEHOLDER_END} from './components/message/message-utils';
 
 let token = 0;
 
@@ -23,9 +24,6 @@ const getToken = () => {
   token += 1;
   return token;
 };
-
-export const LAUNCH_PLACEHOLDER_START = '<<<LAUNCH:';
-export const PLACEHOLDER_END = '>>>';
 
 const base = 'https://edge.aws.cloud-pipeline.com/pipeline-74205-7860-0/';
 const socketIOUrl = new URL('socket.io', base);
