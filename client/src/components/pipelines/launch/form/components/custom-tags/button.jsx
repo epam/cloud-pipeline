@@ -12,7 +12,8 @@ function CustomTagsButton (props) {
     disabled,
     tags,
     onClick,
-    buttonText = 'Configure tags'
+    buttonText = 'Configure tags',
+    validation = []
   } = props;
 
   let component = (
@@ -34,16 +35,35 @@ function CustomTagsButton (props) {
     );
   }
 
+  const valid = !validation || validation.length === 0;
+
+  const validationComponent = (() => {
+    if (validation && validation.length > 0) {
+      const count = validation.length;
+      return (<span className={classNames(styles.uiRunTagsValidation, 'cp-error')}>
+        {count} tag{count === 1 ? ' is' : 's are'} required
+      </span>);
+    }
+    return null;
+  })();
+
   if (disabled) {
     return (
-      <span className={classNames(className, styles.link, 'cp-text')} style={style}>
+      <span
+        className={classNames(className, styles.link, {'cp-text': valid, 'cp-error': !valid})}
+        style={style}>
         {component}
+        {validationComponent}
       </span>
     );
   }
   return (
-    <a className={classNames(className, styles.link, 'cp-text')} style={style} onClick={onClick}>
+    <a
+      className={classNames(className, styles.link, {'cp-text': valid, 'cp-error': !valid})}
+      style={style}
+      onClick={onClick}>
       {component}
+      {validationComponent}
     </a>
   );
 }
@@ -53,6 +73,8 @@ CustomTagsButton.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   tags: PropTypes.object,
+  validation: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
+  payload: PropTypes.object,
   onClick: PropTypes.func,
   buttonText: PropTypes.node
 };

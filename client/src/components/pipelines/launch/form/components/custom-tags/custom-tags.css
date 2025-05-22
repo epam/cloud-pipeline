@@ -9,7 +9,8 @@
 
 .ui-run-tag {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  line-height: 24px;
 }
 
 .ui-run-tag .title {
@@ -19,4 +20,16 @@
 
 .ui-run-tag .value {
   flex: 1;
+}
+
+.ui-run-tag .value .value-input {
+  width: 100%;
+}
+
+.ui-run-tag .validation-error {
+  font-size: smaller;
+}
+
+.ui-run-tags-validation {
+  margin-left: 10px;
 }

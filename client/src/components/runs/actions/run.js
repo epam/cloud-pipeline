@@ -73,11 +73,12 @@ import {
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
 import RunModal from '../../main/RunModal';
 import checkToolVersionErrors from '../utilities/check-tool-version-errors';
-import CustomTagsControl from "../../pipelines/launch/form/components/custom-tags/control";
-import RunPayloadEstimatedPriceAlert from "./run-payload-estimated-price-alert";
+import CustomTagsControl from '../../pipelines/launch/form/components/custom-tags/control';
+import RunPayloadEstimatedPriceAlert from './run-payload-estimated-price-alert';
 import {
   getAllowedStoragesForCloudRegion
 } from '../../../utils/limit-mounts/check-cloud-region-rules';
+import {getUserTagsValidationResult} from '../run-tags/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -512,6 +513,11 @@ function runFn (
               message.error(error, 5);
               return Promise.reject(new Error(error));
             }
+            if (component.state.tagsValidation && component.state.tagsValidation.length > 0) {
+              const error = 'You need to specify required tags';
+              message.error(error, 5);
+              return Promise.reject(new Error(error));
+            }
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
@@ -637,6 +643,8 @@ export class RunConfirmation extends React.Component {
     onChangeRunCapabilities: PropTypes.func,
     showRunCapabilities: PropTypes.bool,
     tags: PropTypes.object,
+    tagsPayload: PropTypes.object,
+    tagsValidation: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
     onChangeTags: PropTypes.func,
     pipelineId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     pipelineVersion: PropTypes.string,
@@ -1271,6 +1279,8 @@ export class RunConfirmation extends React.Component {
         >
           <CustomTagsControl
             tags={this.props.tags}
+            payload={this.props.tagsPayload}
+            validation={this.props.tagsValidation}
             onChange={this.props.onChangeTags}
           />
         </div>
@@ -1376,7 +1386,9 @@ class RunSpotConfirmationWithPrice extends React.Component {
     limitMounts: null,
     runNameAlias: null,
     runCapabilities: null,
-    tags: {}
+    tags: {},
+    tagsPayload: {},
+    tagsValidation: []
   };
 
   get runCapabilitiesError () {
@@ -1389,16 +1401,58 @@ class RunSpotConfirmationWithPrice extends React.Component {
     return false;
   }
 
+  getUserTagsLaunchPayload () {
+    const {
+      parameters,
+      dockerImage,
+      nodeCount
+    } = this.props;
+    const {
+      instanceType
+    } = this.state;
+    return {
+      dockerImage,
+      instanceType,
+      nodeCount,
+      params: parameters
+    };
+  }
+
+  updateUserTagsValidationInfo = async () => {
+    const info = await this.getUserTagsValidationInfo();
+    const {
+      validation = [],
+      payload
+    } = info || {};
+    this.setState({
+      tagsValidation: validation,
+      tagsPayload: payload
+    });
+  };
+
+  getUserTagsValidationInfo = async () => {
+    const {tags} = this.state;
+    const payload = this.getUserTagsLaunchPayload();
+    if (payload) {
+      const validation = await getUserTagsValidationResult(tags, {launchPayload: payload});
+      return {
+        validation,
+        payload
+      };
+    }
+    return undefined;
+  };
+
   onChangeSpotType = (isSpot) => {
     this.setState({
       isSpot
-    });
+    }, this.updateUserTagsValidationInfo);
   };
 
   onChangeInstanceType = (instanceType) => {
     this.setState({
       instanceType
-    });
+    }, this.updateUserTagsValidationInfo);
   };
 
   onChangeLimitMounts = (limitMounts) => {
@@ -1406,24 +1460,34 @@ class RunSpotConfirmationWithPrice extends React.Component {
       limitMounts
     }, async () => {
       this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(limitMounts);
+      await this.updateUserTagsValidationInfo();
     });
   };
 
   onChangeHddSize = (hddSize) => {
     this.setState({
       hddSize
-    });
+    }, this.updateUserTagsValidationInfo);
   };
 
   onChangeRunNameAlias = (alias) => {
-    this.setState({runNameAlias: alias});
+    this.setState(
+      {runNameAlias: alias},
+      this.updateUserTagsValidationInfo
+    );
   };
 
   onChangeRunCapabilities = (capabilities) => {
-    this.setState({runCapabilities: (capabilities || []).slice()});
+    this.setState(
+      {runCapabilities: (capabilities || []).slice()},
+      this.updateUserTagsValidationInfo
+    );
   };
 
-  onChangeTags = (tags) => this.setState({tags});
+  onChangeTags = (tags) => this.setState(
+    {tags},
+    this.updateUserTagsValidationInfo
+  );
 
   renderModalTitle = () => {
     const {
@@ -1509,6 +1573,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
             dockerRegistries={this.props.dockerRegistries}
             usersInfo={this.props.usersInfo}
             tags={this.state.tags}
+            tagsPayload={this.state.tagsPayload}
+            tagsValidation={this.state.tagsValidation}
             onChangeTags={this.onChangeTags}
             pipelineId={this.props.pipelineId}
             pipelineVersion={this.props.pipelineVersion}
@@ -1551,7 +1617,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
       hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts,
       runCapabilities: getEnabledCapabilities(this.props.parameters),
-      tags: this.props.tags || {},
-    });
+      tags: this.props.tags || {}
+    }, this.updateUserTagsValidationInfo);
   }
 }
