@@ -145,6 +145,7 @@ import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import CustomTagsControl from './components/custom-tags/control';
+import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -263,6 +264,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   state = {
     userTags: {},
+    userTagsValidation: [],
+    userTagsValidationPayload: undefined,
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -419,71 +422,106 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable rescheduleRunInitialValue = undefined;
 
   @action
-  formFieldsChanged = async () => {
-    const {form, parameters} = this.props;
-    const formParameters = form.getFieldValue(PARAMETERS);
-    const formParametersCorrected = parameterUtilities.correctFormFieldValues(formParameters);
-    if (formParametersCorrected) {
-      form.setFieldsValue({
-        [PARAMETERS]: formParameters
-      });
-    }
-    this.inputPaths = getInputPaths(
-      formParameters,
-      (parameters || {}).parameters
-    );
-    this.outputPaths = getOutputPaths(
-      formParameters,
-      (parameters || {}).parameters
-    );
-    const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
-    if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
-      if (currentDockerImage) {
-        await this.loadToolSettings(currentDockerImage);
-        const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
-        const regionId = this.correctCloudRegion(
-          currentValue ||
-          this.defaultCloudRegionId
+  formFieldsChanged = () => {
+    const token = this.__formFieldsChangedToken = {};
+    class FormFieldChangedAbortedError extends Error {}
+    const checkIfNotAborted = () => {
+      if (token !== this.__formFieldsChangedToken) {
+        throw new FormFieldChangedAbortedError();
+      }
+    };
+    clearTimeout(this.__formFieldsChangedTimeout);
+    this.__formFieldsChangedTimeout = setTimeout(async () => {
+      try {
+        checkIfNotAborted();
+        const {form, parameters} = this.props;
+        const formParameters = form.getFieldValue(PARAMETERS);
+        const formParametersCorrected = parameterUtilities.correctFormFieldValues(formParameters);
+        if (formParametersCorrected) {
+          form.setFieldsValue({
+            [PARAMETERS]: formParameters
+          });
+        }
+        this.inputPaths = getInputPaths(
+          formParameters,
+          (parameters || {}).parameters
         );
-        this.props.form.setFieldsValue({
-          [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+        this.outputPaths = getOutputPaths(
+          formParameters,
+          (parameters || {}).parameters
+        );
+        const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
+        if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
+          if (currentDockerImage) {
+            await this.loadToolSettings(currentDockerImage);
+            checkIfNotAborted();
+            const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+            const regionId = this.correctCloudRegion(
+              currentValue ||
+              this.defaultCloudRegionId
+            );
+            this.props.form.setFieldsValue({
+              [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+            });
+          } else {
+            this.resetToolSettings();
+          }
+        }
+        this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
+        this.modified = checkModifiedState(
+          this.props,
+          this.state,
+          {
+            defaultCloudRegionId: this.defaultCloudRegionId,
+            execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
+            spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
+            cmdTemplateValue: this.cmdTemplateValue,
+            toolDefaultCmd: this.toolDefaultCmd
+          }
+        );
+        this.props.onModified && this.props.onModified(this.modified);
+        await this.rebuildLaunchCommand();
+        checkIfNotAborted();
+        const validateFields = async () => new Promise((resolve) => {
+          const onValidationChange = (formInvalid, values) => {
+            resolve({values, errors: formInvalid});
+          };
+          if (this.forceValidation) {
+            this.forceValidation = false;
+            this.props.form.validateFields({force: true}, onValidationChange);
+          } else {
+            this.props.form.validateFields(onValidationChange);
+          }
         });
-      } else {
-        this.resetToolSettings();
+        const {values} = await validateFields();
+        checkIfNotAborted();
+        const payload = values ? this.generateLaunchPayload(values) : undefined;
+        await this.validateUserTags(payload);
+      } catch (error) {
+        if (error instanceof FormFieldChangedAbortedError) {
+          // noop
+        } else {
+          console.log(error);
+        }
       }
-    }
-    this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
-    this.modified = checkModifiedState(
-      this.props,
-      this.state,
-      {
-        defaultCloudRegionId: this.defaultCloudRegionId,
-        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
-        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue,
-        toolDefaultCmd: this.toolDefaultCmd
-      }
-    );
-    this.props.onModified && this.props.onModified(this.modified);
-    this.rebuildLaunchCommand();
-    if (this.forceValidation) {
-      this.forceValidation = false;
-      this.props.form.validateFields(undefined, {force: true}, () => {});
-    } else {
-      this.props.form.validateFields();
-    }
+    }, 0);
   };
 
-  rebuildLaunchCommand = () => {
-    if (!this.props.detached && !this.props.editConfigurationMode) {
-      this.props.form.validateFields(async (err, values) => {
-        if (!err && this.validateFireCloudConnections()) {
-          this.launchCommandPayload = this.generateLaunchPayload(values);
-        } else {
-          this.launchCommandPayload = undefined;
-        }
-      });
-    }
+  rebuildLaunchCommand = async () => {
+    return new Promise((resolve) => {
+      if (!this.props.detached && !this.props.editConfigurationMode) {
+        this.props.form.validateFields(async (err, values) => {
+          if (!err && this.validateFireCloudConnections()) {
+            this.launchCommandPayload = this.generateLaunchPayload(values);
+          } else {
+            this.launchCommandPayload = undefined;
+          }
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
   };
 
   showLaunchCommands = () => {
@@ -743,9 +781,84 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
+  expandErroredPanels = (errorKeys, scroll = true) => {
+    const {openedPanels} = this.state;
+    const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
+    const wrongFields = [];
+    const extractFields = (section) => {
+      if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
+        for (let key in errorKeys[section]) {
+          if (errorKeys[section].hasOwnProperty(key)) {
+            wrongFields.push(key.replace(/\./g, '_'));
+          }
+        }
+      } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
+        for (let key in errorKeys[section].params) {
+          if (errorKeys[section].params.hasOwnProperty(key)) {
+            wrongFields.push(key.replace(/\./g, '_'));
+          }
+        }
+      }
+    };
+    for (let key in errorKeys) {
+      if (errorKeys.hasOwnProperty(key)) {
+        extractFields(key);
+        if (openedPanels.indexOf(getPanelKey(key)) === -1) {
+          openedPanels.push(getPanelKey(key));
+        }
+      }
+    }
+    this.setState({
+      openedPanels
+    }, () => {
+      if (wrongFields.length > 0 && scroll) {
+        const scrollToWrongField = () => {
+          const element = document.querySelector(`.${wrongFields[0]}`);
+          const layout = document.querySelector(`.${styles.layout}`);
+          if (layout && element) {
+            // For detached configuration & pipeline configuration scrolling:
+            element.scrollIntoView({behavior: 'smooth'});
+            layout.scrollIntoView({behavior: 'smooth'});
+            if (layout.parentElement) {
+              layout.parentElement.scrollIntoView({behavior: 'smooth'});
+            }
+          }
+        };
+        const TIMEOUT_MS = 500;
+        setTimeout(scrollToWrongField, TIMEOUT_MS);
+      }
+    });
+  };
+
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFields(async (err, values) => {
+
+    const mergeErrors = (...errors) => {
+      const filtered = errors.filter(Boolean);
+      if (filtered.length === 0) {
+        return undefined;
+      }
+      if (filtered.length === 1) {
+        return filtered[0];
+      }
+      const [first, second, ...rest] = filtered;
+      const merged = [
+        ...new Set(Object.keys(first).concat(Object.keys(second)))
+      ].reduce((acc, cur) => ({
+        ...acc,
+        [cur]: {
+          ...(first[cur] || {}),
+          ...(second[cur] || {})
+        }
+      }), []);
+      return mergeErrors(merged, ...rest);
+    };
+
+    this.props.form.validateFields(async (errors, values) => {
+      const userTagsValid = await this.validateUserTags(this.generateLaunchPayload(values));
+      const err = mergeErrors(errors, userTagsValid ? undefined : {
+        [ADVANCED]: {customTags: false}
+      });
       if (!err && this.validateFireCloudConnections()) {
         let payload;
         if (this.props.editConfigurationMode) {
@@ -768,53 +881,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         }
       } else {
-        const openedPanels = this.state.openedPanels;
-        const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
-        const wrongFields = [];
-        const extractFields = (section) => {
-          if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
-            for (let key in err[section]) {
-              if (err[section].hasOwnProperty(key)) {
-                wrongFields.push(key.replace(/\./g, '_'));
-              }
-            }
-          } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
-            for (let key in err[section].params) {
-              if (err[section].params.hasOwnProperty(key)) {
-                wrongFields.push(key.replace(/\./g, '_'));
-              }
-            }
-          }
-        };
-        for (let key in err) {
-          if (err.hasOwnProperty(key)) {
-            extractFields(key);
-            if (openedPanels.indexOf(getPanelKey(key)) === -1) {
-              openedPanels.push(getPanelKey(key));
-            }
-          }
-        }
-        this.setState({
-          openedPanels
-        }, () => {
-          if (wrongFields.length > 0) {
-            const scrollToWrongField = () => {
-              const element = document.querySelector(`.${wrongFields[0]}`);
-              const layout = document.querySelector(`.${styles.layout}`);
-              const scrollableParent = layout.parentElement.parentElement;
-              if (scrollableParent && element) {
-                // For detached configuration & pipeline configuration scrolling:
-                scrollableParent.scrollTo({left: 0, top: element.offsetTop});
-                if (scrollableParent.parentElement) {
-                  // For launch form scrolling:
-                  scrollableParent.parentElement.scrollTo({left: 0, top: element.offsetTop});
-                }
-              }
-            };
-            const TIMEOUT_MS = 500;
-            setTimeout(scrollToWrongField, TIMEOUT_MS);
-          }
-        });
+        this.expandErroredPanels(err);
       }
     });
   };
@@ -2796,6 +2863,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return false;
   };
 
+  validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
+    let result = [];
+    if (
+      !this.props.detached &&
+      !this.props.isDetachedConfiguration &&
+      !this.props.editConfigurationMode
+    ) {
+      const {userTags} = this.state;
+      result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
+    }
+    this.setState({
+      userTagsValidation: result,
+      userTagsValidationPayload: payload,
+    }, () => {
+      resolve(!result || result.length === 0);
+    });
+  });
+
   @computed
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
@@ -4499,6 +4584,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
+    const {
+      userTags,
+      userTagsValidation = [],
+      userTagsValidationPayload,
+    } = this.state;
 
     return (
       <FormItem
@@ -4507,7 +4597,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         label="Tags"
       >
         <CustomTagsControl
-          tags={this.state.userTags}
+          tags={userTags}
+          validation={userTagsValidation}
+          payload={userTagsValidationPayload}
           onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
           buttonText="Configure"
         />
@@ -5802,6 +5894,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         fireCloudDefaultOutputs: []
       });
     }
+  }
+
+  componentWillUnmount () {
+    this.__formFieldsChangedToken = {};
+    clearTimeout(this.__formFieldsChangedTimeout);
   }
 }
 

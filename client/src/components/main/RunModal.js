@@ -47,11 +47,18 @@ export default class RunModal extends Component {
     const {onOk} = this.state.opts || {};
     if (onOk && typeof onOk === 'function') {
       this.setState({loading: true}, async () => {
-        await onOk();
-        this.setState({
-          loading: false,
-          visible: false
-        });
+        try {
+          await onOk();
+          this.setState({
+            loading: false,
+            visible: false
+          });
+        } catch {
+          // noop
+          this.setState({
+            loading: false
+          });
+        }
       });
       return;
     }
