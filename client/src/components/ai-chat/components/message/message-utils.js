@@ -14,29 +14,80 @@
  * limitations under the License.
  */
 
-import {LAUNCH_PLACEHOLDER_START, PLACEHOLDER_END} from '../../ai-chat-engine';
+export const LAUNCH_PLACEHOLDER_START = '<<<LAUNCH:';
+export const PLACEHOLDER_END = '>>>';
+
+function extractJSON (message, regexp) {
+  try {
+    const matches = regexp.exec(message.text);
+    if (matches && matches[1]?.length) {
+      return {
+        text: matches[0],
+        payload: JSON.parse(matches[1].trim())
+      };
+    }
+  } catch (e) {
+    console.error('Error parsing message payload:', e);
+    return null;
+  }
+}
+
+function extractPlainJSON (message) {
+  const launchIndex = message.text.indexOf('LAUNCH:');
+  if (launchIndex === -1) {
+    return null;
+  }
+  const jsonStart = message.text.indexOf('{', launchIndex);
+  const jsonEnd = message.text.lastIndexOf('}');
+  if (jsonStart < 0 || jsonEnd < 0) {
+    return null;
+  }
+  const substring = message.text.slice(jsonStart, jsonEnd + 1);
+  let json;
+  try {
+    json = JSON.parse(substring);
+  } catch (e) {}
+  if (json) {
+    return {
+      text: message.text.slice(launchIndex, jsonEnd + 1),
+      payload: json
+    };
+  }
+  return null;
+}
+
+function extractJsonFromText (message) {
+  let payload;
+  const variants = [
+    new RegExp(`\`\`\`\\s*${LAUNCH_PLACEHOLDER_START}(.*?)${PLACEHOLDER_END}\\s*\`\`\``, 'gi'),
+    new RegExp(`${LAUNCH_PLACEHOLDER_START}(.*?)${PLACEHOLDER_END}`, 'gi')
+  ];
+  payload = variants
+    .map((regexp) => extractJSON(message, regexp))
+    .filter(Boolean)[0];
+  if (!payload) {
+    payload = extractPlainJSON(message);
+  }
+  return payload;
+}
 
 export function processMessage (message) {
   if (message.fromUser) {
     return message;
   }
-  let payload;
-  let parts = [];
-  const regexp = new RegExp(`${LAUNCH_PLACEHOLDER_START}(.*?)${PLACEHOLDER_END}`, 'gi');
-  try {
-    const matches = regexp.exec(message.text);
-    if (matches && matches[1]?.length) {
-      payload = JSON.parse(matches[1].trim());
-      const textParts = message.text.split(matches[0]);
-      parts = [
-        {isText: true, value: textParts[0]},
-        {isPayload: true, value: payload},
-        {isText: true, value: textParts[1]}
+  const {text, payload} = extractJsonFromText(message) || {};
+  if (!payload) {
+    return {...message, parts: []};
+  }
+  const textParts = message.text.split(text);
+  const parts = textParts.flatMap((part, index) => {
+    if (textParts.length > 1 && index === 0) {
+      return [
+        {isText: true, value: part},
+        {isPayload: true, value: payload}
       ];
     }
-  } catch (e) {
-    console.error('Error parsing message payload:', e);
-    return message;
-  }
+    return [{isText: true, value: part}];
+  });
   return {...message, parts};
 }

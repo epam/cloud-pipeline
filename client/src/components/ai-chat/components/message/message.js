@@ -64,8 +64,7 @@ export default class Message extends React.Component {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
     }
-
-    if (this.message.parts.length > 0) {
+    if (this.message.parts?.length > 0) {
       return (
         <div>
           {this.message.parts.map((part, index) => {
@@ -73,8 +72,6 @@ export default class Message extends React.Component {
               return <Markdown key={index} md={part.value} />;
             }
             if (part.isPayload) {
-              console.log(part.value);
-
               return (
                 <LaunchForm
                   key={index}
