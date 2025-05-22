@@ -1,88 +1,68 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {TitleSection, InputDocker, SelectField} from '../index';
+import {TitleSection, InputField, SelectField} from '../index';
 import styles from './environment.css';
-import LaunchFormStore from '../launch-form-store';
 
 @observer
 export default class Environment extends React.Component {
-  constructor (props) {
-    super(props);
-    this.formStore = new LaunchFormStore();
-  }
-
-  componentDidMount () {
-    const {mockData} = this.props;
-    this.formStore.updateField('inputDocker', mockData.registry);
-  }
-
   handleChange = (field, value) => {
-    const actionMap = {
-      selectedInstance: 'selectedInstance',
-      selectedDisk: 'selectedDisk',
-      selectedPriceType: 'selectedPriceType',
-    };
+    const {formStore} = this.props;
 
-    const key = actionMap[field];
-
-    if (key) {
-      this.formStore.updateField(key, value);
+    if (field === 'is_spot') {
+      formStore.updateField('is_spot', value === 'spot'); // true для spot, false для On Demand
     } else {
-      console.error(`Unknown field '${field}'`);
+      formStore.updateField(field, value);
     }
   };
 
   render () {
-    const {mockData} = this.props;
-    const {
-      selectedInstance,
-      selectedDisk,
-      selectedPriceType,
-      inputDocker
-    } = this.formStore;
+    const {formStore, data} = this.props;
 
-    if (!mockData.optionsSelect || mockData.optionsSelect.length === 0) {
-      return (
-        <div className={styles.stripe}>
-          <TitleSection title="Environment" />
-          <div className={styles.errorMessage}>
-            Options for Instance, Disk, and Price Type are missing.
-          </div>
-        </div>
-      );
-    }
+    const {dockerImage, instanceType, disk, is_spot} = formStore;
+
+    const priceOptions = [
+      {value: 'spot', label: 'Spot'},
+      {value: 'On Demand', label: 'On Demand'}
+    ];
+
+    const selectedOption = is_spot ? 'spot' : 'On Demand';
+
+    const instanceOptions = data.optionsSelect || [];
 
     return (
       <div className={styles.stripe}>
         <TitleSection title="Environment" />
-        <InputDocker
+        <InputField
           label="Docker"
-          value={inputDocker}
-          onChange={(value) => this.formStore.updateField('inputDocker', value)}
+          value={dockerImage}
+          onChange={(value) => this.handleChange('dockerImage', value)}
           disabled={false}
         />
         <div className={styles.selectContainer}>
+          {instanceType && (
+            <SelectField
+              label="Instance"
+              value={instanceType}
+              options={instanceOptions}
+              onChange={(value) => this.handleChange('instanceType', value)}
+              placeholder="Choose instance type"
+            />
+          )}
+          {disk && (
+            <InputField
+              label="Disk Size"
+              value={disk}
+              onChange={(value) => this.handleChange('disk', value)}
+              disabled={false}
+            />
+          )}
           <SelectField
-            label="Instance"
-            value={selectedInstance}
-            options={mockData.optionsSelect}
-            onChange={(value) => this.handleChange('selectedInstance', value)}
-            placeholder="Choose"
-          />
-          <SelectField
-            label="Disk, GB"
-            value={selectedDisk}
-            options={mockData.optionsSelect}
-            onChange={(value) => this.handleChange('selectedDisk', value)}
-            placeholder="Choose"
-          />
-          <SelectField
-            value={selectedPriceType}
-            label="Price type"
-            options={mockData.optionsSelect}
-            onChange={(value) => this.handleChange('selectedPriceType', value)}
-            placeholder="Choose"
+            label="Price Type"
+            value={selectedOption}
+            options={priceOptions}
+            onChange={(value) => this.handleChange('is_spot', value)}
+            placeholder="Choose price type"
           />
         </div>
       </div>
@@ -91,8 +71,9 @@ export default class Environment extends React.Component {
 }
 
 Environment.propTypes = {
-  mockData: PropTypes.shape({
-    registry: PropTypes.string.isRequired,
+  formStore: PropTypes.object.isRequired,
+  data: PropTypes.shape({
+    dockerImage: PropTypes.string.isRequired,
     optionsSelect: PropTypes.arrayOf(
       PropTypes.shape({
         value: PropTypes.string.isRequired,

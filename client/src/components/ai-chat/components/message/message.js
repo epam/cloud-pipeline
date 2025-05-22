@@ -25,37 +25,29 @@ import Markdown from '../../../special/markdown';
 import {processMessage} from './message-utils';
 import styles from './message.css';
 
-const mockData = {
-  toolId: 123,
-  pipelineId: 456,
-  configurationName: 'Default Configuration',
-  version: '1.0.0',
-  image: 'tool/image',
-  registry: 'registry.example.com',
-  dockerImage: 'registry.example.com/tool/image:1.0.0',
-  instanceType: 't2.medium',
-  disk: 100,
-  is_spot: true,
-  description: 'BWA is a bioinformatics software package for ' +
-    'mapping low-divergent sequences against a large reference genome, such as the human genome.',
-  parameters: {
-    reference_path: {type: 'string', value: 'String value'},
-    checkbox: {type: 'boolean', value: true},
-    input: {type: 'path', value: '/path/to/file'},
-    path: {type: 'path', value: '/another/path'}
-  },
-  optionsSelect: [
-    {value: "m5.xlarge", label: "m5.xlarge(CPU 4, RAM 16)"},
-    {value: "m4.large", label: "m4.large(CPU 2, RAM 8)"}
-  ]
+const mockParameters = {
+  reference_path: {type: 'string', value: 'String value'},
+  checkbox: {type: 'boolean', value: true, checkboxText: 'Enable feature'},
+  input: {type: 'path', value: '/path/to/file'},
+  path: {type: 'path', value: '/another/path'},
+};
+
+const processPartValue = (value) => {
+  if (!value.parameters || Object.keys(value.parameters).length === 0) {
+    return {
+      ...value,
+      configurationName: 'Default Configuration',
+      version: '1.0.0',
+      description: 'BWA is a bioinformatics software package for ' +
+      'mapping low-divergent sequences against a large reference genome, such as the human genome.',
+      parameters: mockParameters
+    };
+  }
+  return value;
 };
 
 @observer
 export default class Message extends React.Component {
-  state = {
-    parameters: mockData.parameters
-  };
-
   @computed
   get message () {
     return this.props.message
@@ -72,6 +64,7 @@ export default class Message extends React.Component {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
     }
+
     if (this.message.parts.length > 0) {
       return (
         <div>
@@ -80,10 +73,12 @@ export default class Message extends React.Component {
               return <Markdown key={index} md={part.value} />;
             }
             if (part.isPayload) {
+              console.log(part.value);
+
               return (
                 <LaunchForm
                   key={index}
-                  mockData={mockData}
+                  data={processPartValue(part.value)}
                 />
               );
             }

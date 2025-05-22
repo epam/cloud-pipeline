@@ -17,5 +17,9 @@
 .select-container {
   column-gap: 20px;
   display: flex;
-  margin-bottom: 15px;
+  margin: 15px 0;
+
+  > div  {
+    max-width: 33.333%;
+  }
 }

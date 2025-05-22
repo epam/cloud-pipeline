@@ -34,9 +34,11 @@ export default class LaunchFormInfo extends React.Component {
             <span className={styles.value}>{version}</span>
           </div>
         </div>
-        <p>
-          {description}
-        </p>
+        {description &&
+          <p>
+            {description}
+          </p>
+        }
       </div>
     );
   }
@@ -46,8 +48,4 @@ LaunchFormInfo.propTypes = {
   name: PropTypes.string.isRequired,
   version: PropTypes.string.isRequired,
   description: PropTypes.string
-};
-
-LaunchFormInfo.defaultProps = {
-  description: 'Default description'
 };

@@ -21,7 +21,7 @@ import styles from './input-field.css';
 import {observer} from 'mobx-react';
 
 @observer
-export default class InputDocker extends React.Component {
+export default class InputField extends React.Component {
   render () {
     const {value, onChange, label, disabled} = this.props;
     return (
@@ -39,14 +39,14 @@ export default class InputDocker extends React.Component {
   }
 }
 
-InputDocker.propTypes = {
+InputField.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   label: PropTypes.string,
   disabled: PropTypes.bool
 };
 
-InputDocker.defaultProps = {
+InputField.defaultProps = {
   value: '',
   label: '',
   disabled: false
