@@ -32,15 +32,19 @@ export default class ParameterGroup extends React.Component {
       return <div>No parameters found.</div>;
     }
 
-    return Object.entries(parameters).map(([key, parameter]) => (
-      <LaunchFormParameterInput
-        key={key}
-        parameter={parameter}
-        onChange={(updatedParameter) => {
-          formStore.updateParameter(key, updatedParameter.value);
-        }}
-        label={`Parameter: ${key}`}
-      />
+    return Object.entries(parameters).map(([parameterName, parameter]) => (
+      // TODO: make it (label + input) look more like a big LaunchForm
+      <div style={{display: 'flex', gap: '5px', alignItems: 'center'}}>
+        <span>{parameterName}</span>
+        <LaunchFormParameterInput
+          key={parameterName}
+          parameter={parameter}
+          onChange={(updatedParameter) => {
+            formStore.updateParameter(parameterName, updatedParameter.value);
+          }}
+          style={{flex: 1}}
+        />
+      </div>
     ));
   };
 
@@ -57,5 +61,5 @@ export default class ParameterGroup extends React.Component {
 }
 
 ParameterGroup.propTypes = {
-  formStore: PropTypes.object.isRequired
+  formStore: PropTypes.object
 };

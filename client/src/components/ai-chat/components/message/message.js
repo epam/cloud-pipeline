@@ -25,22 +25,17 @@ import Markdown from '../../../special/markdown';
 import {processMessage} from './message-utils';
 import styles from './message.css';
 
-const mockParameters = {
-  reference_path: {type: 'string', value: 'String value'},
-  checkbox: {type: 'boolean', value: true, checkboxText: 'Enable feature'},
-  input: {type: 'path', value: '/path/to/file'},
-  path: {type: 'path', value: '/another/path'},
-};
-
-const processPartValue = (value) => {
+const mockParameters = (value) => {
+  const parameters = {
+    Reference_Path: {type: 'string', value: 'String value'},
+    Checkbox: {type: 'boolean', value: true, checkboxText: 'Enable feature'},
+    Path_To_File: {type: 'path', value: '/path/to/file'},
+    Another_Path_Parameter: {type: 'path', value: '/another/path'}
+  };
   if (!value.parameters || Object.keys(value.parameters).length === 0) {
     return {
       ...value,
-      configurationName: 'Default Configuration',
-      version: '1.0.0',
-      description: 'BWA is a bioinformatics software package for ' +
-      'mapping low-divergent sequences against a large reference genome, such as the human genome.',
-      parameters: mockParameters
+      parameters
     };
   }
   return value;
@@ -75,7 +70,7 @@ export default class Message extends React.Component {
               return (
                 <LaunchForm
                   key={index}
-                  data={processPartValue(part.value)}
+                  data={mockParameters(part.value)}
                 />
               );
             }

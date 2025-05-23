@@ -1,14 +1,49 @@
-import {observable, action} from 'mobx';
+/*
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {observable, action, computed} from 'mobx';
+import {getToolConfiguration} from './utils';
 
 class LaunchFormStore {
   @observable disk = '';
-  @observable selectedPriceType = '';
   @observable dockerImage = '';
   @observable instanceType = '';
   @observable cmd = '';
-  @observable is_spot = false;
-
+  @observable isSpot = false;
   @observable parameters = {};
+
+  @observable toolInfo = undefined;
+  @observable _error = '';
+  @observable _pending = true;
+
+  @computed get error () {
+    return this._error;
+  }
+
+  @computed get pending () {
+    return this._pending;
+  }
+
+  @computed get toolInfo () {
+    return this.toolInfo;
+  }
+
+  set error (error) {
+    this._error = error;
+  }
 
   @action updateField (key, value) {
     if (this.hasOwnProperty(key)) {
@@ -26,25 +61,39 @@ class LaunchFormStore {
     }
   }
 
-  @action initializeFields (data) {
-    if (data) {
-      if (data.disk !== undefined) this.disk = data.disk;
-      if (data.selectedPriceType !== undefined) this.selectedPriceType = data.selectedPriceType;
-      if (data.dockerImage !== undefined) this.dockerImage = data.dockerImage;
-      if (data.instanceType !== undefined) this.instanceType = data.instanceType;
-      if (data.cmd !== undefined) this.cmd = data.cmd;
-      if (data.is_spot !== undefined) this.is_spot = data.is_spot;
-    } else {
-      console.error('[LaunchFormStore] Invalid data provided:', data);
+  @action
+  initializeData ({data, toolInfo, toolVersion}) {
+    const {parameters} = data || {};
+    const mergeValues = (current, initial) => current ?? initial;
+    if (!data || !toolInfo) {
+      return;
     }
-  }
-
-  @action initializeParameters (parameters) {
+    const {configuration = {}} = getToolConfiguration(
+      data.configuration,
+      toolVersion
+    ) || {};
+    console.log('INITIALIZE', {
+      configuration,
+      data,
+      toolInfo,
+      toolVersion
+    });
+    this.disk = mergeValues(data.disk, configuration.instance_disk);
+    this.isSpot = mergeValues(data.is_spot, configuration.is_spot);
+    // TODO: discuss about docker image format from chat (registry/image:version?)
+    this.dockerImage = mergeValues(
+      data.dockerImage,
+      `${toolInfo.registry}/${toolInfo.image}:${toolVersion.name}`
+    );
+    this.instanceType = mergeValues(data.instanceType, configuration.instance_size);
+    this.cmd = mergeValues(data.cmd, toolInfo.cmd_template);
     if (parameters && typeof parameters === 'object') {
-      this.parameters = {...parameters};
-    } else {
-      console.error('[MobX Store] Invalid parameters data provided:', parameters);
+      this.parameters = {
+        ...(configuration?.parameters || {}),
+        ...(parameters || {})
+      };
     }
+    this._pending = false;
   }
 }
 
