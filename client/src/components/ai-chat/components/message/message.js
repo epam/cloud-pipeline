@@ -41,6 +41,23 @@ const mockParameters = (value) => {
   return value;
 };
 
+const mockPayload = () => {
+  const parameters = {
+    Reference_Path: {type: 'string', value: 'String value'},
+    Checkbox: {type: 'boolean', value: true, checkboxText: 'Enable feature'},
+    Path_To_File: {type: 'path', value: '/path/to/file'},
+    Another_Path_Parameter: {type: 'path', value: '/another/path'}
+  };
+  return {
+    is_spot: false,
+    cmd: 'sleep infinity',
+    disk: 45,
+    instanceType: 'c5.2xlarge',
+    dockerImage: 'library/centos:latest',
+    parameters
+  };
+};
+
 @observer
 export default class Message extends React.Component {
   @computed
@@ -59,6 +76,15 @@ export default class Message extends React.Component {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
     }
+    // mock return, remove this return statement when API will be fixed
+    return (
+      <div>
+        <Markdown md={this.message.text} />
+        <LaunchForm
+          data={mockPayload()}
+        />
+      </div>
+    );
     if (this.message.parts?.length > 0) {
       return (
         <div>

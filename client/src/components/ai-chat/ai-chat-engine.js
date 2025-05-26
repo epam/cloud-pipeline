@@ -25,7 +25,7 @@ const getToken = () => {
   return token;
 };
 
-const base = 'https://edge.aws.cloud-pipeline.com/pipeline-74205-7860-0/';
+const base = 'https://edge.aws.cloud-pipeline.com/pipeline-74844-7860-0/';
 const socketIOUrl = new URL('socket.io', base);
 
 class ChatEngine {
