@@ -24,3 +24,27 @@
   font-weight: bold;
   min-width: 70px;
 }
+
+.input-container {
+  position: relative;
+  width: 100%;
+}
+
+.error {
+  color: #f04134;
+  font-size: 12px;
+  left: 0;
+  position: absolute;
+  top: 28px;
+}
+
+.input-field .input-container .inputError {
+  border-color: #f04134 !important;
+  box-shadow: none !important;
+
+  &:active,
+  &:hover {
+    border-color: #f04134 !important;
+    box-shadow: none !important;
+  }
+}

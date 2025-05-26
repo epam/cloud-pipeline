@@ -17,26 +17,34 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import styles from './launch-form-info.css';
+import {observer} from 'mobx-react';
 
+@observer
 export default class LaunchFormInfo extends React.Component {
   render () {
-    const {name, version, description} = this.props;
+    const {formStore} = this.props;
+
+    const {toolInfo, toolVersion, configuration} = formStore;
 
     return (
       <div className={styles.container}>
         <div className={styles.launchFormInfo}>
-          <div className={styles.infoRow}>
-            <span className={styles.label}>Pipeline:</span>
-            <span className={styles.value}>{name}</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.label}>Version:</span>
-            <span className={styles.value}>{version}</span>
-          </div>
+          {configuration.cmd_template && (
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Pipeline:</span>
+              <span className={styles.value}>{configuration.cmd_template}</span>
+            </div>
+          )}
+          {toolVersion.version && (
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Version:</span>
+              <span className={styles.value}>{toolVersion.version}</span>
+            </div>
+          )}
         </div>
-        {description &&
+        {toolInfo?.description &&
           <p>
-            {description}
+            {toolInfo?.description}
           </p>
         }
       </div>
@@ -45,7 +53,15 @@ export default class LaunchFormInfo extends React.Component {
 }
 
 LaunchFormInfo.propTypes = {
-  name: PropTypes.string.isRequired,
-  version: PropTypes.string.isRequired,
-  description: PropTypes.string
+  formStore: PropTypes.shape({
+    toolInfo: PropTypes.shape({
+      description: PropTypes.string
+    }),
+    toolVersion: PropTypes.shape({
+      version: PropTypes.string
+    }),
+    configuration: PropTypes.shape({
+      cmd_template: PropTypes.string
+    })
+  }).isRequired
 };

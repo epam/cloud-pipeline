@@ -101,19 +101,17 @@ export default class LaunchForm extends React.Component {
   };
 
   render () {
-    const {data} = this.props;
     if (this.formStore?.error) {
       return <Alert type="error" message={this.formStore.error} />;
     }
     if (this.formStore.pending) {
       return <Spin />;
     }
+
     return (
       <div className={classNames(styles.launchForm, 'cp-panel')}>
         <LaunchFormInfo
-          name={data.configurationName}
-          version={data.version}
-          description={data.description}
+          formStore={this.formStore}
         />
         <Environment formStore={this.formStore} />
         <ParameterGroup formStore={this.formStore} />

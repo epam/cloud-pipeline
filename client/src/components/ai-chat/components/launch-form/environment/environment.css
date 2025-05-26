@@ -23,3 +23,14 @@
     max-width: 33.333%;
   }
 }
+
+.select-field {
+  align-items: center;
+  display: flex;
+  flex: 1;
+}
+
+.label {
+  font-weight: bold;
+  min-width: 70px;
+}

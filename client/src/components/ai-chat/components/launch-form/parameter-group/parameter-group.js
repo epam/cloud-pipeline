@@ -1,19 +1,3 @@
-/*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
@@ -32,20 +16,26 @@ export default class ParameterGroup extends React.Component {
       return <div>No parameters found.</div>;
     }
 
-    return Object.entries(parameters).map(([parameterName, parameter]) => (
-      // TODO: make it (label + input) look more like a big LaunchForm
-      <div style={{display: 'flex', gap: '5px', alignItems: 'center'}}>
-        <span>{parameterName}</span>
-        <LaunchFormParameterInput
-          key={parameterName}
-          parameter={parameter}
-          onChange={(updatedParameter) => {
-            formStore.updateParameter(parameterName, updatedParameter.value);
-          }}
-          style={{flex: 1}}
-        />
-      </div>
-    ));
+    return Object.entries(parameters).map(([parameterName, parameter]) => {
+      const isBoolean = typeof parameter.value === 'boolean';
+
+      const parameterClass = isBoolean
+        ? styles.checkboxField
+        : styles.parameterField;
+
+      return (
+        <div key={parameterName} className={parameterClass}>
+          <span>{parameterName}</span>
+          <LaunchFormParameterInput
+            parameter={parameter}
+            onChange={(updatedParameter) => {
+              formStore.updateParameter(parameterName, updatedParameter.value);
+            }}
+            style={{flex: 1}}
+          />
+        </div>
+      );
+    });
   };
 
   render () {

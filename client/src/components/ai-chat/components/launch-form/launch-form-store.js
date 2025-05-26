@@ -25,7 +25,9 @@ class LaunchFormStore {
   @observable isSpot = false;
   @observable parameters = {};
 
-  @observable toolInfo = undefined;
+  @observable _toolInfo = undefined;
+  @observable _configuration = undefined;
+  @observable _toolVersion = undefined;
   @observable _error = '';
   @observable _pending = true;
 
@@ -38,7 +40,15 @@ class LaunchFormStore {
   }
 
   @computed get toolInfo () {
-    return this.toolInfo;
+    return this._toolInfo;
+  }
+
+  @computed get configuration () {
+    return this._configuration;
+  }
+
+  @computed get toolVersion () {
+    return this._toolVersion;
   }
 
   set error (error) {
@@ -80,6 +90,9 @@ class LaunchFormStore {
     });
     this.disk = mergeValues(data.disk, configuration.instance_disk);
     this.isSpot = mergeValues(data.is_spot, configuration.is_spot);
+    this._toolInfo = toolInfo;
+    this._toolVersion = toolVersion;
+    this._configuration = configuration;
     // TODO: discuss about docker image format from chat (registry/image:version?)
     this.dockerImage = mergeValues(
       data.dockerImage,

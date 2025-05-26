@@ -20,6 +20,8 @@ import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {TitleSection, InputField, SelectField} from '../index';
 import styles from './environment.css';
+import {getSelectOptions} from '../../../../special/instance-type-info';
+import {Select} from 'antd';
 
 const PRICE_TYPES = {
   spot: 'Spot',
@@ -55,6 +57,21 @@ export default class Environment extends React.Component {
       {value: PRICE_TYPES.onDemand, label: PRICE_TYPES.onDemand}
     ];
     const priceOption = isSpot ? PRICE_TYPES.spot : PRICE_TYPES.onDemand;
+    const instanceOptions = getSelectOptions(
+      this.allowedInstanceTypes["cluster.allowed.instance.types"]
+    );
+    const onlyNumbersWithRangeValidator = (value) => {
+      if (!value || value.trim() === '') {
+        return 'This field cannot be empty.';
+      }
+
+      if (!/^\d+$/.test(value)) {
+        return 'Instance disk is required, Minimum value is 15';
+      }
+
+      return null;
+    };
+
     return (
       <div className={styles.stripe}>
         <TitleSection title="Environment" />
@@ -66,22 +83,26 @@ export default class Environment extends React.Component {
         />
         <div className={styles.selectContainer}>
           {instanceType && (
-            <SelectField
-              label="Instance"
-              value={instanceType}
-              options={[]}
-              onChange={this.handleChange('instanceType')}
-              placeholder="Choose instance type"
-            />
+            <div className={styles.selectField}>
+              <label className={styles.label}>Instance</label>
+              <Select
+                label="Instance"
+                style={{width: '100%'}}
+                value={instanceType}
+                onChange={this.handleChange('instanceType')}
+                placeholder="Choose instance type"
+              >
+                {instanceOptions}
+              </Select>
+            </div>
           )}
-          {disk && (
-            <InputField
-              label="Disk Size"
-              value={disk}
-              onChange={this.handleChange('disk')}
-              disabled={false}
-            />
-          )}
+          <InputField
+            label="Disk Size"
+            value={disk}
+            onChange={this.handleChange('disk')}
+            disabled={false}
+            validator={onlyNumbersWithRangeValidator}
+          />
           <SelectField
             label="Price Type"
             value={priceOption}
