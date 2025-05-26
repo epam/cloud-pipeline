@@ -29,7 +29,7 @@ export default class LaunchFormInfo extends React.Component {
     return (
       <div className={styles.container}>
         <div className={styles.launchFormInfo}>
-          {configuration.cmd_template && (
+          {configuration.image && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Tool:</span>
               <span className={styles.value}>{toolInfo.image}</span>
