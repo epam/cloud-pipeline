@@ -31,8 +31,8 @@ export default class LaunchFormInfo extends React.Component {
         <div className={styles.launchFormInfo}>
           {configuration.cmd_template && (
             <div className={styles.infoRow}>
-              <span className={styles.label}>Pipeline:</span>
-              <span className={styles.value}>{configuration.cmd_template}</span>
+              <span className={styles.label}>Tool:</span>
+              <span className={styles.value}>{toolInfo.image}</span>
             </div>
           )}
           {toolVersion.version && (
@@ -44,7 +44,7 @@ export default class LaunchFormInfo extends React.Component {
         </div>
         {toolInfo?.description &&
           <p>
-            {toolInfo?.description}
+            {toolInfo?.shortDescription}
           </p>
         }
       </div>
