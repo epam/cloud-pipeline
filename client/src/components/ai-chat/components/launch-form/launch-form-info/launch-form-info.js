@@ -24,12 +24,12 @@ export default class LaunchFormInfo extends React.Component {
   render () {
     const {formStore} = this.props;
 
-    const {toolInfo, toolVersion, configuration} = formStore;
+    const {toolInfo, toolVersion} = formStore;
 
     return (
       <div className={styles.container}>
         <div className={styles.launchFormInfo}>
-          {configuration.image && (
+          {toolInfo.image && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Tool:</span>
               <span className={styles.value}>{toolInfo.image}</span>
