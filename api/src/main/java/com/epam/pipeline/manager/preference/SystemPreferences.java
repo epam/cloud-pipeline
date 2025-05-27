@@ -364,9 +364,11 @@ public class SystemPreferences {
             "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+    public static final BooleanPreference GIT_REPOSITORY_RENAME_REPO = new BooleanPreference(
+            "git.repository.rename.repo", true, GIT_GROUP, pass);
 
     public static final StringPreference GITHUB_USER_NAME = new StringPreference(
-            "github.user.name", null, GIT_GROUP, pass);
+            "github.user.name", "x-token-auth", GIT_GROUP, pass);
 
     public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
             "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
