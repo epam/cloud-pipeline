@@ -964,6 +964,10 @@ public class SystemPreferences {
             "ui.personal.tools.permissions.restrictions",
             Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<List<Object>> UI_STORAGE_RESTRICTIONS = new ObjectPreference<>(
+            "ui.storages.permissions.restrictions",
+            Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
     public static final ObjectPreference<Object> UI_SEARCH_COLUMNS_ORDER = new ObjectPreference<>(
             "ui.search.columns.order",
             Collections.emptyList(), new TypeReference<Object>() {},
@@ -1309,6 +1313,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> MISC_GROUPS_UI_PREF = new ObjectPreference<>(
             "misc.groups.ui.preferences", null, new TypeReference<Map<String, Object>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    public static final BooleanPreference EDGE_SKIP_CUSTOM_DNS = new BooleanPreference(
+            "edge.skip.custom.dns", false, MISC_GROUP, pass);
+    public static final StringPreference EDGE_CUSTOM_DOMAIN = new StringPreference(
+            "edge.custom.domain", null, MISC_GROUP, pass);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
