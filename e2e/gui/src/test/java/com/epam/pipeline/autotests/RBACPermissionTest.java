@@ -16,19 +16,13 @@
 
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byId;
-import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMPERSONATE;
 import static com.epam.pipeline.autotests.ao.Primitive.PROFILE;
 import static com.epam.pipeline.autotests.ao.Primitive.USER_MANAGEMENT_TAB;
-import com.epam.pipeline.autotests.ao.UserManagementAO.GroupsTabAO.EditGroupPopup;
-import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -36,10 +30,14 @@ import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.INHERIT;
 import static java.lang.String.format;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
+import com.epam.pipeline.autotests.ao.UserManagementAO.GroupsTabAO.EditGroupPopup;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry;
 import com.epam.pipeline.autotests.mixins.Authorization;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.stream.Stream;
@@ -47,7 +45,7 @@ import java.util.stream.Stream;
 public class RBACPermissionTest extends AbstractBfxPipelineTest implements Authorization {
 
     private String[][] attr = {{"key1", "value1"}, {"key2", "value2"},
-                               {"key3", "value3"}, {"key4", "value4"}};
+                               {"key3", "value3"}, {"key4", "value4"}, {"key5", "value5"}};
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String mask = "*";
     private String[] initialMiscMetadataSensitiveKeys = {""};
@@ -55,7 +53,6 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     private String miscMetadataSensitiveKeysTestValue = format("[\"%s\"]", attr[0][0]);
     private final String testGroup1 = "TEST_GROUP_1";
     private final String testGroup2 = "TEST_GROUP_2";
-
 
     @BeforeClass
     public void prepareTestGroups() {
@@ -67,9 +64,14 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .getPreference(miscMetadataSensitiveKeys);
     }
 
+    @BeforeMethod
+    public void relogin() {
+        open(C.ROOT_ADDRESS);
+        loginAsUser(admin);
+    }
+
     @AfterClass
     public void removeTestGroups() {
-        loginAsUser(admin);
         setMiscMetadataSensitiveKeys(initialMiscMetadataSensitiveKeys[0]);
         Stream.of(testGroup1, testGroup2)
                 .forEach(group -> {
@@ -84,7 +86,6 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
 
     @AfterClass
     public void cleanUpUserPermissions() {
-        loginAsUser(admin);
         UserEntry testUser = navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -100,7 +101,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .edit()
                 .addAllowedLaunchOptions(toolInstanceTypesMask, "")
                 .showMetadata()
-                .deleteKeys(attr[0][0], attr[1][0], attr[2][0], attr[3][0])
+                .deleteKeys(attr[0][0], attr[1][0], attr[2][0], attr[3][0], attr[4][0])
                 .ok();
     }
 
@@ -129,7 +130,6 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     @Test(priority = 1, dependsOnMethods = "readGrantPermissionsToUserAccount")
     @TestCase(value = "3229_2")
     public void wtiteGrantPermissionsToUserAccount() {
-        loginAsUser(admin);
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -161,8 +161,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .assertKeysArePresent(attr[1][0], attr[2][0])
                 .deleteKeys(attr[1][0])
                 .selectKey(attr[2][0])
-                .changeValue(attr[2][1] = format("%s_new", attr[2][1]))
-                .changeKey(attr[2][0] = format("%s_new", attr[2][0]))
+                .changeValue(attr[4][1])
+                .changeKey(attr[4][0])
                 .close()
                 .addKeyWithValue(attr[3][0], attr[3][1])
                 .ok();
@@ -174,14 +174,13 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .openEditUserPopUp()
                 .showMetadata()
                 .assertKeysAreNotPresent(attr[0][0], attr[1][0])
-                .assertKeysArePresent(attr[3][0], attr[2][0])
+                .assertKeysArePresent(attr[3][0], attr[4][0])
                 .ok();
     }
 
     @Test(priority = 1, dependsOnMethods = "wtiteGrantPermissionsToUserAccount")
     @TestCase(value = "3229_3")
     public void executeGrantPermissionsToUserAccount() {
-        loginAsUser(admin);
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -208,8 +207,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .isListOfRolesBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
-                .assertKeysArePresent(attr[2][0], attr[3][0])
-                .assertKeysAreDisabled(attr[2][0], attr[3][0])
+                .assertKeysArePresent(attr[4][0], attr[3][0])
+                .assertKeysAreDisabled(attr[4][0], attr[3][0])
                 .ok()
                 .click(IMPERSONATE);
         navigationMenu()
@@ -243,7 +242,6 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     @Test(priority = 2, dependsOnMethods = "readGrantPermissionsToUserGroup")
     @TestCase(value = "3751_2")
     public void writeGrantPermissionsToUserGroup() {
-        loginAsUser(admin);
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -272,8 +270,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .assertKeysArePresent(attr[1][0], attr[2][0])
                 .deleteKeys(attr[1][0])
                 .selectKey(attr[2][0])
-                .changeValue(attr[2][1] = format("%s_new", attr[2][1]))
-                .changeKey(attr[2][0] = format("%s_new", attr[2][0]))
+                .changeValue(attr[4][1])
+                .changeKey(attr[4][0])
                 .close()
                 .addKeyWithValue(attr[3][0], attr[3][1])
                 .ok();
@@ -286,18 +284,9 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .checkUserExistsInGroup(admin.login)
                 .showMetadata()
                 .assertKeysAreNotPresent(attr[0][0], attr[1][0])
-                .assertKeysArePresent(attr[3][0], attr[2][0])
+                .assertKeysArePresent(attr[3][0], attr[4][0])
                 .ok();
         editGroupPopup.ok();
-    }
-
-    private void loginAsUser(Account account) {
-        logoutIfNeeded();
-        $(byId("navigation-button-stop-impersonation")).waitUntil(not(exist), DEFAULT_TIMEOUT);
-        loginAs(account)
-                .settings()
-                .switchToMyProfile()
-                .validateUserName(account.login);
     }
 
     private void userPermissionsPreparations() {

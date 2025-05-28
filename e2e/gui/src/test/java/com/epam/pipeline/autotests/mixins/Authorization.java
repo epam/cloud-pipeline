@@ -15,11 +15,15 @@
  */
 package com.epam.pipeline.autotests.mixins;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Selectors.byId;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Permission;
 import org.openqa.selenium.Cookie;
 
@@ -113,6 +117,15 @@ public interface Authorization extends Navigation {
         } catch (Throwable e) {
             // User has already performed logout
         }
+    }
+
+    default void loginAsUser(Account account) {
+        logoutIfNeeded();
+        $(byId("navigation-button-stop-impersonation")).waitUntil(not(exist), DEFAULT_TIMEOUT);
+        loginAs(account)
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(account.login);
     }
 
     default void addAccountToStoragePermissions(Account account, String storage, String... folders) {

@@ -213,7 +213,6 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
                 .ok();
     }
 
-
     public CreateNfsMountPopupAO clickOnCreateNfsMountButton() {
         resetMouse().click(CREATE).hover(CREATE_STORAGE).click(CREATE_NFS_MOUNT);
         return new CreateNfsMountPopupAO();
@@ -470,6 +469,15 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
             createStorage(storageName);
         }
         return this;
+    }
+
+    public EditStoragePopUpAO editStorage(String id) {
+        SelenideElement el = $(byId(format("folder-item-storage_%s-edit-button", id)));
+        while(!el.exists() && $(byTitle("Next Page")).has(not(cssClass("ant-pagination-disabled")))) {
+            click(byTitle("Next Page"));
+        }
+        el.click();
+        return new EditStoragePopUpAO();
     }
 
     @Override

@@ -20,7 +20,6 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
-import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.google.common.collect.Comparators;
 import java.io.File;
 import java.net.URI;
@@ -49,7 +48,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.editButton;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -455,6 +453,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public MetadataSectionAO showMetadata() {
         click(ACTIONS);
         if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
+            $(byText("Attributes")).click();
             return new MetadataSectionAO(this);
         }
         click(SHOW_METADATA);
@@ -779,137 +778,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         private boolean getVersionsFlagState() {
             return context().find(byClassName("ant-checkbox-checked")).is(visible);
-        }
-
-        @Override
-        public Map<Primitive, SelenideElement> elements() {
-            return elements;
-        }
-    }
-
-    public class EditStoragePopUpAO extends AbstractEditStoragePopUpAO<EditStoragePopUpAO, PipelinesLibraryAO> {
-        private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                super.elements(),
-                entry(SAVE, $(byId("edit-storage-dialog-save-button"))),
-                entry(DELETE, $(byId("edit-storage-dialog-delete-button"))),
-                entry(CANCEL, $(byId("edit-storage-dialog-cancel-button"))),
-                entry(PERMISSIONS, $(byText("Permissions")))
-        );
-
-        public EditStoragePopUpAO() {
-            super(new PipelinesLibraryAO());
-        }
-
-        public EditStoragePopUpAO validateEditFormElements() {
-            return ensure(PATH, disabled, visible)
-                    .ensure(NAME, visible)
-                    .ensure(DESCRIPTION, visible)
-                    .performIf(C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.AWS.name())
-                            || C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.GCP.name()), popup -> popup
-                            .ensure(ENABLE_VERSIONING, visible))
-                    .ensure(MOUNT_POINT, visible)
-                    .ensure(MOUNT_OPTIONS, visible)
-                    .ensure(SAVE, visible)
-                    .ensure(DELETE, visible)
-                    .ensure(CANCEL, visible);
-        }
-
-        public EditStoragePopUpAO validateEditFormElementsNfsMount() {
-            return ensure(PATH, disabled, visible)
-                    .ensure(NAME, visible)
-                    .ensure(DESCRIPTION, visible)
-                    .ensure(MOUNT_POINT, visible)
-                    .ensure(MOUNT_OPTIONS, visible)
-                    .ensure(SAVE, visible)
-                    .ensure(DELETE, visible)
-                    .ensure(CANCEL, visible);
-        }
-
-        public EditStoragePopUpAO editForNfsMount() {
-            if ($(byClassName("ant-modal-header")).isDisplayed() &&
-                    !$(byClassName("edit-storage-button")).isDisplayed()) {
-                return this;
-            }
-            $(byClassName("edit-storage-button")).shouldBe(enabled).click();
-            return this;
-        }
-
-        @Override
-        public PipelinesLibraryAO ok() {
-           return clickSaveButton();
-        }
-
-        public PipelinesLibraryAO clickSaveButton() {
-            return click(SAVE).parent();
-        }
-
-        public PipelinesLibraryAO clickCancel() {
-            return click(CANCEL).ensure(CANCEL, not(visible)).parent();
-        }
-
-        public DeleteStorageConfirmationPopUp clickDeleteStorageButton() {
-            sleep(1, SECONDS);
-            click(DELETE);
-            return new DeleteStorageConfirmationPopUp(this);
-        }
-
-        public PermissionTabAO clickOnPermissionsTab() {
-            click(PERMISSIONS);
-            return new PermissionTabAO(this);
-        }
-
-        @Override
-        public SelenideElement context() {
-            return $(modalWithTitle("Edit", "storage"));
-        }
-
-        @Override
-        public void closeAll() {
-            ok();
-        }
-
-        @Override
-        public Map<Primitive, SelenideElement> elements() {
-            return elements;
-        }
-    }
-
-    public class DeleteStorageConfirmationPopUp implements AccessObject<DeleteStorageConfirmationPopUp> {
-        private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(DELETE, $(byId("edit-storage-delete-dialog-delete-button"))),
-                entry(UNREGISTER, $(byId("edit-storage-delete-dialog-unregister-button"))),
-                entry(CANCEL, $(byId("edit-storage-delete-dialog-cancel-button"))),
-                entry(CROSS, context().find(className("ant-modal-close")))
-        );
-        private final EditStoragePopUpAO editStoragePopUpAO;
-
-        public DeleteStorageConfirmationPopUp(EditStoragePopUpAO editStoragePopUpAO) {
-            this.editStoragePopUpAO = editStoragePopUpAO;
-        }
-
-        public PipelinesLibraryAO clickDelete() {
-            click(DELETE).ensure(DELETE, not(visible));
-            return new PipelinesLibraryAO();
-        }
-
-        public PipelinesLibraryAO clickUnregister() {
-            click(UNREGISTER).ensure(UNREGISTER, not(visible));
-            return new PipelinesLibraryAO();
-        }
-
-        public EditStoragePopUpAO clickCrossButton() {
-            click(CROSS).ensure(CROSS, not(visible));
-            return editStoragePopUpAO;
-        }
-
-        public EditStoragePopUpAO clickCancel() {
-            click(CANCEL).ensure(CANCEL, not(visible));
-            return editStoragePopUpAO;
-        }
-
-        @Override
-        public SelenideElement context() {
-            return Utils.getPopupByTitle("Do you want to delete a storage itself or only unregister it?");
         }
 
         @Override
