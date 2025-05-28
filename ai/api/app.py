@@ -14,6 +14,8 @@ from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import FunctionTool
 from llama_index.core.agent import (StructuredPlannerAgent, FunctionCallingAgentWorker, ReActAgent)
 from pydantic import Field
+from documents_query_engine import get_query_engine
+
 
 # Configure logging
 logging_level = logging.DEBUG
@@ -189,16 +191,29 @@ def get_compute_instance_state(
     print(pipe_run_cmd)
     return pipe_run_cmd
 
+def query_documents(query: str) -> str:
+    query_engine = get_query_engine()
+    response = query_engine.query(query)
+    sources = "\n".join([s.metadata["source"] for s in response.source_nodes])
+    result = f"""Result: <<<{response}Sources:\n{sources}>>>. Include this result into response to user."""
+    print(result)
+    return result
+
 tool_run_compute_instance = FunctionTool.from_defaults(get_command_to_run_compute_instance)
 tool_stop_compute_instance = FunctionTool.from_defaults(stop_compute_instance)
 tool_get_compute_instance_state = FunctionTool.from_defaults(get_compute_instance_state)
+documents_tool = FunctionTool.from_defaults(
+    fn=query_documents,
+    name="documents_tool",
+    description="Searches documents and issues and returns a list of sources."
+)
 
 worker = FunctionCallingAgentWorker.from_tools(
     [tool_run_compute_instance, tool_stop_compute_instance, tool_get_compute_instance_state], verbose=True, llm=llm
 )
 
 agent = ReActAgent(
-    tools=[tool_run_compute_instance, tool_stop_compute_instance, tool_get_compute_instance_state],
+    tools=[tool_run_compute_instance, tool_stop_compute_instance, tool_get_compute_instance_state, documents_tool],
     verbose=True,
     llm=llm,
     memory=BaseMemory.from_defaults()

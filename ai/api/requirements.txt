@@ -4,3 +4,5 @@ uvicorn==0.34.0
 nest-asyncio==1.6.0
 llama_index==0.12.35
 llama-index-llms-google-genai==0.1.12
+llama-index-embeddings-google-genai==0.1.0
+llama-index-vector-stores-chroma==0.4.1
