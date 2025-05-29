@@ -67,7 +67,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     @BeforeMethod
     public void relogin() {
         open(C.ROOT_ADDRESS);
-        loginAsUser(admin);
+        logoutIfNeeded();
+        loginAs(admin);
     }
 
     @AfterClass
@@ -109,7 +110,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     @TestCase(value = "3229_1")
     public void readGrantPermissionsToUserAccount() {
         userPermissionsPreparations();
-        loginAsUser(user);
+        logoutIfNeeded();
+        loginAs(user);
         navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
@@ -144,7 +146,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .savePermissions()
                 .closeAll();
         setMiscMetadataSensitiveKeys(miscMetadataSensitiveKeysTestValue);
-        loginAsUser(user);
+        logoutIfNeeded();
+        loginAs(user);
         navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
@@ -194,7 +197,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .set(WRITE, INHERIT)
                 .savePermissions()
                 .closeAll();
-        loginAsUser(user);
+        logoutIfNeeded();
+        loginAs(user);
         navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
@@ -222,7 +226,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     public void readGrantPermissionsToUserGroup() {
         groupPermissionsPreparations();
         setMiscMetadataSensitiveKeys(initialMiscMetadataSensitiveKeys[0]);
-        loginAsUser(user);
+        logoutIfNeeded();
+        loginAs(user);
         EditGroupPopup editGroupPopup = navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
@@ -256,7 +261,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .savePermissions()
                 .closeAll();
         setMiscMetadataSensitiveKeys(miscMetadataSensitiveKeysTestValue);
-        loginAsUser(user);
+        logoutIfNeeded();
+        loginAs(user);
         navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
@@ -290,7 +296,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     }
 
     private void userPermissionsPreparations() {
-        loginAsUser(admin);
+        logoutIfNeeded();
+        loginAs(admin);
         EditUserPopup editUserPopup = navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -315,7 +322,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     }
 
     private void groupPermissionsPreparations() {
-        loginAsUser(admin);
+        logoutIfNeeded();
+        loginAs(admin);
         EditGroupPopup editGroupPopup = navigationMenu()
                 .settings()
                 .switchToUserManagement()

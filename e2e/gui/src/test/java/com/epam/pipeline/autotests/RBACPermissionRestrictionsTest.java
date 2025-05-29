@@ -51,7 +51,8 @@ public class RBACPermissionRestrictionsTest extends AbstractBfxPipelineTest impl
     @BeforeMethod
     public void relogin() {
         open(C.ROOT_ADDRESS);
-        loginAsUser(admin);
+        logoutIfNeeded();
+        loginAs(admin);
     }
 
     @AfterClass
@@ -76,13 +77,13 @@ public class RBACPermissionRestrictionsTest extends AbstractBfxPipelineTest impl
                 .createFileWithContent(file[0][0], file[0][1]);
         storage1ID = entityIDfromURL();
         logoutIfNeeded();
-        loginAsUser(user);
+        loginAs(user);
         navigationMenu()
                 .library()
                 .validateStorageIsNotPresent(storage1);
         setStorageAdminRole(true);
         logoutIfNeeded();
-        loginAsUser(user);
+        loginAs(user);
         navigationMenu()
                 .library()
                 .validateStorage(storage1)
@@ -141,7 +142,8 @@ public class RBACPermissionRestrictionsTest extends AbstractBfxPipelineTest impl
                 .fileMetadata(file[0][0])
                 .addKeyWithValue(attr[0][0], attr[0][1])
                 .addKeyWithValue(attr[1][0], attr[1][1]);
-        loginAsUser(user);
+        logoutIfNeeded();
+        loginAs(user);
         storageContentAO = navigationMenu()
                 .library()
                 .selectStorage(storage3);
@@ -171,7 +173,7 @@ public class RBACPermissionRestrictionsTest extends AbstractBfxPipelineTest impl
 
     private void setStorageAdminRole(boolean addRole) {
         logoutIfNeeded();
-        loginAsUser(admin);
+        loginAs(admin);
         EditUserPopup editUserPopup = navigationMenu()
                 .settings()
                 .switchToUserManagement()

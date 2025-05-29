@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
+import static com.codeborne.selenide.Selenide.$x;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
@@ -451,11 +452,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
-        click(ACTIONS);
-        if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
-            $(byText("Attributes")).click();
+        if ($x("//*[contains(@class, 'cp-split-panel-header') and contains(., 'Attributes')]")
+                .exists()) {
             return new MetadataSectionAO(this);
         }
+        click(ACTIONS);
         click(SHOW_METADATA);
         return new MetadataSectionAO(this);
     }

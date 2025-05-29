@@ -119,15 +119,6 @@ public interface Authorization extends Navigation {
         }
     }
 
-    default void loginAsUser(Account account) {
-        logoutIfNeeded();
-        $(byId("navigation-button-stop-impersonation")).waitUntil(not(exist), DEFAULT_TIMEOUT);
-        loginAs(account)
-                .settings()
-                .switchToMyProfile()
-                .validateUserName(account.login);
-    }
-
     default void addAccountToStoragePermissions(Account account, String storage, String... folders) {
         PipelinesLibraryAO library = library();
 

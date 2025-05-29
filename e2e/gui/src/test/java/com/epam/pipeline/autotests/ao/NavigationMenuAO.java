@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Selenide;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
@@ -39,7 +40,7 @@ public class NavigationMenuAO {
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         $(byXpath("//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))
-                .waitUntil(visible, 5000);
+                .waitUntil(visible, DEFAULT_TIMEOUT);
         return new PipelinesLibraryAO();
     }
 
