@@ -4,14 +4,17 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
   const parseRule = (rule) => {
     const {
       role = 'ALL',
-      disable = ''
+      disable = '',
+      readOnly = false,
+      readonly = readOnly
     } = rule;
     return role
       .split(/[,;\s]/g)
       .filter((aRole) => aRole.length > 0)
       .map((aRole) => ({
         role: aRole,
-        disable
+        disable,
+        readonly
       }));
   };
   const rules = restrictions
@@ -23,7 +26,8 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
   return rules.map((rule) => {
     const {
       role,
-      disable = ''
+      disable = '',
+      readonly
     } = rule;
     const masks = disable.split(/[,;\s]/g).filter((mask) => mask.length);
     const disableRead = masks.some((aMask) => /^read$/i.test(aMask));
@@ -31,6 +35,7 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
     const disableExecute = masks.some((aMask) => /^execute$/i.test(aMask));
     return {
       role,
+      readonly,
       disabled: masks,
       disableRead,
       disableWrite,
