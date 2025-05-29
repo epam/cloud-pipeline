@@ -14,7 +14,7 @@ from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import FunctionTool
 from llama_index.core.agent import (FunctionCallingAgentWorker, ReActAgent)
 from pydantic import Field
-from ai.documents_index import query_documents
+from ai.api.documents_index import query_documents
 
 
 # Configure logging
@@ -42,9 +42,9 @@ default_logger.addHandler(file_handler)
 
 app = FastAPI()
 sio_server = socketio.AsyncServer(
-        async_mode='asgi',
-        cors_allowed_origins='*'
-    )
+    async_mode='asgi',
+    cors_allowed_origins='*'
+)
 
 sio_app = socketio.ASGIApp(
     socketio_server=sio_server,
@@ -63,32 +63,32 @@ app.add_middleware(
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 
 def get_command_to_run_compute_instance(
-    docker_image_name: str = Field(
-        description="""
+        docker_image_name: str = Field(
+            description="""
         Defines a docker image name to be used for the user's compute task.
         This parameter is optional, if not specified in the user prompt use default value: 'library/rockylinux:latest'.
         """
-    ),
-    compute_instance_size: str = Field(
-        description="""
+        ),
+        compute_instance_size: str = Field(
+            description="""
         Defines AWS EC2 instance type to be created for the user's compute task.
         This parameter is optional, if not specified in the user prompt use default value: 'm5.xlarge'.
         """
-    ),
-    compute_instance_disk_size: str = Field(
-        description="""
+        ),
+        compute_instance_disk_size: str = Field(
+            description="""
         Defines size of the disk provisioned for EC2 instance in gigabytes.
         This parameter is optional, if not specified in the user prompt use default value: '50'.
         """
-    ),
-    task_command: str = Field(
-        description="""
+        ),
+        task_command: str = Field(
+            description="""
         Defines a shell command used to start the user's task within a docker container.
         This parameter is optional, if not specified in the user prompt use default value: 'sleep infinity'.
         """
-    ),
-    input_paths: str = Field(
-        description="""
+        ),
+        input_paths: str = Field(
+            description="""
         An optional list of AWS S3 paths, which are used by the compute instance.
         This parameter shall be formatted as a JSON array of objects. Each object shall have two fields: 'name' and 'path'.
         Example: 
@@ -104,9 +104,9 @@ def get_command_to_run_compute_instance(
         ]'
         This parameter is optional, if not specified in the user prompt use default value: '[]'.
         """
-    ),
-    output_paths: str = Field(
-        description="""
+        ),
+        output_paths: str = Field(
+            description="""
         An optional list of AWS S3 paths, which will be used by the compute instance to upload the results of processing the 'input_paths'.
         This parameter shall be formatted as a JSON array of objects. Each object shall have two fields: 'name' and 'path'. 'path' is always a directory.
         Example: 
@@ -122,7 +122,7 @@ def get_command_to_run_compute_instance(
         ]'
         This parameter is optional, if not specified in the user prompt use default value: '[]'.
         """
-    )
+        )
 ) -> str:
     """Useful to get a command to start compute instance in AWS.
     Returns json to be used to start a compute task"""
@@ -161,12 +161,12 @@ def get_command_to_run_compute_instance(
     return result
 
 def stop_compute_instance(
-    instance_run_id: int = Field(
-        description="""
+        instance_run_id: int = Field(
+            description="""
         Run ID of the compute instance.
         This is mandatory field. If it's not specified in the user prompt - reject to stop an instance.
         """
-    )
+        )
 ) -> str:
     """Useful to stop an existing compute instance in AWS by it's Run ID."""
     pipe_run_cmd = f"""pipe stop \
@@ -177,12 +177,12 @@ def stop_compute_instance(
 
 
 def get_compute_instance_state(
-    instance_run_id: int = Field(
-        description="""
+        instance_run_id: int = Field(
+            description="""
         Run ID of the compute instance to report status.
         If specified as '-1' - all available instances statuses are returned.
         """
-    )
+        )
 ) -> str:
     """Useful to get information about compute instances. Either a specific one or all available instances."""
     pipe_run_cmd = "pipe view-runs --parameters-details --tasks-details "

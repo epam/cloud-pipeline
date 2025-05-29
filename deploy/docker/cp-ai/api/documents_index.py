@@ -17,9 +17,8 @@ REPO_OWNER = "epam"
 REPO = "cloud-pipeline"
 REPO_DOCUMENTS_FOLDER = "docs/md"
 BRANCH = "develop"
-DOCUMENTS_FOLDER = "data"
 DOCUMENTS_COLLECTION_NAME = "Documents"
-CHROMA_DB_PATH = "./chroma-db"
+CHROMA_DB_PATH = "chroma-db"
 
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 github_token = os.environ["GITHUB_TOKEN"]
@@ -43,7 +42,7 @@ def create_index(force):
     documents_folder = _clone_documents()
     docs = SimpleDirectoryReader(documents_folder, recursive=True).load_data()
     for doc in docs:
-        doc.metadata[SOURCE_METADATA] = _get_document_url(doc)
+        doc.metadata[SOURCE_METADATA] = _get_document_url(doc, documents_folder)
     documents.extend(docs)
     print(f"Documents: {len(documents)}.")
 
@@ -149,12 +148,11 @@ def _clone_documents():
     z.extractall("/tmp/repo")
     return f"/tmp/repo/{REPO}-{BRANCH}/{REPO_DOCUMENTS_FOLDER}"
 
-def _get_document_url(doc):
-    path = doc.metadata['file_path'] \
-        .replace(os.getcwd(), "") \
-        .replace(os.path.sep, "/") \
-        .replace(f"/{DOCUMENTS_FOLDER}/", "")
-    return f"https://github.com/{REPO_OWNER}/{REPO}/tree/{BRANCH}/{REPO_DOCUMENTS_FOLDER}/{path}"
+def _get_document_url(doc, documents_folder):
+    path = ((doc.metadata['file_path']
+             .replace(os.path.abspath(documents_folder), ""))
+            .replace(os.path.sep, "/"))
+    return f"https://github.com/{REPO_OWNER}/{REPO}/tree/{BRANCH}/{REPO_DOCUMENTS_FOLDER}{path}"
 
 def _set_up_embed_model():
     embed_model = GoogleGenAIEmbedding(
