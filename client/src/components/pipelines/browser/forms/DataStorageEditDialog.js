@@ -119,14 +119,32 @@ export class DataStorageEditDialog extends React.Component {
   }
 
   @computed
+  get isAdvancedUser () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        roles = []
+      } = authenticatedUserInfo.value;
+      return roles.some(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  }
+
+  @computed
   get permissionsRestrictions () {
     const {
       preferences,
       authenticatedUserInfo
     } = this.props;
-    const isAdmin = authenticatedUserInfo.loaded && authenticatedUserInfo.value && authenticatedUserInfo.value.admin;
-    if (preferences.loaded && !isAdmin) {
+    const isAdmin = authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.value &&
+      authenticatedUserInfo.value.admin;
+    const {isAdvancedUser} = this;
+    if (preferences.loaded && !isAdmin && !isAdvancedUser) {
       const restrictions = preferences.uiStoragesPermissionsRestrictions;
+      const readOnlyRoles = restrictions.filter((r) => r.readonly).map((r) => r.role);
       const defaultMask = restrictions.map((rule) => ({
         role: rule.role,
         mask: rule.defaultMask
@@ -137,12 +155,14 @@ export class DataStorageEditDialog extends React.Component {
       }));
       return {
         defaultMask,
-        enabledMask
+        enabledMask,
+        readOnlyRoles
       };
     }
     return {
       defaultMask: [],
-      enabledMask: []
+      enabledMask: [],
+      readOnlyRoles: []
     };
   }
 
@@ -466,7 +486,7 @@ export class DataStorageEditDialog extends React.Component {
       this.setState({activeTab: 'info'});
     };
 
-    const {defaultMask, enabledMask} = this.permissionsRestrictions;
+    const {defaultMask, enabledMask, readOnlyRoles} = this.permissionsRestrictions;
 
     return (
       <Modal
@@ -770,6 +790,7 @@ export class DataStorageEditDialog extends React.Component {
                   objectType="DATA_STORAGE"
                   defaultMask={defaultMask}
                   enabledMask={enabledMask}
+                  readOnlyRoles={readOnlyRoles}
                 />
               </Tabs.TabPane>
             }

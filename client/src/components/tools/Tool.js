@@ -768,6 +768,19 @@ export default class Tool extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.admin;
   };
 
+  isAdvancedUser = () => {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        roles = []
+      } = authenticatedUserInfo.value;
+      return roles.some(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  };
+
   historyAvailableForUser = () => {
     if (!this.props.tool.loaded) {
       return false;
@@ -2077,9 +2090,11 @@ export default class Tool extends localization.LocalizedReactComponent {
       toolGroup.privateGroup &&
       roleModel.isOwner(toolGroup);
     const isAdmin = this.isAdmin();
-    const restrictions = isPersonal && !isAdmin
+    const isAdvancedUser = this.isAdvancedUser();
+    const restrictions = isPersonal && !isAdmin && !isAdvancedUser
       ? this.permissionsRestrictions
       : [];
+    const readOnlyRoles = restrictions.filter((r) => r.readonly).map((r) => r.role);
     const defaultMask = restrictions.map((rule) => ({
       role: rule.role,
       mask: rule.defaultMask
@@ -2149,6 +2164,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             objectType="TOOL"
             defaultMask={defaultMask}
             enabledMask={enabledMask}
+            readOnlyRoles={readOnlyRoles}
           />
         </Modal>
       </Card>

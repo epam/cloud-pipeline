@@ -157,6 +157,19 @@ export default class EditToolGroupForm extends React.Component {
     this.setState({activeTab: key});
   };
 
+  isAdvancedUser = () => {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        roles = []
+      } = authenticatedUserInfo.value;
+      return roles.some(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  };
+
   render () {
     const {
       toolGroup,
@@ -168,9 +181,11 @@ export default class EditToolGroupForm extends React.Component {
     const isAdmin = authenticatedUserInfo.loaded &&
       authenticatedUserInfo.value &&
       authenticatedUserInfo.value.admin;
-    const restrictions = isPersonal && !isAdmin
+    const isAdvancedUser = this.isAdvancedUser();
+    const restrictions = isPersonal && !isAdmin && !isAdvancedUser
       ? this.permissionsRestrictions
       : [];
+    const readOnlyRoles = restrictions.filter((r) => r.readonly).map((r) => r.role);
     const defaultMask = restrictions.map((rule) => ({
       role: rule.role,
       mask: rule.defaultMask
@@ -230,6 +245,7 @@ export default class EditToolGroupForm extends React.Component {
                       objectType="TOOL_GROUP"
                       defaultMask={defaultMask}
                       enabledMask={enabledMask}
+                      readOnlyRoles={readOnlyRoles}
                     />
                   </Tabs.TabPane>
                 )
