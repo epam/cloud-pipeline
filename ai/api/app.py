@@ -6,15 +6,15 @@ import sys
 from os import mkdir
 import socketio
 import uvicorn
-from fastapi import FastAPI, WebSocket, Body
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from llama_index.core.memory import BaseMemory
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import FunctionTool
-from llama_index.core.agent import (StructuredPlannerAgent, FunctionCallingAgentWorker, ReActAgent)
+from llama_index.core.agent import (FunctionCallingAgentWorker, ReActAgent)
 from pydantic import Field
-from documents_query_engine import get_query_engine
+from ai.documents_index import query_documents
 
 
 # Configure logging
@@ -190,14 +190,6 @@ def get_compute_instance_state(
         pipe_run_cmd += str(instance_run_id)
     print(pipe_run_cmd)
     return pipe_run_cmd
-
-def query_documents(query: str) -> str:
-    query_engine = get_query_engine()
-    response = query_engine.query(query)
-    sources = "\n".join([s.metadata["source"] for s in response.source_nodes])
-    result = f"""Result: <<<{response}Sources:\n{sources}>>>. Include this result into response to user."""
-    print(result)
-    return result
 
 tool_run_compute_instance = FunctionTool.from_defaults(get_command_to_run_compute_instance)
 tool_stop_compute_instance = FunctionTool.from_defaults(stop_compute_instance)
