@@ -143,6 +143,7 @@ export default class PermissionsForm extends React.Component {
         role: PropTypes.string
       }))
     ]),
+    readOnlyRoles: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
     subObjectsPermissionsMaskToCheck: PropTypes.number,
     subObjectsToCheck: PropTypes.arrayOf(PropTypes.shape({
       entityId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -159,6 +160,7 @@ export default class PermissionsForm extends React.Component {
 
   static defaultProps = {
     enabledMask: ALL_ALLOWED_MASK,
+    readOnlyRoles: [],
     subObjectsPermissionsMaskToCheck: 0,
     showOwner: true,
     permissionsColumns: [PERMISSION_COLUMNS.allow, PERMISSION_COLUMNS.deny],
@@ -238,7 +240,11 @@ export default class PermissionsForm extends React.Component {
         <Button disabled={this.props.readonly} size="small" onClick={this.openFindUserDialog}>
           <Icon type="user-add" />
         </Button>
-        <Button disabled={this.props.readonly} size="small" onClick={this.openFindGroupDialog}>
+        <Button
+          disabled={this.props.readonly || this.rolesAreReadOnly}
+          size="small"
+          onClick={this.openFindGroupDialog}
+        >
           <Icon type="usergroup-add" />
         </Button>
       </span>
@@ -287,10 +293,34 @@ export default class PermissionsForm extends React.Component {
     });
   };
 
+  get rolesAreReadOnly () {
+    const {
+      readOnlyRoles = []
+    } = this.props;
+    return readOnlyRoles.some((r) => /^all$/i.test(r));
+  }
+
+  subjectIsReadOnly = (subject, isPrincipal) => {
+    if (this.rolesAreReadOnly) {
+      return true;
+    }
+    if (isPrincipal) {
+      return false;
+    }
+    const {
+      readOnlyRoles = []
+    } = this.props;
+    return readOnlyRoles.some((r) => r.toLowerCase() === subject.toLowerCase());
+  };
+
   getDefaultMaskForSubject = (subject, isPrincipal) => {
     const {
       defaultMask = []
     } = this.props;
+    const isReadOnly = this.subjectIsReadOnly(subject, isPrincipal);
+    if (isReadOnly) {
+      return 0;
+    }
     return findMaskForSubject(defaultMask, subject, isPrincipal, 0);
   };
 
@@ -298,6 +328,10 @@ export default class PermissionsForm extends React.Component {
     const {
       enabledMask = []
     } = this.props;
+    const isReadOnly = this.subjectIsReadOnly(subject, isPrincipal);
+    if (isReadOnly) {
+      return 0;
+    }
     return findMaskForSubject(enabledMask, subject, isPrincipal, ALL_ALLOWED_MASK);
   };
 
@@ -700,7 +734,11 @@ export default class PermissionsForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
-              disabled={pending || this.props.readonly}
+              disabled={(
+                pending ||
+                this.props.readonly ||
+                this.subjectIsReadOnly(item.sid.name, item.sid.principal)
+              )}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
               <Icon type="delete" />
