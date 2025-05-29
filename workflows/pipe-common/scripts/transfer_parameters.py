@@ -23,7 +23,6 @@ from pipeline.api import DataStorageRule
 import argparse
 import os
 import re
-import urlparse
 from timeit import default_timer as timer
 from multiprocessing import Pool
 import multiprocessing
@@ -32,6 +31,13 @@ import random
 import shutil
 import json
 import socket
+
+try:
+    # python2
+    from urlparse import urlparse
+except:
+    # python3
+    from urllib.parse import urlparse
 
 LOCALIZATION_TASK_NAME = 'InputData'
 VALUE_DELIMITERS = [',', ' ', ';']
@@ -482,7 +488,7 @@ class InputDataTask:
                             task_name=self.task_name)
                 path_suffix = os.path.basename(path)[:-1]
                 path = os.path.dirname(path)
-            remote = urlparse.urlparse(path)
+            remote = urlparse(path)
             relative_path = path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
             local_dir = self.get_local_dir(input_type)
 
@@ -678,7 +684,7 @@ class InputDataTask:
         if source.endswith('/'):
             return False
         if self.match_cloud_path(source):
-            source_path = urlparse.urlparse(source)
+            source_path = urlparse(source)
             # case when whole bucket is selected
             if not source_path.path or source_path.path == '/':
                 return True
@@ -731,7 +737,7 @@ class InputDataTask:
         return sorted(files, key=lambda x: x.size, reverse=True)
 
     def get_path_without_folder(self, source, path):
-        prefix = urlparse.urlparse(source).path
+        prefix = urlparse(source).path
         if prefix.startswith('/'):
             prefix = prefix[1:]
         if not prefix.endswith('/'):

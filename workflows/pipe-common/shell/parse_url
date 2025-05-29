@@ -18,7 +18,12 @@ URL="$1"
 [ -z "$URL" ] && exit 0
 
 PART="${2:-geturl()}"
-$CP_PYTHON2_PATH -c "from urlparse import urlparse
+$CP_PYTHON2_PATH -c "try:
+    # python2
+    from urlparse import urlparse
+except:
+    # python3
+    from urllib.parse import urlparse
 if '$URL'.find('://') == -1:
   url = urlparse('//$URL','http')
 else:

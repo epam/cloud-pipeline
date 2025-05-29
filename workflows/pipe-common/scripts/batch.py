@@ -15,8 +15,13 @@
 import os
 import fnmatch
 import time
-from urlparse import urlparse
 from pipeline import Logger, PipelineAPI, LoggedCommand
+try:
+    # python2
+    from urlparse import urlparse
+except:
+    # python3
+    from urllib.parse import urlparse
 
 
 class AbstractTask:
