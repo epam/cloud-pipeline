@@ -175,11 +175,17 @@ class ChatEngine {
       this._socket.on('chunk', this.onChunk(responseMessage));
       this._socket.on('disconnect', this.onDone);
     } catch (e) {
+      responseMessage.pending = false;
+      this._pending = false;
       this._error = e.message;
-      this._socket && this._socket.close();
-      console.error('Error creating chat:', e);
+      console.error('Error while creating chat:', e);
+
+      if (this._socket) {
+        this._socket.close();
+        this._socket = null;
+      }
     }
-  }
+  };
 }
 
 const AIChatEngine = new ChatEngine();

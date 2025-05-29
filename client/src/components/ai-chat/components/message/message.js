@@ -24,6 +24,7 @@ import LaunchForm from '../launch-form/launch-form';
 import Markdown from '../../../special/markdown';
 import {processMessage} from './message-utils';
 import styles from './message.css';
+import AIChatEngine from '../../ai-chat-engine';
 
 const mockParameters = (value) => {
   const parameters = {
@@ -75,6 +76,9 @@ export default class Message extends React.Component {
   renderContent = () => {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
+    }
+    if (AIChatEngine.error) {
+      return <p>Connection error: {AIChatEngine.error}</p>;
     }
     // mock return, remove this return statement when API will be fixed
     return (
