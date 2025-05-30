@@ -133,8 +133,13 @@ export default class LaunchForm extends React.Component {
       return;
     }
     const registry = this.registries.find(r => r.id === DEFAULT_REGISTRY_ID);
+    let dockerImage = data.dockerImage || '';
+    if (dockerImage.split('/').length === 1) {
+      const defaultGroup = registry.groups[0]?.name;
+      dockerImage = `${defaultGroup}/${dockerImage}`;
+    }
     const {tool} = getDockerImage(
-      `${registry.name}/${data.dockerImage}`,
+      `${registry.name}/${dockerImage}`,
       this.props.dockerRegistries
     ) || {};
     if (!tool) {
