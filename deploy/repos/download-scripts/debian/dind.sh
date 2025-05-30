@@ -12,4 +12,11 @@ apt-get install --download-only -y \
     xfsprogs \
     xz-utils \
     pigz \
-    kmod
+    kmod \
+    libkmod2 \
+    bash-completion \
+    libfuse2 \
+    libexpat1 \
+    ucf \
+    libxml2 \
+    libip4tc0

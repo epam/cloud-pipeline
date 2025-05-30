@@ -86,25 +86,44 @@ localedef -v -c -i en_US -f UTF-8 en_US.UTF-8
 
 yum install curl \
             wget \
-            python \
-            python-pip -y
+            python -y
+
+curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2
 
 if ! aws --version > /dev/null 2>&1; then
     echo "INFO: awscli is not installed, proceeding with installation"
     pip install awscli
 fi
 
+
+rm -f /etc/yum.repos.d/cloud-pipeline.repo && \
+yum install -y centos-release-scl-rh && \
+yum install -y zstd
+
+for repo_file in /etc/yum.repos.d/*.repo; do
+    sed -i '/download.example/d' "$repo_file"
+    sed -i 's/mirror.centos.org/vault.centos.org/g' "$repo_file"
+    if grep -q 'baseurl' "$repo_file"; then
+            sed -i 's/^#baseurl=/baseurl=/g' "$repo_file"
+            sed -i 's/^metalink=/#metalink=/g' "$repo_file"
+            sed -i 's/^mirrorlist=/#mirrorlist=/g' "$repo_file"
+    fi
+done
+
 if ! deb-s3 > /dev/null 2>&1; then
     echo "INFO: deb-s3 is not installed, proceeding with installation"
-    yum install ruby-2.0.0.648-36.el7.x86_64 -y
-    gem install bundler -v '1.17.3'
-    git clone https://github.com/sidoruka/deb-s3
-    cd deb-s3
-    git checkout 058a559484b5d62441bf47229a26687410bf605d
-    bundle install
-    \cp $(pwd)/bin/deb-s3 /usr/local/bin/
-    \cp $(pwd)/lib/deb /usr/local/lib/ -r
-    cd -
+    yum -y --enablerepo=centos-sclo-rh -y install rh-ruby30 && \
+    yum -y --enablerepo=centos-sclo-rh -y install rh-ruby30-ruby-devel && \
+    source /opt/rh/rh-ruby30/enable  && \
+    gem install bundler -v '2.0' && \
+    gem install nokogiri && \
+    git clone https://github.com/deb-s3/deb-s3 && \
+    cd deb-s3 && \
+    git checkout 9fc17226d4f7d18571dd0adde2dc079c751d54c9  && \
+    bundle install && \
+    \cp $(pwd)/bin/deb-s3 /usr/local/bin/ && \
+    \cp $(pwd)/lib/deb /usr/local/lib/ -r && \
+    cd - && \
     rm -rf deb-s3
 fi
 
@@ -143,6 +162,12 @@ for CP_REPOS_DOWNLOAD_SCRIPT in "${POSITIONAL[@]}"; do
         continue
     fi
 
+    # Replace all "%3a" with ":" as otherwise s3 urls are broken
+    for f in ${CP_REPOS_DOWNLOAD_SCRIPT_TMP_DIR}/*.deb; do
+        fn=$(echo "$f" | sed 's/%3a/:/g')
+        /bin/mv "$f" "$fn"
+    done
+
     echo "INFO: packages are downloaded via $CP_REPOS_DOWNLOAD_SCRIPT, uploading to S3"
     deb-s3 upload   --bucket "$CP_REPOS_BUCKET" \
                     --prefix "$CP_REPOS_BUCKET_PREFIX/$CP_REPOS_DOWNLOAD_OS/$VERSION_ID" \
@@ -153,6 +178,26 @@ for CP_REPOS_DOWNLOAD_SCRIPT in "${POSITIONAL[@]}"; do
                     --s3-region="$AWS_DEFAULT_REGION" \
                     --sign="$CP_REPOS_GPG_PUB_KEY_ID" \
                     --arch amd64 \
+                    --visibility=nil \
                     $CP_REPOS_DOWNLOAD_SCRIPT_TMP_DIR/*.deb
     rm -rf "$CP_REPOS_DOWNLOAD_SCRIPT_TMP_DIR"
+    
+done
+
+# Replace all "+" with " " (space) and this is a replacement in S3 urls
+l=$(aws s3 ls --recursive s3://$CP_REPOS_BUCKET/$CP_REPOS_BUCKET_PREFIX/$CP_REPOS_DOWNLOAD_OS/$VERSION_ID/ | grep deb | cut -f2- -d'/' | grep '+')
+for f in $(echo $l); do
+    dir=$(dirname "$f")
+    fn=$(basename "$f")
+    
+    echo $f
+
+    aws s3 cp "s3://$CP_REPOS_BUCKET/tools/$f" ./
+    dir2=$(echo "$dir" | sed 's/+/ /g')
+    fn2=$(echo "$fn" | sed 's/+/ /g')
+    /bin/mv "$fn" "$fn2"
+    aws s3 cp "$fn2" "s3://$CP_REPOS_BUCKET/tools/$dir2/$fn2"
+    rm -f "$fn2" 
+    aws s3 rm "s3://$CP_REPOS_BUCKET/tools/$f"
+    echo ----
 done
