@@ -815,7 +815,8 @@ function parse_options {
     set_service_host "CP_DOCKER_EXTERNAL_HOST" "CP_DOCKER_INTERNAL_HOST" && \
     set_service_host "CP_EDGE_EXTERNAL_HOST" "CP_EDGE_INTERNAL_HOST"  && \
     set_service_host "CP_GITLAB_EXTERNAL_HOST" "CP_GITLAB_INTERNAL_HOST" && \
-    set_service_host "CP_SHARE_SRV_EXTERNAL_HOST" "CP_SHARE_SRV_INTERNAL_HOST"
+    set_service_host "CP_SHARE_SRV_EXTERNAL_HOST" "CP_SHARE_SRV_INTERNAL_HOST" && \
+    set_service_host "CP_MLFLOW_EXTERNAL_HOST" "CP_API_SRV_EXTERNAL_HOST"
 
     if [ $? -ne 0 ]; then
         print_err "Unrecoverable error occured while setting services hosts, exiting"

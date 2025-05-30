@@ -218,5 +218,18 @@ CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
 # cp-notifier
 CP_NOTIFIER_UI_ENABLE=true
 
+# cp-mlflow
+CP_MLFLOW_ARTIFACTS_DESTINATION=/opt/local/data/artifacts
+CP_MLFLOW_DATABASE_USERNAME=mlflow
+CP_MLFLOW_DATABASE_PASSWORD=mlflow
+CP_MLFLOW_DATABASE_NAME=mlflow
+CP_MLFLOW_DATABASE_HOST=cp-api-db.default.svc.cluster.local
+CP_MLFLOW_DATABASE_PORT=5432
+CP_MLFLOW_MODEL_PORT=8080
+CP_MLFLOW_INTERNAL_HOST=cp-mlflow.default.svc.cluster.local
+CP_MLFLOW_INTERNAL_PORT=8080
+CP_MLFLOW_EXTERNAL_PORT=8080
+CP_MLFLOW_EXTERNAL_SUFFIX=/mlflow
+
 # Other params, specified on command line
 #

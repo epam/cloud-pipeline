@@ -667,5 +667,12 @@
         "description": "Disable mount of /ebs/runs and /ebs/reference folders to the run file system.",
         "defaultValue": "false",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_RUN_ENGINE_TYPE",
+        "type": "string",
+        "description": "Instance execution workflow language: nextflow, mlflow",
+        "defaultValue": "",
+        "passToWorkers": false
     }
 ]

@@ -344,6 +344,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-storage-lifecycle-service \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
 
+# MLFlow server
+CP_MLFLOW_DIST_NAME=${CP_MLFLOW_DIST_NAME:-"$CP_DIST_REPO_NAME:mlflow-server-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-mlflow-server \
+                -t "$CP_MLFLOW_DIST_NAME"
+docker push "$CP_MLFLOW_DIST_NAME"
+
+
 ########################
 # Base tools dockers
 ########################
@@ -505,6 +512,14 @@ RESEARCH_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/research
 MD_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/md
 
 # FIXME: Add gromacs and namd
+
+########################
+# MLOps tools dockers
+########################
+MLOPS_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/mlops
+
+# MLFlow client
+build_and_push_tool $MLOPS_TOOLS_DOCKERS_SOURCES_PATH/cp-mlflow "$CP_DIST_REPO_NAME:tools-mlops-mlflow-${DOCKERS_VERSION}" "library/mlflow:latest"
 
 ########################
 # System dockers

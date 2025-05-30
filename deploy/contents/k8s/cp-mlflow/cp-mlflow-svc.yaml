@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-mlflow: "true"
+  name: cp-mlflow
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_MLFLOW_INTERNAL_PORT}
+    targetPort: 8080
+    name: cp-mlflow-port-https
+  selector:
+    cloud-pipeline/cp-mlflow: "true"
