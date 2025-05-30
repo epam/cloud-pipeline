@@ -286,7 +286,7 @@ if [ -z "$docker_data_root" ] || [[ "$docker_data_root" == "@"*"@" ]]; then
   docker_data_root="/ebs/docker"
 fi
 
-if check_gpu_available "nvidia-smi"; then
+if check_gpu_available; then
   nvidia-persistenced --persistence-mode
 
 cat <<EOT > /etc/docker/daemon.json
@@ -546,7 +546,7 @@ fi
 
 enable_emergency_termination_service
 
-if check_gpu_available "nvidia-smi"; then
+if check_gpu_available; then
   cat >> /etc/rc.local << EOF
 nvidia-persistenced --persistence-mode
 nvidia-smi
