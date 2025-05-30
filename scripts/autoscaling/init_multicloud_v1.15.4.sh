@@ -6,9 +6,14 @@ if [[ -f "$launch_token" ]]; then exit 0; fi
 user_data_log="/var/log/user_data.log"
 exec > "$user_data_log" 2>&1
 
-function check_installed {
-    command -v "$1" >/dev/null 2>&1
-    return $?
+function check_gpu_available {
+    command -v "nvidia-smi" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then echo "nvidia-smi not found"; return 1; fi
+    
+    nvidia-smi &> /dev/null
+    if [ $? -eq 9 ]; then echo "NVIDIA driver is not loaded"; return 1; fi
+    
+    return 0
 }
 
 function update_nameserver {
@@ -188,7 +193,7 @@ else
   DOCKER_STORAGE_OPTS=""
 fi
 
-if check_installed "nvidia-smi"; then
+if check_gpu_available; then
   nvidia-persistenced --persistence-mode
 
 cat <<EOT > /etc/docker/daemon.json
@@ -432,7 +437,7 @@ EOL
   fi
 fi
 
-if check_installed "nvidia-smi"; then
+if check_gpu_available; then
   cat >> /etc/rc.local << EOF
 nvidia-persistenced --persistence-mode
 nvidia-smi
