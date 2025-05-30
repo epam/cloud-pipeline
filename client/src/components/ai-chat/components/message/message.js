@@ -77,18 +77,6 @@ export default class Message extends React.Component {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
     }
-    if (AIChatEngine.error) {
-      return <p>Connection error: {AIChatEngine.error}</p>;
-    }
-    // mock return, remove this return statement when API will be fixed
-    return (
-      <div>
-        <Markdown md={this.message.text} />
-        <LaunchForm
-          data={mockPayload()}
-        />
-      </div>
-    );
     if (this.message.parts?.length > 0) {
       return (
         <div>

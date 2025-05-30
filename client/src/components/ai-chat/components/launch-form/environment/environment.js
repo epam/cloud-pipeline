@@ -49,7 +49,6 @@ export default class Environment extends React.Component {
   };
 
   render () {
-    console.log('allowedInstanceTypes', this.allowedInstanceTypes)
     const {formStore} = this.props;
     const {dockerImage, instanceType, disk, isSpot} = formStore;
     const priceOptions = [
@@ -58,7 +57,7 @@ export default class Environment extends React.Component {
     ];
     const priceOption = isSpot ? PRICE_TYPES.spot : PRICE_TYPES.onDemand;
     const instanceOptions = getSelectOptions(
-      this.allowedInstanceTypes["cluster.allowed.instance.types"]
+      this.allowedInstanceTypes['cluster.allowed.instance.types']
     );
     const onlyNumbersWithRangeValidator = (value) => {
       if (!value || value.trim() === '') {

@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {Provider} from 'mobx-react';
 import AIChat from './ai-chat';
 import styles from './ai-chat.css';
 
@@ -22,7 +23,9 @@ export default class AIChatPage extends React.Component {
   render () {
     return (
       <div className={styles.pageContainer}>
-        <AIChat />
+        <Provider router={this.props.router}>
+          <AIChat />
+        </Provider>
       </div>
     );
   }

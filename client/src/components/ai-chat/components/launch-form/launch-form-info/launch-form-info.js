@@ -29,18 +29,14 @@ export default class LaunchFormInfo extends React.Component {
     return (
       <div className={styles.container}>
         <div className={styles.launchFormInfo}>
-          {toolInfo.image && (
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Tool:</span>
-              <span className={styles.value}>{toolInfo.image}</span>
-            </div>
-          )}
-          {toolVersion.version && (
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Version:</span>
-              <span className={styles.value}>{toolVersion.version}</span>
-            </div>
-          )}
+          <div className={styles.infoRow}>
+            <span className={styles.label}>Tool:</span>
+            <span className={styles.value}>{toolInfo.image}</span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.label}>Version:</span>
+            <span className={styles.value}>{toolVersion.version}</span>
+          </div>
         </div>
         {toolInfo?.description &&
           <p>
@@ -63,5 +59,5 @@ LaunchFormInfo.propTypes = {
     configuration: PropTypes.shape({
       cmd_template: PropTypes.string
     })
-  }).isRequired
+  })
 };

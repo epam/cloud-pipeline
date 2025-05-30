@@ -28,6 +28,8 @@ class LaunchFormStore {
   @observable _toolInfo = undefined;
   @observable _configuration = undefined;
   @observable _toolVersion = undefined;
+  @observable _versions = undefined;
+
   @observable _error = '';
   @observable _pending = true;
 
@@ -51,6 +53,10 @@ class LaunchFormStore {
     return this._toolVersion;
   }
 
+  @computed get versions () {
+    return this._versions?.versions || [];
+  }
+
   set error (error) {
     this._error = error;
   }
@@ -72,7 +78,7 @@ class LaunchFormStore {
   }
 
   @action
-  initializeData ({data, toolInfo, toolVersion}) {
+  initializeData ({data, toolInfo, toolVersion, versions}) {
     const {parameters} = data || {};
     const mergeValues = (current, initial) => current ?? initial;
     if (!data || !toolInfo) {
@@ -86,14 +92,16 @@ class LaunchFormStore {
       configuration,
       data,
       toolInfo,
-      toolVersion
+      toolVersion,
+      versions
     });
-    this.disk = mergeValues(data.disk, configuration.instance_disk);
-    this.isSpot = mergeValues(data.is_spot, configuration.is_spot);
     this._toolInfo = toolInfo;
     this._toolVersion = toolVersion;
     this._configuration = configuration;
+    this._versions = versions;
     // TODO: discuss about docker image format from chat (registry/image:version?)
+    this.disk = mergeValues(data.disk, configuration.instance_disk);
+    this.isSpot = mergeValues(data.is_spot, configuration.is_spot);
     this.dockerImage = mergeValues(
       data.dockerImage,
       `${toolInfo.registry}/${toolInfo.image}:${toolVersion.name}`
