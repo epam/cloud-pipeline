@@ -289,7 +289,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO waitForNestedRunsLink() {
         long startTime = currentTimeMillis();
         while(!get(NESTED_RUNS).exists() &&
-                (currentTimeMillis()-startTime) < SSH_LINK_APPEARING_TIMEOUT * 1000) {
+                (currentTimeMillis()-startTime) < SSH_LINK_APPEARING_TIMEOUT) {
             ensure(STATUS, not(completed));
         }
         return this;
