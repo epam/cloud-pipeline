@@ -76,6 +76,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                     .find(byClassName("ant-select"))),
             entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row")
                     .find(by("role", "combobox"))),
+            entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud Region')]"))
+                    .closest(".ant-row").find(by("role", "combobox"))),
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex")
                     .find(cssSelector(".ant-checkbox-wrapper"))),
             entry(IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),

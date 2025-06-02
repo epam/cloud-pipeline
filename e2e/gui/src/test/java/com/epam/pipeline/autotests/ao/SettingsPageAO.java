@@ -103,6 +103,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return new SystemManagementAO(parentAO);
     }
 
+    public CloudRegionsAO switchToCloudRegions() {
+        click(CLOUD_REGIONS_TAB);
+        return new CloudRegionsAO();
+    }
+
     public MyProfileAO switchToMyProfile() {
         click(MY_PROFILE);
         return new MyProfileAO();
