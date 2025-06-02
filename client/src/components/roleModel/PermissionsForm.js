@@ -222,11 +222,15 @@ export default class PermissionsForm extends React.Component {
   renderGroupAndUsersActions = () => {
     return (
       <span className={styles.actions}>
-        <Button disabled={this.props.readonly} size="small" onClick={this.openFindUserDialog}>
+        <Button
+          disabled={this.props.readonly || this.permissionsAreReadOnly}
+          size="small"
+          onClick={this.openFindUserDialog}
+        >
           <Icon type="user-add" />
         </Button>
         <Button
-          disabled={this.props.readonly || this.rolesAreReadOnly}
+          disabled={this.props.readonly || this.permissionsAreReadOnly}
           size="small"
           onClick={this.openFindGroupDialog}
         >
@@ -278,7 +282,7 @@ export default class PermissionsForm extends React.Component {
     });
   };
 
-  get rolesAreReadOnly () {
+  get permissionsAreReadOnly () {
     const {
       readOnlyRoles = []
     } = this.props;
@@ -286,7 +290,7 @@ export default class PermissionsForm extends React.Component {
   }
 
   subjectIsReadOnly = (subject, isPrincipal) => {
-    if (this.rolesAreReadOnly) {
+    if (this.permissionsAreReadOnly) {
       return true;
     }
     if (isPrincipal) {
