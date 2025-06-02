@@ -46,4 +46,4 @@ RUN mkdir -p /opt/local/mamba && \
 # Patch MLFlow
 ADD patches /tmp/patches
 RUN cd /opt/local/mamba/envs/mlflow/lib/python3.10/site-packages/mlflow/tracking && \
-    patch -p1 --dry-run < /tmp/patches/fluent.py.patch
+    patch -p1 fluent.py < /tmp/patches/fluent.py.patch
