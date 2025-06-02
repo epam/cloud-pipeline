@@ -32,7 +32,6 @@ class ChatEngine {
   @observable _messages = [];
   @observable _pending = false;
   @observable _socket;
-  @observable _error = '';
 
   @computed
   get messages () {
@@ -47,11 +46,6 @@ class ChatEngine {
   @computed
   get pending () {
     return this._pending;
-  }
-
-  @computed
-  get error () {
-    return this._error;
   }
 
   @action
@@ -89,7 +83,6 @@ class ChatEngine {
       });
     } catch (e) {
       this._pending = false;
-      this._error = e.message;
     }
   };
 
@@ -177,13 +170,9 @@ class ChatEngine {
     } catch (e) {
       responseMessage.pending = false;
       this._pending = false;
-      this._error = e.message;
+      responseMessage.error = e.message;
       console.error('Error while creating chat:', e);
-
-      if (this._socket) {
-        this._socket.close();
-        this._socket = null;
-      }
+      this.onDone();
     }
   };
 }

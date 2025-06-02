@@ -77,6 +77,13 @@ export default class Message extends React.Component {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
     }
+    if (this.message.error) {
+      return (
+        <p className={styles.errorConnect}>
+          Error: {this.message.error}
+        </p>
+      );
+    }
     if (this.message.parts?.length > 0) {
       return (
         <div>

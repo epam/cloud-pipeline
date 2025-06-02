@@ -43,3 +43,7 @@
 .typing-indicator {
   margin-left: 10px;
 }
+
+.errorConnect {
+  color: #f04134;
+}
