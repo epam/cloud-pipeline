@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import base64
 
 import os
 import fnmatch
@@ -190,7 +191,7 @@ def get_well_known_hosts(cloud_region):
     return get_cloud_config_section(cloud_region, "well_known_hosts")
 
 
-def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, run_id=None):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
     default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
     default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
@@ -201,15 +202,44 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
         return default_object
 
     for image_config in instance_images_config:
+        permissions = set(image_config["permissions"]) if "permissions" in image_config else None
+        try:
+            if permissions:
+                pipe_log('Image config with restricted roles found ({}), checking permissions'.format(permissions))
+                api_token_data = api_token.split(".")[1]
+                api_token_data = api_token_data + "="*divmod(len(api_token_data),4)[1]
+                api_token_data = json.loads(base64.urlsafe_b64decode(api_token_data))
+                api_token_roles = set(api_token_data["roles"])
+                api_token_roles.update(set(api_token_data.get('groups', [])))
+                if not (permissions & api_token_roles):
+                    continue
+        except:
+                    # If something is wrong with the permissions check - do not use a restricted image
+                    continue
+
+        docker_image_list = image_config["docker_image"] if "docker_image" in image_config else None
+        try:
+            if docker_image_list and run_id is not None:
+                pipe_log('Image config with restricted docker image found ({}), checking for match with a current run'.format(docker_image_list))
+                run_info = get_run_info(run_id)
+                if  not run_info or \
+                    not 'dockerImage' in run_info or \
+                    not run_info['dockerImage'] in docker_image_list:
+                    continue
+        except:
+            # If something is wrong with the permissions check - do not use a restricted image
+            continue
+
         image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
         init_script = image_config.get("init_script", default_object["init_script"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
+        additional_spec = image_config.get("additional_spec", None)
         if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
             return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
-            "embedded_scripts": embedded_scripts, "fs_type": fs_type}
+            "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec}
 
     return default_object
 
@@ -295,12 +325,16 @@ def replace_docker_images(pre_pull_images, user_data_script):
     else:
         raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
 
+def get_additional_spec(cloud_region, ins_type, ins_platform, ins_img, run_id):
+    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img, run_id=run_id)
+    return allowed_instance.get('additional_spec', {})
+
 
 def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
                          global_distribution_url, swap_size, pre_pull_images=[], docker_data_root='/ebs/docker',
-                         docker_storage_driver='', skip_system_images_load=''):
-    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
+                         docker_storage_driver='', skip_system_images_load='', run_id=None):
+    allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img, run_id=run_id)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
@@ -447,3 +481,12 @@ def get_region_id(cloud_region, provider, api):
         if region.provider == provider and region.region_id == cloud_region:
             return region.id
     return None
+
+def get_run_info(run_id):
+    pipe_api = PipelineAPI(api_url, None)
+    try:
+        return pipe_api.load_run_efficiently(run_id)
+    except:
+        pipe_log('An error occured while getting info for run id {}'.format(run_id))
+        return None
+
