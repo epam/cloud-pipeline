@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-.select-container {
+.parameter-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+
+.row {
   column-gap: 20px;
   display: flex;
   margin: 15px 0;
-
-  > div  {
-    max-width: 33.333%;
-  }
 }
 
-.select-field {
-  align-items: center;
-  display: flex;
-  flex: 1;
-}
-
-.label {
-  font-weight: bold;
-  min-width: 70px;
+.row > * {
+  max-width: 33.333%;
+  flex: 1 0;
 }

@@ -8,12 +8,5 @@
 
 .parameter-field {
   display: flex;
-  flex-direction: column;
-}
-
-.checkbox-field {
-  display: flex;
-  flex-direction: row-reverse;
-  width: fit-content;
   gap: 5px;
 }

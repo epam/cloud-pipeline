@@ -24,12 +24,11 @@ import LaunchForm from '../launch-form/launch-form';
 import Markdown from '../../../special/markdown';
 import {processMessage} from './message-utils';
 import styles from './message.css';
-import AIChatEngine from '../../ai-chat-engine';
 
 const mockParameters = (value) => {
   const parameters = {
-    Reference_Path: {type: 'string', value: 'String value'},
-    Checkbox: {type: 'boolean', value: true, checkboxText: 'Enable feature'},
+    Reference_Path: {type: 'string', value: 'Some value'},
+    Boolean_Type_Parameter: {type: 'boolean', value: true},
     Path_To_File: {type: 'path', value: '/path/to/file'},
     Another_Path_Parameter: {type: 'path', value: '/another/path'}
   };

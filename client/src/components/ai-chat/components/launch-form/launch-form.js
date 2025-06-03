@@ -319,9 +319,7 @@ export default class LaunchForm extends React.Component {
 
     return (
       <div className={classNames(styles.launchForm, 'cp-panel')}>
-        <LaunchFormInfo
-          formStore={this.formStore}
-        />
+        <LaunchFormInfo formStore={this.formStore} />
         <Environment formStore={this.formStore} />
         <ParameterGroup formStore={this.formStore} />
         <div className={styles.controlBtn}>
