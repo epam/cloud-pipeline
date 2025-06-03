@@ -9,7 +9,6 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageCon
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
-
 EMBED_MODEL_NAME = "text-embedding-004"
 SOURCE_METADATA = "source"
 
@@ -18,22 +17,13 @@ REPO = "cloud-pipeline"
 REPO_DOCUMENTS_FOLDER = "docs/md"
 BRANCH = "develop"
 DOCUMENTS_COLLECTION_NAME = "Documents"
-CHROMA_DB_PATH = "chroma-db"
 
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 github_token = os.environ["GITHUB_TOKEN"]
+chroma_db_path = os.environ["CHROMA_DB_PATH"]
 
-def create_index(force):
-    collection_name = DOCUMENTS_COLLECTION_NAME
-    chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-    for collection in chroma_client.list_collections():
-        if collection.name == collection_name:
-            if force:
-                chroma_client.delete_collection(collection_name)
-            else:
-                print(f"Collection {collection_name} already exists. Index won't be created.")
-                exit(1)
-
+def create_index():
+    chroma_client = chromadb.PersistentClient(path=chroma_db_path)
     _set_up_embed_model()
     issues = _get_issues()
     print(f"Issues: {len(issues)}.")
@@ -50,38 +40,29 @@ def create_index(force):
         print("Index was not created. No documents found.")
         return None
 
-    chroma_collection = chroma_client.create_collection(collection_name)
+    chroma_collection = chroma_client.create_collection(DOCUMENTS_COLLECTION_NAME)
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     return VectorStoreIndex.from_documents(documents, storage_context=storage_context)
 
 def query_documents(query: str) -> str:
-    query_engine = _get_query_engine(CHROMA_DB_PATH, DOCUMENTS_COLLECTION_NAME)
+    query_engine = _get_query_engine()
     response = query_engine.query(query)
     sources = "\n".join([s.metadata["source"] for s in response.source_nodes])
     result = f"""Result: <<<{response}Sources:\n{sources}>>>. Include this result into response to user."""
-    print(result)
     return result
 
-def _get_query_engine(chroma_db_path, collection_name):
+def _get_query_engine():
     _set_up_embed_model()
     try:
         chroma_client = chromadb.PersistentClient(path=chroma_db_path)
-        chroma_collection = chroma_client.get_collection(collection_name)
+        chroma_collection = chroma_client.get_collection(DOCUMENTS_COLLECTION_NAME)
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
         index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
         return index.as_query_engine(llm=llm)
     except NotFoundError:
-        print(f"There is no {collection_name} collection. Llama index for documents should be created in Chroma DB.")
+        print(f"There is no {DOCUMENTS_COLLECTION_NAME} collection. Llama index for documents should be created in Chroma DB.")
         return None
-
-def main():
-    query_engine = _get_query_engine(CHROMA_DB_PATH, DOCUMENTS_COLLECTION_NAME)
-    response = query_engine.query(
-        "When initial vulnerability scan is expected to run automatically?"
-    )
-    print(response)
-
 
 def _get_issues():
     import requests
@@ -160,6 +141,13 @@ def _set_up_embed_model():
         embed_batch_size=100
     )
     Settings.embed_model = embed_model
+
+def main():
+    query_engine = _get_query_engine()
+    response = query_engine.query(
+        "When initial vulnerability scan is expected to run automatically?"
+    )
+    print(response)
 
 if __name__ == '__main__':
     main()
