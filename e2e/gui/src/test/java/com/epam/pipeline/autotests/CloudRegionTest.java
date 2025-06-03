@@ -213,9 +213,11 @@ public class CloudRegionTest
                     output[0] = shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion1ID))
+                            .screenshot("screenshot-3971-1")
                             .lastCommandResult(command(cloudRegion1ID));
                     output[1] = shell
                             .execute(command(cloudRegion2ID))
+                            .screenshot("screenshot-3971-2")
                             .lastCommandResult(command(cloudRegion2ID));
                     shell.close();
                 });
