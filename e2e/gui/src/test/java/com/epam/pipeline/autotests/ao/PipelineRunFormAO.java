@@ -336,6 +336,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkStoragesAreInListConflictedStorages(String...storages) {
+        $$(byClassName("ant-modal-body"))
+                .findBy(text("Launch"))
+                .find(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible);
         Arrays.stream(storages).forEach(storage ->
                assertTrue($$(className("ant-select-selection__choice")).texts().contains(storage),
                       format("Storages list doesn't contain %s", storage)));
@@ -344,6 +348,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkStoragesNotInListConflictedStorages(String...storages) {
+        $$(byClassName("ant-modal-body"))
+                .findBy(text("Launch"))
+                .find(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible);
         Arrays.stream(storages).forEach(storage ->
                 assertFalse($$(className("ant-select-selection__choice")).texts().contains(storage),
                         format("Storages list contains %s", storage)));

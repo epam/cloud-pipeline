@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selenide.open;
 import com.epam.pipeline.autotests.ao.CloudRegionsAO;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
@@ -40,6 +41,7 @@ import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -100,6 +102,11 @@ public class CloudRegionTest
     public void getInitialRegionsMountRules() {
         getInitialRules(cloudRegion1, 0);
         getInitialRules(cloudRegion2, 1);
+    }
+
+    @AfterMethod
+    public void relogin() {
+        open(C.ROOT_ADDRESS);
     }
 
     @AfterClass
