@@ -74,6 +74,9 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
     }
 
     public SelectLimitMountsPopupAO<PARENT_TYPE> clearSelection() {
+        if (!get(CLEAR_SELECTION).exists()) {
+            return this;
+        }
         return click(CLEAR_SELECTION).sleep(1, SECONDS);
     }
 
