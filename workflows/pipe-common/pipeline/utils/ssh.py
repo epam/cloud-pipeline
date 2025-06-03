@@ -97,7 +97,11 @@ class LocalExecutor(CloudPipelineExecutor):
 
     def _execute(self, command, user=None):
         stdout, stderr = self._get_stdout_and_stderr()
-        p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr,
+        p = subprocess.Popen(command,
+                             universal_newlines=True,
+                             shell=True,
+                             stdout=stdout,
+                             stderr=stderr,
                              preexec_fn=self._execute_as_fn(user))
         out, err = p.communicate()
         return p.returncode, out, err

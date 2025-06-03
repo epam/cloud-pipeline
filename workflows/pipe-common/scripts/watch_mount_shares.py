@@ -102,9 +102,18 @@ def configure_kernel_param(key, value):
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
     if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+        p = subprocess.Popen(command,
+                             universal_newlines=True,
+                             shell=True,
+                             stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             executable=executable)
     else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(command,
+                             universal_newlines=True,
+                             shell=True,
+                             stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE)
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)

@@ -33,7 +33,12 @@ def execute(command, logger=None):
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
     stdout, stderr = _get_stdout_and_stderr()
-    p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable)
+    p = subprocess.Popen(command,
+                         universal_newlines=True,
+                         shell=True,
+                         stdout=stdout,
+                         stderr=stderr,
+                         executable=executable)
     out, err = p.communicate()
     if not silent and err:
         print(err)
@@ -49,7 +54,12 @@ def execute_cmd_command(command, silent=False, executable=None):
 
 def get_cmd_command_output(command, executable=None):
     stdout, stderr = _get_stdout_and_stderr()
-    p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable)
+    p = subprocess.Popen(command,
+                         universal_newlines=True,
+                         shell=True,
+                         stdout=stdout,
+                         stderr=stderr,
+                         executable=executable)
     out, err = p.communicate()
     if err:
         print(err)

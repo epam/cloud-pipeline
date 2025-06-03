@@ -142,7 +142,11 @@ class LoggedCommand:
                 'state'     : _task_state}
 
     def execute(self):
-        process = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(self.command,
+                                   universal_newlines=True,
+                                   shell=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
         use_buffer = self.buffer_size > 0
         if use_buffer:
             line_buffer = []
