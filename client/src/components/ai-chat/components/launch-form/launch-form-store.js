@@ -24,6 +24,7 @@ class LaunchFormStore {
   @observable cmd = '';
   @observable isSpot = false;
   @observable parameters = {};
+  @observable successfulRunLaunchForm = false;
 
   @observable _toolInfo = undefined;
   @observable _configuration = undefined;
@@ -59,6 +60,11 @@ class LaunchFormStore {
 
   set error (error) {
     this._error = error;
+  }
+
+  @action
+  setSuccessfulRunLaunchForm (value) {
+    this.successfulRunLaunchForm = value;
   }
 
   @action updateField (key, value) {

@@ -72,6 +72,13 @@ export default class Message extends React.Component {
     return this.props.message.pending;
   }
 
+  handleRunSuccess = (message) => {
+    const {onRunLaunchSuccess} = this.props;
+    if (onRunLaunchSuccess) {
+      onRunLaunchSuccess(message);
+    }
+  };
+
   renderContent = () => {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
@@ -95,6 +102,7 @@ export default class Message extends React.Component {
                 <LaunchForm
                   key={index}
                   data={mockParameters(part.value)}
+                  onRunSuccess={this.handleRunSuccess}
                 />
               );
             }

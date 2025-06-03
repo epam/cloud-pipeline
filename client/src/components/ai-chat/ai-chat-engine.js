@@ -61,6 +61,18 @@ class ChatEngine {
   };
 
   @action
+  sendSystemMessage = (text) => {
+    const systemMessage = {
+      text,
+      id: getToken(),
+      fromUser: false,
+      pending: false,
+      error: ''
+    };
+    this._messages.push(systemMessage);
+  };
+
+  @action
   sendUserMessage = async () => {
     this._pending = true;
     const responseMessage = observable({

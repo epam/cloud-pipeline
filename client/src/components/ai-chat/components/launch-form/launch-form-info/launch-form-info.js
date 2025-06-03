@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import styles from './launch-form-info.css';
 import {observer} from 'mobx-react';
+import {Link} from 'react-router';
 
 @observer
 export default class LaunchFormInfo extends React.Component {
@@ -31,7 +32,9 @@ export default class LaunchFormInfo extends React.Component {
         <div className={styles.launchFormInfo}>
           <div className={styles.infoRow}>
             <span className={styles.label}>Tool:</span>
-            <span className={styles.value}>{toolInfo.image}</span>
+            <Link to={`/tool/${toolInfo.id}/description`}>
+              <span>{toolInfo.image}</span>
+            </Link>
           </div>
           <div className={styles.infoRow}>
             <span className={styles.label}>Version:</span>

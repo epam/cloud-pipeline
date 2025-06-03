@@ -179,7 +179,7 @@ export default class LaunchForm extends React.Component {
 
   runTool = async (version) => {
     this.setState({launchPending: true}, async () => {
-      const {currentUserAttributes} = this.props;
+      const {currentUserAttributes, onRunSuccess} = this.props;
       const hide = message.loading('Fetching tool info...', 0);
       const chooseDefaultValue = (
         versionSettingsValue,
@@ -299,8 +299,12 @@ export default class LaunchForm extends React.Component {
       );
       hide();
       this.setState({launchPending: undefined});
+
       if (runResolved) {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        this.formStore.setSuccessfulRunLaunchForm(true);
+        if (onRunSuccess) {
+          onRunSuccess(`Tool "${this.formStore.toolInfo?.id}" was successfully launched!`);
+        }
       }
     });
   };
@@ -326,10 +330,13 @@ export default class LaunchForm extends React.Component {
           <Button
             type="primary"
             onClick={this.onLaunch}
-            disabled={this.state.launchPending}
-          >
+            disabled={this.state.launchPending || this.formStore.successfulRunLaunchForm}>
             {this.state.launchPending ? (<Icon type="loading" />) : null}
-            LAUNCH
+            {this.formStore.successfulRunLaunchForm ? (
+              'LAUNCHED'
+            ) : (
+              'LAUNCH'
+            )}
           </Button>
         </div>
       </div>
@@ -350,5 +357,6 @@ LaunchForm.propTypes = {
         value: PropTypes.any
       })
     )
-  })
+  }),
+  onRunSuccess: PropTypes.func
 };
