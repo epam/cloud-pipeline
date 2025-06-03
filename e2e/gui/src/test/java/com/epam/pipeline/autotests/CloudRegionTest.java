@@ -61,7 +61,7 @@ public class CloudRegionTest
     private final String storage1 = format("storage_3971_%s", Utils.randomSuffix());
     private final String storage2 = format("storage_3971_%s", Utils.randomSuffix());
     private final String nfsStorage1 = format("nfsStorage_3971_%s", Utils.randomSuffix());
-    private final String cloudRegion1 = C.SSH_CLOUD_REGION;
+    private final String cloudRegion1 = C.DEFAULT_CLOUD_REGION;
     private final String cloudRegion2 = C.ANOTHER_CLOUD_REGION;
     private final String cloudRegion1ID = "6";
     private final String cloudRegion2ID = "2";
