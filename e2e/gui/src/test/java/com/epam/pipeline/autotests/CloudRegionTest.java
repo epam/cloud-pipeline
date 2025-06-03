@@ -214,12 +214,12 @@ public class CloudRegionTest
                     output[0] = shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion1ID))
-                            .assertNextStringIsVisible(command(cloudRegion1ID), rootHost)
+                            .assertPageAfterCommandContainsStrings(command(cloudRegion1ID), rootHost)
                             .screenshot("screenshot-3971-1")
                             .lastCommandResult(command(cloudRegion1ID));
                     output[1] = shell
                             .execute(command(cloudRegion2ID))
-                            .assertNextStringIsVisible(command(cloudRegion2ID), rootHost)
+                            .assertPageAfterCommandContainsStrings(command(cloudRegion2ID), rootHost)
                             .screenshot("screenshot-3971-2")
                             .lastCommandResult(command(cloudRegion2ID));
                     shell.close();
