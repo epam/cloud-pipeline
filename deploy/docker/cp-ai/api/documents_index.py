@@ -24,6 +24,10 @@ chroma_db_path = os.environ["CHROMA_DB_PATH"]
 
 def create_index():
     chroma_client = chromadb.PersistentClient(path=chroma_db_path)
+    collections = chroma_client.list_collections()
+    if any(c.name == DOCUMENTS_COLLECTION_NAME for c in collections):
+        return
+
     _set_up_embed_model()
     issues = _get_issues()
     print(f"Issues: {len(issues)}.")
@@ -38,12 +42,12 @@ def create_index():
 
     if not documents:
         print("Index was not created. No documents found.")
-        return None
+        return
 
     chroma_collection = chroma_client.create_collection(DOCUMENTS_COLLECTION_NAME)
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    return VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+    VectorStoreIndex.from_documents(documents, storage_context=storage_context)
 
 def query_documents(query: str) -> str:
     query_engine = _get_query_engine()
