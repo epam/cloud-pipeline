@@ -25,7 +25,7 @@ chroma_db_path = os.environ["CHROMA_DB_PATH"]
 def create_index():
     chroma_client = chromadb.PersistentClient(path=chroma_db_path)
     collections = chroma_client.list_collections()
-    if any(c.name == DOCUMENTS_COLLECTION_NAME for c in collections):
+    if any(c == DOCUMENTS_COLLECTION_NAME for c in collections):
         return
 
     _set_up_embed_model()

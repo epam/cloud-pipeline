@@ -24,6 +24,9 @@ AI_CONDA_ENVIRONMENT_NAME="${AI_CONDA_ENVIRONMENT_NAME:-ai}"
 eval "$(micromamba shell hook --shell bash)"
 micromamba activate "$AI_CONDA_ENVIRONMENT_NAME"
 
+echo "creating index"
+python api/create_index.py
+
 echo "starting api"
 touch /var/log/api.log
 

@@ -33,6 +33,8 @@ RUN mkdir -p $AI_APP_DIR
 COPY api $AI_APP_DIR/api/
 COPY launch.sh $AI_APP_DIR/
 
+ENV CHROMA_DB_PATH /opt/ai/chroma-db
+
 RUN chmod +x $AI_APP_DIR/launch.sh
 
 EXPOSE 7860

@@ -14,7 +14,7 @@ from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import FunctionTool
 from llama_index.core.agent import (FunctionCallingAgentWorker, ReActAgent)
 from pydantic import Field
-from documents_index import query_documents
+from api.documents_index import query_documents
 
 
 # Configure logging
