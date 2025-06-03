@@ -48,8 +48,9 @@ def create_index():
 def query_documents(query: str) -> str:
     query_engine = _get_query_engine()
     response = query_engine.query(query)
-    sources = "\n".join([s.metadata["source"] for s in response.source_nodes])
-    result = f"""Result: <<<{response}Sources:\n{sources}>>>. Include this result into response to user."""
+    sources = ";".join(set([s.metadata["source"] for s in response.source_nodes]))
+    result = f'''Result: <<<{response}. Sources:{sources}.>>>. Include this result into response to user. 
+    IMPORTANT!!!: Always include Sources!.'''
     return result
 
 def _get_query_engine():
