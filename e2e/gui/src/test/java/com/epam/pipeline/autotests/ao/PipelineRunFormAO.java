@@ -46,6 +46,7 @@ import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -92,7 +93,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button"))),
             entry(CONFIGURE_DNS, context().find(byTitle("Internal DNS name")).parent()
                     .closest(".launch-pipeline-form__form-item-row")
-                    .find(byClassName("hosted-app-configuration__configure")))
+                    .find(byClassName("hosted-app-configuration__configure"))),
+            entry(LAUNCH_BUTTON, context().find(byId("launch-pipeline-button")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -330,6 +332,22 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO checkLaunchItemName(String name) {
         context().find(launchItemName()).shouldHave(text(name));
+        return this;
+    }
+
+    public PipelineRunFormAO checkStoragesAreInListConflictedStorages(String...storages) {
+        Arrays.stream(storages).forEach(storage ->
+               assertTrue($$(className("ant-select-selection__choice")).texts().contains(storage),
+                      format("Storages list doesn't contain %s", storage)));
+        new ConfirmationPopupAO(this).cancel();
+        return this;
+    }
+
+    public PipelineRunFormAO checkStoragesNotInListConflictedStorages(String...storages) {
+        Arrays.stream(storages).forEach(storage ->
+                assertFalse($$(className("ant-select-selection__choice")).texts().contains(storage),
+                        format("Storages list contains %s", storage)));
+        new ConfirmationPopupAO(this).cancel();
         return this;
     }
 

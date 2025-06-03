@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import com.epam.pipeline.autotests.ao.CloudRegionsAO;
@@ -27,18 +26,16 @@ import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_STORAGES;
+import static com.epam.pipeline.autotests.ao.Primitive.LAUNCH_BUTTON;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OBJECT_STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 import static org.testng.Assert.assertTrue;
@@ -47,7 +44,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class CloudRegionTest
@@ -65,8 +61,8 @@ public class CloudRegionTest
     private final String storage1 = format("storage_3971_%s", Utils.randomSuffix());
     private final String storage2 = format("storage_3971_%s", Utils.randomSuffix());
     private final String nfsStorage1 = format("nfsStorage_3971_%s", Utils.randomSuffix());
-    private final String cloudRegion1 = "eu-central-1-test";
-    private final String cloudRegion2 = "us-east-1";
+    private final String cloudRegion1 = C.SSH_CLOUD_REGION;
+    private final String cloudRegion2 = C.ANOTHER_CLOUD_REGION;
     private final String cloudRegion1ID = "6";
     private final String cloudRegion2ID = "2";
     private final String mountPoint = "/testDir";
@@ -152,7 +148,7 @@ public class CloudRegionTest
                 .cancel();
     }
 
-    @Test(dependsOnMethods = "mountRulesMountNoneStoragesLocatedInCloudRegion")
+    @Test
     @TestCase(value = "3971_2")
     public void mountRulesMountStoragesLocatedInTheSameCloudRegionWithInstance() {
         navigationMenu()
@@ -187,7 +183,7 @@ public class CloudRegionTest
                 .cancel();
     }
 
-    @Test(dependsOnMethods = "mountRulesMountNoneStoragesLocatedInCloudRegion")
+    @Test
     @TestCase(value = "3971_3")
     public void mountRulesCheckMountStoragesLocatedInTheCertainCloudRegionViaPipeCLI() {
         final String[] output = new String[2];
@@ -249,6 +245,31 @@ public class CloudRegionTest
                         "Only 0 storages will be mounted.",
                         "Found 0 available storage(s). Checking mount options.",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"));
+    }
+
+    @Test
+    @TestCase(value = "3971_4")
+    public void mountRulesCheckFilterStoragesForCloudRegionInLaunchConfirmation() {
+        navigationMenu()
+                .settings()
+                .switchToCloudRegions()
+                .selectRegion(cloudRegion1)
+                .selectValue(OBJECT_STORAGES, SAME_REGION)
+                .selectValue(FILE_STORAGES, SAME_REGION)
+                .save()
+                .selectRegion(cloudRegion2)
+                .selectValue(OBJECT_STORAGES, NONE)
+                .selectValue(FILE_STORAGES, NONE)
+                .save();
+        navigationMenu()
+                .tools()
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .selectValue(CLOUD_REGION, cloudRegion1)
+                .click(LAUNCH_BUTTON)
+                .checkStoragesAreInListConflictedStorages(storage1, nfsStorage1)
+                .click(LAUNCH_BUTTON)
+                .checkStoragesNotInListConflictedStorages(storage2);
     }
 
     private void getInitialRules(String region, int count) {

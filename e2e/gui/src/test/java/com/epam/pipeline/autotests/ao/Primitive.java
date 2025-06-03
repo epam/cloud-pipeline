@@ -334,5 +334,6 @@ public enum Primitive {
     PROFILE,
     ADD_ROLE,
     OBJECT_STORAGES,
-    FILE_STORAGES
+    FILE_STORAGES,
+    LAUNCH_BUTTON
 }
