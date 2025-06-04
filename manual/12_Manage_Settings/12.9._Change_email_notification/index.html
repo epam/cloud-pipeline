@@ -254,6 +254,12 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#other-automatic-email-notifications">Other automatic email notifications</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#full-node-pool">FULL NODE POOL</a>
+    </li>
+        </ul>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#push-notifications">Push notifications</a>
         <ul>
     <li class="toctree-l4"><a class="reference internal" href="#view-push-notifications">View push notifications</a>
@@ -392,13 +398,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../../installation/management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
                   </li>
               </ul>
       </div>
@@ -440,6 +446,10 @@
 </li>
 <li><a href="#high-consumed-runs">HIGH-CONSUMED runs</a></li>
 <li><a href="#high-consumed-network-bandwidth-runs">HIGH-CONSUMED NETWORK BANDWIDTH runs</a></li>
+</ul>
+</li>
+<li><a href="#other-automatic-email-notifications">Other automatic email notifications</a><ul>
+<li><a href="#full-node-pool">FULL NODE POOL</a></li>
 </ul>
 </li>
 <li><a href="#push-notifications">Push notifications</a><ul>
@@ -654,6 +664,21 @@ These settings duplicate some System Preferences and also can be configured from
 <p>So, when network consumption will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).</p>
 <p>Saving of the changes in described parameters values at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding values in the <strong>PREFERENCES</strong>, and vice versa.<br />
 For usage of such preferences see in the section <a href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/#network-pressure-runs">here</a>.</p>
+<h2 id="other-automatic-email-notifications">Other automatic email notifications</h2>
+<h3 id="full-node-pool">FULL NODE POOL</h3>
+<p>Admins have the ability to configure notifications sending for the following case - when any hot node pool is fully loaded, i.e. all pool nodes are already in use.</p>
+<p>For such case, there is a special email notification type - <strong><code>FULL_NODE_POOL</code></strong>:
+    <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_09.png" /></p>
+<p>This notification type generate an email that includes the following info about fully loaded hot node pools:</p>
+<ul>
+<li><strong>Hot node pool name</strong></li>
+<li><strong>Instance type</strong></li>
+<li><strong>Maximum nodes count</strong></li>
+</ul>
+<p>Additional parameter of this notification type:</p>
+<ul>
+<li><em>Resend delay</em> - defines the delay in seconds after which the email notification will be sent again, if the pool is still fully loaded (default value "-1" means that resending is not performed)</li>
+</ul>
 <hr />
 <h2 id="push-notifications">Push notifications</h2>
 <p>All email notifications, that are sending by Cloud Pipeline platform, are also duplicated as push notifications. This allows to view notifications right in the platform GUI.<br />

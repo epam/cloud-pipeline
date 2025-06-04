@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
-    <title>Windows runs support - Cloud Pipeline</title>
+    <title>Support Windows runs - Cloud Pipeline</title>
     <link rel="stylesheet" href="../../css/theme.css" />
     <link rel="stylesheet" href="../../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
@@ -13,7 +13,7 @@
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Windows runs support";
+        var mkdocs_page_name = "Support Windows runs";
         var mkdocs_page_input_path = "operation/support_windows_runs.md";
         var mkdocs_page_url = null;
       </script>
@@ -335,7 +335,7 @@
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
-              <ul>
+              <ul class="current">
                   <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
     <ul>
                 <li class="toctree-l2"><a class="reference internal" href="../../installation/self-hosted/prerequisites/common/">General requirements</a>
@@ -366,13 +366,29 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../installation/management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../installation/support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Support Windows runs</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#build-windows-ami">Build Windows ami</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#build-windows-tool">Build Windows tool</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configure-deployment">Configure deployment</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#configure-brand-new-deployment">Configure brand-new deployment</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configure-existing-deployment">Configure existing deployment</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
                   </li>
               </ul>
       </div>
@@ -389,7 +405,8 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
-      <li>Windows runs support</li>
+          <li>Cloud Pipeline Installation &raquo;</li>
+      <li>Support Windows runs</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -555,6 +572,9 @@ kube.node.token=${CP_KUBE_NODE_TOKEN}
               
             </div>
           </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../change_kube_certificates/" class="btn btn-neutral float-left" title="Change Kubernetes certificates"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
 
   <hr/>
 
@@ -575,6 +595,8 @@ kube.node.token=${CP_KUBE_NODE_TOKEN}
   <div class="rst-versions" role="note" aria-label="Versions">
   <span class="rst-current-version" data-toggle="rst-current-version">
     
+    
+      <span><a href="../change_kube_certificates/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
   </span>

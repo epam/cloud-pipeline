@@ -366,13 +366,13 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../../management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../operation/environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../operation/support_windows_runs/">Support Windows runs</a>
                   </li>
               </ul>
       </div>
@@ -407,10 +407,8 @@
 <p>This step-by-step guide illustrates how to deploy Cloud Pipeline using AWS CloudFormation. The solution relies on
 creating a CloudFormation stack that deploys the necessary infrastructure using a Terraform module and install the Cloud
 Pipeline on top of it.</p>
-<p>Follow the outlined steps below to execute the deployment process: <br></p>
+<p>Follow the outlined steps below to execute the deployment process:</p>
 <ul>
-<li><a href="#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide">Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide</a><ul>
-<li><a href="#overview">Overview</a><ul>
 <li><a href="#prerequisites">Prerequisites</a><ul>
 <li><a href="#aws-vpc">AWS VPC</a></li>
 <li><a href="#aws-elastic-load-balancer">AWS Elastic Load Balancer</a></li>
@@ -437,10 +435,6 @@ Pipeline on top of it.</p>
 <li><a href="#review-deployment-logs">Review Deployment Logs</a></li>
 <li><a href="#destroy-cloud-pipeline-resources">Destroy Cloud-Pipeline resources</a></li>
 </ul>
-</li>
-</ul>
-</li>
-</ul>
 <h3 id="prerequisites">Prerequisites</h3>
 <p>Before creating the CloudFormation stack, you need to prepare several requirements:</p>
 <h4 id="awsserviceroleforec2spot-service-role">AWSServiceRoleForEC2Spot service role</h4>
@@ -452,26 +446,22 @@ https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/service-linked-roles-spot-in
 <ol>
 <li>Click Create VPC.</li>
 <li>Choose the "VPC and more". This gives you more customization options.</li>
-<li>
-<p>Configure your VPC:</p>
+<li>Configure your VPC:<ul>
+<li><strong>Name tag auto-generation</strong>: Provide a suitable name for your VPC.</li>
+<li><strong>IPv4 CIDR block</strong>: Determine the starting IP and the size of your VPC using CIDR notation, for example, <code>10.0.0.0/16</code>, <code>172.32.0.0/16</code>, etc.</li>
+<li><strong>Number of Availability Zones</strong>: Select number based on your requirements.</li>
+<li><strong>Number of Public Subnets</strong>: Select number based on your requirements.</li>
+<li><strong>Number of Private Subnets</strong>: Select number based on your requirements.</li>
+<li><strong>NAT Gateway</strong>: For this guide, select "in 1 AZ" or "1 per AZ". A NAT gateway allows instances in a private subnet to
+access the internet but prevents the internet from initiating a connection with those instances.</li>
+<li><strong>VPC Endpoints</strong>: Choose variant based on your requirements. The Amazon VPC endpoint for Amazon S3 provides a private
+connection between your VPC and S3, without involving internet access.</li>
+</ul>
 </li>
-<li>
-<p>Name tag auto-generation: Provide a suitable name for your VPC.</p>
-</li>
-<li>IPv4 CIDR block: Determine the starting IP and the size of your VPC using CIDR notation, for example, 10.0.0.0/16 ,
-  172.32.0.0/16 , etc.</li>
-<li>Number of Availability Zones: Select number based on your requirements.</li>
-<li>Number of Public Subnets: Select number based on your requirements.</li>
-<li>Number of Private Subnets: Select number based on your requirements.</li>
-<li>NAT Gateway: For this guide, select "in 1 AZ" or "1 per AZ". A NAT gateway allows instances in a private subnet to
-  access the internet but prevents the internet from initiating a connection with those instances.</li>
-<li>VPC Endpoints: Choose variant based on your requirements. The Amazon VPC endpoint for Amazon S3 provides a private
-  connection between your VPC and S3, without involving internet access.</li>
 </ol>
 <blockquote>
-<p>If you follow these instructions, it will provide you with VPC for the <code>internet-facing</code> model of the deployment (see
-section Elastic Load Balancer for more details). It doesn't cover any organization-specific custom requirements (f.e.
-access the platform through the VPN, etc.).</p>
+<p>If you follow these instructions, it will provide you with VPC for the <code>internet-facing</code> model of the deployment (see section Elastic Load Balancer for more details).<br />
+It doesn't cover any organization-specific custom requirements (f.e. access the platform through the VPN, etc.).</p>
 </blockquote>
 <h4 id="aws-elastic-load-balancer">AWS Elastic Load Balancer</h4>
 <p>During the deployment process, an Elastic Load Balancer (ELB) will be created. Before starting the deployment process,
@@ -501,32 +491,38 @@ Examples of the security groups:</p>
 There are two ways to provide such credentials:</p>
 <ol>
 <li>
-<p>If you have Administrator role in AWS account or role that Allowed to created resources: EC2 instance, IAM
-   Roles/Policies, EKS cluster, security groups, cloudwatch logs, S3 buckets, EFS/FSX for Lustre file systems, KMS keys,
-   RDS
-   etc. you can use these credentials:</p>
-</li>
+<p>If you have Administrator role in AWS account or role that allowed to create resources: EC2 instance, IAM Roles/Policies, EKS cluster, security groups, cloudwatch logs, S3 buckets, EFS/FSX for Lustre file systems, KMS keys, RDS, etc., you can use these credentials:  </p>
+<ul>
 <li>
 <p>Put your credentials of temporary credentials into the AWS secret:</p>
 <ul>
-<li>Create aws secretsmanager secret using AWS console or this aws cli command(make sure you have installed aws cli):
-<code>aws secretsmanager create-secret --name &lt;secrets-name&gt; \
-  --secret-string 'export AWS_ACCESS_KEY_ID="&lt;key-id&gt;" export AWS_SECRET_ACCESS_KEY="&lt;secret acess key&gt;" export AWS_SESSION_TOKEN="&lt;session token&gt;"' \
-  --region &lt;region-id&gt;</code></li>
-<li>If you need to update the secret value with a new credentials (f.i. when you are using temporary credentials and
-  decide to destroy the infrastructure. See <a href="#destroy-cloud-pipeline-resources">destroy infrastructure</a>):
-<code>aws secretsmanager put-secret-value \
-  --secret-id &lt;secrets-name&gt; \
-  --secret-string 'export AWS_ACCESS_KEY_ID="&lt;key-id&gt;" export AWS_SECRET_ACCESS_KEY="&lt;secret acess key&gt;" export AWS_SESSION_TOKEN="&lt;session token&gt;"' \
-  --region &lt;region-id&gt;</code></li>
-<li>Remember the secret name, you will need this value during further deployment.
-  (To set this secret name as stack parameter <code>AWSCredentialSecretId</code>. For more information you can
-  look <a href="#stack-parameters-description">deploy parameters</a>)</li>
+<li>
+<p>Create aws secretsmanager secret using AWS console or this aws cli command(make sure you have installed aws cli):</p>
+<pre><code>aws secretsmanager create-secret --name &lt;secrets-name&gt; \
+--secret-string 'export AWS_ACCESS_KEY_ID="&lt;key-id&gt;" export AWS_SECRET_ACCESS_KEY="&lt;secret acess key&gt;" export AWS_SESSION_TOKEN="&lt;session token&gt;"' \
+--region &lt;region-id&gt;
+</code></pre>
+</li>
+<li>
+<p>If you need to update the secret value with a new credentials (f.i. when you are using temporary credentials and
+decide to destroy the infrastructure. See <a href="#destroy-cloud-pipeline-resources">destroy infrastructure</a>):</p>
+<pre><code>aws secretsmanager put-secret-value \
+--secret-id &lt;secrets-name&gt; \
+--secret-string 'export AWS_ACCESS_KEY_ID="&lt;key-id&gt;" export AWS_SECRET_ACCESS_KEY="&lt;secret acess key&gt;" export AWS_SESSION_TOKEN="&lt;session token&gt;"' \
+--region &lt;region-id&gt;
+</code></pre>
+</li>
+<li>
+<p>Remember the secret name, you will need this value during further deployment.<br />
+(To set this secret name as stack parameter <code>AWSCredentialSecretId</code>. For more information you can
+look <a href="#stack-parameters-description">deploy parameters</a>)</p>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li>
-<p>If you don't provide secret name with the credentials to the deployment script, an additional IAM Role will be
-   created with full administrator access and assumed by Jump-Server during deploy process.</p>
+<p>If you don't provide secret name with the credentials to the deployment script, an additional IAM Role will be created with full administrator access and assumed by Jump-Server during deploy process.</p>
 </li>
 </ol>
 <h4 id="create-dns-records">Create DNS records</h4>
@@ -543,43 +539,41 @@ scheme:</p>
 </thead>
 <tbody>
 <tr>
-<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>A</td>
-<td>&lt; EIP value &gt;</td>
+<td><code>&lt; EIP value &gt;</code></td>
 <td>Required</td>
 </tr>
 <tr>
-<td>edge.&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>edge.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>CNAME</td>
-<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>Required</td>
 </tr>
 <tr>
-<td>docker.<cloud-pipeline-name>.\&lt;your-domain></td>
+<td>docker.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>CNAME</td>
-<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>Required</td>
 </tr>
 <tr>
-<td>git.&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>git.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>CNAME</td>
-<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>Required</td>
 </tr>
 <tr>
-<td>auth.&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>auth.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>CNAME</td>
-<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 <td>Skip, if you use your organisation IdP</td>
 </tr>
 </tbody>
 </table>
 <h4 id="add-authority-signed-certificates-for-services">Add authority signed certificates for services</h4>
 <blockquote>
-<p>NOTE: This step can be skipped. <br>
-By default, if no authority-signed certificates are set, Cloud Pipeline will create self-signed certificates during
-the
-deployment</p>
+<p><strong><em>Note</em></strong>: This step can be skipped.<br />
+By default, if no authority-signed certificates are set, Cloud Pipeline will create self-signed certificates during the deployment</p>
 </blockquote>
 <table>
 <thead>
@@ -591,15 +585,15 @@ deployment</p>
 <tbody>
 <tr>
 <td>Subject</td>
-<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 </tr>
 <tr>
 <td>Alternative names</td>
-<td>DNS: *.\&lt;cloud-pipeline-name>.\&lt;your-domain> <br>or<br> DNS:<br> edge.\&lt;cloud-pipeline-name>.\&lt;your-domain> <br> docker.\<cloud-pipeline-name>.\&lt;your-domain> <br> git.\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td><strong>DNS</strong>: *.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code> <br><em>or</em><br> <strong>DNS</strong>: <br> edge.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code> <br> docker.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code> <br> git.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 </tr>
 <tr>
-<td>Alternative names (optional)</td>
-<td>DNS: auth.\<cloud-pipeline-name>.\&lt;your-domain></td>
+<td>* Alternative names (<em>optional</em>)</td>
+<td><strong>DNS</strong>: auth.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
 </tr>
 <tr>
 <td>Duration (days)</td>
@@ -608,14 +602,13 @@ deployment</p>
 </tbody>
 </table>
 <blockquote>
-<p>Alternative names (optional) - DNS: auth.<cloud-pipeline-name>.<your-domain> - This must be set if there is no
-integration with organization Identity Provider.</p>
+<p>* Alternative names (<em>optional</em>) - This must be set if there is no integration with organization Identity Provider.</p>
 </blockquote>
 <h4 id="integrate-with-an-identity-provider-idp">Integrate with an Identity Provider (IdP)</h4>
 <blockquote>
-<p>If you deploy Cloud-Pipeline with self-hosted IdP, you can skip this step: <br>
-Cloud-pipeline creates a dummy IdP service suitable for testing, it is not recommended for production due to
-security concerns. For secure access, you should integrate your Cloud Pipeline with your organization's IdP Service</p>
+<p>If you deploy Cloud-Pipeline with self-hosted IdP, you can skip this step:<br />
+Cloud-pipeline creates a dummy IdP service suitable for testing, it is not recommended for production due to security concerns.<br />
+For secure access, you should integrate your Cloud Pipeline with your organization's IdP Service.</p>
 </blockquote>
 <p>Integration is implemented with SAML2 protocol. The following IdP connections shall be requested from the IdP team:</p>
 <table>
@@ -631,15 +624,15 @@ security concerns. For secure access, you should integrate your Cloud Pipeline w
 <tbody>
 <tr>
 <td>cloud-pipeline GUI</td>
-<td>https://\&lt;cloud-pipeline-name>.\&lt;your-domain>/pipeline</td>
-<td>https://\&lt;cloud-pipeline-name>.\&lt;your-domain>/pipeline/saml/SSO</td>
+<td>https://<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code>/pipeline</td>
+<td>https://<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code>/pipeline/saml/SSO</td>
 <td>HTTP Redirect</td>
 <td>* NameID<br> * email<br> * first name<br> * last name<br></td>
 </tr>
 <tr>
 <td>cloud-pipeline GitLab</td>
-<td>https://git.\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
-<td>https://git.&lt;cloud-pipeline-name>.\&lt;your-domain>//users/auth/saml/callback</td>
+<td>https://git.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code></td>
+<td>https://git.<code>&lt;cloud-pipeline-name&gt;</code>.<code>&lt;your-domain&gt;</code>/users/auth/saml/callback</td>
 <td>HTTP Post</td>
 <td>* NameID<br> * email<br> * first name<br> * last name<br></td>
 </tr>
@@ -652,28 +645,25 @@ security concerns. For secure access, you should integrate your Cloud Pipeline w
 </ul>
 <h4 id="create-a-zip-file-with-additional-assets">Create a Zip File with Additional Assets</h4>
 <blockquote>
-<p>This step is required if you've prepared SSL certificated and IdP integration on previous steps. <br>
+<p>This step is required if you've prepared SSL certificated and IdP integration on previous steps.<br />
 It allows to provide these assets for the deployment.</p>
 </blockquote>
 <p>Once all additional certificates (and optional metadata) are ready, you should create a zip archive with a specific
-structure. <br></p>
+structure.</p>
 <p>To do this you can run script <code>create_assets_zip.sh</code> with your parameters, for example:</p>
 <pre><code>bash create_assets_zip.sh ca-public-cert.pem ca-private-key.pem cp-api-srv-fed-meta.xml idp-public-cert.pem
 </code></pre>
 <blockquote>
-<p>Optional: <br>
-If you don't have s3 bucket you can create it in AWS Console or using AWS CLI command:<br> aws s3api create-bucket
---bucket &lt;<em>s3-bucket-name</em>&gt;</p>
+<p><em>Optional</em>:<br />
+If you don't have s3 bucket you can create it in AWS Console or using AWS CLI command:<br />
+<code>aws s3api create-bucket --bucket &lt;s3-bucket-name&gt;</code></p>
 </blockquote>
 <p>Upload zip file to the s3 bucket using AWS console or aws cli command:</p>
 <pre><code> aws s3 cp &lt;pathtofile&gt;/cp-assets.zip s3://&lt;s3-bucket-name&gt;
 </code></pre>
-<p>Save this link, you will need it for further step t set it as parameter in AWS Console stack parameters(for more
-information you can look
-at <a href="#stack-parameters-description">parameters description</a>) or as additional parameter in .json file(if create stack
-using awc cli) :</p>
+<p>Save this link, you will need it for further step t set it as parameter in AWS Console stack parameters(for more information you can look at <a href="#stack-parameters-description">parameters description</a>) or as additional parameter in <code>.json</code> file (if create stack using awc cli):</p>
 <blockquote>
-<p>Link format should be as follows: s3://<em>s3-bucket-name</em>/cp-assets.zip</p>
+<p>Link format should be as follows: <code>s3://&lt;s3-bucket-name&gt;/cp-assets.zip</code></p>
 </blockquote>
 <h3 id="create-cloudformation-stack-using-template-file">Create Cloudformation Stack using template file</h3>
 <p>There are two methods to create a CloudFormation stack that deploys the infrastructure and Cloud-Pipeline services: via
@@ -690,23 +680,23 @@ the AWS console, or the AWS Command Line Interface (CLI).</p>
 <tbody>
 <tr>
 <td><code>Application name</code></td>
-<td>(Required) Name of the deployment. Will be used as resources name prefix</td>
+<td>(<strong>Required</strong>) Name of the deployment. Will be used as resources name prefix</td>
 </tr>
 <tr>
 <td><code>Environment name</code></td>
-<td>(Required) Environment name. Will be used as resources name prefix</td>
+<td>(<strong>Required</strong>) Environment name. Will be used as resources name prefix</td>
 </tr>
 <tr>
 <td><code>Name of the AWS Secret with AWS credentials</code></td>
-<td>(Optional) Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure.If not set the TFDeployRole will be created with full administrator access and assumed to Jump-Server role.</td>
+<td>(<em>Optional</em>) Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure.<br>If not set the TFDeployRole will be created with full administrator access and assumed to Jump-Server role.</td>
 </tr>
 <tr>
 <td><code>Jump Server EC2 instance type</code></td>
-<td>(Optional) Jump-server EC2 instance type. By default, instance type of the Jump server is t3.large</td>
+<td>(<em>Optional</em>) Jump-server EC2 instance type. By default, instance type of the Jump server is t3.large</td>
 </tr>
 <tr>
 <td><code>Jump Server EC2 instance image</code></td>
-<td>(Optional) EKS based Image id that will be used for Jump-Server, by default will be the latest version for EKS 1.31. If version of the EKS version other than 1.31 it is important to use AMI same version as EKS cluster. Use the following command to view the name of the latest Amazon EKS optimized AMI for Amazon Linux 2: aws ssm get-parameters --names /aws/service/eks/optimized-ami/<eks version number>/amazon-linux-2/recommended. For more information read official documentation https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html</td>
+<td>(<em>Optional</em>) EKS based Image id that will be used for Jump-Server, by default will be the latest version for EKS 1.31.<br>If version of the EKS version other than 1.31 it is important to use AMI same version as EKS cluster.<br>Use the following command to view the name of the latest Amazon EKS optimized AMI for Amazon Linux 2:<br><code>aws ssm get-parameters --names /aws/service/eks/optimized-ami/&lt;eks version number&gt;/amazon-linux-2/recommended</code><br><br>For more information read official documentation <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html">https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html</a></td>
 </tr>
 </tbody>
 </table>
@@ -721,31 +711,31 @@ the AWS console, or the AWS Command Line Interface (CLI).</p>
 <tbody>
 <tr>
 <td><code>ID of the deployment VPC</code></td>
-<td>(Required) Id of the VPC where all resources will be created</td>
+<td>(<strong>Required</strong>) Id of the VPC where all resources will be created</td>
 </tr>
 <tr>
 <td><code>Application network schema</code></td>
-<td>(Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.</td>
+<td>(<strong>Required</strong>) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.</td>
 </tr>
 <tr>
 <td><code>Elastic IP/Private IP or the ELB</code></td>
-<td>(Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP from reserved CIDR block in case of internal ELB. See <a href="#aws-elastic-load-balancer">AWS Elastic Load Balancer</a></td>
+<td>(<strong>Required</strong>) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP from reserved CIDR block in case of internal ELB. See <a href="#aws-elastic-load-balancer">AWS Elastic Load Balancer</a></td>
 </tr>
 <tr>
 <td><code>ID of the ELB subnet</code></td>
-<td>(Optional) (Required) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId</td>
+<td>(<strong>Required</strong>) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId</td>
 </tr>
 <tr>
 <td><code>Application subnet ID</code></td>
-<td>(Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created</td>
+<td>(<strong>Required</strong>) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created</td>
 </tr>
 <tr>
 <td><code>Private application subnet IDs</code></td>
-<td>(Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list.</td>
+<td>(<strong>Required</strong>) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list.</td>
 </tr>
 <tr>
 <td><code>List of AWS Security Groups IDs</code></td>
-<td>(Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.</td>
+<td>(<em>Optional</em>) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.</td>
 </tr>
 </tbody>
 </table>
@@ -760,19 +750,19 @@ the AWS console, or the AWS Command Line Interface (CLI).</p>
 <tbody>
 <tr>
 <td><code>Version of the EKS cluster</code></td>
-<td>(Optional) This refers to the version of the installed AWS EKS Cluster.Please note that the current version (1.29) has been tested and verified to work properly with Cloud-Pipeline. Cloud-Pipeline has not been tested with other versions of the EKS cluster and may potentially encounter issues. Users attempting to install them do so at their own risk.</td>
+<td>(<em>Optional</em>) This refers to the version of the installed AWS EKS Cluster. Please note that the current version (1.29) has been tested and verified to work properly with Cloud-Pipeline.<br>Cloud-Pipeline has not been tested with other versions of the EKS cluster and may potentially encounter issues.<br>Users attempting to install them do so at their own risk.</td>
 </tr>
 <tr>
 <td><code>List of EKS admin IAM roles</code></td>
-<td>(Optional) Set of roles ARNs which will get admin access in EKS cluster.Could be useful if DeploymentAWSCredentialsSecretId is not provided. Then here user can provide ARN of his role to get access to the cluster.</td>
+<td>(<em>Optional</em>) Set of roles ARNs which will get admin access in EKS cluster. Could be useful if DeploymentAWSCredentialsSecretId is not provided.<br>Then here user can provide ARN of his role to get access to the cluster.</td>
 </tr>
 <tr>
 <td><code>List of EKS admin IAM users</code></td>
-<td>(Optional) Set of IAM user ARNs which will get admin access in EKS cluster.</td>
+<td>(<em>Optional</em>) Set of IAM user ARNs which will get admin access in EKS cluster.</td>
 </tr>
 <tr>
 <td><code>IAM Role permissions boundary ARN</code></td>
-<td>(Optional) Account specific role boundaries, this value will be used for all created IAM Roles.</td>
+<td>(<em>Optional</em>) Account specific role boundaries, this value will be used for all created IAM Roles.</td>
 </tr>
 </tbody>
 </table>
@@ -787,63 +777,59 @@ the AWS console, or the AWS Command Line Interface (CLI).</p>
 <tbody>
 <tr>
 <td><code>Application host domain name</code></td>
-<td>(Required) API service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) API service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>Edge service domain name</code></td>
-<td>(Required) EDGE service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) EDGE service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>Internal Docker registry domain name</code></td>
-<td>(Required) Internal Docker registry domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) Internal Docker registry domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>Internal GitLab platform domain name</code></td>
-<td>(Required) Internal GITLAB service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) Internal GITLAB service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>Internal IdP service domain name</code></td>
-<td>(Optional) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended! If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline.  See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<em>Optional</em>) Self hosted IDP service domain name address.<br><strong><em>WARNING</em></strong>: Using self hosted IDP service in production environment strongly not recommended!<br>If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>Link to S3 bucket with certificates for IdP</code></td>
-<td>(Optional) Link to zip archive with additional assets(certificates) on AWS S3 bucket. For example s3://&lt; bucket-name &gt;/&lt; filename.zip &gt; See <a href="#optional-creating-zip-with-additional-assets">Creating zip with additional assets</a></td>
+<td>(<em>Optional</em>) Link to zip archive with additional assets (certificates) on AWS S3 bucket. For example <code>s3://&lt;bucket-name&gt;/&lt;filename.zip&gt;</code>. See <a href="#create-a-zip-file-with-additional-assets">Creating zip with additional assets</a></td>
 </tr>
 <tr>
 <td><code>Link to pipectl binnary</code></td>
-<td>(Required) URL for the binary file located in a remote S3 bucket. This file will be downloaded during deployment to install the Cloud Pipeline on the target environment.</td>
+<td>(<strong>Required</strong>) URL for the binary file located in a remote S3 bucket. This file will be downloaded during deployment to install the Cloud Pipeline on the target environment.</td>
 </tr>
 <tr>
 <td><code>Cloud Pipeline Default Admin name</code></td>
-<td>(Optional) Default administrator of the Cloud-Pipeline</td>
+<td>(<em>Optional</em>) Default administrator of the Cloud-Pipeline</td>
 </tr>
 <tr>
 <td><code>NFS type</code></td>
-<td>(Optional) Network FileSystem type that will be created. Can be efs or fsx. Default efs</td>
+<td>(<em>Optional</em>) Network FileSystem type that will be created. Can be efs or fsx. Default efs</td>
 </tr>
 </tbody>
 </table>
 <h4 id="deploy-cloud-pipeline-using-aws-console">Deploy Cloud Pipeline using AWS Console</h4>
 <ol>
-<li>Go to the CloudFormation service in the AWS Console and select the "create stack" option.
-   <img alt="create_stack" src="images/create_stack.jpg" /></li>
-<li>In the "Prerequisite - Prepare template" section, choose "Use an existing template".
-   <img alt="prepare_template" src="images/prepare_template.jpg" /></li>
+<li>Go to the CloudFormation service in the AWS Console and select the "create stack" option.<br />
+<img alt="create_stack" src="images/create_stack.jpg" /></li>
+<li>In the "Prerequisite - Prepare template" section, choose "Use an existing template".<br />
+<img alt="prepare_template" src="images/prepare_template.jpg" /></li>
 <li>Choose your 'jump-server.yaml' file under "Specify a template" and click "Next".</li>
-<li>On "Specify stack details" step provide the Stack Name and all required parameters, click "Next" and leave next
-   page "Configure stack options" without changes, then click "Next" to check parameters at "Review and create" page.
-   <img alt="stack_details" src="images/stack_details.jpg" /></li>
-<li>Click "Submit" to start stack creation.
-   <img alt="submit" src="images/submit.jpg" /></li>
+<li>On "Specify stack details" step provide the Stack Name and all required parameters, click "Next" and leave next page "Configure stack options" without changes, then click "Next" to check parameters at "Review and create" page.<br />
+<img alt="stack_details" src="images/stack_details.jpg" /></li>
+<li>Click "Submit" to start stack creation.<br />
+<img alt="submit" src="images/submit.jpg" /></li>
 </ol>
 <p>Follow the <a href="#stack-parameters-description">Stack Parameters Description</a> section for a detailed explanation of each
 parameter.</p>
 <h4 id="deploy-cloud-pipeline-using-aws-cli">Deploy Cloud Pipeline using AWS CLI</h4>
-<ol>
-<li>Use the AWS CLI to deploy the Cloud Pipeline. Create Cloudformation stack using AWS Console and file jump-server.yaml
-   and set parameters (see <a href="#stack-parameters-description">deployment parameters</a>) or create file jump-server.json like
-   in example (Not all needed parameters could be in this example):</li>
-</ol>
+<p>Use the AWS CLI to deploy the Cloud Pipeline.<br />
+Create Cloudformation stack using AWS Console and file <code>jump-server.yaml</code> and set parameters (see <a href="#stack-parameters-description">deployment parameters</a>) or create file <code>jump-server.json</code> like in example (Not all needed parameters could be in this example):</p>
 <pre><code>[
     {
         &quot;ParameterKey&quot;: &quot;DeploymentName&quot;,  
@@ -926,8 +912,6 @@ parameter.</p>
         &quot;ParameterValue&quot;: &quot;https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/xxxxxxxxxxxxxxx/xxxxxxxxxxxxxxx&quot; 
     }
 ]
-
-
 </code></pre>
 <p>From aws cli run command:</p>
 <pre><code> aws cloudformation create-stack  --stack-name &lt;stack-name&gt;  --template-body file://cloud-pipeline-deployer.yaml  --parameters file://&lt;user parameter filename&gt;.json --capabilities CAPABILITY_NAMED_IAM  --region &lt;region-id&gt;
@@ -945,159 +929,172 @@ parameter.</p>
 <tbody>
 <tr>
 <td><code>DeploymentName</code></td>
-<td>(Required) Name of the deployment. Will be used as resources name prefix</td>
+<td>(<strong>Required</strong>) Name of the deployment. Will be used as resources name prefix</td>
 </tr>
 <tr>
 <td><code>DeploymentEnv</code></td>
-<td>(Required) Environment name. Will be used as resources name prefix</td>
+<td>(<strong>Required</strong>) Environment name. Will be used as resources name prefix</td>
 </tr>
 <tr>
 <td><code>DeploymentAWSCredentialsSecretId</code></td>
-<td>(Optional) Name of the aws secret with secret key and access key of the user that will be used on Jumpserver to run Terraform to deploy infrastructure. See <a href="#set-access-to-create-infrastructure-resources">Set access to create infrastructure</a></td>
+<td>(<em>Optional</em>) Name of the aws secret with secret key and access key of the user that will be used on Jumpserver to run Terraform to deploy infrastructure. See <a href="#credentials-to-create-infrastructure-resources">Set access to create infrastructure</a></td>
 </tr>
 <tr>
 <td><code>JumpServerInstanceType</code></td>
-<td>(Optional) Jump-server EC2 instance type</td>
+<td>(<em>Optional</em>) Jump-server EC2 instance type</td>
 </tr>
 <tr>
 <td><code>JumpServerAmiId</code></td>
-<td>(Optional) EKS based Image id that will be used for Jump-Server, by default will be the latest version for EKS 1.31. If version of the EKS version other then 1.31 it is important to use AMI same version as EKS cluster. Use the following command to view the name of the latest Amazon EKS optimized AMI for Amazon Linux 2: aws ssm get-parameters --names /aws/service/eks/optimized-ami/<eks version number>/amazon-linux-2/recommended. For more information read official documentation https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html</td>
+<td>(<em>Optional</em>) EKS based Image id that will be used for Jump-Server, by default will be the latest version for EKS 1.31. If version of the EKS version other then 1.31 it is important to use AMI same version as EKS cluster. Use the following command to view the name of the latest Amazon EKS optimized AMI for Amazon Linux 2: aws ssm get-parameters --names /aws/service/eks/optimized-ami/<eks version number>/amazon-linux-2/recommended. For more information read official documentation https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html</td>
 </tr>
 <tr>
 <td><code>VpcId</code></td>
-<td>(Required) Id of the VPC where all resources will be created. See <a href="#create-vpc">Create VPC</a></td>
+<td>(<strong>Required</strong>) Id of the VPC where all resources will be created. See <a href="#aws-vpc">Create VPC</a></td>
 </tr>
 <tr>
 <td><code>SubnetIds</code></td>
-<td>(Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list. See <a href="#create-vpc">Create VPC</a></td>
+<td>(<strong>Required</strong>) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list. See <a href="#aws-vpc">Create VPC</a></td>
 </tr>
 <tr>
 <td><code>EKSVersion</code></td>
-<td>(Optional) This refers to the version of the installed AWS EKS Cluster. Please note that the current version (1.29) has been tested and verified to work properly with Cloud-Pipeline. Cloud-Pipeline has not been tested with other versions of the EKS cluster and may potentially encounter issues. Users attempting to install them do so at their own risk.</td>
+<td>(<em>Optional</em>) This refers to the version of the installed AWS EKS Cluster. Please note that the current version (1.29) has been tested and verified to work properly with Cloud-Pipeline. Cloud-Pipeline has not been tested with other versions of the EKS cluster and may potentially encounter issues. Users attempting to install them do so at their own risk.</td>
 </tr>
 <tr>
 <td><code>CPSystemSubnetId</code></td>
-<td>(Required) Subnet where JumpServer instance and EKS node group will be created. See <a href="#create-vpc">Create VPC</a></td>
+<td>(<strong>Required</strong>) Subnet where JumpServer instance and EKS node group will be created. See <a href="#aws-vpc">Create VPC</a></td>
 </tr>
 <tr>
 <td><code>EKSAdminRoleArns</code></td>
-<td>(Optional) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster)</td>
+<td>(<em>Optional</em>) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster)</td>
 </tr>
 <tr>
 <td><code>IAMrolePermissionsBoundaryArn</code></td>
-<td>(Optional) Account specific role boundaries, that can be used during creating AMI Roles with organization specific restrictions.</td>
+<td>(<em>Optional</em>) Account specific role boundaries, that can be used during creating AMI Roles with organization specific restrictions.</td>
 </tr>
 <tr>
 <td><code>CPNetworkFileSystemType</code></td>
-<td>(Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.</td>
+<td>(<em>Optional</em>) FileSystem type that will be created. Can be efs or fsx. Default efs.</td>
 </tr>
 <tr>
 <td><code>CPExternalAccessSecurityGroupIds</code></td>
-<td>(Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.</td>
+<td>(<em>Optional</em>) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.</td>
 </tr>
 <tr>
 <td><code>CPDeploymentId</code></td>
-<td>(Optional) Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). Must contain only letters, digits, underscore or horizontal bar.</td>
+<td>(<em>Optional</em>) Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). Must contain only letters, digits, underscore or horizontal bar.</td>
 </tr>
 <tr>
 <td><code>CPEdgeAwsELBSubnet</code></td>
-<td>(Required) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the <code>CPInfraSubnetIdNode</code>.</td>
+<td>(<strong>Required</strong>) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the <code>CPInfraSubnetIdNode</code>.</td>
 </tr>
 <tr>
 <td><code>CPEdgeAwsELBIP</code></td>
-<td>(Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP from reserved CIDR block in case of internal ELB. See <a href="#aws-elastic-load-balancer">AWS Elastic Load Balancer</a></td>
+<td>(<strong>Required</strong>) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP from reserved CIDR block in case of internal ELB. See <a href="#aws-elastic-load-balancer">AWS Elastic Load Balancer</a></td>
 </tr>
 <tr>
 <td><code>CPEdgeAwsELBSchema</code></td>
-<td>(Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.</td>
+<td>(<strong>Required</strong>) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.</td>
 </tr>
 <tr>
 <td><code>CPApiSrvHost</code></td>
-<td>(Required) API service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) API service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>CPIdpHost</code></td>
-<td>(Optional) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended! If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline.</td>
+<td>(<em>Optional</em>) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended! If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline.</td>
 </tr>
 <tr>
 <td><code>CPDockerHost</code></td>
-<td>(Required) Internal Docker service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) Internal Docker service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>CPEdgeHost</code></td>
-<td>(Required) EDGE service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) EDGE service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>CPGitlabHost</code></td>
-<td>(Required) Internal GITLAB service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+<td>(<strong>Required</strong>) Internal GITLAB service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
 </tr>
 <tr>
 <td><code>CPAssetsS3Url</code></td>
-<td>(Optional) Link to zip archive with additional assets(certificates) on AWS S3 bucket. For example s3://&lt; bucket-name &gt;/&lt; filename.zip &gt; See <a href="#optional-creating-zip-with-additional-assets">Creating zip with additional assets</a></td>
+<td>(<em>Optional</em>) Link to zip archive with additional assets(certificates) on AWS S3 bucket. For example <code>s3://&lt;bucket-name&gt;/&lt;filename.zip&gt;</code> See <a href="#create-a-zip-file-with-additional-assets">Creating zip with additional assets</a></td>
 </tr>
 <tr>
 <td><code>CPPipectlUrl</code></td>
-<td>(Required) URL for the binary file located in a remote S3 bucket. This file will be downloaded during deployment to install the Cloud Pipeline on the target environment.</td>
+<td>(<strong>Required</strong>) URL for the binary file located in a remote S3 bucket. This file will be downloaded during deployment to install the Cloud Pipeline on the target environment.</td>
 </tr>
 <tr>
 <td><code>CPDefaultAdmin</code></td>
-<td>(Optional) Default administrator of the Cloud-Pipeline</td>
+<td>(<em>Optional</em>) Default administrator of the Cloud-Pipeline</td>
 </tr>
 </tbody>
 </table>
 <h3 id="review-deployment-logs">Review Deployment Logs</h3>
 <p>To review the deployment process logs, follow these steps:</p>
 <ol>
-<li>Log in to the Jump Server using the AWS Console or by running the ssm start-session command from the stack creation
-   Output.</li>
-<li>Execute the following commands to log in as the root user and navigate to the root/cloud-pipeline/infra/ directory:</li>
-</ol>
-<pre><code>  sudo su 
-  cd ~/cloud-pipeline/infra/
+<li>Log in to the Jump Server using the AWS Console or by running the ssm start-session command from the stack creation Output.</li>
+<li>
+<p>Execute the following commands to log in as the root user and navigate to the <code>root/cloud-pipeline/infra/</code> directory:</p>
+<pre><code>sudo su
+cd ~/cloud-pipeline/infra/
 </code></pre>
-<ol>
-<li>To monitor the Terraform deployment process, open the <code>terraform_apply.log</code> file in this directory. You can do this
-   with the following command:</li>
-</ol>
-<pre><code> tail -f terraform_apply.log
+</li>
+<li>
+<p>To monitor the Terraform deployment process, open the <code>terraform_apply.log</code> file in this directory. You can do this with the following command:</p>
+<pre><code>tail -f terraform_apply.log
 </code></pre>
-<ol>
-<li>Wait for the log to display "Apply complete!" and additional outputs. Once these appear, wait a few more minutes to
-   allow Cloud Pipeline to start its installation and create the pipectl.log file.</li>
-<li>From ~/cloud-pipeline/pipectl-deploy/ directory monitor the Cloud-Pipeline deployment process using the following
-   command:</li>
-</ol>
-<pre><code> tail -f pipectl.log
+</li>
+<li>
+<p>Wait for the log to display "Apply complete!" and additional outputs. Once these appear, wait a few more minutes to allow Cloud Pipeline to start its installation and create the <code>pipectl.log</code> file.</p>
+</li>
+<li>
+<p>From ~/cloud-pipeline/pipectl-deploy/ directory monitor the Cloud-Pipeline deployment process using the following command:</p>
+<pre><code>tail -f pipectl.log
 </code></pre>
-<ol>
-<li>Once the installation is finished, the log will display "Installation done" along with some links.</li>
+</li>
+<li>
+<p>Once the installation is finished, the log will display "Installation done" along with some links.</p>
+</li>
 </ol>
-<p>Wait approximately 40-90 minutes until all resources and services are deployed. Then, verify the deployment by visiting
-https://&lt;service>.&lt;user-domain-name>/</p>
+<p>Wait approximately 40-90 minutes until all resources and services are deployed. Then, verify the deployment by visiting https://<code>&lt;service&gt;</code>.<code>&lt;user-domain-name&gt;</code>/</p>
 <h3 id="destroy-cloud-pipeline-resources">Destroy Cloud-Pipeline resources</h3>
 <p>To delete all resources of the Cloud Pipeline along with the infrastructure, follow these steps:</p>
 <ol>
-<li>If you use AWS Secret to store <strong>temporary</strong> credentials as described
-   in <a href="#credentials-to-create-infrastructure-resources">Credentials to create Infrastructure Resources</a>, you need to
-   first update your credentials token in your AWS Secret before proceeding with the next steps.</li>
-<li>Log in to the Jump Server instance using its Instance ID, which can be found in the CloudFormation stack output.
-    <code>aws ssm start-session --target &lt;instance-id&gt; --region &lt;deployment-region&gt;</code></li>
-<li>After a login, switch the user to root by running the command <code>sudo su</code>.</li>
-<li>Next, navigate to the home root directory by entering <code>cd /root/cloud-pipeline/</code>.</li>
-<li>Execute the deletion script by running <code>./delete_all_cp_infra.sh</code>. <br>
-   The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline
-   resources. <br>
-   Confirm if you are sure about the deletion.</li>
-<li>Once the script finished and all resources are deleted, you can now manually delete s3 bucket for terraform state and
-   the CloudFormation stack.</li>
+<li>If you use AWS Secret to store <strong>temporary</strong> credentials as described in <a href="#credentials-to-create-infrastructure-resources">Credentials to create Infrastructure Resources</a>, firstly you need to update your credentials token in your AWS Secret before proceeding with the next steps.</li>
+<li>
+<p>Log in to the Jump Server instance using its Instance ID, which can be found in the CloudFormation stack output.</p>
+<pre><code>aws ssm start-session --target &lt;instance-id&gt; --region &lt;deployment-region&gt;
+</code></pre>
+</li>
+<li>
+<p>After a login, switch the user to root by running the command:</p>
+<pre><code>sudo su
+</code></pre>
+</li>
+<li>
+<p>Next, navigate to the home root directory by entering:</p>
+<pre><code>cd /root/cloud-pipeline/
+</code></pre>
+</li>
+<li>
+<p>Execute the deletion script by running</p>
+<pre><code>./delete_all_cp_infra.sh
+</code></pre>
+<p>The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources.<br />
+Confirm if you are sure about the deletion.</p>
+</li>
+<li>
+<p>Once the script finished and all resources are deleted, you can now manually delete s3 bucket for terraform state and
+   the CloudFormation stack.</p>
+</li>
 </ol>
-<p>Please note that these actions will delete all your resources in the Cloud Pipeline infrastructure. Be sure to back up
-any necessary data before starting the deletion process.</p>
+<p>Please note that these actions will delete all your resources in the Cloud Pipeline infrastructure. Be sure to back up any necessary data before starting the deletion process.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../terraform/" class="btn btn-neutral float-left" title="Terraform"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../../../operation/environments_sync/environments_sync/" class="btn btn-neutral float-right" title="Environments sync">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -1122,6 +1119,8 @@ any necessary data before starting the deletion process.</p>
     
       <span><a href="../terraform/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
+    
+      <span><a href="../../../../operation/environments_sync/environments_sync/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
