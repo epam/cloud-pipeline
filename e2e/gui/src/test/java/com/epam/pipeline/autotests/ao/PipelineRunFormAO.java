@@ -309,20 +309,14 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     private boolean checkMessage(final String typeMessage, final String message) {
-        $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
-        $$(byClassName("ant-modal-body"))
-                .findBy(text("Launch"))
-                .find(byClassName("ob-estimated-price-info__info"))
-                .shouldBe(visible);
+        click(LAUNCH_BUTTON);
+        waitUntilPriceInfoAppearsOnLaunchModal();
         boolean messageExist = context().$(byClassName("ant-modal-body"))
                 .findAll(byClassName(format("ant-alert-%s", typeMessage)))
                 .stream()
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
                 .count() == 1;
-        if (messageExist) {
-            screenshot("check_launch_message" + Utils.randomSuffix());
-        }
         $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
                 .find(button("Cancel"))
                 .shouldBe(enabled)
@@ -336,10 +330,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkStoragesAreInListConflictedStorages(String...storages) {
-        $$(byClassName("ant-modal-body"))
-                .findBy(text("Launch"))
-                .find(byClassName("ob-estimated-price-info__info"))
-                .shouldBe(visible);
+        waitUntilPriceInfoAppearsOnLaunchModal();
         Arrays.stream(storages).forEach(storage ->
                assertTrue($$(className("ant-select-selection__choice")).texts().contains(storage),
                       format("Storages list doesn't contain %s", storage)));
@@ -348,14 +339,19 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkStoragesNotInListConflictedStorages(String...storages) {
-        $$(byClassName("ant-modal-body"))
-                .findBy(text("Launch"))
-                .find(byClassName("ob-estimated-price-info__info"))
-                .shouldBe(visible);
+        waitUntilPriceInfoAppearsOnLaunchModal();
         Arrays.stream(storages).forEach(storage ->
                 assertFalse($$(className("ant-select-selection__choice")).texts().contains(storage),
                         format("Storages list contains %s", storage)));
         new ConfirmationPopupAO(this).cancel();
+        return this;
+    }
+
+    private PipelineRunFormAO waitUntilPriceInfoAppearsOnLaunchModal() {
+        $$(byClassName("ant-modal-body"))
+                .findBy(text("Launch"))
+                .find(byClassName("ob-estimated-price-info__info"))
+                .shouldBe(visible);
         return this;
     }
 
@@ -365,8 +361,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO launch() {
         ensure(ESTIMATED_PRICE, visible);
-        $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
-        $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
+        click(LAUNCH_BUTTON);
+        waitUntilPriceInfoAppearsOnLaunchModal();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
         return this;
     }

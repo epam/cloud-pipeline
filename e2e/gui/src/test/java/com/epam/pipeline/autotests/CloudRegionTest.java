@@ -37,7 +37,9 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.regex.Pattern.compile;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
@@ -45,6 +47,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -72,6 +75,8 @@ public class CloudRegionTest
     private String storage1ID = "";
     private String storage2ID = "";
     private String nfsStorage1ID = "";
+    private String run1ID = null;
+    private String run2ID = null;
 
     @BeforeClass
     public void preparations() {
@@ -122,16 +127,19 @@ public class CloudRegionTest
         setRegionMountRules(cloudRegion2, initialMountRules[1][0], initialMountRules[1][1]);
     }
 
+    @AfterClass(alwaysRun = true)
+    void stopRun() {
+        open(C.ROOT_ADDRESS);
+        sleep(1, SECONDS);
+        Stream.of(run1ID, run2ID)
+                .forEach(runID -> Optional.ofNullable(runID)
+                    .ifPresent(runId -> runsMenu().stopRunIfPresent(runId)));
+    }
+
     @Test
     @TestCase(value = "3971_1")
     public void mountRulesMountNoneStoragesLocatedInCloudRegion() {
-        navigationMenu()
-                .settings()
-                .switchToCloudRegions()
-                .selectRegion(cloudRegion1)
-                .selectValue(OBJECT_STORAGES, NONE)
-                .selectValue(FILE_STORAGES, NONE)
-                .save();
+        setRegionMountRules(cloudRegion1, NONE, NONE);
         navigationMenu()
             .tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
@@ -158,13 +166,7 @@ public class CloudRegionTest
     @Test
     @TestCase(value = "3971_2")
     public void mountRulesMountStoragesLocatedInTheSameCloudRegionWithInstance() {
-        navigationMenu()
-                .settings()
-                .switchToCloudRegions()
-                .selectRegion(cloudRegion1)
-                .selectValue(OBJECT_STORAGES, SAME_REGION)
-                .selectValue(FILE_STORAGES, SAME_REGION)
-                .save();
+        setRegionMountRules(cloudRegion1, SAME_REGION, SAME_REGION);
         navigationMenu()
                 .tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
@@ -195,17 +197,8 @@ public class CloudRegionTest
     public void mountRulesCheckMountStoragesLocatedInTheCertainCloudRegionViaPipeCLI() {
         final String[] output = new String[2];
         final String rootHost = "root@pipeline";
-        navigationMenu()
-                .settings()
-                .switchToCloudRegions()
-                .selectRegion(cloudRegion1)
-                .selectValue(OBJECT_STORAGES, SAME_REGION)
-                .selectValue(FILE_STORAGES, SAME_REGION)
-                .save()
-                .selectRegion(cloudRegion2)
-                .selectValue(OBJECT_STORAGES, NONE)
-                .selectValue(FILE_STORAGES, NONE)
-                .save();
+        setRegionMountRules(cloudRegion1, SAME_REGION, SAME_REGION);
+        setRegionMountRules(cloudRegion2, NONE, NONE);
         tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
@@ -217,18 +210,21 @@ public class CloudRegionTest
                     output[0] = shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion1ID))
-                            .assertNextStringIsVisible(command(cloudRegion1ID), rootHost)
+                            .assertNextStringIsVisible("Pipeline run scheduled with RunId:",
+                                    format("pipeline-%s", getLastRunId()))
                             .screenshot("screenshot-3971-1")
                             .lastCommandResult(command(cloudRegion1ID));
+                    shell.refresh();
                     output[1] = shell
                             .execute(command(cloudRegion2ID))
-                            .assertNextStringIsVisible(command(cloudRegion2ID), rootHost)
+                            .assertNextStringIsVisible("Pipeline run scheduled with RunId:",
+                                    format("pipeline-%s", getLastRunId()))
                             .screenshot("screenshot-3971-2")
                             .lastCommandResult(command(cloudRegion2ID));
                     shell.close();
                 });
-        final String run1ID = getRunID(output[0]);
-        final String run2ID = getRunID(output[1]);
+        run1ID = getRunID(output[0]);
+        run2ID = getRunID(output[1]);
         runsMenu()
                 .viewAvailableActiveRuns()
                 .shouldContainRun("pipeline", run1ID)
@@ -260,22 +256,14 @@ public class CloudRegionTest
                         "Only 0 storages will be mounted.",
                         "Found 0 available storage(s). Checking mount options.",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"));
+
     }
 
     @Test
     @TestCase(value = "3971_4")
     public void mountRulesCheckFilterStoragesForCloudRegionInLaunchConfirmation() {
-        navigationMenu()
-                .settings()
-                .switchToCloudRegions()
-                .selectRegion(cloudRegion1)
-                .selectValue(OBJECT_STORAGES, SAME_REGION)
-                .selectValue(FILE_STORAGES, SAME_REGION)
-                .save()
-                .selectRegion(cloudRegion2)
-                .selectValue(OBJECT_STORAGES, NONE)
-                .selectValue(FILE_STORAGES, NONE)
-                .save();
+        setRegionMountRules(cloudRegion1, SAME_REGION, SAME_REGION);
+        setRegionMountRules(cloudRegion2, NONE, NONE);
         navigationMenu()
                 .tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
