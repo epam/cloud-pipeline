@@ -17,7 +17,7 @@ import {
   CP_CAP_SHARE_FS_SIZE,
   CP_CAP_SHARE_FS_THROUGHPUT,
   CP_CAP_SHARE_FS_TYPE
-} from "../parameters";
+} from '../parameters';
 
 function renderParameterTooltip (parameter, style) {
   if (!CP_CAP_FS_PARAMETERS_HINTS[parameter]) {
@@ -32,21 +32,21 @@ function renderParameterTooltip (parameter, style) {
   );
 }
 
-function getOptionValue(option) {
+function getOptionValue (option) {
   if (option === undefined) {
     return 'not-set';
   }
   return option.toString();
 }
 
-function getOptionDescription(option) {
+function getOptionDescription (option) {
   if (option === undefined) {
     return 'Not set';
   }
   return option.toString();
 }
 
-function parseOptionValue(value) {
+function parseOptionValue (value) {
   if (value === 'not-set' || Number.isNaN(Number(value))) {
     return undefined;
   }
@@ -160,7 +160,7 @@ class ConfigureFileSystem extends React.Component {
   onChangeDeploymentType = (deploymentType) => {
     this.setState(normalizeFsConfig({
       ...this.state,
-      deploymentType,
+      deploymentType
     }), this.validateAndReport);
   };
 
@@ -319,6 +319,7 @@ class ConfigureFileSystem extends React.Component {
                       <Select.Option
                         key={getOptionValue(to)}
                         value={getOptionValue(to)}
+                        title={getOptionValue(to)}
                       >
                         <span>{getOptionDescription(to)}</span>
                       </Select.Option>
@@ -356,6 +357,7 @@ class ConfigureFileSystem extends React.Component {
                       <Select.Option
                         key={getOptionValue(io)}
                         value={getOptionValue(io)}
+                        title={getOptionValue(io)}
                       >
                         <span>{getOptionDescription(io)}</span>
                       </Select.Option>

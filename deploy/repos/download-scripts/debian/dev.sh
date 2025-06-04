@@ -9,6 +9,7 @@ apt-get install --download-only -y \
     autotools-dev \
     fuse \
     g++ \
+    gcc \
     libcurl4-gnutls-dev \
     libfuse-dev \
     libssl-dev \
@@ -18,4 +19,9 @@ apt-get install --download-only -y \
     zlib1g-dev \
     libncurses5-dev \
     gettext-base \
-    libjsoncpp-dev
+    libjsoncpp-dev \
+    bash-completion \
+    libfuse2 \
+    libexpat1 \
+    ucf \
+    libxml2

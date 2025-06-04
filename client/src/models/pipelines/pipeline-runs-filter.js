@@ -1,12 +1,13 @@
 import moment from 'moment-timezone';
+import {alphabeticalSorter} from '../../utils/sorting';
 
 function asStringArray (array) {
   return (array || []).map((item) => `${item}`);
 }
 
 export function simpleArraysAreEqual (array1, array2) {
-  const a = [...new Set(asStringArray(array1))].sort();
-  const b = [...new Set(asStringArray(array2))].sort();
+  const a = [...new Set(asStringArray(array1))].sort(alphabeticalSorter);
+  const b = [...new Set(asStringArray(array2))].sort(alphabeticalSorter);
   if (a.length !== b.length) {
     return false;
   }

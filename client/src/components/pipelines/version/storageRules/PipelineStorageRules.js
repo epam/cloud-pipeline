@@ -26,14 +26,18 @@ import roleModel from '../../../../utils/roleModel';
 @inject(({pipelines, routing}, {params}) => ({
   rules: new DataStorageRules(params.id),
   pipelineId: params.id,
-  pipeline: pipelines.getPipeline(params.id),
+  pipeline: pipelines.getPipeline(params.id)
 }))
 @observer
 export default class PipelineStorageRules extends React.Component {
-
   state = {createRuleDialogVisible: false};
 
   rulesTableColumns = [
+    {
+      dataIndex: 'name',
+      key: 'name',
+      title: 'Name'
+    },
     {
       dataIndex: 'fileMask',
       key: 'fileMask',
@@ -51,9 +55,17 @@ export default class PipelineStorageRules extends React.Component {
       title: 'Move to Short-Term Storage',
       render: (value) => {
         if (roleModel.writeAllowed(this.props.pipeline.value)) {
-          return <Checkbox checked={value} disabled={true} />
-        } else {
-          return undefined;
+          return <Checkbox checked={value} disabled />;
+        }
+      }
+    },
+    {
+      dataIndex: 'isResult',
+      key: 'isResult',
+      title: 'Pipeline Results',
+      render: (value) => {
+        if (roleModel.writeAllowed(this.props.pipeline.value)) {
+          return <Checkbox checked={value} disabled />;
         }
       }
     },
@@ -94,7 +106,7 @@ export default class PipelineStorageRules extends React.Component {
     });
   };
 
-  createRule = async(rule) => {
+  createRule = async (rule) => {
     await this.props.rules.createRule(rule);
     if (this.props.rules.createRuleLastError) {
       message.error(this.props.rules.createRuleLastError, 5);
@@ -113,14 +125,13 @@ export default class PipelineStorageRules extends React.Component {
   };
 
   render () {
-
     const header = (
       roleModel.writeAllowed(this.props.pipeline.value)
-      ? (
-        <Row type="flex" justify="end" style={{paddingRight: 5}}>
-          <Button type="primary" onClick={this.openCreateRuleDialog}>Add new rule</Button>
-        </Row>
-      )
+        ? (
+          <Row type="flex" justify="end" style={{paddingRight: 5}}>
+            <Button type="primary" onClick={this.openCreateRuleDialog}>Add new rule</Button>
+          </Row>
+        )
         : false
     );
 
@@ -135,12 +146,15 @@ export default class PipelineStorageRules extends React.Component {
           dataSource={this.props.rules.list.map(i => i)}
           locale={{emptyText: 'Rules are not configured'}}
           pagination={{pageSize: 20}}
-          size="small" />
-        <PipelineStorageRuleCreateDialog visible={this.state.createRuleDialogVisible}
-                                         onCancel={this.closeCreateRuleDialog}
-                                         onSubmit={this.createRule}
-                                         pending={this.props.rules.pending}
-                                         pipelineId={this.props.pipelineId} />
+          size="small"
+        />
+        <PipelineStorageRuleCreateDialog
+          visible={this.state.createRuleDialogVisible}
+          onCancel={this.closeCreateRuleDialog}
+          onSubmit={this.createRule}
+          pending={this.props.rules.pending}
+          pipelineId={this.props.pipelineId}
+        />
       </Row>
     );
   }

@@ -30,6 +30,7 @@ import multiprocessing
 import string
 import random
 import shutil
+import json
 import socket
 
 LOCALIZATION_TASK_NAME = 'InputData'
@@ -64,6 +65,19 @@ class File:
         self.filename = filename
         self.size = size
 
+class PipelineRunResult:
+
+    def __init__(self, runId, name, fileMask):
+        self.runId = runId
+        self.name = name
+        self.fileMask = fileMask
+        self.items = []
+
+    def add_item(self, path):
+        self.items.append(path)
+
+    def to_dict(self):
+        return vars(self)
 
 class TransferChunk:
 
@@ -249,7 +263,8 @@ def transfer_async(chunk, with_file_list=True):
     else:
         file_list_path = None
     bucket = S3Bucket()
-    cmd = bucket.build_pipe_cp_command(chunk.source, chunk.destination, file_list=file_list_path, include=chunk.rules)
+    rule_patterns = [rule.file_mask for rule in chunk.rules]
+    cmd = bucket.build_pipe_cp_command(chunk.source, chunk.destination, file_list=file_list_path, include=rule_patterns)
     if chunk.hostname != 'localhost':
         cmd = '(ssh %s API=$API API_TOKEN=$API_TOKEN RUN_ID=$RUN_ID "%s") & _CHUNK_PID=$! && wait $_CHUNK_PID' % \
               (chunk.hostname, cmd)
@@ -282,6 +297,8 @@ class InputDataTask:
         self.is_upload = upload
         self.env_suffix = env_suffix
         self.extra_args = os.getenv('CP_TRANSFER_PIPE_INPUT_ARGS') if self.is_upload else os.getenv('CP_TRANSFER_PIPE_OUTPUT_ARGS')
+        self.run_id = os.getenv('RUN_ID', None)
+
 
     def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
@@ -314,13 +331,12 @@ class InputDataTask:
                     self.transfer_dts(dts_locations, dts_registry)
                     self.localize_data(remote_locations)
                 else:
-                    rule_patterns = DataStorageRule.read_from_file(self.rules)
-                    rules = []
-                    for rule in rule_patterns:
+                    sts_rules = []
+                    for rule in DataStorageRule.read_from_file(self.rules):
                         if rule.move_to_sts:
-                            rules.append(rule.file_mask)
-                    self.localize_data(remote_locations, rules=rules)
-                    self.transfer_dts(dts_locations, dts_registry, rules=rules)
+                            sts_rules.append(rule)
+                    self.localize_data(remote_locations, rules=sts_rules)
+                    self.transfer_dts(dts_locations, dts_registry, rules=sts_rules)
             if self.is_upload and self.report_file:
                 Logger.info('Writing report file {}...'.format(self.report_file), task_name=self.task_name)
                 with open(self.report_file, 'w') as report:
@@ -545,7 +561,8 @@ class InputDataTask:
         trimmed_suffix = suffix[1:] if suffix.startswith('/') else suffix
         return trimmed_prefix + trimmed_suffix
 
-    def transfer_dts(self, dts_locations, dts_registry, rules=None):
+    def transfer_dts(self, dts_locations, dts_registry, rules=[]):
+        rule_patterns = [rule.file_mask for rule in rules]
         grouped_paths = {}
         for path in dts_locations:
             if path.prefix not in grouped_paths:
@@ -557,7 +574,7 @@ class InputDataTask:
             dts_url = dts_registry[prefix]
             Logger.info('Uploading {} paths using DTS service {}'.format(len(paths), dts_url),  self.task_name)
             dts_client = DataTransferServiceClient(dts_url, self.token, self.api_url, self.token, 10)
-            dts_client.transfer_data([self.create_dts_path(path, rules) for path in paths], self.task_name)
+            dts_client.transfer_data([self.create_dts_path(path, rule_patterns) for path in paths], self.task_name)
 
     def create_dts_path(self, path, rules):
         return LocalToS3(path.path, path.cloud_path, rules) if self.is_upload \
@@ -577,6 +594,43 @@ class InputDataTask:
                     files.append((source, destination))
         if files:
             self.perform_cluster_file_transfer(files, cluster, rules=rules)
+
+        should_collect_run_results = self.run_id is not None
+        if should_collect_run_results and rules:
+            self.publish_run_results(rules, remote_locations)
+
+    def publish_run_results(self, rules, locations):
+
+        def add_result_if_matches(file, destination, run_result_rules, run_results):
+            matched = DataStorageRule.match_which(run_result_rules, file)
+            if matched:
+                run_result = run_results.get(matched.name)
+                if not run_result:
+                    run_result = PipelineRunResult(self.run_id, matched.name, matched.file_mask)
+                    run_results[matched.name] = run_result
+                run_result.add_item(destination)
+                return True
+            return False
+
+        run_result_rules = [rule for rule in rules if rule.is_result]
+        result_file_count = 0
+        run_results = {}
+        for location in locations:
+            for path in location.paths:
+                source, destination = self.get_local_paths(path, self.is_upload)
+                if self.is_file(source):
+                    if add_result_if_matches(source, destination, run_result_rules, run_results):
+                        result_file_count = result_file_count + 1
+                else:
+                    for file in self.fetch_source_files(source):
+                        filename = file.filename
+                        if add_result_if_matches(filename, os.path.join(destination, filename),
+                                                      run_result_rules, run_results):
+                            result_file_count = result_file_count + 1
+
+        Logger.info('Matched {} files for {} run result rules'.format(result_file_count, len(run_results)), task_name=self.task_name)
+        self.api.add_pipeline_run_results(self.run_id, [run_results[k].to_dict() for k in run_results.keys()])
+
 
     def perform_local_transfer(self, source, destination):
         Logger.info('Uploading files from {} to {} using local pipe'.format(source, destination), self.task_name)

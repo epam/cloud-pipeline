@@ -39,6 +39,7 @@ nav:
     - 6.2. Launch a Pipeline: 'manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md'
     - 6.3. Delete and unregister Pipeline: 'manual/06_Manage_Pipeline/6.3._Delete_a_pipeline.md'
     - 6.4. Work with AWS HealthOmics Workflow: 'manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow.md'
+    - 6.5. Pipeline configuration: 'manual/06_Manage_Pipeline/6.5._Pipeline_configuration.md'
   - 7. Manage Detached configuration:
     - 7.0. Overview: 'manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration.md'
     - 7.1. Create and customize Detached configuration: 'manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md'
@@ -144,9 +145,10 @@ nav:
     - Azure: 'installation/self-hosted/prerequisites/azure.md'
     - GCP: 'installation/self-hosted/prerequisites/gcp.md'
   - Deployment:
-    - AWS:
-      - Terraform: 'installation/native/aws/terraform/README.md'
-      - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
+    - Cloud native:
+      - AWS:
+        - Terraform: 'installation/native/aws/terraform/README.md'
+        - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
   - Management:
     - Environments sync: 'operation/environments_sync/environments_sync.md'
   - Change Kubernetes certificates: 'operation/change_kube_certificates.md'

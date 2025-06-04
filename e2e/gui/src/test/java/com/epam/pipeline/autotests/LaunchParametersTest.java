@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,6 +177,13 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         library()
                 .removeConfigurationIfExists(configuration)
                 .removePipelineIfExists(pipeline);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void restorePreference() {
+        open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -503,9 +510,9 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     public void addSupportForAutoscalingFilesystemForAWS() {
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .doNotMountStoragesSelect(true)
                 .setDisk("25")
                 .setPriceType(ON_DEMAND)
-                .doNotMountStoragesSelect(true)
                 .click(START_IDLE)
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->

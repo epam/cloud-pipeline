@@ -40,12 +40,13 @@ class GridEngineParametersGroup:
 
 
 class GridEngineParameter:
-
-    def __init__(self, name, type, default, help):
+    # 'nullable' defines if empty strings are accepted as a valid value or 'default' shall be used
+    def __init__(self, name, type, default, help, nullable=True):
         self.name = name
         self.type = type
         self.default = default
         self.help = help
+        self.nullable = nullable
 
     def get(self):
         return self.type.extract(self)
@@ -98,7 +99,7 @@ class StringParameterType(GridEngineParameterType):
 
     def extract(self, parameter):
         value = os.getenv(parameter.name)
-        if value is None:
+        if value is None or ( len(value) == 0 and not parameter.nullable ):
             if parameter.default is None:
                 return None
             value = str(parameter.default)
@@ -118,19 +119,19 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Enables autoscaling.')
         self.autoscaling_hosts_number = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_WORKERS', type=PARAM_INT, default=3,
-            help='Specifies a maximum number of autoscaling workers.')
+            help='Specifies a maximum number of autoscaling workers.', nullable=False)
         self.instance_type = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_TYPE', type=PARAM_STR, default=os.environ['instance_size'],
-            help='Specifies worker instance type.')
+            help='Specifies worker instance type.', nullable=False)
         self.instance_disk = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_DISK', type=PARAM_INT, default=os.environ['instance_disk'],
-            help='Specifies worker disk size.')
+            help='Specifies worker disk size.', nullable=False)
         self.instance_image = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_IMAGE', type=PARAM_STR, default=os.environ['docker_image'],
-            help='Specifies worker docker image.')
+            help='Specifies worker docker image.', nullable=False)
         self.price_type = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_PRICE_TYPE', type=PARAM_STR, default=os.environ['price_type'],
-            help='Specifies worker price type.')
+            help='Specifies worker price type.', nullable=False)
         self.cmd_template = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_CMD_TEMPLATE', type=PARAM_STR, default='sleep infinity',
             help='Specifies worker cmd template.')

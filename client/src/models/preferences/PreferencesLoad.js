@@ -17,7 +17,8 @@
 import Remote from '../basic/Remote';
 import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
-import roleModel from '../../utils/roleModel';
+import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
+import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -416,7 +417,7 @@ class PreferencesLoad extends Remote {
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
             capabilities: Object.entries(capabilities)
-              .map(c => mapCapability(c, entry)),
+              .map(c => mapCapability([c, entry])),
             multiple: Boolean(entry?.multiple)
           };
         };
@@ -815,12 +816,32 @@ class PreferencesLoad extends Remote {
     const value = this.getPreferenceValue('ui.runs.tags');
     if (value) {
       try {
-        return JSON.parse(value);
+        const result = JSON.parse(value);
+        if (!Array.isArray(result)) {
+          throw new Error(`array expected, got ${typeof result}`);
+        }
+        return result.map((o) => {
+          const {
+            // eslint-disable-next-line camelcase
+            user_tag = false,
+            userTag = user_tag,
+            ...rest
+          } = o;
+          return {
+            ...rest,
+            userTag: `${userTag}`.toLowerCase() === 'true'
+          };
+        });
       } catch (e) {
         console.warn('Error parsing "ui.runs.tags" preference:', e.message);
       }
     }
     return [];
+  }
+
+  @computed
+  get uiRunsUserTags () {
+    return this.uiRunsTags.filter((tag) => tag.userTag);
   }
 
   @computed
@@ -901,58 +922,30 @@ class PreferencesLoad extends Remote {
         console.warn('Error parsing "ui.personal.tools.permissions.restrictions" preference:', e.message);
       }
     }
-    const parseRule = (rule) => {
-      const {
-        role = 'ALL',
-        disable = ''
-      } = rule;
-      return role
-        .split(/[,;\s]/g)
-        .filter((aRole) => aRole.length > 0)
-        .map((aRole) => ({
-          role: aRole,
-          disable
-        }));
-    };
-    const rules = restrictions
-      .reduce((result, rule) => ([
-        ...result,
-        ...parseRule(rule)
-      ]), [])
-      .filter(Boolean);
-    return rules.map((rule) => {
-      const {
-        role,
-        disable = ''
-      } = rule;
-      const masks = disable.split(/[,;\s]/g).filter((mask) => mask.length);
-      const disableRead = masks.some((aMask) => /^read$/i.test(aMask));
-      const disableWrite = masks.some((aMask) => /^write$/i.test(aMask));
-      const disableExecute = masks.some((aMask) => /^execute$/i.test(aMask));
-      return {
-        role,
-        disabled: masks,
-        disableRead,
-        disableWrite,
-        disableExecute,
-        enabledMask: roleModel.buildPermissionsMask(
-          !disableRead,
-          !disableRead,
-          !disableWrite,
-          !disableWrite,
-          !disableExecute,
-          !disableExecute
-        ),
-        defaultMask: roleModel.buildPermissionsMask(
-          0,
-          disableRead,
-          0,
-          disableWrite,
-          0,
-          disableExecute
-        )
-      };
-    });
+    return parsePermissionsRestrictionsConfig(restrictions);
+  }
+
+  /**
+   * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
+   */
+  @computed
+  get uiStoragesPermissionsRestrictions () {
+    const value = this.getPreferenceValue('ui.storages.permissions.restrictions');
+    const defaultValue = [];
+    let restrictions = defaultValue;
+    if (value && value.length) {
+      try {
+        restrictions = JSON.parse(value);
+        if (!Array.isArray(restrictions) && !isObservableArray(restrictions)) {
+          restrictions = defaultValue;
+          throw new Error('wrong format (should be array)');
+        }
+      } catch (e) {
+        // eslint-disable-next-line max-len
+        console.warn('Error parsing "ui.storages.permissions.restrictions" preference:', e.message);
+      }
+    }
+    return parsePermissionsRestrictionsConfig(restrictions);
   }
 
   @computed
@@ -1042,6 +1035,40 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get uiRunActions () {
+    const value = this.getPreferenceValue('ui.run.actions');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          const result = {};
+          for (const [key, value] of Object.entries(cfg)) {
+            result[key] = parseRunActionCriteria(key, value);
+          }
+          return result;
+        }
+        throw Error(`unsupported ui.run.actions format. expected object, got ${typeof cfg}`);
+      } catch (e) {
+        console.warn('Error parsing "ui.run.actions" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get uiMlflowSettings () {
+    const value = this.getPreferenceValue('ui.mlflow.settings');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.mlflow.settings" preference:', e.message);
+      }
+    }
+    return undefined;
   }
 
   toolScanningEnabledForRegistry (registry) {

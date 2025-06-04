@@ -18,6 +18,7 @@ import {clearQuotes} from './string-utilities';
 import {
   ContextTypes, isConditional, isScatter, isWorkflow
 } from '../../../../../../../utils/pipeline-builder';
+import {alphabeticalSorter} from '../../../../../../../utils/sorting';
 
 export function serializeWorkflowParameters (workflow) {
   if (!workflow) {
@@ -44,8 +45,8 @@ export function serializeWorkflowParameters (workflow) {
 }
 
 export function workflowParametersEquals (p1, p2) {
-  const keys1 = Object.keys(p1 || {}).sort();
-  const keys2 = Object.keys(p2 || {}).sort();
+  const keys1 = Object.keys(p1 || {}).sort(alphabeticalSorter);
+  const keys2 = Object.keys(p2 || {}).sort(alphabeticalSorter);
   if (keys1.length !== keys2.length) {
     return false;
   }

@@ -25,12 +25,10 @@ import ToolImage from '../../../../models/tools/ToolImage';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../../../models/tools/LoadToolScanPolicy';
-import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import {getVersionRunningInfo} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
-import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
 import {
   getInputPaths,
@@ -65,6 +63,7 @@ import {
   getLimitMountsStorages
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import checkToolVersionErrors from '../../../runs/utilities/check-tool-version-errors';
+import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -239,47 +238,69 @@ export default class PersonalToolsPanel extends React.Component {
     return false;
   }
 
+  /**
+   * Returns launch payload without applied run capabilities
+   */
+  getGeneralLaunchPayload = () => {
+    const {runToolInfo} = this.state;
+    if (runToolInfo) {
+      const payload = {...(runToolInfo.payload || {})};
+      if (runToolInfo.isSpot !== undefined) {
+        payload.isSpot = runToolInfo.isSpot;
+      }
+      if (runToolInfo.instanceType !== undefined) {
+        payload.instanceType = runToolInfo.instanceType;
+      }
+      if (runToolInfo.hddSize !== undefined) {
+        payload.hddSize = runToolInfo.hddSize;
+      }
+      if (runToolInfo.limitMounts !== undefined) {
+        if (!payload.params) {
+          payload.params = {};
+        }
+        if (runToolInfo.limitMounts.value) {
+          payload.params[CP_CAP_LIMIT_MOUNTS] = runToolInfo.limitMounts;
+        } else if (payload.params[CP_CAP_LIMIT_MOUNTS]) {
+          delete payload.params[CP_CAP_LIMIT_MOUNTS];
+        }
+      }
+      if (runToolInfo.runNameAlias) {
+        payload.runNameAlias = runToolInfo.runNameAlias;
+      }
+      return payload;
+    }
+    return undefined;
+  };
+
+  getLaunchPayload = async () => {
+    const {runToolInfo} = this.state;
+    const {preferences} = this.props;
+    const payload = this.getGeneralLaunchPayload();
+    if (runToolInfo && payload) {
+      payload.params = await applyUserCapabilities(
+        payload.params || {},
+        preferences,
+        runToolInfo.tool.platform
+      );
+      if (runToolInfo.runCapabilities) {
+        payload.params = updateCapabilities(
+          payload.params,
+          runToolInfo.runCapabilities,
+          preferences,
+          runToolInfo.tool.platform
+        );
+      }
+      return payload;
+    }
+    return undefined;
+  };
+
   runToolWithDefaultSettings = () => {
     this.setState({
       pending: true,
       showLoading: true
     }, async () => {
-      const payload = this.state.runToolInfo.payload;
-      if (this.state.runToolInfo.isSpot !== undefined) {
-        payload.isSpot = this.state.runToolInfo.isSpot;
-      }
-      if (this.state.runToolInfo.instanceType !== undefined) {
-        payload.instanceType = this.state.runToolInfo.instanceType;
-      }
-      if (this.state.runToolInfo.hddSize !== undefined) {
-        payload.hddSize = this.state.runToolInfo.hddSize;
-      }
-      if (this.state.runToolInfo.limitMounts !== undefined) {
-        if (!payload.params) {
-          payload.params = {};
-        }
-        if (this.state.runToolInfo.limitMounts.value) {
-          payload.params[CP_CAP_LIMIT_MOUNTS] = this.state.runToolInfo.limitMounts;
-        } else if (payload.params[CP_CAP_LIMIT_MOUNTS]) {
-          delete payload.params[CP_CAP_LIMIT_MOUNTS];
-        }
-      }
-      if (this.state.runToolInfo.runNameAlias) {
-        payload.runNameAlias = this.state.runToolInfo.runNameAlias;
-      }
-      payload.params = await applyUserCapabilities(
-        payload.params || {},
-        this.props.preferences,
-        this.state.runToolInfo.tool.platform
-      );
-      if (this.state.runToolInfo.runCapabilities) {
-        payload.params = updateCapabilities(
-          payload.params,
-          this.state.runToolInfo.runCapabilities,
-          this.props.preferences,
-          this.state.runToolInfo.tool.platform
-        );
-      }
+      const payload = await this.getLaunchPayload();
       if (await run(this)(payload, false)) {
         this.setState({
           runToolInfo: null
@@ -533,15 +554,9 @@ export default class PersonalToolsPanel extends React.Component {
           this.isAdmin(),
           this.props.preferences,
           registry);
-        const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-        await estimatedPriceRequest.send({
-          instanceType: defaultPayload.instanceType,
-          instanceDisk: defaultPayload.hddSize,
-          spot: defaultPayload.isSpot,
-          regionId: defaultPayload.cloudRegionId
-        });
         if (allowedToExecute) {
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
+          const validation = await getUserTagsValidationResult({}, {launchPayload: defaultPayload});
           this.setState({
             pending: true,
             runToolInfo: {
@@ -550,9 +565,6 @@ export default class PersonalToolsPanel extends React.Component {
               tag: defaultTag,
               payload: defaultPayload,
               warning: launchTooltip,
-              pricePerHour: estimatedPriceRequest.loaded
-                ? estimatedPriceRequest.value.pricePerHour
-                : false,
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
@@ -560,7 +572,9 @@ export default class PersonalToolsPanel extends React.Component {
               runCapabilitiesError: checkRequiredCapabilitiesErrors(
                 runCapabilities,
                 this.props.preferences
-              )
+              ),
+              userTagsValidation: validation,
+              userTagsPayload: defaultPayload
             }
           }, async () => {
             const hide = message.loading('Checking tool size...', 0);
@@ -714,21 +728,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
       runToolInfo.isSpot = isSpot;
-      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-      await estimatedPriceRequest.send({
-        instanceType: runToolInfo.instanceType !== undefined
-          ? runToolInfo.instanceType
-          : runToolInfo.payload.instanceType,
-        instanceDisk: runToolInfo.hddSize !== undefined
-          ? runToolInfo.hddSize
-          : runToolInfo.payload.hddSize,
-        spot: isSpot,
-        regionId: runToolInfo.payload.cloudRegionId
-      });
-      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
         runToolInfo
-      });
+      }, this.updateUserTagsValidationInfo);
     }
   };
 
@@ -736,21 +738,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
       runToolInfo.instanceType = instanceType;
-      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-      await estimatedPriceRequest.send({
-        instanceType: instanceType,
-        instanceDisk: runToolInfo.hddSize !== undefined
-          ? runToolInfo.hddSize
-          : runToolInfo.payload.hddSize,
-        spot: runToolInfo.isSpot !== undefined
-          ? runToolInfo.isSpot
-          : runToolInfo.payload.isSpot,
-        regionId: runToolInfo.payload.cloudRegionId
-      });
-      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
         runToolInfo
-      });
+      }, this.updateUserTagsValidationInfo);
     }
   };
 
@@ -758,23 +748,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
       runToolInfo.hddSize = diskSize;
-      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
-      await estimatedPriceRequest.send({
-        instanceType: runToolInfo.instanceType !== undefined
-          ? runToolInfo.instanceType
-          : runToolInfo.payload.instanceType,
-        instanceDisk: runToolInfo.hddSize !== undefined
-          ? runToolInfo.hddSize
-          : runToolInfo.payload.hddSize,
-        spot: runToolInfo.isSpot !== undefined
-          ? runToolInfo.isSpot
-          : runToolInfo.payload.isSpot,
-        regionId: runToolInfo.payload.cloudRegionId
-      });
-      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
         runToolInfo
-      });
+      }, this.updateUserTagsValidationInfo);
     }
   };
 
@@ -788,8 +764,55 @@ export default class PersonalToolsPanel extends React.Component {
       };
       this.setState({
         runToolInfo
+      }, this.updateUserTagsValidationInfo);
+    }
+  };
+
+  onChangeUserTags = (tags) => {
+    if (this.state.runToolInfo) {
+      const newPayload = {
+        ...(this.state.runToolInfo.payload || {}),
+        tags
+      };
+      this.setState({
+        runToolInfo: {
+          ...this.state.runToolInfo,
+          payload: newPayload
+        }
+      }, this.updateUserTagsValidationInfo);
+    }
+  };
+
+  updateUserTagsValidationInfo = async () => {
+    const {runToolInfo} = this.state;
+    if (runToolInfo) {
+      const info = await this.getUserTagsValidationInfo();
+      const {
+        validation,
+        payload
+      } = info || {};
+      this.setState({
+        runToolInfo: {
+          ...runToolInfo,
+          userTagsValidation: validation,
+          userTagsPayload: payload
+        }
       });
     }
+  };
+
+  getUserTagsValidationInfo = async () => {
+    const {runToolInfo} = this.state;
+    const payload = this.getGeneralLaunchPayload();
+    if (runToolInfo && payload) {
+      const {tags = {}} = runToolInfo.payload || {};
+      const validation = await getUserTagsValidationResult(tags, {launchPayload: payload});
+      return {
+        validation,
+        payload
+      };
+    }
+    return undefined;
   };
 
   onChangeRunNameAlias = (alias) => {
@@ -798,7 +821,7 @@ export default class PersonalToolsPanel extends React.Component {
       runToolInfo.runNameAlias = alias;
       this.setState({
         runToolInfo
-      });
+      }, this.updateUserTagsValidationInfo);
     }
   };
 
@@ -810,7 +833,7 @@ export default class PersonalToolsPanel extends React.Component {
           ...runToolInfo,
           runCapabilities: (capabilities || []).slice()
         }
-      });
+      }, this.updateUserTagsValidationInfo);
     }
   };
 
@@ -881,6 +904,10 @@ export default class PersonalToolsPanel extends React.Component {
                     ) ||
                     this.runCapabilitiesError ||
                     this.state.runToolInfo?.versionErrors?.size?.hard ||
+                    (
+                      this.state.runToolInfo.userTagsValidation &&
+                      this.state.runToolInfo.userTagsValidation.length > 0
+                    ) ||
                     this.state.pending
                   }
                   onClick={this.runToolWithDefaultSettings}
@@ -932,6 +959,10 @@ export default class PersonalToolsPanel extends React.Component {
                     : undefined
                 }
                 onChangeLimitMounts={this.onChangeLimitMounts}
+                tags={this.state.runToolInfo.payload.tags}
+                tagsPayload={this.state.runToolInfo.userTagsPayload}
+                tagsValidation={this.state.runToolInfo.userTagsValidation}
+                onChangeTags={this.onChangeUserTags}
                 onChangeHddSize={this.onChangeDiskSize}
                 nodeCount={+this.state.runToolInfo.payload.nodeCount || 0}
                 hddSize={this.state.runToolInfo.payload.hddSize}
@@ -946,21 +977,6 @@ export default class PersonalToolsPanel extends React.Component {
                 dockerRegistries={this.props.dockerRegistries}
                 usersInfo={this.props.usersInfo}
               />
-          }
-          {
-            this.state.runToolInfo && this.state.runToolInfo.pricePerHour &&
-            <Alert
-              type="success"
-              style={{margin: 2}}
-              message={
-                <Row>
-                  <JobEstimatedPriceInfo>
-                    Estimated price: <b>{
-                      Math.ceil(this.state.runToolInfo.pricePerHour * (this.state.runToolInfo.nodeCount + 1) * 100.0) / 100.0
-                    }$</b> per hour.
-                  </JobEstimatedPriceInfo>
-                </Row>
-              } />
           }
         </Modal>
       </div>

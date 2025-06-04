@@ -62,6 +62,9 @@ RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/fi
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 ADD filebeat-template.yml /etc/filebeat/
 
+RUN yum install python3 -y \
+    && python3 -m pip install elasticsearch5 pykube
+ADD network-event-scrapper /opt/network-event-scrapper
 
 ADD init /init
 RUN chmod +x /init

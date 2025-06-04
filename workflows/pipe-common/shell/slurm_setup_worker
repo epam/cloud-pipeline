@@ -175,7 +175,8 @@ pipe_log_info "SLURM cluster has been configured" "$SLURM_WORKER_SETUP_TASK"
 
 pipe_log_info "Adding worker node to SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
 if [ "${cluster_role_type}" == "additional" ]; then
-    slurmd -Z --conf "CPUs=$_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=FUTURE"
+    _WORKER_FEATURE_NAME="${CP_CAP_SLURM_QUEUE_NAME:-$CP_CAP_SGE_QUEUE_NAME}"
+    slurmd -Z --conf "CPUs=$_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=FUTURE Feature=$_WORKER_FEATURE_NAME"
 else
     slurmd
 fi

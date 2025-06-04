@@ -18,16 +18,24 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
+import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
+import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,12 +54,31 @@ public class EngineRunTaskService {
         runCRUDService.loadRunById(runId);
         return engineRunTaskDao.batchUpsert(tasks.stream()
                         .peek(task -> task.setRunId(runId))
-                        .map(this::validate)
+                        .map(this::validateEvent)
                         .collect(Collectors.toList()))
                 .size();
     }
 
-    private EngineRunTask validate(final EngineRunTask task) {
+    public Map<String, Map<EngineTaskStatus, Long>> loadTasksStats(final Long runId, final EngineType engineType) {
+        runCRUDService.loadRunById(runId);
+        return ListUtils.emptyIfNull(engineRunTaskDao.loadStats(runId, engineType)).stream()
+                .filter(stats -> Objects.nonNull(stats.getTaskGroup()))
+                .collect(Collectors.groupingBy(EngineRunTaskStatsEntity::getTaskGroup,
+                                Collectors.toMap(EngineRunTaskStatsEntity::getStatus,
+                                        EngineRunTaskStatsEntity::getTasksCount)));
+    }
+
+    public PagedResult<List<EngineRunTask>> loadTasks(final Long runId, final EngineType engineType,
+                                                      final EngineRunTaskFilter filter) {
+        Assert.isTrue(filter.getPage() > 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
+        Assert.isTrue(filter.getPageSize() > 0, messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+
+        runCRUDService.loadRunById(runId);
+        return new PagedResult<>(engineRunTaskDao.filterTasksByRunIdAndTypeAndFilter(runId, engineType, filter),
+                engineRunTaskDao.countTasksByRunIdAndTypeAndFilter(runId, engineType, filter));
+    }
+
+    private EngineRunTask validateEvent(final EngineRunTask task) {
         Assert.notNull(task.getTaskId(), messageHelper.getMessage(
                 MessageConstants.ERROR_ENGINE_RUN_TASK_SETTING_NOT_FOUND, "taskId"));
         Assert.notNull(task.getEngineType(), messageHelper.getMessage(

@@ -1,0 +1,72 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-mlflow
+  namespace: default
+spec:
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-mlflow: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                cloud-pipeline/cp-mlflow: "true"
+            topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        cloud-pipeline/cp-mlflow: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: cp-mlflow
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:mlflow-server-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/mlflow/logs
+              name: mlflow-logs
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-mlflow.sh
+            initialDelaySeconds: 300
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-mlflow.sh
+            initialDelaySeconds: 180
+            periodSeconds: 15
+            failureThreshold: 4
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      volumes:
+        - name: mlflow-logs
+          hostPath:
+            path: /opt/mlflow/logs
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

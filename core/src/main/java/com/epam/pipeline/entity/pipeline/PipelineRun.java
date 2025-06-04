@@ -121,6 +121,10 @@ public class PipelineRun extends AbstractSecuredEntity {
      */
     private BigDecimal computePricePerHour;
     /**
+     * Run filesystem price per hour (including size).
+     */
+    private BigDecimal fsPricePerHour;
+    /**
      * Pipeline run instance disk gigabyte price per hour. 
      */
     private BigDecimal diskPricePerHour;
@@ -128,6 +132,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private List<RestartRun> restartedRuns;
     private List<RunStatus> runStatuses;
     private boolean nonPause;
+    private Long projectId;
 
     /**
      * For CMD runs parent is TOOL, for usual runs - it is a PIPELINE

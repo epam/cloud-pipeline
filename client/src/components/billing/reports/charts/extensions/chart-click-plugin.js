@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,10 @@ const plugin = {
       const {top} = scales[axis];
       const {highest} = scales[axis]._getLabelSizes();
       const {height, offset} = highest;
-      if (y > height + offset + top) {
+      const isScale = axis.includes('x-axis')
+        ? y > height + offset + top
+        : y > top;
+      if (isScale) {
         scaleHovered = true;
       }
     }
@@ -50,9 +53,10 @@ const plugin = {
         return;
       }
       if (handler) {
-        const value = scales[axis].getValueForPixel(x);
+        const px = axis.includes('x-axis') ? x : y;
+        const value = scales[axis].getValueForPixel(px);
         if (value >= 0) {
-          handler(value);
+          handler(value, scaleHovered);
         }
       }
     } else if (/^mousemove$/i.test(type) && scaleHovered && scaleHandler) {

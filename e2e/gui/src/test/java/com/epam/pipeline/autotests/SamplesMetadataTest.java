@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -398,7 +398,7 @@ public class SamplesMetadataTest
                     return Utils.readResourceFully(configJson)
                             .replace("{{docker_image}}", dockerImage)
                             .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                            .replace("{{is_spot}}", String.valueOf(isSpot));
+                            .replace("\"{{is_spot}}\"", String.valueOf(isSpot));
                 })
                 .deleteExtraBrackets(110)
                 .saveAndCommitWithMessage("test: sample metadata")

@@ -718,9 +718,9 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 # --- svc-port-N
 # --- svc-path-N
 
-def load_pods_for_runs_with_endpoints():
+def load_pods_for_runs_with_endpoints(run_pod_selector_key, run_pod_selector_value):
         pods_with_endpoints = []
-        all_pipeline_pods = Pod.objects(kube_api).filter(selector={'type': 'pipeline'})\
+        all_pipeline_pods = Pod.objects(kube_api).filter(selector={run_pod_selector_key: run_pod_selector_value})\
                                                  .filter(field_selector={"status.phase": "Running"})
         for pod in all_pipeline_pods.response['items']:
                 labels = pod['metadata']['labels']
@@ -979,6 +979,9 @@ else:
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
+run_pod_selector_key = os.getenv('CP_EDGE_RUN_POD_SELECTOR_KEY', "type")
+run_pod_selector_value = os.getenv('CP_EDGE_RUN_POD_SELECTOR_VALUE', "pipeline")
+
 edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_PREF, 'default.edge.region')
 edge_region_id = os.getenv('CP_EDGE_REGION_ID') or find_preference(API_GET_PREF, 'default.edge.region.id')
 
@@ -1028,7 +1031,7 @@ if not edge_service_port:
 do_log('EDGE: {}:{} ({} #{})'.format(edge_service_external_ip, edge_service_port,
                                      edge_region_name, edge_region_id or 'undefined'))
 
-pods_with_endpoints = load_pods_for_runs_with_endpoints()
+pods_with_endpoints = load_pods_for_runs_with_endpoints(run_pod_selector_key, run_pod_selector_value)
 runs_with_endpoints = get_active_runs(pods_with_endpoints)
 
 services_list = {}

@@ -39,6 +39,7 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
 import getToolLaunchingOptions from './utilities/get-tool-launching-options';
 import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
 import roleModel from '../../../utils/roleModel';
+import {LaunchFormPlugin} from '../../plugins';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -633,6 +634,22 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   render () {
+    return (
+      <LaunchFormPlugin
+        style={{width: '100%', height: '100%', overflow: 'auto'}}
+        pipelineId={this.props.pipelineId}
+        pipelineVersion={this.props.version}
+        pipelineConfiguration={this.props.configurationName}
+        runId={this.props.runId}
+        toolId={this.props.image}
+        toolVersion={this.props.toolVersion}
+      >
+        {this.renderDefault()}
+      </LaunchFormPlugin>
+    );
+  }
+
+  renderDefault () {
     if (this.pipelinePending ||
       this.configurationsPending ||
       this.runPending ||

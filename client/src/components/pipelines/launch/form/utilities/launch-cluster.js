@@ -160,6 +160,7 @@ export function getSkippedSystemParametersList (controller) {
     CP_CAP_AUTOSCALE,
     CP_CAP_AUTOSCALE_WORKERS,
     CP_CAP_RESCHEDULE_RUN,
+    ...CP_CAP_FS_PARAMETERS,
     ...getRunCapabilitiesSkippedParameters()
   ];
 }

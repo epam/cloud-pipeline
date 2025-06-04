@@ -536,6 +536,12 @@ function api_register_gitlab {
     api_preference_drop_array
 }
 
+function api_register_mlflow {
+    local pref_value="{ \"mlflow_base\": \"https://${CP_MLFLOW_EXTERNAL_HOST}:${CP_MLFLOW_EXTERNAL_PORT}${CP_MLFLOW_EXTERNAL_SUFFIX}\" }"
+    pref_value="$(escape_string "$pref_value")"
+    api_set_preference "ui.mlflow.settings" "$pref_value" "true"
+}
+
 function api_find_docker_image {
     local docker_image_name="$1"
 

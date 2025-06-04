@@ -93,6 +93,11 @@ class CloudPipelineThemes {
     return undefined;
   }
 
+  @computed
+  get currentThemeObject () {
+    return this.themes.find(o => o.identifier === this.currentTheme);
+  }
+
   constructor () {
     this.listeners = [];
     (this.initialize)();

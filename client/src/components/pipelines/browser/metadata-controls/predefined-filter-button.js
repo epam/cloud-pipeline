@@ -21,6 +21,7 @@ import moment from 'moment-timezone';
 import MetadataEntityFilter from '../../../../models/folderMetadata/MetadataEntityFilter';
 import classNames from 'classnames';
 import {getPredefinedFilterClassName, localDateToUTC} from './predefined-filter-utilities';
+import {defaultSorter} from '../../../../utils/sorting';
 
 function mapColumnName (name) {
   if (name === 'externalId') {
@@ -41,8 +42,8 @@ function isPredefined (name) {
 }
 
 function arraysAreTheSame (array1, array2) {
-  const a = [...new Set(array1 || [])].sort();
-  const b = [...new Set(array2 || [])].sort();
+  const a = [...new Set(array1 || [])].sort(defaultSorter);
+  const b = [...new Set(array2 || [])].sort(defaultSorter);
   if (a.length !== b.length) {
     return false;
   }
@@ -86,8 +87,8 @@ function predefinedFiltersAreTheSame (filtersA, filtersB) {
   if (aStart !== bStart || aEnd !== bEnd) {
     return false;
   }
-  const aKeys = Object.keys(restA).sort();
-  const bKeys = Object.keys(restB).sort();
+  const aKeys = Object.keys(restA).sort(defaultSorter);
+  const bKeys = Object.keys(restB).sort(defaultSorter);
   if (aKeys.length !== bKeys.length || !arraysAreTheSame(aKeys, bKeys)) {
     return false;
   }

@@ -19,6 +19,9 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 
 import javax.annotation.Nullable;
@@ -97,4 +100,9 @@ public interface UsageMonitoringManager {
                                String podId,
                                String dockerImage);
 
+    NetworkEventFilter getPlatformNetworkStatsFilters();
+
+    List<HistogramBin> getPlatformNetworkStats(HistogramType histogramType,
+                                               LocalDateTime from, LocalDateTime to,
+                                               Integer intervals, NetworkEventFilter filter);
 }

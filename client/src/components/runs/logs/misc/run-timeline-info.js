@@ -28,91 +28,174 @@ import displayDate from '../../../../utils/displayDate';
 import {displayDurationInSeconds} from '../../../../utils/displayDuration';
 import styles from './run-timeline-info.css';
 
-function RunTimelineInfo (
-  {
+const defaultDateFormat = 'D MMMM, YYYY, HH:mm';
+
+function RunTimelineInfoDetails (props) {
+  const {
     className,
     style,
     run,
     runTasks,
-    analyseSchedulingPhase
-  }
-) {
+    analyseSchedulingPhase,
+    dateFormat = defaultDateFormat
+  } = props;
   if (!run) {
     return null;
   }
   const {
-    info,
-    last,
-    runningDate,
-    pausedDuration,
-    totalRunningDuration,
-    wasPaused,
     pausedIntervals
   } = getRunDurationInfo(
     run,
     analyseSchedulingPhase,
     runTasks || []
   );
+  if (pausedIntervals.length > 0) {
+    return (
+      <div className={classNames(styles.runTimelineInfoDetails, className)} style={style}>
+        <table
+          className={
+            classNames(
+              'cp-run-timeline-table',
+              styles.pausedDurationTable
+            )
+          }
+        >
+          <thead>
+            <tr>
+              <th>Paused</th>
+              <th>Resumed / Stopped</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              pausedIntervals.map((interval, index) => {
+                const {
+                  start,
+                  end
+                } = interval;
+                return (
+                  <tr key={`interval-${index}`}>
+                    <td>{displayDate(start, dateFormat)}</td>
+                    <td>{displayDate(end, dateFormat)}</td>
+                    <td>{displayDurationInSeconds(getIntervalDuration(interval), true)}</td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  return null;
+}
+
+RunTimelineInfoDetails.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  run: PropTypes.object,
+  runTasks: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  analyseSchedulingPhase: PropTypes.bool,
+  dateFormat: PropTypes.string
+};
+
+RunTimelineInfoDetails.available = function (
+  run,
+  runTasks,
+  analyseSchedulingPhase
+) {
+  const {
+    pausedIntervals,
+    runningDate
+  } = getRunDurationInfo(
+    run,
+    analyseSchedulingPhase,
+    runTasks || []
+  );
+  return runningDate && pausedIntervals.length > 0;
+};
+
+function getRunTimelineInfoDescription (
+  run,
+  runTasks,
+  analyseSchedulingPhase,
+  dateFormat
+) {
+  if (!run) {
+    return null;
+  }
   const {
     status
   } = run;
-  if (runningDate && (!analyseSchedulingPhase || (runTasks || []).length > 0)) {
-    const isStopped = ['SUCCESS', 'FAILURE', 'STOPPED'].includes((status || '').toUpperCase());
-    const durationInfos = [displayDurationInSeconds(totalRunningDuration)];
-    if (pausedDuration > 0) {
-      durationInfos.push(`${displayDurationInSeconds(pausedDuration)} in pause`);
-    }
-    if (!isStopped && wasPaused && last && last.phase === RunHistoryPhase.running) {
-      durationInfos.push(
-        `${displayDurationInSeconds(getIntervalDuration(last))} since last resume`
-      );
-    }
-    const durationInfo = durationInfos.join(' / ');
-    const infoString = isStopped
-      ? `${displayDate(info.end || moment.utc())} (${durationInfo})`
-      : durationInfo;
-    if (pausedIntervals.length > 0) {
+  const {
+    info,
+    last,
+    runningDate,
+    pausedDuration,
+    totalRunningDuration,
+    wasPaused
+  } = getRunDurationInfo(
+    run,
+    analyseSchedulingPhase,
+    runTasks || []
+  );
+  if (!runningDate) {
+    return null;
+  }
+  const isStopped = ['SUCCESS', 'FAILURE', 'STOPPED'].includes((status || '').toUpperCase());
+  const durationInfos = [displayDurationInSeconds(totalRunningDuration)];
+  if (pausedDuration > 0) {
+    durationInfos.push(`${displayDurationInSeconds(pausedDuration)} in pause`);
+  }
+  if (!isStopped && wasPaused && last && last.phase === RunHistoryPhase.running) {
+    durationInfos.push(
+      `${displayDurationInSeconds(getIntervalDuration(last))} since last resume`
+    );
+  }
+  const durationInfo = durationInfos.join(' / ');
+  return isStopped
+    ? `${displayDate(info.end || moment.utc(), dateFormat)} (${durationInfo})`
+    : durationInfo;
+}
+
+function RunTimelineInfo (
+  {
+    className,
+    style,
+    run,
+    runTasks,
+    analyseSchedulingPhase,
+    showDetails = true,
+    dateFormat
+  }
+) {
+  if (!run) {
+    return null;
+  }
+  const infoString = getRunTimelineInfoDescription(
+    run,
+    runTasks,
+    analyseSchedulingPhase,
+    dateFormat
+  );
+  if (infoString) {
+    const details = showDetails
+      ? RunTimelineInfoDetails.available(run, runTasks, analyseSchedulingPhase)
+      : false;
+    if (details) {
       return (
         <Popover
           content={(
-            <div className={styles.runTimelineInfoDetails}>
-              <table
-                className={
-                  classNames(
-                    'cp-run-timeline-table',
-                    styles.pausedDurationTable
-                  )
-                }
-              >
-                <thead>
-                  <tr>
-                    <th>Paused</th>
-                    <th>Resumed / Stopped</th>
-                    <th>Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {
-                    pausedIntervals.map((interval, index) => {
-                      const {
-                        start,
-                        end
-                      } = interval;
-                      return (
-                        <tr key={`interval-${index}`}>
-                          <td>{displayDate(start, 'D MMMM, YYYY, HH:mm')}</td>
-                          <td>{displayDate(end, 'D MMMM, YYYY, HH:mm')}</td>
-                          <td>{displayDurationInSeconds(getIntervalDuration(interval), true)}</td>
-                        </tr>
-                      );
-                    })
-                  }
-                </tbody>
-              </table>
-            </div>
+            <RunTimelineInfoDetails
+              run={run}
+              runTasks={runTasks}
+              analyseSchedulingPhase={analyseSchedulingPhase}
+              dateFormat={dateFormat}
+            />
           )}
         >
-          <span style={{cursor: 'pointer'}}>
+          <span className={className} style={{...(style || {}), cursor: 'pointer'}}>
             {infoString}
             <Icon type="info-circle-o" style={{marginLeft: 5}} />
           </span>
@@ -120,7 +203,7 @@ function RunTimelineInfo (
       );
     }
     return (
-      <span>
+      <span className={className} style={style}>
         {infoString}
       </span>
     );
@@ -133,7 +216,16 @@ RunTimelineInfo.propTypes = {
   style: PropTypes.object,
   run: PropTypes.object,
   runTasks: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  analyseSchedulingPhase: PropTypes.bool
+  analyseSchedulingPhase: PropTypes.bool,
+  showDetails: PropTypes.bool,
+  dateFormat: PropTypes.string
 };
 
+RunTimelineInfo.defaultProps = {
+  showDetails: true
+};
+
+RunTimelineInfo.Details = observer(RunTimelineInfoDetails);
+
 export default observer(RunTimelineInfo);
+export {RunTimelineInfoDetails};

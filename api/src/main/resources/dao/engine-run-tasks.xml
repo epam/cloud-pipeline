@@ -26,6 +26,7 @@
                         task_id,
                         task_name,
                         task_key,
+                        task_tag,
                         task_group,
                         parent_id,
                         engine_type,
@@ -39,6 +40,7 @@
                         :TASK_ID,
                         :TASK_NAME,
                         :TASK_KEY,
+                        :TASK_TAG,
                         :TASK_GROUP,
                         :PARENT_ID,
                         :ENGINE_TYPE,
@@ -48,11 +50,14 @@
                         :END_DATE,
                         :RUN_ID,
                         :DURATION
-                    ) ON CONFLICT (run_id, task_id, engine_type) DO UPDATE SET
+                    )
+                    ON CONFLICT (run_id, task_id, engine_type)
+                    DO UPDATE SET
                         status = :STATUS,
                         data = to_jsonb(:DATA::jsonb),
                         end_date = :END_DATE,
                         duration = :DURATION
+                    WHERE engine_run_task.status NOT IN ('CACHED', 'COMPLETED', 'FAILED', 'ABORTED')
                 ]]>
             </value>
         </property>
@@ -63,13 +68,32 @@
                 ]]>
             </value>
         </property>
-        <property name="findEngineRunTaskByRunIdQuery">
+        <property name="loadEngineRunTasksStatsByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        engine_type,
+                        task_group,
+                        status,
+                        COUNT(*) AS tasks_count
+                    FROM
+                        pipeline.engine_run_task
+                    WHERE run_id = :RUN_ID AND engine_type = :ENGINE_TYPE AND task_group IS NOT NULL
+                    GROUP BY
+                        engine_type,
+                        task_group,
+                        status
+                ]]>
+            </value>
+        </property>
+        <property name="findEngineRunTaskByRunIdAndTypeQuery">
             <value>
                 <![CDATA[
                     SELECT
                         r.task_id,
                         r.task_name,
                         r.task_key,
+                        r.task_tag,
                         r.task_group,
                         r.parent_id,
                         r.engine_type,
@@ -77,9 +101,21 @@
                         r.start_date,
                         r.end_date,
                         r.run_id,
-                        r.duration
+                        r.duration,
+                        r.data
                     FROM pipeline.engine_run_task r
-                    WHERE r.run_id = :RUN_ID
+                    WHERE r.run_id = :RUN_ID AND r.engine_type = :ENGINE_TYPE @WHERE@
+                    @SORT@
+                    LIMIT :LIMIT OFFSET :OFFSET
+                ]]>
+            </value>
+        </property>
+        <property name="countEngineRunTaskByRunIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT count(*)
+                    FROM pipeline.engine_run_task r
+                    WHERE r.run_id = :RUN_ID AND r.engine_type = :ENGINE_TYPE @WHERE@
                 ]]>
             </value>
         </property>

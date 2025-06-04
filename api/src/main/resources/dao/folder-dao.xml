@@ -28,13 +28,15 @@
                         folder_name,
                         parent_id,
                         created_date,
-                        owner)
+                        owner,
+                        description)
                     VALUES (
                         :FOLDER_ID,
                         :FOLDER_NAME,
                         :PARENT_ID,
                         :CREATED_DATE,
-                        :OWNER)
+                        :OWNER,
+                        :DESCRIPTION)
                 ]]>
             </value>
         </property>
@@ -45,7 +47,8 @@
                         folder_name = :FOLDER_NAME,
                         parent_id = :PARENT_ID,
                         locked = :LOCKED,
-                        owner = :OWNER
+                        owner = :OWNER,
+                        description = :DESCRIPTION
                     WHERE
                         folder_id = :FOLDER_ID
                 ]]>
@@ -61,6 +64,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         p.pipeline_id,
                         p.description as pipeline_description,
                         p.created_date as pipeline_created_date,
@@ -100,6 +104,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -120,6 +125,7 @@
                        c.created_date,
                        c.locked,
                        c.owner,
+                       c.description,
                        null as pipeline_id,
                        null as pipeline_description,
                        null as pipeline_created_date,
@@ -159,6 +165,7 @@
                        d.sensitive as datastorage_sensitive,
                        d.mount_disabled as datastorage_mount_disabled,
                        d.mount_status as datastorage_mount_status,
+                       d.path_permissions_enabled as datastorage_path_permissions_enabled,
                        null as config_id,
                        null as config_folder_id,
                        null as config_name,
@@ -179,6 +186,7 @@
                        c.created_date,
                        c.locked,
                        c.owner,
+                       c.description,
                        null as pipeline_id,
                        null as pipeline_description,
                        null as pipeline_created_date,
@@ -218,6 +226,7 @@
                        null as datastorage_sensitive,
                        null as datastorage_mount_disabled,
                        null as datastorage_mount_status,
+                       null as datastorage_path_permissions_enabled,
                        (g.id)::text as config_id,
                        (g.folder_id)::text as config_folder_id,
                        g.name as config_name,
@@ -238,6 +247,7 @@
                        c.created_date,
                        c.locked,
                        c.owner,
+                       c.description,
                        null as pipeline_id,
                        null as pipeline_description,
                        null as pipeline_created_date,
@@ -277,6 +287,7 @@
                        null as datastorage_sensitive,
                        null as datastorage_mount_disabled,
                        null as datastorage_mount_status,
+                       null as datastorage_path_permissions_enabled,
                        null as config_id,
                        null as config_folder_id,
                        null as config_name,
@@ -296,6 +307,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         m.class_name
                 ]]>
             </value>
@@ -317,7 +329,8 @@
                         p.folder_name,
                         p.created_date,
                         p.locked,
-                        p.owner
+                        p.owner,
+                        p.description
                       FROM
                         folder p
                       WHERE folder_id = ?
@@ -328,7 +341,8 @@
                         f.folder_name,
                         f.created_date,
                         f.locked,
-                        f.owner
+                        f.owner,
+                        f.description
                       FROM
                         pipeline.folder f
                         INNER JOIN children c ON c.folder_id = f.parent_id
@@ -339,6 +353,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         p.pipeline_id,
                         p.description as pipeline_description,
                         p.created_date as pipeline_created_date,
@@ -378,6 +393,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -398,6 +414,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         null as pipeline_id,
                         null as pipeline_description,
                         null as pipeline_created_date,
@@ -437,6 +454,7 @@
                         d.sensitive as datastorage_sensitive,
                         d.mount_disabled as datastorage_mount_disabled,
                         d.mount_status as datastorage_mount_status,
+                        d.path_permissions_enabled as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -457,6 +475,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         null as pipeline_id,
                         null as pipeline_description,
                         null as pipeline_created_date,
@@ -496,6 +515,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         (g.id)::text as config_id,
                         (g.folder_id)::text as config_folder_id,
                         g.name as config_name,
@@ -516,6 +536,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         null as pipeline_id,
                         null as pipeline_description,
                         null as pipeline_created_date,
@@ -555,6 +576,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -575,6 +597,7 @@
                           c.created_date,
                           c.locked,
                           c.owner,
+                          c.description,
                           m.class_name
                 ]]>
             </value>
@@ -588,7 +611,8 @@
                         f.folder_name,
                         f.created_date,
                         f.locked,
-                        f.owner
+                        f.owner,
+                        f.description
                     FROM pipeline.folder f
                     WHERE lower(f.folder_name) = ? and f.parent_id = ?
                 ]]>
@@ -603,7 +627,8 @@
                         f.folder_name,
                         f.created_date,
                         f.locked,
-                        f.owner
+                        f.owner,
+                        f.description
                     FROM pipeline.folder f
                     WHERE lower(f.folder_name) = ? and f.parent_id is null
                 ]]>
@@ -619,7 +644,8 @@
                             f.folder_name,
                             f.created_date,
                             f.locked,
-                            f.owner
+                            f.owner,
+                            f.description
                         FROM pipeline.folder AS f WHERE f.folder_id = ?
                         UNION ALL
                         SELECT
@@ -628,7 +654,8 @@
                             c.folder_name,
                             c.created_date,
                             c.locked,
-                            c.owner
+                            c.owner,
+                            c.description
                         FROM pipeline.folder AS c
                         JOIN parents ON parents.parent_id = c.folder_id
                     )
@@ -639,6 +666,7 @@
                             n.created_date,
                             n.locked,
                             n.owner,
+                            n.description,
                             m.data
                     FROM parents AS n
                     LEFT JOIN
@@ -668,6 +696,7 @@
                             p.created_date,
                             p.locked,
                             p.owner,
+                            p.description,
                             m.data
                         FROM pipeline.folder p LEFT JOIN pipeline.metadata m
                         ON m.entity_class = 'FOLDER' AND m.entity_id = p.folder_id
@@ -680,6 +709,7 @@
                             f.created_date,
                             f.locked,
                             f.owner,
+                            f.description,
                         NULL
                         FROM
                         pipeline.folder f
@@ -693,6 +723,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         c.data,
                         p.pipeline_id,
                         p.description as pipeline_description,
@@ -733,6 +764,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -753,6 +785,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         c.data,
                         null as pipeline_id,
                         null as pipeline_description,
@@ -793,6 +826,7 @@
                         d.sensitive as datastorage_sensitive,
                         d.mount_disabled as datastorage_mount_disabled,
                         d.mount_status as datastorage_mount_status,
+                        d.path_permissions_enabled as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -813,6 +847,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         c.data,
                         null as pipeline_id,
                         null as pipeline_description,
@@ -853,6 +888,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         (g.id)::text as config_id,
                         (g.folder_id)::text as config_folder_id,
                         g.name as config_name,
@@ -873,6 +909,7 @@
                         c.created_date,
                         c.locked,
                         c.owner,
+                        c.description,
                         c.data,
                         null as pipeline_id,
                         null as pipeline_description,
@@ -913,6 +950,7 @@
                         null as datastorage_sensitive,
                         null as datastorage_mount_disabled,
                         null as datastorage_mount_status,
+                        null as datastorage_path_permissions_enabled,
                         null as config_id,
                         null as config_folder_id,
                         null as config_name,
@@ -932,6 +970,7 @@
                     c.created_date,
                     c.locked,
                     c.owner,
+                    c.description,
                     c.data,
                     m.class_name
                  ]]>

@@ -145,11 +145,29 @@ docker build    $DOCKERS_SOURCES_PATH/cp-idp \
                 -t "$CP_IDP_DIST_NAME"
 docker push "$CP_IDP_DIST_NAME"
 
-# Docker registry
-CP_IDP_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry \
-                -t "$CP_IDP_DIST_NAME"
-docker push "$CP_IDP_DIST_NAME"
+# Docker registry DEFAULT is v2.7.0+aws_imds2
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-default"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v2.7.0+aws_imds2 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
+
+# Docker registry v2.7.0+aws_imds2
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-2.7.0-aws-imds2"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v2.7.0+aws_imds2 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
+
+# Docker registry v2.7.1
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-2.7.1"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v2.7.1 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
+
+# Docker registry v3.0.0
+CP_REGISTRY_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}-3.0.0"}
+docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry/v3.0.0 \
+                -t "$CP_REGISTRY_DIST_NAME"
+docker push "$CP_REGISTRY_DIST_NAME"
 
 # EDGE
 CP_EDGE_DIST_NAME=${CP_EDGE_DIST_NAME:-"$CP_DIST_REPO_NAME:edge-${DOCKERS_VERSION}"}
@@ -326,6 +344,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-storage-lifecycle-service \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
 
+# MLFlow server
+CP_MLFLOW_DIST_NAME=${CP_MLFLOW_DIST_NAME:-"$CP_DIST_REPO_NAME:mlflow-server-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-mlflow-server \
+                -t "$CP_MLFLOW_DIST_NAME"
+docker push "$CP_MLFLOW_DIST_NAME"
+
+
 ########################
 # Base tools dockers
 ########################
@@ -487,6 +512,14 @@ RESEARCH_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/research
 MD_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/md
 
 # FIXME: Add gromacs and namd
+
+########################
+# MLOps tools dockers
+########################
+MLOPS_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/mlops
+
+# MLFlow client
+build_and_push_tool $MLOPS_TOOLS_DOCKERS_SOURCES_PATH/cp-mlflow "$CP_DIST_REPO_NAME:tools-mlops-mlflow-${DOCKERS_VERSION}" "library/mlflow:latest"
 
 ########################
 # System dockers

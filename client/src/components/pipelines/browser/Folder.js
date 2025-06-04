@@ -830,7 +830,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           ? storage.regionId
           : undefined,
         sensitive: storage.sensitive,
-        toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
+        toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined,
+        pathPermissionsEnabled: storage.pathPermissionsEnabled
       };
     }
     await request.send(payload);
@@ -864,7 +865,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       description: storage.description,
       path: storage.path,
       mountDisabled: storage.mountDisabled,
-      sensitive: storage.sensitive
+      sensitive: storage.sensitive,
+      pathPermissionsEnabled: storage.pathPermissionsEnabled
     };
     if (!storage.mountDisabled) {
       payload.toolsToMount = storage.toolsToMount;
@@ -949,8 +951,12 @@ export default class Folder extends localization.LocalizedReactComponent {
         .fetch()
         .then(() => {
           if (request.loaded) {
-            const {toolsToMount = [], sourceStorageId} = request.value || {};
-            return Promise.resolve({toolsToMount, sourceStorageId});
+            const {
+              toolsToMount = [],
+              sourceStorageId,
+              pathPermissionsEnabled
+            } = request.value || {};
+            return Promise.resolve({toolsToMount, sourceStorageId, pathPermissionsEnabled});
           }
           return Promise.resolve({});
         })

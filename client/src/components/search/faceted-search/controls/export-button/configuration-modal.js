@@ -24,10 +24,13 @@ import {
 } from 'antd';
 import {DocumentColumns} from '../../utilities';
 import styles from './export.css';
+import {defaultSorter} from '../../../../../utils/sorting';
 
 function columnsAreEqual (a, b) {
-  const aa = [...new Set((a || []).map((column) => column.key))].sort();
-  const bb = [...new Set((b || []).map((column) => column.key))].sort();
+  const aa = [...new Set((a || []).map((column) => column.key))]
+    .sort(defaultSorter);
+  const bb = [...new Set((b || []).map((column) => column.key))]
+    .sort(defaultSorter);
   if (aa.length !== bb.length) {
     return false;
   }

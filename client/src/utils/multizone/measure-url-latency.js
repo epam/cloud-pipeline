@@ -14,10 +14,12 @@
  *  limitations under the License.
  */
 
+import {safeRandom} from '../primitives';
+
 function measureSingleUrlLatency (url, experiment = 0) {
   const urlWithQuery = url +
     (/\?.+/.test(url) ? '&' : '?') +
-    `___e=${experiment || 0}&___r=${Math.floor(Math.random() * 1000000)}`;
+    `___e=${experiment || 0}&___r=${Math.floor(safeRandom() * 1000000)}`;
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
     xhr.timeout = 2000;

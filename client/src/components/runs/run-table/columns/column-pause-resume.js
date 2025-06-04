@@ -28,6 +28,7 @@ import {renderPipelineName} from './utilities';
 import localization from '../../../../utils/localization';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
+import {checkRunActionAvailable, runActions} from '../../actions/actions-availability';
 
 const getColumnFilter = () => {};
 
@@ -175,6 +176,9 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
         case 'paused':
           const {resumeFailureReason} = run;
           const buttonId = `run-${run.id}-resume-button`;
+          if (!checkRunActionAvailable(run, runActions.resume)) {
+            return (<div />);
+          }
           if (this.maintenanceMode) {
             return getMaintenanceDisabledButton('RESUME', buttonId);
           }
