@@ -216,6 +216,7 @@ public class CloudRegionTest
                             .lastCommandResult(command(cloudRegion1ID));
                     shell.refresh();
                     output[1] = shell
+                            .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion2ID))
                             .assertNextStringIsVisible("Pipeline run scheduled with RunId:",
                                     format("pipeline-%s", getLastRunId()))
