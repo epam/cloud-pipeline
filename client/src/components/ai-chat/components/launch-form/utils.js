@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+export const LAUNCH_MODES = {
+  pipeline: 'pipeline',
+  tool: 'tool'
+};
+
 export function getToolConfiguration (configurationName = '', toolVersion) {
   if (!toolVersion) {
     return undefined;
@@ -23,4 +28,11 @@ export function getToolConfiguration (configurationName = '', toolVersion) {
   const defaultConfiguration = toolVersion.settings
     .find(({name}) => name === 'default');
   return currentConfiguration || defaultConfiguration;
+}
+
+export function getLaunchMode (data = {}) {
+  if (data.pipelineId !== undefined) {
+    return LAUNCH_MODES.pipeline;
+  }
+  return LAUNCH_MODES.tool;
 }

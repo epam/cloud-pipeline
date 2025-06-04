@@ -35,8 +35,8 @@ export default class Environment extends React.Component {
   );
 
   render () {
-    const {formStore} = this.props;
-    const {dockerImage, instanceType, disk, isSpot} = formStore;
+    const {environment} = this.props.formStore;
+    const {dockerImage, instanceType, disk, isSpot} = environment;
     const priceOption = isSpot ? PRICE_TYPES.spot : PRICE_TYPES.onDemand;
     return (
       <div className={styles.stripe}>

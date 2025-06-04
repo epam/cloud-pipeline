@@ -35,6 +35,7 @@ const mockParameters = (value) => {
   if (!value.parameters || Object.keys(value.parameters).length === 0) {
     return {
       ...value,
+      // pipelineId: 1966,
       parameters
     };
   }

@@ -15,16 +15,20 @@
  */
 
 import {observable, action, computed} from 'mobx';
-import {getToolConfiguration} from './utils';
+import {getLaunchMode, getToolConfiguration} from './utils';
 
 class LaunchFormStore {
-  @observable disk = '';
-  @observable dockerImage = '';
-  @observable instanceType = '';
-  @observable cmd = '';
-  @observable isSpot = false;
+  @observable environment = {
+    disk: '',
+    dockerImage: '',
+    instanceType: '',
+    cmd: '',
+    isSpot: false
+  };
   @observable parameters = {};
-  @observable successfulRunLaunchForm = false;
+
+  @observable runLaunched = false;
+  @observable mode = undefined; // tool || pipeline
 
   @observable _toolInfo = undefined;
   @observable _configuration = undefined;
@@ -63,8 +67,8 @@ class LaunchFormStore {
   }
 
   @action
-  setSuccessfulRunLaunchForm (value) {
-    this.successfulRunLaunchForm = value;
+  setRunLaunched (value) {
+    this.runLaunched = value;
   }
 
   @action updateField (key, value) {
@@ -90,6 +94,7 @@ class LaunchFormStore {
     if (!data || !toolInfo) {
       return;
     }
+    this.mode = getLaunchMode(data);
     const {configuration = {}} = getToolConfiguration(
       data.configuration,
       toolVersion
@@ -105,15 +110,26 @@ class LaunchFormStore {
     this._toolVersion = toolVersion;
     this._configuration = configuration;
     this._versions = versions;
-    // TODO: discuss about docker image format from chat (registry/image:version?)
-    this.disk = mergeValues(data.disk, configuration.instance_disk);
-    this.isSpot = mergeValues(data.is_spot, configuration.is_spot);
-    this.dockerImage = mergeValues(
+    this.environment.disk = mergeValues(
+      data.disk,
+      configuration.instance_disk
+    );
+    this.environment.isSpot = mergeValues(
+      data.is_spot,
+      configuration.is_spot
+    );
+    this.environment.dockerImage = mergeValues(
       data.dockerImage,
       `${toolInfo.registry}/${toolInfo.image}:${toolVersion.name}`
     );
-    this.instanceType = mergeValues(data.instanceType, configuration.instance_size);
-    this.cmd = mergeValues(data.cmd, toolInfo.cmd_template);
+    this.environment.instanceType = mergeValues(
+      data.instanceType,
+      configuration.instance_size
+    );
+    this.environment.cmd = mergeValues(
+      data.cmd,
+      configuration.cmd_template
+    );
     if (parameters && typeof parameters === 'object') {
       this.parameters = {
         ...(configuration?.parameters || {}),

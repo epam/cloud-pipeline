@@ -121,6 +121,7 @@ export default class AIChat extends React.Component {
   onRunLaunchSuccess = (message) => {
     if (this.chat) {
       this.chat.sendSystemMessage(message);
+      this.scrollToBottom();
     }
   };
 
@@ -181,7 +182,10 @@ export default class AIChat extends React.Component {
                   }}
                   data-id={message.id}
                 >
-                  <Message message={message} onRunLaunchSuccess={this.onRunLaunchSuccess} />
+                  <Message
+                    message={message}
+                    onRunLaunchSuccess={this.onRunLaunchSuccess}
+                  />
                 </div>
               )) : (
                 <EmptyChatPlaceholder user={this.currentUser} />

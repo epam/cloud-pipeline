@@ -30,12 +30,19 @@ import {withCurrentUserAttributes} from '../../../../utils/current-user-attribut
 import {modifyPayloadForAllowedInstanceTypes, run} from '../../../runs/actions';
 import {getVersionRunningInfo} from '../../../tools/utils';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
-import SessionStorageWrapper from '../../../special/SessionStorageWrapper';
 import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
+import {LAUNCH_MODES} from './utils';
 
 const DEFAULT_REGISTRY_ID = 1; // Default registry
 
-@inject('dockerRegistries', 'awsRegions', 'router', 'authenticatedUserInfo', 'preferences')
+@inject(
+  'dockerRegistries',
+  'awsRegions',
+  'router',
+  'authenticatedUserInfo',
+  'preferences',
+  'pipelines'
+)
 @withCurrentUserAttributes()
 @observer
 export default class LaunchForm extends React.Component {
@@ -180,6 +187,8 @@ export default class LaunchForm extends React.Component {
   runTool = async (version) => {
     this.setState({launchPending: true}, async () => {
       const {currentUserAttributes, onRunSuccess} = this.props;
+      const {toolVersion, environment} = this.formStore;
+      const {version} = toolVersion;
       const hide = message.loading('Fetching tool info...', 0);
       const chooseDefaultValue = (
         versionSettingsValue,
@@ -256,24 +265,24 @@ export default class LaunchForm extends React.Component {
       const allowedInstanceTypesRequest = new AllowedInstanceTypes({
         toolId: this.formStore.toolInfo.id,
         regionId: cloudRegionIdValue,
-        spot: this.formStore.isSpot
+        spot: environment.isSpot
       });
       await allowedInstanceTypesRequest.fetch();
       const platform = this.formStore.toolVersion.platform;
       const payload = modifyPayloadForAllowedInstanceTypes({
-        instanceType: this.formStore.instanceType || chooseDefaultValue(
+        instanceType: environment.instanceType || chooseDefaultValue(
           versionSettingValue('instance_size'),
           this.formStore.toolInfo.instanceType,
           this.props.preferences.getPreferenceValue('cluster.instance.type')
         ),
-        hddSize: +this.formStore.disk || +chooseDefaultValue(
+        hddSize: +environment.disk || +chooseDefaultValue(
           versionSettingValue('instance_disk'),
           this.formStore.toolInfo.disk,
           this.props.preferences.getPreferenceValue('cluster.instance.hdd'),
           p => +p > 0
         ),
         timeout: +(this.formStore.toolInfo.timeout || 0),
-        cmdTemplate: this.formStore.cmd || chooseDefaultValue(
+        cmdTemplate: environment.cmd || chooseDefaultValue(
           versionSettingValue('cmd_template'),
           this.formStore.toolInfo.cmd,
           this.props.preferences.getPreferenceValue('launch.cmd.template')
@@ -282,7 +291,7 @@ export default class LaunchForm extends React.Component {
           ? `${registry.path}/${this.formStore.toolInfo.image}${version ? `:${version}` : ''}`
           : `${this.formStore.toolInfo.image}${version ? `:${version}` : ''}`,
         params: prepareParameters(this.formStore.parameters),
-        isSpot: this.formStore.isSpot,
+        isSpot: environment.isSpot,
         nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
           ? +versionSettingValue('node_count')
           : undefined,
@@ -299,18 +308,32 @@ export default class LaunchForm extends React.Component {
       );
       hide();
       this.setState({launchPending: undefined});
-
       if (runResolved) {
-        this.formStore.setSuccessfulRunLaunchForm(true);
-        if (onRunSuccess) {
-          onRunSuccess(`Tool "${this.formStore.toolInfo?.id}" was successfully launched!`);
-        }
+        this.formStore.setRunLaunched(true);
+        onRunSuccess && onRunSuccess(
+          `Tool "${this.formStore.toolInfo?.id}" was successfully launched!`
+        );
       }
     });
   };
 
-  onLaunch = () => {
-    this.runTool(this.formStore.toolVersion?.version);
+  runPipeline = () => {
+    this.setState({launchPending: true}, () => {
+      const {data} = this.props;
+      const {pipelineId} = data;
+      const {instanceType, environment} = this.formStore;
+      const pipeline = this.props.pipelines.getPipeline(pipelineId);
+      // TBD
+    });
+  };
+
+  onLaunch = async () => {
+    if (this.formStore.mode === LAUNCH_MODES.tool) {
+      this.runTool();
+    }
+    if (this.formStore.mode === LAUNCH_MODES.pipeline) {
+      this.runPipeline();
+    }
   };
 
   render () {
@@ -330,9 +353,9 @@ export default class LaunchForm extends React.Component {
           <Button
             type="primary"
             onClick={this.onLaunch}
-            disabled={this.state.launchPending || this.formStore.successfulRunLaunchForm}>
+            disabled={this.state.launchPending || this.formStore.runLaunched}>
             {this.state.launchPending ? (<Icon type="loading" />) : null}
-            {this.formStore.successfulRunLaunchForm ? (
+            {this.formStore.runLaunched ? (
               'LAUNCHED'
             ) : (
               'LAUNCH'
