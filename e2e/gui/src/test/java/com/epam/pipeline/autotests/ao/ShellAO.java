@@ -143,8 +143,9 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public String lastCommandResult(String command) {
-        return context().text().substring(context().text().indexOf(command))
-                .replace("\n", "").replace(command, "");
+        String str1 = context().text().replace("\n", "");
+        return str1.substring(str1.indexOf(command))
+                .replace(command, "");
     }
 
     public String getFirstLine() {
