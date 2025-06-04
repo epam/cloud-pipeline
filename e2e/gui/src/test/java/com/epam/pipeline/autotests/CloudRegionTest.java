@@ -207,19 +207,22 @@ public class CloudRegionTest
                 .selectValue(FILE_STORAGES, NONE)
                 .save();
         tools()
-                .perform(defaultRegistry, defaultGroup, testingTool, tool -> tool.run(this))
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .doNotMountStoragesSelect(true)
+                .launch(this)
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> {
                     output[0] = shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion1ID))
-                            .assertPageAfterCommandContainsStrings(command(cloudRegion1ID), rootHost)
+                            .assertNextStringIsVisible(command(cloudRegion1ID), rootHost)
                             .screenshot("screenshot-3971-1")
                             .lastCommandResult(command(cloudRegion1ID));
                     output[1] = shell
                             .execute(command(cloudRegion2ID))
-                            .assertPageAfterCommandContainsStrings(command(cloudRegion2ID), rootHost)
+                            .assertNextStringIsVisible(command(cloudRegion2ID), rootHost)
                             .screenshot("screenshot-3971-2")
                             .lastCommandResult(command(cloudRegion2ID));
                     shell.close();
