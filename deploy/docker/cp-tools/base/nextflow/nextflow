@@ -14,10 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function generate_params_file() {
+    all_cp_params_json=""
+    all_cp_params=$(printenv | sed 's;=.*;;' | grep _PARAM_TYPE)
+    for cp_param in $all_cp_params; do
+        [[ "$cp_param" =~ CP_* ]]  && continue
+        cp_param_clean=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
+        all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${!cp_param_clean}\""
+    done
+    all_cp_params_json="{ $(echo "$all_cp_params_json" | sed 's/,//') }"
+    echo "$all_cp_params_json" | jq -r > "$CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+    echo "[INFO] Parameters are written into $CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+    echo "[INFO] Parameters JSON:"
+    cat "$CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+}
+
 CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
 CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
 CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
+CP_NF_AUTOGENERATE_PARAMETERS_PATH="${CP_NF_AUTOGENERATE_PARAMETERS_PATH:-$SCRIPTS_DIR/cp_params.json}"
 
 export NXF_WORK="$CP_NF_WORKDIR"
 mkdir -p "$NXF_WORK"
@@ -65,6 +81,11 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
             echo "trace.file = '${CP_NF_TRACE_FILE}'" >> $NEXTFLOW_CONFIG
             echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes'" >> $NEXTFLOW_CONFIG
         fi
+    fi
+
+    if [ "$CP_NF_AUTOGENERATE_PARAMETERS" == "true" ]; then
+        generate_params_file
+        _ARGS+=("-params-file $CP_NF_AUTOGENERATE_PARAMETERS_PATH")
     fi
 fi
 
