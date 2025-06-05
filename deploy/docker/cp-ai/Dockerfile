@@ -9,6 +9,10 @@ RUN yum update -y && \
     nginx \
     bzip2
 
+ARG GOOGLE_GENAI_MODEL
+ARG GOOGLE_API_KEY
+ARG GITHUB_TOKEN
+
 COPY api/requirements.txt /tmp/ai/
 
 ENV AI_CONDA_ENVIRONMENT_NAME ai
@@ -33,6 +37,9 @@ RUN mkdir -p $AI_APP_DIR
 COPY api $AI_APP_DIR/api/
 COPY launch.sh $AI_APP_DIR/
 
+ENV GOOGLE_GENAI_MODEL $GOOGLE_GENAI_MODEL
+ENV GOOGLE_API_KEY $GOOGLE_API_KEY
+ENV GITHUB_TOKEN $GITHUB_TOKEN
 ENV CHROMA_DB_PATH /opt/ai/chroma-db
 
 RUN chmod +x $AI_APP_DIR/launch.sh
