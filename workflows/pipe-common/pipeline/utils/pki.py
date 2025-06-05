@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cryptography
+from cryptography.hazmat.primitives import serialization
 import OpenSSL
 import socket
 
@@ -36,6 +36,6 @@ def load_root_certificate(host, port):
     full_cert_chain = list(generate_cert_chain(host, port))
     if full_cert_chain:
         root_cert = full_cert_chain[-1]
-        return root_cert.public_bytes(cryptography.hazmat.primitives.serialization.Encoding.PEM)
+        return root_cert.public_bytes(serialization.Encoding.PEM)
     else:
         raise RuntimeError("Failed to load certificate chain for '{}:{}'".format(host, port))
