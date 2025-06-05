@@ -19,26 +19,36 @@ import PropTypes from 'prop-types';
 import styles from './launch-form-info.css';
 import {observer} from 'mobx-react';
 import {Link} from 'react-router';
+import {LAUNCH_MODES} from '../utils';
 
 @observer
 export default class LaunchFormInfo extends React.Component {
   render () {
     const {formStore} = this.props;
-
-    const {toolInfo, toolVersion} = formStore;
-
+    const {toolInfo, toolVersion, mode, pipeline, pipelineVersion} = formStore;
+    const name = mode === LAUNCH_MODES.tool
+      ? toolInfo?.image
+      : pipeline.name;
+    const version = mode === LAUNCH_MODES.tool
+      ? toolVersion?.version
+      : pipelineVersion.name;
+    const url = mode === LAUNCH_MODES.tool
+      ? `/tool/${toolInfo?.id}/description`
+      : `/${pipeline.id}/${version}`;
     return (
       <div className={styles.container}>
         <div className={styles.launchFormInfo}>
           <div className={styles.infoRow}>
-            <span className={styles.label}>Tool:</span>
-            <Link to={`/tool/${toolInfo.id}/description`}>
-              <span>{toolInfo.image}</span>
+            <span className={styles.label}>
+              {mode === LAUNCH_MODES.tool ? 'Tool:' : 'Pipeline:'}
+            </span>
+            <Link to={url}>
+              {name}
             </Link>
           </div>
           <div className={styles.infoRow}>
             <span className={styles.label}>Version:</span>
-            <span className={styles.value}>{toolVersion.version}</span>
+            <span className={styles.value}>{version}</span>
           </div>
         </div>
         {toolInfo?.description &&

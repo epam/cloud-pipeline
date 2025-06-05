@@ -15,7 +15,7 @@
  */
 
 import {observable, action, computed} from 'mobx';
-import {getLaunchMode, getToolConfiguration} from './utils';
+import {getLaunchMode, getToolConfiguration, LAUNCH_MODES} from './utils';
 
 class LaunchFormStore {
   @observable environment = {
@@ -32,8 +32,11 @@ class LaunchFormStore {
 
   @observable _toolInfo = undefined;
   @observable _configuration = undefined;
+  @observable _pipelineConfiguration = undefined;
   @observable _toolVersion = undefined;
   @observable _versions = undefined;
+  @observable _pipeline = undefined;
+  @observable _pipelineVersion = undefined;
 
   @observable _error = '';
   @observable _pending = true;
@@ -62,6 +65,18 @@ class LaunchFormStore {
     return this._versions?.versions || [];
   }
 
+  @computed get pipeline () {
+    return this._pipeline;
+  }
+
+  @computed get pipelineVersion () {
+    return this._pipelineVersion;
+  }
+
+  @computed get pipelineConfiguration () {
+    return this._pipelineConfiguration;
+  }
+
   set error (error) {
     this._error = error;
   }
@@ -88,19 +103,28 @@ class LaunchFormStore {
   }
 
   @action
-  initializeData ({data, toolInfo, toolVersion, versions}) {
-    const {parameters} = data || {};
-    const mergeValues = (current, initial) => current ?? initial;
-    if (!data || !toolInfo) {
+  initializeData ({
+    data,
+    toolInfo,
+    toolVersion,
+    pipelineVersion,
+    pipelineConfiguration,
+    pipeline,
+    versions
+  }) {
+    if (!data) {
       return;
     }
+    const {parameters} = data || {};
     this.mode = getLaunchMode(data);
-    const {configuration = {}} = getToolConfiguration(
-      data.configuration,
-      toolVersion
-    ) || {};
+    if (this.mode === LAUNCH_MODES.tool) {
+      const {configuration = {}} = getToolConfiguration(
+        data.configuration,
+        toolVersion
+      ) || {};
+      this._configuration = configuration;
+    }
     console.log('INITIALIZE', {
-      configuration,
       data,
       toolInfo,
       toolVersion,
@@ -108,33 +132,17 @@ class LaunchFormStore {
     });
     this._toolInfo = toolInfo;
     this._toolVersion = toolVersion;
-    this._configuration = configuration;
+    this._pipelineConfiguration = pipelineConfiguration;
     this._versions = versions;
-    this.environment.disk = mergeValues(
-      data.disk,
-      configuration.instance_disk
-    );
-    this.environment.isSpot = mergeValues(
-      data.is_spot,
-      configuration.is_spot
-    );
-    this.environment.dockerImage = mergeValues(
-      data.dockerImage,
-      `${toolInfo.registry}/${toolInfo.image}:${toolVersion.name}`
-    );
-    this.environment.instanceType = mergeValues(
-      data.instanceType,
-      configuration.instance_size
-    );
-    this.environment.cmd = mergeValues(
-      data.cmd,
-      configuration.cmd_template
-    );
+    this._pipeline = pipeline;
+    this._pipelineVersion = pipelineVersion;
+    this.environment.disk = data.disk;
+    this.environment.isSpot = data.is_spot;
+    this.environment.dockerImage = data.dockerImage;
+    this.environment.instanceType = data.instanceType;
+    this.environment.cmd = data.cmd;
     if (parameters && typeof parameters === 'object') {
-      this.parameters = {
-        ...(configuration?.parameters || {}),
-        ...(parameters || {})
-      };
+      this.parameters = parameters || {};
     }
     this._pending = false;
   }

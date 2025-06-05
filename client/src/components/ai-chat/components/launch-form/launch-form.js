@@ -32,6 +32,8 @@ import {getVersionRunningInfo} from '../../../tools/utils';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
 import {LAUNCH_MODES} from './utils';
+import GetPipelineVersions from '../../../../models/pipelines/Version';
+import PipelineConfigurations from '../../../../models/pipelines/PipelineConfigurations';
 
 const DEFAULT_REGISTRY_ID = 1; // Default registry
 
@@ -134,7 +136,7 @@ export default class LaunchForm extends React.Component {
     return null;
   }
 
-  initializeData = async () => {
+  initializeToolData = async () => {
     const {data} = this.props;
     if (!this.props.dockerRegistries.loaded || !data) {
       return;
@@ -182,11 +184,56 @@ export default class LaunchForm extends React.Component {
         .find(({version}) => version === (toolInfo.value.version || 'latest')),
       versions: versions.value
     });
+  }
+
+  initializePipelineData = async () => {
+    const {data, pipelines} = this.props;
+    const {pipelineId} = data;
+    const [pipelineRequest, versionsRequest] = [
+      pipelines.getPipeline(pipelineId),
+      new GetPipelineVersions(pipelineId)
+    ];
+    await Promise.all([
+      pipelineRequest,
+      versionsRequest
+    ].map(request => request.fetchIfNeededOrWait
+      ? request.fetchIfNeededOrWait()
+      : request.fetch()
+    ));
+    const pipeline = pipelineRequest.value;
+    const versions = versionsRequest.value;
+    let version = versions.find(v => v.name === data.version);
+    if (!version) {
+      version = versions.find(v => v.name === pipeline.currentVersion?.name);
+    }
+    const configurations = new PipelineConfigurations(data.pipelineId, version.name);
+    await configurations.fetch();
+    let configuration = (configurations.value || []).find(c => c.name === data.configuration);
+    if (!configuration) {
+      configuration = (configurations.value || []).find(c => c.default);
+    }
+    this.formStore.initializeData({
+      data,
+      pipeline,
+      pipelineVersion: version,
+      pipelineConfiguration: configuration
+    });
   };
 
-  runTool = async (version) => {
+  initializeData = async () => {
+    const {data} = this.props;
+    if (!data) {
+      return;
+    }
+    if (data.pipelineId !== undefined) {
+      return this.initializePipelineData();
+    }
+    return this.initializeToolData();
+  };
+
+  runTool = async () => {
     this.setState({launchPending: true}, async () => {
-      const {currentUserAttributes, onRunSuccess} = this.props;
+      const {onRunSuccess} = this.props;
       const {toolVersion, environment} = this.formStore;
       const {version} = toolVersion;
       const hide = message.loading('Fetching tool info...', 0);
@@ -227,25 +274,6 @@ export default class LaunchForm extends React.Component {
           with default settings?
         </span>
       ]);
-      const prepareParameters = (parameters) => {
-        const result = {};
-        if (parameters) {
-          for (let key in parameters) {
-            if (parameters.hasOwnProperty(key)) {
-              result[key] = {
-                type: parameters[key].type,
-                value: parameters[key].value,
-                required: parameters[key].required,
-                defaultValue: parameters[key].defaultValue
-              };
-            }
-          }
-        }
-        return currentUserAttributes.extendLaunchParameters(
-          result,
-          this.formStore.toolInfo.allowSensitive
-        );
-      };
       const parameterIsNotEmpty = (parameter, additionalCriteria) =>
         parameter !== null &&
         parameter !== undefined &&
@@ -281,23 +309,14 @@ export default class LaunchForm extends React.Component {
           this.props.preferences.getPreferenceValue('cluster.instance.hdd'),
           p => +p > 0
         ),
-        timeout: +(this.formStore.toolInfo.timeout || 0),
-        cmdTemplate: environment.cmd || chooseDefaultValue(
-          versionSettingValue('cmd_template'),
-          this.formStore.toolInfo.cmd,
-          this.props.preferences.getPreferenceValue('launch.cmd.template')
-        ),
+        cmdTemplate: environment.cmd,
         dockerImage: registry
           ? `${registry.path}/${this.formStore.toolInfo.image}${version ? `:${version}` : ''}`
           : `${this.formStore.toolInfo.image}${version ? `:${version}` : ''}`,
-        params: prepareParameters(this.formStore.parameters),
-        isSpot: environment.isSpot,
-        nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
-          ? +versionSettingValue('node_count')
-          : undefined,
-        cloudRegionId: cloudRegionIdValue
+        params: this.formStore.parameters,
+        isSpot: environment.isSpot
       }, allowedInstanceTypesRequest);
-      const runResolved = await run(this)(
+      const runInfo = await run(this)(
         payload,
         true,
         titleFn,
@@ -308,22 +327,50 @@ export default class LaunchForm extends React.Component {
       );
       hide();
       this.setState({launchPending: undefined});
-      if (runResolved) {
+      if (runInfo) {
         this.formStore.setRunLaunched(true);
-        onRunSuccess && onRunSuccess(
-          `Tool "${this.formStore.toolInfo?.image}" was successfully launched!`
-        );
+        onRunSuccess && onRunSuccess(runInfo);
       }
     });
   };
 
   runPipeline = () => {
-    this.setState({launchPending: true}, () => {
-      const {data} = this.props;
+    this.setState({launchPending: true}, async () => {
+      const {data, onRunSuccess} = this.props;
       const {pipelineId} = data;
-      const {instanceType, environment} = this.formStore;
-      const pipeline = this.props.pipelines.getPipeline(pipelineId);
-      // TBD
+      const {environment, pipelineConfiguration} = this.formStore;
+      const {configuration} = pipelineConfiguration;
+      const payload = {
+        pipelineId,
+        dockerImage: configuration.docker_image,
+        instanceType: environment.instanceType,
+        hddSize: Number(environment.disk || configuration.instance_disk),
+        cmdTemplate: environment.cmd,
+        params: this.formStore.parameters,
+        isSpot: environment.isSpot
+      };
+      const cloudRegionIdValue = this.defaultCloudRegionId;
+      const allowedInstanceTypesRequest = new AllowedInstanceTypes({
+        toolId: configuration.docker_image,
+        regionId: cloudRegionIdValue,
+        spot: environment.isSpot
+      });
+      await allowedInstanceTypesRequest.fetch();
+      const platform = this.formStore.pipelineVersion.platform;
+      const runInfo = await run(this)(
+        payload,
+        true,
+        undefined,
+        undefined,
+        allowedInstanceTypesRequest,
+        undefined,
+        platform
+      );
+      this.setState({pending: false});
+      if (runInfo) {
+        this.formStore.setRunLaunched(true);
+        onRunSuccess && onRunSuccess(runInfo);
+      }
     });
   };
 

@@ -400,7 +400,7 @@ function runFn (
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
         await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-        resolve(true);
+        resolve(PipelineRunner.value);
         callbackFn && callbackFn(true);
       }
     };
@@ -558,7 +558,7 @@ function runFn (
                 await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
               }
               await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-              resolve(true);
+              resolve(PipelineRunner.value);
               callbackFn && callbackFn(true);
             }
           }

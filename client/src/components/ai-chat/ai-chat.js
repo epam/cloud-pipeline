@@ -118,9 +118,9 @@ export default class AIChat extends React.Component {
     }, 1500);
   };
 
-  onRunLaunchSuccess = (message) => {
+  onRunLaunchSuccess = (run) => {
     if (this.chat) {
-      this.chat.sendSystemMessage(message);
+      this.chat.sendSystemMessage({text: '', run});
       this.scrollToBottom();
     }
   };

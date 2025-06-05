@@ -61,8 +61,9 @@ class ChatEngine {
   };
 
   @action
-  sendSystemMessage = (text) => {
+  sendSystemMessage = ({text = '', run}) => {
     const systemMessage = {
+      run,
       text,
       id: getToken(),
       fromUser: false,
@@ -77,6 +78,7 @@ class ChatEngine {
     this._pending = true;
     const responseMessage = observable({
       text: '',
+      run: undefined,
       id: getToken(),
       fromUser: false,
       pending: true,

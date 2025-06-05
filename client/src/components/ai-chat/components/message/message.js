@@ -19,11 +19,13 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
+import {Link} from 'react-router';
 import {TypingIndicator} from '../index';
 import LaunchForm from '../launch-form/launch-form';
 import Markdown from '../../../special/markdown';
 import {processMessage} from './message-utils';
 import styles from './message.css';
+import StatusIcon from '../../../special/run-status-icon';
 
 const mockParameters = (value) => {
   const parameters = {
@@ -35,7 +37,7 @@ const mockParameters = (value) => {
   if (!value.parameters || Object.keys(value.parameters).length === 0) {
     return {
       ...value,
-      // pipelineId: 1966,
+      pipelineId: 1966,
       parameters
     };
   }
@@ -56,11 +58,33 @@ export default class Message extends React.Component {
     return this.props.message.pending;
   }
 
-  handleRunSuccess = (message) => {
+  handleRunSuccess = (run) => {
     const {onRunLaunchSuccess} = this.props;
     if (onRunLaunchSuccess) {
-      onRunLaunchSuccess(message);
+      onRunLaunchSuccess(run);
     }
+  };
+
+  renderRunStatusMessage = () => {
+    const {aclClass = '', name, taskName} = this.message.run;
+    const runType = aclClass.toLowerCase();
+    const runName = runType === 'pipeline'
+      ? `${name || taskName}-${this.message.run.id}`
+      : name || taskName;
+    return (
+      <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+        <StatusIcon
+          run={this.message.run}
+          small
+          status="RUNNING"
+        />
+        <span style={{textTransform: 'capitalize'}}>{runType}</span>
+        <Link to={`run/${this.message.run.id}`}>
+          {runName}
+        </Link>
+        was successfully launched!
+      </div>
+    );
   };
   renderContent = () => {
     if (this.message.fromUser) {
@@ -73,7 +97,9 @@ export default class Message extends React.Component {
         </p>
       );
     }
-
+    if (!this.message.fromUser && this.message.run) {
+      return this.renderRunStatusMessage();
+    }
     if (this.message.parts?.length > 0) {
       return (
         <div>
@@ -137,8 +163,10 @@ export default class Message extends React.Component {
 Message.propTypes = {
   message: PropTypes.shape({
     text: PropTypes.string,
+    error: PropTypes.string,
     id: PropTypes.number,
     fromUser: PropTypes.bool,
-    pending: PropTypes.bool
+    pending: PropTypes.bool,
+    run: PropTypes.object
   })
 };
