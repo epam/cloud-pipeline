@@ -23,10 +23,7 @@
 .row {
   column-gap: 20px;
   display: flex;
+  flex-wrap: wrap;
   margin: 15px 0;
-}
-
-.row > * {
-  max-width: 33.333%;
-  flex: 1 0;
+  row-gap: 5px;
 }

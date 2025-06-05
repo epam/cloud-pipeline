@@ -47,3 +47,8 @@
 .errorConnect {
   color: #f04134;
 }
+
+.no-border {
+  border: none !important;
+  padding: 0;
+}

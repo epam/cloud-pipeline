@@ -311,7 +311,7 @@ export default class LaunchForm extends React.Component {
       if (runResolved) {
         this.formStore.setRunLaunched(true);
         onRunSuccess && onRunSuccess(
-          `Tool "${this.formStore.toolInfo?.id}" was successfully launched!`
+          `Tool "${this.formStore.toolInfo?.image}" was successfully launched!`
         );
       }
     });
@@ -345,7 +345,7 @@ export default class LaunchForm extends React.Component {
     }
 
     return (
-      <div className={classNames(styles.launchForm, 'cp-panel')}>
+      <div className={classNames(styles.launchForm, 'cp-panel', this.props.className)}>
         <LaunchFormInfo formStore={this.formStore} />
         <Environment formStore={this.formStore} />
         <ParameterGroup formStore={this.formStore} />
@@ -381,5 +381,6 @@ LaunchForm.propTypes = {
       })
     )
   }),
-  onRunSuccess: PropTypes.func
+  onRunSuccess: PropTypes.func,
+  className: PropTypes.string
 };

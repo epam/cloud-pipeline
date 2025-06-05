@@ -75,19 +75,25 @@ export function processMessage (message) {
   if (message.fromUser) {
     return message;
   }
+
   const {text, payload} = extractJsonFromText(message) || {};
+
   if (!payload) {
     return {...message, parts: []};
   }
+
   const textParts = message.text.split(text);
+
   const parts = textParts.flatMap((part, index) => {
     if (textParts.length > 1 && index === 0) {
       return [
-        {isText: true, value: part},
+        {isText: true, value: part, hasText: part.trim().length > 0},
         {isPayload: true, value: payload}
       ];
     }
-    return [{isText: true, value: part}];
+
+    return [{isText: true, value: part, hasText: part.trim().length > 0}];
   });
+
   return {...message, parts};
 }

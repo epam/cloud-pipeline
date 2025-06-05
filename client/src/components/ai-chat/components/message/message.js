@@ -42,23 +42,6 @@ const mockParameters = (value) => {
   return value;
 };
 
-const mockPayload = () => {
-  const parameters = {
-    Reference_Path: {type: 'string', value: 'String value'},
-    Checkbox: {type: 'boolean', value: true, checkboxText: 'Enable feature'},
-    Path_To_File: {type: 'path', value: '/path/to/file'},
-    Another_Path_Parameter: {type: 'path', value: '/another/path'}
-  };
-  return {
-    is_spot: false,
-    cmd: 'sleep infinity',
-    disk: 45,
-    instanceType: 'c5.2xlarge',
-    dockerImage: 'library/centos:latest',
-    parameters
-  };
-};
-
 @observer
 export default class Message extends React.Component {
   @computed
@@ -79,7 +62,6 @@ export default class Message extends React.Component {
       onRunLaunchSuccess(message);
     }
   };
-
   renderContent = () => {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
@@ -91,6 +73,7 @@ export default class Message extends React.Component {
         </p>
       );
     }
+    console.log("this.message", this.message);
     if (this.message.parts?.length > 0) {
       return (
         <div>
@@ -99,11 +82,19 @@ export default class Message extends React.Component {
               return <Markdown key={index} md={part.value} />;
             }
             if (part.isPayload) {
+              const hasText = this.message.parts.some(
+                p => p.isText && typeof p.value === 'string' && p.value.trim().length > 0
+              );
+
+              const noBorder = classNames({
+                [styles.noBorder]: !hasText
+              });
               return (
                 <LaunchForm
                   key={index}
                   data={mockParameters(part.value)}
                   onRunSuccess={this.handleRunSuccess}
+                  className={noBorder}
                 />
               );
             }

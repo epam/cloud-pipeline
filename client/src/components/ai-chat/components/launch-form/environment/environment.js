@@ -41,8 +41,8 @@ export default class Environment extends React.Component {
     return (
       <div className={styles.stripe}>
         <TitleSection title="Environment" />
-        {this.renderParameter('Docker image', dockerImage)}
         <div className={styles.row}>
+          {this.renderParameter('Docker image', dockerImage)}
           {this.renderParameter('Instance type', instanceType)}
           {this.renderParameter('Disk (Gb)', disk)}
           {this.renderParameter('Price type', priceOption)}
