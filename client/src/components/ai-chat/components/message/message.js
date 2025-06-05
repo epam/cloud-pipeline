@@ -86,6 +86,7 @@ export default class Message extends React.Component {
       </div>
     );
   };
+
   renderContent = () => {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
