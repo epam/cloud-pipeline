@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from datetime import datetime
 import sqlite3
 
 app = Flask(__name__)
@@ -16,7 +17,7 @@ def home():
 @app.route('/chat', methods=['POST'])
 def add_chat():
     data = request.get_json()
-    title = data['title']
+    title = data.get('title', 'Untitled')
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('INSERT INTO chats (title) VALUES (?)', (title,))
@@ -37,14 +38,13 @@ def get_chat(chat_id):
 @app.route('/chat/message/<chat_id>', methods=['POST'])
 def add_message(chat_id):
     data = request.get_json()
-    created_date = data['created_date']
     role = data['role']
     content = data['content']
     attributes = data['attributes']
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('INSERT INTO messages (chat_id, created_date, role, content, attributes) VALUES (?,?,?,?,?)',
-                 (chat_id, created_date, role, content, attributes))
+                   (chat_id, datetime.now(), role, content, attributes))
     message_id = cursor.lastrowid
     conn.commit()
     conn.close()
