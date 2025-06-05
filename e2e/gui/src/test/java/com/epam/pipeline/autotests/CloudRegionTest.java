@@ -31,6 +31,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.LAUNCH_BUTTON;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OBJECT_STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
+import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
@@ -214,7 +215,10 @@ public class CloudRegionTest
                                     format("pipeline-%s", getLastRunId()))
                             .screenshot("screenshot-3971-1")
                             .lastCommandResult(command(cloudRegion1ID));
-                    shell.refresh();
+                    shell.close();});
+        runsMenu()
+                .showLog(getLastRunId())
+                .ssh(shell -> {
                     output[1] = shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion2ID))
@@ -222,8 +226,7 @@ public class CloudRegionTest
                                     format("pipeline-%s", getLastRunId()))
                             .screenshot("screenshot-3971-2")
                             .lastCommandResult(command(cloudRegion2ID));
-                    shell.close();
-                });
+                    shell.close();});
         run1ID = getRunID(output[0]);
         run2ID = getRunID(output[1]);
         runsMenu()
