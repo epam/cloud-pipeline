@@ -211,19 +211,12 @@ public class CloudRegionTest
                     output[0] = shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion1ID))
-                            .assertNextStringIsVisible("Pipeline run scheduled with RunId:",
-                                    format("pipeline-%s", getLastRunId()))
+                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
                             .screenshot("screenshot-3971-1")
                             .lastCommandResult(command(cloudRegion1ID));
-                    shell.close();});
-        runsMenu()
-                .showLog(getLastRunId())
-                .ssh(shell -> {
                     output[1] = shell
-                            .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion2ID))
-                            .assertNextStringIsVisible("Pipeline run scheduled with RunId:",
-                                    format("pipeline-%s", getLastRunId()))
+                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 3)
                             .screenshot("screenshot-3971-2")
                             .lastCommandResult(command(cloudRegion2ID));
                     shell.close();});
@@ -234,9 +227,7 @@ public class CloudRegionTest
                 .shouldContainRun("pipeline", run1ID)
                 .showLog(run1ID)
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage1), exist)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage2), exist)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, nfsStorage1), exist)
+                .checkMountLimitsParameter(storage1, storage2, nfsStorage1)
                 .waitForTask(MOUNT_DATA_STORAGES)
                 .clickTaskWithName(MOUNT_DATA_STORAGES)
                 .ensure(log(), containsMessages(
@@ -251,16 +242,13 @@ public class CloudRegionTest
                 .shouldContainRun("pipeline", run2ID)
                 .showLog(run2ID)
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage1), exist)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage2), exist)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, nfsStorage1), exist)
+                .checkMountLimitsParameter(storage1, storage2, nfsStorage1)
                 .waitForTask(MOUNT_DATA_STORAGES)
                 .clickTaskWithName(MOUNT_DATA_STORAGES)
                 .ensure(log(), containsMessages(
                         "Only 0 storages will be mounted.",
                         "Found 0 available storage(s). Checking mount options.",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"));
-
     }
 
     @Test
