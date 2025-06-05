@@ -522,6 +522,13 @@ export default `
   border-color: @input-border;
   color: @input-color;
 }
+@THEME .ant-form-item-control.has-feedback input {
+  padding-right: 18px;
+}
+@THEME .ant-input-group .ant-select-search__field__mirror {
+  max-width: calc(9999px - 100vw);
+  overflow: hidden;
+}
 @THEME .transparent-upload .ant-upload {
   background-color: transparent;
   border-color: transparent;

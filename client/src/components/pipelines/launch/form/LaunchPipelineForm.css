@@ -59,6 +59,7 @@
 .form-item-row {
   margin: 2px 0 !important;
   flex: 1;
+  overflow: hidden;
 }
 
 .pipeline-name-form-item-row {
