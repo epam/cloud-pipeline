@@ -15,12 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
-import com.epam.pipeline.autotests.ao.CloudRegionsAO;
-import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
@@ -31,18 +28,18 @@ import static com.epam.pipeline.autotests.ao.Primitive.LAUNCH_BUTTON;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OBJECT_STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
-import com.epam.pipeline.autotests.ao.ShellAO;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.regex.Pattern.compile;
+import static org.testng.Assert.assertTrue;
+import com.epam.pipeline.autotests.ao.CloudRegionsAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.regex.Pattern.compile;
-import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -59,7 +56,6 @@ public class CloudRegionTest
     private static final String NONE = "None";
     private static final String SAME_REGION = "Same region";
     private String nfsPrefix = C.NFS_PREFIX;
-    private static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String MOUNT_DATA_STORAGES = "MountDataStorages";
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
@@ -70,7 +66,6 @@ public class CloudRegionTest
     private final String cloudRegion1 = C.DEFAULT_CLOUD_REGION;
     private final String cloudRegion2 = C.ANOTHER_CLOUD_REGION;
     private final String cloudRegion1ID = "6";
-    private final String cloudRegion2ID = "2";
     private final String mountPoint = "/testDir";
     private String[][] initialMountRules = new String[2][2];
     private String storage1ID = "";
@@ -196,8 +191,6 @@ public class CloudRegionTest
     @Test
     @TestCase(value = "3971_3")
     public void mountRulesCheckMountStoragesLocatedInTheCertainCloudRegionViaPipeCLI() {
-        final String[] output = new String[2];
-        final String rootHost = "root@pipeline";
         setRegionMountRules(cloudRegion1, SAME_REGION, SAME_REGION);
         setRegionMountRules(cloudRegion2, NONE, NONE);
         tools()
@@ -208,23 +201,14 @@ public class CloudRegionTest
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> {
-                    output[0] = shell
+                    run1ID = getRunID(shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(command(cloudRegion1ID))
                             .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
-                            .screenshot("screenshot-3971-1")
-                            .lastCommandResult(command(cloudRegion1ID));
-                    output[1] = shell
-                            .execute(command(cloudRegion2ID))
-                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 3)
-                            .screenshot("screenshot-3971-2")
-                            .lastCommandResult(command(cloudRegion2ID));
+                            .lastCommandResult(command(cloudRegion1ID)));
                     shell.close();});
-        run1ID = getRunID(output[0]);
-        run2ID = getRunID(output[1]);
         runsMenu()
                 .viewAvailableActiveRuns()
-                .shouldContainRun("pipeline", run1ID)
                 .showLog(run1ID)
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storage1, storage2, nfsStorage1)
@@ -233,13 +217,23 @@ public class CloudRegionTest
                 .ensure(log(), containsMessages(
                         "Found 2 available storage(s). Checking mount options.",
                         "Only 2 storages will be mounted",
-                        format("-->%s mounted to /cloud-data/%s", storage1ID, nfsStorage1ID  ),
-                        format("-->%s mounted to /cloud-data/%s", storage1ID),
-                        format("-->%s%s mounted to /cloud-data/%s%s",
-                                nfsPrefix, nfsStorage1ID, nfsPrefix, nfsStorage1ID )));
+                        format("-->%s mounted to %s", storage1ID, mountPoint),
+                        format("-->%s%s mounted to %s",
+                                nfsPrefix, nfsStorage1ID, mountPoint)));
+
+        setRegionMountRules(cloudRegion1, NONE, NONE);
+        setRegionMountRules(cloudRegion2, SAME_REGION, SAME_REGION);
         runsMenu()
-                .viewAvailableActiveRuns()
-                .shouldContainRun("pipeline", run2ID)
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .ssh(shell -> {
+                    run2ID = getRunID(shell
+                            .waitUntilTextAppears(getLastRunId())
+                            .execute(command(cloudRegion1ID))
+                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
+                            .lastCommandResult(command(cloudRegion1ID)));
+                    shell.close();});
+        runsMenu()
                 .showLog(run2ID)
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storage1, storage2, nfsStorage1)

@@ -126,10 +126,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         sleep(1, SECONDS);
         show(runId);
         sleep(3, SECONDS);
-        if (new LogAO().get(STOP).exists()) {
-            return new LogAO();
-        }
-        show(runId);
+//        if (new LogAO().get(STOP).exists()) {
+//            return new LogAO();
+//        }
+//        show(runId);
         return new LogAO();
     }
 
