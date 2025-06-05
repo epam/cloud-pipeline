@@ -2,6 +2,12 @@
 POST {{host}}/chat
 Content-Type: application/json
 
+{}
+
+### Create a chat
+POST {{host}}/chat
+Content-Type: application/json
+
 {
   "title": "Title"
 }
@@ -16,7 +22,6 @@ Content-Type: application/json
 
 {
   "role": "User",
-  "created_date": "2025-01-01 00:00:00",
   "content": "Content",
   "attributes": "{'attr1':'val1', 'attr2':'val2'}"
 }
