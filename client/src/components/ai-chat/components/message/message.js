@@ -73,7 +73,7 @@ export default class Message extends React.Component {
         </p>
       );
     }
-    console.log("this.message", this.message);
+
     if (this.message.parts?.length > 0) {
       return (
         <div>
