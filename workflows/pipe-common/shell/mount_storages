@@ -15,6 +15,7 @@
 MOUNT_ROOT=$1
 TMP_DIR=$2
 MOUNT_TASK_NAME=$3
+MOUNT_LOG_FILE=$4
 
 # Check global variables
 if [ -z "$API" ]
@@ -49,4 +50,42 @@ if [ -z "$MOUNT_TASK_NAME" ]
 	exit 1
 fi
 
-$CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}"
+if [ -z "$MOUNT_LOG_FILE" ]
+  then
+    MOUNT_LOG_FILE="$LOG_DIR/${MOUNT_TASK_NAME}.log"
+fi
+
+MOUNT_CHECK_INTERVAL="${MOUNT_CHECK_INTERVAL:-1}"
+
+function check_mount_status() {
+    if [[ ! -f "$MOUNT_LOG_FILE" ]]; then
+        return 2
+    fi
+    if grep -q "Finished initial data storage mounting" "$MOUNT_LOG_FILE"; then
+        return 0
+    elif grep -q "Failed data storage mounting" "$MOUNT_LOG_FILE"; then
+        return 1
+    fi
+    return 2
+}
+
+is_process_running() {
+    local pid="$1"
+    kill -0 "$pid" &> /dev/null
+}
+
+nohup $CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}" 1>/dev/null 2> $MOUNT_LOG_FILE &
+MOUNT_STORAGE_PID="$!"
+
+while is_process_running "$MOUNT_STORAGE_PID"; do
+    check_mount_status
+    status=$?
+
+    case $status in
+        0|1) exit $status ;;
+        2) sleep "$MOUNT_CHECK_INTERVAL" ;;
+    esac
+done
+
+check_mount_status
+exit $?
