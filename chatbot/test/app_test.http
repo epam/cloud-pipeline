@@ -1,0 +1,36 @@
+### Create a chat
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "title": "Title"
+}
+
+### Get a chat
+GET {{host}}/chat/5
+Content-Type: application/json
+
+### Create a message
+POST {{host}}/chat/message/5
+Content-Type: application/json
+
+{
+  "role": "User",
+  "created_date": "2025-01-01 00:00:00",
+  "content": "Content",
+  "attributes": "{'attr1':'val1', 'attr2':'val2'}"
+}
+
+### Get a message
+GET {{host}}/chat/message/4
+Content-Type: application/json
+
+### Get messages
+GET {{host}}/chat/5/messages
+Content-Type: application/json
+
+### Delete a message
+DELETE {{host}}/chat/message/1
+Content-Type: application/json
+
+
