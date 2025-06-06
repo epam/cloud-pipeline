@@ -88,6 +88,8 @@ function clone_repository {
                   if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ]; then
                         git -c http.sslVerify=false submodule init
                         git -c http.sslVerify=false submodule update
+                  elif [ "$CP_GIT_RECURSIVE_CLONE_SINGLE_CMD" = "true" ]; then
+                        git -c http.sslVerify=false submodule update --init --recursive
                   fi
 
                   _CLONE_RESULT=$?
