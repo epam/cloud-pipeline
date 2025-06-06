@@ -20,7 +20,12 @@ function generate_params_file() {
     for cp_param in $all_cp_params; do
         [[ "$cp_param" =~ CP_* ]]  && continue
         cp_param_clean=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
-        all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${!cp_param_clean}\""
+        cp_param_type="${!cp_param}"
+        if [ "$cp_param_type" == "boolean" ]; then
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": ${!cp_param_clean}"
+        else
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${!cp_param_clean}\""
+        fi
     done
     all_cp_params_json="{ $(echo "$all_cp_params_json" | sed 's/,//') }"
     echo "$all_cp_params_json" | jq -r > "$CP_NF_AUTOGENERATE_PARAMETERS_PATH"
