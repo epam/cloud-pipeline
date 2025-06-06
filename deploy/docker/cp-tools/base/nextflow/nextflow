@@ -85,7 +85,7 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 
     if [ "$CP_NF_AUTOGENERATE_PARAMETERS" == "true" ]; then
         generate_params_file
-        _ARGS+=("-params-file $CP_NF_AUTOGENERATE_PARAMETERS_PATH")
+        _ARGS+=("-params-file" "$CP_NF_AUTOGENERATE_PARAMETERS_PATH")
     fi
 fi
 
