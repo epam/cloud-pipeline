@@ -63,12 +63,15 @@ STORAGE_MOUNT_OPTIONS_ENV_PREFIX = 'CP_CAP_MOUNT_OPTIONS_'
 STORAGE_MOUNT_PATH_ENV_PREFIX = 'CP_CAP_MOUNT_PATH_'
 
 CP_CAP_MOUNT_REFRESH_INTERVAL = int(os.getenv('CP_CAP_MOUNT_REFRESH_INTERVAL', 300))  # in seconds (5 minutes)
-CP_CAP_ALLOWED_MOUNT_TYPES = "${CP_CAP_MOUNT_TYPES:-cifs,fuse,nfs,nfs4,lustre}"
+CP_CAP_ALLOWED_MOUNT_TYPES = os.getenv('CP_CAP_MOUNT_TYPES', 'cifs,fuse,nfs,nfs4,lustre')
 
 MOUNT_FILE = '/proc/mounts'
+INIT_MOUNT_STATUS_FILE = os.getenv('CP_CAP_INIT_MOUNT_FILE', '/tmp/init_mount_status')
 MOUNT_LINE_PATTERN = r'^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+\d+\s+\d+'
 UNMOUNT_CMD_PATTERN = "umount -l -f \"{}\""
 DELETE_CMD_PATTERN = "rm -rf \"{}\""
+UNMOUNT_RETRY = int(os.getenv('CP_CAP_UNMOUNT_RETRY', 3))
+UNMOUNT_DELAY_BETWEEN_RETRY = int(os.getenv('CP_CAP_UNMOUNT_DELAY_BETWEEN_RETRY', 5))
 
 MOUNT_STATUS_DISABLED = 'MOUNT_DISABLED'
 MOUNT_STATUS_READ_ONLY = 'READ_ONLY'
@@ -175,20 +178,34 @@ class MountPointDetails:
                         task_name=task_name)
 
     def unmount(self, mount_point, task_name):
-        self.execute_unmount(UNMOUNT_CMD_PATTERN.format(mount_point), mount_point, task_name)
-        self.execute_remove(DELETE_CMD_PATTERN.format(mount_point), mount_point, task_name)
-
-    @staticmethod
-    def execute_unmount(command, mount_point, task_name):
-        exit_code = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
-        if exit_code == 0:
-            Logger.info('-->{} was unmounted'.format(mount_point), task_name=task_name)
-        else:
-            Logger.warn('--> Failed unmounting {}'.format(mount_point), task_name=task_name)
+        try:
+            self.execute_unmount(UNMOUNT_CMD_PATTERN.format(mount_point), mount_point, task_name)
+            self.execute_remove(DELETE_CMD_PATTERN.format(mount_point), mount_point, task_name)
+        except Exception as e:
+            Logger.warn('Unmount process failed: {}.'.format(self.mount_point, str(e)), task_name=task_name)
             raise RuntimeError('Failed unmounting {}'.format(mount_point))
 
     @staticmethod
+    def execute_unmount(command, mount_point, task_name, retries=UNMOUNT_RETRY, delay=UNMOUNT_DELAY_BETWEEN_RETRY):
+        if not MountPointDetails.is_mounted(mount_point, task_name):
+            Logger.warn("--> {} is not a valid mount point".format(mount_point), task_name=task_name)
+            return
+        for attempt in range(1, retries + 1):
+            exit_code = common.execute_cmd_command(
+                command, executable=None if StorageMounter.is_windows() else '/bin/bash'
+            )
+            if exit_code == 0 and not MountPointDetails.is_mounted(mount_point, task_name):
+                Logger.info('-->{} was unmounted'.format(mount_point), task_name=task_name)
+                return exit_code
+            Logger.warn('--> Attempt {} failed unmounting {}'.format(attempt, mount_point), task_name=task_name)
+            time.sleep(delay)
+        raise RuntimeError('Failed unmounting {}'.format(mount_point))
+
+    @staticmethod
     def execute_remove(command, mount_point, task_name):
+        if MountPointDetails.is_mounted(mount_point, task_name):
+            Logger.error('--> Refusing to remove: {} is still mounted'.format(mount_point), task_name=task_name)
+            raise RuntimeError('Failed cleaning up {}, due to still mounted'.format(mount_point))
         exit_code = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
         if exit_code == 0:
             Logger.info('--> Cleaning up {} path'.format(mount_point), task_name=task_name)
@@ -204,6 +221,15 @@ class MountPointDetails:
         except Exception as e:
             Logger.warn('Unable to get chmod value from a mounted directory {}: {}.'.format(self.mount_point, str(e)),
                         task_name=task_name)
+
+    @staticmethod
+    def is_mounted(path, task_name):
+        try:
+            if os.path.ismount(path):
+                return True
+        except Exception as e:
+            Logger.warn('Unable to check a mounted directory {}: {}.'.format(path, str(e)), task_name=task_name)
+            return False
 
     def __repr__(self):
         return "<MountPointDetails: %s %s %s %s>" % (self.mount_source, self.mount_point, self.mount_type,
@@ -334,7 +360,7 @@ class MountStorageTask:
             Logger.fail('An error occured while waiting for the mounts prerequisites: {}.'.format(str(e.message)),
                         task_name=self.task_name)
 
-    def run(self, mount_root, tmp_dir):
+    def run(self, mount_root, tmp_dir, init_mount_status_file):
         try:
             Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
 
@@ -351,7 +377,8 @@ class MountStorageTask:
             self._perform_mount(mount_root, tmp_dir, available_storages_with_mounts, storages_ids_by_path, run,
                                 monitor=False)
             Logger.success('Finished initial data storage mounting', task_name=self.task_name)
-
+            with open(init_mount_status_file, "w") as f:
+                f.write("SUCCESS\n")
             if self.auto_mount_umount or self.auto_nfs_status:
                 self._setup_signal_handlers()
                 if self.auto_mount_umount:
@@ -372,6 +399,8 @@ class MountStorageTask:
             Logger.fail('Unhandled error during mount task: {}.'.format(traceback.format_exc()),
                         task_name=self.task_name)
             Logger.fail('Failed data storage mounting', task_name=self.task_name)
+            with open(init_mount_status_file, "w") as f:
+                f.write("FAILURE\n")
             exit(1)
 
     def _monitor_loop(self, mount_root, tmp_dir):
@@ -1346,11 +1375,12 @@ def main():
     parser.add_argument('--mount-root', required=True)
     parser.add_argument('--tmp-dir', required=True)
     parser.add_argument('--task', required=False, default=MOUNT_DATA_STORAGES)
+    parser.add_argument('--status-file', required=False, default=INIT_MOUNT_STATUS_FILE)
     args = parser.parse_args()
     if EXEC_ENVIRONMENT in os.environ and os.environ[EXEC_ENVIRONMENT] == DTS:
         Logger.success('Skipping cloud storage mount for execution environment %s' % DTS, task_name=args.task)
         return
-    MountStorageTask(args.task).run(args.mount_root, args.tmp_dir)
+    MountStorageTask(args.task).run(args.mount_root, args.tmp_dir, args.status_file)
 
 
 if __name__ == '__main__':

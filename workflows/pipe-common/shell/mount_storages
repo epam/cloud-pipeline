@@ -56,17 +56,15 @@ if [ -z "$MOUNT_LOG_FILE" ]
 fi
 
 MOUNT_CHECK_INTERVAL="${MOUNT_CHECK_INTERVAL:-1}"
+INIT_MOUNT_STATUS_FILE="/tmp/init_mount_status"
 
 function check_mount_status() {
-    if [[ ! -f "$MOUNT_LOG_FILE" ]]; then
-        return 2
-    fi
-    if grep -q "Finished initial data storage mounting" "$MOUNT_LOG_FILE"; then
-        return 0
-    elif grep -q "Failed data storage mounting" "$MOUNT_LOG_FILE"; then
-        return 1
-    fi
-    return 2
+    [[ ! -f "$MOUNT_STATUS_FILE" ]] && return 2
+    case "$(cat "$MOUNT_STATUS_FILE")" in
+        SUCCESS) return 0 ;;
+        FAILURE) return 1 ;;
+        *) return 2 ;;
+    esac
 }
 
 is_process_running() {
@@ -74,7 +72,12 @@ is_process_running() {
     kill -0 "$pid" &> /dev/null
 }
 
-nohup $CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}" 1>/dev/null 2> $MOUNT_LOG_FILE &
+nohup $CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" \
+                       --mount-root "${MOUNT_ROOT}" \
+                       --tmp-dir "${TMP_DIR}" \
+                       --task "${MOUNT_TASK_NAME}" \
+                       --status-file "${INIT_MOUNT_STATUS_FILE}" \
+                       1>/dev/null 2> $MOUNT_LOG_FILE &
 MOUNT_STORAGE_PID="$!"
 
 while is_process_running "$MOUNT_STORAGE_PID"; do
