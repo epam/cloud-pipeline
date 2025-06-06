@@ -87,6 +87,7 @@ nav:
     - 11.4. Automatic labels and actions for the runs: 'manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md'
     - 11.5. Archive completed runs: 'manual/11_Manage_Runs/11.5._Archive_runs.md'
     - 11.6. Nextflow runs visualization: 'manual/11_Manage_Runs/11.6._Nextflow_runs_visualization.md'
+    - 11.7. GUI plugins for run pages: 'manual/11_Manage_Runs/11.7._Plugins_framework.md'
   - 12. Manage settings:
     - 12.0. Overview: 'manual/12_Manage_Settings/12._Manage_Settings.md'
     - 12.1. Add a new system event: 'manual/12_Manage_Settings/12.1._Add_a_new_system_event.md'
@@ -155,3 +156,4 @@ nav:
     - Environments sync: 'operation/environments_sync/environments_sync.md'
   - Change Kubernetes certificates: 'operation/change_kube_certificates.md'
   - Support Windows runs: 'operation/support_windows_runs.md'
+  - GUI plugins development: 'operation/plugins_development.md'
