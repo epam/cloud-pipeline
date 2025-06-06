@@ -13,6 +13,7 @@ nav:
   - v.0.15: 'release_notes/v.0.15/v.0.15_-_Release_notes.md'
   - v.0.16: 'release_notes/v.0.16/v.0.16_-_Release_notes.md'
   - v.0.17: 'release_notes/v.0.17/v.0.17_-_Release_notes.md'
+  - v.0.20: 'release_notes/v.0.20/v.0.20_-_Release_notes.md'
 - User guide:
   - Contents: 'manual/Cloud_Pipeline_-_Manual.md'
   - 1. Quick start: 'manual/01_Quick_start/1._Quick_start.md'
@@ -85,6 +86,7 @@ nav:
     - 11.3. Sharing with other users: 'manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md'
     - 11.4. Automatic labels and actions for the runs: 'manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md'
     - 11.5. Archive completed runs: 'manual/11_Manage_Runs/11.5._Archive_runs.md'
+    - 11.6. Nextflow runs visualization: 'manual/11_Manage_Runs/11.6._Nextflow_runs_visualization.md'
   - 12. Manage settings:
     - 12.0. Overview: 'manual/12_Manage_Settings/12._Manage_Settings.md'
     - 12.1. Add a new system event: 'manual/12_Manage_Settings/12.1._Add_a_new_system_event.md'
