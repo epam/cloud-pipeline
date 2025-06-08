@@ -1,0 +1,44 @@
+### Create a chat
+POST {{host}}/chat
+Content-Type: application/json
+
+{}
+
+### Create a chat
+POST {{host}}/chat
+Content-Type: application/json
+
+{
+  "title": "Title"
+}
+
+### Get a chat
+GET {{host}}/chat/5
+Content-Type: application/json
+
+### Create a message
+POST {{host}}/chat/message/9
+Content-Type: application/json
+
+{
+  "role": "user",
+  "content": "Use documents_tool. How to add environment variable to a tool?",
+  "attributes": {
+    "attr1": "val1",
+    "attr2": "val2"
+  }
+}
+
+### Get a message
+GET {{host}}/chat/message/8
+Content-Type: application/json
+
+### Get messages
+GET {{host}}/chat/5/messages
+Content-Type: application/json
+
+### Delete a message
+DELETE {{host}}/chat/message/12
+Content-Type: application/json
+
+

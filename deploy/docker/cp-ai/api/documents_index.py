@@ -136,7 +136,7 @@ def _clone_documents():
 
 def _get_document_url(doc, documents_folder):
     path = ((doc.metadata['file_path']
-             .replace(os.path.abspath(documents_folder), ""))
+            .replace(os.path.abspath(documents_folder), ""))
             .replace(os.path.sep, "/"))
     return f"https://github.com/{REPO_OWNER}/{REPO}/tree/{BRANCH}/{REPO_DOCUMENTS_FOLDER}{path}"
 
