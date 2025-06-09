@@ -70,6 +70,12 @@ app.add_middleware(
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 
 def get_command_to_run_compute_instance(
+        pipeline_name: str = Field (
+            description="""
+        Defines a pipeline name to be used for user's compute task.
+        This parameter is optional, if not specified in the user prompt leave value empty.
+        """
+        ),
         docker_image_name: str = Field(
             description="""
         Defines a docker image name to be used for the user's compute task.
@@ -160,6 +166,8 @@ def get_command_to_run_compute_instance(
         "is_spot": False,
         "parameters": params
     }
+    if pipeline_name:
+        start_command["pipelineName"] = pipeline_name
 
     json_str = json.dumps(start_command)
 
