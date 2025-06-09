@@ -290,7 +290,7 @@ def add_chat(chat: Chat):
 def get_chat(chat_id: int):
     return _get_chat(chat_id)
 
-@app.post('/chat/message/{chat_id}')
+@app.post('/chat/{chat_id}/message')
 def add_message(chat_id: int, message: Message):
     return _save_message(chat_id, message)
 
