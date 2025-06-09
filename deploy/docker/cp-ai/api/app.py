@@ -16,7 +16,7 @@ from llama_index.core.agent import (FunctionCallingAgentWorker, ReActAgent)
 from pydantic import Field, BaseModel
 from typing import Optional
 
-from documents_index import query_documents
+from api.documents_index import query_documents
 import datetime
 from datetime import datetime
 import sqlite3

@@ -13,7 +13,7 @@ ARG GOOGLE_GENAI_MODEL
 ARG GOOGLE_API_KEY
 ARG GITHUB_TOKEN
 
-COPY api/requirements.txt /tmp/ai/
+COPY requirements.txt /tmp/ai/
 
 ENV AI_CONDA_ENVIRONMENT_NAME ai
 

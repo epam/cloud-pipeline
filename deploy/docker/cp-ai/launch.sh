@@ -27,6 +27,9 @@ micromamba activate "$AI_CONDA_ENVIRONMENT_NAME"
 echo "creating index"
 python api/create_index.py
 
+echo "initialize DB"
+python api/init_db.py
+
 echo "starting api"
 touch /var/log/api.log
 
