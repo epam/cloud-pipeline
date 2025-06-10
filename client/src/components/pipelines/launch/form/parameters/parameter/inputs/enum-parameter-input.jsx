@@ -36,7 +36,6 @@ function LaunchFormEnumParameterInput (props) {
     style,
     value: valueProps,
     onChange,
-    readOnly,
     disabled,
     enumeration: enumerationProps = []
   } = props;
@@ -53,7 +52,7 @@ function LaunchFormEnumParameterInput (props) {
       style={style}
       value={value}
       onChange={onInputChange}
-      disabled={readOnly || disabled}
+      disabled={disabled}
       size="large"
     >
       {enumeration.map((v) => (
@@ -72,8 +71,12 @@ LaunchFormEnumParameterInput.propTypes = {
   enumeration: PropTypes.any,
   required: PropTypes.bool,
   onChange: PropTypes.func,
-  readOnly: PropTypes.bool,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  currentProjectMetadata: PropTypes.object,
+  currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  rootEntityId: PropTypes.string,
+  metadataAutoComplete: PropTypes.bool
 };
 
 export default LaunchFormEnumParameterInput;

@@ -1,37 +1,35 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Checkbox} from 'antd';
+import MetadataParameterInput from '../../../MetadataParameterInput';
 import styles from './launch-form-parameter-input.css';
 
-function LaunchFormBoolParameterInput (props) {
+function LaunchFormMetadataParameterInput (props) {
   const {
     className,
     style,
     value,
     onChange,
-    disabled
+    disabled,
+    currentProjectId,
+    currentMetadataEntity = [],
+    rootEntityId
   } = props;
-  const checked = value ? String(value).toLowerCase() === 'true' : false;
-  const onCheckboxValueChange = (e) => {
-    if (typeof onChange === 'function') {
-      onChange(e.target.checked);
-    }
-  };
   return (
-    <Checkbox
+    <MetadataParameterInput
       className={classNames(className, styles.launchParameterInput)}
       style={style}
-      checked={checked}
-      onChange={onCheckboxValueChange}
       disabled={disabled}
-    >
-      Enabled
-    </Checkbox>
+      onSelectMetadata={onChange}
+      currentProjectId={currentProjectId}
+      rootEntityId={rootEntityId}
+      currentMetadataEntity={currentMetadataEntity.slice()}
+      value={value}
+    />
   );
 }
 
-LaunchFormBoolParameterInput.propTypes = {
+LaunchFormMetadataParameterInput.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   value: PropTypes.any,
@@ -45,4 +43,4 @@ LaunchFormBoolParameterInput.propTypes = {
   metadataAutoComplete: PropTypes.bool
 };
 
-export default LaunchFormBoolParameterInput;
+export default LaunchFormMetadataParameterInput;

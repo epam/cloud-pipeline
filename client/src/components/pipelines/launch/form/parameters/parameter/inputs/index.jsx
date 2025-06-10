@@ -5,6 +5,7 @@ import LaunchFormBoolParameterInput from './bool-parameter-input';
 import LaunchFormPathParameterInput from './path-parameter-input';
 import {isObservableArray} from 'mobx';
 import LaunchFormEnumParameterInput from './enum-parameter-input';
+import LaunchFormMetadataParameterInput from './metadata-parameter-input';
 
 function LaunchFormParameterInput (props) {
   const {
@@ -12,7 +13,13 @@ function LaunchFormParameterInput (props) {
     style,
     parameter,
     onChange,
-    disabled
+    disabled,
+    rawEdit,
+    currentProjectId,
+    currentProjectMetadata,
+    currentMetadataEntity,
+    rootEntityId,
+    metadataAutoComplete
   } = props;
   if (!parameter || typeof parameter !== 'object') {
     return null;
@@ -20,15 +27,14 @@ function LaunchFormParameterInput (props) {
   let {
     type = 'string',
     value,
-    no_override: _noOverride = false,
-    noOverride = _noOverride,
-    read_only: _readOnly = false,
-    readonly = _readOnly,
-    readOnly = readonly,
-    required = false,
-    enum: _enum,
-    enumeration = _enum
+    config = {}
   } = parameter;
+  const {
+    readOnly: readOnlyValue = false,
+    required = false,
+    enumeration
+  } = config;
+  const readOnly = rawEdit ? false : readOnlyValue;
   if (typeof type !== 'string') {
     type = 'string';
   }
@@ -36,12 +42,13 @@ function LaunchFormParameterInput (props) {
     enumeration &&
     typeof enumeration === 'object' &&
     (Array.isArray(enumeration) || isObservableArray(enumeration)) &&
-    enumeration.length > 0
+    enumeration.length > 0 &&
+    !rawEdit
   ) {
     type = 'enum';
   }
   const onParameterValueChange = (newValue) => {
-    if (typeof onChange === 'function' && !readOnly && !disabled && !noOverride) {
+    if (typeof onChange === 'function') {
       onChange({
         ...parameter,
         value: newValue
@@ -60,9 +67,13 @@ function LaunchFormParameterInput (props) {
           value={value}
           pathType={type.toLowerCase()}
           onChange={onParameterValueChange}
-          readOnly={readOnly || noOverride}
-          disabled={readOnly || noOverride || disabled}
+          disabled={readOnly || disabled}
           required={required}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
         />
       );
     case 'boolean':
@@ -72,9 +83,13 @@ function LaunchFormParameterInput (props) {
           style={style}
           value={value}
           onChange={onParameterValueChange}
-          readOnly={readOnly || noOverride}
-          disabled={readOnly || noOverride || disabled}
+          disabled={readOnly || disabled}
           required={required}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
         />
       );
     case 'enum':
@@ -85,10 +100,30 @@ function LaunchFormParameterInput (props) {
           style={style}
           value={value}
           onChange={onParameterValueChange}
-          readOnly={readOnly || noOverride}
-          disabled={readOnly || noOverride || disabled}
+          disabled={readOnly || disabled}
           required={required}
           enumeration={enumeration}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
+        />
+      );
+    case 'metadata':
+      return (
+        <LaunchFormMetadataParameterInput
+          className={className}
+          style={style}
+          value={value}
+          onChange={onParameterValueChange}
+          disabled={readOnly || disabled}
+          required={required}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
         />
       );
     case 'string':
@@ -99,9 +134,13 @@ function LaunchFormParameterInput (props) {
           style={style}
           value={value}
           onChange={onParameterValueChange}
-          readOnly={readOnly || noOverride}
-          disabled={readOnly || noOverride || disabled}
+          disabled={readOnly || disabled}
           required={required}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
         />
       );
   }
@@ -112,7 +151,13 @@ LaunchFormParameterInput.propTypes = {
   style: PropTypes.object,
   parameter: PropTypes.object,
   onChange: PropTypes.func,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  rawEdit: PropTypes.bool,
+  currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  currentProjectMetadata: PropTypes.object,
+  currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  rootEntityId: PropTypes.string,
+  metadataAutoComplete: PropTypes.bool
 };
 
 export default LaunchFormParameterInput;

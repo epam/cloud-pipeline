@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import styles from './launch-form-parameter-input.css';
 import {Icon, Input} from 'antd';
 import BucketBrowser from '../../../../dialogs/BucketBrowser';
+import MetadataAutoComplete from "./metadata-auto-complete";
 
 function getIcon (pathType) {
   switch (pathType) {
@@ -49,8 +50,12 @@ class LaunchFormPathParameterInput extends React.PureComponent {
       pathType = 'path',
       onChange,
       value,
-      readOnly,
-      disabled
+      disabled,
+      currentProjectId,
+      currentMetadataEntity,
+      currentProjectMetadata,
+      rootEntityId,
+      metadataAutoComplete
     } = this.props;
     const icon = getIcon(pathType);
     const onPathChange = (path) => {
@@ -59,11 +64,8 @@ class LaunchFormPathParameterInput extends React.PureComponent {
       }
       this.closeBucketBrowser();
     };
-    const onInputChange = (e) => {
-      onPathChange(e.target.value);
-    };
     const onAddonClick = () => {
-      if (!disabled && !readOnly) {
+      if (!disabled) {
         this.openBucketBrowser();
       }
     };
@@ -77,11 +79,11 @@ class LaunchFormPathParameterInput extends React.PureComponent {
         className={classNames(className, styles.launchParameterInput)}
         style={style}
       >
-        <Input
+        <MetadataAutoComplete
           style={{width: '100%'}}
           value={value ? String(value) : ''}
-          onChange={onInputChange}
-          disabled={readOnly || disabled}
+          onChange={onPathChange}
+          disabled={disabled}
           addonBefore={(
             <div
               className={styles.launchParameterPathInputAddon}
@@ -91,6 +93,11 @@ class LaunchFormPathParameterInput extends React.PureComponent {
           )}
           placeholder="Path"
           size="large"
+          currentProjectId={currentProjectId}
+          currentMetadataEntity={currentMetadataEntity}
+          currentProjectMetadata={currentProjectMetadata}
+          rootEntityId={rootEntityId}
+          defaultInput={!metadataAutoComplete}
         />
         <BucketBrowser
           multiple
@@ -116,8 +123,12 @@ LaunchFormPathParameterInput.propTypes = {
   pathType: PropTypes.string,
   required: PropTypes.bool,
   onChange: PropTypes.func,
-  readOnly: PropTypes.bool,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  currentProjectMetadata: PropTypes.object,
+  currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  rootEntityId: PropTypes.string,
+  metadataAutoComplete: PropTypes.bool
 };
 
 export default LaunchFormPathParameterInput;

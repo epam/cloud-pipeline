@@ -578,8 +578,8 @@ export default class PersonalToolsPanel extends React.Component {
             }
           }, async () => {
             const hide = message.loading('Checking tool size...', 0);
-            const inputs = getInputPaths(null, defaultPayload.params);
-            const outputs = getOutputPaths(null, defaultPayload.params);
+            const inputs = getInputPaths(defaultPayload.params);
+            const outputs = getOutputPaths(defaultPayload.params);
             const {errors: permissionErrors} = await performAsyncCheck({
               inputs,
               outputs,

@@ -1,0 +1,45 @@
+:root {
+  --parameter-name-input-height: 22px;
+  --parameter-name-icon-size: calc(var(--parameter-name-input-height) - 5px);
+}
+
+.parameter-name-input-container .parameter-name-input-row {
+  display: flex;
+  align-items: center;
+  line-height: var(--parameter-name-input-height);
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parameter-name.editing-enabled {
+  cursor: text;
+}
+
+.parameter-name.editing-disabled {
+  cursor: default;
+}
+
+.parameter-name-input-row > *:not(:last-child) {
+  margin-right: 5px;
+}
+
+.parameter-name-input-row .parameter-name-input {
+  flex: 1;
+  height: var(--parameter-name-input-height);
+  line-height: var(--parameter-name-input-height);
+}
+
+.parameter-name-input-row .parameter-name-edit-icon {
+  margin-left: 5px;
+  width: var(--parameter-name-icon-size);
+  height: var(--parameter-name-icon-size);
+}
+
+.parameter-name:not(:hover) .parameter-name-edit-icon,
+.parameter-name.editing-disabled .parameter-name-edit-icon {
+  display: none;
+}
