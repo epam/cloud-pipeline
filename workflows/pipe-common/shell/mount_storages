@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,11 +56,11 @@ if [ -z "$MOUNT_LOG_FILE" ]
 fi
 
 MOUNT_CHECK_INTERVAL="${MOUNT_CHECK_INTERVAL:-1}"
-INIT_MOUNT_STATUS_FILE="/tmp/init_mount_status"
+INIT_MOUNT_STATUS_FILE=$TMP_DIR/.init_mount_status
 
 function check_mount_status() {
-    [[ ! -f "$MOUNT_STATUS_FILE" ]] && return 2
-    case "$(cat "$MOUNT_STATUS_FILE")" in
+    [[ ! -f "$INIT_MOUNT_STATUS_FILE" ]] && return 2
+    case "$(cat "$INIT_MOUNT_STATUS_FILE")" in
         SUCCESS) return 0 ;;
         FAILURE) return 1 ;;
         *) return 2 ;;
@@ -91,4 +91,8 @@ while is_process_running "$MOUNT_STORAGE_PID"; do
 done
 
 check_mount_status
-exit $?
+mount_status_exit_code=$?
+
+rm -f $INIT_MOUNT_STATUS_FILE
+
+exit $mount_status_exit_code
