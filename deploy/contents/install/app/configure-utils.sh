@@ -193,7 +193,9 @@ function api_create_pipeline {
 read -r -d '' payload <<-EOF
 {
     "name":"$pipeline_name",
-    "description":"$pipeline_description" ${folder_parent_key_value}
+    "description":"$pipeline_description" ${folder_parent_key_value},
+    "codePath": "src/",
+    "docsPath": "docs/"
 }
 EOF
 
