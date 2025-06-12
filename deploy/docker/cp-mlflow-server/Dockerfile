@@ -41,7 +41,7 @@ RUN mkdir -p /opt/local/mamba && \
     micromamba create -n mlflow && \
     micromamba activate mlflow && \
     micromamba install -y python==3.10 && \
-    pip install mlflow psycopg2-binary
+    pip install mlflow psycopg2-binary boto3
 
 # MLflow GUI
 ENV NVM_DIR=/opt/local/nvm
