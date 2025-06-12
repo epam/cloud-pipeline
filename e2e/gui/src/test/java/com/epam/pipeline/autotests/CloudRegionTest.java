@@ -217,9 +217,9 @@ public class CloudRegionTest
                 .ensure(log(), containsMessages(
                         "Found 2 available storage(s). Checking mount options.",
                         "Only 2 storages will be mounted",
-                        format("-->%s mounted to %s", storage1ID, mountPoint),
+                        format("-->%s mounted to %s", storage1, mountPoint),
                         format("-->%s%s mounted to %s",
-                                nfsPrefix, nfsStorage1ID, mountPoint)));
+                                nfsPrefix, nfsStorage1, mountPoint)));
 
         setRegionMountRules(cloudRegion1, NONE, NONE);
         setRegionMountRules(cloudRegion2, SAME_REGION, SAME_REGION);

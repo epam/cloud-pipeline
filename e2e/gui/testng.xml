@@ -550,15 +550,21 @@
         </classes>
     </test>
 
-    <test name="RBACPermissionRestrictionsTest">
+    <test name="RBACStorageAdminPermissionTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.RBACPermissionRestrictionsTest"/>
+            <class name="com.epam.pipeline.autotests.RBACStorageAdminPermissionTest"/>
         </classes>
     </test>
 
     <test name="CloudRegionTest">
         <classes>
             <class name="com.epam.pipeline.autotests.CloudRegionTest"/>
+        </classes>
+    </test>
+
+    <test name="RBACPermissionRestrictionsTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RBACPermissionRestrictionsTest"/>
         </classes>
     </test>
 </suite>

@@ -22,6 +22,7 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
+import org.openqa.selenium.By;
 import static org.openqa.selenium.By.tagName;
 
 public enum Privilege {
@@ -68,6 +69,11 @@ public enum Privilege {
                     .find(byCssSelector(String.format("td:nth-child(%d)", columnNumber)))
                     .find(byClassName("ant-checkbox-wrapper")).shouldBe(visible)
                     .find(tagName("input")).should(exist);
+    }
+
+    public void isDisabled() {
+        getPrivilegeRow().$$(By.className("permissions-form__user-allow-deny-actions"))
+                .first().$(byXpath(".//span")).has(cssClass("ant-checkbox-disabled"));
     }
 
     public static ElementsCollection privilegesRows() {

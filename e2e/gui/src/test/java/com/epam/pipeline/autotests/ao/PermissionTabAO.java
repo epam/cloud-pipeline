@@ -218,6 +218,12 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
             return this;
         }
 
+        public UserPermissionsTableAO validatePrivilegesAreDisabled(Privilege...privileges) {
+            Stream.of(privileges).forEach(privilege ->
+                    privilege.isDisabled());
+            return this;
+        }
+
         @Override
         public void closeAll() {
             parentAO.closeAll();
