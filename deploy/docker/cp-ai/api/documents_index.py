@@ -13,6 +13,7 @@ EMBED_MODEL_NAME = "text-embedding-004"
 SOURCE_METADATA = "source"
 
 REPO_OWNER = "epam"
+APPLICATION_URI = "https://aws.cloud-pipeline.com/pipeline/#"
 REPO = "cloud-pipeline"
 REPO_DOCUMENTS_FOLDER = "docs/md"
 BRANCH = "develop"
@@ -21,6 +22,18 @@ DOCUMENTS_COLLECTION_NAME = "Documents"
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 github_token = os.environ["GITHUB_TOKEN"]
 chroma_db_path = os.environ["CHROMA_DB_PATH"]
+links = {
+    "tool": "/tools",
+    "pipeline": "/pipelines",
+    "storage": "/storages",
+    "dashboard": "/dashboard",
+    "active runs": "/runs/active",
+    "pausing runs": "/runs/pausing",
+    "paused runs": "/runs/paused",
+    "resuming runs": "/runs/resuming",
+    "completed runs": "/runs/completed",
+    "settings": "/settings/cli"
+}
 
 def create_index():
     chroma_client = chromadb.PersistentClient(path=chroma_db_path)
@@ -49,11 +62,28 @@ def create_index():
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     VectorStoreIndex.from_documents(documents, storage_context=storage_context)
 
+def get_link(query: str, response: str) -> str:
+    prompt = f"""Given the following question:
+    {query}
+    And the following answer:
+    {response}
+    Choose the best link to use from this list: [{links}]. 
+    If nothing suitable, return None.
+    Only reply with the link."""
+    link = llm.complete(prompt).text.strip()
+    if link != "None":
+        link = f''' Application Link:{APPLICATION_URI}{link}.'''
+    else:
+        link = ""
+    return link
+
 def query_documents(query: str) -> str:
     query_engine = _get_query_engine()
     response = query_engine.query(query)
+    link = get_link(query, str(response))
     sources = ";".join(set([s.metadata["source"] for s in response.source_nodes]))
-    result = f'''Result: <<<{response}. Sources:{sources}.>>>. Include this result into response to user. 
+    result = f'''Result: <<<{response}. Sources:{sources}.{link}>>>. 
+    Include this result into response to user. 
     IMPORTANT!!!: Always include Sources!.'''
     return result
 
