@@ -5,7 +5,7 @@
     - [1. ES6 modules](#1-es6-modules)
     - [2. Framework compatibility](#2-framework-compatibility)
     - [3. Exported functions interfaces](#3-exported-functions-interfaces)
-        - [3.1 Common types & interfaces](#31-common-types--interfaces)
+        - [3.1 Common types & interfaces](#31-common-types-and-interfaces)
         - [3.2 `renderLaunchForm`](#32-renderlaunchform)
         - [3.3 `renderLogForm`](#33-renderlogform)
     - [4. Additional resources](#4-additional-resources)
@@ -47,7 +47,7 @@ If a framework is included, the necessary libraries and dependencies should be b
 
 ### 3. Exported functions interfaces
 
-#### 3.1 Common types & interfaces
+#### 3.1 Common types and interfaces
 
 ```typescript
 /**

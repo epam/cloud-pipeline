@@ -3,6 +3,13 @@
 - [Visualization of Nextflow pipeline execution](#visualization-of-nextflow-pipeline-execution)
 - [Visualization of genomics pipeline results](#visualization-of-genomics-pipeline-results)
 - [GUI plugins framework](#gui-plugins-framework)
+- [Pre-packaged pipelines for genomics](#pre-packaged-pipelines-for-genomics)
+    - [Rnaseq](#rnaseq)
+    - [Scrnaseq](#scrnaseq)
+    - [Sarek](#sarek)
+    - [Methylseq](#methylseq)
+    - [Proteinfold](#proteinfold)
+    - [Active Learning Pipeline](#active-learning-pipeline)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -92,3 +99,70 @@ GUI plugins framework implies the following usage workflow:
     ![CP_v.0.20_ReleaseNotes](attachments/RN020_Plugins_3.png)
 
 For more details and example see [here](../../manual/11_Manage_Runs/11.7._Plugins_framework.md).
+
+## Pre-packaged pipelines for genomics
+
+In the current version, a set of pre-packaged pipelines, that could be deployed simultaneously with the Cloud Pipeline platform, was added.  
+They are pre-configured and allow users to easily execute their genomics workflows "out of the box".  
+Pre-packaged pipelines, added to the Cloud Pipeline platform within this version, are related to the [Nextflow](https://www.nextflow.io/) pipelines and include:
+
+### Rnaseq
+
+**Rnaseq** is a bioinformatics pipeline that can be used to analyse RNA sequencing data obtained from organisms with a reference genome and annotation.  
+It takes a samplesheet and FASTQ files as input, performs quality control (QC), trimming and (pseudo-)alignment, and produces a gene expression matrix and extensive QC report.
+
+![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_1.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#rnaseq).
+
+### Scrnaseq
+
+**Scrnaseq** is a bioinformatics analysis pipeline for processing 10x Genomics single-cell RNA-seq data, offering support for various alignment tools and downstream analyses, and supporting:
+
+- `SimpleAF` (`Alevin-Fry`) + `AlevinQC`
+- `STARSolo`
+- `Kallisto` + `BUStools`
+- `Cellranger`
+- `Universc`
+
+![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_2.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#scrnaseq).
+
+### Sarek
+
+**Sarek** is a workflow designed to detect variants on whole genome or targeted sequencing data.  
+Initially designed for Human, and Mouse, it can work on any species with a reference genome. Sarek can also handle tumour / normal pairs and could include additional relapses.
+
+![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_3.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#sarek).
+
+### Methylseq
+
+**Methylseq** is a bioinformatics analysis pipeline used for Methylation (Bisulfite) sequencing data.  
+It pre-processes raw data from `FastQ` inputs, aligns the reads and performs extensive quality-control on the results.
+
+![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_4.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#methylseq).
+
+### Proteinfold
+
+**Proteinfold** is a bioinformatics analysis pipeline for Protein 3D structure prediction.  
+It leverages deep learning models like `AlphaFold2`, `RoseTTAFold` and `ESMFold` to predict protein structures from amino acid sequences.  
+For sequences already existing in Protein Database, their structures are obtained from the database without a fold calculating.
+
+![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_5.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#proteinfold).
+
+### Active Learning Pipeline
+
+**Al-docking** is an active learning-driven molecular docking pipeline that ingests 3D receptor structures and a chemical compound database.  
+It iteratively performs docking simulations (`QuickVina`) and trains machine learning models (`DGL`, `PyTorch`) over protein structure files to prioritize promising ligands, producing docking score prediction results, trained models, and a summary report with progress through iteration figures.  
+Totally, it allows to predict drug candidates using active learning from a set of small molecule 2D input structures or protein structure files.
+
+![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_6.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#active-learning-pipeline).
