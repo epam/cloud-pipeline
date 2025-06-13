@@ -23,7 +23,6 @@ from datetime import datetime
 import sqlite3
 
 ROLE_ASSISTANT = "assistant"
-APPLICATION_URI = "https://aws.cloud-pipeline.com/pipeline/"
 
 # Configure logging
 logging_level = logging.DEBUG
@@ -71,10 +70,11 @@ app.add_middleware(
 #os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY"  # add your GOOGLE API key here
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 cp_api_token = os.environ["API_TOKEN"]
+cp_api = os.environ["API"]
 
 def get_all_pipelines():
     headers = {"Authorization": f"Bearer {cp_api_token}"}
-    cp_api_url = f"{APPLICATION_URI}restapi/pipeline/loadAll"
+    cp_api_url = f"{cp_api}pipeline/loadAll"
     response = requests.get(cp_api_url, headers=headers)
     if response.status_code != 200:
         print("Error:", ' API responded with http status %s.' % str(response.status_code))
