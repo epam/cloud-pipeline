@@ -19,30 +19,12 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Link} from 'react-router';
 import {TypingIndicator} from '../index';
 import LaunchForm from '../launch-form/launch-form';
 import Markdown from '../../../special/markdown';
 import {processMessage} from './message-utils';
 import styles from './message.css';
-import StatusIcon from '../../../special/run-status-icon';
-
-const mockParameters = (value) => {
-  const parameters = {
-    Reference_Path: {type: 'string', value: 'Some value'},
-    Boolean_Type_Parameter: {type: 'boolean', value: true},
-    Path_To_File: {type: 'path', value: '/path/to/file'},
-    Another_Path_Parameter: {type: 'path', value: '/another/path'}
-  };
-  if (!value.parameters || Object.keys(value.parameters).length === 0) {
-    return {
-      ...value,
-      pipelineId: 1966,
-      parameters
-    };
-  }
-  return value;
-};
+import RunStatusMessage from './run-status-message';
 
 @observer
 export default class Message extends React.Component {
@@ -65,28 +47,6 @@ export default class Message extends React.Component {
     }
   };
 
-  renderRunStatusMessage = () => {
-    const {aclClass = '', name, taskName} = this.message.run;
-    const runType = aclClass.toLowerCase();
-    const runName = runType === 'pipeline'
-      ? `${name || taskName}-${this.message.run.id}`
-      : name || taskName;
-    return (
-      <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
-        <StatusIcon
-          run={this.message.run}
-          small
-          status="RUNNING"
-        />
-        <span style={{textTransform: 'capitalize'}}>{runType}</span>
-        <Link to={`run/${this.message.run.id}`}>
-          {runName}
-        </Link>
-        was successfully launched!
-      </div>
-    );
-  };
-
   renderContent = () => {
     if (this.message.fromUser) {
       return <span style={{whiteSpace: 'pre-line'}}>{this.message.text}</span>;
@@ -99,7 +59,7 @@ export default class Message extends React.Component {
       );
     }
     if (!this.message.fromUser && this.message.run) {
-      return this.renderRunStatusMessage();
+      return <RunStatusMessage run={this.message.run} />;
     }
     if (this.message.parts?.length > 0) {
       return (
@@ -119,7 +79,7 @@ export default class Message extends React.Component {
               return (
                 <LaunchForm
                   key={index}
-                  data={mockParameters(part.value)}
+                  data={part.value}
                   onRunSuccess={this.handleRunSuccess}
                   className={noBorder}
                 />

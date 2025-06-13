@@ -71,19 +71,33 @@ function extractJsonFromText (message) {
   return payload;
 }
 
+function processLinks (message) {
+  const variants = [
+    [';https://', 'https://'],
+    [';http://', 'http://'],
+    ['http://', '\n\nhttp://'],
+    ['https://', '\n\nhttps://']
+  ];
+  let text = message.text || '';
+  variants.forEach(([pattern, replacement]) => {
+    text = text.replaceAll(pattern, replacement);
+  });
+  return {
+    ...message,
+    text
+  };
+}
+
 export function processMessage (message) {
   if (message.fromUser) {
     return message;
   }
-
-  const {text, payload} = extractJsonFromText(message) || {};
-
+  const messageWithLinks = processLinks(message);
+  const {text, payload} = extractJsonFromText(messageWithLinks) || {};
   if (!payload) {
-    return {...message, parts: []};
+    return {...messageWithLinks, parts: []};
   }
-
-  const textParts = message.text.split(text);
-
+  const textParts = text.split(text);
   const parts = textParts.flatMap((part, index) => {
     if (textParts.length > 1 && index === 0) {
       return [
@@ -91,9 +105,7 @@ export function processMessage (message) {
         {isPayload: true, value: payload}
       ];
     }
-
     return [{isText: true, value: part, hasText: part.trim().length > 0}];
   });
-
-  return {...message, parts};
+  return {...messageWithLinks, parts};
 }

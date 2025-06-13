@@ -25,13 +25,14 @@ const getToken = () => {
   return token;
 };
 
-const base = 'https://edge.aws.cloud-pipeline.com/pipeline-74844-7860-0/';
+const base = 'https://edge.aws.cloud-pipeline.com/pipeline-75485-7860-0/';
 const socketIOUrl = new URL('socket.io', base);
 
 class ChatEngine {
   @observable _messages = [];
   @observable _pending = false;
   @observable _socket;
+  @observable _chatId;
 
   @computed
   get messages () {
@@ -57,7 +58,7 @@ class ChatEngine {
       pending: false
     };
     this._messages.push(message);
-    this.sendUserMessage();
+    this.sendUserMessage(message);
   };
 
   @action
@@ -73,8 +74,30 @@ class ChatEngine {
     this._messages.push(systemMessage);
   };
 
+  postMessage = async (message) => {
+    const fetchOptions = {
+      mode: 'cors',
+      credentials: 'include',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8;'
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: message.text
+      })
+    };
+    const response = await fetch(
+      `${base}chat/${this._chatId}/message`,
+      fetchOptions
+    );
+    if (response.error) {
+      this.error = response.error;
+    }
+  };
+
   @action
-  sendUserMessage = async () => {
+  sendUserMessage = async (message) => {
     this._pending = true;
     const responseMessage = observable({
       text: '',
@@ -86,14 +109,10 @@ class ChatEngine {
     });
     this._messages.push(responseMessage);
     try {
-      await this.createChat(responseMessage);
+      await this.initializeChat(responseMessage);
+      await this.postMessage(message);
       this._socket.emit('assistant', {
-        messages: this.messages
-          .filter(message => message !== responseMessage)
-          .map(message => ({
-            content: message.text,
-            role: message.fromUser ? 'user' : 'assistant'
-          }))
+        'chat_id': this._chatId
       });
     } catch (e) {
       this._pending = false;
@@ -146,16 +165,47 @@ class ChatEngine {
 
   @action
   destroy = () => {
-    this._messages = [];
     this._pending = false;
-    token = 0;
     if (this._socket) {
       this._socket.close();
       this._socket = null;
     }
   }
 
-  createChat = async (responseMessage) => {
+  @action
+  clear = () => {
+    this._pending = false;
+    this._messages = [];
+    this._chatId = undefined;
+    if (this._socket) {
+      this._socket.close();
+      this._socket = null;
+    }
+  };
+
+  registerNewChat = async () => {
+    const fetchOptions = {
+      mode: 'cors',
+      credentials: 'include',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8;'
+      },
+      body: JSON.stringify({})
+    };
+    const response = await fetch(`${base}chat`, fetchOptions);
+    if (response.error) {
+      this.error = response.error;
+      return;
+    }
+    const id = await response.json();
+    this._chatId = id;
+  };
+
+  initializeChat = async (responseMessage) => {
+    if (!this._chatId) {
+      await this.registerNewChat();
+    }
     const waitUntilConnect = () => new Promise((resolve, reject) => {
       const errorGenerator = (socketError) => () => {
         reject(new Error(socketError));
@@ -172,7 +222,7 @@ class ChatEngine {
       }
       this._socket = io(socketIOUrl.origin, {
         withCredentials: true,
-        // secure: true,
+        secure: true,
         path: socketIOUrl.pathname,
         transports: ['websocket']
       });

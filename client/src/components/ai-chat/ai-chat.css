@@ -20,6 +20,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
+  position: relative;
 }
 
 .input-field-area {
@@ -64,8 +65,6 @@
   max-width: 1200px;
   min-height: 100%;
   margin: 0 auto;
-  /* margin-bottom: 15px;
-  padding-bottom: 30px; */
   padding: 10px 10px 0;
 }
 
@@ -85,4 +84,11 @@
 .down-button.visible {
   top: -30px;
   opacity: 1;
+}
+
+.clear-button {
+  position: absolute;
+  top: -23px;
+  left: 0px;
+  white-space: nowrap;
 }

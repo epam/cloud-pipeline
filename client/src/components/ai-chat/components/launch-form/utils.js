@@ -31,7 +31,7 @@ export function getToolConfiguration (configurationName = '', toolVersion) {
 }
 
 export function getLaunchMode (data = {}) {
-  if (data.pipelineId !== undefined) {
+  if (data.pipelineId !== undefined || data.pipelineName) {
     return LAUNCH_MODES.pipeline;
   }
   return LAUNCH_MODES.tool;

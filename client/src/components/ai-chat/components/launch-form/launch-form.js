@@ -35,9 +35,10 @@ import {LAUNCH_MODES} from './utils';
 import GetPipelineVersions from '../../../../models/pipelines/Version';
 import PipelineConfigurations from '../../../../models/pipelines/PipelineConfigurations';
 
-const DEFAULT_REGISTRY_ID = 1; // Default registry
+const DEFAULT_REGISTRY_ID = 1;
 
 @inject(
+  'allowedInstanceTypes',
   'dockerRegistries',
   'awsRegions',
   'router',
@@ -188,10 +189,21 @@ export default class LaunchForm extends React.Component {
 
   initializePipelineData = async () => {
     const {data, pipelines} = this.props;
-    const {pipelineId} = data;
+    const {pipelineId, pipelineName} = data;
+    await pipelines.fetchIfNeededOrWait();
+    const rawPipeline = pipelines.value.find(pipeline => {
+      return pipelineId
+        ? pipeline.id === pipelineId
+        : pipeline.name === pipelineName;
+    });
+    if (!rawPipeline) {
+      // eslint-disable-next-line max-len
+      this.formStore._error = `Pipeline ${pipelineId || pipelineName} not found!`;
+      return;
+    }
     const [pipelineRequest, versionsRequest] = [
-      pipelines.getPipeline(pipelineId),
-      new GetPipelineVersions(pipelineId)
+      pipelines.getPipeline(rawPipeline.id),
+      new GetPipelineVersions(rawPipeline.id)
     ];
     await Promise.all([
       pipelineRequest,
@@ -206,7 +218,7 @@ export default class LaunchForm extends React.Component {
     if (!version) {
       version = versions.find(v => v.name === pipeline.currentVersion?.name);
     }
-    const configurations = new PipelineConfigurations(data.pipelineId, version.name);
+    const configurations = new PipelineConfigurations(pipeline.id, version.name);
     await configurations.fetch();
     let configuration = (configurations.value || []).find(c => c.name === data.configuration);
     if (!configuration) {
@@ -225,7 +237,7 @@ export default class LaunchForm extends React.Component {
     if (!data) {
       return;
     }
-    if (data.pipelineId !== undefined) {
+    if (data.pipelineId !== undefined || data.pipelineName !== undefined) {
       return this.initializePipelineData();
     }
     return this.initializeToolData();
@@ -326,7 +338,7 @@ export default class LaunchForm extends React.Component {
         platform
       );
       hide();
-      this.setState({launchPending: undefined});
+      this.setState({launchPending: false});
       if (runInfo) {
         this.formStore.setRunLaunched(true);
         onRunSuccess && onRunSuccess(runInfo);
@@ -336,12 +348,14 @@ export default class LaunchForm extends React.Component {
 
   runPipeline = () => {
     this.setState({launchPending: true}, async () => {
-      const {data, onRunSuccess} = this.props;
-      const {pipelineId} = data;
+      const {onRunSuccess} = this.props;
+      const {id} = this.formStore.pipeline;
       const {environment, pipelineConfiguration} = this.formStore;
       const {configuration} = pipelineConfiguration;
+      const cloudRegionIdValue = this.defaultCloudRegionId;
       const payload = {
-        pipelineId,
+        cloudRegionId: +configuration.cloudRegionId || cloudRegionIdValue,
+        pipelineId: id,
         dockerImage: configuration.docker_image,
         instanceType: environment.instanceType,
         hddSize: Number(environment.disk || configuration.instance_disk),
@@ -349,13 +363,13 @@ export default class LaunchForm extends React.Component {
         params: this.formStore.parameters,
         isSpot: environment.isSpot
       };
-      const cloudRegionIdValue = this.defaultCloudRegionId;
-      const allowedInstanceTypesRequest = new AllowedInstanceTypes({
-        toolId: configuration.docker_image,
-        regionId: cloudRegionIdValue,
-        spot: environment.isSpot
+      const allowedInstanceTypesRequest = new AllowedInstanceTypes();
+      allowedInstanceTypesRequest.setParameters({
+        isSpot: this.formStore.is_spot,
+        regionId: configuration.cloudRegionId,
+        requestAllRegionsForProviders: ['GCP']
       });
-      await allowedInstanceTypesRequest.fetch();
+      await allowedInstanceTypesRequest.fetchIfNeededOrWait();
       const platform = this.formStore.pipelineVersion.platform;
       const runInfo = await run(this)(
         payload,
@@ -366,7 +380,7 @@ export default class LaunchForm extends React.Component {
         undefined,
         platform
       );
-      this.setState({pending: false});
+      this.setState({launchPending: false});
       if (runInfo) {
         this.formStore.setRunLaunched(true);
         onRunSuccess && onRunSuccess(runInfo);
@@ -388,7 +402,7 @@ export default class LaunchForm extends React.Component {
       return <Alert type="error" message={this.formStore.error} />;
     }
     if (this.formStore.pending) {
-      return <Spin />;
+      return <Spin style={{minHeight: 183}} />;
     }
 
     return (

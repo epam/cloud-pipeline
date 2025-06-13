@@ -208,6 +208,11 @@ export default class AIChat extends React.Component {
             )}
             onClick={this.scrollToBottom}
           />
+          {this.chat.messages?.length ? (
+            <a className={styles.clearButton} onClick={this.chat.clear}>
+              Clear chat
+            </a>
+          ) : null}
           <InputField
             value={userInput}
             onChange={this.onChangeUserInput}

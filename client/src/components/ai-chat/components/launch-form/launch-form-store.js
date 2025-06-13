@@ -124,12 +124,6 @@ class LaunchFormStore {
       ) || {};
       this._configuration = configuration;
     }
-    console.log('INITIALIZE', {
-      data,
-      toolInfo,
-      toolVersion,
-      versions
-    });
     this._toolInfo = toolInfo;
     this._toolVersion = toolVersion;
     this._pipelineConfiguration = pipelineConfiguration;
