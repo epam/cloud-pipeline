@@ -45,7 +45,7 @@ spec:
                 - /bin/sh
                 - -c
                 - /liveness-mlflow.sh
-            initialDelaySeconds: 300
+            initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             exec:
