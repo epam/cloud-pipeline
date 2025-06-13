@@ -379,7 +379,9 @@ export default class EditToolForm extends React.Component {
             }
           }
         }
+        const initialConfiguration = this.props.configuration || {};
         const configuration = {
+          ...initialConfiguration,
           parameters,
           node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
           cloudRegionId: values.cloudRegionId === regionNotConfiguredValue
@@ -570,7 +572,7 @@ export default class EditToolForm extends React.Component {
           ? getGPUScalingSkippedParameters(this.props.preferences)
           : [];
         const kubeLabels = Object
-          .entries((this.props.configuration || {}).kubeLabels || {})
+          .entries((props.configuration || {}).kubeLabels || {})
           .map(([key, value]) => ({key, value}));
         state.kubeLabels = kubeLabels;
         state.initialKubeLabels = kubeLabels;
