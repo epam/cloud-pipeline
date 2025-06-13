@@ -15,6 +15,7 @@ from llama_index.core.tools import FunctionTool
 from llama_index.core.agent import (FunctionCallingAgentWorker, ReActAgent)
 from pydantic import Field, BaseModel
 from typing import Optional
+import requests
 
 from api.documents_index import query_documents
 import datetime
@@ -22,6 +23,7 @@ from datetime import datetime
 import sqlite3
 
 ROLE_ASSISTANT = "assistant"
+APPLICATION_URI = "https://aws.cloud-pipeline.com/pipeline/"
 
 # Configure logging
 logging_level = logging.DEBUG
@@ -68,18 +70,41 @@ app.add_middleware(
 
 #os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY"  # add your GOOGLE API key here
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
+cp_api_token = os.environ["API_TOKEN"]
+
+def get_all_pipelines():
+    headers = {"Authorization": f"Bearer {cp_api_token}"}
+    cp_api_url = f"{APPLICATION_URI}restapi/pipeline/loadAll"
+    response = requests.get(cp_api_url, headers=headers)
+    if response.status_code != 200:
+        print("Error:", ' API responded with http status %s.' % str(response.status_code))
+        return []
+    data = response.json().get("payload")
+    if data:
+        result = [{"name": item["name"], "id": item["id"]} for item in data]
+        return result
+    return []
+
+def get_pipeline_id(pipeline_name: str) -> str:
+    pipelines = get_all_pipelines()
+    prompt = f"""Given the following pipeline name:
+    {pipeline_name}
+    Choose the best pipeline id to use from this list: [{pipelines}]. 
+    If nothing suitable, return None.
+    Only reply with the id."""
+    return llm.complete(prompt).text.strip()
 
 def get_command_to_run_compute_instance(
-        pipeline_name: str = Field (
-            description="""
-        Defines a pipeline name to be used for user's compute task.
-        This parameter is optional, if not specified in the user prompt leave value empty.
-        """
-        ),
         docker_image_name: str = Field(
             description="""
         Defines a docker image name to be used for the user's compute task.
         This parameter is optional, if not specified in the user prompt use default value: 'library/rockylinux:latest'.
+        """
+        ),
+        pipeline_name: str = Field (
+            description="""
+        Defines a pipeline name to be used for user's compute task.
+        This parameter is optional, if not specified in the user prompt leave value empty.
         """
         ),
         compute_instance_size: str = Field(
@@ -166,7 +191,11 @@ def get_command_to_run_compute_instance(
         "is_spot": False,
         "parameters": params
     }
-    if pipeline_name:
+
+    pipeline_id = get_pipeline_id(pipeline_name)
+    if pipeline_id != "None":
+        start_command["pipelineId"] = pipeline_id
+    else:
         start_command["pipelineName"] = pipeline_name
 
     json_str = json.dumps(start_command)
