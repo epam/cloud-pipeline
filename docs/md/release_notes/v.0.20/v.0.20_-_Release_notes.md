@@ -10,6 +10,8 @@
     - [Methylseq](#methylseq)
     - [Proteinfold](#proteinfold)
     - [Active Learning Pipeline](#active-learning-pipeline)
+- [System logs: Google Cloud Logging integration](#system-logs-google-cloud-logging-integration)
+- [Resource monitoring: Google Cloud Monitoring integration](#resource-monitoring-google-cloud-monitoring-integration)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -166,3 +168,66 @@ Totally, it allows to predict drug candidates using active learning from a set o
 ![CP_v.0.20_ReleaseNotes](attachments/RN020_PrePackagedPipeline_6.png)
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#active-learning-pipeline).
+
+## System logs: Google Cloud Logging integration
+
+In Cloud Pipeline, [Security logging](../../manual/12_Manage_Settings/12.12._System_logs.md) is supported.  
+Platform records audit trail events like:
+
+- users' authentication attempts
+- users' profiles modifications
+- platform objects' permissions management
+- access to interactive applications from pipeline runs
+- access to the data
+
+Previously, only one approach for such logging was supported - logs were collected/managed to the index database (based on `ElasticSearch`) and backed up to the preconfigured data storage.
+
+In **`v0.20`**, new approach is implemented - ability to switch logging to [`Google Cloud Logging`](https://cloud.google.com/logging/docs/overview) was added.  
+In case of enabled `Google Cloud Logging`:
+
+- [`Ops Agent`](https://cloud.google.com/logging/docs/agent/ops-agent) is used to collect log data from the Cloud Pipeline platform deployment to the linked Google Cloud project
+- [`BigQuery`](https://cloud.google.com/bigquery) dataset within Sink connector is used to access, manage and store logs
+- in terms of the **System logs** usage and the GUI, for the end user everything remains the same  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_SystemLogs_1.png)
+
+Switching between `Google Cloud Logging` and `ElasticSearch` is enabled via a configuration flag in application properties - system administrators should set **`logging.provider=gcp`** or **`logging.provider=elastic`** to select a provider for system logs.
+
+Besides, new **System Preferences** were added to have the ability to configure `Google Cloud Logging` in the Cloud Pipeline platform:
+
+- **`gcp.logging.log.name`** - logname for Google Cloud Logging
+- **`gcp.logging.sink.label.key`** - key of the label that defines from where the log comes. It is necessary for the Sink connector that redirects the log to `BigQuery`
+- **`gcp.logging.sink.label.value`** - value of the label that defines from where the log comes. It is necessary for the Sink connector that redirects the log to `BigQuery`
+- **`gcp.logging.bigquery.table.name`** - specifies the `BigQuery` project table name
+- **`gcp.logging.bigquery.read.timeout.mills`** - sets the read timeout (in milliseconds) for `BigQuery` read operations
+- **`gcp.logging.bigquery.connect.timeout.mills`** - sets the connection timeout (in milliseconds) for the `BigQuery` client
+- **`gcp.logging.bigquery.max.bytes`** - sets the maximum limit (in bytes) that could be fetched per request
+
+## Resource monitoring: Google Cloud Monitoring integration
+
+In Cloud Pipeline, lots of metrics to monitor cluster compute nodes are collected.  
+For users, these metrics are available via the [**Cluster Monitor**](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor) form.  
+
+Previously, built-in `Kubernetes` functionality was used to monitor compute nodes metrics.
+
+In **`v0.20`**, new ability is integrated to the Cloud Pipeline platform - [`Google Cloud Monitoring`](https://cloud.google.com/monitoring) to monitor metrics on Google Compute Engine nodes.  
+In case of `Google Cloud Monitoring`:
+
+- metrics are collected within built-in Google Cloud services (for such metrics like CPU utilization and Network traffic tracking) and special [`Ops Agent`](https://cloud.google.com/monitoring/api/metrics_opsagent) (for such metrics like memory and disk usage)
+- the following metrics are monitored:
+    - `CPU Utilization`: load and `max` usage
+    - `Memory Usage`: used and `max` memory
+    - `Disk Usage`: per-device capacity and free space
+    - `Network Traffic`: sent/received bytes summary
+    - `GPU Utilization`: `avg`, `min`, `max` usages
+    - `GPU Memory Usage`: `avg`, `min`, `max` memory
+    - `GPU Processes Utilization`: `avg`, `min`, `max` usages
+- in terms of the **Cluster Monitor** usage and the GUI, for the end user everything remains the same  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_MetricsMonitoring_1.png)
+
+Besides, new **System Preferences** were added to have the ability to configure `Google Cloud Monitoring` in the Cloud Pipeline platform:
+
+- **`cluster.monitoring.gcp.intervals.number`** - sets a number of intervals in monitoring period by which metrics should be received
+- **`cluster.monitoring.gcp.minimal.interval`** - defines minimum interval (in seconds) between metrics taking.  
+    This interval duration will be used for metrics taking only in case when monitoring period divided on `cluster.monitoring.gcp.intervals.number` is smaller than this interval
+
+For more technical details about metrics getting, see [here](https://github.com/epam/cloud-pipeline/issues/3969#issuecomment-2879486629).
