@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>6.5. Pipeline configuration - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "6.5. Pipeline configuration";
+        var mkdocs_page_input_path = "manual/06_Manage_Pipeline/6.5._Pipeline_configuration.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">6. Manage Pipeline</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">6.5. Pipeline configuration</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#configjson">config.json</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#parameters-section">Parameters section</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="#">Cloud native</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" href="#">AWS</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="" href="../../../installation/management/environments_sync.md">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="" href="../../../installation/support_windows_runs.md">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>6. Manage Pipeline &raquo;</li>
+      <li>6.5. Pipeline configuration</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="65-pipeline-configuration-details">6.5. Pipeline configuration details</h1>
+<ul>
+<li><a href="#configjson"><code>config.json</code></a><ul>
+<li><a href="#parameters-section">Parameters section</a><ul>
+<li><a href="#enum-type-features"><code>Enum</code> type features</a></li>
+<li><a href="#metadata-type-features"><code>Metadata</code> type features</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="configjson"><code>config.json</code></h2>
+<p>This file contains description of all pipeline's configs. Each config defines pipeline's execution parameters and settings that shall be used for the pipeline run.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: we advise to modify pipeline execution settings via <a href="../6._Manage_Pipeline/#configuration">CONFIGURATION tab</a> for default pipeline configuration or via <a href="../6.2._Launch_a_pipeline/">Launch pipeline page</a> for pipeline settings for a current run.<br />
+Manual <strong><code>config.json</code></strong> editing is more suitable for advanced users (primarily developers).</p>
+</blockquote>
+<p>This file has <code>JSON</code> format and for an empty newly pipeline looks like the following:</p>
+<pre><code class="language-json">[{
+  &quot;name&quot; : &quot;default&quot;,
+  &quot;default&quot; : true,
+  &quot;description&quot; : &quot;Initial default configuration&quot;,
+  &quot;configuration&quot; : {
+    &quot;main_file&quot; : &quot;pipelineexample.sh&quot;,
+    &quot;instance_size&quot; : &quot;m5.large&quot;,
+    &quot;instance_disk&quot; : &quot;20&quot;,
+    &quot;docker_image&quot; : &quot;library/centos:7&quot;,
+    &quot;cmd_template&quot; : &quot;chmod +x $SCRIPTS_DIR/src/[main_file] &amp;&amp; $SCRIPTS_DIR/src/[main_file]&quot;,
+    &quot;parameters&quot;: {}
+  }
+}]
+</code></pre>
+<p>Possible pipeline settings and attributes that could be specified via that configuration file:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Setting name</th>
+<th>Description</th>
+<th>Value</th>
+<th>Analog in GUI (<strong>CONFIGURATION</strong> tab)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>name</code></strong></td>
+<td></td>
+<td>Name of the pipeline config</td>
+<td><em>String</em><br>Example: <code>default</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_01.png" /></td>
+</tr>
+<tr>
+<td><strong><code>default</code></strong></td>
+<td></td>
+<td>Whether the config is default for the current pipeline</td>
+<td><em>Boolean</em></td>
+<td>Default config is being opened and used for pipeline runs by default</td>
+</tr>
+<tr>
+<td><strong><code>description</code></strong></td>
+<td></td>
+<td>Description the pipeline config</td>
+<td><em>String</em></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>configuration</code></strong></td>
+<td></td>
+<td>Container for the current config settings</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>main_file</code></strong></td>
+<td>Pipeline's main script file name</td>
+<td><em>String</em><br>Example: <code>pipelineexample.sh</code></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>instance_size</code></strong></td>
+<td>Instance type in terms of the specific Cloud Provider</td>
+<td><em>String</em><br>Example: <code>m5.large</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_02.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>instance_disk</code></strong></td>
+<td>Instance's disk size in Gb</td>
+<td><em>Float</em><br>Example: <code>25</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_03.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>docker_image</code></strong></td>
+<td>Name of the Docker image that will be used for the pipeline run.<br>Name can be specified without Docker Registry path, in short format:<br><code>&lt;Tools_group&gt;/&lt;Tool_name&gt;:&lt;Version&gt;</code></td>
+<td><em>String</em><br>Example: <code>library/centos:7</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_04.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>cmd_template</code></strong></td>
+<td>Command template that will be executed in the pipeline run after all initializations.<br><br>Template can use environment variables:<br />- to address the <strong>main_file</strong>, use <strong><code>[main_file]</code></strong><br>- to address other variables, use <strong><code>$&lt;VARIABLE_NAME&gt;</code></strong>, e.g. <code>$SCRIPTS_DIR</code></td>
+<td><em>String</em></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_05.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>parameters</code></strong></td>
+<td>Container for the pipeline execution parameters.<br>See details <a href="#parameters-section">below</a></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="parameters-section">Parameters section</h3>
+<p>Parameters section - it is <code>parameters</code> container inside <code>configuration</code> container of the pipeline config in <strong><code>config.json</code></strong> file.<br />
+This section defines execution parameters that will be used during a pipeline run.<br />
+Via these parameters, path for input or output data, sample name or some custom flag, etc. can be specified that will be used during the pipeline execution.</p>
+<p>Example of that section:</p>
+<pre><code class="language-json">...
+&quot;parameters&quot; : {
+    &quot;InputData&quot; : {
+        &quot;value&quot; : &quot;s3://testexamplestorage/input&quot;,
+        &quot;type&quot; : &quot;input&quot;,
+        &quot;section&quot; : &quot;other&quot;,
+        &quot;required&quot; : false,
+        &quot;no_override&quot; : false
+    },
+    &quot;FastqAvailabilityFlag&quot; : {
+        &quot;pretty_name&quot; : &quot;FASTQ availability&quot;,
+        &quot;value&quot; : &quot;true&quot;,
+        &quot;type&quot; : &quot;boolean&quot;,
+        &quot;section&quot; : &quot;other&quot;,
+        &quot;required&quot; : false
+    }
+}
+...
+</code></pre>
+<p>Each parameter has a name and a set of attributes/settings that affect parameter view and behavior in GUI before the run and how parameter shall be resolved during the run.<br />
+In <strong><code>config.json</code></strong> file, each parameter is described as container with the name corresponds to the parameter name, and all parameter attributes inside that container, i.e.:</p>
+<pre><code class="language-json">&quot;&lt;PARAMETER_NAME&gt;&quot; : {
+    &quot;value&quot; : &quot;&lt;PARAMETER_VALUE&gt;&quot;,
+    &quot;type&quot; : &quot;&lt;PARAMETER_TYPE&gt;&quot;,
+    ...
+}
+...
+</code></pre>
+<p>Possible parameter settings and attributes that could be specified via that configuration file:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute name</th>
+<th>Description</th>
+<th>Value</th>
+<th>View in GUI (CONFIGURATION tab / Launch form)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>value</code></strong></td>
+<td>Parameter value.<br><br>Attribute may be omitted, then the corresponding field in the GUI will be left empty for manual input</td>
+<td><em>String</em></td>
+<td>For example, <code>"value" : "SR133451"</code> will be shown as:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_06.png" /><br><br>If <code>value</code> attribute was not specified in the <strong><code>config.json</code></strong>,<br>such parameter will be shown with empty field:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_12.png" /></td>
+</tr>
+<tr>
+<td><strong><code>type</code></strong></td>
+<td>Parameter type</td>
+<td><em>One of these</em>:</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>For parameters with generic scalar values</td>
+<td><code>string</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_26.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_06.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For parameters with multiple predefined scalar values.<br>In GUI, such parameter field is displayed as dropdown list, where one value can be selected.<br><br>To specify all numeration values, additional attribute shall be used in format:<br><code>"enum" : ["&lt;ENUM_VALUE1&gt;", "&lt;ENUM_VALUE2&gt;", ...]</code>, where <code>&lt;ENUM_VALUE&gt;</code> - enumeration value.<br><br><strong><em>Note</em></strong>: for additional features of <code>enum</code> type see <a href="#enum-type-features">below</a>.</td>
+<td><code>enum</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_27.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_20.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For parameters with boolean values</td>
+<td><code>boolean</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_28.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_07.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For specifying a path in a data storage hierarchy</td>
+<td><code>path</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_29.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_08.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For specifying an input path in a data storage hierarchy.<br>During the pipeline initialization, this path will be used to download input data to the node for processing</td>
+<td><code>input</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_30.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_09.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For specifying an output path in a data storage hierarchy.<br>During the pipeline finalization, this path will be used to upload resulting data to the storage</td>
+<td><code>output</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_31.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_10.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For specifying a common path in a data storage hierarchy.<br>Similar to <code>input</code> type, but this data will not be erased from a calculation node,<br>when a pipeline is finished. This is useful for data that can be reused by further pipeline runs</td>
+<td><code>common</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_32.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_11.png" /></td>
+</tr>
+<tr>
+<td></td>
+<td>For loading parameter value from metadata entity.<br><br><strong><em>Note</em></strong>: for additional details about value format of <code>metadata</code> type values see <a href="#metadata-type-features">below</a>.</td>
+<td><code>metadata</code></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_33.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_13.png" /></td>
+</tr>
+<tr>
+<td><strong><code>description</code></strong></td>
+<td>Parameter description.<br>It is not processed anyhow, but just shown as parameter help</td>
+<td><em>String</em></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_34.png" /><br><br>If parameter has a description, it is displayed under parameter field:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_18.png" /></td>
+</tr>
+<tr>
+<td><strong><code>required</code></strong></td>
+<td>Defines whether this parameter must be set or not.<br>If <code>true</code>, parameter value can't be left empty or removed, and must be specified before the launch.<br>If <code>false</code>, parameter value can be left empty or removed</td>
+<td><em>Boolean</em></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_14.png" /></td>
+</tr>
+<tr>
+<td><strong><code>visible</code></strong></td>
+<td>Defines whether this parameter is visible in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form or not.<br>If <code>true</code>, parameter will be visible as usual.<br>If <code>false</code>, parameter will not be visible in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form,<br> but parameter will be normally used during the run and visible on the <a href="../../11_Manage_Runs/11._Manage_Runs/#parameters"><strong>Run logs</strong></a> page.<br><br>Also, value of <code>visible</code> attribute can be an expression over some parameter value that results to <code>true</code> or <code>false</code>.<br>Expression format shall be:<br>- <code>&lt;PARAMETER_NAME1&gt; &lt;OPERAND&gt; &lt;PARAMETER_NAME2&gt;</code> or several such sequences linked by <code>&lt;OPERAND&gt;</code><br>- or <code>&lt;PARAMETER_NAME1&gt; &lt;OPERAND&gt; &lt;COMPARED_VALUE&gt;</code> or several such sequences linked by <code>&lt;OPERAND&gt;</code><br>Where:<br>- <code>&lt;PARAMETER_NAME&gt;</code> - parameter which value used for expression calculation<br>- <code>&lt;COMPARED_VALUE&gt;</code> - strings in quotas, numbers<br>- <code>&lt;OPERAND&gt;</code> - logical operands: <code>&amp;&amp;</code> (<em>AND</em>), <code>&#124;&#124;</code> (<em>OR</em>), <code>==</code> (<em>equals</em>), <code>!=</code> (<em>not equals</em>)<br>or condition operands: <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></td>
+<td><em>String</em></td>
+<td>Such parameter will not be visible in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_21.png" /><br><br>Such parameter will be visible only if other parameter (<code>SampleNameExtra</code>)<br>will have a specific value (<code>SR133458</code>):<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_22.png" /></td>
+</tr>
+<tr>
+<td><strong><code>no_override</code></strong></td>
+<td>Defines whether parameter's default value from config will be immutable<br>in the <a href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">detached configuration</a> that uses this pipeline.<br>If <code>true</code> and parameter has a value - that value will be read-only.<br>If <code>false</code> and parameter has a value - that value will be rewritable.<br>If parameter has no default value, this option is ignored</td>
+<td><em>Boolean</em></td>
+<td>In the detached configuration, that uses a pipeline:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_15.png" /></td>
+</tr>
+<tr>
+<td><strong><code>pretty_name</code></strong></td>
+<td>Defines a pretty name (alias) for the parameter,<br>that will be shown near the parameter field in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form.<br><br><strong><em>Note</em></strong>: during the pipeline script execution, original parameter name will be used</td>
+<td><em>String</em></td>
+<td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_35.png" /><br><br>If attribute is set, pretty name is shown near the parameter:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_16.png" /><br>Original name can be viewed:<br>- in a tooltip on the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form<br>- on the <a href="../../11_Manage_Runs/11._Manage_Runs/#parameters"><strong>Run logs</strong></a> page during the run:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_17.png" /></td>
+</tr>
+<tr>
+<td><strong><code>section</code></strong></td>
+<td>Allows to group different parameters in sections in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form.<br>Parameters with the same <code>section</code> will be located in one area with the corresponding header.<br><br><strong><em>Note</em></strong>: for parameters created via the GUI, this attribute is set as <code>"section" : "other"</code></td>
+<td><em>String</em></td>
+<td>For example:<br>- for first 2 parameters <code>"section" : "Samples"</code> is set<br>- for another 2 parameters <code>"section" : "Paths"</code> is set<br>- for others <code>"section" : "Other"</code> is set<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_19.png" /><br><br>You can use corresponding controls (hyperlinks) in the left upper corner<br>of the parameters section to navigate/focus on the specific section.</td>
+</tr>
+<tr>
+<td><strong><code>validation</code></strong></td>
+<td>Allows to configure parameters validation according to values specified via the GUI.<br>Attribute presents an array of containers, each with structure <code>{"throw", "message"}</code>, where:<br>- <code>throw</code> - expression to test based on parameter(s) value(s)<br>- <code>message</code> - message that will be shown if <code>throw</code> expression is <code>true</code><br><br>Format of <code>throw</code> expression shall be:<br>- <code>&lt;PARAMETER_NAME1&gt; &lt;OPERAND&gt; &lt;PARAMETER_NAME2&gt;</code> or several such sequences linked by <code>&lt;OPERAND&gt;</code><br>- or <code>&lt;PARAMETER_NAME1&gt; &lt;OPERAND&gt; &lt;COMPARED_VALUE&gt;</code> or several such sequences linked by <code>&lt;OPERAND&gt;</code><br>- or <code>/&lt;REGEX&gt;/.test(&lt;PARAMETER_NAME&gt;)</code><br>Where:<br>- <code>&lt;PARAMETER_NAME&gt;</code> - parameter which value used for expression calculation<br>- <code>&lt;REGEX&gt;</code> - regular expression<br>- <code>&lt;COMPARED_VALUE&gt;</code> - strings in quotas, numbers<br>- <code>&lt;OPERAND&gt;</code> - logical operands: <code>&amp;&amp;</code> (<em>AND</em>), <code>&#124;&#124;</code> (<em>OR</em>), <code>==</code> (<em>equals</em>), <code>!=</code> (<em>not equals</em>)<br>or condition operands: <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></td>
+<td><em>Array</em></td>
+<td>Example:<br>If the value of the following parameter equals to the value of the other one,<br>message will be thrown:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_23.png" /><br>And in in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_24.png" /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="enum-type-features"><code>Enum</code> type features</h4>
+<p>For enumeration values, visibility can be configured for each value separately.<br />
+It is being configured via the attribute <strong><code>visible</code></strong> assigned to specific enumeration values.<br />
+In such case, format of the enumeration shall be:</p>
+<pre><code class="language-json">&quot;enum&quot; : [
+    {
+        &quot;name&quot; : &quot;&lt;ENUM_VALUE1&gt;&quot;,
+        &quot;visible&quot; : &quot;&lt;VISIBILITY_EXPRESSION1&gt;&quot;
+    },
+    {
+        &quot;name&quot; : &quot;&lt;ENUM_VALUE2&gt;&quot;,
+        &quot;visible&quot; : &quot;&lt;VISIBILITY_EXPRESSION2&gt;&quot;
+    },
+    ...
+]
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><code>&lt;ENUM_VALUE&gt;</code> - enumeration value</li>
+<li><code>&lt;VISIBILITY_EXPRESSION&gt;</code> - expression that determines if the visibility of that enumeration value:<ul>
+<li>if equals <code>true</code>, enumeration value will be visible in the parameter's dropdown list (in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form)</li>
+<li>if equals <code>false</code>, parameter will not be visible</li>
+<li>also, value can be an expression over some parameter(s) value(s) that results to <code>true</code> or <code>false</code>.<br />
+    In such case, expression format shall be:  <ul>
+<li><code>&lt;PARAMETER_NAME1&gt; &lt;OPERAND&gt; &lt;PARAMETER_NAME2&gt;</code> or several such sequences linked by <code>&lt;OPERAND&gt;</code></li>
+<li>or <code>&lt;PARAMETER_NAME1&gt; &lt;OPERAND&gt; &lt;COMPARED_VALUE&gt;</code> or several such sequences linked by <code>&lt;OPERAND&gt;</code><br />
+Where:  </li>
+<li><code>&lt;PARAMETER_NAME&gt;</code> - parameter which value used for expression calculation</li>
+<li><code>&lt;COMPARED_VALUE&gt;</code> - strings in quotas, numbers</li>
+<li><code>&lt;OPERAND&gt;</code> - logical operands: <code>&amp;&amp;</code> (<em>AND</em>), <code>||</code> (<em>OR</em>), <code>==</code> (<em>equals</em>), <code>!=</code> (<em>not equals</em>) or condition operands: <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Example of visibility usage for separate enumeration values:</p>
+<pre><code class="language-json">...
+parameters: {
+    &quot;p1&quot;: {
+        &quot;type&quot; : &quot;enum&quot;,
+        &quot;enum&quot; : [&quot;human&quot;, &quot;mouse&quot;],
+        &quot;required&quot; : true
+    },
+    &quot;p2&quot;: {
+        &quot;type&quot; : &quot;enum&quot;,
+        &quot;enum&quot;: [
+            {
+                &quot;name&quot; : &quot;hg19&quot;,
+                &quot;visible&quot; : &quot;p1 == 'human'&quot;
+            },
+            {
+                &quot;name&quot; : &quot;hg38&quot;,
+                &quot;visible&quot; : &quot;p1 == 'human'&quot;
+            }
+            ...
+        ],
+    }
+    ...
+}
+...
+</code></pre>
+<p>In the example above, values <code>hg19</code> and <code>hg38</code> will be visible for parameter <code>p2</code> only if parameter <code>p1</code> is set to <code>human</code>.</p>
+<h4 id="metadata-type-features"><code>Metadata</code> type features</h4>
+<p>If the parameter has <code>"type" : "metadata"</code>, then format of its value shall be: <code>&lt;METADATA_OBJECT_ID&gt;:&lt;INSTANCE_TYPE_NAME&gt;:&lt;INSTANCE_ID1&gt;,&lt;INSTANCE_ID2&gt;,...</code><br />
+Where:</p>
+<ul>
+<li><code>&lt;METADATA_OBJECT_ID&gt;</code> - ID of the folder/project to which metadata belongs</li>
+<li><code>&lt;INSTANCE_TYPE_NAME&gt;</code> - name of the metadata instance type</li>
+<li><code>&lt;INSTANCE_ID&gt;</code> - ID of the metadata instance of the selected instance type</li>
+</ul>
+<p>For example:<br />
+<img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_25.png" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../6.4._Work_with_aws_healthomics_workflow/" class="btn btn-neutral float-left" title="6.4. Work with AWS HealthOmics Workflow"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/" class="btn btn-neutral float-right" title="7.0. Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../6.4._Work_with_aws_healthomics_workflow/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
