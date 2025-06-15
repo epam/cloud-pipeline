@@ -83,6 +83,9 @@ chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 ###
 # Build pipe-omics
 ###
+export PATH=$PATH:~/mamba/bin
+export MAMBA_ROOT_PREFIX=~/mamba
+eval "$(micromamba shell hook --shell bash)"
 micromamba activate py3
 python3 -m pip install pyinstaller==6.5.0
 python3 -m pip install -r ${PIPE_OMICS_SOURCES_DIR}/requirements.txt
@@ -103,7 +106,7 @@ pyinstaller \
   ${PIPE_OMICS_SOURCES_DIR}/pipe-omics.py
 
 chmod +x /tmp/pipe-omics/dist/pipe-omics/pipe-omics
-deactivate
+micromamba deactivate
 
 ###
 # Build pipe
