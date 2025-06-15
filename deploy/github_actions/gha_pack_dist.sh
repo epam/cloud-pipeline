@@ -17,6 +17,11 @@
 CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
 
+# Setup python2
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/python-2.7.18-macosx10.9.pkg"
+/usr/bin/sudo installer -allowUntrusted -dumplog -package python-2.7.18-macosx10.9.pkg -target /
+#
+
 # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
 function download_gradle_dependencies() {
     ./gradlew clean buildDependents -Pfast -x test --no-daemon
@@ -38,7 +43,6 @@ function get_pipe_binaries() {
   mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
 }
 
-source ~/venv2.7/bin/activate
 pip install PyYAML==3.12
 pip install mkdocs==1.0.4
 
@@ -76,11 +80,6 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
                     -Pfast \
                     --no-daemon
 
-deactivate
-
-source ~/venv3.8/bin/activate
-pip install awscli
-
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 
@@ -90,5 +89,3 @@ if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
     fi
 fi
-
-deactivate
