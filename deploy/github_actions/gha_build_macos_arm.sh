@@ -16,21 +16,18 @@
 
 set -e
 
-# Setup python
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/python-2.7.18-macosx10.9.pkg"
-/usr/bin/sudo installer -allowUntrusted -dumplog -package python-2.7.18-macosx10.9.pkg -target /
-#
-
 CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
 
 ./gradlew -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
           -Pprofile=release \
-          pipe-cli:buildMac \
+          pipe-cli:buildMacArm \
           --no-daemon \
           -x :pipe-cli:test
 
+pip install awscli
+
 cd pipe-cli
-DIST_TGZ_NAME=pipe-osx-full.$CLOUD_PIPELINE_BUILD_NUMBER.tar.gz
+DIST_TGZ_NAME="pipe-osx-full-arm.${APPVEYOR_BUILD_NUMBER}.tar.gz"
 tar -zcf $DIST_TGZ_NAME dist
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] || [[ "$GITHUB_REF_NAME" == "gha-25" ]] ; then
