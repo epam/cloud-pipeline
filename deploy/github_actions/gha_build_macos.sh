@@ -17,14 +17,14 @@
 set -e
 
 # Setup python2
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/python-2.7.18-macosx10.9.pkg"
-/usr/bin/sudo installer -allowUntrusted -dumplog -package python-2.7.18-macosx10.9.pkg -target /
+# wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/python-2.7.18-macosx10.9.pkg"
+# /usr/bin/sudo installer -allowUntrusted -dumplog -package python-2.7.18-macosx10.9.pkg -target /
 #
 
 # Setup python3
 mkdir -p ~/mamba
 cd ~/mamba
-curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
 export PATH=$PATH:~/mamba/bin
 export MAMBA_ROOT_PREFIX=~/mamba
 eval "$(micromamba shell hook --shell bash)"
