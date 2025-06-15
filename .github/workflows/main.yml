@@ -66,6 +66,7 @@ jobs:
     needs:
     - CLI_MacOS
     - CLI_MacOS_Arm
+    - Publish_Docs
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v2

@@ -27,7 +27,7 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
 pip install awscli
 
 cd pipe-cli
-DIST_TGZ_NAME="pipe-osx-full-arm.${APPVEYOR_BUILD_NUMBER}.tar.gz"
+DIST_TGZ_NAME="pipe-osx-full-arm.${CLOUD_PIPELINE_BUILD_NUMBER}.tar.gz"
 tar -zcf $DIST_TGZ_NAME dist
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] || [[ "$GITHUB_REF_NAME" == "gha-25" ]] ; then
