@@ -30,6 +30,7 @@ export MAMBA_ROOT_PREFIX=~/mamba
 eval "$(micromamba shell hook --shell bash)"
 micromamba create -n py3
 micromamba install -n py3 -y python==3.10
+cd -
 #
 
 CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
