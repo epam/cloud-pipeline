@@ -16,9 +16,23 @@
 
 set -e
 
-# Setup python
+# Setup python2
 wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/python-2.7.18-macosx10.9.pkg"
 /usr/bin/sudo installer -allowUntrusted -dumplog -package python-2.7.18-macosx10.9.pkg -target /
+#
+
+# Setup python3
+mkdir -p ~/mamba
+cd ~/mamba
+curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+export PATH=$PATH:~/mamba/bin
+export MAMBA_ROOT_PREFIX=~/mamba
+eval "$(micromamba shell hook --shell bash)"
+micromamba create -n py3
+micromamba install -n py3 -y python==3.10
+micromamba activate py
+which python3
+exit 1
 #
 
 CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))

@@ -83,7 +83,7 @@ chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 ###
 # Build pipe-omics
 ###
-source ~/venv3.10*/bin/activate
+micromamba activate py3
 python3 -m pip install pyinstaller==6.5.0
 python3 -m pip install -r ${PIPE_OMICS_SOURCES_DIR}/requirements.txt
 cd $PIPE_OMICS_SOURCES_DIR && \
