@@ -39,7 +39,7 @@ function get_pipe_binaries() {
   _suffix="$1"
   _OSX_CLI_TAR_NAME="pipe-osx-full${_suffix}.$CLOUD_PIPELINE_BUILD_NUMBER.tar.gz"
   _OSX_CLI_PATH=$(mktemp -d)
-  aws s3 cp s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
+  aws s3 cp --no-progress s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
   tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
 
   mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx* ${API_STATIC_PATH}/
@@ -89,6 +89,6 @@ if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     # Publish repackaged distribution tgz to S3 into builds/ prefix
     # Only if it is one of the allowed branches and it is a push (not PR)
     if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] || [[ "$GITHUB_REF_NAME" == "gha-25" ]] ; then
-            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
+            aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
     fi
 fi

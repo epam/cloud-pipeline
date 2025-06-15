@@ -46,6 +46,6 @@ DIST_TGZ_NAME=pipe-osx-full.$CLOUD_PIPELINE_BUILD_NUMBER.tar.gz
 tar -zcf $DIST_TGZ_NAME dist
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] || [[ "$GITHUB_REF_NAME" == "gha-25" ]] ; then
-        aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
+        aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
     fi
 fi
