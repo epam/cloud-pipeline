@@ -8,7 +8,7 @@ on:
       - develop
       - 'release/**'
       - 'stage/**'
-      - gha
+      - gha-25
 
   workflow_dispatch:
 
