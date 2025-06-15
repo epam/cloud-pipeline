@@ -18,8 +18,11 @@ CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 CLOUD_PIPELINE_BUILD_NUMBER=21291 #$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
 
 # Setup python2
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/python-2.7.18-macosx10.9.pkg"
-/usr/bin/sudo installer -allowUntrusted -dumplog -package python-2.7.18-macosx10.9.pkg -target /
+cd /opt
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
+source /opt/conda/etc/profile.d/conda.sh
+cd -
 #
 
 # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
