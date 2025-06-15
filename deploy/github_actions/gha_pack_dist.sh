@@ -22,6 +22,9 @@ cd /opt
 wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
 tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
 source /opt/conda/etc/profile.d/conda.sh
+which conda
+which python
+which python2
 cd -
 #
 
