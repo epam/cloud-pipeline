@@ -23,9 +23,6 @@ wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/pyth
 tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
 source /opt/conda/etc/profile.d/conda.sh
 conda activate
-which conda
-which python
-which python2
 cd -
 #
 
