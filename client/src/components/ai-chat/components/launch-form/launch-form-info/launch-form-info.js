@@ -35,6 +35,9 @@ export default class LaunchFormInfo extends React.Component {
     const url = mode === LAUNCH_MODES.tool
       ? `/tool/${toolInfo?.id}/description`
       : `/${pipeline.id}/${version}`;
+    const description = LAUNCH_MODES.tool
+      ? toolInfo?.shortDescription || toolInfo?.description
+      : '';
     return (
       <div className={styles.container}>
         <div className={styles.launchFormInfo}>
@@ -51,9 +54,9 @@ export default class LaunchFormInfo extends React.Component {
             <span className={styles.value}>{version}</span>
           </div>
         </div>
-        {toolInfo?.description &&
+        {!!description &&
           <p>
-            {toolInfo?.shortDescription}
+            {description}
           </p>
         }
       </div>
