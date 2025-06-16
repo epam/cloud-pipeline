@@ -42,6 +42,7 @@ git config --global user.name "Github-Actions"
 
 # Clone gh-pages and replace with new docs
 echo "Preparing gh-pages branch"
+git config --global credential.helper store
 git clone --quiet --branch=gh-pages https://${CP_GITHUB_USER}:${CP_GITHUB_TOKEN}@github.com/epam/cloud-pipeline.git gh-pages > /dev/null
 cd gh-pages
 rm -rf ./$GITHUB_REF_NAME && mkdir -p ./$GITHUB_REF_NAME
