@@ -12,6 +12,7 @@
     - [Active Learning Pipeline](#active-learning-pipeline)
 - [System logs: Google Cloud Logging integration](#system-logs-google-cloud-logging-integration)
 - [Resource monitoring: Google Cloud Monitoring integration](#resource-monitoring-google-cloud-monitoring-integration)
+- [Billing: Google Cloud Billing integration](#billing-google-cloud-billing-integration)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -231,3 +232,23 @@ Besides, new **System Preferences** were added to have the ability to configure 
     This interval duration will be used for metrics taking only in case when monitoring period divided on `cluster.monitoring.gcp.intervals.number` is smaller than this interval
 
 For more technical details about metrics getting, see [here](https://github.com/epam/cloud-pipeline/issues/3969#issuecomment-2879486629).
+
+## Billing: Google Cloud Billing integration
+
+Cloud Pipeline platform has integrated billing service.  
+It allows to get from Cloud provider and then process, track and display the associated costs for using platform resources by the users.  
+Costs on compute instances launch are available from runs pages. Additionally, there is a separate [**Billing Dashboard**](../../manual/Appendix_D/Appendix_D._Costs_management.md#billing-reports) to monitor platform expenses.
+
+Cloud Pipeline already supports billing functionality for different Cloud providers, including Google Cloud.  
+But in the current version, default collecting of the billing information for the Google Cloud provider was supplemented with the using of GCP Billing API for more accuracy.
+
+A new **System Preference** was added - **`gcp.billing.account.id`**  
+This preference allows to specify billing account ID of the GCP account used in the current Cloud Pipeline deployment. And if this preference is set (billing account is specified):
+
+- GCP billing prices associated with the specific account will be retrieved.  
+    Such account-specific prices retrieving enables more granular and accurate price calculations in the Cloud Pipeline platform based on some discounts for a billing account
+- Prices are now fetched from the following endpoint: `https://cloudbilling.googleapis.com/v1beta/billingAccounts/<BILLING_ACCOUNT_ID>/skus/-/price?currencyCode=<CURRENCY>`  
+    **_Note_**: API requires the `billing.billingAccountSkus.list` permission to function properly.
+- in terms of the GUI of different platform pages displaying billing information, for the end user everything remains the same
+
+If `gcp.billing.account.id` preference is not set and GCP is the current Cloud provider of the Cloud Pipeline platform, for all billing calculations default GCP prices will be retrieved without taking into account possible discounts of the specific billing account.
