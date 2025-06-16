@@ -147,7 +147,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         final String alias = indexPrefix + String.format("-%d", dataStorage.getId());
         final String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
-            final String currentIndexName = initIndex(alias, indexName, dataStorage.getId());
+            initIndex(alias, indexName, dataStorage.getId());
             final Supplier<TemporaryCredentials> credentialsSupplier = () -> getTemporaryCredentials(dataStorage);
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
@@ -167,7 +167,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                         ).forEach(requestContainer::add);
             }
 
-            finalizeIndex(alias, indexName, currentIndexName, dataStorage.getId());
+            finalizeIndex(alias, indexName, dataStorage.getId());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             deleteIndex(indexName, dataStorage.getId());
@@ -184,13 +184,13 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private void finalizeIndex(final String alias,
                                final String indexName,
-                               final String currentIndexName,
                                final Long storageId) {
         lockService.runWithLock(storageId, () -> {
-            elasticsearchServiceClient.createIndexAlias(indexName, alias);
-                if (StringUtils.isNotBlank(currentIndexName)) {
-                    elasticsearchServiceClient.deleteIndex(currentIndexName);
-                }
+                elasticsearchServiceClient.createIndexAlias(indexName, alias);
+                elasticsearchServiceClient.findIndices("*-" + alias)
+                        .stream()
+                        .filter(index -> !index.equals(indexName))
+                        .forEach(index -> elasticsearchServiceClient.deleteIndex(index));
             }
         );
     }

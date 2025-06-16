@@ -25,6 +25,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,6 +37,8 @@ import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -101,6 +104,29 @@ public class ObjectStorageIndexTest {
     public void shouldAddTwoFilesToRequestContainer() {
         final List<DataStorageFile> files = Arrays.asList(createFile(TEST_BLOB_NAME_1), createFile(TEST_BLOB_NAME_2));
         verifyRequestContainerState(files, 2);
+    }
+
+    @Test
+    public void shouldFinalizeIndexWithMultipleIndex() {
+        String alias = TEST_NAME + "-1";
+        String oldIndexName = "xyz12-" + alias;
+        String superOldIndexName = "abcde-" + alias;
+        Mockito.when(elasticsearchServiceClient.getIndexNameByAlias(alias)).thenReturn(null);
+        Mockito.when(elasticsearchServiceClient.findIndices("*-" + alias))
+                .thenReturn(Arrays.asList(oldIndexName, superOldIndexName));
+
+        objectStorageIndex.indexStorage(dataStorage);
+
+        ArgumentCaptor<Runnable> lockActionCaptor = ArgumentCaptor.forClass(Runnable.class);
+        verify(lockService, times(2))
+                .runWithLock(eq(dataStorage.getId()), lockActionCaptor.capture());
+        List<Runnable> capturedActions = lockActionCaptor.getAllValues();
+        capturedActions.stream().forEach(Runnable::run);
+
+        verify(elasticsearchServiceClient).createIndexAlias(anyString(), eq(alias));
+        verify(elasticsearchServiceClient).findIndices(eq("*-" + alias));
+        verify(elasticsearchServiceClient).deleteIndex(eq(oldIndexName));
+        verify(elasticsearchServiceClient).deleteIndex(eq(superOldIndexName));
     }
 
     private void verifyRequestContainerState(final List<DataStorageFile> files, final int numberOfInvocation) {
