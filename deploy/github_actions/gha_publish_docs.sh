@@ -39,10 +39,10 @@ tar -zxf dist/cloud-pipeline-docs.tar.gz -C $HOME/cloud-pipeline-docs
 cd $HOME
 git config --global user.email "github-actions@github.com"
 git config --global user.name "Github-Actions"
+git config --global credential.helper 'cache --timeout=600'
 
 # Clone gh-pages and replace with new docs
 echo "Preparing gh-pages branch"
-git config --global credential.helper store
 git clone --quiet --branch=gh-pages https://${CP_GITHUB_USER}:${CP_GITHUB_TOKEN}@github.com/epam/cloud-pipeline.git gh-pages > /dev/null
 cd gh-pages
 rm -rf ./$GITHUB_REF_NAME && mkdir -p ./$GITHUB_REF_NAME
