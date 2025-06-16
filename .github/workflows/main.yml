@@ -73,9 +73,10 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '8'
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: '14.21.3'
+          check-latest: false
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
