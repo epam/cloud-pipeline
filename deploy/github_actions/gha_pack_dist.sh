@@ -81,6 +81,7 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
 ./gradlew distTar   -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                     -Pprofile=release \
                     -x test \
+                    -x :pipe-cli:buildLinux \
                     -Pfast \
                     --no-daemon
 
