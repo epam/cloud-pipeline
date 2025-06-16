@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -38,6 +40,10 @@ public class NavigationMenuAO {
         final By pipelinesPageSelector = byId("navigation-button-library");
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
+        SelenideElement expandButton = $(byId("expand-collapse-library-tree-button"));
+        if(expandButton.$x("./i").has(cssClass("anticon-right"))) {
+            expandButton.click();
+        }
         $(byXpath("//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))
                 .waitUntil(visible, 5000);
         return new PipelinesLibraryAO();

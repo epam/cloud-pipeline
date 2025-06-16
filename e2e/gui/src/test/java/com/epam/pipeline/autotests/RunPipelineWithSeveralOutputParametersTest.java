@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.mixins.StorageHandling;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -71,6 +72,7 @@ public class RunPipelineWithSeveralOutputParametersTest extends AbstractAutoRemo
                 .addToSelection(anotherStorageFolder)
                 .ok()
                 .close()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();
