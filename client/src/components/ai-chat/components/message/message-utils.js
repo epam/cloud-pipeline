@@ -22,7 +22,7 @@ function extractJSON (message, regexp) {
     const matches = regexp.exec(message.text);
     if (matches && matches[1]?.length) {
       return {
-        text: matches[0],
+        payloadText: matches[0],
         payload: JSON.parse(matches[1].trim())
       };
     }
@@ -49,7 +49,7 @@ function extractPlainJSON (message) {
   } catch (e) {}
   if (json) {
     return {
-      text: message.text.slice(launchIndex, jsonEnd + 1),
+      payloadText: message.text.slice(launchIndex, jsonEnd + 1),
       payload: json
     };
   }
@@ -93,11 +93,11 @@ export function processMessage (message) {
     return message;
   }
   const messageWithLinks = processLinks(message);
-  const {text, payload} = extractJsonFromText(messageWithLinks) || {};
+  const {payloadText, payload} = extractJsonFromText(messageWithLinks) || {};
   if (!payload) {
     return {...messageWithLinks, parts: []};
   }
-  const textParts = text.split(text);
+  const textParts = messageWithLinks.text.split(payloadText);
   const parts = textParts.flatMap((part, index) => {
     if (textParts.length > 1 && index === 0) {
       return [
