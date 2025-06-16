@@ -26,6 +26,13 @@ conda activate
 cd -
 #
 
+# Setup node
+source ~/.nvm/nvm.sh
+nvm install 14.21.3
+nvm use 14.21.3
+echo "node binary: $(which node)"
+#
+
 # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
 function download_gradle_dependencies() {
     ./gradlew clean buildDependents -Pfast -x test --no-daemon

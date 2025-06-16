@@ -61,41 +61,25 @@ jobs:
   #         python-version: '3.9'
   #         architecture: 'x64'
   #     - run: bash deploy/github_actions/gha_publish_docs.sh
-  # Build_All:
-  #   runs-on: ubuntu-22.04
-  #   # needs:
-  #   # - CLI_MacOS
-  #   # - CLI_MacOS_Arm
-  #   # - Publish_Docs
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: actions/setup-java@v2
-  #       with:
-  #         distribution: 'zulu'
-  #         java-version: '8'
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '14.21.3'
-  #         check-latest: false
-  #     - uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
-  #     - run: sudo -E bash deploy/github_actions/gha_pack_dist.sh
-  #       env:
-  #         CP_GITHUB_USER: ${{ secrets.CP_GITHUB_USER }}
-  #         CP_GITHUB_TOKEN: ${{ secrets.CP_GITHUB_TOKEN }}
-  #         CP_DOCKER_DIST_SRV: ${{ secrets.CP_DOCKER_DIST_SRV }}
   Build_All:
     runs-on: ubuntu-22.04
+    # needs:
+    # - CLI_MacOS
+    # - CLI_MacOS_Arm
+    # - Publish_Docs
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-java@v2
         with:
-          node-version: 14.21.3
-          check-latest: false
-      - run: sudo -E bash deploy/github_actions/gha_test.sh
-
-# /usr/local/bin/node
-# v20.19.2
+          distribution: 'zulu'
+          java-version: '8'
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - run: sudo -E bash deploy/github_actions/gha_pack_dist.sh
+        env:
+          CP_GITHUB_USER: ${{ secrets.CP_GITHUB_USER }}
+          CP_GITHUB_TOKEN: ${{ secrets.CP_GITHUB_TOKEN }}
+          CP_DOCKER_DIST_SRV: ${{ secrets.CP_DOCKER_DIST_SRV }}
