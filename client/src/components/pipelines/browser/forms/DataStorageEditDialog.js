@@ -133,6 +133,21 @@ export class DataStorageEditDialog extends React.Component {
   }
 
   @computed
+  get isUserDefaultStorage () {
+    const {
+      authenticatedUserInfo,
+      dataStorage
+    } = this.props;
+    if (dataStorage && authenticatedUserInfo.loaded) {
+      const {
+        defaultStorageId
+      } = authenticatedUserInfo.value;
+      return Number(dataStorage.id) === Number(defaultStorageId);
+    }
+    return undefined;
+  }
+
+  @computed
   get permissionsRestrictions () {
     const {
       preferences,
@@ -141,10 +156,13 @@ export class DataStorageEditDialog extends React.Component {
     const isAdmin = authenticatedUserInfo.loaded &&
       authenticatedUserInfo.value &&
       authenticatedUserInfo.value.admin;
-    const {isAdvancedUser} = this;
+    const {isAdvancedUser, isUserDefaultStorage} = this;
     if (preferences.loaded && !isAdmin && !isAdvancedUser) {
       const restrictions = preferences.uiStoragesPermissionsRestrictions;
-      const readOnlyRoles = restrictions.filter((r) => r.readonly).map((r) => r.role);
+      const readOnlyRoles = restrictions
+        .filter((r) => r.readonly)
+        .filter((r) => r.onlyDefaultStorage ? isUserDefaultStorage : true)
+        .map((r) => r.role);
       const defaultMask = restrictions.map((rule) => ({
         role: rule.role,
         mask: rule.defaultMask
