@@ -91,4 +91,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '14.21.3'
+          check-latest: false
       - run: sudo -E bash deploy/github_actions/gha_test.sh
+
+# /usr/local/bin/node
+# v20.19.2
