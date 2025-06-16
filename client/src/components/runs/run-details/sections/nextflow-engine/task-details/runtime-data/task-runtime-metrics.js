@@ -7,7 +7,8 @@ function TaskRuntimeMetrics (props) {
   const {
     className,
     style,
-    data = ''
+    data = '',
+    task
   } = props;
   const params = data
     .split('\n')
@@ -22,6 +23,12 @@ function TaskRuntimeMetrics (props) {
         header: parts.length === 1
       };
     });
+  const {attributes = {}} = task || {};
+  const {env, ...restAttributes} = attributes || {};
+  const attrs = Object.entries(restAttributes).map(([key, value]) => ({
+    key,
+    value
+  }));
   return (
     <div
       className={classNames(className)}
@@ -48,6 +55,24 @@ function TaskRuntimeMetrics (props) {
                       <td className="cp-divider bottom light" key="value">{param.value}</td>
                     ]
                 }
+              </tr>
+            ))
+          }
+          <tr key="runtime-attributes header">
+            <th
+              colSpan={2}
+              className="cp-divider bottom light"
+            >
+              Runtime attributes:
+            </th>
+          </tr>
+          {
+            attrs.map((param, pIdx) => (
+              <tr
+                key={`attr-${param.key}-${pIdx}`}
+              >
+                <th className="cp-divider bottom light" key="key">{param.key}:</th>
+                <td className="cp-divider bottom light" key="value">{param.value}</td>
               </tr>
             ))
           }
