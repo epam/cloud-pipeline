@@ -2,13 +2,6 @@
 which node
 node --version
 
-ls -la ~
-echo ===========
-ls -la ~/*
-echo ===========
-ls -la ~/*/*
-echo ===========
-ls -la ~/.*
-echo ===========
-ls -la ~/.*/*
-echo ===========
+source ~/.nvm/nvm.sh
+nvm which 14
+nvm use 14
