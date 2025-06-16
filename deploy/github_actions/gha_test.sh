@@ -3,5 +3,7 @@ which node
 node --version
 
 source ~/.nvm/nvm.sh
-nvm which 14
+nvm install 14
 nvm use 14
+nvm which 14
+which node
