@@ -388,6 +388,8 @@ class UINavigation {
           this.libraryExpanded = libraryExpanded;
           this.parseSupportTemplate();
           this._loaded = true;
+          console.log(this)
+          console.log('pages', pages)
         })
         .then(resolve);
     });

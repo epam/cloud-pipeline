@@ -120,6 +120,7 @@ export default [
     title: 'Chat',
     icon: 'message',
     path: '/chat',
+    keys: ['chat', 'ai-chat'],
     isDefault: false,
     isLink: true
   },

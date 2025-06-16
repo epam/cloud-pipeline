@@ -91,9 +91,7 @@ export default class AIChat extends React.Component {
     }
     this.chat.ask(userInput);
     this.setState({userInput: ''}, () => {
-      const lastUserMessage = this.chat.messages
-        .findLast(message => message.fromUser);
-      this.scrollToMessage(lastUserMessage.id);
+      setTimeout(this.scrollToBottom, 100);
     });
   };
 
