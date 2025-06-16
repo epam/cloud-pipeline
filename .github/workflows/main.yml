@@ -60,6 +60,9 @@ jobs:
           python-version: '3.9'
           architecture: 'x64'
       - run: bash deploy/github_actions/gha_publish_docs.sh
+        env:
+          CP_GITHUB_USER: ${{ secrets.CP_GITHUB_USER }}
+          CP_GITHUB_TOKEN: ${{ secrets.CP_GITHUB_TOKEN }}
   Build_All:
     runs-on: ubuntu-22.04
     needs:
@@ -88,6 +91,4 @@ jobs:
           swap-storage: true
       - run: sudo -E bash deploy/github_actions/gha_pack_dist.sh
         env:
-          CP_GITHUB_USER: ${{ secrets.CP_GITHUB_USER }}
-          CP_GITHUB_TOKEN: ${{ secrets.CP_GITHUB_TOKEN }}
           CP_DOCKER_DIST_SRV: ${{ secrets.CP_DOCKER_DIST_SRV }}
