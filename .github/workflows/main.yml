@@ -2,12 +2,13 @@ name: Cloud-Pipeline-Distribution
 
 concurrency: Cloud-Pipeline-Distribution
 
+# We build only develop, until the GHA is proved working correctly
 on:
   push:
     branches:
       - develop
-      - 'release/**'
-      - 'stage/**'
+      # - 'release/**'
+      # - 'stage/**'
 
   workflow_dispatch:
 

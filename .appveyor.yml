@@ -2,7 +2,6 @@ version: 0.17.{build}
 
 branches:
   only:
-    - develop
     - /release\/.*/
     - /stage\/.*/
 
