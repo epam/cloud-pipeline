@@ -13,6 +13,7 @@
 - [System logs: Google Cloud Logging integration](#system-logs-google-cloud-logging-integration)
 - [Resource monitoring: Google Cloud Monitoring integration](#resource-monitoring-google-cloud-monitoring-integration)
 - [Billing: Google Cloud Billing integration](#billing-google-cloud-billing-integration)
+- [Data catalog: improvements and Google Cloud integration](#data-catalog-improvements-and-google-cloud-integration)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -252,3 +253,80 @@ This preference allows to specify billing account ID of the GCP account used in 
 - in terms of the GUI of different platform pages displaying billing information, for the end user everything remains the same
 
 If `gcp.billing.account.id` preference is not set and GCP is the current Cloud provider of the Cloud Pipeline platform, for all billing calculations default GCP prices will be retrieved without taking into account possible discounts of the specific billing account.
+
+## Data catalog: improvements and Google Cloud integration
+
+Cloud Pipeline platform has integrated system of the displaying and searching over the platform objects (runs, tools, pipelines, data storage files and folders, and others) - [Data Catalog](../../manual/19_Search/19._Global_search.md#advanced-search).  
+It allows easily find and filter necessary objects and data, and then open them or navigate for the further work with.
+
+In the current version, some issues, that were previously observed with the Data Catalog time to time, were solved including:
+
+- instability of security logs
+- low performance for large indices
+- duplication of indices
+
+### Instability of security logs
+
+Previously, System Logs could be partially unavailable or not stored due to `ElasticSearch` issues.  
+These issues could caused to hardly track security events and analyze historical data.  
+In **`v0.20`**, such instability of security logs was addressed via the [Google Cloud Logging integration](#system-logs-google-cloud-logging-integration).  
+Now, audit logs are stored and managed using more stable Google Cloud APIs.
+
+### Low performance for large indices
+
+Performance of the previous implementation of the Data Catalog based on `ElasticSearch` could degrade with large indices due to various factors like improper shard allocation, high ingestion rates, and resource limitations.  
+In **`v0.20`**, the following measures were taken to avoid a performance decrease:
+
+- Support of the multi node deployment for `ElasticSearch` on Google Kubernetes Engine is implemented.  
+    This offers several advantages - higher availability, scalability, and efficient resource utilization. By distributing `Elasticsearch` across multiple nodes within a cluster, Cloud Pipeline gains resilience against node failures, enabling search and catalog engine to remain operational even if one or more nodes go down. This distributed architecture also allows for horizontal scaling via adding more nodes to handle increased data volume and query load. That all allows to improve service performance.
+- Ability to exclude files from indexing and search availability.
+
+The last measure reduces the amount of data the system needs to process, store, and update, thereby lowering resource consumption.  
+This improves query performance by keeping the index smaller and more efficient, focusing only on relevant, necessary data.  
+To exclude certain data from indexing, users can use the **System Preference** **`search.storage.elements.settings`**.  
+It has a format of `JSON` array. To exclude data from indexing, the following item shall be added to the preference value:
+
+```json
+{
+    "storageName": <STORAGE_NAME>,
+    "hiddenFilePathGlobs": [
+        <GLOB1>,
+        <GLOB2>,
+        ...
+    ]
+}
+```
+
+Where, `<STORAGE_NAME>` is an exact storage name or a wildcard for a storage name (e.g. "Home-Storage-\*"), `<GLOB>` - path glob to a directory or a file within a storage, which will be hidden during the indexing.  
+
+> In reality, hidden files are excluded from the index and search, but their total size is taken into account for the catalog engine, reducing the number of data files that will be in the index (not changing the total volume of files).  
+> For example, if for a storage `"hiddenFilePathGlobs": ["temp/**"]` was configured, the following situation with this storage will be in terms of files availability for the search:
+> 
+>     File                    Size    Hidden (not available for search)
+>     data/file1.txt          10G     false
+>     data/file2.txt          20G     false
+>     temp/file3.txt          15G     true
+>     temp/file4.txt          15G     true
+>     temp/interim/file5.txt  10G     true
+>     temp/interim/file6.txt  10G     true
+> 
+>     Total size:             80G
+>     Number of documents:    6
+>
+> And for the catalog engine in terms of the index, hidden files will be like the one file without content but with the size of all hidden files matched that glob, i.e.:
+>
+>     File                    Size    Hidden (not available for search)
+>     data/file1.txt          10G     false
+>     data/file2.txt          20G     false
+>     .temp                   50G     true -> no content
+>
+>     Total size:             80G
+>     Number of documents:    3
+
+### Duplication of indices
+
+From time to time, in the `ElasticSearch` database duplicated, unused or detached indices are occurred.  
+It may lead to wasting extra space, consuming more system resources, and slowing down query performance.
+
+To prevent such situation, in **`v0.20`**, extended clean up logic for indices was added to `ElasticSearch` agent service implementation.  
+This allows to easily remove identified duplicated, unused or detached indices from alias during the regular index management in automatic mode.
