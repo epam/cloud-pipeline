@@ -139,11 +139,14 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   get currentConfiguration () {
     const {configurations, configurationName} = this;
-    if (configurationName && configurations) {
-      return configurations
-      // eslint-disable-next-line max-len
-        .find((cfg) => (cfg.name || '').toLowerCase() === (configurationName || '').toLowerCase()) ||
-        configurations.find((cfg) => cfg.default) || configurations[0];
+    if (configurations) {
+      const defaultConfiguration = configurations.find((cfg) => cfg.default) || configurations[0];
+      if (configurationName) {
+        const cfgName = configurationName.toLowerCase();
+        return configurations.find((cfg) => (cfg.name || '').toLowerCase() === cfgName) ||
+          defaultConfiguration;
+      }
+      return defaultConfiguration;
     }
     return undefined;
   };
