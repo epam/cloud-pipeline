@@ -55,4 +55,4 @@
 | [**TC-PARAMETERS-4**](TC-PARAMETERS-4.md) | Node memory limits |
 | [**TC-PARAMETERS-5**](TC-PARAMETERS-5.md) | Link storage with their URLs and not only with their IDs |
 | [**TC-PARAMETERS-6**](SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration |
-| [**TC-PARAMETERS-7**](TC-PARAMETERS-7.md) | Check conda capability |
+| [**TC-PARAMETERS-7**](TC-PARAMETERS-7.md) | Check 'conda' run capability |

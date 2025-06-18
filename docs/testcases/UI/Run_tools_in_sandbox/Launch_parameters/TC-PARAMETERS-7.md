@@ -1,6 +1,6 @@
-# Check conda capability
+# Check 'conda' run capability
 
-Test verifies that user has possibility to create/remove environments with conda.
+Test verifies that user has possibility to create/remove conda environments via the built-in run capability.
 
 **Prerequisites**:
 - Admin user
