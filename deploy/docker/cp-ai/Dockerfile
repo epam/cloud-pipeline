@@ -9,6 +9,15 @@ RUN yum update -y && \
     nginx \
     bzip2
 
+# Install MongoDB
+RUN dnf install -y dnf-utils && \
+    echo -e "[mongodb-org-6.0]\nname=MongoDB Repository\nbaseurl=https://repo.mongodb.org/yum/redhat/8/mongodb-org/6.0/x86_64/\ngpgcheck=1\nenabled=1\ngpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc" \
+    > /etc/yum.repos.d/mongodb-org-6.0.repo && \
+    rpm --import https://www.mongodb.org/static/pgp/server-6.0.asc && \
+    dnf install -y mongodb-org && \
+    dnf clean all && \
+    echo "exclude=mongodb-org* mongodb-mongosh" >> /etc/dnf/dnf.conf
+
 ARG GOOGLE_GENAI_MODEL
 ARG GOOGLE_API_KEY
 ARG GITHUB_TOKEN
@@ -40,7 +49,6 @@ COPY launch.sh $AI_APP_DIR/
 ENV GOOGLE_GENAI_MODEL $GOOGLE_GENAI_MODEL
 ENV GOOGLE_API_KEY $GOOGLE_API_KEY
 ENV GITHUB_TOKEN $GITHUB_TOKEN
-ENV CHROMA_DB_PATH /opt/ai/chroma-db
 
 RUN chmod +x $AI_APP_DIR/launch.sh
 

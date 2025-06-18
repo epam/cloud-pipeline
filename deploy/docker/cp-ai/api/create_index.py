@@ -1,4 +1,4 @@
-from documents_index import create_index
+from api.documents_index import create_index
 
 def main():
     create_index()

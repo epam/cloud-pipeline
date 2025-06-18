@@ -5,23 +5,25 @@ import io
 import chromadb
 from chromadb.errors import NotFoundError
 from llama_index.llms.google_genai import GoogleGenAI
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Settings, Document, load_index_from_storage
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Settings, Document
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
+from api import config
 
 EMBED_MODEL_NAME = "text-embedding-004"
 SOURCE_METADATA = "source"
 
 REPO_OWNER = "epam"
-APPLICATION_URI = "https://aws.cloud-pipeline.com/pipeline/"
 REPO = "cloud-pipeline"
 REPO_DOCUMENTS_FOLDER = "docs/md"
 BRANCH = "develop"
 DOCUMENTS_COLLECTION_NAME = "Documents"
 
+application_uri = config.application_uri
 llm = GoogleGenAI(model=os.environ["GOOGLE_GENAI_MODEL"])
 github_token = os.environ["GITHUB_TOKEN"]
-chroma_db_path = os.environ["CHROMA_DB_PATH"]
+chroma_db_path = config.chroma_db_path
+
 links = {
     "tool": "#/tools",
     "pipeline": "#/pipelines",
@@ -72,7 +74,7 @@ def get_application_link(query: str, response: str) -> str:
     Only reply with the link."""
     link = llm.complete(prompt).text.strip()
     if link != "None":
-        link = f'''\n\nApplication Link: {APPLICATION_URI}{link}.'''
+        link = f'''\n\nApplication Link: {application_uri}{link}.'''
     else:
         link = ""
     return link
@@ -164,7 +166,7 @@ def _clone_documents():
 
 def _get_document_url(doc, documents_folder):
     path = ((doc.metadata['file_path']
-            .replace(os.path.abspath(documents_folder), ""))
+             .replace(os.path.abspath(documents_folder), ""))
             .replace(os.path.sep, "/"))
     return f"https://github.com/{REPO_OWNER}/{REPO}/tree/{BRANCH}/{REPO_DOCUMENTS_FOLDER}{path}"
 

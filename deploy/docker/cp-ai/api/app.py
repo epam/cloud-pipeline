@@ -3,9 +3,10 @@ import json
 import logging
 import os
 import sys
-from os import mkdir
+import requests
 import socketio
 import uvicorn
+from os import mkdir
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from llama_index.core.memory import BaseMemory
@@ -13,14 +14,11 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import FunctionTool
 from llama_index.core.agent import (FunctionCallingAgentWorker, ReActAgent)
-from pydantic import Field, BaseModel
-from typing import Optional
-import requests
-
+from pydantic import Field
 from api.documents_index import query_documents
-import datetime
-from datetime import datetime
-import sqlite3
+from api import db
+from api.models.chat import Chat
+from api.models.message import Message
 
 ROLE_ASSISTANT = "assistant"
 
@@ -255,93 +253,29 @@ agent = ReActAgent(
     memory=BaseMemory.from_defaults()
 )
 
-class Chat(BaseModel):
-    chat_id: Optional[int] = None
-    title: Optional[str] = 'Untitled'
-
-class Message(BaseModel):
-    message_id: Optional[int] = None
-    chat_id: Optional[int] = None
-    created_date: Optional[datetime] = None
-    role: str
-    content: str
-    attributes : Optional[dict] = None
-
-def _get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def _add_chat(chat: Chat):
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO chats (title) VALUES (?)', (chat.title,))
-    chat_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return chat_id
-
-def _get_chat(chat_id: int):
-    conn = _get_db_connection()
-    result = conn.execute('SELECT * FROM chats WHERE chat_id = ?', (chat_id,)).fetchall()
-    conn.close()
-    return result
-
-def _save_message(chat_id: int, message: Message):
-    attributes_json = None
-    if message.attributes:
-        attributes_json = json.dumps(message.attributes)
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO messages (chat_id, created_date, role, content, attributes) VALUES (?,?,?,?,?)',
-                   (chat_id, datetime.now(), message.role, message.content, attributes_json))
-    message_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return message_id
-
-def _get_message(message_id: int):
-    conn = _get_db_connection()
-    result = conn.execute('SELECT * FROM messages WHERE message_id = ?', (message_id,)).fetchall()
-    conn.close()
-    return result
-
-def _get_messages(chat_id: int):
-    conn = _get_db_connection()
-    result = conn.execute('SELECT * FROM messages WHERE chat_id = ? ORDER BY created_date ASC', (chat_id,)).fetchall()
-    conn.close()
-    return result
-
-def _delete_message(message_id: int):
-    conn = _get_db_connection()
-    conn.execute('DELETE FROM messages WHERE message_id = ?', (message_id,))
-    conn.commit()
-    conn.close()
-    return message_id
-
 @app.post('/chat')
 def add_chat(chat: Chat):
-    return _add_chat(chat)
+    return db.add_chat(chat)
 
 @app.get('/chat/{chat_id}')
-def get_chat(chat_id: int):
-    return _get_chat(chat_id)
+def get_chat(chat_id: str):
+    return db.get_chat(chat_id)
 
 @app.post('/chat/{chat_id}/message')
-def add_message(chat_id: int, message: Message):
-    return _save_message(chat_id, message)
+def add_message(chat_id: str, message: Message):
+    return db.save_message(chat_id, message)
 
 @app.delete('/chat/message/{message_id}')
-def delete_message(message_id: int):
-    return _delete_message(message_id)
+def delete_message(message_id: str):
+    return db.delete_message(message_id)
 
 @app.get('/chat/message/{message_id}')
-def get_message(message_id: int):
-    return _get_message(message_id)
+def get_message(message_id: str):
+    return db.get_message(message_id)
 
 @app.get('/chat/{chat_id}/messages')
-def get_messages(chat_id: int):
-    return _get_messages(chat_id)
+def get_messages(chat_id: str):
+    return db.get_messages(chat_id)
 
 @sio_server.event
 def connect(sid: str, env, auth):
@@ -359,7 +293,7 @@ async def handle_message(sid, data):
 async def handle_message(sid, request_data: dict):
     try:
         chat_id = request_data.get('chat_id')
-        chat_messages = _get_messages(chat_id)
+        chat_messages = db.get_messages(chat_id)
         messages = [ ChatMessage.from_str(dict(m)['content'], dict(m)['role']) for m in chat_messages ]
         message = messages.pop().content
         message = f'''
@@ -370,12 +304,12 @@ async def handle_message(sid, request_data: dict):
         resp = await agent.astream_chat(message=message, chat_history=messages)
         async for chunk in resp.async_response_gen():
             await sio_server.emit('chunk', chunk, to=sid)
-
         message = Message(
             role=ROLE_ASSISTANT,
             content=resp.response
         )
-        _save_message(chat_id, message)
+
+        db.save_message(chat_id, message)
 
     except Exception as e:
         default_logger.error('error handling user message', exc_info=e)

@@ -24,13 +24,15 @@ AI_CONDA_ENVIRONMENT_NAME="${AI_CONDA_ENVIRONMENT_NAME:-ai}"
 eval "$(micromamba shell hook --shell bash)"
 micromamba activate "$AI_CONDA_ENVIRONMENT_NAME"
 
-echo "creating index"
-python api/create_index.py
+mkdir -p "/data/db"
+echo "Starting MongoDB"
+mongod --dbpath /data/db --bind_ip_all &
+MONGO_PID=$!
 
-echo "initialize DB"
-python api/init_db.py
+echo "Creating documents index"
+python -m api.create_index
 
-echo "starting api"
+echo "Starting api"
 touch /var/log/api.log
 
 export AI_PORT=7860
