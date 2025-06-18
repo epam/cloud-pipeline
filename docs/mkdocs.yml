@@ -153,6 +153,8 @@ nav:
       - AWS:
         - Terraform: 'installation/native/aws/terraform/README.md'
         - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
+      - GCP:
+        - Terraform: 'installation/native/gcp/terraform/README.md'
   - Management:
     - Environments sync: 'operation/environments_sync/environments_sync.md'
   - Change Kubernetes certificates: 'operation/change_kube_certificates.md'

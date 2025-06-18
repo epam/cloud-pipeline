@@ -14,6 +14,7 @@
 - [Resource monitoring: Google Cloud Monitoring integration](#resource-monitoring-google-cloud-monitoring-integration)
 - [Billing: Google Cloud Billing integration](#billing-google-cloud-billing-integration)
 - [Data catalog: improvements and Google Cloud integration](#data-catalog-improvements-and-google-cloud-integration)
+- [Terraform-based platform deployment on Google Cloud](#terraform-based-platform-deployment-on-google-cloud)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -330,3 +331,18 @@ It may lead to wasting extra space, consuming more system resources, and slowing
 
 To prevent such situation, in **`v0.20`**, extended clean up logic for indices was added to `ElasticSearch` agent service implementation.  
 This allows to easily remove identified duplicated, unused or detached indices from alias during the regular index management in automatic mode.
+
+## Terraform-based platform deployment on Google Cloud
+
+From the current version, any new Cloud Pipeline platform release can be easily deployed on Google Cloud Platform using [**`Terraform`**](https://developer.hashicorp.com/terraform).
+
+A full technical guidance how to deploy infrastructure using `Terraform` and install Cloud Pipeline on Google Cloud, see in the [Platform on GCP deployment manual](../../installation/native/gcp/terraform/README.md).  
+That guidance provisions everything needed to run Cloud Pipeline reliably and securely, including:
+
+- **Google Kubernetes Engine (GKE) cluster**
+- **Filestore (NFS)**
+- **Cloud SQL (Private IP)**
+- **Cloud Storage bucket**
+- **Artifact Registry**
+- **Firewall rules**
+- **Jump Host**
