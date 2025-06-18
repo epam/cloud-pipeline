@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+export JAVA_HOME=/usr/lib/jvm/jre-17
+
 function generate_params_file() {
     all_cp_params_json=""
     all_cp_params=$(printenv | sed 's;=.*;;' | grep _PARAM_TYPE)
