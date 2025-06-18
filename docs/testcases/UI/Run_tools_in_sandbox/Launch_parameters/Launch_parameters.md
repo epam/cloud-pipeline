@@ -1,7 +1,7 @@
 # Launch parameters testcases
 
 | Case ID | Description/name |
-|--- |---|
+| ---|---|
 | [**1900_1**](1900/1900_1.md) | Implement kubernetes dns custom hosts management |
 | [**1900_2**](1900/1900_2.md) | Support dns hosts management in sge autoscaler |
 | [**223**](223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) |
@@ -55,3 +55,4 @@
 | [**TC-PARAMETERS-4**](TC-PARAMETERS-4.md) | Node memory limits |
 | [**TC-PARAMETERS-5**](TC-PARAMETERS-5.md) | Link storage with their URLs and not only with their IDs |
 | [**TC-PARAMETERS-6**](SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration |
+| [**TC-PARAMETERS-7**](TC-PARAMETERS-7.md) | Check 'conda' run capability |
