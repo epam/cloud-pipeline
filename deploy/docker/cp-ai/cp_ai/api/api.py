@@ -112,7 +112,7 @@ async def _get_bearer_from_socket_session(sid: str) -> str | None:
 @sio_server.on('assistant')
 async def handle_message(sid, request_data: dict):
     try:
-        bearer = _get_bearer_from_socket_session(sid)
+        bearer = await _get_bearer_from_socket_session(sid)
         api_logger.info(f'socket "assistant" event:\nsid: {sid}\nbearer: {bearer}\n\nPayload:\n{repr(request_data)}')
         chat_id = request_data.get('chat_id')
         if chat_id is None:
@@ -142,7 +142,7 @@ async def handle_message(sid, request_data: dict):
 @sio_server.on('assistant_test')
 async def handle_message(sid, request_data: dict):
     try:
-        bearer = _get_bearer_from_socket_session(sid)
+        bearer = await _get_bearer_from_socket_session(sid)
         messages = [ ChatMessage.from_str(m['content'], m['role']) for m in request_data.get('messages', []) ]
         resp = await answer_using_default_agent(
             messages=messages,
