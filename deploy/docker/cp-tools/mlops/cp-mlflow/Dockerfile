@@ -20,7 +20,8 @@ RUN yum install -y wget \
                    acl \
                    openssh-server \
                    yum-utils \
-                   findutils && \
+                   findutils \
+                   patch && \
     yum clean all
 RUN dnf install -y --allowerasing coreutils
 

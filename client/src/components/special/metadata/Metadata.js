@@ -31,6 +31,7 @@ import {
   Alert,
   AutoComplete,
   Button,
+  Checkbox,
   Col,
   Icon,
   Input,
@@ -300,9 +301,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
     });
   };
 
-  autoFocusInputRef = (input) => {
+  autoFocusInputRef = (input, password = false) => {
     if (input && input.refs && input.refs.input && input.refs.input.focus) {
       input.refs.input.focus();
+      if (password) {
+        input.refs.input.type = 'password';
+      }
     }
   };
 
@@ -446,6 +450,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       } = this.getCascadeValues(
         this.state.addKey.key.trim(),
         this.state.addKey.value,
+        this.state.addKey.secret,
         this.props.systemDictionaries.loaded
           ? (this.props.systemDictionaries.value || [])
           : []
@@ -524,9 +529,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
     });
   };
 
-  getCascadeValues = (key, value, dictionaries, processed = []) => {
+  getCascadeValues = (key, value, secret, dictionaries, processed = []) => {
     let warnings = new Set();
-    let result = processed.slice().concat(({key, value}));
+    let result = processed.slice().concat(({key, value, type: secret ? 'secret' : 'string'}));
     const dictionary = dictionaries.find(dict => dict.key === key);
     if (dictionary) {
       const {values = []} = dictionary;
@@ -545,7 +550,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             const {
               result: childResult,
               warnings: childWarnings
-            } = this.getCascadeValues(linkKey, linkValue, dictionaries, result);
+            } = this.getCascadeValues(linkKey, linkValue, false, dictionaries, result);
             result = childResult;
             warnings = new Set([...warnings, ...childWarnings]);
           }
@@ -558,14 +563,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
     };
   };
 
-  applyCascadeValues = async (key, value) => {
+  applyCascadeValues = async (key, value, secret = false) => {
     const {systemDictionaries} = this.props;
     await systemDictionaries.fetchIfNeededOrWait();
     if (systemDictionaries.loaded) {
       const {
         result: values,
         warnings
-      } = this.getCascadeValues(key, value, systemDictionaries.value || []);
+      } = this.getCascadeValues(key, value, secret, systemDictionaries.value || []);
       if (warnings.size > 0) {
         message.warning(
           // eslint-disable-next-line
@@ -945,23 +950,25 @@ export default class Metadata extends localization.LocalizedReactComponent {
     let valueElement;
     const readOnly = this.props.readOnly || this.isReadOnlyTag(metadataItem.key);
     const isSecret = (metadataItem.type || '').toLowerCase() === 'secret';
-    const inputOptions = (field) => {
-      return {
-        id: `${field}-input-${metadataItem.key}`,
-        ref: this.autoFocusInputRef,
-        onBlur: this.saveMetadata({index: metadataItem.index, field}),
-        onPressEnter: this.saveMetadata({index: metadataItem.index, field}),
-        size: 'small',
-        disabled: readOnly,
-        value: this.state.editableText,
-        onChange: this.onMetadataChange,
-        onKeyDown: (e) => {
-          if (e.key && e.key === 'Escape') {
-            this.discardChanges();
-          }
+    const inputOptions = (field) => ({
+      id: `${field}-input-${metadataItem.key}`,
+      ref: (input) => this.autoFocusInputRef(input, field === 'value' ? isSecret : false),
+      onBlur: field === 'value' && isSecret
+        ? this.discardChanges
+        : this.saveMetadata({index: metadataItem.index, field}),
+      onPressEnter: this.saveMetadata({index: metadataItem.index, field}),
+      size: 'small',
+      disabled: readOnly,
+      value: this.state.editableText,
+      onChange: this.onMetadataChange,
+      onKeyDown: (e) => {
+        if (e.key && e.key === 'Escape') {
+          this.discardChanges();
+        } else if (e.key && e.key === 'Enter') {
+          e.preventDefault();
         }
-      };
-    };
+      }
+    });
     if (this.state.editableKeyIndex === metadataItem.index) {
       keyElement = (
         <tr
@@ -1040,27 +1047,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       ? (this.state.editableText || metadataItem.key)
       : metadataItem.key;
     const dictionary = systemDictionaries.getDictionary(key);
-    if (isSecret) {
-      valueElement = (
-        <tr
-          key={`${metadataItem.key}_value`}
-          className={
-            classNames(
-              'cp-metadata-item-row'
-            )
-          }
-        >
-          <td
-            id={`value-column-${metadataItem.key}`}
-            colSpan={6}
-          >
-            <span style={{display: 'inline-block'}}>
-              *****
-            </span>
-          </td>
-        </tr>
-      );
-    } else if (dictionary) {
+    if (dictionary) {
       valueElement = (
         <tr
           key={`${metadataItem.key}_value`}
@@ -1126,15 +1113,34 @@ export default class Metadata extends localization.LocalizedReactComponent {
           }
         >
           <td colSpan={6}>
-            <Input
-              {...inputOptions('value')}
-              type="textarea"
-              autosize={MetadataDisplayOptions.edit.autosize}
-              className={classNames(
-                'qa-metadata-item-value-input',
-                `qa-metadata-item-value-input-${metadataItem.index}`
-              )}
-            />
+            <div>
+              <Input
+                {...inputOptions('value')}
+                {...(isSecret ? {
+                  style: {height: '24px'}
+                } : {
+                  type: 'textarea',
+                  autosize: MetadataDisplayOptions.edit.autosize
+                })}
+                className={classNames(
+                  'qa-metadata-item-value-input',
+                  `qa-metadata-item-value-input-${metadataItem.index}`
+                )}
+              />
+            </div>
+            {
+              isSecret && (
+                <div
+                  className="cp-text-not-important"
+                  style={{
+                    fontSize: 'smaller',
+                    textAlign: 'center'
+                  }}
+                >
+                  Press Enter to save new secret
+                </div>
+              )
+            }
           </td>
         </tr>
       );
@@ -1155,11 +1161,15 @@ export default class Metadata extends localization.LocalizedReactComponent {
             onClick={
               readOnly
                 ? undefined
-                : this.onMetadataEditStarted('value', metadataItem.index, metadataItem.value)
+                : this.onMetadataEditStarted(
+                  'value',
+                  metadataItem.index,
+                  isSecret ? '' : metadataItem.value
+                )
             }
           >
             <span style={{display: 'inline-block'}}>
-              {MetadataDisplayOptions.preview.display(metadataItem.value)}
+              {isSecret ? '*****' : MetadataDisplayOptions.preview.display(metadataItem.value)}
             </span>
           </td>
         </tr>
@@ -1424,6 +1434,22 @@ export default class Metadata extends localization.LocalizedReactComponent {
             {valueItem}
           </td>
         </tr>,
+        <tr className={styles.newKeyRow} key="new secret row">
+          <td style={{textAlign: 'right', width: 80}}>
+            {'\u00A0'}
+          </td>
+          <td colSpan={2}>
+            <Checkbox
+              checked={this.state.addKey.secret}
+              onChange={(e) => this.setState({addKey: {
+                ...(this.state.addKey || {}),
+                secret: e.target.checked
+              }})}
+            >
+              Secret
+            </Checkbox>
+          </td>
+        </tr>,
         <tr className={styles.newKeyRow} key="new key title row">
           <td colSpan={3} style={{textAlign: 'right'}}>
             <Button
@@ -1659,7 +1685,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
         editableText: null,
         addKey: {
           key: '',
-          value: ''
+          value: '',
+          secret: false
         }
       });
     };

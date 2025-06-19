@@ -664,7 +664,8 @@ class RunTaskLogs extends React.Component {
       className,
       lineClassName,
       style = {},
-      showDate,
+      taskName,
+      showDate: showDateProps,
       showLineNumber,
       autoUpdate,
       runId,
@@ -672,6 +673,10 @@ class RunTaskLogs extends React.Component {
       onDownloadCompleteLogClick,
       alwaysShowDownloadCompleteLog = false
     } = this.props;
+    let showDate = showDateProps;
+    if (showDate === undefined) {
+      showDate = taskName ? !/^console$/i.test(taskName) : true;
+    }
     const {
       followLog,
       scrolledDown,
@@ -975,7 +980,6 @@ RunTaskLogs.propTypes = {
 
 RunTaskLogs.defaultProps = {
   showLineNumber: true,
-  showDate: true,
   searchAvailable: true
 };
 

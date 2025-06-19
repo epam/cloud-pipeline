@@ -375,44 +375,53 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/vanilla "$CP_DIST_RE
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-cuda:18.04-cuda11" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
-# RStudio
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:3.5.1"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:4.0.0" --file "Dockerfile.el7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:latest" --file "Dockerfile.el7"
+# Rocky
+# - Vanilla
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rockylinux/vanilla "$CP_DIST_REPO_NAME:tools-base-rockylinux-8-${DOCKERS_VERSION}" "library/rockylinux:8"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rockylinux/vanilla "$CP_DIST_REPO_NAME:tools-base-rockylinux-8-${DOCKERS_VERSION}" "library/rockylinux:latest"
+
+##################################################################################
+# !!! All tools require revision !!!
+##################################################################################
+
+# # RStudio
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:3.5.1"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:4.0.0" --file "Dockerfile.el7"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:latest" --file "Dockerfile.el7"
 
 # Cromwell
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/cromwell "$CP_DIST_REPO_NAME:tools-base-cromwell-${DOCKERS_VERSION}" "library/cromwell:latest"
 
 # Nextflow
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest" --build-arg BASE_IMAGE="library/rockylinux:8.7"
 
-# Snakemake
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/snakemake "$CP_DIST_REPO_NAME:tools-base-snakemake-${DOCKERS_VERSION}" "library/snakemake:latest"
+# # Snakemake
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/snakemake "$CP_DIST_REPO_NAME:tools-base-snakemake-${DOCKERS_VERSION}" "library/snakemake:latest"
 
-# CWL Toil
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/toil "$CP_DIST_REPO_NAME:tools-base-cwl-runner-${DOCKERS_VERSION}" "library/cwl-runner:latest"
+# # CWL Toil
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/toil "$CP_DIST_REPO_NAME:tools-base-cwl-runner-${DOCKERS_VERSION}" "library/cwl-runner:latest"
 
-# Luigi
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:tools-base-luigi-${DOCKERS_VERSION}" "library/luigi:latest"
+# # Luigi
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:tools-base-luigi-${DOCKERS_VERSION}" "library/luigi:latest"
 
-# Jupyter
-## - Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-310-${DOCKERS_VERSION}" "library/jupyter:conda-310" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" "library/jupyter:latest" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# # Jupyter
+# ## - Vanilla
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-310-${DOCKERS_VERSION}" "library/jupyter:conda-310" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" "library/jupyter:latest" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
 
-## - CUDA
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-310-cuda12-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-310-cuda12" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:12.1.1-cudnn8-runtime-centos7" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-cuda12-${DOCKERS_VERSION}" "library/jupyter-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:12.1.1-cudnn8-runtime-centos7" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# ## - CUDA
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-310-cuda12-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-310-cuda12" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:12.1.1-cudnn8-runtime-centos7" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-cuda12-${DOCKERS_VERSION}" "library/jupyter-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:12.1.1-cudnn8-runtime-centos7" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
 
-# JupyterLab
-# Python2 version is not built due to https://github.com/jupyterlab/jupyterlab/issues/2096 (Python2 support is dropped since JupyterLab 0.33)
-## - Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-310-${DOCKERS_VERSION}" "library/jupyter-lab:conda-310" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-310-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-${DOCKERS_VERSION}" "library/jupyter-lab:latest" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# # JupyterLab
+# # Python2 version is not built due to https://github.com/jupyterlab/jupyterlab/issues/2096 (Python2 support is dropped since JupyterLab 0.33)
+# ## - Vanilla
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-310-${DOCKERS_VERSION}" "library/jupyter-lab:conda-310" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-310-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-${DOCKERS_VERSION}" "library/jupyter-lab:latest" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
 
-## - CUDA
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-310-cuda10-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:conda-310-cuda12" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-310-cuda12-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-cuda12-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-cuda12-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# ## - CUDA
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-310-cuda10-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:conda-310-cuda12" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-310-cuda12-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-cuda12-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-cuda12-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-py310_23.3.1-0"
 
 
 # Desktop NoMachine
@@ -428,14 +437,14 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_
 #build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 #build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
-## - Centos
-### -- Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:7" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:latest" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
+# ## - Centos
+# ### -- Vanilla
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:7" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:latest" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
 
-### -- CUDA
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda11-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:7-cuda11" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:latest" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
+# ### -- CUDA
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda11-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:7-cuda11" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:latest" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 
 # Desktop noVNC
 ## - Ubuntu
@@ -449,17 +458,17 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST
 #build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-novnc-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 #build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-novnc-cuda:latest" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
-## - Centos
-### -- Vanilla
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-${DOCKERS_VERSION}" "library/centos-novnc:7" --file "centos/Dockerfile" --build-arg BASE_IMAGE="library/centos:7.7.1908"
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-${DOCKERS_VERSION}" "library/centos-novnc:latest" --file "centos/Dockerfile" --build-arg BASE_IMAGE="library/centos:7.7.1908"
+# ## - Centos
+# ### -- Vanilla
+# build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-${DOCKERS_VERSION}" "library/centos-novnc:7" --file "centos/Dockerfile" --build-arg BASE_IMAGE="library/centos:7.7.1908"
+# build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-${DOCKERS_VERSION}" "library/centos-novnc:latest" --file "centos/Dockerfile" --build-arg BASE_IMAGE="library/centos:7.7.1908"
 
-### -- CUDA
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-cuda11-${DOCKERS_VERSION}" "library/centos-novnc-cuda:7-cuda11" --file "centos/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-cuda11-${DOCKERS_VERSION}" "library/centos-novnc-cuda:latest" --file "centos/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
+# ### -- CUDA
+# build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-cuda11-${DOCKERS_VERSION}" "library/centos-novnc-cuda:7-cuda11" --file "centos/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
+# build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-cuda11-${DOCKERS_VERSION}" "library/centos-novnc-cuda:latest" --file "centos/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 
-## AWS HealthOmics Workflow
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/aws-healthomics-workflow "$CP_DIST_REPO_NAME:aws-healthomics-workflow-${DOCKERS_VERSION}" "library/aws-healthomics-workflow:latest"
+# ## AWS HealthOmics Workflow
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/aws-healthomics-workflow "$CP_DIST_REPO_NAME:aws-healthomics-workflow-${DOCKERS_VERSION}" "library/aws-healthomics-workflow:latest"
 
 ########################
 # NGS tools dockers
@@ -467,22 +476,22 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/aws-healthomics-workflow "$
 
 NGS_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/ngs
 
-# bcl2fastq2
-build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/bcl2fastq2 "$CP_DIST_REPO_NAME:tools-ngs-bcl2fastq2-${DOCKERS_VERSION}" "ngs/bcl2fastq2:latest"
+# # bcl2fastq2
+# build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/bcl2fastq2 "$CP_DIST_REPO_NAME:tools-ngs-bcl2fastq2-${DOCKERS_VERSION}" "ngs/bcl2fastq2:latest"
 
-# ngs-essential
-# !!! Disabled due to multiple build errors. To be revised. !!!
-# build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/ngs-essential "$CP_DIST_REPO_NAME:tools-ngs-essential-${DOCKERS_VERSION}" "ngs/ngs-essential:latest"
+# # ngs-essential
+# # !!! Disabled due to multiple build errors. To be revised. !!!
+# # build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/ngs-essential "$CP_DIST_REPO_NAME:tools-ngs-essential-${DOCKERS_VERSION}" "ngs/ngs-essential:latest"
 
-# cellranger
-export CELLRANGER_URL=${CELLRANGER_URL:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-2.1.0.tar.gz https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-3.0.2.tar.gz"}
-build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/cellranger "$CP_DIST_REPO_NAME:tools-ngs-cellranger-${DOCKERS_VERSION}" "ngs/cellranger:latest" --build-arg CELLRANGER_URL="$CELLRANGER_URL"
+# # cellranger
+# export CELLRANGER_URL=${CELLRANGER_URL:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-2.1.0.tar.gz https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-3.0.2.tar.gz"}
+# build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/cellranger "$CP_DIST_REPO_NAME:tools-ngs-cellranger-${DOCKERS_VERSION}" "ngs/cellranger:latest" --build-arg CELLRANGER_URL="$CELLRANGER_URL"
 
-# msgen
-build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/msgen "$CP_DIST_REPO_NAME:tools-ngs-msgen-${DOCKERS_VERSION}" "ngs/msgen:latest"
+# # msgen
+# build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/msgen "$CP_DIST_REPO_NAME:tools-ngs-msgen-${DOCKERS_VERSION}" "ngs/msgen:latest"
 
-# bioconductor
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-ngs-bioconductor-${DOCKERS_VERSION}" "ngs/bioconductor:latest" --spec "../../ngs/bioconductor" --build-arg BASE_IMAGE="bioconductor/release_core2:R3.5.3_Bioc3.8"
+# # bioconductor
+# build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-ngs-bioconductor-${DOCKERS_VERSION}" "ngs/bioconductor:latest" --spec "../../ngs/bioconductor" --build-arg BASE_IMAGE="bioconductor/release_core2:R3.5.3_Bioc3.8"
 
 ########################
 # Research environments dockers
