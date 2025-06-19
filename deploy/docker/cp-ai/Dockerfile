@@ -43,7 +43,7 @@ RUN mkdir -p /opt/local/mamba && \
 
 ENV AI_APP_DIR /opt/ai
 RUN mkdir -p $AI_APP_DIR
-COPY api $AI_APP_DIR/api/
+COPY cp_ai $AI_APP_DIR/cp_ai/
 COPY launch.sh $AI_APP_DIR/
 
 ENV GOOGLE_GENAI_MODEL $GOOGLE_GENAI_MODEL

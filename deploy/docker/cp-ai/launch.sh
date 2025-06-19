@@ -18,6 +18,20 @@
 
 export PATH=$PATH:/opt/local/mamba/bin
 export AI_APP_DIR="${AI_APP_DIR:-/opt/ai}"
+
+export MONGODB_ROOT_PATH="${MONGODB_ROOT_PATH:-/opt/mongodb}"
+export MONGODB_DATA_PATH="${MONGODB_DATA_PATH:-$MONGODB_ROOT_PATH/data/db}"
+export MONGODB_HOST="${MONGODB_HOST:-127.0.0.1}"
+export MONGODB_PORT="${MONGODB_PORT:-27017}"
+
+export CHROMA_DB_PATH="${CHROMA_DB_PATH:-/opt/documents}"
+export CHATS_DB_PATH="mongodb://$MONGODB_HOST:$MONGODB_PORT"
+export CP_AI_LOGS_DIR=/var/log
+
+mkdir -p CP_AI_LOGS_DIR
+
+MONGODB_CONFIG_PATH="$MONGODB_ROOT_PATH/mongo.conf"
+
 cd "$AI_APP_DIR"
 AI_CONDA_ENVIRONMENT_NAME="${AI_CONDA_ENVIRONMENT_NAME:-ai}"
 
@@ -26,23 +40,32 @@ micromamba activate "$AI_CONDA_ENVIRONMENT_NAME"
 
 mkdir -p "/data/db"
 echo "Starting MongoDB"
-mongod --dbpath /data/db --bind_ip_all &
+echo "Creating MongoDB config at $MONGODB_CONFIG_PATH"
+mkdir -p "$MONGODB_ROOT_PATH"
+mkdir -p "$MONGODB_DATA_PATH"
+cat > "$MONGODB_CONFIG_PATH" << EOM
+storage:
+  dbPath: $MONGODB_DATA_PATH
+net:
+  bindIp: $MONGODB_HOST
+  port: $MONGODB_PORT
+EOM
+mongod --config "$MONGODB_CONFIG_PATH" &
 MONGO_PID=$!
 
 echo "Creating documents index"
-python -m api.create_index
+python -m cp_ai.database.create
 
 echo "Starting api"
-touch /var/log/api.log
-
+touch /var/log/cp_ai.log
 export AI_PORT=7860
 export AI_HOST="0.0.0.0"
 os_processes_count=$(($(nproc) - 1))
 export PROCESSES_COUNT=${AI_WEB_SERVER_PROCESSES:-$os_processes_count}
 mkdir "$AI_APP_DIR/logs"
-nohup python -m uvicorn api.app:app --loop asyncio --host "$AI_HOST" --port "$AI_PORT" --workers "$PROCESSES_COUNT" >> /var/log/api.log 2>&1 &
+nohup python -m uvicorn cp_ai.api.api:app --loop asyncio --host "$AI_HOST" --port "$AI_PORT" --workers "$PROCESSES_COUNT" >> /var/log/cp_ai.log 2>&1 &
 
 micromamba deactivate
 
-tail -F /var/log/api.log &
+tail -F /var/log/cp_ai.log &
 wait "$!"
