@@ -17,6 +17,7 @@
 import {observable, computed, action} from 'mobx';
 import {io} from 'socket.io-client';
 import {LAUNCH_PLACEHOLDER_START, PLACEHOLDER_END} from './components/message/message-utils';
+import preferences from '../../models/preferences/PreferencesLoad';
 
 let token = 0;
 
@@ -25,8 +26,54 @@ const getToken = () => {
   return token;
 };
 
-const base = 'https://edge.aws.cloud-pipeline.com/pipeline-75485-7860-0/';
-const socketIOUrl = new URL('socket.io', base);
+/**
+ * @returns {Promise<{base: string, socketIOUrl: URL}>}
+ */
+async function initialize () {
+  await preferences.fetchIfNeededOrWait();
+  const {
+    api
+  } = preferences.miscAIPreferences || {};
+  if (!api) {
+    throw new Error('Chatbot API is not specified');
+  }
+  let base = api;
+  if (!base.endsWith('/')) {
+    base = base + '/';
+  }
+  const socketIOUrl = new URL('socket.io', base);
+  return {
+    base,
+    socketIOUrl
+  };
+}
+
+async function aiApiFetch (uri, options) {
+  const {
+    base
+  } = await initialize();
+  if (uri.startsWith('/')) {
+    uri = uri.slice(1);
+  }
+  const response = await fetch(`${base}${uri}`, options);
+  if (!response.ok) {
+    throw new Error(
+      response.statusText
+        ? `error fetching "${uri}": ${response.statusText}`
+        : `error fetching "${uri}": ${response.status}`
+    );
+  }
+  const data = await response.json();
+  const {
+    status = 'OK',
+    message,
+    payload
+  } = data || {};
+  if (!/^OK$/i.test(status)) {
+    throw new Error(message || `error fetching "${uri}"`);
+  }
+  return payload;
+}
 
 class ChatEngine {
   @observable _messages = [];
@@ -83,16 +130,16 @@ class ChatEngine {
         'Content-Type': 'application/json; charset=UTF-8;'
       },
       body: JSON.stringify({
-        role: 'user',
         content: message.text
       })
     };
-    const response = await fetch(
-      `${base}chat/${this._chatId}/message`,
-      fetchOptions
-    );
-    if (response.error) {
-      this.error = response.error;
+    try {
+      await aiApiFetch(
+        `chat/${this._chatId}/message`,
+        fetchOptions
+      );
+    } catch (error) {
+      this.error = error.message;
     }
   };
 
@@ -190,16 +237,17 @@ class ChatEngine {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=UTF-8;'
-      },
-      body: JSON.stringify({})
+      }
     };
-    const response = await fetch(`${base}chat`, fetchOptions);
-    if (response.error) {
-      this.error = response.error;
-      return;
+    try {
+      const chat = await aiApiFetch('chat', fetchOptions);
+      const {
+        chat_id: chatId
+      } = chat || {};
+      this._chatId = chatId;
+    } catch (error) {
+      this.error = error.message;
     }
-    const id = await response.json();
-    this._chatId = id;
   };
 
   initializeChat = async (responseMessage) => {
@@ -220,6 +268,7 @@ class ChatEngine {
       if (this._socket) {
         this._socket.close();
       }
+      const {socketIOUrl} = await initialize();
       this._socket = io(socketIOUrl.origin, {
         withCredentials: true,
         secure: true,
