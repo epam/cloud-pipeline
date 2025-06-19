@@ -180,7 +180,7 @@ app.mount('/', sio_app)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0")
-    parser.add_argument("--port", default=7862)
+    parser.add_argument("--port", default=7861)
     args = parser.parse_args()
     api_logger.info(f'launching app at {args.host}:{args.port}')
     uvicorn.run(sio_app,
