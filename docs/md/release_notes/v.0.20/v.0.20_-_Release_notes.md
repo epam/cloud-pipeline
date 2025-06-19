@@ -15,6 +15,7 @@
 - [Billing: Google Cloud Billing integration](#billing-google-cloud-billing-integration)
 - [Data catalog: improvements and Google Cloud integration](#data-catalog-improvements-and-google-cloud-integration)
 - [Terraform-based platform deployment on Google Cloud](#terraform-based-platform-deployment-on-google-cloud)
+- [Pipeline execution: Google Batch integration](#pipeline-execution-google-batch-integration)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -346,3 +347,22 @@ That guidance provisions everything needed to run Cloud Pipeline reliably and se
 - **Artifact Registry**
 - **Firewall rules**
 - **Jump Host**
+
+## Pipeline execution: Google Batch integration
+
+In the current version, the ability that extends Cloud Pipeline's main execution backend to run Nextflow pipelines on Batch in Google Cloud deployment was added.
+
+From now on, to enable Batch using for Nextflow pipeline runs on GCP, it is enough to meet the following conditions:
+
+- Nextflow pipeline based on Nextflow docker image shall be used for the run.
+- In the `cluster.networks.config` System Preference, configuration section of the machine image, that is used for the running Nextflow pipelines, shall contain additional specification that includes GCP service account details:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_NextflowBatchGCP_01.png)
+- `nextflow.config` of the pipeline shall contain special `google-batch` profile, that is used for the Nextflow pipeline run:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_NextflowBatchGCP_02.png)
+- Pipeline's `nextflow run` command shall use created `google-batch` profile:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_NextflowBatchGCP_03.png)
+
+During the such pipeline run, Nextflow Batch execution logs will be diplayed in the console:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_NextflowBatchGCP_04.png)
+
+For more details, see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#running-nextflow-pipelines-on-batch-in-google-cloud).
