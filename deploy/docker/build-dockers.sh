@@ -393,7 +393,8 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rockylinux/vanilla "$CP_DIS
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/cromwell "$CP_DIST_REPO_NAME:tools-base-cromwell-${DOCKERS_VERSION}" "library/cromwell:latest"
 
 # Nextflow
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest" --build-arg BASE_IMAGE="library/rockylinux:8.7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow/latest "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest" --build-arg BASE_IMAGE="library/rockylinux:8.7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow/nf-25.02.3-edge-rocky8 "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:25.02.3-edge-rocky8"
 
 # # Snakemake
 # build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/snakemake "$CP_DIST_REPO_NAME:tools-base-snakemake-${DOCKERS_VERSION}" "library/snakemake:latest"
@@ -498,6 +499,10 @@ NGS_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/ngs
 ########################
 
 RESEARCH_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/research
+
+# Active Learning Docking
+
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/al-docking "$CP_DIST_REPO_NAME:tools-research-al-docking-${DOCKERS_VERSION}" "library/al-docking:1.0.0"
 
 ### TODO disabled because of error with ubuntu public key
 # Spyder with noVNC

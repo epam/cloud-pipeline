@@ -1,4 +1,5 @@
 /.gradle
+/.history
 /.idea
 *.log
 api/src/main/resources/static/
