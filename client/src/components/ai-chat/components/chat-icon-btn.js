@@ -14,19 +14,24 @@
  *  limitations under the License.
  */
 
-export default {
-  dashboard: 'dashboard',
-  library: 'library',
-  cluster: 'cluster',
-  tools: 'tools',
-  runs: 'runs',
-  run: 'run',
-  settings: 'settings',
-  search: 'search',
-  billing: 'billing',
-  chat: 'chat',
-  notifications: 'notifications',
-  miew: 'miew',
-  wsi: 'wsi',
-  hcs: 'hcs'
-};
+/* eslint-disable max-len */
+import React from 'react';
+
+export default function ChatIconBtn () {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="cp-primary"
+      style={{width: '100%', height: '100%'}}
+    >
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}

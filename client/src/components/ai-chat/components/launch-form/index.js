@@ -14,19 +14,16 @@
  *  limitations under the License.
  */
 
-export default {
-  dashboard: 'dashboard',
-  library: 'library',
-  cluster: 'cluster',
-  tools: 'tools',
-  runs: 'runs',
-  run: 'run',
-  settings: 'settings',
-  search: 'search',
-  billing: 'billing',
-  chat: 'chat',
-  notifications: 'notifications',
-  miew: 'miew',
-  wsi: 'wsi',
-  hcs: 'hcs'
+import TitleSection from './title-section/title-section';
+import InputField from './input-field/input-field';
+import ParameterGroup from './parameter-group/parameter-group';
+import Environment from './environment/environment';
+import LaunchFormInfo from './launch-form-info/launch-form-info';
+
+export {
+  TitleSection,
+  InputField,
+  ParameterGroup,
+  Environment,
+  LaunchFormInfo
 };
