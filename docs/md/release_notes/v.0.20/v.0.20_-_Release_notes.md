@@ -10,12 +10,16 @@
     - [Methylseq](#methylseq)
     - [Proteinfold](#proteinfold)
     - [Active Learning Pipeline](#active-learning-pipeline)
-- [System logs: Google Cloud Logging integration](#system-logs-google-cloud-logging-integration)
-- [Resource monitoring: Google Cloud Monitoring integration](#resource-monitoring-google-cloud-monitoring-integration)
-- [Billing: Google Cloud Billing integration](#billing-google-cloud-billing-integration)
-- [Data catalog: improvements and Google Cloud integration](#data-catalog-improvements-and-google-cloud-integration)
-- [Terraform-based platform deployment on Google Cloud](#terraform-based-platform-deployment-on-google-cloud)
-- [Pipeline execution: Google Batch integration](#pipeline-execution-google-batch-integration)
+- [Google-native infrastructure integration](#google-native-infrastructure-integration)
+    - [Compute engines management: Google Kubernetes Engine integration](#compute-engines-management-google-kubernetes-engine-integration)
+    - [Platform database: Google Cloud SQL integration](#platform-database-google-cloud-sql-integration)
+    - [Docker images storing: Google Artifact Registry integration](#docker-images-storing-google-artifact-registry-integration)
+    - [Resource monitoring: Google Cloud Monitoring integration](#resource-monitoring-google-cloud-monitoring-integration)
+    - [Terraform-based platform deployment on Google Cloud](#terraform-based-platform-deployment-on-google-cloud)
+    - [System logs: Google Cloud Logging integration](#system-logs-google-cloud-logging-integration)
+    - [Billing: Google Cloud Billing integration](#billing-google-cloud-billing-integration)
+    - [Data catalog: improvements and Google Cloud integration](#data-catalog-improvements-and-google-cloud-integration)
+    - [Pipeline execution: Google Batch integration](#pipeline-execution-google-batch-integration)
 
 ## Visualization of Nextflow pipeline execution
 
@@ -173,7 +177,97 @@ Totally, it allows to predict drug candidates using active learning from a set o
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md#active-learning-pipeline).
 
-## System logs: Google Cloud Logging integration
+## Google-native infrastructure integration
+
+[Previously](../v.0.16/v.0.16_-_Release_notes.md#google-cloud-platform-support), the support of [Google Cloud Platform](https://cloud.google.com/) (GCP) resources in Cloud Pipeline (in terms of data storages and compute engine instances) was implemented.
+
+And in the current version, one of the major features implemented is the core integration of the Cloud Pipeline solution with native GCP services.  
+As a result of this integration Cloud Pipeline platform leverages GCP services to provide a scalable, intelligent, and user-friendly platform for managing and running genomics pipelines and HPC tasks.
+
+In the context of the integration of Cloud Pipeline with GCP, the process of replacing the on-premises general infrastructure components with GCP-native solutions was carried out.  
+This replacement includes the following core systems and components:
+
+- self-hosted `Kubernetes` was replaced with [`Google Kubernetes Engine (GKE)`](https://cloud.google.com/kubernetes-engine)
+- self-hosted `PostgreSQL` database was replaced with [`Cloud SQL`](https://cloud.google.com/sql)
+- self-hosted `Docker Registry` was replaced with [`Artifact Registry`](https://cloud.google.com/artifact-registry/docs)
+- built-in `Kubernetes` node monitoring functionality was replaced with [`Cloud Monitoring`](https://cloud.google.com/monitoring)
+- additionally, Terraform-based code scripts for automated deployment of the Cloud Pipeline platform on GCP was provided
+
+In addition, several Cloud Pipeline application services have been implemented using GCP-native services.  
+This includes:
+
+- support [`Cloud Logging`](https://developers.google.com/maps/documentation/mobility/operations/cloud-logging) for system logs storage
+- support [`Cloud Billing`](https://cloud.google.com/billing/docs) for billing reports generation
+- improved stability and scalability of platform’s data catalog feature
+- support [`GCP Batch`](https://cloud.google.com/batch) for pipeline execution
+
+The resulting Cloud Pipeline deployment using GCP-native services and infrastructure is shown below:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_GCP_01.png)
+
+### Compute engines management: Google Kubernetes Engine integration
+
+Previously, only one approach for the management of compute engine instances was supported - using self-hosted `Kubernetes` configuration.  
+Since the current **`v0.20`**, Cloud Pipeline platform could be deployed with [`Google Kubernetes Engine`](https://cloud.google.com/kubernetes-engine) as the core hosting and execution platform on GCP.  
+In terms of the GUI and the general platform use, for the end user everything remains the same.
+
+### Platform database: Google Cloud SQL integration
+
+Previously, only one approach for the storing the state of the Cloud Pipeline platform deployment was supported - using self-hosted `PostgreSQL 16` instance.  
+Since the current **`v0.20`**, Cloud Pipeline platform could be deployed with [`Google Cloud SQL`](https://cloud.google.com/sql) database for the storing the platform state. It provides better reliability and easier support for Cloud Pipeline deployment on GCP.  
+In terms of the GUI and the general platform use, for the end user everything remains the same.
+
+### Docker images storing: Google Artifact Registry integration
+
+Previously, only one approach for the storing docker images and Linux software packages for the Cloud Pipeline platform was supported - using self-hosted `Docker Registry`.  
+Since the current **`v0.20`**, Cloud Pipeline platform could be deployed with [`Google Artifact Registry`](https://cloud.google.com/artifact-registry/docs) repository that allows to store docker images and Linux software packages needed to start workloads and install missing dependencies in a same way.  
+In terms of the GUI and the general platform use, for the end user everything remains the same.
+
+### Resource monitoring: Google Cloud Monitoring integration
+
+In Cloud Pipeline, lots of metrics to monitor cluster compute nodes are collected.  
+For users, these metrics are available via the [**Cluster Monitor**](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor) form.  
+
+Previously, built-in `Kubernetes` functionality was used to monitor compute nodes metrics.
+
+In **`v0.20`**, new ability is integrated to the Cloud Pipeline platform - [`Google Cloud Monitoring`](https://cloud.google.com/monitoring) to monitor metrics on Google Compute Engine nodes.  
+In case of `Google Cloud Monitoring`:
+
+- metrics are collected within built-in Google Cloud services (for such metrics like CPU utilization and Network traffic tracking) and special [`Ops Agent`](https://cloud.google.com/monitoring/api/metrics_opsagent) (for such metrics like memory and disk usage)
+- the following metrics are monitored:
+    - `CPU Utilization`: load and `max` usage
+    - `Memory Usage`: used and `max` memory
+    - `Disk Usage`: per-device capacity and free space
+    - `Network Traffic`: sent/received bytes summary
+    - `GPU Utilization`: `avg`, `min`, `max` usages
+    - `GPU Memory Usage`: `avg`, `min`, `max` memory
+    - `GPU Processes Utilization`: `avg`, `min`, `max` usages
+- in terms of the **Cluster Monitor** usage and the GUI, for the end user everything remains the same  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_MetricsMonitoring_1.png)
+
+Besides, new **System Preferences** were added to have the ability to configure `Google Cloud Monitoring` in the Cloud Pipeline platform:
+
+- **`cluster.monitoring.gcp.intervals.number`** - sets a number of intervals in monitoring period by which metrics should be received
+- **`cluster.monitoring.gcp.minimal.interval`** - defines minimum interval (in seconds) between metrics taking.  
+    This interval duration will be used for metrics taking only in case when monitoring period divided on `cluster.monitoring.gcp.intervals.number` is smaller than this interval
+
+For more technical details about metrics getting, see [here](https://github.com/epam/cloud-pipeline/issues/3969#issuecomment-2879486629).
+
+### Terraform-based platform deployment on Google Cloud
+
+From the current version, any new Cloud Pipeline platform release can be easily deployed on Google Cloud Platform using [**`Terraform`**](https://developer.hashicorp.com/terraform).
+
+A full technical guidance how to deploy infrastructure using `Terraform` and install Cloud Pipeline on Google Cloud, see in the [Platform on GCP deployment manual](../../installation/native/gcp/terraform/README.md).  
+That guidance provisions everything needed to run Cloud Pipeline reliably and securely, including:
+
+- **Google Kubernetes Engine (GKE) cluster**
+- **Filestore (NFS)**
+- **Cloud SQL (Private IP)**
+- **Cloud Storage bucket**
+- **Artifact Registry**
+- **Firewall rules**
+- **Jump Host**
+
+### System logs: Google Cloud Logging integration
 
 In Cloud Pipeline, [Security logging](../../manual/12_Manage_Settings/12.12._System_logs.md) is supported.  
 Platform records audit trail events like:
@@ -206,44 +300,14 @@ Besides, new **System Preferences** were added to have the ability to configure 
 - **`gcp.logging.bigquery.connect.timeout.mills`** - sets the connection timeout (in milliseconds) for the `BigQuery` client
 - **`gcp.logging.bigquery.max.bytes`** - sets the maximum limit (in bytes) that could be fetched per request
 
-## Resource monitoring: Google Cloud Monitoring integration
-
-In Cloud Pipeline, lots of metrics to monitor cluster compute nodes are collected.  
-For users, these metrics are available via the [**Cluster Monitor**](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor) form.  
-
-Previously, built-in `Kubernetes` functionality was used to monitor compute nodes metrics.
-
-In **`v0.20`**, new ability is integrated to the Cloud Pipeline platform - [`Google Cloud Monitoring`](https://cloud.google.com/monitoring) to monitor metrics on Google Compute Engine nodes.  
-In case of `Google Cloud Monitoring`:
-
-- metrics are collected within built-in Google Cloud services (for such metrics like CPU utilization and Network traffic tracking) and special [`Ops Agent`](https://cloud.google.com/monitoring/api/metrics_opsagent) (for such metrics like memory and disk usage)
-- the following metrics are monitored:
-    - `CPU Utilization`: load and `max` usage
-    - `Memory Usage`: used and `max` memory
-    - `Disk Usage`: per-device capacity and free space
-    - `Network Traffic`: sent/received bytes summary
-    - `GPU Utilization`: `avg`, `min`, `max` usages
-    - `GPU Memory Usage`: `avg`, `min`, `max` memory
-    - `GPU Processes Utilization`: `avg`, `min`, `max` usages
-- in terms of the **Cluster Monitor** usage and the GUI, for the end user everything remains the same  
-    ![CP_v.0.20_ReleaseNotes](attachments/RN020_MetricsMonitoring_1.png)
-
-Besides, new **System Preferences** were added to have the ability to configure `Google Cloud Monitoring` in the Cloud Pipeline platform:
-
-- **`cluster.monitoring.gcp.intervals.number`** - sets a number of intervals in monitoring period by which metrics should be received
-- **`cluster.monitoring.gcp.minimal.interval`** - defines minimum interval (in seconds) between metrics taking.  
-    This interval duration will be used for metrics taking only in case when monitoring period divided on `cluster.monitoring.gcp.intervals.number` is smaller than this interval
-
-For more technical details about metrics getting, see [here](https://github.com/epam/cloud-pipeline/issues/3969#issuecomment-2879486629).
-
-## Billing: Google Cloud Billing integration
+### Billing: Google Cloud Billing integration
 
 Cloud Pipeline platform has integrated billing service.  
 It allows to get from Cloud provider and then process, track and display the associated costs for using platform resources by the users.  
 Costs on compute instances launch are available from runs pages. Additionally, there is a separate [**Billing Dashboard**](../../manual/Appendix_D/Appendix_D._Costs_management.md#billing-reports) to monitor platform expenses.
 
 Cloud Pipeline already supports billing functionality for different Cloud providers, including Google Cloud.  
-But in the current version, default collecting of the billing information for the Google Cloud provider was supplemented with the using of GCP Billing API for more accuracy.
+But in the current version, default collecting of the billing information for the Google Cloud provider was supplemented with the using of [`Cloud Billing`](https://cloud.google.com/billing/docs) API for more accuracy.
 
 A new **System Preference** was added - **`gcp.billing.account.id`**  
 This preference allows to specify billing account ID of the GCP account used in the current Cloud Pipeline deployment. And if this preference is set (billing account is specified):
@@ -256,7 +320,7 @@ This preference allows to specify billing account ID of the GCP account used in 
 
 If `gcp.billing.account.id` preference is not set and GCP is the current Cloud provider of the Cloud Pipeline platform, for all billing calculations default GCP prices will be retrieved without taking into account possible discounts of the specific billing account.
 
-## Data catalog: improvements and Google Cloud integration
+### Data catalog: improvements and Google Cloud integration
 
 Cloud Pipeline platform has integrated system of the displaying and searching over the platform objects (runs, tools, pipelines, data storage files and folders, and others) - [Data Catalog](../../manual/19_Search/19._Global_search.md#advanced-search).  
 It allows easily find and filter necessary objects and data, and then open them or navigate for the further work with.
@@ -267,14 +331,14 @@ In the current version, some issues, that were previously observed with the Data
 - low performance for large indices
 - duplication of indices
 
-### Instability of security logs
+#### Instability of security logs
 
 Previously, System Logs could be partially unavailable or not stored due to `ElasticSearch` issues.  
 These issues could caused to hardly track security events and analyze historical data.  
 In **`v0.20`**, such instability of security logs was addressed via the [Google Cloud Logging integration](#system-logs-google-cloud-logging-integration).  
 Now, audit logs are stored and managed using more stable Google Cloud APIs.
 
-### Low performance for large indices
+#### Low performance for large indices
 
 Performance of the previous implementation of the Data Catalog based on `ElasticSearch` could degrade with large indices due to various factors like improper shard allocation, high ingestion rates, and resource limitations.  
 In **`v0.20`**, the following measures were taken to avoid a performance decrease:
@@ -325,7 +389,7 @@ Where, `<STORAGE_NAME>` is an exact storage name or a wildcard for a storage nam
 >     Total size:             80G
 >     Number of documents:    3
 
-### Duplication of indices
+#### Duplication of indices
 
 From time to time, in the `ElasticSearch` database duplicated, unused or detached indices are occurred.  
 It may lead to wasting extra space, consuming more system resources, and slowing down query performance.
@@ -333,24 +397,9 @@ It may lead to wasting extra space, consuming more system resources, and slowing
 To prevent such situation, in **`v0.20`**, extended clean up logic for indices was added to `ElasticSearch` agent service implementation.  
 This allows to easily remove identified duplicated, unused or detached indices from alias during the regular index management in automatic mode.
 
-## Terraform-based platform deployment on Google Cloud
+### Pipeline execution: Google Batch integration
 
-From the current version, any new Cloud Pipeline platform release can be easily deployed on Google Cloud Platform using [**`Terraform`**](https://developer.hashicorp.com/terraform).
-
-A full technical guidance how to deploy infrastructure using `Terraform` and install Cloud Pipeline on Google Cloud, see in the [Platform on GCP deployment manual](../../installation/native/gcp/terraform/README.md).  
-That guidance provisions everything needed to run Cloud Pipeline reliably and securely, including:
-
-- **Google Kubernetes Engine (GKE) cluster**
-- **Filestore (NFS)**
-- **Cloud SQL (Private IP)**
-- **Cloud Storage bucket**
-- **Artifact Registry**
-- **Firewall rules**
-- **Jump Host**
-
-## Pipeline execution: Google Batch integration
-
-In the current version, the ability that extends Cloud Pipeline's main execution backend to run Nextflow pipelines on Batch in Google Cloud deployment was added.
+In the current version, the ability that extends Cloud Pipeline's main execution backend to run Nextflow pipelines on [`Batch`](https://cloud.google.com/batch) in Google Cloud deployment was added.
 
 From now on, to enable Batch using for Nextflow pipeline runs on GCP, it is enough to meet the following conditions:
 
