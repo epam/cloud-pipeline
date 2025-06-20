@@ -8,7 +8,7 @@ from cp_ai.common.utilities import extract_json_response
 from cp_ai.llm import llm_simple_query
 from ..launch.tools import generate_launch_payload, LaunchException
 from ..logger import agents_logger
-from ..utilities import pick_best_elements
+from ..utilities import pick_best_elements, wrap_launch_payload_response
 
 
 _pipeline_score_prompt = (f'Calculate score based on the following rules:\n'
@@ -271,18 +271,16 @@ def launch_pipeline_by_user_query(
                 f'\n\n'
                 f'Please, specify which pipeline to launch'
             )
-        payload = generate_pipeline_launch_payload(
+        return wrap_launch_payload_response(generate_pipeline_launch_payload(
             query,
             matched_pipelines[0],
             bearer=bearer,
             **kwargs
-        )
-        payload_str = json.dumps(payload)
-        return f'<<<LAUNCH:{payload_str}>>>'
+        ))
     except LaunchException as le:
         agents_logger.error(le.launch_exception_message)
         return str(le)
     except BaseException as e:
-        agents_logger.error('error generataing launch pipeline payload',
+        agents_logger.error('error generating launch pipeline payload',
                             exc_info=e)
         raise

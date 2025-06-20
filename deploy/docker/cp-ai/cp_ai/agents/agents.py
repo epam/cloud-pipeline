@@ -58,10 +58,10 @@ async def answer_using_default_agent(
         -------------
         {user_query}
         -------------
-        Instructions: 
+        IMPORTANT: 
         - Do not use tools if it is not requested directly.
-        - You must include any and all blocks that look like <<<...>>> verbatim and exactly as they appeared in the tool output.
-        - Do not rephrase, omit, or filter out these <<<...>>> blocks. Treat them as immutable text.
+        - You must include any and all blocks that look like `<<<...>>>` verbatim and exactly as they appeared in the tool output.
+        - Do not rephrase, omit, or filter out these `<<<...>>>` blocks. Treat them as immutable text.
         - If the tool output contains **references**, include such references to the final response.
         - If 'LaunchException' is returned from some of the agent, STOP execution and request details from user considering LaunchException info.
         - Use Markdown format; include all available links and references (prefer format [entity name](entity url)].

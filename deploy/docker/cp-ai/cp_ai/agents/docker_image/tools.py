@@ -10,7 +10,8 @@ from cp_ai.llm import llm_simple_query
 from ..launch.tools import LaunchException, generate_launch_payload
 from ..logger import agents_logger
 from ..utilities import (batched_execution,
-                         pick_best_elements)
+                         pick_best_elements,
+                         wrap_launch_payload_response)
 
 
 class _ScoredDockerImage(BaseModel):
@@ -196,13 +197,11 @@ def launch_tool_by_user_query(
             cfg.docker_image = f'{docker_image.full_image}:{version}'
         if cfg.cmd_template is None:
             cfg.cmd_template = 'sleep infinity'
-        payload = generate_launch_payload(
+        return wrap_launch_payload_response(generate_launch_payload(
             cfg,
             user_query=query,
             bearer=bearer
-        )
-        payload_str = json.dumps(payload)
-        return f'<<<LAUNCH:{payload_str}>>>'
+        ))
     except LaunchException as le:
         agents_logger.error(le.launch_exception_message)
         return str(le)

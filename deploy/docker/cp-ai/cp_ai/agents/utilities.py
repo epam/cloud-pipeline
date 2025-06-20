@@ -235,3 +235,13 @@ def pick_best_elements(
             logger.info(p_str)
     print_results(best, title=f'picked {element_name}s identifiers')
     return [b.element for b in best]
+
+
+def wrap_launch_payload_response(
+        payload: dict
+) -> str:
+    payload_str = json.dumps(payload)
+    return (f'<<<LAUNCH:{payload_str}>>>\n\n'
+            f'IMPORTANT:'
+            f'- You must include this block that exactly as it appeared in the tool output.\n'
+            f'- Do not rephrase, omit, or filter out this `<<<LAUNCH:...>>>` block. Treat them as immutable text.\n')
