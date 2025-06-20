@@ -62,7 +62,7 @@ def find_docker_image(image: str, /, docker_images: list[DockerImage] | None = N
 
 def get_docker_image_versions(
         tool_id: int,
-        logger: Logger | None,
+        logger: Logger | None = None,
         bearer: str | None = None,
 ) -> list[str]:
     if logger is None:
@@ -79,7 +79,7 @@ def get_docker_image_versions(
 
 def get_docker_image_settings(
         tool_id: int,
-        logger: Logger | None,
+        logger: Logger | None = None,
         bearer: str | None = None,
 ) -> list[DockerImageSettings]:
     if logger is None:

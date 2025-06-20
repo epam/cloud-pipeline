@@ -60,8 +60,8 @@ async def answer_using_default_agent(
         -------------
         Instructions: 
         - Do not use tools if it is not requested directly.
-        - If the tool output contains responses of format "<<<...>>>" (e.g. "<<<LAUNCH:...>>>"), always include such responses AS IS to the final response;
-        such blocks (<<<...>>>) are essential and contains technical details about user query.
+        - You must include any and all blocks that look like <<<...>>> verbatim and exactly as they appeared in the tool output.
+        - Do not rephrase, omit, or filter out these <<<...>>> blocks. Treat them as immutable text.
         - If the tool output contains **references**, include such references to the final response.
         - If 'LaunchException' is returned from some of the agent, STOP execution and request details from user considering LaunchException info.
         - Use Markdown format; include all available links and references (prefer format [entity name](entity url)].
