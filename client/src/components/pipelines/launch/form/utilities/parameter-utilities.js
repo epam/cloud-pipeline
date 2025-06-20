@@ -384,70 +384,82 @@ function generateKey (parameters = []) {
  * @returns {Promise<Parameter[]>}
  */
 async function readParametersFromConfiguration (configuration, options = undefined) {
-  const {
-    detached = false,
-    pipeline = false
-  } = options || {};
-  await Promise.all([
-    preferences.fetchIfNeededOrWait(),
-    runDefaultParameters.fetchIfNeededOrWait()
-  ]);
-  const {
-    parameters = {},
-    // eslint-disable-next-line camelcase
-    conditional_parameters = {},
-    conditionalParameters = conditional_parameters
-  } = configuration || {};
-  const params = [];
-  for (const [name, parameter] of Object.entries(parameters)) {
-    const normalized = getParameterConfig(name, parameter, {detached, pipeline});
-    const {type, value, system} = normalized;
-    params.push({
-      key: generateKey(params),
-      name,
-      type,
-      value,
-      config: normalized,
-      configs: [normalized],
-      system
-    });
-  }
-  for (const [condition, paramsMap] of Object.entries(conditionalParameters)) {
-    for (const [name, parameter] of Object.entries(paramsMap)) {
-      const normalized = getParameterConfig(
+  try {
+    const {
+      detached = false,
+      pipeline = false
+    } = options || {};
+    await Promise.all([
+      preferences.fetchIfNeededOrWait(),
+      runDefaultParameters.fetchIfNeededOrWait()
+    ]);
+    let {
+      parameters = {},
+      // eslint-disable-next-line camelcase
+      conditional_parameters = {},
+      conditionalParameters = conditional_parameters
+    } = configuration || {};
+    if (!parameters) {
+      parameters = {};
+    }
+    if (!conditionalParameters) {
+      conditionalParameters = {};
+    }
+    const params = [];
+    for (const [name, parameter] of Object.entries(parameters || {})) {
+      const normalized = getParameterConfig(name, parameter, {detached, pipeline});
+      const {type, value, system} = normalized;
+      params.push({
+        key: generateKey(params),
         name,
-        parameter,
-        {condition, detached, pipeline}
-      );
-      const existing = params.find((p) => p.name === name);
-      if (existing) {
-        existing.configs.push(normalized);
-      } else {
-        const defaultConfig = getParameterConfig(
+        type,
+        value,
+        config: normalized,
+        configs: [normalized],
+        system
+      });
+    }
+    for (const [condition, paramsMap] of Object.entries(conditionalParameters || {})) {
+      for (const [name, parameter] of Object.entries(paramsMap || {})) {
+        const normalized = getParameterConfig(
           name,
-          {
-            value: undefined,
-            type: normalized.type,
-            visible: false,
-            fallbackConfig: true
-          },
-          {detached, pipeline}
+          parameter,
+          {condition, detached, pipeline}
         );
-        const {type, value, system} = defaultConfig;
-        params.push({
-          key: generateKey(params),
-          name,
-          type,
-          value,
-          config: defaultConfig,
-          configs: [defaultConfig, normalized],
-          system
-        });
+        const existing = params.find((p) => p.name === name);
+        if (existing) {
+          existing.configs.push(normalized);
+        } else {
+          const defaultConfig = getParameterConfig(
+            name,
+            {
+              value: undefined,
+              type: normalized.type,
+              visible: false,
+              fallbackConfig: true
+            },
+            {detached, pipeline}
+          );
+          const {type, value, system} = defaultConfig;
+          params.push({
+            key: generateKey(params),
+            name,
+            type,
+            value,
+            config: defaultConfig,
+            configs: [defaultConfig, normalized],
+            system
+          });
+        }
       }
     }
+    const {parameters: result} = validateParameters(params);
+    return result;
+  } catch (error) {
+    console.error('Error reading parameters from configuration:');
+    console.error(error);
+    throw error;
   }
-  const {parameters: result} = validateParameters(params);
-  return result;
 }
 
 /**

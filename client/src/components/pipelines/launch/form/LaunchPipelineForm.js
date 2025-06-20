@@ -952,14 +952,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }} : undefined);
       if (!err && this.validateFireCloudConnections()) {
         let payload;
-        if (this.props.editConfigurationMode) {
-          payload = this.generateConfigurationPayload(values);
-        } else if (this.props.detached) {
-          // single payload
-          payload = this.generateLaunchPayload(values);
-        } else {
-          // multiple payloads
-          payload = this.generateLaunchPayloads(values);
+        try {
+          if (this.props.editConfigurationMode) {
+            payload = this.generateConfigurationPayload(values);
+          } else if (this.props.detached) {
+            // single payload
+            payload = this.generateLaunchPayload(values);
+          } else {
+            // multiple payloads
+            payload = this.generateLaunchPayloads(values);
+          }
+        } catch (e) {
+          message.error(e.message, 5);
+          return;
         }
         if (this.props.onLaunch) {
           const result = await this.props.onLaunch(
@@ -1577,7 +1582,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateLaunchPayloads = (values) => {
-    const payloads = this.getParametersPayloads().filter((p) => p.enabled);
+    const parametersPayloads = this.getParametersPayloads();
+    if (parametersPayloads.length === 0) {
+      const payload = this.getParametersPayloads() || {};
+      parametersPayloads.push({
+        ...payload,
+        enabled: true
+      });
+    }
+    const payloads = parametersPayloads.filter((p) => p.enabled);
     return payloads.map((p) => this.generateLaunchPayload(values, p.id));
   };
 
@@ -5255,13 +5268,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } = this.state;
     this.abortLoading('parametersChanged');
     this.wrapLoading('parameters', async (commitState) => {
-      const params = await parameterUtilities.readParametersFromConfiguration(
-        payload,
-        {
-          detached,
-          pipeline: pipeline !== undefined && pipeline !== null
-        }
-      );
+      let params = [];
+      try {
+        params = await parameterUtilities.readParametersFromConfiguration(
+          payload,
+          {
+            detached,
+            pipeline: pipeline !== undefined && pipeline !== null
+          }
+        );
+      } catch (error) {
+        console.log(`error initializing parameters: ${error.message}`);
+      }
       await this.registerParametersPayloads(
         [{parameters: params, id: 'default'}],
         commitState
@@ -5413,7 +5431,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const d = {
       id: currentParametersPayload ?? 'default',
       parameters: [],
-      initialParameters: []
+      initialParameters: [],
+      enabled: true
     };
     return parametersPayloads.find((p) => p.id === currentParametersPayload) ??
       parametersPayloads[0] ?? d;
@@ -5476,15 +5495,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return new Promise((resolve) => {
       const {parametersPayloads = []} = this.state;
       const idx = parametersPayloads.findIndex(p => p.id === payload.id);
+      const updated = parametersPayloads.slice();
       if (idx >= 0) {
-        const updated = parametersPayloads.slice();
         updated.splice(idx, 1, {...payload});
-        this.setState({
-          parametersPayloads: updated
-        }, () => resolve());
       } else {
-        resolve();
+        updated.push(payload);
       }
+      this.setState({
+        parametersPayloads: updated
+      }, () => resolve());
     });
   };
 
