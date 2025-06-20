@@ -34,15 +34,29 @@ function generate_params_file() {
     echo "[INFO] Parameters are written into $CP_NF_AUTOGENERATE_PARAMETERS_PATH"
     echo "[INFO] Parameters JSON:"
     cat "$CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+    echo
 }
 
 CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
+CP_NF_CACHEDIR="${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}"
 CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
 CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
 CP_NF_AUTOGENERATE_PARAMETERS_PATH="${CP_NF_AUTOGENERATE_PARAMETERS_PATH:-$SCRIPTS_DIR/cp_params.json}"
 
 export NXF_WORK="$CP_NF_WORKDIR"
+export NXF_CACHE_DIR="$CP_NF_CACHEDIR"
+export NXF_IGNORE_RESUME_HISTORY="${NXF_IGNORE_RESUME_HISTORY:-true}"
+export NXF_LOG_FILE="${NXF_LOG_FILE:-nextflow.log}"
+export NXF_UUID="$CP_NXF_UUID"
+
+# Parameters validation
+if [ -z "$CP_NXF_UUID" ]; then
+    echo "[ERROR] CP_NXF_UUID variable is not set. Cannot continue run $CP_CONTINUE_RUN"
+    exit 1
+fi
+#
+
 mkdir -p "$NXF_WORK"
 
 _IS_RUN_COMMAND=
@@ -55,6 +69,7 @@ done
 
 _ARGS=("$@")
 
+# Executor parameters
 NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
 rm -f "$NEXTFLOW_CONFIG"
@@ -76,7 +91,9 @@ if [ "$CP_CAP_SGE" == "true" ]; then
     echo "process.queue = 'main.q'" >> $NEXTFLOW_CONFIG
     echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
 fi
+#
 
+# NF Handler parameters
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
     if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
         echo "Running Nextflow with -with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event option"
@@ -97,11 +114,40 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 if [ -f "$NEXTFLOW_CONFIG" ]; then
+    echo "[INFO] Global nextflow config ($NEXTFLOW_CONFIG):"
+    cat "$NEXTFLOW_CONFIG"
+    echo
     _ARGS+=('-c')
     _ARGS+=("$NEXTFLOW_CONFIG")
 fi
+#
 
-$NXF_HOME/nextflow "${_ARGS[@]}"
+# Resume parameters
+_ARGS+=('-name')
+_ARGS+=($HOSTNAME)
+if [ -n "$CP_CONTINUE_RUN" ]; then
+    num_re='^[0-9]+$'
+    if ! [[ $CP_CONTINUE_RUN =~ $num_re ]] ; then
+      echo "[ERROR] CP_CONTINUE_RUN variable (value: $CP_CONTINUE_RUN) is not a run id, exiting"
+      exit 1
+    fi
+    
+    _ARGS+=('-resume')
+    _ARGS+=("$CP_NXF_UUID")
+fi
+#
+
+# Execute
+# - Print NFX_* environment
+echo "[INFO] NXF Environment variables:"
+printenv | grep '^NXF_'
+echo
+# - Print nextflow command
+echo "[INFO] Nextflow command:"
+_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}""
+echo "$_nf_cmd"
+echo
+eval "$_nf_cmd"
 _result_code="$?"
 
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
