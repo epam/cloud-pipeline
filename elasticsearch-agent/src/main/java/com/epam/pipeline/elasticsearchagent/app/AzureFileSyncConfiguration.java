@@ -59,6 +59,12 @@ public class AzureFileSyncConfiguration {
     @Value("${sync.az-file.storage.exclude.metadata.value:Exclude}")
     private String storageExcludeValue;
 
+    @Value("${sync.hidden.files.use.squashing:false}")
+    private boolean useSquashingForHiddenFiles;
+
+    @Value("${sync.hidden.files.squashed.name}")
+    private String squashedFilesName;
+
     @Bean
     public ObjectStorageFileManager azFileManager() {
         return new AzureBlobManager();
@@ -78,6 +84,9 @@ public class AzureFileSyncConfiguration {
                 DataStorageType.AZ,
                 SearchDocumentType.AZ_BLOB_FILE,
                 tagDelimiter, false,
-                storageExcludeKey, storageExcludeValue);
+                storageExcludeKey,
+                storageExcludeValue,
+                useSquashingForHiddenFiles,
+                squashedFilesName);
     }
 }

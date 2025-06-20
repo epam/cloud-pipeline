@@ -24,6 +24,7 @@ import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
+import com.epam.pipeline.elasticsearchagent.utils.HiddenFilesAggregator;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -43,7 +44,6 @@ import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -76,7 +76,6 @@ import java.util.stream.Stream;
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 
-@RequiredArgsConstructor
 @Slf4j
 @Setter
 public class ObjectStorageIndexImpl implements ObjectStorageIndex {
@@ -106,7 +105,49 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private Set<Long> storageIds;
     private Set<Long> skipStorageIds;
 
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
+    private final Boolean useSquashingHiddenFiles;
+    private final String squashedHiddenFolderName;
+
+    private final StorageFileMapper fileMapper;
+
+    public ObjectStorageIndexImpl(
+            CloudPipelineAPIClient cloudPipelineAPIClient,
+            ElasticsearchServiceClient elasticsearchServiceClient,
+            ElasticIndexService elasticIndexService,
+            ObjectStorageFileManager fileManager,
+            LockService lockService,
+            String indexPrefix,
+            String indexMappingFile,
+            int bulkInsertSize,
+            int bulkLoadTagsSize,
+            DataStorageType storageType,
+            SearchDocumentType documentType,
+            String tagDelimiter,
+            boolean includeVersions,
+            String storageExcludeKey,
+            String storageExcludeValue,
+            Boolean useSquashingHiddenFiles,
+            String squashedHiddenFolderName) {
+
+        this.cloudPipelineAPIClient = cloudPipelineAPIClient;
+        this.elasticsearchServiceClient = elasticsearchServiceClient;
+        this.elasticIndexService = elasticIndexService;
+        this.fileManager = fileManager;
+        this.lockService = lockService;
+        this.indexPrefix = indexPrefix;
+        this.indexMappingFile = indexMappingFile;
+        this.bulkInsertSize = bulkInsertSize;
+        this.bulkLoadTagsSize = bulkLoadTagsSize;
+        this.storageType = storageType;
+        this.documentType = documentType;
+        this.tagDelimiter = tagDelimiter;
+        this.includeVersions = includeVersions;
+        this.storageExcludeKey = storageExcludeKey;
+        this.storageExcludeValue = storageExcludeValue;
+        this.useSquashingHiddenFiles = useSquashingHiddenFiles;
+        this.squashedHiddenFolderName = squashedHiddenFolderName;
+        this.fileMapper = new StorageFileMapper(this.useSquashingHiddenFiles, this.squashedHiddenFolderName);
+    }
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
@@ -160,11 +201,25 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled() && includeVersions
                         ? loadFileWithVersions(dataStorage, credentialsSupplier)
                         : loadFiles(dataStorage, credentialsSupplier);
+
+                HiddenFilesAggregator hiddenFilesAggregator = new HiddenFilesAggregator(squashedHiddenFolderName);
+
                 files.flatMap(file -> countRestored(restoreActions, file).stream())
-                        .map(file -> createIndexRequest(
-                                file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
-                                findFileContent(dataStorage, file.getPath()))
-                        ).forEach(requestContainer::add);
+                    .forEach(file -> {
+                        if (useSquashingHiddenFiles && fileMapper.isHidden(dataStorage, file)) {
+                            hiddenFilesAggregator.add(file);
+                        } else {
+                            IndexRequest indexRequest = createIndexRequest(file, dataStorage, permissionsContainer,
+                                indexName, credentials.getRegion(), findFileContent(dataStorage, file.getPath()));
+                            requestContainer.add(indexRequest);
+                        }
+                    });
+
+                Optional.ofNullable(hiddenFilesAggregator.getHiddenAggregatedFile())
+                    .ifPresent(hiddenFile ->
+                        requestContainer.add(createIndexRequest(hiddenFile, dataStorage, permissionsContainer,
+                            indexName, credentials.getRegion(), null)));
+
             }
 
             finalizeIndex(alias, indexName, dataStorage.getId());
