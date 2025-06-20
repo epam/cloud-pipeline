@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.utils.FileContentUtils;
+import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -60,6 +61,21 @@ public class StorageFileMapper {
 
     private final Map<String, Set<String>> hiddenMasks = new HashMap<>();
     private final Map<String, Set<String>> indexContentMasks = new HashMap<>();
+
+    @Setter
+    private String hiddenFolderName;
+    @Setter
+    private boolean useSquashingHiddenFiles;
+
+    public StorageFileMapper() {
+        this.hiddenFolderName = null;
+        this.useSquashingHiddenFiles = false;
+    }
+
+    public StorageFileMapper(boolean useSquashingHiddenFiles, String hiddenFolderName) {
+        this.useSquashingHiddenFiles = useSquashingHiddenFiles;
+        this.hiddenFolderName = hiddenFolderName;
+    }
 
     public XContentBuilder fileToDocument(final DataStorageFile dataStorageFile,
                                           final AbstractDataStorage dataStorage,
@@ -197,7 +213,11 @@ public class StorageFileMapper {
         return null;
     }
 
-    private boolean isHidden(final AbstractDataStorage dataStorage, final DataStorageFile file) {
+    public boolean isHidden(final AbstractDataStorage dataStorage, final DataStorageFile file) {
+        if (useSquashingHiddenFiles &&
+                !StringUtils.isEmpty(this.hiddenFolderName) && this.hiddenFolderName.equals(file.getPath())) {
+            return true;
+        }
         return isMaskMatch(dataStorage.getName(), file.getPath(), hiddenMasks);
     }
 

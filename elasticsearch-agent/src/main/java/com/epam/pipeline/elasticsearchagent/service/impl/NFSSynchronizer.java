@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
+import com.epam.pipeline.elasticsearchagent.utils.HiddenFilesAggregator;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -82,8 +83,10 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticIndexService elasticIndexService;
     private final NFSStorageMounter nfsMounter;
     private final String tagDelimiter;
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
+    private final StorageFileMapper fileMapper;
     protected final Map<Long, AbstractCloudRegion> cloudRegions;
+    private final boolean useSquashingForHiddenFiles;
+    private final String squashedFilesName;
 
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
@@ -96,7 +99,10 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                            ElasticsearchServiceClient elasticsearchServiceClient,
                            ElasticIndexService elasticIndexService,
                            NFSStorageMounter nfsMounter,
-                           @Value("${sync.nfs-file.tag.value.delimiter:;}") String tagDelimiter) {
+                           @Value("${sync.nfs-file.tag.value.delimiter:;}") String tagDelimiter,
+                           @Value("${sync.hidden.files.use.squashing:false}") final boolean useSquashingForHiddenFiles,
+                           @Value("${sync.hidden.files.squashed.name}") final String squashedFilesName
+                           ) {
         this.indexSettingsPath = indexSettingsPath;
         this.rootMountPoint = rootMountPoint;
         this.indexPrefix = indexPrefix;
@@ -111,6 +117,9 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.cloudRegions = ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllRegions()).stream()
                 .map(r -> ImmutablePair.of(r.getId(), r))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        this.useSquashingForHiddenFiles = useSquashingForHiddenFiles;
+        this.squashedFilesName = squashedFilesName;
+        this.fileMapper = new StorageFileMapper(useSquashingForHiddenFiles, squashedFilesName);
     }
 
     @Override
@@ -181,10 +190,20 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             final Stream<DataStorageFile> files = paths
                     .filter(path -> path.toFile().isFile())
                     .map(path -> convertToStorageFile(path, mountFolder));
+            HiddenFilesAggregator hiddenFilesAggregator = new HiddenFilesAggregator(this.squashedFilesName);
             processFilesTagsInChunks(dataStorage, files)
-                    .map(file -> createIndexRequest(file, indexName, dataStorage, regionCode, permissionsContainer,
-                            findFileContent(dataStorage.getName(), file.getPath(), mountFolder.toString())))
-                    .forEach(walker::add);
+                .forEach(file -> {
+                    if (useSquashingForHiddenFiles && fileMapper.isHidden(dataStorage, file)) {
+                        hiddenFilesAggregator.add(file);
+                    } else {
+                        walker.add(createIndexRequest(file, indexName, dataStorage, regionCode,
+                            permissionsContainer, findFileContent(dataStorage.getName(), file.getPath(),
+                                mountFolder.toString())));
+                    }
+                });
+            Optional.ofNullable(hiddenFilesAggregator.getHiddenAggregatedFile())
+                .ifPresent(file -> walker.add(createIndexRequest(file, indexName, dataStorage, regionCode,
+                    permissionsContainer, null)));
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
         }

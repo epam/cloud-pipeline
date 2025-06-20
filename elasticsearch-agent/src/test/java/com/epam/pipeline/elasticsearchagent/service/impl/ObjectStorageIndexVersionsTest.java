@@ -84,7 +84,10 @@ public class ObjectStorageIndexVersionsTest {
                         DataStorageType.S3,
                         SearchDocumentType.S3_FILE,
                         ";", true,
-                        EXCLUDE_KEY, EXCLUDE_VALUE)
+                        EXCLUDE_KEY,
+                        EXCLUDE_VALUE,
+                        false,
+                        null)
         );
     }
 
