@@ -8,7 +8,7 @@ from .tools import (get_command_to_run_compute_instance,
                     get_command_to_run_pipeline,
                     stop_compute_instance,
                     get_compute_instance_state)
-from cp_ai.database import search_platform_documents_and_issues
+from cp_ai.database import search_platform_documentation
 from cp_ai.llm import llm
 
 
@@ -28,11 +28,26 @@ def get_default_agent(**kwargs):
             build_tool(get_command_to_run_pipeline, **kwargs),
             build_tool(stop_compute_instance, **kwargs),
             build_tool(get_compute_instance_state, **kwargs),
-            build_tool(search_platform_documents_and_issues, **kwargs)
+            build_tool(search_platform_documentation, **kwargs)
         ],
         verbose=True,
         llm=llm,
         memory=BaseMemory.from_defaults()
+    )
+
+
+def retrieve_platform_information(query: str, context: str | None = None, **kwargs):
+    """Useful for answering user questions about how the platform operates,
+    how perform different actions on the platform, and other questions that can be answered
+    using the platform's documentation"""
+    all_context = ''
+    if context:
+        all_context += context + '\n\n'
+    all_context += query
+    return search_platform_documentation(
+        query=query,
+        user_query=all_context,
+        **kwargs
     )
 
 
@@ -52,6 +67,7 @@ async def answer_using_default_agent(
         _messages.append(map_message(message))
 
     last_message = _messages.pop()
+    # history = '\n\n'.join([m.__str__() for m in _messages])
     user_query = last_message.content
     prompt = f'''
         This is user query, provide an answer for this query using provided agents or general LLM knowledge:
@@ -59,7 +75,6 @@ async def answer_using_default_agent(
         {user_query}
         -------------
         IMPORTANT: 
-        - Do not use tools if it is not requested directly.
         - You must include any and all blocks that look like `<<<...>>>` verbatim and exactly as they appeared in the tool output.
         - Do not rephrase, omit, or filter out these `<<<...>>>` blocks. Treat them as immutable text.
         - If the tool output contains **references**, include such references to the final response.

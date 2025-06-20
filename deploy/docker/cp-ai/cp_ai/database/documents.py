@@ -121,12 +121,13 @@ def query_documents(query: str, **kwargs) -> str:
             f'{sources}')
 
 
-def search_platform_documents_and_issues(
+def search_platform_documentation(
         query: str,
         user_query: str | None = None,
         **kwargs
 ) -> str:
-    """Useful for answering user question / retrieving information from the platform documentation and issues.
+    """Useful for answering user questions / retrieving information from the platform documentation.
+    Use this tool for questions like "How can I...", "What is...", "Where can I..." and other general questions.
     Required parameters:
     - query, string - a query to be used to search documentation / issues
     Optional parameters:
@@ -144,12 +145,12 @@ def search_platform_documents_and_issues(
     query_engine = _get_query_engine(logger=logger)
     response = query_engine.query(query)
 
-    def process_single_node(node: NodeWithScore):
-        title = _node_to_md(node)
-        prompt = (f'Here\'s the context:\n\n'
+    def process_single_node(_node: NodeWithScore):
+        title = _node_to_md(_node)
+        prompt = (f'Here\'s the context:\n'
                   f'--------------\n'
                   f'{title}\n'
-                  f'{node.text}\n\n'
+                  f'{_node.text}\n\n'
                   f'--------------\n'
                   f'Summarize the context, trying to answer the user query:\n'
                   f'--------------\n'
@@ -172,7 +173,7 @@ def search_platform_documents_and_issues(
 
     if len(results) > 0:
         result = '\n\n'.join([r.get('text') for r in results])
-        result_links = [r.get('link') for r in results]
+        result_links = list(set([r.get('link') for r in results]))
         links_result = '\n'.join([f'- {l}' for l in result_links])
         return (f'{result}\n'
                 f'\n'

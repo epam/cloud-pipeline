@@ -196,6 +196,34 @@ def extract_instance_type_from_query(
     return None
 
 
+def extract_instance_disk_from_query(
+        query: str,
+        /,
+        bearer: str | None = None,
+        generation_info_callback: Callable[[str], Any] | None = None
+) -> float | None:
+    prompt = (f'Here is the user query:\n'
+              f'----------------\n'
+              f'{query}\n'
+              f'----------------\n\n'
+              'Please, answer `{"size": ...}` if user specifies a node or disk size '
+              '(in gigabytes, terabytes, megabytes, etc.), provide a size in gigabytes.\n'
+              'Otherwise, if user does not mention any node size requirements, answer `{}` (empty JSON object).\n\n'
+              'Format your answer as a JSON object only, `{"size": ...}` or `{}`:')
+    size_requirements_resp = extract_json_response(llm_simple_query(prompt).strip().lower())
+    if isinstance(size_requirements_resp, dict):
+        size = size_requirements_resp.get('size', None)
+        try:
+            size = float(repr(size))
+        except BaseException as e:
+            agents_logger.error(f'error parsing size requirements from "{repr(size)}"',
+                                exc_info=e)
+            size = None
+    else:
+        size = None
+    return size
+
+
 def generate_launch_payload(
         configuration: Configuration,
         /,
@@ -252,9 +280,15 @@ def generate_launch_payload(
         raise LaunchException('Please specify node instance type')
     # -------------
     # instance disk
-    if instance_disk is None or instance_disk == 0:
+    if not instance_disk:
+        instance_disk = extract_instance_disk_from_query(
+            user_query,
+            bearer=bearer,
+            generation_info_callback=generation_info_callback
+        )
+    if not instance_disk:
         instance_disk = configuration.instance_disk
-    if instance_disk is None or instance_disk == 0:
+    if not instance_disk:
         raise LaunchException('Please specify node instance disk size (GB)')
     # -------------
     # cmd template

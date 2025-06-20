@@ -18,7 +18,7 @@ def get_pipeline_id(pipeline_name: str) -> str:
 
 
 def get_command_to_run_pipeline(user_query: str, **kwargs):
-    """Useful to get a command to launch a **specific pipeline**.
+    """Useful to get a command to launch a **specific pipeline** (specified by name, identifier or by description).
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines pipeline, parameters and environment information.
@@ -27,8 +27,8 @@ def get_command_to_run_pipeline(user_query: str, **kwargs):
 
 
 def get_command_to_run_compute_instance(user_query: str, **kwargs):
-    """Useful to get a command to launch a general compute instance (not a pipeline),
-    specified by "tool", "docker image", "image" or similar words.
+    """Useful to get a command to launch a specific compute instance (not a pipeline),
+    specified by "tool", "docker image", "image" or similar words, e.g. "launch XXX instance", "launch XXX".
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines tool (or image), parameters and environment information.
