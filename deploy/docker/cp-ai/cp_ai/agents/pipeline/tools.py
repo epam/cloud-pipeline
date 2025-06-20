@@ -94,8 +94,13 @@ def _get_pipeline_version_from_query(
         query: str,
         pipeline: Pipeline
 ) -> str | None:
+    agents_logger.info(f'extracting pipeline #{pipeline.id} version from user query')
+    agents_logger.debug(f'fetching pipeline #{pipeline.id} versions...')
     versions = get_pipeline_versions(pipeline.id)
+    agents_logger.info(f'pipeline #{pipeline.id} has {len(versions)} versions')
     if len(versions) == 1:
+        any_version = versions[0]
+        agents_logger.info(f'picking "{any_version.name}" version as it is the only version in #{pipeline.id} pipeline')
         return versions[0].name
 
     pipeline_version: str | None = None
@@ -110,28 +115,36 @@ def _get_pipeline_version_from_query(
                           'If user asks to launch latest version, or draft version, '
                           'or does not specify pipeline version at all, '
                           'return empty object `{}`.')
+        agents_logger.info(f'extracting pipeline #{pipeline.id} version from the user query using prompt...')
         version_raw = extract_json_response(llm_simple_query(version_prompt))
+        agents_logger.info(f'extracting pipeline #{pipeline.id} version from the user query using prompt: response "{version_raw}"')
         if isinstance(version_raw, dict) and 'version' in version_raw:
             version_str = version_raw.get('version')
         else:
             version_str = None
         if version_str:
             # user specified pipeline version - we need to find it
-
+            agents_logger.info(f'matching version "{version_raw}" with the available versions...')
             found = pick_best_elements(
-                query,
+                version_str,
                 versions,
                 description_fn=lambda x: {'version': x.name},
                 element_name='pipeline version',
                 logger=agents_logger,
             )
+            agents_logger.info(f'matching version "{version_raw}" with the available versions: {len(found)} matches found')
+            for m in found:
+                agents_logger.info(f'- {m.name}')
             if len(found) > 0:
+                picked_version = found[0]
+                agents_logger.info(f'picking version "{picked_version.name}"')
                 # if we have a match - we'll use it
-                version_str = found[0].name
+                version_str = picked_version.name
         else:
             # user did not specify pipeline version - we need to use the latest one (draft), or any
             latest = next((v for v in versions if v.draft), None) or versions[0]
             version_str = latest.name
+            agents_logger.info(f'user did not specify version - selecting the latest version "{version_str}"')
         pipeline_version = version_str
 
     if pipeline_version is None:
@@ -146,9 +159,14 @@ def _get_pipeline_configuration_from_query(
         pipeline: Pipeline,
         version: str
 ) -> ConfigurationEntry | None:
+    agents_logger.info(f'extracting pipeline #{pipeline.id} configuration from user query')
+    agents_logger.debug(f'fetching pipeline #{pipeline.id} configuration...')
     configurations = get_pipeline_configurations(pipeline.id, version)
+    agents_logger.info(f'pipeline #{pipeline.id} has {len(configurations)} configurations')
     if len(configurations) == 1:
-        return configurations[0]
+        any_configuration = configurations[0]
+        agents_logger.info(f'picking "{any_configuration.name}" configuration as it is the only configuration in #{pipeline.id} pipeline')
+        return any_configuration
 
     pipeline_configuration: str | None = None
     if len(configurations) > 1:
@@ -163,13 +181,17 @@ def _get_pipeline_configuration_from_query(
                       '```\n\n'
                       'If user does not specify pipeline configuration explicitly, '
                       'return empty object `{}`.')
+        agents_logger.info(f'extracting pipeline #{pipeline.id} configuration from the user query using prompt...')
         cfg_name_raw = extract_json_response(llm_simple_query(cfg_prompt))
+        agents_logger.info(f'extracting pipeline #{pipeline.id} configuration '
+                           f'from the user query using prompt: response "{cfg_name_raw}"')
         if isinstance(cfg_name_raw, dict) and 'configuration' in cfg_name_raw:
             cfg_name = cfg_name_raw.get('configuration')
         else:
             cfg_name = None
         if cfg_name:
             # user specified pipeline configuration - we need to find it
+            agents_logger.info(f'matching version "{cfg_name}" with the available configurations...')
             found = pick_best_elements(
                 query,
                 configurations,
@@ -177,13 +199,19 @@ def _get_pipeline_configuration_from_query(
                 element_name='pipeline configuration',
                 logger=agents_logger,
             )
+            agents_logger.info(f'matching version "{cfg_name}" with the available configurations: {len(found)} matches found')
+            for m in found:
+                agents_logger.info(f'- {m.name}')
             if len(found) > 0:
                 # if we have a match - we'll use it
-                cfg_name = found[0].name
+                picked_cfg = found[0]
+                agents_logger.info(f'picking configuration "{picked_cfg.name}"')
+                cfg_name = picked_cfg.name
         else:
             # user did not specify pipeline configuration - we need to use the default one, or any
             dflt = next((v for v in configurations if v.default), None) or configurations[0]
             cfg_name = dflt.name
+            agents_logger.info(f'user did not specify configuration - selecting the default configuration "{cfg_name}"')
         pipeline_configuration = cfg_name
 
     if pipeline_configuration is None:
@@ -198,7 +226,8 @@ def generate_pipeline_launch_payload(
         query: str,
         pipeline: Pipeline,
         /,
-        bearer: str | None = None
+        bearer: str | None = None,
+        **kwargs
 ) -> dict:
     version = _get_pipeline_version_from_query(query, pipeline)
     if version is None:
@@ -245,7 +274,8 @@ def launch_pipeline_by_user_query(
         payload = generate_pipeline_launch_payload(
             query,
             matched_pipelines[0],
-            bearer=bearer
+            bearer=bearer,
+            **kwargs
         )
         payload_str = json.dumps(payload)
         return f'<<<LAUNCH:{payload_str}>>>'

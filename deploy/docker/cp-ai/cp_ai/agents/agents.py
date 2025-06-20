@@ -8,7 +8,7 @@ from .tools import (get_command_to_run_compute_instance,
                     get_command_to_run_pipeline,
                     stop_compute_instance,
                     get_compute_instance_state)
-from cp_ai.database import query_documents
+from cp_ai.database import search_platform_documents_and_issues
 from cp_ai.llm import llm
 
 
@@ -28,12 +28,7 @@ def get_default_agent(**kwargs):
             build_tool(get_command_to_run_pipeline, **kwargs),
             build_tool(stop_compute_instance, **kwargs),
             build_tool(get_compute_instance_state, **kwargs),
-            build_tool(
-                query_documents,
-                name="documents_tool",
-                description="Searches documents and issues and returns a list of sources.",
-                **kwargs
-            )
+            build_tool(search_platform_documents_and_issues, **kwargs)
         ],
         verbose=True,
         llm=llm,
@@ -65,9 +60,11 @@ async def answer_using_default_agent(
         -------------
         Instructions: 
         - Do not use tools if it is not requested directly.
-        - Always include responses of format "<<<...>>>" (e.g. "<<<LAUNCH:...>>>") AS IS to the final response.
+        - If the tool output contains responses of format "<<<...>>>" (e.g. "<<<LAUNCH:...>>>"), always include such responses AS IS to the final response;
+        such blocks (<<<...>>>) are essential and contains technical details about user query.
+        - If the tool output contains **references**, include such references to the final response.
         - If 'LaunchException' is returned from some of the agent, STOP execution and request details from user considering LaunchException info.
-        - Use Markdown format; include all available links.
+        - Use Markdown format; include all available links and references (prefer format [entity name](entity url)].
         '''
     default_agent = get_default_agent(**kwargs)
     return await default_agent.astream_chat(

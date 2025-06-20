@@ -29,6 +29,15 @@ def extract_json_response(response: str) -> Any:
         return None
 
 
+def remove_quotes(response: str) -> str:
+    if not response:
+        return ''
+    resp = response
+    resp = re.sub(r"^\s*'|'\s*$", '', resp, flags=re.DOTALL).strip()
+    resp = re.sub(r'^\s*"|"\s*$', '', resp, flags=re.DOTALL).strip()
+    return resp
+
+
 def _base64url_decode(input_str: str):
     # Add padding if needed
     rem = len(input_str) % 4

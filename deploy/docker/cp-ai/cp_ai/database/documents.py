@@ -6,15 +6,18 @@ import chromadb
 from logging import Logger
 from chromadb.errors import NotFoundError
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Document
+from llama_index.core.schema import NodeWithScore
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from cp_ai.common import cp_ai_settings
 from cp_ai.common.logger import create_logger
-from cp_ai.llm import embed_model, llm
+from cp_ai.common.utilities import remove_quotes
+from cp_ai.llm import embed_model, llm, llm_simple_query
 
 documents_logger = create_logger('documents', cp_ai_settings.cp_documents_logs_file)
 
 SOURCE_METADATA = "source"
+TITLE_METADATA = "file_name"
 DOCUMENTS_COLLECTION_NAME = "Documents"
 
 links = {
@@ -27,7 +30,7 @@ links = {
     "paused runs": "#/runs/paused",
     "resuming runs": "#/runs/resuming",
     "completed runs": "#/runs/completed",
-    "settings": "#/settings/cli"
+    "settings": "#/settings"
 }
 
 def create_index(logger: Logger | None = None):
@@ -59,6 +62,7 @@ def create_index(logger: Logger | None = None):
                                  exclude_hidden=False).load_data()
     logger.info(f'documents: {len(docs)} documents read')
     for doc in docs:
+        doc.metadata[TITLE_METADATA] = doc.metadata.get('file_name', 'No title')
         doc.metadata[SOURCE_METADATA] = _get_document_url(doc, documents_folder)
     documents.extend(docs)
 
@@ -90,6 +94,19 @@ def get_application_link(query: str, response: str) -> str:
         link = ""
     return link
 
+
+def _node_to_md(node: NodeWithScore) -> str:
+    title = node.metadata.get(TITLE_METADATA, None)
+    source = node.metadata.get(SOURCE_METADATA, None)
+    if title is not None and source is not None:
+        return f'[{title}]({source})'
+    if title is not None:
+        return str(title)
+    if source is not None:
+        return str(source)
+    return node.node_id
+
+
 def query_documents(query: str, **kwargs) -> str:
     logger = kwargs.get('logger', None)
     if not isinstance(logger, Logger):
@@ -97,11 +114,73 @@ def query_documents(query: str, **kwargs) -> str:
     query_engine = _get_query_engine(logger=logger)
     response = query_engine.query(query)
     link = get_application_link(query, str(response))
-    sources = "\n".join(set([f'- [{s.metadata["file_name"]}]({s.metadata["source"]})' for s in response.source_nodes]))
-    result = f'''Result: <<<{response}Sources:\n{sources}{link}>>>. 
-    Include this result into response to user. 
-    IMPORTANT!!!: Always include Sources!.'''
-    return result
+    sources = "\n".join(set([f'- {_node_to_md(s)}' for s in response.source_nodes]))
+    return (f'{response}\n\n'
+            f'{link}\n\n'
+            f'**References**:\n'
+            f'{sources}')
+
+
+def search_platform_documents_and_issues(
+        query: str,
+        user_query: str | None = None,
+        **kwargs
+) -> str:
+    """Useful for answering user question / retrieving information from the platform documentation and issues.
+    Required parameters:
+    - query, string - a query to be used to search documentation / issues
+    Optional parameters:
+    - user_query, string, optional - original user query or question (as is)
+    """
+    logger = kwargs.get('logger', None)
+    if not isinstance(logger, Logger):
+        logger = None
+    if query is None:
+        query = user_query
+    if user_query is None:
+        user_query = query
+    if query is None or user_query is None:
+        raise RuntimeError('please specify the question / query')
+    query_engine = _get_query_engine(logger=logger)
+    response = query_engine.query(query)
+
+    def process_single_node(node: NodeWithScore):
+        title = _node_to_md(node)
+        prompt = (f'Here\'s the context:\n\n'
+                  f'--------------\n'
+                  f'{title}\n'
+                  f'{node.text}\n\n'
+                  f'--------------\n'
+                  f'Summarize the context, trying to answer the user query:\n'
+                  f'--------------\n'
+                  f'{user_query}\n'
+                  f'--------------\n'
+                  f'\n'
+                  f'- Respond exactly "NOT RELEVANT", if the context is not relevant and not answers user query.\n'
+                  f'- Include all links and references to the final response, if it is relevant.\n')
+        node_response = llm_simple_query(prompt).strip()
+        if remove_quotes(node_response).lower() in {'not relevant', 'not_relevant', 'not-relevant'}:
+            return ''
+        return node_response
+
+    results = []
+
+    for node in response.source_nodes[:20]:
+        n_r = process_single_node(node)
+        if n_r:
+            results.append({'text': n_r, 'link': _node_to_md(node)})
+
+    if len(results) > 0:
+        result = '\n\n'.join([r.get('text') for r in results])
+        result_links = [r.get('link') for r in results]
+        links_result = '\n'.join([f'- {l}' for l in result_links])
+        return (f'{result}\n'
+                f'\n'
+                f'**References:**\n\n'
+                f'{links_result}')
+
+    return 'Nothing found'
+
 
 def _get_query_engine(logger: Logger | None = None):
     if logger is None:
@@ -175,13 +254,17 @@ def _get_issues():
 def _issues_to_docs(issues):
     docs = []
     for issue in issues:
-        doc = Document(
-            text="%s. %s".format(issue.get("title"), issue.get("body")),
-            metadata={
-                SOURCE_METADATA: issue.get("url")
-            }
-        )
-        docs.append(doc)
+        title = issue.get('title', 'No title')
+        body = issue.get('body')
+        if body is not None:
+            doc = Document(
+                text=f'{title}. {body}',
+                metadata={
+                    TITLE_METADATA: title,
+                    SOURCE_METADATA: issue.get("url")
+                }
+            )
+            docs.append(doc)
     return docs
 
 def _clone_documents():
