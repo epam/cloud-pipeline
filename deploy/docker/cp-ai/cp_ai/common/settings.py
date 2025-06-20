@@ -17,11 +17,20 @@ def _get_application_url_from_api(api: str | None) -> str | None:
 
 _cp_api: str | None = os.environ.get('API', None)
 
+def _get_env(key: str, default_value):
+    """Utility method for fetching env var.
+    If env var is set to "" (empty string), use default value
+    """
+    value = os.environ.get(key, default_value)
+    if isinstance(value, str) and value.strip() == '':
+        return default_value
+    return value
+
 class CpAiSettings(BaseModel):
     # Model settings
     GOOGLE_API_KEY: str | None = os.environ.get('GOOGLE_API_KEY', None)
-    GOOGLE_GENAI_MODEL: str = os.environ.get('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash-lite')
-    EMBED_MODEL_NAME: str = os.environ.get('EMBED_MODEL_NAME', 'text-embedding-004')
+    GOOGLE_GENAI_MODEL: str = _get_env('GOOGLE_GENAI_MODEL', 'gemini-2.0-flash-lite')
+    EMBED_MODEL_NAME: str = _get_env('EMBED_MODEL_NAME', 'text-embedding-004')
     # --------------
 
     # Cloud Pipeline settings
