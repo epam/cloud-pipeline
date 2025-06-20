@@ -55,12 +55,6 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.storage.exclude.metadata.value:Exclude}")
     private String storageExcludeValue;
 
-    @Value("${sync.hidden.files.use.squashing:false}")
-    private boolean useSquashingForHiddenFiles;
-
-    @Value("${sync.hidden.files.squashed.name}")
-    private String squashedFilesName;
-
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
@@ -80,10 +74,7 @@ public class GSFileSyncConfiguration {
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
                 tagDelimiter, false,
-                storageExcludeKey,
-                storageExcludeValue,
-                useSquashingForHiddenFiles,
-                squashedFilesName);
+                storageExcludeKey, storageExcludeValue);
     }
 
 }

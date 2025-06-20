@@ -62,11 +62,6 @@ public class S3FileSyncConfiguration {
     private String storageExcludeKey;
     @Value("${sync.s3-file.storage.exclude.metadata.value:Exclude}")
     private String storageExcludeValue;
-    @Value("${sync.hidden.files.use.squashing:false}")
-    private boolean useSquashingForHiddenFiles;
-
-    @Value("${sync.hidden.files.squashed.name}")
-    private String squashedFilesName;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
@@ -88,10 +83,7 @@ public class S3FileSyncConfiguration {
                 SearchDocumentType.S3_FILE,
                 tagDelimiter,
                 includeVersions,
-                storageExcludeKey,
-                storageExcludeValue,
-                useSquashingForHiddenFiles,
-                squashedFilesName);
+                storageExcludeKey, storageExcludeValue);
         if (StringUtils.isNotBlank(storageIds)) {
             service.setStorageIds(parseIds(storageIds));
         }

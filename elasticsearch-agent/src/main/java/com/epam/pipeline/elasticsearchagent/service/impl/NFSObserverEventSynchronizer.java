@@ -119,15 +119,9 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
                                         final List<ObjectStorageFileManager> objectStorageFileManagers,
-                                        final NFSStorageMounter nfsMounter,
-                                        @Value("${sync.hidden.files.use.squashing:false}")
-                                            final boolean useSquashingForHiddenFiles,
-                                        @Value("${sync.hidden.files.squashed.name}")
-                                            final String squashedFilesName
-                                        ) {
+                                        final NFSStorageMounter nfsMounter) {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, bulkLoadTagsSize,
-              cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter, tagDelimiter,
-              useSquashingForHiddenFiles, squashedFilesName);
+              cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter, tagDelimiter);
 
         this.eventsFileChunkSize = eventsFileChunkSize;
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
