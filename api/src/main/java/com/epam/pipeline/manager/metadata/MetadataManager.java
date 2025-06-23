@@ -135,8 +135,9 @@ public class MetadataManager {
             LOGGER.debug("Could not find such metadata. A new one will be created.");
             metadataDao.registerMetadataItem(metadataToSave);
         } else {
-            existingMetadata.getData().putAll(metadataToSave.getData());
-            metadataDao.uploadMetadataItem(existingMetadata);
+            final MetadataEntry entryWithSecrets = loadMetadataWithSecrets(existingMetadata);
+            entryWithSecrets.getData().putAll(metadataToSave.getData());
+            metadataDao.uploadMetadataItem(entryWithSecrets);
         }
         return metadataDao.loadMetadataItem(entity);
     }
@@ -384,6 +385,12 @@ public class MetadataManager {
                             entityVO.getEntityClass()));
         }
         return metadataEntry;
+    }
+
+    private MetadataEntry loadMetadataWithSecrets(final MetadataEntry entry) {
+        final EntityVO entity = entry.getEntity();
+        final List<String> keys = new ArrayList<>(MapUtils.emptyIfNull(entry.getData()).keySet());
+        return metadataDao.loadMetadataItemWithSecrets(entity, keys);
     }
 
     private void validateMetadata(MetadataVO metadataVO) {
