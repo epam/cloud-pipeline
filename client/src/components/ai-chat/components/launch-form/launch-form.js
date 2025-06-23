@@ -147,15 +147,17 @@ export default class LaunchForm extends React.Component {
     if (dockerImage.split('/').length === 1) {
       const defaultGroup = registry.groups[0]?.name;
       dockerImage = `${defaultGroup}/${dockerImage}`;
+    } else if (dockerImage.split('/').length === 2) {
+      dockerImage = `${registry.name}/${dockerImage}`;
     }
     const {tool} = getDockerImage(
-      `${registry.name}/${dockerImage}`,
+      dockerImage,
       this.props.dockerRegistries
     ) || {};
     if (!tool) {
       this.formStore.error = `Tool ${data.dockerImage} not found!`;
       return;
-    };
+    }
     const [toolVersions, toolInfo, versions] = [
       new LoadToolVersionSettings(tool.id),
       new LoadTool(tool.id),
@@ -177,7 +179,7 @@ export default class LaunchForm extends React.Component {
       const error = toolVersions.error || toolInfo.error || versions.error;
       this.formStore.error = `Error loading tool info. ${error}`;
       return;
-    };
+    }
     this.formStore.initializeData({
       data,
       toolInfo: toolInfo.value,
@@ -237,7 +239,7 @@ export default class LaunchForm extends React.Component {
     if (!data) {
       return;
     }
-    if (data.pipelineId !== undefined || data.pipelineName !== undefined) {
+    if (!!data.pipelineId || !!data.pipelineName) {
       return this.initializePipelineData();
     }
     return this.initializeToolData();
