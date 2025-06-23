@@ -79,6 +79,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.entity.region.CloudProvider.GCP;
+
 /**
  * Provides methods to operate Docker Registry API
  */
@@ -93,6 +95,7 @@ public class DockerClient {
     private static final String LAYER_DELETE_URL = "https://%s/v2/%s/blobs/%s";
 
     private static final String V2_MANIFEST_FORMAT = "application/vnd.docker.distribution.manifest.v2+json";
+    private static final String V1_MANIFEST_FORMAT = "application/vnd.docker.distribution.manifest.v1+prettyjws";
     // in ms
     private static final int REQUEST_TIMEOUT = 30 * 1000;
 
@@ -299,8 +302,9 @@ public class DockerClient {
         String url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), imageName, tag);
         try {
             URI uri = new URI(url);
+            final HttpEntity httpEntity = GCP == registry.getProvider() ? getV1AuthHeaders() : headers;
             ResponseEntity<RawImageDescription>
-                response = getRestTemplate().exchange(uri, HttpMethod.GET, headers,
+                response = getRestTemplate().exchange(uri, HttpMethod.GET, httpEntity,
                                                       new ParameterizedTypeReference<RawImageDescription>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody();
@@ -370,6 +374,12 @@ public class DockerClient {
     private HttpEntity getV2AuthHeaders() {
         HttpHeaders headers = getHttpHeaders();
         headers.add(HttpHeaders.ACCEPT, V2_MANIFEST_FORMAT);
+        return new HttpEntity(headers);
+    }
+
+    private HttpEntity getV1AuthHeaders() {
+        HttpHeaders headers = getHttpHeaders();
+        headers.add(HttpHeaders.ACCEPT, V1_MANIFEST_FORMAT);
         return new HttpEntity(headers);
     }
 

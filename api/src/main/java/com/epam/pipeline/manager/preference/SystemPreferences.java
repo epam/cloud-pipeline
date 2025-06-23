@@ -1420,6 +1420,10 @@ public class SystemPreferences {
     public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
             "gcp.default.gpu.type", "a100", GCP_GROUP, isNotBlank);
 
+    public static final StringPreference GCP_ARTIFACT_REGISTRY_NOTIFICATION_AUDIENCE = new StringPreference(
+            "gcp.artifact.registry.notification.audience",
+            "/pipeline/restapi/gcpRegistry/notify", GCP_GROUP, isNotBlank);
+
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
             "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);

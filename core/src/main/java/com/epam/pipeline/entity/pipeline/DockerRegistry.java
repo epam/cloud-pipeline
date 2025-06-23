@@ -18,11 +18,14 @@ package com.epam.pipeline.entity.pipeline;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +44,8 @@ public class DockerRegistry extends AbstractHierarchicalEntity {
     private List<Tool> tools = new ArrayList<>();
     private List<ToolGroup> groups = new ArrayList<>();
     private AclClass aclClass = AclClass.DOCKER_REGISTRY;
+    @Enumerated(EnumType.STRING)
+    private CloudProvider provider;
     /**
      * Indicates that this registry is configured to use CloudPipeline as Authorization service
      */

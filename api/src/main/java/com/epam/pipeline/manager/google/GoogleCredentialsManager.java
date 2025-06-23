@@ -27,7 +27,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.UserCredentials;
 import lombok.AllArgsConstructor;
@@ -105,7 +105,7 @@ public class GoogleCredentialsManager implements CredentialsManager {
 
         GoogleAuthorizationCodeFlow authorizationFlow = new GoogleAuthorizationCodeFlow.Builder(
                 HTTP_TRANSPORT,
-                new JacksonFactory(),
+                GsonFactory.getDefaultInstance(),
                 webClientCredentials.getClientId(),
                 webClientCredentials.getClientSecret(),
                 scopes)
