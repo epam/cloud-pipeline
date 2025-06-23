@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -226,14 +227,15 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageListing getItems(final NFSDataStorage dataStorage, final String path,
-                                       final Boolean showVersion, final Integer pageSize, final String marker) {
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         final File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         final File startingPath = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
 
         // If we list file - just return it as result
         if (startingPath.isFile()) {
             return new DataStorageListing(
-                    null,
+                    null, null,
                     Collections.singletonList(mapFileToDataStorageFile(dataStorageRoot, startingPath))
             );
         }
@@ -286,11 +288,15 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public DataStorageListing getItems(final NFSDataStorage dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         if (Objects.nonNull(restoredListing)) {
             throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
         }
-        return getItems(dataStorage, path, showVersion, pageSize, marker);
+        if (Objects.nonNull(permissionsContainer)) {
+            throw new UnsupportedOperationException("Path permissions are not supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
     }
 
     @Override

@@ -329,7 +329,8 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
             final SecuredEntityWithAction<AbstractDataStorage> securedDataStorage = new SecuredEntityWithAction<>();
             securedDataStorage.setEntity(dataStoragePair.getLeft());
             Mockito.doReturn(securedDataStorage).when(mockStorageApiService)
-                    .create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
+                    .create(Mockito.refEq(dataStorageVO), Mockito.eq(true),
+                            Mockito.eq(true), Mockito.eq(true));
 
             final MvcResult mvcResult = performRequest(post(DATASTORAGE_SAVE_URL).params(params).content(content));
 
@@ -337,7 +338,8 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
         });
 
         Mockito.verify(mockStorageApiService, Mockito.times(securedStorageTypeReferenceList.size()))
-                .create(Mockito.refEq(dataStorageVO), Mockito.eq(true), Mockito.eq(true));
+                .create(Mockito.refEq(dataStorageVO), Mockito.eq(true),
+                        Mockito.eq(true), Mockito.eq(true));
     }
 
     @Test

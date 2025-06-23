@@ -364,9 +364,11 @@ public class SystemPreferences {
             "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+    public static final BooleanPreference GIT_REPOSITORY_RENAME_REPO = new BooleanPreference(
+            "git.repository.rename.repo", true, GIT_GROUP, pass);
 
     public static final StringPreference GITHUB_USER_NAME = new StringPreference(
-            "github.user.name", null, GIT_GROUP, pass);
+            "github.user.name", "x-token-auth", GIT_GROUP, pass);
 
     public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
             "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
@@ -597,7 +599,7 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
             5, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_AWS_EBS_TYPE = new StringPreference(
-            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank);
+            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank, true);
     public static final StringPreference CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE = new StringPreference(
             "cluster.aws.ec2.pricing.url.template",
             "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv",
@@ -962,6 +964,10 @@ public class SystemPreferences {
             "ui.personal.tools.permissions.restrictions",
             Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<List<Object>> UI_STORAGE_RESTRICTIONS = new ObjectPreference<>(
+            "ui.storages.permissions.restrictions",
+            Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
     public static final ObjectPreference<Object> UI_SEARCH_COLUMNS_ORDER = new ObjectPreference<>(
             "ui.search.columns.order",
             Collections.emptyList(), new TypeReference<Object>() {},
@@ -989,6 +995,13 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
     public static final ObjectPreference<Object> UI_RUN_ACTIONS = new ObjectPreference<>(
             "ui.run.actions",
+            Collections.emptyMap(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
+
+    public static final StringPreference UI_PLUGIN_ROOT_FOLDER_PATH = new StringPreference(
+            "ui.plugin.root.folder.path", "/opt/api/etc/ui-plugins", UI_GROUP, pass, true);
+    public static final ObjectPreference<Object> UI_MLFLOW_SETTINGS = new ObjectPreference<>(
+            "ui.mlflow.settings",
             Collections.emptyMap(), new TypeReference<Object>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
@@ -1300,6 +1313,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> MISC_GROUPS_UI_PREF = new ObjectPreference<>(
             "misc.groups.ui.preferences", null, new TypeReference<Map<String, Object>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    public static final BooleanPreference EDGE_SKIP_CUSTOM_DNS = new BooleanPreference(
+            "edge.skip.custom.dns", false, MISC_GROUP, pass);
+    public static final StringPreference EDGE_CUSTOM_DOMAIN = new StringPreference(
+            "edge.custom.domain", null, MISC_GROUP, pass);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",

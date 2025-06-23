@@ -60,7 +60,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, ins_platform,
                                                       kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                       global_distribution_url, swap_size, pre_pull_images, docker_data_root, docker_storage_driver,
-                                                      skip_system_images_load)
+                                                      skip_system_images_load, run_id=run_id)
 
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
         if ins_type.startswith('a3'):
@@ -123,7 +123,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 ]}
             body.update(gpu)
 
-        
+        additional_args = utils.get_additional_spec(self.cloud_region, ins_type, ins_platform, ins_img, run_id)
+        if additional_args:
+            body.update(**additional_args)
 
         try:
             response = self.client.instances().insert(

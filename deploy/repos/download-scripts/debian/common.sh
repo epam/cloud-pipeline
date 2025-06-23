@@ -7,12 +7,11 @@ apt-get update
 apt-get install --download-only -y \
     sudo \
     locales \
-    python \
+    python2 \
     git \
     curl \
     wget \
     fuse \
-    python-docutils \
     tzdata \
     acl \
     coreutils \
@@ -23,4 +22,20 @@ apt-get install --download-only -y \
     nfs-common \
     cifs-utils \
     nfs-kernel-server \
-    tcl-dev
+    tcl-dev \
+    samba* \
+    procps \
+    pciutils \
+    screen \
+    vim \
+    nano \
+    htop \
+    gettext \
+    bash-completion \
+    libfuse2 \
+    libexpat1 \
+    ucf \
+    libxml2
+
+
+

@@ -952,6 +952,7 @@ class ConfigurationPayload extends React.Component {
           disabled={disabled}
           style={{flex: 1, maxWidth: '50%'}}
           tool={tool}
+          cloudRegion={this.currentCloudRegion}
         />
       </div>
     );

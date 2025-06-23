@@ -79,6 +79,7 @@ export class DataStorageEditDialog extends React.Component {
     activeTab: 'info',
     mountDisabled: false,
     versioningEnabled: false,
+    pathPermissionsEnabled: false,
     sharingEnabled: false,
     sensitive: false,
     restrictedAccess: true,
@@ -122,6 +123,54 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
+  @computed
+  get isAdvancedUser () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        roles = []
+      } = authenticatedUserInfo.value;
+      return roles.some(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  }
+
+  @computed
+  get permissionsRestrictions () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    const isAdmin = authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.value &&
+      authenticatedUserInfo.value.admin;
+    const {isAdvancedUser} = this;
+    if (preferences.loaded && !isAdmin && !isAdvancedUser) {
+      const restrictions = preferences.uiStoragesPermissionsRestrictions;
+      const readOnlyRoles = restrictions.filter((r) => r.readonly).map((r) => r.role);
+      const defaultMask = restrictions.map((rule) => ({
+        role: rule.role,
+        mask: rule.defaultMask
+      }));
+      const enabledMask = restrictions.map((rule) => ({
+        role: rule.role,
+        mask: rule.enabledMask
+      }));
+      return {
+        defaultMask,
+        enabledMask,
+        readOnlyRoles
+      };
+    }
+    return {
+      defaultMask: [],
+      enabledMask: [],
+      readOnlyRoles: []
+    };
+  }
+
   openDeleteDialog = () => {
     this.setState({deleteDialogVisible: true});
   };
@@ -152,6 +201,12 @@ export class DataStorageEditDialog extends React.Component {
           values.backupDuration = undefined;
           values.versioningEnabled = false;
         }
+        values.pathPermissionsEnabled = (
+          !this.isNfsMount &&
+          !this.omicsStore &&
+          this.currentRegionSupportsStoragePermissions &&
+          this.state.pathPermissionsEnabled
+        );
         if (!this.isNfsMount) {
           values.sensitive = this.state.sensitive;
         }
@@ -259,6 +314,11 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get currentRegionSupportsPolicy () {
     return this.currentRegion && ['AWS', 'GCP'].indexOf(this.currentRegion.provider) >= 0;
+  }
+
+  @computed
+  get currentRegionSupportsStoragePermissions () {
+    return this.currentRegion && ['AWS'].indexOf(this.currentRegion.provider) >= 0;
   }
 
   @computed
@@ -423,6 +483,10 @@ export class DataStorageEditDialog extends React.Component {
     callback();
   }
 
+  onChangePathPermissionsEnabled = (e) => this.setState({
+    pathPermissionsEnabled: e.target.checked
+  });
+
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
@@ -441,6 +505,9 @@ export class DataStorageEditDialog extends React.Component {
       this.setState({activeTab: 'info'});
     };
     const skipPolicyFlagVisible = !this.props.dataStorage;
+
+    const {defaultMask, enabledMask, readOnlyRoles} = this.permissionsRestrictions;
+
     return (
       <Modal
         maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
@@ -665,6 +732,30 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 )}
+                {
+                  !this.omicsStore &&
+                  !this.isNfsMount &&
+                  this.currentRegionSupportsStoragePermissions && (
+                    <Row>
+                      <Col xs={24} sm={6} />
+                      <Col xs={24} sm={18}>
+                        <Form.Item className={styles.dataStorageFormItem}>
+                          <Checkbox
+                            disabled={
+                              this.props.pending ||
+                              isReadOnly ||
+                              Boolean(this.props.dataStorage)
+                            }
+                            onChange={this.onChangePathPermissionsEnabled}
+                            checked={this.state.pathPermissionsEnabled}
+                          >
+                            Fine-grained permissions
+                          </Checkbox>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  )
+                }
                 {!this.omicsStore &&
                 !this.isNfsMount &&
                 this.props.policySupported &&
@@ -750,7 +841,11 @@ export class DataStorageEditDialog extends React.Component {
                 <PermissionsForm
                   readonly={isReadOnly}
                   objectIdentifier={this.props.dataStorage.id}
-                  objectType="DATA_STORAGE" />
+                  objectType="DATA_STORAGE"
+                  defaultMask={defaultMask}
+                  enabledMask={enabledMask}
+                  readOnlyRoles={readOnlyRoles}
+                />
               </Tabs.TabPane>
             }
             {this.transitionRulesAvailable && (
@@ -779,13 +874,23 @@ export class DataStorageEditDialog extends React.Component {
       const mountDisabled = this.props.dataStorage ? this.props.dataStorage.mountDisabled : false;
       const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy
         ? this.props.dataStorage.storagePolicy.versioningEnabled : true;
+      const pathPermissionsEnabled = this.props.dataStorage
+        ? this.props.dataStorage.pathPermissionsEnabled
+        : false;
       const sensitive = this.props.dataStorage
         ? this.props.dataStorage.sensitive
         : false;
       const sharingEnabled = !this.isNfsMount && this.props.dataStorage
         ? this.props.dataStorage.shared
         : false;
-      this.setState({mountDisabled, versioningEnabled, sharingEnabled, sensitive, skipPolicy: false});
+      this.setState({
+        mountDisabled,
+        versioningEnabled,
+        sharingEnabled,
+        sensitive,
+        skipPolicy: false,
+        pathPermissionsEnabled
+      });
     }
   };
 
@@ -795,7 +900,15 @@ export class DataStorageEditDialog extends React.Component {
       const versioningEnabled = false;
       const sensitive = false;
       const sharingEnabled = false;
-      this.setState({mountDisabled, versioningEnabled, sharingEnabled, sensitive, skipPolicy: false});
+      const pathPermissionsEnabled = false;
+      this.setState({
+        mountDisabled,
+        versioningEnabled,
+        sharingEnabled,
+        sensitive,
+        skipPolicy: false,
+        pathPermissionsEnabled
+      });
     }
   }
 

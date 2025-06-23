@@ -128,8 +128,10 @@ class KubeProvider(object):
             rep = 0
             while rep <= num_rep:
                 node = pykube.Node.objects(self.api).filter(field_selector={'metadata.name': ret_namenode})
-                status = node.response['items'][0]['status']['conditions'][3]['status']
-                if status == u'True':
+                #status = node.response['items'][0]['status']['conditions'][3]['status']
+                #if status == u'True':
+                ready_condition = [condition for condition in node.response['items'][0]['status']['conditions'] if condition['type'] == u'Ready' and condition['status'] == u'True']
+                if len(ready_condition) > 0:
                     utils.pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                     break
                 rep = utils.increment_or_fail(num_rep, rep,

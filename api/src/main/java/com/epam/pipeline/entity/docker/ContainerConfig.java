@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,4 +34,11 @@ public class ContainerConfig {
 
     @JsonProperty("Labels")
     private Map<String, String> labels;
+
+    public static ContainerConfig empty() {
+        final ContainerConfig containerConfig = new ContainerConfig();
+        containerConfig.setCommands(new ArrayList<>());
+        containerConfig.setLabels(new HashMap<>());
+        return containerConfig;
+    }
 }

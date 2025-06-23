@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ public class SystemParameter {
     private String type;
     private String description;
     private String defaultValue;
-    private String passToWorkers;
+    private boolean passToWorkers;
     @JsonProperty("roles")
     private String[] roles;
 
@@ -52,11 +52,11 @@ public class SystemParameter {
         this.defaultValue = defaultValue;
     }
 
-    public String getPassToWorkers() {
+    public boolean getPassToWorkers() {
         return passToWorkers;
     }
 
-    public void setPassToWorkers(String passToWorkers) {
+    public void setPassToWorkers(boolean passToWorkers) {
         this.passToWorkers = passToWorkers;
     }
 

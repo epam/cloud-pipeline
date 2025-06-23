@@ -26,8 +26,9 @@ import styles from './LimitMountsInput.css';
 import {
   correctLimitMountsParameterValue, storageMatchesIdentifiers
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
+import {getAllowedStoragesForCloudRegion} from '../../../../utils/limit-mounts/check-cloud-region-rules';
 
-@inject('dataStorageAvailable', 'preferences')
+@inject('dataStorageAvailable', 'preferences', 'awsRegions')
 @observer
 export class LimitMountsInput extends React.Component {
   static propTypes = {
@@ -36,7 +37,8 @@ export class LimitMountsInput extends React.Component {
     disabled: PropTypes.bool,
     showOnlySummary: PropTypes.bool,
     allowSensitive: PropTypes.bool,
-    className: PropTypes.string
+    className: PropTypes.string,
+    cloudRegion: PropTypes.object
   };
 
   static defaultProps = {
@@ -47,6 +49,14 @@ export class LimitMountsInput extends React.Component {
     value: null,
     limitMountsDialogVisible: false
   };
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
 
   componentDidMount () {
     this.props.dataStorageAvailable.fetch();
@@ -70,9 +80,10 @@ export class LimitMountsInput extends React.Component {
     const {
       allowSensitive,
       dataStorageAvailable,
-      value
+      value,
+      cloudRegion
     } = this.props;
-    if (!allowSensitive && value && !/^none$/i.test(value)) {
+    if (value && !/^none$/i.test(value)) {
       dataStorageAvailable
         .fetchIfNeededOrWait()
         .then(() => {
@@ -80,7 +91,7 @@ export class LimitMountsInput extends React.Component {
             value: correctLimitMountsParameterValue(
               value,
               dataStorageAvailable.value || [],
-              {allowSensitive}
+              {allowSensitive, cloudRegion, cloudRegions: this.awsRegions}
             )
           }, this.handleChange);
         })
@@ -100,10 +111,14 @@ export class LimitMountsInput extends React.Component {
 
   @computed
   get availableStorages () {
+    const {
+      cloudRegion
+    } = this.props;
     if (this.props.dataStorageAvailable.loaded) {
-      return (this.props.dataStorageAvailable.value || [])
+      const storages = (this.props.dataStorageAvailable.value || [])
         .filter(s => !s.mountDisabled && (this.props.allowSensitive || !s.sensitive) && !s.sourceStorageId)
         .map(s => s);
+      return getAllowedStoragesForCloudRegion(storages, cloudRegion, this.awsRegions);
     }
     return [];
   }

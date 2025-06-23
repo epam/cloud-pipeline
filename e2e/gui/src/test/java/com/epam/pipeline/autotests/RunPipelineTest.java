@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
@@ -161,8 +162,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     public void activePipelineShouldBeOpenedFromNodeInfo() {
         final String runIdLabel = String.format("RUN ID %s", getLastRunId());
         clusterMenu()
-            .click(nodeLabel(runIdLabel), LogAO::new)
-            .ensure(taskList(), visible);
+                .sortByDecrease(DATE)
+                .click(nodeLabel(runIdLabel), LogAO::new)
+                .ensure(taskList(), visible);
     }
 
     @Test(priority = 1, dependsOnMethods = "activePipelineShouldBeOpenedFromNodeInfo")

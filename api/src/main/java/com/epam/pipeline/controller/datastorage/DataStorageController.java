@@ -27,7 +27,23 @@ import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
-import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StorageMountPath;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
@@ -554,8 +570,9 @@ public class DataStorageController extends AbstractRestController {
     public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
             @RequestBody DataStorageVO dataStorageVO,
             @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud,
-            @RequestParam(value = "skipPolicy", defaultValue = FALSE) final boolean skipPolicy){
-        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud, skipPolicy));
+            @RequestParam(value = "skipPolicy", defaultValue = FALSE) final boolean skipPolicy,
+            @RequestParam(value = "checkExistence", defaultValue = "true") final boolean checkExistence){
+        return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud, skipPolicy, checkExistence));
     }
 
     @RequestMapping(value = "/datastorage/update", method = RequestMethod.POST)

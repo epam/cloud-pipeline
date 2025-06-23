@@ -246,8 +246,9 @@ public class DataStorageApiService {
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final boolean proceedOnCloud,
-                                                               final boolean skipPolicy) {
-        return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
+                                                               final boolean skipPolicy,
+                                                               final boolean checkExistence) {
+        return dataStorageManager.create(dataStorageVO, proceedOnCloud, checkExistence, true, skipPolicy);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE)

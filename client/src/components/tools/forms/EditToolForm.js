@@ -111,6 +111,7 @@ import {
   getFsConfigFromParameters,
   getToolParametersFromFsConfig
 } from '../../pipelines/launch/form/utilities/configure-fs/utilities';
+import ConfigurePlugins from '../../plugins/configure';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -143,6 +144,8 @@ export default class EditToolForm extends React.Component {
       defaultCommand: PropTypes.string,
       endpoints: PropTypes.object
     }),
+    toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    toolVersion: PropTypes.string,
     allowSensitive: PropTypes.bool,
     mode: PropTypes.oneOf(['tool', 'version']),
     configuration: PropTypes.object,
@@ -532,9 +535,9 @@ export default class EditToolForm extends React.Component {
         const instanceTypeName = (props.configuration ? props.configuration.instance_size : undefined) ||
           (props.tool ? props.tool.instanceType : undefined);
         const instanceType = this.allowedInstanceTypes.find(i => i.name === instanceTypeName);
-        const [provider] = regions
-          .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
-          .map(a => a.provider);
+        const currentRegion = regions
+          .find(a => (instanceType && a.id === instanceType.regionId) || !instanceType);
+        const provider = currentRegion ? currentRegion.provider : undefined;
         state.gpuScalingConfiguration = props.configuration
           ? readGPUScalingPreference({
             autoScaled: state.autoScaledCluster,
@@ -586,7 +589,11 @@ export default class EditToolForm extends React.Component {
               if (this.props.dataStorageAvailable.loaded) {
                 this.defaultLimitMounts = correctLimitMountsParameterValue(
                   props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '',
-                  this.props.dataStorageAvailable.value || []
+                  this.props.dataStorageAvailable.value || [],
+                  {
+                    cloudRegion: currentRegion,
+                    cloudRegions: regions,
+                  }
                 );
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
@@ -1334,6 +1341,25 @@ export default class EditToolForm extends React.Component {
                   />
                 </Col>
               </Row>
+              <Row style={{marginBottom: 10, marginTop: 10}}>
+                <Col
+                  xs={24}
+                  sm={6}
+                  style={{paddingRight: 10}}
+                  className={classNames(
+                    'cp-accent',
+                    styles.toolSettingsTitle
+                  )}
+                >
+                  Custom UI Pages:
+                </Col>
+                <Col xs={24} sm={12}>
+                  <ConfigurePlugins
+                    toolId={this.props.toolId}
+                    toolVersion={this.props.toolVersion}
+                  />
+                </Col>
+              </Row>
               {
                 !this.isWindowsPlatform && (
                   <Form.Item
@@ -1365,6 +1391,7 @@ export default class EditToolForm extends React.Component {
                             <LimitMountsInput
                               allowSensitive={allowSensitive}
                               disabled={this.state.pending || this.props.readOnly}
+                              cloudRegion={this.getCloudRegion()}
                             />
                           )}
                         </Form.Item>

@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-docker-registry
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:registry-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:registry-${CP_VERSION}-${CP_DOCKER_REGISTRY_TYPE}
           imagePullPolicy: "Always"
           ports:
             - containerPort: 443
@@ -32,6 +32,8 @@ spec:
           env:
           - name: REGISTRY_HTTP_ADDR
             value: "0.0.0.0:80"
+          - name: OTEL_TRACES_EXPORTER
+            value: none
           volumeMounts:
             - mountPath: /opt/docker-registry/pki
               name: docker-pki

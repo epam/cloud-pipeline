@@ -153,10 +153,16 @@ import {
   getFsConfigFromParameters,
   getParametersFromFsConfig
 } from './utilities/configure-fs/utilities';
+import ConditionalParameters from './ConditionalParameters';
+import CustomTagsControl from './components/custom-tags/control';
+import ConfigurePlugins from '../../../plugins/configure';
+import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
 const RUN_CLUSTER_KEY = 'run cluster';
+
+const CONDITIONAL_PARAMETERS_KEY = 'conditional_parameters';
 
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
@@ -273,6 +279,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    userTags: {},
+    userTagsValidation: [],
+    userTagsValidationPayload: undefined,
+    conditionalParameters: [],
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -441,74 +451,111 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable rescheduleRunInitialValue = undefined;
 
   @action
-  formFieldsChanged = async () => {
-    const {form, parameters} = this.props;
-    const formParameters = form.getFieldValue(PARAMETERS);
-    const formParametersCorrected = parameterUtilities.correctFormFieldValues(
-      formParameters,
-      this.state.isRawEditEnabled
-    );
-    if (formParametersCorrected) {
-      form.setFieldsValue({
-        [PARAMETERS]: formParameters
-      });
-    }
-    this.inputPaths = getInputPaths(
-      formParameters,
-      (parameters || {}).parameters
-    );
-    this.outputPaths = getOutputPaths(
-      formParameters,
-      (parameters || {}).parameters
-    );
-    const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
-    if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
-      if (currentDockerImage) {
-        await this.loadToolSettings(currentDockerImage);
-        const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
-        const regionId = this.correctCloudRegion(
-          currentValue ||
-          this.defaultCloudRegionId
+  formFieldsChanged = () => {
+    const token = this.__formFieldsChangedToken = {};
+    class FormFieldChangedAbortedError extends Error {}
+    const checkIfNotAborted = () => {
+      if (token !== this.__formFieldsChangedToken) {
+        throw new FormFieldChangedAbortedError();
+      }
+    };
+    clearTimeout(this.__formFieldsChangedTimeout);
+    this.__formFieldsChangedTimeout = setTimeout(async () => {
+      try {
+        checkIfNotAborted();
+        const {form, parameters} = this.props;
+        const formParameters = form.getFieldValue(PARAMETERS);
+        const formParametersCorrected = parameterUtilities.correctFormFieldValues(
+          formParameters,
+          this.state.isRawEditEnabled
         );
-        this.props.form.setFieldsValue({
-          [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+        if (formParametersCorrected) {
+          form.setFieldsValue({
+            [PARAMETERS]: formParameters
+          });
+        }
+        this.inputPaths = getInputPaths(
+          formParameters,
+          (parameters || {}).parameters
+        );
+        this.outputPaths = getOutputPaths(
+          formParameters,
+          (parameters || {}).parameters
+        );
+        const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
+        if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
+          if (currentDockerImage) {
+            await this.loadToolSettings(currentDockerImage);
+            checkIfNotAborted();
+            const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+            const regionId = this.correctCloudRegion(
+              currentValue ||
+              this.defaultCloudRegionId
+            );
+            this.props.form.setFieldsValue({
+              [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+            });
+          } else {
+            this.resetToolSettings();
+          }
+        }
+        this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
+        this.modified = checkModifiedState(
+          this.props,
+          this.state,
+          {
+            defaultCloudRegionId: this.defaultCloudRegionId,
+            execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
+            spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
+            cmdTemplateValue: this.cmdTemplateValue,
+            toolDefaultCmd: this.toolDefaultCmd
+          }
+        );
+        this.props.onModified && this.props.onModified(this.modified);
+        await this.rebuildConditionalParameters();
+        checkIfNotAborted();
+        await this.rebuildLaunchCommand();
+        checkIfNotAborted();
+        const validateFields = async () => new Promise((resolve) => {
+          const onValidationChange = (formInvalid, values) => {
+            resolve({values, errors: formInvalid});
+          };
+          if (this.forceValidation) {
+            this.forceValidation = false;
+            this.props.form.validateFields({force: true}, onValidationChange);
+          } else {
+            this.props.form.validateFields(onValidationChange);
+          }
         });
-      } else {
-        this.resetToolSettings();
+        const {values} = await validateFields();
+        checkIfNotAborted();
+        const payload = values ? this.generateLaunchPayload(values) : undefined;
+        await this.validateUserTags(payload);
+      } catch (error) {
+        if (error instanceof FormFieldChangedAbortedError) {
+          // noop
+        } else {
+          console.log(error);
+        }
       }
-    }
-    this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
-    this.modified = checkModifiedState(
-      this.props,
-      this.state,
-      {
-        defaultCloudRegionId: this.defaultCloudRegionId,
-        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
-        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue,
-        toolDefaultCmd: this.toolDefaultCmd
-      }
-    );
-    this.props.onModified && this.props.onModified(this.modified);
-    this.rebuildLaunchCommand();
-    if (this.forceValidation) {
-      this.forceValidation = false;
-      this.props.form.validateFields(undefined, {force: true}, () => {});
-    } else {
-      this.props.form.validateFields();
-    }
+    }, 0);
   };
 
-  rebuildLaunchCommand = () => {
-    if (!this.props.detached && !this.props.editConfigurationMode) {
-      this.props.form.validateFields(async (err, values) => {
-        if (!err && this.validateFireCloudConnections()) {
-          this.launchCommandPayload = this.generateLaunchPayload(values);
-        } else {
-          this.launchCommandPayload = undefined;
-        }
-      });
-    }
+  rebuildLaunchCommand = async () => {
+    return new Promise((resolve) => {
+      if (!this.props.detached && !this.props.editConfigurationMode) {
+        this.props.form.validateFields(async (err, values) => {
+          if (!err && this.validateFireCloudConnections()) {
+            this.launchCommandPayload = this.generateLaunchPayload(values);
+          } else {
+            this.launchCommandPayload = undefined;
+          }
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
   };
 
   showLaunchCommands = () => {
@@ -822,9 +869,84 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return `${estimatedPriceSectionVisible}`.toLowerCase() === 'true';
   }
 
+  expandErroredPanels = (errorKeys, scroll = true) => {
+    const {openedPanels} = this.state;
+    const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
+    const wrongFields = [];
+    const extractFields = (section) => {
+      if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
+        for (let key in errorKeys[section]) {
+          if (errorKeys[section].hasOwnProperty(key)) {
+            wrongFields.push(key.replace(/\./g, '_'));
+          }
+        }
+      } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
+        for (let key in errorKeys[section].params) {
+          if (errorKeys[section].params.hasOwnProperty(key)) {
+            wrongFields.push(key.replace(/\./g, '_'));
+          }
+        }
+      }
+    };
+    for (let key in errorKeys) {
+      if (errorKeys.hasOwnProperty(key)) {
+        extractFields(key);
+        if (openedPanels.indexOf(getPanelKey(key)) === -1) {
+          openedPanels.push(getPanelKey(key));
+        }
+      }
+    }
+    this.setState({
+      openedPanels
+    }, () => {
+      if (wrongFields.length > 0 && scroll) {
+        const scrollToWrongField = () => {
+          const element = document.querySelector(`.${wrongFields[0]}`);
+          const layout = document.querySelector(`.${styles.layout}`);
+          if (layout && element) {
+            // For detached configuration & pipeline configuration scrolling:
+            element.scrollIntoView({behavior: 'smooth'});
+            layout.scrollIntoView({behavior: 'smooth'});
+            if (layout.parentElement) {
+              layout.parentElement.scrollIntoView({behavior: 'smooth'});
+            }
+          }
+        };
+        const TIMEOUT_MS = 500;
+        setTimeout(scrollToWrongField, TIMEOUT_MS);
+      }
+    });
+  };
+
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFields(async (err, values) => {
+
+    const mergeErrors = (...errors) => {
+      const filtered = errors.filter(Boolean);
+      if (filtered.length === 0) {
+        return undefined;
+      }
+      if (filtered.length === 1) {
+        return filtered[0];
+      }
+      const [first, second, ...rest] = filtered;
+      const merged = [
+        ...new Set(Object.keys(first).concat(Object.keys(second)))
+      ].reduce((acc, cur) => ({
+        ...acc,
+        [cur]: {
+          ...(first[cur] || {}),
+          ...(second[cur] || {})
+        }
+      }), []);
+      return mergeErrors(merged, ...rest);
+    };
+
+    this.props.form.validateFields(async (errors, values) => {
+      const userTagsValid = await this.validateUserTags(this.generateLaunchPayload(values));
+      const err = mergeErrors(errors, userTagsValid ? undefined : {
+        [ADVANCED]: {customTags: false}
+      });
       if (!err && this.validateFireCloudConnections()) {
         let payload;
         if (this.props.editConfigurationMode) {
@@ -848,53 +970,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         }
       } else {
-        const openedPanels = this.state.openedPanels;
-        const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
-        const wrongFields = [];
-        const extractFields = (section) => {
-          if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
-            for (let key in err[section]) {
-              if (err[section].hasOwnProperty(key)) {
-                wrongFields.push(key.replace(/\./g, '_'));
-              }
-            }
-          } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
-            for (let key in err[section].params) {
-              if (err[section].params.hasOwnProperty(key)) {
-                wrongFields.push(key.replace(/\./g, '_'));
-              }
-            }
-          }
-        };
-        for (let key in err) {
-          if (err.hasOwnProperty(key)) {
-            extractFields(key);
-            if (openedPanels.indexOf(getPanelKey(key)) === -1) {
-              openedPanels.push(getPanelKey(key));
-            }
-          }
-        }
-        this.setState({
-          openedPanels
-        }, () => {
-          if (wrongFields.length > 0) {
-            const scrollToWrongField = () => {
-              const element = document.querySelector(`.${wrongFields[0]}`);
-              const layout = document.querySelector(`.${styles.layout}`);
-              const scrollableParent = layout.parentElement.parentElement;
-              if (scrollableParent && element) {
-                // For detached configuration & pipeline configuration scrolling:
-                scrollableParent.scrollTo({left: 0, top: element.offsetTop});
-                if (scrollableParent.parentElement) {
-                  // For launch form scrolling:
-                  scrollableParent.parentElement.scrollTo({left: 0, top: element.offsetTop});
-                }
-              }
-            };
-            const TIMEOUT_MS = 500;
-            setTimeout(scrollToWrongField, TIMEOUT_MS);
-          }
-        });
+        this.expandErroredPanels(err);
       }
     });
   };
@@ -1157,6 +1233,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       notifications: (values[ADVANCED].notifications || []).slice(),
       raw: this.state.isRawEditEnabled
     };
+    if (this.props.parameters && this.props.parameters[CONDITIONAL_PARAMETERS_KEY]) {
+      payload[CONDITIONAL_PARAMETERS_KEY] = this.props.parameters[CONDITIONAL_PARAMETERS_KEY];
+    }
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
     }
@@ -1381,6 +1460,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
+      tags: this.state.userTags,
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -1413,6 +1493,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return value === 'true';
       }
     };
+    const conditionalParameters = (this.state.conditionalParameters || [])
+      .filter(p => !p.markAsDeleted);
+    if (conditionalParameters.length) {
+      for (let i = 0; i < conditionalParameters.length; i++) {
+        const parameter = conditionalParameters[i];
+        payload.params[parameter.name] = {
+          type: parameter.type,
+          value: (parameter.type || '').toLowerCase() === 'boolean'
+            ? getBooleanValue(parameter.value)
+            : (parameter.value || ''),
+          required: `${parameter.required || false}`.toLowerCase() === 'true',
+          enum: parameter.initialEnumeration,
+          visible: parameter.visible,
+          validation: parameter.validation,
+          no_override: parameter.noOverride,
+          section: parameter.section
+        };
+      }
+    }
     if (values[PARAMETERS] && values[PARAMETERS].keys) {
       for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
         const key = values[PARAMETERS].keys[i];
@@ -2843,6 +2942,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   validateParameterName = (sectionName, key, isSystemParameter) => (rule, value, callback) => {
+    const {conditionalParameters = []} = this.state;
     const parametersValues = this.getSectionValue(sectionName);
     let error = false;
     if (value && value.length > 0) {
@@ -2863,6 +2963,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             break;
           }
         }
+      }
+      if (conditionalParameters.find(p => !p.markAsDeleted && p.name === value)) {
+        error = true;
       }
     }
     if (error) {
@@ -2950,6 +3053,67 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return false;
   };
 
+  rebuildConditionalParameters = async () => {
+    return new Promise((resolve) => {
+      const {form, parameters} = this.props;
+      const {conditionalParameters} = this.state;
+      const formParameters = form.getFieldValue(PARAMETERS);
+      const normalizedParameters = parameterUtilities.normalizeParameters(formParameters);
+      const rawConditional = this.props.parameters[CONDITIONAL_PARAMETERS_KEY];
+      if (parameters && rawConditional && typeof rawConditional === 'object') {
+        const params = Object
+          .entries(rawConditional)
+          .reduce((acc, [visibilityCondition, parameters]) => {
+            const isVisible = parameterUtilities.isVisible(
+              {visible: visibilityCondition},
+              normalizedParameters,
+              false
+            );
+            if (!isVisible) {
+              return acc;
+            }
+            const params = Object.entries(parameters).map(([name, param]) => {
+              const currentStateParameter = (conditionalParameters || [])
+                .find(p => p.visibilityCondition === visibilityCondition && p.name === name);
+              return {
+                ...param,
+                name,
+                visibilityCondition,
+                value: currentStateParameter?.value || param.value,
+                markAsDeleted: currentStateParameter?.markAsDeleted || false
+              };
+            });
+            acc = [...acc, ...params];
+            return acc;
+          }, []).filter(Boolean);
+        this.setState(
+          {conditionalParameters: params},
+          () => resolve()
+        );
+      } else {
+        resolve();
+      }
+    });
+  };
+
+  validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
+    let result = [];
+    if (
+      !this.props.detached &&
+      !this.props.isDetachedConfiguration &&
+      !this.props.editConfigurationMode
+    ) {
+      const {userTags} = this.state;
+      result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
+    }
+    this.setState({
+      userTagsValidation: result,
+      userTagsValidationPayload: payload,
+    }, () => {
+      resolve(!result || result.length === 0);
+    });
+  });
+
   @computed
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
@@ -3019,6 +3183,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   closeSystemParameterBrowser = () => {
     this.setState({systemParameterBrowserVisible: false});
+  };
+
+  onConditionalParametersChanged = (value) => {
+    this.setState({conditionalParameters: value}, this.formFieldsChanged);
   };
 
   renderParameters = (isSystemParametersSection) => {
@@ -3889,6 +4057,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   })
                   : renderParametersGroup(keys, params)
                 }
+                <ConditionalParameters
+                  conditionalParameters={this.state.conditionalParameters}
+                  onChange={this.onConditionalParametersChanged}
+                  readOnly={this.props.readOnly ||
+                    this.props.editConfigurationMode ||
+                    !this.state.pipeline ||
+                    this.props.detached
+                  }
+                />
               </div>
             </div>
           );
@@ -4402,7 +4579,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       slurmEnabled,
       kubeEnabled,
       autoScaledPriceType,
-      fsConfig,
+      fsConfig
     } = configuration;
     let {runCapabilities} = this.state;
     if (kubeEnabled) {
@@ -4890,7 +5067,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       };
       const defaultValue = correctLimitMountsParameterValue(
         getDefaultValue() || '',
-        dataStorageAvailable.value || []
+        dataStorageAvailable.value || [],
+        {
+          cloudRegion: this.currentCloudRegion,
+          cloudRegions: this.awsRegions
+        }
       );
       let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
       if (currentValue === undefined) {
@@ -4951,6 +5132,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         !!this.state.fireCloudMethodName ||
                         (this.props.readOnly && !this.props.canExecute)
                       }
+                      cloudRegion={this.currentCloudRegion}
                     />
                   )}
                 </FormItem>
@@ -4998,6 +5180,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
+
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
@@ -5018,6 +5201,37 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
           {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
         </Col>
+      </FormItem>
+    );
+  };
+
+  renderCustomTagsConfigurationItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    const {
+      userTags,
+      userTagsValidation = [],
+      userTagsValidationPayload,
+    } = this.state;
+
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customTags')}
+        {...this.leftFormItemLayout}
+        label="Tags"
+      >
+        <CustomTagsControl
+          tags={userTags}
+          validation={userTagsValidation}
+          payload={userTagsValidationPayload}
+          onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
+          buttonText="Configure"
+        />
       </FormItem>
     );
   };
@@ -5050,6 +5264,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </Col>
     </FormItem>
   );
+
+  renderCustomUIItem = () => {
+    const {
+      detached,
+      editConfigurationMode,
+      pipeline = {},
+      version: pipelineVersion
+    } = this.props;
+    const {id: pipelineId} = pipeline;
+    if (detached || !editConfigurationMode || !pipelineId || !pipelineVersion) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customUI')}
+        {...this.leftFormItemLayout}
+        label="Custom UI Pages"
+      >
+        <Col span={24}>
+          <ConfigurePlugins
+            pipelineId={pipelineId}
+            pipelineVersion={pipelineVersion}
+          />
+        </Col>
+      </FormItem>
+    );
+  };
 
   renderCmdTemplateFormItem = () => {
     const {isRawEditEnabled} = this.state;
@@ -5912,7 +6153,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   initialValue: this.props.currentConfigurationName
                 }
               )(
-                <Input disabled={this.props.readOnly && !this.props.canExecute}/>
+                <Input disabled={this.props.readOnly && !this.props.canExecute} />
               )}
             </FormItem>
           </div>
@@ -6024,7 +6265,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         );
       }
 
-      let pipelineVersionPicker
+      let pipelineVersionPicker;
       if (this.props.pipeline) {
         if (!this.props.editConfigurationMode && !this.props.detached) {
           pipelineVersionPicker = (
@@ -6080,7 +6321,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {renderSubmitButton()}
             </div>
             <div
-              style={{width: '100%', display: 'flex', alignItems: 'center', margin: 5, flexWrap: 'wrap'}}>
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', margin: 5, flexWrap: 'wrap'
+              }}>
               {this.renderEstimatedPriceInfo()}
             </div>
           </div>
@@ -6091,7 +6334,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             !this.props.detached
               ? (
                 <Row>
-                <Alert
+                  <Alert
                     type="warning"
                     message={`You have no permissions to launch ${this.props.pipeline.name}`} />
                   <br />
@@ -6106,7 +6349,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               id="launch-pipeline-exec-environment-panel"
               key={EXEC_ENVIRONMENT}
               className={
-                classNames(styles.section, {[styles.hidden]: !this.executionEnvironmentSectionVisible})
+                classNames(styles.section, {
+                  [styles.hidden]: !this.executionEnvironmentSectionVisible
+                })
               }
               header={this.getPanelHeader(EXEC_ENVIRONMENT)}>
               <Row type="flex" justify="space-between">
@@ -6221,6 +6466,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 classNames(styles.section, {[styles.hidden]: !this.advancedSectionVisible})
               }
               header={this.getPanelHeader(ADVANCED)}>
+              {this.renderCustomTagsConfigurationItem()}
               {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}
@@ -6228,6 +6474,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderHostedAppConfigurationItem()}
               {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
+              {this.renderCustomUIItem()}
               {this.renderEndpointNameFormItem()}
               {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}
@@ -6485,6 +6732,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   componentWillUnmount () {
     cancelAnimationFrame(this.checkRAF);
+    this.__formFieldsChangedToken = {};
+    clearTimeout(this.__formFieldsChangedTimeout);
   }
 }
 

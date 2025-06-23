@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.entity.docker;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+
+import java.util.Optional;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown=true)
@@ -32,4 +35,14 @@ public class HistoryEntryV1 {
 
     @JsonProperty("container_config")
     private ContainerConfig containerConfig;
+
+    @JsonProperty("config")
+    private ContainerConfig config;
+
+    @JsonIgnore
+    public ContainerConfig getContainerConfig() {
+        return Optional.ofNullable(containerConfig)
+                .orElseGet(() -> Optional.ofNullable(config)
+                        .orElse(ContainerConfig.empty()));
+    }
 }

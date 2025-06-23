@@ -1,0 +1,35 @@
+.configure-plugins-container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  gap: 5px;
+}
+
+.configure-plugins-container .error,
+.configure-plugins-container .actions {
+  flex-shrink: 0;
+}
+
+.configure-plugins-container .list {
+  flex: 1;
+  overflow: auto;
+}
+
+.configure-plugin-row {
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+  line-height: 24px;
+}
+
+.configure-plugin-row.flex-start {
+  align-items: flex-start;
+}
+
+.configure-plugin-row > *:not(:last-child) {
+  margin-right: 5px;
+}
+
+.configure-plugin-row .control {
+  flex: 1;
+}

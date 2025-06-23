@@ -28,16 +28,30 @@ function TasksStatuses (props) {
       <div className={styles.tasksStatusesHeader}>
         {
           taskGroupFilter ? (
-            <span>
-              <span style={{fontWeight: 'bold'}}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                flex: 1,
+                overflow: 'hidden'
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: 'bold',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 {taskGroupFilter}
               </span>
-              <span style={{marginLeft: 5}}>
+              <span style={{marginLeft: 5, flexShrink: 0}}>
                 process tasks statuses
               </span>
             </span>
           ) : (
-            <span style={{fontWeight: 'bold'}}>
+            <span style={{fontWeight: 'bold', flex: 1, overflow: 'hidden'}}>
               Tasks statuses
             </span>
           )

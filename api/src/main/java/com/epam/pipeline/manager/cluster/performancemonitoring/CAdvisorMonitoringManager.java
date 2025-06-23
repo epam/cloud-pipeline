@@ -24,6 +24,9 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.RawMonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -152,6 +155,20 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
                                 MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
 
         return diskStats.getCapacity() - diskStats.getUsableSpace();
+    }
+
+    @Override
+    public NetworkEventFilter getPlatformNetworkStatsFilters() {
+        throw new UnsupportedOperationException(messageHelper.getMessage(
+                MessageConstants.CADVISOR_STATS_REPORTS_NOT_SUPPORTED));
+    }
+
+    @Override
+    public List<HistogramBin> getPlatformNetworkStats(final HistogramType histogramType,
+                                                      final LocalDateTime from, final LocalDateTime to,
+                                                      final Integer intervals, final NetworkEventFilter filter) {
+        throw new UnsupportedOperationException(messageHelper.getMessage(
+                MessageConstants.CADVISOR_STATS_REPORTS_NOT_SUPPORTED));
     }
 
     public List<MonitoringStats> getStats(final String nodeName) {

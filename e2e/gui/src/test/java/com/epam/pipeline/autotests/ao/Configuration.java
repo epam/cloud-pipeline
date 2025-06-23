@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,7 +255,8 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration validateParameters(final String... parameters) {
-        final ElementsCollection actualParameters = SelenideElements.of(parameterName());
+        final ElementsCollection actualParameters = $(byId("launch-pipeline-parameters-panel"))
+                .$$(byClassName("launch-pipeline-form__parameter-name-container"));
         IntStream.range(0, parameters.length)
                 .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i])));
         return this;

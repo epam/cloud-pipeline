@@ -14,9 +14,11 @@
  *  limitations under the License.
  */
 
+import {defaultSorter} from '../../../../utils/sorting';
+
 export default function channelsAreEqual (channelsSet1, channelsSet2) {
-  const channels1 = Object.keys(channelsSet1 || {}).sort();
-  const channels2 = Object.keys(channelsSet2 || {}).sort();
+  const channels1 = Object.keys(channelsSet1 || {}).sort(defaultSorter);
+  const channels2 = Object.keys(channelsSet2 || {}).sort(defaultSorter);
   if (channels1.length !== channels2.length) {
     return false;
   }

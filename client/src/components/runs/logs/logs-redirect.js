@@ -4,20 +4,32 @@ import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import LoadingView from '../../special/LoadingView';
 import RunDetails from '../run-details';
 import Logs from './Log';
-import {isNextflowEngine} from '../run-details/utilities/helpers';
+import {isMlflowEngine, isNextflowEngine} from '../run-details/utilities/helpers';
+import {inject, observer} from 'mobx-react';
 
 const runDetailsPresentation = {
   default: 'default',
-  nextflow: 'nextflow'
+  nextflow: 'nextflow',
+  mlflow: 'mlflow'
 };
 
-function getRunDetailsPresentation (run) {
+function getRunDetailsPresentation (run, preferences) {
   if (isNextflowEngine(run)) {
     return runDetailsPresentation.nextflow;
+  }
+  if (
+    isMlflowEngine(run) &&
+    preferences &&
+    preferences.uiMlflowSettings &&
+    preferences.uiMlflowSettings.mlflow_base
+  ) {
+    return runDetailsPresentation.mlflow;
   }
   return runDetailsPresentation.default;
 }
 
+@inject('preferences')
+@observer
 class LogsRedirect extends React.Component {
   state = {
     pending: true,
@@ -44,7 +56,7 @@ class LogsRedirect extends React.Component {
   }
 
   checkRun = () => {
-    const {params: currentParams = {}} = this.props;
+    const {params: currentParams = {}, preferences} = this.props;
     const {runId: currentRunId} = currentParams;
     const token = this.token = {};
     const commit = (fn) => {
@@ -60,7 +72,7 @@ class LogsRedirect extends React.Component {
       }, async () => {
         try {
           const runRequest = new PipelineRunInfo(currentRunId);
-          await runRequest.fetch();
+          await Promise.all([runRequest.fetch(), preferences.fetchIfNeededOrWait()]);
           if (runRequest.error) {
             throw new Error(runRequest.error);
           }
@@ -92,14 +104,6 @@ class LogsRedirect extends React.Component {
     }
   }
 
-  getIsNextflowRun = () => {
-    const {run} = this.state;
-    if (!run) {
-      return false;
-    }
-    return true;
-  };
-
   render () {
     const {
       error,
@@ -114,10 +118,11 @@ class LogsRedirect extends React.Component {
       );
     }
     if (run) {
-      const {params: currentParams = {}} = this.props;
+      const {params: currentParams = {}, preferences} = this.props;
       const {mode} = currentParams;
-      switch (getRunDetailsPresentation(run)) {
+      switch (getRunDetailsPresentation(run, preferences)) {
         case runDetailsPresentation.nextflow:
+        case runDetailsPresentation.mlflow:
           return mode === undefined
             ? (<RunDetails {...this.props} preLoadedRun={run} />)
             : (<Logs {...this.props} />);

@@ -24,7 +24,7 @@
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ############################################################################################
 
-distros_debian=(debian:8 debian:9 ubuntu:16.04 ubuntu:18.04 ubuntu:19.04 ubuntu:20.04)
+distros_debian=(debian:8 debian:9 ubuntu:16.04 ubuntu:18.04 ubuntu:19.04 ubuntu:20.04 ubuntu:22.04)
 distros_centos=(centos:7 centos:8)
 
 repo_bucket=cloud-pipeline-oss-builds

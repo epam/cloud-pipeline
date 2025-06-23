@@ -128,6 +128,7 @@ public class C {
         TEST_RUN_TAG = conf.getProperty("e2e.ui.test.run.tag");
         DEFAULT_CLOUD_REGION = conf.getProperty("e2e.ui.default.cloud.region");
         SSH_CLOUD_REGION = conf.getProperty("e2e.ssh.cloud.region");
+        DEFAULT_INSTANCE_PRICE_TYPE_TOOL = conf.getProperty("e2e.ui.default.instance.price.type.tool");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -235,4 +236,5 @@ public class C {
     public static final int BACKUP_STORAGE_OFFSET;
     public static final String TEST_RUN_TAG;
     public static final String SSH_CLOUD_REGION;
+    public static final String DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
 }

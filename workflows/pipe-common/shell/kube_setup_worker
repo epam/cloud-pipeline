@@ -48,6 +48,14 @@ fi
 
 pipe_log_info "Kubeadm token received: $CP_CAP_KUBE_MASTER_TOKEN" "$_kube_worker_setup_task"
 
+if [ -z "$CP_CAP_KUBE_VERSION" ]; then
+    if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+        export CP_CAP_KUBE_VERSION="1.28.2"
+    else
+        export CP_CAP_KUBE_VERSION="1.15.4"
+    fi
+fi
+
 export CP_CAP_KUBE_VERSION="${CP_CAP_KUBE_VERSION:-1.15.4}"
 export CP_CAP_KUBE_MASTER_API_PORT="${CP_CAP_KUBE_MASTER_API_PORT:-6443}"
 export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"

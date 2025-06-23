@@ -1,8 +1,8 @@
 import {observable} from 'mobx';
 import moment from 'moment-timezone';
 import dataStorages from '../../models/dataStorage/DataStorages';
-import {ObjectStorage} from '../object-storage';
 import DataStorageItemUpdate from '../../models/dataStorage/DataStorageItemUpdate';
+import S3Storage from '../../models/s3-upload/s3-storage';
 import whoAmI from '../../models/user/WhoAmI';
 
 const KB = 1024;
@@ -160,14 +160,11 @@ class FileUpload {
       this.resolvedPath = /^nfs$/i.test(storage.type) ? this.cloudDataPath : this.fullStoragePath;
       const parentFolder = (this.uploadPath || '').split('/').slice(0, -1).join('/');
       const fileName = (this.uploadPath || '').split('/').pop();
-      const storageWrapper = /^s3$/i.test(storage.type) ? new ObjectStorage(storage) : undefined;
+      const storageWrapper = /^s3$/i.test(storage.type) ? new S3Storage(storage) : undefined;
       if (storageWrapper) {
-        await storageWrapper.initialize();
-      }
-      if (storageWrapper && storageWrapper.s3Storage) {
         await whoAmI.fetchIfNeededOrWait();
-        storageWrapper.s3Storage.prefix = parentFolder;
-        await storageWrapper.s3Storage.doUpload(
+        storageWrapper.prefix = parentFolder;
+        await storageWrapper.doUpload(
           this.file,
           {
             fileName,

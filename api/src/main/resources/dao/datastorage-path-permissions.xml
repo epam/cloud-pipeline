@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao" id="dataStoragePathPermissionsDao"
+          autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--insertStoragePathPermissionsQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_path_permissions (
+                        storage_id,
+                        folder_path,
+                        file_name,
+                        sid_name,
+                        principal,
+                        mask
+                    )
+                    VALUES (
+                        :STORAGE_ID,
+                        :FOLDER_PATH,
+                        :FILE_NAME,
+                        :SID_NAME,
+                        :PRINCIPAL,
+                        :MASK
+                    )
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteStoragePathPermissionsQuery-->
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = ?
+                    @WHERE@
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadStoragePathPermissionsQuery-->
+                <![CDATA[
+                    WITH ranked_permissions AS (
+                        SELECT
+                            p.storage_id,
+                            p.folder_path,
+                            p.file_name,
+                            p.sid_name,
+                            p.principal,
+                            p.mask,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY p.storage_id, p.folder_path, p.file_name
+                                ORDER BY
+                                    CASE
+                                        WHEN p.principal = true THEN 0
+                                        ELSE 1
+                                    END,
+                                    p.mask
+                            ) AS rn
+                        FROM
+                            pipeline.datastorage_path_permissions p
+                        WHERE
+                            p.storage_id = ?
+                        @WHERE@
+                    )
+                    SELECT
+                        rp.storage_id,
+                        rp.folder_path,
+                        rp.file_name,
+                        rp.sid_name,
+                        rp.principal,
+                        rp.mask
+                    FROM
+                        ranked_permissions rp
+                    WHERE
+                        rp.rn = 1
+                    ORDER BY LENGTH(rp.folder_path) DESC, rp.file_name DESC NULLS LAST
+                    @LIMIT@
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteStoragePathPermissionsByStorageIdQuery-->
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--findSidsWithStoragePathPermissionsQuery-->
+                <![CDATA[
+                    SELECT DISTINCT
+                        p.sid_name,
+                        p.principal
+                    FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--findClosestStorageFolderPermissionQuery-->
+                <![CDATA[
+                    WITH ranked_permissions AS (
+                        SELECT
+                            p.storage_id,
+                            p.folder_path,
+                            p.file_name,
+                            p.sid_name,
+                            p.principal,
+                            p.mask,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY p.storage_id, p.folder_path, p.file_name
+                                ORDER BY
+                                    CASE
+                                        WHEN p.principal = true THEN 0
+                                        ELSE 1
+                                    END,
+                                    p.mask
+                            ) AS rn
+                        FROM
+                            pipeline.datastorage_path_permissions p
+                        WHERE
+                            p.storage_id = ?
+                        @WHERE@
+                    )
+                    SELECT
+                        rp.storage_id,
+                        rp.folder_path,
+                        rp.file_name,
+                        rp.sid_name,
+                        rp.principal,
+                        rp.mask
+                    FROM
+                        ranked_permissions rp
+                    WHERE
+                        rp.rn = 1
+                    ORDER BY LENGTH(rp.folder_path) DESC
+                    @LIMIT@
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadClosetsStoragePathPermissionsByPrefixQuery-->
+                <![CDATA[
+                    WITH ranked_permissions AS (
+                        SELECT
+                            p.storage_id,
+                            p.folder_path,
+                            p.file_name,
+                            p.sid_name,
+                            p.principal,
+                            p.mask,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY p.storage_id, p.folder_path, p.file_name
+                                ORDER BY
+                                    CASE
+                                        WHEN p.principal = true THEN 0
+                                        ELSE 1
+                                    END,
+                                    p.mask
+                            ) AS rn
+                        FROM
+                            pipeline.datastorage_path_permissions p
+                        WHERE
+                            p.storage_id = :STORAGE_ID AND p.folder_path LIKE :FOLDER_PATH
+                        @WHERE@
+                    )
+                    SELECT
+                        rp.storage_id,
+                        rp.folder_path,
+                        rp.file_name,
+                        rp.sid_name,
+                        rp.principal,
+                        rp.mask
+                    FROM
+                        ranked_permissions rp
+                    WHERE
+                        rp.rn = 1
+                    ORDER BY LENGTH(rp.folder_path) ASC
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteStoragePathPermissionsByFilePathQuery-->
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = :STORAGE_ID AND p.folder_path = :FOLDER_PATH AND p.file_name = :FILE_NAME
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteStoragePathPermissionsByFolderPathQuery-->
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = :STORAGE_ID AND p.folder_path = :FOLDER_PATH AND p.file_name IS NULL
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadStoragePathPermissionsByPathQuery-->
+                <![CDATA[
+                    SELECT
+                        p.storage_id,
+                        p.folder_path,
+                        p.file_name,
+                        p.sid_name,
+                        p.principal,
+                        p.mask
+                    FROM
+                        pipeline.datastorage_path_permissions p
+                    WHERE
+                        p.storage_id = :STORAGE_ID AND p.folder_path = :FOLDER_PATH AND @WHERE@
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>

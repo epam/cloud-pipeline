@@ -815,7 +815,8 @@ function parse_options {
     set_service_host "CP_DOCKER_EXTERNAL_HOST" "CP_DOCKER_INTERNAL_HOST" && \
     set_service_host "CP_EDGE_EXTERNAL_HOST" "CP_EDGE_INTERNAL_HOST"  && \
     set_service_host "CP_GITLAB_EXTERNAL_HOST" "CP_GITLAB_INTERNAL_HOST" && \
-    set_service_host "CP_SHARE_SRV_EXTERNAL_HOST" "CP_SHARE_SRV_INTERNAL_HOST"
+    set_service_host "CP_SHARE_SRV_EXTERNAL_HOST" "CP_SHARE_SRV_INTERNAL_HOST" && \
+    set_service_host "CP_MLFLOW_EXTERNAL_HOST" "CP_API_SRV_EXTERNAL_HOST"
 
     if [ $? -ne 0 ]; then
         print_err "Unrecoverable error occured while setting services hosts, exiting"
@@ -1013,6 +1014,17 @@ function prepare_kube_dns {
 
         # 2. Mount hosts config map into dnsmasq
         print_info "Configuring kube-dns for custom entries support"
+
+        # Setting auth-zone allows to bypass IPv6 DNS query AAAA
+        # https://unix.stackexchange.com/questions/720570/why-would-nslookup-return-a-response-then-timeout
+        if [ "$CP_KUBE_DNS_AUTH_ZONE" ]; then
+            _dnsmasq_auth_zone="{
+                                    \"op\": \"add\",
+                                    \"path\": \"/spec/template/spec/containers/1/args/-\",
+                                    \"value\": \"--auth-zone=$CP_KUBE_DNS_AUTH_ZONE\"
+                                },"
+        fi
+
         kubectl patch deployment kube-dns \
             --namespace kube-system \
             --type='json' \
@@ -1076,7 +1088,7 @@ function prepare_kube_dns {
                         \"op\": \"add\",
                         \"path\": \"/spec/template/spec/containers/1/args/-\",
                         \"value\": \"--bind-interfaces\"
-                    },
+                    }, $_dnsmasq_auth_zone
                     {
                         \"op\": \"replace\",
                         \"path\": \"/spec/template/spec/containers/2/image\",

@@ -17,6 +17,7 @@
 import {action, computed, observable} from 'mobx';
 import moment from 'moment-timezone';
 import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
+import {alphabeticalSorter} from '../../../../utils/sorting';
 
 function makePromise (node, from, to) {
   return new Promise(async (resolve) => {
@@ -211,7 +212,7 @@ class ChartData {
       .map(g => g.group)
       .reduce((d, group) => ({[group]: makeEmptyData(), ...d}), {});
     const groups = Object.keys(data);
-    groups.sort();
+    groups.sort(alphabeticalSorter);
     const xPoints = [];
     for (let i = 0; i < responseData.length; i++) {
       const item = responseData[i];

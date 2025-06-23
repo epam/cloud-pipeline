@@ -249,7 +249,7 @@ function buildAutoFillAction (options) {
     if (!value) {
       return 0;
     }
-    const exec = /^[\\-]?(0+[\d]+)$/.exec(`${value}`);
+    const exec = /^[\\-]?(\d+)$/.exec(`${value}`);
     if (exec && exec.length === 2) {
       return exec[1].length;
     }

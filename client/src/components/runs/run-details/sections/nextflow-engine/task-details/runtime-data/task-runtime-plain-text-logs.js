@@ -46,7 +46,8 @@ function TaskRuntimePlainTextLogs (props) {
 TaskRuntimePlainTextLogs.propTypes = {
   ...TaskRuntimeDataDetailsProps,
   asCommand: PropTypes.bool,
-  errorMessage: PropTypes.string
+  errorMessage: PropTypes.string,
+  errorMessageRunning: PropTypes.string
 };
 
 export default TaskRuntimePlainTextLogs;

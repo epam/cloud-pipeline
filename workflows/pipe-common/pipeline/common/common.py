@@ -75,7 +75,7 @@ o=$(mktemp -d)
 {payload}
 EOF
 chmod +x $o/*
-$o/init.sh
+bash $o/init.sh
 c=$?
 rm -rf $o
 exit $c
@@ -114,7 +114,7 @@ def _pack_script_contents(script_contents, init_script_name, wrapping_script_tem
         for name, contents in embedded_scripts.items():
             compressed.addfile(*_tarfile(name, contents))
     b64_contents = base64.b64encode(compressed_stream.getvalue())
-    return wrapping_script_template.format(payload=b64_contents)
+    return wrapping_script_template.format(payload=b64_contents.decode('ascii'))
 
 
 def _tarfile(name, string):

@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.plugin.PluginAssignmentService;
+import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -67,6 +69,7 @@ import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManag
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -630,6 +633,15 @@ public class AclTestBeans {
 
     @SpyBean
     protected GCPJwtTokenVerifier spyGcpJwtTokenVerifier;
+
+    @MockBean
+    protected StoragePathPermissionsService storagePathPermissionsService;
+
+    @MockBean
+    protected PluginService pluginService;
+
+    @MockBean
+    protected PluginAssignmentService assignmentService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

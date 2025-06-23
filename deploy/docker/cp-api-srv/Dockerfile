@@ -40,7 +40,8 @@ RUN yum install -y \
                 samba \
                 samba-client \
                 cifs-utils \
-                gettext
+                gettext \
+                bzip2
 
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
@@ -119,12 +120,29 @@ RUN cd /tmp && \
     rm -rf bin
 ADD config $CP_API_HOME/config
 
+# Create mamba environment for gke autoscaling scripts
+ENV MAMBA_ROOT_PREFIX=/opt/local/mamba
+RUN mkdir -p $MAMBA_ROOT_PREFIX && \
+    cd $MAMBA_ROOT_PREFIX && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    export PATH=$PATH:$MAMBA_ROOT_PREFIX/bin && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -n gke -c conda-forge python=3.8 -y && \
+    micromamba activate gke && \
+    pip install -r /opt/api/scripts/gke/requirements.txt
+
 # Install pipe-common package
 RUN mkdir -p /tmp/pipe-temp && \
     cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
     cd /tmp/pipe-temp/ && \
     unzip -qq pipeline.jar && \
     pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    mkdir /tmp/pipe-temp/pipe-common && \
+    cd /tmp/pipe-temp/pipe-common && \
+    tar -xvf /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    mkdir $MAMBA_ROOT_PREFIX/envs/gke/lib/python3.8/site-packages/pipeline/ && \
+    cp -R /tmp/pipe-temp/pipe-common/pipeline/* $MAMBA_ROOT_PREFIX/envs/gke/lib/python3.8/site-packages/pipeline/ && \
+    rm -f $MAMBA_ROOT_PREFIX/envs/gke/lib/python3.8/site-packages/pipeline/autoscaling/__init__.py && \
     cd / && \
     rm -rf /tmp/pipe-temp
 

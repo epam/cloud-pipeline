@@ -382,6 +382,12 @@ CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME=${CP_STORAGE_LIFECYCLE_SERVICE_KUBE_
 print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME"
 kubectl label nodes "$CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME" cloud-pipeline/cp-storage-lifecycle-service="true" --overwrite
 
+# Allow to schedule MLFlow to the master
+MLFLOW_KUBE_NODE_NAME=${MLFLOW_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $MLFLOW_KUBE_NODE_NAME"
+kubectl label nodes "$MLFLOW_KUBE_NODE_NAME" cloud-pipeline/cp-mlflow="true" --overwrite
+
+
 echo
 
 ##########
@@ -1550,6 +1556,41 @@ if is_service_requested cp-storage-lifecycle-service; then
         wait_for_deployment "cp-storage-lifecycle-service"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-storage-lifecycle-service: deployed"
+    fi
+    echo
+fi
+
+# MLFlow
+if is_service_requested cp-mlflow; then
+    print_ok "[Starting MLFlow deployment]"
+
+    print_info "-> Deleting existing instance of MLFlow"
+    delete_deployment_and_service   "cp-mlflow" \
+                                    "/opt/mlflow"
+
+    if is_install_requested; then
+        if is_service_requested cp-api-db; then
+            print_info "-> Creating postgres DB user and schema for MLFlow"
+            create_user_and_db  "cp-api-db" \
+                                "$CP_MLFLOW_DATABASE_USERNAME" \
+                                "$CP_MLFLOW_DATABASE_PASSWORD" \
+                                "$CP_MLFLOW_DATABASE_NAME"
+        else
+            print_warn "-> API DB is not requested to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (CP_MLFLOW_DATABASE_USERNAME, CP_MLFLOW_DATABASE_PASSWORD, CP_MLFLOW_DATABASE_NAME) in advance."
+        fi
+
+        print_info "-> Deploying MLFlow"
+
+        create_kube_resource $K8S_SPECS_HOME/cp-mlflow/cp-mlflow-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-mlflow/cp-mlflow-svc.yaml
+
+        print_info "-> Waiting for MLFlow to initialize"
+        wait_for_deployment "cp-mlflow"
+
+        print_info "-> Register MLFlow in API Services"
+        api_register_mlflow
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-mlflow: http://${CP_MLFLOW_INTERNAL_HOST}:${CP_MLFLOW_INTERNAL_PORT}/mlflow"
     fi
     echo
 fi

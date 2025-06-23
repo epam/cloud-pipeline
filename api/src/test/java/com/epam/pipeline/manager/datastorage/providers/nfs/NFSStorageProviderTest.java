@@ -255,7 +255,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         File testFolder = new File(dataStorageRoot, testFolderName);
         Assert.assertTrue(testFolder.exists());
 
-        DataStorageListing listing = nfsProvider.getItems(dataStorage, null, false, DEFAULT_PAGE_SIZE, null);
+        DataStorageListing listing = nfsProvider.getItems(dataStorage, null, false, DEFAULT_PAGE_SIZE, null, null);
         Assert.assertFalse(listing.getResults().isEmpty());
 
         Optional<AbstractDataStorageItem>
@@ -278,9 +278,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         Assert.assertEquals(testFolderName + "/", loadedFolder.get().getPath());
         Assert.assertNull(listing.getNextPageMarker());
 
-        listing = nfsProvider.getItems(dataStorage, null, false, 1, null);
+        listing = nfsProvider.getItems(dataStorage, null, false, 1, null, null);
         Assert.assertEquals("2", listing.getNextPageMarker());
-        listing = nfsProvider.getItems(dataStorage, null, false, 1, listing.getNextPageMarker());
+        listing = nfsProvider.getItems(dataStorage, null, false, 1, listing.getNextPageMarker(), null);
         Assert.assertNull(listing.getNextPageMarker());
         Assert.assertFalse(listing.getResults().isEmpty());
     }

@@ -116,14 +116,20 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
     distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
     if [ $IS_RPM_BASED -eq 0 ]; then
-        export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-1.14.3-1}"
+        export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-1.17.7-1}"
+        if [ "$CP_CAP_DIND_GPU_VERSION_RPM" ]; then
+            CP_CAP_DIND_GPU_VERSION="$CP_CAP_DIND_GPU_VERSION_RPM"
+        fi
 
         curl -s -L "${GLOBAL_DISTRIBUTION_URL}tools/nvidia/libnvidia-container/rpm/stable/nvidia-container-toolkit.repo" > /etc/yum.repos.d/nvidia-container-toolkit.repo
         yum install -y nvidia-container-toolkit-$CP_CAP_DIND_GPU_VERSION
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
-        export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-2.0.0+docker18.09.6-3}"
+        export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-3.13.0-1}"
+        if [ "$CP_CAP_DIND_GPU_VERSION_DEB" ]; then
+            CP_CAP_DIND_GPU_VERSION="$CP_CAP_DIND_GPU_VERSION_DEB"
+        fi
         curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
         curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list \
         | tee /etc/apt/sources.list.d/nvidia-docker.list
@@ -161,6 +167,19 @@ chmod +x /usr/local/bin/modprobe
 ######################################################
 DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
 DIND_STORAGE_DRIVER="${DIND_STORAGE_DRIVER:-"btrfs"}"
+
+if [ "$CP_CAP_DIND_REGISTRY_MIRRORS" ]; then
+    IFS=',' read -r -a _DIND_REGISTRY_MIRRORS_ARR <<< "$CP_CAP_DIND_REGISTRY_MIRRORS"
+    for _mirror in ${_DIND_REGISTRY_MIRRORS_ARR[@]}; do
+        _DIND_REGISTRY_MIRRORS="\"$_mirror\","
+    done
+    _DIND_REGISTRY_MIRRORS=",\"registry-mirrors\": [${_DIND_REGISTRY_MIRRORS%,}]"
+fi
+
+if [ "$CP_CAP_DIND_DEBUG" == "true" ]; then
+    _DIND_DEBUG=",\"debug\": $CP_CAP_DIND_DEBUG"
+fi
+
 pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
 mkdir -p "$DIND_DATA_ROOT"
 mkdir -p "/etc/docker"
@@ -168,6 +187,9 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "$DIND_DATA_ROOT",
   "storage-driver": "$DIND_STORAGE_DRIVER"
+  $_DIND_REGISTRY_MIRRORS
+  $_DIND_DEBUG
+
 }
 EOT
 if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then

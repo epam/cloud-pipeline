@@ -62,6 +62,7 @@ import CloudRegionContextualSetting, {
   updateContextualSettingValue,
   launchCommonMountsSetting
 } from './cloud-regions/contextual-setting';
+import {defaultSorter} from '../../utils/sorting';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -209,7 +210,7 @@ export default class AWSRegionsForm extends React.Component {
     if (this.awsRegionIds.loaded) {
       return (this.awsRegionIds.value || [])
         .map(r => r)
-        .sort();
+        .sort(defaultSorter);
     }
     return [];
   }
@@ -1812,6 +1813,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
@@ -1834,6 +1836,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
@@ -1856,6 +1859,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}

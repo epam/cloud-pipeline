@@ -42,30 +42,48 @@ function staticResource (url) {
   return `url('${uri}')`;
 }
 
+function generateColorFunctionRegex (functionName) {
+  return new RegExp(
+    `${functionName}\\(\\s*` +
+    `(#[0-9a-fA-F]{8}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgba?\\([\\d,.%\\s]+\\))` + // Color input
+    `\\s*,\\s*` +
+    `([\\d.%-]+)` + // Percentage or decimal number
+    `\\s*\\)`,
+    'i'
+  );
+}
+
+// Generate specific regex patterns
+const darkenRegex = generateColorFunctionRegex('darken');
+const lightenRegex = generateColorFunctionRegex('lighten');
+const fadeinRegex = generateColorFunctionRegex('fadein');
+const fadeoutRegex = generateColorFunctionRegex('fadeout');
+const fadeRegex = generateColorFunctionRegex('fade');
+
 export function parseFunctions (content) {
   const variables = [
     {
-      regExp: /darken\((.*),(.*)\)/i,
+      regExp: darkenRegex,
       value: darken,
       length: exec => exec && exec.length ? exec[0].length : 0
     },
     {
-      regExp: /lighten\((.*),(.*)\)/i,
+      regExp: lightenRegex,
       value: lighten,
       length: exec => exec && exec.length ? exec[0].length : 0
     },
     {
-      regExp: /fadein\((.*),(.*)\)/i,
+      regExp: fadeinRegex,
       value: fadein,
       length: exec => exec && exec.length ? exec[0].length : 0
     },
     {
-      regExp: /fadeout\((.*),(.*)\)/i,
+      regExp: fadeoutRegex,
       value: fadeout,
       length: exec => exec && exec.length ? exec[0].length : 0
     },
     {
-      regExp: /fade\((.*),(.*)\)/i,
+      regExp: fadeRegex,
       value: fade,
       length: exec => exec && exec.length ? exec[0].length : 0
     }

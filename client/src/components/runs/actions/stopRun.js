@@ -129,13 +129,8 @@ export function terminateRun (parent, callback) {
     // eslint-disable-next-line max-len
     throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
   }
-  const {
-    localization,
-    dockerRegistries,
-    hiddenObjects
-  } = parent.props;
   return function (run) {
-    return terminateRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
+    return terminateRunFn(run, callback);
   };
 }
 

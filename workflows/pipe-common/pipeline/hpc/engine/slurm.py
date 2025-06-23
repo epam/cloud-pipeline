@@ -24,8 +24,9 @@ class SlurmGridEngine(GridEngine):
     _SCONTROL_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _GET_JOBS = "scontrol -o show job"
 
-    def __init__(self, cmd_executor):
+    def __init__(self, cmd_executor, queue_name):
         self.cmd_executor = cmd_executor
+        self.queue = queue_name
         self.job_state_to_codes = {
             GridEngineJobState.RUNNING: ['RUNNING'],
             GridEngineJobState.PENDING: ['PENDING'],
@@ -118,6 +119,11 @@ class SlurmGridEngine(GridEngine):
 
             root_job_id = job_dict.get('JobId')
             job_name = job_dict.get('JobName')
+            job_partition = job_dict.get('Partition')
+
+            if job_partition != self.queue:
+                continue
+
             job_user = self._parse_user(job_dict.get('UserId'))
             job_hosts = self._parse_nodelist(job_dict.get('NodeList'))
 
@@ -241,22 +247,15 @@ class SlurmDemandSelector(GridEngineDemandSelector):
         self.grid_engine = grid_engine
 
     def select(self, jobs):
-        _provisioned_root_jobs = set()
-        # Check if root_job was already provisioned with resources on a prev yield and if so - return empty demand.
-        #
-        # We are doing so because all jobs with the same rood_id is a "secondary" jobs, that were created by splitting
-        # resources of main real job on number of jobs = root_job["NumNodes"] (see SlurmGridEngine._parse_jobs),
-        # so requesting for all "secondary" jobs the same amount of resources will lead to requesting a big node
-        # but will not allow to utilize it fully, because actually we need several small nodes.
-        #
-        # For more details see Slurm sbatch docs (-N option particular),
-        # GridEngineAutoscaler.scale() method and how resources demand are calculated
+        # Currently, in _parse_jobs we don't take into account -N option (when job required minimum number of jobs to run)
+        # So this code currently works well when job was run with only -n (number of tasks), in this case for each task
+        # we will return its own demand with resources == resources per task (f.e. -c cpu-per-tasks)
+        # But in case when we have -N option provided, current behaviour can lead to over-provisioning of the resources
+        # (we can scale big node with resource enough to run the whole job, but job still will be waiting for necessary number of nodes)
+        # TODO: So we need to fix approach here and in GridEngineScaleUpOrchestrator.scale_up and InstanceSelector
+        # TODO: to understand that resources should be explicitly spreaded to several nodes
         for job in jobs:
-            if job.root_id not in _provisioned_root_jobs:
-                _provisioned_root_jobs.add(job.root_id)
-                yield IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
-            else:
-                yield IntegralDemand()
+            yield IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
 
 
 class SlurmJobValidator(GridEngineJobValidator):

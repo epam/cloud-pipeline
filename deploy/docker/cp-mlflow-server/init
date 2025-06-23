@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+CP_MLFLOW_ARTIFACTS_DESTINATION="${CP_MLFLOW_ARTIFACTS_DESTINATION:-/opt/local/data/artifacts}"
+
+if [ -z "$CP_API_SRV_EXTERNAL_HOST" ] || [ -z "$CP_API_SRV_EXTERNAL_PORT" ]; then
+    echo "[ERROR] API external host/port is not set, use CP_API_SRV_EXTERNAL_HOST and CP_API_SRV_EXTERNAL_PORT variables. This is required to integrate MLFlow into Cloud Pipeline GUI."
+    exit 1
+fi
+
+if [ -z "$CP_MLFLOW_MODEL_SERVE_DOCKER_IMAGE" ]; then
+    CP_MLFLOW_MODEL_SERVE_DOCKER_IMAGE="library/rockylinux:latest"
+    echo "[WARN] CP_MLFLOW_MODEL_SERVE_DOCKER_IMAGE is not set, using a default: $CP_MLFLOW_MODEL_SERVE_DOCKER_IMAGE"
+fi
+
+if [ -z "$CP_MLFLOW_MODEL_SERVE_INSTANCE_TYPE" ]; then
+    if [ "$CP_PREF_CLUSTER_INSTANCE_TYPE" ]; then
+        CP_MLFLOW_MODEL_SERVE_INSTANCE_TYPE="$CP_PREF_CLUSTER_INSTANCE_TYPE"
+        echo "[WARN] Docker image for serving MLFlow models is not set via CP_MLFLOW_MODEL_SERVE_INSTANCE_TYPE, using a global default (CP_PREF_CLUSTER_INSTANCE_TYPE): $CP_PREF_CLUSTER_INSTANCE_TYPE"
+    else
+        echo "[ERROR] Docker image for serving MLFlow models is not set via CP_MLFLOW_MODEL_SERVE_INSTANCE_TYPE and no global default is available (CP_PREF_CLUSTER_INSTANCE_TYPE)"
+        exit 1
+    fi
+fi
+
+cat>"$MLFLOW_JS_BUILD_DIR/settings.json"<<EOF
+{
+    "cloud_pipeline_url": "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline",
+    "run_payload": {
+        "instanceType": "${CP_MLFLOW_MODEL_SERVE_INSTANCE_TYPE}",
+        "hddSize": 50,
+        "cmdTemplate": "/opt/local/scripts/serve_model.sh; sleep infinity",
+        "dockerImage": "${CP_MLFLOW_MODEL_SERVE_DOCKER_IMAGE}",
+        "isSpot": false,
+        "cloudRegionId": 1
+    }
+}
+EOF
+echo "[INFO] setting.json is written into $MLFLOW_JS_BUILD_DIR/settings.json"
+
+export PATH=$PATH:/opt/local/mamba/bin
+export MAMBA_ROOT_PREFIX=/opt/local/mamba
+eval "$(micromamba shell hook --shell bash)"
+micromamba activate mlflow
+
+_param_artifacts_destination="$CP_MLFLOW_ARTIFACTS_DESTINATION"
+_param_backend_store_uri="postgresql://${CP_MLFLOW_DATABASE_USERNAME}:${CP_MLFLOW_DATABASE_PASSWORD}@${CP_MLFLOW_DATABASE_HOST}:${CP_MLFLOW_DATABASE_PORT}/${CP_MLFLOW_DATABASE_NAME}"
+_param_log_file="/opt/mlflow/logs/mlflow-server.log"
+_param_mlflow_host="0.0.0.0"
+_param_mlflow_port="8080"
+mkdir -p $(dirname $_param_log_file)
+
+echo "[INFO] Starting MLflow server with parameters:"
+echo "-> host: $_param_mlflow_host"
+echo "-> port: $_param_mlflow_port"
+echo "-> artifacts-destination: $_param_artifacts_destination"
+echo "-> backend-store-uri: $_param_backend_store_uri"
+echo "-> log: $_param_log_file"
+
+mlflow server \
+    --host "$_param_mlflow_host" \
+    --port "$_param_mlflow_port" \
+    --artifacts-destination "$_param_artifacts_destination" \
+    --backend-store-uri "$_param_backend_store_uri" \
+        >> "$_param_log_file" 2>&1

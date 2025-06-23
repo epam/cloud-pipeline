@@ -35,11 +35,15 @@ const KNOWN_TAG_NAMES = {
   proc_out_of_memory: 'proc_out_of_memory',
   network_limit: 'network_limit',
   network_pressure: 'network_pressure',
-  long_running: 'long_running'
+  long_running: 'long_running',
+  mlflow_experiment: 'CP_MLFLOW_EXPERIMENT_ID',
+  mlflow_run: 'CP_MLFLOW_RUN_UUID'
 };
 
 const KNOWN_TAG_RENDER = {
-  [KNOWN_TAG_NAMES.network_limit]: (name) => name
+  [KNOWN_TAG_NAMES.network_limit.toLowerCase()]: (name) => name,
+  [KNOWN_TAG_NAMES.mlflow_experiment.toLowerCase()]: mlflowExperimentTagRenderer,
+  [KNOWN_TAG_NAMES.mlflow_run.toLowerCase()]: tagSemiValueRenderer
 };
 
 export function networkLimitValueRender (value) {
@@ -63,8 +67,40 @@ export function networkLimitValueRender (value) {
 }
 
 const KNOWN_TAG_VALUE_RENDER = {
-  [KNOWN_TAG_NAMES.network_limit]: (name, value) => networkLimitValueRender(value)
+  [KNOWN_TAG_NAMES.network_limit]: (name, value) => networkLimitValueRender(value),
+  [KNOWN_TAG_NAMES.mlflow_experiment]: (_, value) => value,
+  [KNOWN_TAG_NAMES.mlflow_run]: (_, value) => value
 };
+
+const KNOWN_TAG_PRETTY_NAME = {
+  [KNOWN_TAG_NAMES.mlflow_experiment.toLowerCase()]: 'MLFLOW EXPERIMENT',
+  [KNOWN_TAG_NAMES.mlflow_run.toLowerCase()]: 'MLFLOW RUN'
+};
+
+function getTagName (tag) {
+  return KNOWN_TAG_PRETTY_NAME[tag.toLowerCase()] || tag;
+}
+
+function collapseText (text, size = 10) {
+  return text.slice(0, size);
+}
+
+function tagSemiValueRenderer (tag, value) {
+  if (value) {
+    return `${getTagName(tag)}: ${collapseText(String(value), 8)}`;
+  }
+  return getTagName(tag);
+}
+
+function mlflowExperimentTagRenderer (tag, value) {
+  if (value) {
+    const experiments = value.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
+    if (experiments.length > 1) {
+      return `${experiments.length} MLFLOW EXPERIMENTS`;
+    }
+  }
+  return tagSemiValueRenderer(tag, value);
+}
 
 const PREDEFINED_TAGS = [{
   tag: KNOWN_TAG_NAMES.idle,
@@ -95,6 +131,14 @@ const PREDEFINED_TAGS = [{
 }, {
   tag: KNOWN_TAG_NAMES.long_running,
   color: 'warning'
+}, {
+  tag: KNOWN_TAG_NAMES.mlflow_experiment,
+  color: 'primary',
+  instanceLink: false
+}, {
+  tag: KNOWN_TAG_NAMES.mlflow_run,
+  color: 'primary',
+  instanceLink: false
 }];
 
 const KNOWN_COLORS = {
@@ -161,6 +205,11 @@ const skipTag = (tag, tags, preferences) => {
     isKnownTagWithDateSuffix(tag, preferences);
 };
 
+const isUserTag = (tag, preferences) => {
+  const userTags = preferences.uiRunsTags || [];
+  return userTags.some((t) => t.tag === tag);
+};
+
 const getTagColors = (color = '') => {
   if (!color.length) {
     return [];
@@ -181,12 +230,14 @@ function Tag (
     onMouseEnter,
     onMouseLeave,
     onFocus,
-    predefinedTags
+    predefinedTags,
+    interactive = true,
+    small = true
   }
 ) {
   let display = value;
   if (`${value}` === 'true') {
-    display = tagName;
+    display = getTagName(tagName);
   }
   const tagRenderFn = KNOWN_TAG_RENDER[tagName.toLowerCase()];
   if (tagRenderFn && typeof tagRenderFn === 'function') {
@@ -196,17 +247,24 @@ function Tag (
     .find(({tag}) => tag.toLowerCase() === tagName.toLowerCase()) || {};
   const isInstanceLink = instance &&
     instance.nodeName &&
-    `${tagOptions.instanceLink}` !== 'false';
+    `${tagOptions.instanceLink}` !== 'false' &&
+    !tagOptions.userTag;
   const handleClick = event => {
     if (tagOptions.link || isInstanceLink) {
       event && event.stopPropagation();
     }
   };
+  let valueToDisplay = tagOptions.display || (display || '').toUpperCase();
+  if (tagOptions.userTag && `${value}`.toLowerCase() !== 'true' && `${value}`.trim().length > 0) {
+    const v = `${value}`.trim();
+    valueToDisplay = `${tagOptions.display || tagOptions.tag}: ${v}`;
+  }
   const element = (
     <span
       className={
         classNames(
           styles.runTag,
+          {[styles.small]: small},
           className,
           'cp-tag',
           'accent',
@@ -217,22 +275,22 @@ function Tag (
           }
         )
       }
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={handleClick}
-      onFocus={onFocus}
+      onMouseEnter={interactive ? onMouseEnter : undefined}
+      onMouseLeave={interactive ? onMouseLeave : undefined}
+      onClick={interactive ? handleClick : undefined}
+      onFocus={interactive ? onFocus : undefined}
     >
-      {tagOptions.display || (display || '').toUpperCase()}
+      {valueToDisplay}
     </span>
   );
   if (tagOptions.link) {
     return (
       <a
         className={styles.link}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={handleClick}
-        onFocus={onFocus}
+        onMouseEnter={interactive ? onMouseEnter : undefined}
+        onMouseLeave={interactive ? onMouseLeave : undefined}
+        onClick={interactive ? handleClick : undefined}
+        onFocus={interactive ? onFocus : undefined}
         href={tagOptions.link}
         target="_blank"
       >
@@ -247,10 +305,10 @@ function Tag (
         id={tagName}
         to={instanceLink}
         className={styles.link}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={handleClick}
-        onFocus={onFocus}
+        onMouseEnter={interactive ? onMouseEnter : undefined}
+        onMouseLeave={interactive ? onMouseLeave : undefined}
+        onClick={interactive ? handleClick : undefined}
+        onFocus={interactive ? onFocus : undefined}
       >
         {element}
       </Link>
@@ -262,20 +320,26 @@ function Tag (
 function RunTagsComponent (
   {
     className,
+    style = {display: 'inline'},
     onlyKnown,
     overflow,
     tagClassName,
     run,
     theme,
     preferences,
-    excludeTags = []
+    excludeTags = [],
+    excludeCustomUserTags = false,
+    showOnlyCustomUserTags: showOnlyCustomUserTagsProps = false,
+    interactive = true,
+    small = true
   }
 ) {
   if (!run) {
     return null;
   }
   const {status, tags, instance} = run;
-  if (!tags || !activeRunStatuses.includes(status)) {
+  const showOnlyCustomUserTags = showOnlyCustomUserTagsProps || !activeRunStatuses.includes(status);
+  if (!tags) {
     return null;
   }
   const result = [];
@@ -290,6 +354,9 @@ function RunTagsComponent (
       tagName.toLowerCase().endsWith(suffix.toLowerCase()) &&
       Object.prototype.hasOwnProperty.call(tags, tagName.slice(0, tagName.length - suffix.length));
   };
+
+  const customUserTags = preferences.uiRunsUserTags.map(({tag}) => tag);
+
   for (let tagName in tags) {
     if (
       Object.prototype.hasOwnProperty.call(tags, tagName) &&
@@ -298,7 +365,9 @@ function RunTagsComponent (
     ) {
       if (
         timestampTagHasCounterpart(tagName) ||
-        excludeTags.includes(tagName.toLowerCase())
+        excludeTags.includes(tagName.toLowerCase()) ||
+        (excludeCustomUserTags && customUserTags.includes(tagName)) ||
+        (showOnlyCustomUserTags && !customUserTags.includes(tagName))
       ) {
         continue;
       }
@@ -320,6 +389,8 @@ function RunTagsComponent (
               instance={instance}
               theme={theme}
               predefinedTags={predefinedTags}
+              interactive={interactive}
+              small={small}
             />
           </RunTagPopover>
         )
@@ -334,7 +405,7 @@ function RunTagsComponent (
     return (
       <div
         className={className}
-        style={{display: 'inline'}}
+        style={style}
       >
         {result.map(r => r.element)}
       </div>
@@ -348,7 +419,7 @@ function RunTagsComponent (
     return (
       <div
         className={className}
-        style={{display: 'inline'}}
+        style={style}
       >
         {result.map(r => r.element)}
       </div>
@@ -371,7 +442,7 @@ function RunTagsComponent (
   return (
     <div
       className={className}
-      style={{display: 'inline'}}
+      style={style}
     >
       {result.slice(0, tagsToDisplayCount).map(r => r.element)}
       {popover}
@@ -381,24 +452,36 @@ function RunTagsComponent (
 
 const RunTags = inject('preferences')(observer(RunTagsComponent));
 
-RunTags.shouldDisplayTags = function (run, preferences, onlyKnown = false) {
+RunTags.shouldDisplayTags = function (
+  run,
+  preferences,
+  onlyKnown = false,
+  excludeUserTags = false
+) {
   if (!run) {
     return false;
   }
   const {status, tags} = run;
-  if (!tags || !activeRunStatuses.includes(status)) {
+  const onlyUserTags = !activeRunStatuses.includes(status);
+  if (!tags) {
     return false;
   }
+  let tagsCount = 0;
   for (let tag in tags) {
+    const userTag = isUserTag(tag, preferences);
+    if (excludeUserTags && userTag) {
+      continue;
+    }
     if (
       Object.prototype.hasOwnProperty.call(tags, tag) &&
       !skipTag(tag, tags, preferences) &&
-      (!onlyKnown || isKnownTag(tag, preferences))
+      (!onlyKnown || isKnownTag(tag, preferences)) &&
+      (!onlyUserTags || isUserTag(tag, preferences))
     ) {
-      return true;
+      tagsCount += 1;
     }
   }
-  return false;
+  return tagsCount > 0;
 };
 
 export {KNOWN_TAG_NAMES};

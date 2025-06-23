@@ -40,6 +40,8 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
@@ -104,6 +106,9 @@ public class PipelineManager implements SecuredEntityManager {
 
     @Autowired
     private PipelineRepositoryService pipelineRepositoryService;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
 
@@ -215,8 +220,7 @@ public class PipelineManager implements SecuredEntityManager {
         if (!previousName.equals(pipelineVOName)) {
             updatePipelineNameForRuns(pipelineVO.getId(), pipelineVOName);
         }
-
-        if (projectNameUpdated) {
+        if (projectNameUpdated && preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_RENAME_REPO)) {
             pipelineRepositoryService.updateRepositoryName(dbPipeline, currentProjectPath, newProjectName);
         }
         return dbPipeline;
