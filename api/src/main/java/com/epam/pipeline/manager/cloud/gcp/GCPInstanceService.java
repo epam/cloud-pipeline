@@ -65,6 +65,7 @@ import java.util.stream.Collectors;
 public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     private static final String GOOGLE_PROJECT_ID = "GOOGLE_PROJECT_ID";
+    private static final String CP_KUBE_CLUSTER_NAME = "CP_KUBE_CLUSTER_NAME";
     protected static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
 
     private final ClusterCommandService commandService;
@@ -77,6 +78,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     private final PreferenceManager preferenceManager;
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
+    private final String clusterName;
 
     public GCPInstanceService(final ClusterCommandService commandService,
                               final CommonCloudInstanceService instanceService,
@@ -86,7 +88,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                               @Value("${cluster.gcp.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
                               @Value("${cluster.gcp.reassign.script}") final String nodeReassignScript,
-                              @Value("${cluster.gcp.node.terminate.script}") final String nodeTerminateScript) {
+                              @Value("${cluster.gcp.node.terminate.script}") final String nodeTerminateScript,
+                              @Value("${kube.cluster.name}") final String clusterName) {
         this.commandService = commandService;
         this.instanceService = instanceService;
         this.vmService = vmService;
@@ -96,6 +99,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
+        this.clusterName = clusterName;
     }
 
     @Override
@@ -341,6 +345,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         }
         envVars.put(GOOGLE_PROJECT_ID, region.getProject());
         envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(region));
+        envVars.put(CP_KUBE_CLUSTER_NAME, clusterName);
         return envVars;
     }
 

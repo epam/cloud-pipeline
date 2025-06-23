@@ -244,10 +244,10 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
     return default_object
 
 
-def get_certs_string():
+def get_certs_string(cert_folder='/etc/docker/certs.d'):
     global api_token
     global api_url
-    command_pattern = 'mkdir -p /etc/docker/certs.d/{url} && echo "{cert}" >> /etc/docker/certs.d/{url}/ca.crt'
+    command_pattern = 'mkdir -p {folder}/{url} && echo "{cert}" >> {folder}/{url}/ca.crt'
     if api_url and api_token:
         pipe_api = PipelineAPI(api_url, None)
         result = pipe_api.load_certificates()
@@ -255,8 +255,8 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
-                entries.append(command_pattern.format(url=url, cert=cert))
+            for url, cert in result.items():
+                entries.append(command_pattern.format(folder=cert_folder, url=url, cert=cert))
             return " && ".join(entries)
     return ""
 
@@ -333,12 +333,13 @@ def get_additional_spec(cloud_region, ins_type, ins_platform, ins_img, run_id):
 def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
                          global_distribution_url, swap_size, pre_pull_images=[], docker_data_root='/ebs/docker',
-                         docker_storage_driver='', skip_system_images_load='', run_id=None):
+                         docker_storage_driver='', skip_system_images_load='', run_id=None,
+                         cert_folder='/etc/docker/certs.d'):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img, run_id=run_id)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
-        certs_string = get_certs_string()
+        certs_string = get_certs_string(cert_folder=cert_folder)
         well_known_string = get_well_known_hosts_string(cloud_region)
         fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
         if fs_type not in SUPPORTED_FS_TYPES:
