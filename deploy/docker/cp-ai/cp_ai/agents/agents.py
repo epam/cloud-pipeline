@@ -51,23 +51,6 @@ def retrieve_platform_information(query: str, context: str | None = None, **kwar
     )
 
 
-def prepare_user_query(query: str, history: str | None) -> str:
-    if history is None:
-        return query
-    prompt = (f'Here\'s the user conversation history with an AI assistant:\n'
-              f'-------------------\n'
-              f'{history}\n'
-              f'-------------------\n'
-              f'\n'
-              f'If there are any <<<LAUNCH:...>>> blocks, analyze them and extract '
-              f'a launch payload (take the last <<<LAUNCH:...>>> block if there are '
-              f'multiple ones).\n'
-              f'If there are no <<<LAUNCH:...>>> blocks, extract any technical details.\n')
-    resp = llm_simple_query(prompt)
-    return (f'{resp}\n\n'
-            f'{query}')
-
-
 async def answer_using_default_agent(
         message: str | ChatMessage | None = None,
         messages: list[Union[ChatMessage, str]] | None = None,
