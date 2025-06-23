@@ -1,10 +1,12 @@
 import math
 import json
+import re
 from typing import TypeVar, Generic, Callable, TypedDict
 from pydantic import BaseModel
 from cp_ai.llm import llm_simple_query
 from cp_ai.common.utilities import extract_json_response
 from logging import Logger
+from .types import LaunchPayload
 from .logger import agents_logger
 
 
@@ -14,6 +16,8 @@ _BatchFnArgs = TypeVar("_BatchFnArgs", bound=tuple)
 
 
 def _get_batches(items: list[_BatchItem], batch_size: int) -> list[list[_BatchItem]]:
+    if len(items) == 0:
+        return []
     batches_count = math.ceil(len(items) / batch_size)
     batch_size = math.ceil(len(items) / batches_count)
     batches: list[list[_BatchItem]] = []
@@ -225,6 +229,8 @@ def pick_best_elements(
             logger.info(f'- #{s.element.id} {s.element.name} (score {s.score})')
         else:
             logger.info(f'- #{s.element.id} (score {s.score})')
+    if len(scored) == 0:
+        return []
     best_score = sorted(list({*[s.score for s in scored]})).pop()
     best = [s.element for s in scored if s.score == best_score]
     def print_results(items: list[T], /, title: str | None = None):
@@ -238,10 +244,25 @@ def pick_best_elements(
 
 
 def wrap_launch_payload_response(
-        payload: dict
+        payload: LaunchPayload
 ) -> str:
-    payload_str = json.dumps(payload)
+    payload_str = json.dumps(payload.model_dump(mode='json', by_alias=True))
     return (f'<<<LAUNCH:{payload_str}>>>\n\n'
             f'IMPORTANT:'
             f'- You must include this block that exactly as it appeared in the tool output.\n'
             f'- Do not rephrase, omit, or filter out this `<<<LAUNCH:...>>>` block. Treat them as immutable text.\n')
+
+def extract_launch_payload(
+        payload: str | None = None
+) -> LaunchPayload | None:
+    if payload is not None:
+        try:
+            payload = re.sub(r'^\s*```(json)?|```\s*$', '', payload, flags=re.DOTALL).strip()
+            payload = re.sub(r'^\s*`|`\s*$', '', payload, flags=re.DOTALL).strip()
+            m = re.match(f'^\s*<<<LAUNCH(.+)>>>\s*$', payload, re.DOTALL)
+            if m is not None:
+                payload = m.group(1)
+                return LaunchPayload(**json.loads(payload))
+        except:
+            return None
+    return None

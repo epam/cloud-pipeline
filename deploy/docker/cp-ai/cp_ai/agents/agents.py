@@ -9,7 +9,7 @@ from .tools import (get_command_to_run_compute_instance,
                     stop_compute_instance,
                     get_compute_instance_state)
 from cp_ai.database import search_platform_documentation
-from cp_ai.llm import llm
+from cp_ai.llm import llm, llm_simple_query
 
 
 def build_tool(
@@ -51,6 +51,23 @@ def retrieve_platform_information(query: str, context: str | None = None, **kwar
     )
 
 
+def prepare_user_query(query: str, history: str | None) -> str:
+    if history is None:
+        return query
+    prompt = (f'Here\'s the user conversation history with an AI assistant:\n'
+              f'-------------------\n'
+              f'{history}\n'
+              f'-------------------\n'
+              f'\n'
+              f'If there are any <<<LAUNCH:...>>> blocks, analyze them and extract '
+              f'a launch payload (take the last <<<LAUNCH:...>>> block if there are '
+              f'multiple ones).\n'
+              f'If there are no <<<LAUNCH:...>>> blocks, extract any technical details.\n')
+    resp = llm_simple_query(prompt)
+    return (f'{resp}\n\n'
+            f'{query}')
+
+
 async def answer_using_default_agent(
         message: str | ChatMessage | None = None,
         messages: list[Union[ChatMessage, str]] | None = None,
@@ -67,11 +84,12 @@ async def answer_using_default_agent(
         _messages.append(map_message(message))
 
     last_message = _messages.pop()
-    # history = '\n\n'.join([m.__str__() for m in _messages])
+    history = '\n\n'.join([m.__str__() for m in _messages])
     user_query = last_message.content
     prompt = f'''
         This is user query, provide an answer for this query using provided agents or general LLM knowledge:
         -------------
+        {history}
         {user_query}
         -------------
         IMPORTANT: 
@@ -84,5 +102,4 @@ async def answer_using_default_agent(
     default_agent = get_default_agent(**kwargs)
     return await default_agent.astream_chat(
         message=prompt,
-        chat_history=_messages
     )

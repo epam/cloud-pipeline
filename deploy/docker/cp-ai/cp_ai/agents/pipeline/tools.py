@@ -6,6 +6,7 @@ from cp_ai.pipeline.types import (Pipeline,
                                   ConfigurationEntry)
 from cp_ai.common.utilities import extract_json_response
 from cp_ai.llm import llm_simple_query
+from ..types import LaunchPayload
 from ..launch.tools import generate_launch_payload, LaunchException
 from ..logger import agents_logger
 from ..utilities import pick_best_elements, wrap_launch_payload_response
@@ -21,12 +22,16 @@ _pipeline_score_prompt = (f'Calculate score based on the following rules:\n'
 
 def pick_pipelines_by_query(query: str,
                             /,
+                            pipeline_id: int | None = None,
                             skip_pipelines_without_description = False,
                             bearer: str | None = None) -> list[Pipeline]:
     """Search pipelines based on the user query. Returns list of matched pipelines, if any"""
     all_pipelines = get_all_pipelines(bearer=bearer)
     if len(all_pipelines) == 0:
         return []
+
+    if pipeline_id is not None:
+        return [p for p in all_pipelines if p.id == pipeline_id]
 
     def match_id(o) -> int | None:
         if isinstance(o, int):
@@ -228,30 +233,36 @@ def generate_pipeline_launch_payload(
         /,
         bearer: str | None = None,
         **kwargs
-) -> dict:
+) -> str:
     version = _get_pipeline_version_from_query(query, pipeline)
     if version is None:
         raise LaunchException(f'Pipeline {pipeline.md_title} does not have versions')
     configuration = _get_pipeline_configuration_from_query(query, pipeline, version)
     if configuration is None:
         raise LaunchException(f'Configuration not found for {pipeline.md_title}')
-    return generate_launch_payload(
+    return wrap_launch_payload_response(generate_launch_payload(
         configuration.configuration,
         user_query=query,
         pipeline=pipeline,
         pipeline_version=version,
         bearer=bearer
-    )
+    ))
 
 
 def launch_pipeline_by_user_query(
         query: str,
+        launch_payload: LaunchPayload | None = None,
         bearer: str | None = None,
         **kwargs
 ) -> str:
     """Searches pipelines based on the user query and generates launch payload.
     If several pipelines match a user query, returns a "Please specify a pipeline" message"""
     try:
+        if launch_payload is not None:
+            lp = json.dumps(launch_payload.model_dump(exclude_none=True, mode='json'), indent=' ')
+            query = (f'Previous launch payload:\n'
+                     f'{lp}\n\n'
+                     f'{query}')
         agents_logger.info(f'launch_pipeline_by_query -> user query: {query}')
         matched_pipelines = pick_pipelines_by_query(query, bearer=bearer)
         agents_logger.info(f'launch_pipeline_by_query -> {len(matched_pipelines)} pipelines found')
@@ -271,12 +282,12 @@ def launch_pipeline_by_user_query(
                 f'\n\n'
                 f'Please, specify which pipeline to launch'
             )
-        return wrap_launch_payload_response(generate_pipeline_launch_payload(
+        return generate_pipeline_launch_payload(
             query,
             matched_pipelines[0],
             bearer=bearer,
             **kwargs
-        ))
+        )
     except LaunchException as le:
         agents_logger.error(le.launch_exception_message)
         return str(le)

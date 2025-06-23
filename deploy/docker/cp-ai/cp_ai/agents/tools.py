@@ -4,6 +4,7 @@ from pydantic import Field
 from cp_ai.pipeline.pipelines import get_all_pipelines
 from .pipeline.tools import launch_pipeline_by_user_query
 from .docker_image.tools import launch_tool_by_user_query
+from .utilities import extract_launch_payload
 from cp_ai.llm import llm
 
 
@@ -17,23 +18,45 @@ def get_pipeline_id(pipeline_name: str) -> str:
     return llm.complete(prompt).text.strip()
 
 
-def get_command_to_run_pipeline(user_query: str, **kwargs):
+def get_command_to_run_pipeline(
+        user_query: str,
+        launch_payload: str | None = None,
+        **kwargs
+):
     """Useful to get a command to launch a **specific pipeline** (specified by name, identifier or by description).
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines pipeline, parameters and environment information.
+    Optional inputs:
+    - payload: str - if context contains relevant `<<<LAUNCH:...>>>` block, pass it here
     """
-    return launch_pipeline_by_user_query(user_query, **kwargs)
+    payload = extract_launch_payload(launch_payload)
+    return launch_pipeline_by_user_query(
+        user_query,
+        launch_payload=payload,
+        **kwargs
+    )
 
 
-def get_command_to_run_compute_instance(user_query: str, **kwargs):
+def get_command_to_run_compute_instance(
+        user_query: str,
+        launch_payload: str | None = None,
+        **kwargs
+):
     """Useful to get a command to launch a specific compute instance (not a pipeline),
     specified by "tool", "docker image", "image" or similar words, e.g. "launch XXX instance", "launch XXX".
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines tool (or image), parameters and environment information.
+    Optional inputs:
+    - payload: str - if context contains relevant `<<<LAUNCH:...>>>` block, pass it here
     """
-    return launch_tool_by_user_query(user_query, **kwargs)
+    payload = extract_launch_payload(launch_payload)
+    return launch_tool_by_user_query(
+        user_query,
+        launch_payload=payload,
+        **kwargs
+    )
 
 
 def get_command_to_run_compute_instance1(

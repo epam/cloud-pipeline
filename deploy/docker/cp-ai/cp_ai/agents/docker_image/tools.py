@@ -7,6 +7,7 @@ from cp_ai.pipeline.tools import (get_docker_images,
 from cp_ai.pipeline.types import DockerImage
 from cp_ai.common.utilities import extract_json_response
 from cp_ai.llm import llm_simple_query
+from ..types import LaunchPayload
 from ..launch.tools import LaunchException, generate_launch_payload
 from ..logger import agents_logger
 from ..utilities import (batched_execution,
@@ -152,13 +153,22 @@ def _get_docker_image_version_from_query(
 
 def launch_tool_by_user_query(
         query: str,
+        launch_payload: LaunchPayload | None = None,
         bearer: str | None = None,
         **kwargs
 ) -> str:
     """Searches docker images based on the user query and generates launch payload.
     If several docker images match a user query, returns a "Please specify a docker image" message"""
     try:
-        docker_images = pick_docker_image_by_query(query, bearer=bearer)
+        if launch_payload is not None:
+            lp = json.dumps(launch_payload.model_dump(exclude_none=True, mode='json'), indent=' ')
+            query = (f'Previous launch payload:\n'
+                     f'{lp}\n\n'
+                     f'{query}')
+        docker_images = pick_docker_image_by_query(
+            query,
+            bearer=bearer
+        )
         if len(docker_images) == 0:
             raise LaunchException('Docker image not found; specify docker image')
         if len(docker_images) > 1:

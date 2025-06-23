@@ -10,6 +10,7 @@ from cp_ai.pipeline.tools import find_docker_image
 from cp_ai.common.utilities import extract_json_response
 from cp_ai.llm import llm_simple_query
 from typing import Any, Callable
+from ..types import LaunchPayload
 from ..utilities import pick_best_elements
 from ..logger import agents_logger
 
@@ -237,7 +238,7 @@ def generate_launch_payload(
         spot: bool | None = None,
         bearer: str | None = None,
         generation_info_callback: Callable[[str], Any] | None = None
-) -> dict:
+) -> LaunchPayload:
     caps = get_run_capabilities_parameters()
     sys_params = get_system_parameters()
     autoscaling_params = get_autoscaling_configuration_parameters()
@@ -326,17 +327,16 @@ def generate_launch_payload(
                 existing.update({'value': parameter_value})
                 params.update({parameter: existing})
     # ------------
-
-    payload = {
-        'cloudRegionId': cloud_region_id,
-        'dockerImage': docker_image,
-        "instanceType": instance_type,
-        "disk": instance_disk,
-        "cmd": cmd_template,
-        "is_spot": False,
-        "parameters": params,
-        'pipelineId': pipeline.id if pipeline is not None else None,
-        'version': pipeline_version if pipeline is not None and pipeline_version is not None else None
-    }
-    agents_logger.info(f'generate_launch_payload -> payload: \n{repr(payload)}')
+    payload = LaunchPayload(
+        cloudRegionId=cloud_region_id,
+        dockerImage=docker_image,
+        instanceType=instance_type,
+        disk=instance_disk,
+        cmd=cmd_template,
+        is_spot=False,
+        parameters=params,
+        pipelineId=pipeline.id if pipeline is not None else None,
+        version=pipeline_version if pipeline is not None and pipeline_version is not None else None
+    )
+    agents_logger.info(f'generate_launch_payload -> payload: \n{repr(payload.model_dump())}')
     return payload
