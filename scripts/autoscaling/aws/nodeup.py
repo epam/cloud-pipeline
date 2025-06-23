@@ -1620,6 +1620,9 @@ def main():
         else:
             pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
+        if not availability_zone and allowed_instance and allowed_instance["availability_zone"]:
+            availability_zone = allowed_instance["availability_zone"]
+
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id,
