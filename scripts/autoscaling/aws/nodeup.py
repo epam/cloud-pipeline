@@ -249,8 +249,11 @@ def get_well_known_hosts(aws_region):
 def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
     default_embedded_scripts = None
-    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
-        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None }
+    default_object = {
+        "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
+        "availability_zone": None
+    }
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -289,12 +292,14 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
         init_script = image_config.get("init_script", default_object["init_script"])
+        availability_zone = image_config.get("availability_zone", default_object["availability_zone"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
         additional_spec = image_config.get("additional_spec", None)
         if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
             return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
-                     "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec}
+                     "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec,
+                     "availability_zone": availability_zone}
 
     return default_object
 
@@ -1620,8 +1625,9 @@ def main():
         else:
             pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
-        if not availability_zone and allowed_instance and allowed_instance["availability_zone"]:
+        if not availability_zone and allowed_instance and "availability_zone" in allowed_instance:
             availability_zone = allowed_instance["availability_zone"]
+            pipe_log('Particular availability_zone: {availability_zone} is configured in allowed_instance configuration'.format(availability_zone=availability_zone))
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
