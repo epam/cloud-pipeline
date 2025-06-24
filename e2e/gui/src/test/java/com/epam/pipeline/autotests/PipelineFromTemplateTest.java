@@ -16,8 +16,8 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.Template;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.visible;
@@ -68,7 +68,7 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
                 .createPipeline(template, getPipelineName())
                 .firstVersion()
                 .runPipeline()
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion()

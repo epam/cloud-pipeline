@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -478,7 +479,7 @@ public class ToolsTest
                 .ensure(ESTIMATED_PRICE, visible)
                 .ensure(INFORMATION_ICON, visible)
                 .expandTab(ADVANCED_PANEL)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .hover(INFORMATION_ICON)
                 .ensure(PRICE_TABLE, visible)
                 .expandTab(PARAMETERS_PANEL)

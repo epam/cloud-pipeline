@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -347,7 +348,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         return navigationMenu()
                 .tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .doNotMountStoragesSelect(true)
                 .launch(this);
     }

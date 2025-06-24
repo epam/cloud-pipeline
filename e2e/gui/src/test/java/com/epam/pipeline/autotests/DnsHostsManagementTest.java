@@ -21,9 +21,9 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
@@ -104,7 +104,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .expandTab(ADVANCED_PANEL)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm("Auto-scaled cluster")

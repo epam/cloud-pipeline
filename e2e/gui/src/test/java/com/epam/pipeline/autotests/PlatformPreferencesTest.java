@@ -28,12 +28,12 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.C.ROOT_ADDRESS;
 import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.SupportButton;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.BeforeMethod;
@@ -291,7 +291,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                 .expandTab(EXEC_ENVIRONMENT)
                 .expandTab(ADVANCED_PANEL)
                 .setTypeValue("c5.xlarge")
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .doNotMountStoragesSelect(true)
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())

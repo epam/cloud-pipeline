@@ -23,10 +23,10 @@ import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
 
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -55,7 +55,7 @@ public class RunToolsInSandBoxTest
     private final String command = "nginx -g \"daemon off;\"";
     private final String type = C.DEFAULT_INSTANCE;
     private final String disk = "15";
-    private final String price = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String price = DEFAULT_INSTANCE_PRICE_TYPE;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
@@ -212,7 +212,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .selectRunCapability("DinD")
                 .click(START_IDLE)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
@@ -242,7 +242,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .selectRunCapability("Singularity")
                 .click(START_IDLE)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
