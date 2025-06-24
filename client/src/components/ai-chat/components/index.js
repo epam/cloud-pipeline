@@ -14,19 +14,10 @@
  *  limitations under the License.
  */
 
-export default {
-  dashboard: 'dashboard',
-  library: 'library',
-  cluster: 'cluster',
-  tools: 'tools',
-  runs: 'runs',
-  run: 'run',
-  settings: 'settings',
-  search: 'search',
-  billing: 'billing',
-  chat: 'chat',
-  notifications: 'notifications',
-  miew: 'miew',
-  wsi: 'wsi',
-  hcs: 'hcs'
-};
+import Message from './message/message';
+import EmptyChatPlaceholder from './empty-chat-placeholder/empty-chat-placeholder';
+import InputField from './input-field/input-field';
+import TypingIndicator from './typing-indicator/typing-indicator';
+import ChatIconBtn from './chat-icon-btn';
+
+export {Message, EmptyChatPlaceholder, InputField, TypingIndicator, ChatIconBtn};

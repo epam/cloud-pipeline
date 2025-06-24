@@ -1,0 +1,10 @@
+
+.launch-form {
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.control-btn {
+  display: flex;
+  justify-content: flex-end;
+}

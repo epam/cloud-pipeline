@@ -1,0 +1,54 @@
+/*
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.message-from-user,
+.message-from-chat {
+  flex-shrink: 0;
+  border-radius: 10px;
+  max-width: 95%;
+}
+
+.message-from-user {
+  display: flex;
+  font-size: 13px;
+  justify-content: flex-end;
+  padding: 10px;
+  width: fit-content;
+  justify-self: flex-end;
+  min-width: 30px;
+}
+
+.message-from-chat {
+  padding: 10px;
+}
+
+.message-pending-chat {
+  width: fit-content;
+  padding-right: 20px;
+}
+
+.typing-indicator {
+  margin-left: 10px;
+}
+
+.errorConnect {
+  color: #f04134;
+}
+
+.no-border {
+  border: none !important;
+  padding: 0;
+}
