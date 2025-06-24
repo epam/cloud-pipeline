@@ -195,13 +195,14 @@ public class MetadataManager {
         EntityVO entity = metadataWithKeysToDelete.getEntity();
         checkEntityExistsAndCanBeModified(entity.getEntityId(), entity.getEntityClass());
 
-        MetadataEntry metadataEntry = listMetadataItem(entity, true);
-        Set<String> existingKeys = metadataEntry.getData().keySet();
+        MetadataEntry entryWithSecrets = loadMetadataWithSecrets(listMetadataItem(entity, true));
+        Set<String> existingKeys = entryWithSecrets.getData().keySet();
         Set<String> keysToDelete = metadataWithKeysToDelete.getData().keySet();
         if (!existingKeys.containsAll(keysToDelete)) {
             throw new IllegalArgumentException("Could not delete non existing key.");
         }
-        return metadataDao.deleteMetadataItemKeys(metadataEntry, keysToDelete);
+        metadataDao.deleteMetadataItemKeys(entryWithSecrets, keysToDelete);
+        return metadataDao.loadMetadataItem(entryWithSecrets.getEntity());
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
