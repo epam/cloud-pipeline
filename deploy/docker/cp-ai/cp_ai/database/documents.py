@@ -147,6 +147,10 @@ def search_platform_documentation(
 
     def process_single_node(_node: NodeWithScore):
         title = _node_to_md(_node)
+        base_instruction = ''
+        source = node.metadata.get(SOURCE_METADATA, None)
+        if source is not None:
+            base_instruction = f'- Change all relative links to absolute links, the base is "{source}".\n'
         prompt = (f'Here\'s the context:\n'
                   f'--------------\n'
                   f'{title}\n'
@@ -158,7 +162,10 @@ def search_platform_documentation(
                   f'--------------\n'
                   f'\n'
                   f'- Respond exactly "NOT RELEVANT", if the context is not relevant and not answers user query.\n'
-                  f'- Include all links and references to the final response, if it is relevant.\n')
+                  f'- Include all links and references to the final response, if it is relevant; use markdown format.\n'
+                  f'{base_instruction}'
+                  f'- For images, use ![<image name>](<url> "image name") format.\n'
+                  f'- Do not use words like "in the provided context...", act as you\'re answering a user query.\n')
         node_response = llm_simple_query(prompt).strip()
         if remove_quotes(node_response).lower() in {'not relevant', 'not_relevant', 'not-relevant'}:
             return ''
