@@ -4,7 +4,7 @@ from pydantic import Field
 from cp_ai.pipeline.pipelines import get_all_pipelines
 from .pipeline.tools import launch_pipeline_by_user_query
 from .docker_image.tools import launch_tool_by_user_query
-from .utilities import extract_launch_payload
+from .types import LaunchPayload
 from cp_ai.llm import llm
 
 
@@ -22,7 +22,9 @@ def get_command_to_run_pipeline(
         user_query: str,
         **kwargs
 ):
-    """Useful to get a command to launch a **specific pipeline** (specified by name, identifier or by description).
+    """Useful to get a command to launch a **specific pipeline** (specified by name, identifier or by description),
+    or to modify the existing command to launch a **specific pipeline** (if context contains previous LAUNCH payload
+    and user asks to change some parameter).
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines pipeline, parameters and environment information.
@@ -38,11 +40,17 @@ def get_command_to_run_compute_instance(
         **kwargs
 ):
     """Useful to get a command to launch a specific compute instance (not a pipeline),
-    specified by "tool", "docker image", "image" or similar words, e.g. "launch XXX instance", "launch XXX".
+    specified by "tool", "docker image", "image" or similar words, e.g. "launch XXX instance", "launch XXX",
+    or to modify the existing command to launch a specific compute instance (if context contains previous LAUNCH payload
+    and user asks to change some parameter).
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines tool (or image), parameters and environment information.
     """
+    if 'launch_payload' in kwargs:
+        launch_payload = kwargs.get('launch_payload', {})
+        if isinstance(launch_payload, LaunchPayload) and launch_payload.pipeline_id is not None:
+            return get_command_to_run_pipeline(user_query, **kwargs)
     return launch_tool_by_user_query(
         user_query,
         **kwargs
