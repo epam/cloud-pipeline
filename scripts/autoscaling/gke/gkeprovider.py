@@ -21,7 +21,7 @@ import pipeline.autoscaling.utils as utils
 from google.cloud import container_v1
 from google.cloud import compute_v1
 
-GCP_API_CALL_TIMEOUT=5
+GCP_API_CALL_TIMEOUT=15
 NO_BOOT_DEVICE_NAME = 'sdb1'
 SWAP_DEVICE_NAME = 'sdb2'
 INSTANCE_USER_NAME = "pipeline"
@@ -43,7 +43,7 @@ class GKEInstanceProvider(object):
                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
                     global_distribution_url, pre_pull_images, is_dedicated, docker_data_root, docker_storage_driver,
                     skip_system_images_load):
-        node_pool = self.__get_or_create_node_pool(is_spot, ins_type, ins_hdd)
+        node_pool = self.__get_or_create_node_pool(is_spot, ins_type, ins_hdd, num_rep, time_rep)
         instance_name, ip = self.__run_instance_in_node_pool(node_pool, num_rep, time_rep)
         utils.pipe_log(f'Started instance {instance_name} with ip {ip}')
         instance = self.__get_instance(instance_name)
@@ -59,7 +59,8 @@ class GKEInstanceProvider(object):
         return instance_name, ip
 
     def find_and_tag_instance(self, old_id, new_id):
-        pass
+        instance = self.__find_instance(old_id)
+        self.__apply_tags(instance, GKEInstanceProvider.run_id_tag(new_id))
 
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
@@ -100,7 +101,6 @@ class GKEInstanceProvider(object):
             return '{}.{}.c.{}.internal'.format(instance.name, self.cloud_region, self.project_id), instance.name
         return None, None
 
-
     def find_instance(self, run_id):
         instance = self.__find_instance(run_id)
         if instance:
@@ -108,10 +108,38 @@ class GKEInstanceProvider(object):
         return None
 
     def terminate_instance(self, ins_id):
-        pass
+        instance = self.__get_instance(ins_id)
+        node_pool = ''
+        for item in instance.metadata.items:
+            if item.key == 'created-by':
+                node_pool = item.value.split('/instanceGroupManagers/')[1]
+                break
 
-    def terminate_instance_by_ip(self, node_internal_ip, node_name):
-        pass
+        request = compute_v1.types.DeleteInstancesInstanceGroupManagerRequest(
+            instance_group_manager=node_pool,
+            project=self.project_id,
+            zone=self.cloud_region,
+            instance_group_managers_delete_instances_request_resource=compute_v1.types.InstanceGroupManagersDeleteInstancesRequest(
+                instances=[instance.self_link]
+            )
+        )
+        response = self.ins_group_manager_client.delete_instances(request=request)
+        self.__wait_for_extended_operation(response)
+
+    def terminate_instance_by_ip_or_name(self, node_internal_ip, node_name):
+        instance = self.__find_instance_by_ip(node_internal_ip)
+        if instance:
+            self.terminate_instance(instance.name)
+        else:
+            self.terminate_instance(node_name)
+
+    def __find_instance_by_ip(self, ip):
+        items = self.__filter_instances("")
+        if items:
+            filtered = [ins for ins in items if ins.network_interfaces and ins.network_interfaces[0].network_i_p == ip]
+            if filtered and len(filtered) == 1:
+                return filtered[0]
+        return None
 
     def find_nodes_with_run_id(self, run_id):
         instance = self.find_instance(run_id)
@@ -129,7 +157,7 @@ class GKEInstanceProvider(object):
             instances.append(instance)
         return instances
 
-    def __get_or_create_node_pool(self, is_spot, ins_type, disk_size):
+    def __get_or_create_node_pool(self, is_spot, ins_type, disk_size, num_rep, time_rep):
         pool_name = f"cp-worker-node-pool-{ins_type}{'-spot' if is_spot else ''}"
         cluster_link = f"projects/{self.project_id}/locations/{self.cloud_region}/clusters/{self.cluster_name}"
         request = container_v1.ListNodePoolsRequest(parent=cluster_link)
@@ -143,14 +171,15 @@ class GKEInstanceProvider(object):
             preemptible=is_spot, disk_type='pd-ssd', local_ssd_count=1)
         node_pool = container_v1.types.NodePool(name=pool_name, config=pool_config, initial_node_count=0)
         request = container_v1.CreateNodePoolRequest(node_pool=node_pool, parent=cluster_link)
-        operation = self.container_client.create_node_pool(request)
-        self.__wait_for_extended_operation(operation, "pool creation")
+        response = self.container_client.create_node_pool(request)
+        rep = 0
         while response.status != container_v1.types.Operation.Status.DONE:
             response = self.container_client.get_operation(request=container_v1.GetOperationRequest(
                 name=f"projects/{self.project_id}/locations/{self.cloud_region}/operations/{response.name}")
             )
-            time.sleep(GCP_API_CALL_TIMEOUT)
-            utils.pipe_log('Current status: ' + response.status.name)
+            rep = utils.increment_or_fail(num_rep, rep, f'Failed to create node pool {pool_name}')
+            time.sleep(time_rep)
+            utils.pipe_log(f'Current node pool {pool_name} status: {response.status.name}')
         utils.pipe_log(f'Node pool {pool_name} created')
         return self.container_client.get_node_pool(container_v1.GetNodePoolRequest(
             name=f"projects/{self.project_id}/locations/{self.cloud_region}/clusters/{self.cluster_name}/nodePools/{pool_name}")
@@ -185,6 +214,7 @@ class GKEInstanceProvider(object):
         raise RuntimeError(f'Failed to create instance {instance_name}')
 
     def __wait_instance_running(self, instance_name, num_rep, time_rep):
+        time.sleep(GCP_API_CALL_TIMEOUT)
         status = None
         rep = 0
         while status != 'RUNNING':
@@ -201,18 +231,21 @@ class GKEInstanceProvider(object):
         return node_pool.instance_group_urls[0].split('/instanceGroupManagers/')[1]
 
     def __label_instance(self, instance, run_id, pool_id):
+        return self.__apply_tags(instance, GKEInstanceProvider.get_tags(run_id, pool_id, self.cloud_region))
+
+    def __apply_tags(self, instance, tags):
         labels = instance.labels
-        labels.update(GKEInstanceProvider.get_tags(run_id, pool_id, self.cloud_region))
+        labels.update(tags)
         request = compute_v1.SetLabelsInstanceRequest(
             instance=instance.name,
             project=self.project_id,
             zone=self.cloud_region,
             instances_set_labels_request_resource=
-                compute_v1.types.InstancesSetLabelsRequest(
-                    labels=labels,
-                    label_fingerprint=instance.label_fingerprint
-                )
+            compute_v1.types.InstancesSetLabelsRequest(
+                labels=labels,
+                label_fingerprint=instance.label_fingerprint
             )
+        )
         response = self.compute_client.set_labels(request=request)
         self.__wait_for_extended_operation(response)
 
@@ -280,7 +313,6 @@ class GKEInstanceProvider(object):
         response = self.compute_client.attach_disk(request=request)
         self.__wait_for_extended_operation(response)
         utils.pipe_log(f'Successfully attached disk {disk_name} to instance {instance.name}')
-
 
     def __get_device(self, ins_hdd, device_name):
         return {
@@ -363,7 +395,6 @@ class GKEInstanceProvider(object):
             time.sleep(time_rep)
             ret_code, out, err = self.__run_command(test_command)
         utils.pipe_log('Successfully established SSH connection')
-
 
     def __collect_output(self, out, err):
         message = ''

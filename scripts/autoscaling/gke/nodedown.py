@@ -45,8 +45,6 @@ def main():
         except Exception as e:
             print(str(e))
             nodename = None
-
-        kube_provider.delete_kube_node(nodename, run_id)
         cloud_provider.terminate_instance(ins_id)
 
 

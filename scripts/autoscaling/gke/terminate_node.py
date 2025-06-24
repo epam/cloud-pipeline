@@ -32,7 +32,6 @@ def main():
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
     cloud_provider = gkeprovider.GKEInstanceProvider(cloud_region)
 
-    kube_provider.delete_kubernetes_node_by_name(args.node_name)
     cloud_provider.terminate_instance_by_ip_or_name(args.internal_ip, args.node_name)
 
 
