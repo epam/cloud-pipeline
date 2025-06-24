@@ -45,6 +45,9 @@ from src.utilities.storage.common import StorageOperations, AbstractListingManag
 from src.config import Config
 
 import requests
+
+from src.utilities.storage_path_permissions_manager import get_manager
+
 requests.urllib3.disable_warnings()
 import botocore.vendored.requests.packages.urllib3 as boto_urllib3
 boto_urllib3.disable_warnings()
@@ -898,11 +901,14 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item_keys = collections.OrderedDict()
         items_count = 0
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+        permissions_manager = get_manager(self.bucket.bucket, prefix)
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
                     name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
+                    if not permissions_manager.is_folder_allowed(folder['Prefix']):
+                        continue
                     items.append(self.get_folder_object(name))
                     items_count += 1
             if 'Versions' in page:
@@ -918,6 +924,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                         else:
                             if version_not_restored:
                                 restore_status = None
+                    if not permissions_manager.is_file_allowed(name):
+                        continue
                     item = self.get_file_object(version, name, version=True, lifecycle_status=restore_status)
                     self.process_version(item, item_keys, name)
             if 'DeleteMarkers' in page:
@@ -952,11 +960,14 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         items = []
         items_count = 0
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+        permissions_manager = get_manager(self.bucket.bucket, prefix)
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
                     name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
+                    if not permissions_manager.is_folder_allowed(folder['Prefix']):
+                        continue
                     items.append(self.get_folder_object(name))
                     items_count += 1
             if 'Contents' in page:
@@ -967,6 +978,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                         lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
                         if not show_archive and not lifecycle_status:
                             continue
+                    if not permissions_manager.is_file_allowed(name):
+                        continue
                     item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
                     items.append(item)
                     items_count += 1
@@ -981,12 +994,15 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+        permissions_manager = get_manager(self.bucket.bucket, prefix)
         items = []
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
                     name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
+                    if not permissions_manager.is_folder_allowed(folder['Prefix']):
+                        continue
                     items.append(self.get_folder_object(name))
             if 'Contents' in page:
                 for file in page['Contents']:
@@ -996,6 +1012,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                         lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
                         if not show_archive and not lifecycle_status:
                             continue
+                    if not permissions_manager.is_file_allowed(name):
+                        continue
                     item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
                     items.append(item)
         return items, page.get('NextContinuationToken', None) if page else None

@@ -23,7 +23,7 @@ from src.model.datastorage_usage_model import StorageUsage
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_wrapper import DataStorageWrapper
-from src.utilities.storage_path_permissions import verify_storage_path_permissions_allowed
+from src.utilities.storage_path_permissions_manager import verify_storage_path_permissions_allowed
 from src.utilities.user_operations_manager import UserOperationsManager
 
 

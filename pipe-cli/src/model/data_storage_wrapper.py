@@ -21,7 +21,7 @@ from ftplib import FTP, error_temp
 from future.standard_library import install_aliases
 
 from ..utilities.encoding_utilities import to_unicode, to_string
-from ..utilities.storage_path_permissions import verify_storage_path_permissions_allowed
+from ..utilities.storage_path_permissions_manager import verify_storage_path_permissions_allowed
 
 install_aliases()
 
