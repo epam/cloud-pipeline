@@ -36,6 +36,7 @@ _docker_image_score_prompt = (f'Calculate score based on the following rules:\n'
 def pick_docker_image_by_query(
         query: str,
         /,
+        docker_image: str | None = None,
         bearer: str | None = None
 ) -> list[DockerImage]:
     """Search docker images based on the user query. Returns list of matched docker images, if any"""
@@ -45,8 +46,14 @@ def pick_docker_image_by_query(
 
     exact = find_docker_image(query, docker_images=all_images)
     if exact is not None:
-        agents_logger.info(f'docker image {query} found (exact match)')
+        agents_logger.info(f'docker image "{query}" found (exact match)')
         return [exact]
+
+    if docker_image is not None:
+        exact = find_docker_image(docker_image, docker_images=all_images)
+        if exact is not None:
+            agents_logger.info(f'docker image "{docker_image}" found (exact match)')
+            return [exact]
 
     agents_logger.debug(f'picking docker images by query -> docker images count: {len(all_images)}')
 
@@ -86,11 +93,22 @@ def pick_docker_image_by_query(
 
 def _get_docker_image_version_from_query(
         query: str,
-        docker_image: DockerImage
+        docker_image: DockerImage,
+        /,
+        docker_image_full: str | None = None,
 ) -> str | None:
     versions = get_docker_image_versions(docker_image.id)
     if len(versions) == 1:
         return versions[0]
+
+    if docker_image_full is not None:
+        try:
+            _, _, i = docker_image_full.split('/', maxsplit=3)
+            _, version = i.split(':', maxsplit=1)
+            if version is not None:
+                return version
+        except:
+            pass
 
     docker_image_version: str | None = None
     if len(versions) > 1:
@@ -167,7 +185,8 @@ def launch_tool_by_user_query(
                      f'{query}')
         docker_images = pick_docker_image_by_query(
             query,
-            bearer=bearer
+            bearer=bearer,
+            docker_image=launch_payload.docker_image if launch_payload is not None else None
         )
         if len(docker_images) == 0:
             raise LaunchException('Docker image not found; specify docker image')
@@ -187,7 +206,11 @@ def launch_tool_by_user_query(
             )
         docker_image = docker_images[0]
         agents_logger.info(f'launch_tool_by_user_query -> docker image found: {docker_image.image} ({docker_image.id})')
-        version = _get_docker_image_version_from_query(query, docker_image)
+        version = _get_docker_image_version_from_query(
+            query,
+            docker_image,
+            docker_image_full=launch_payload.docker_image if launch_payload is not None else None
+        )
         if version is None:
             raise LaunchException(f'Docker image {docker_image.full_image} version not found, please specify version')
         agents_logger.info(f'launch_tool_by_user_query -> docker image version found: {version}')
@@ -206,10 +229,11 @@ def launch_tool_by_user_query(
         if cfg.docker_image is None:
             cfg.docker_image = f'{docker_image.full_image}:{version}'
         if cfg.cmd_template is None:
-            cfg.cmd_template = 'sleep infinity'
+            cfg.cmd_template = launch_payload.cmd if launch_payload is not None else 'sleep infinity'
         return wrap_launch_payload_response(generate_launch_payload(
             cfg,
             user_query=query,
+            launch_payload=launch_payload,
             bearer=bearer
         ))
     except LaunchException as le:

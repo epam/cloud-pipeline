@@ -158,14 +158,16 @@ async def handle_message(sid, request_data: dict):
 
 class AssistantRequest(BaseModel):
     message: str
+    history: list[str] | None = None
 
 
 @app.post('/assistant')
 @app_response(logger=api_logger)
 async def assistant_get_message(req: AssistantRequest,
                                 bearer = Depends(_get_bearer_cookie)):
+    hist = req.history or []
     resp = await answer_using_default_agent(
-        messages=[req.message],
+        messages=[*hist, req.message],
         bearer=bearer
     )
     result = ''

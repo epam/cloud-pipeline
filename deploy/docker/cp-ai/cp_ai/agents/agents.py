@@ -21,33 +21,22 @@ def build_tool(
 ):
     return FunctionTool.from_defaults(fn, name=name, description=description, partial_params=kwargs)
 
+
+def build_tools(**kwargs):
+    return [
+        build_tool(get_command_to_run_compute_instance, **kwargs),
+        build_tool(get_command_to_run_pipeline, **kwargs),
+        build_tool(stop_compute_instance, **kwargs),
+        build_tool(get_compute_instance_state, **kwargs),
+        build_tool(search_platform_documentation, **kwargs)
+    ]
+
 def get_default_agent(**kwargs):
     return ReActAgent(
-        tools=[
-            build_tool(get_command_to_run_compute_instance, **kwargs),
-            build_tool(get_command_to_run_pipeline, **kwargs),
-            build_tool(stop_compute_instance, **kwargs),
-            build_tool(get_compute_instance_state, **kwargs),
-            build_tool(search_platform_documentation, **kwargs)
-        ],
+        tools=build_tools(**kwargs),
         verbose=True,
         llm=llm,
         memory=BaseMemory.from_defaults()
-    )
-
-
-def retrieve_platform_information(query: str, context: str | None = None, **kwargs):
-    """Useful for answering user questions about how the platform operates,
-    how perform different actions on the platform, and other questions that can be answered
-    using the platform's documentation"""
-    all_context = ''
-    if context:
-        all_context += context + '\n\n'
-    all_context += query
-    return search_platform_documentation(
-        query=query,
-        user_query=all_context,
-        **kwargs
     )
 
 

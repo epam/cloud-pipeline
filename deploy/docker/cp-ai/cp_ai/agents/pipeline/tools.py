@@ -162,12 +162,21 @@ def _get_pipeline_version_from_query(
 def _get_pipeline_configuration_from_query(
         query: str,
         pipeline: Pipeline,
-        version: str
+        version: str,
+        /,
+        configuration: str | None = None,
 ) -> ConfigurationEntry | None:
     agents_logger.info(f'extracting pipeline #{pipeline.id} configuration from user query')
     agents_logger.debug(f'fetching pipeline #{pipeline.id} configuration...')
     configurations = get_pipeline_configurations(pipeline.id, version)
     agents_logger.info(f'pipeline #{pipeline.id} has {len(configurations)} configurations')
+    if configuration is not None:
+        agents_logger.info(f'extracting pipeline #{pipeline.id} configuration: finding "{configuration}"')
+        cfg = next((c for c in configurations if c.name.lower() == configuration.lower()))
+        if cfg:
+            agents_logger.info(f'extracting pipeline #{pipeline.id} configuration: configuration "{cfg.name}" found')
+            return cfg
+        agents_logger.info(f'extracting pipeline #{pipeline.id} configuration: configuration "{cfg.name}" is not found')
     if len(configurations) == 1:
         any_configuration = configurations[0]
         agents_logger.info(f'picking "{any_configuration.name}" configuration as it is the only configuration in #{pipeline.id} pipeline')
@@ -231,13 +240,22 @@ def generate_pipeline_launch_payload(
         query: str,
         pipeline: Pipeline,
         /,
+        launch_payload: LaunchPayload | None = None,
         bearer: str | None = None,
         **kwargs
 ) -> str:
-    version = _get_pipeline_version_from_query(query, pipeline)
+    if launch_payload is not None and launch_payload.version is not None:
+        version = launch_payload.version
+    else:
+        version = _get_pipeline_version_from_query(query, pipeline)
     if version is None:
         raise LaunchException(f'Pipeline {pipeline.md_title} does not have versions')
-    configuration = _get_pipeline_configuration_from_query(query, pipeline, version)
+
+    configuration = _get_pipeline_configuration_from_query(
+        query,
+        pipeline,
+        version,
+    )
     if configuration is None:
         raise LaunchException(f'Configuration not found for {pipeline.md_title}')
     return wrap_launch_payload_response(generate_launch_payload(
@@ -245,7 +263,8 @@ def generate_pipeline_launch_payload(
         user_query=query,
         pipeline=pipeline,
         pipeline_version=version,
-        bearer=bearer
+        launch_payload=launch_payload,
+        bearer=bearer,
     ))
 
 
@@ -264,7 +283,11 @@ def launch_pipeline_by_user_query(
                      f'{lp}\n\n'
                      f'{query}')
         agents_logger.info(f'launch_pipeline_by_query -> user query: {query}')
-        matched_pipelines = pick_pipelines_by_query(query, bearer=bearer)
+        matched_pipelines = pick_pipelines_by_query(
+            query,
+            pipeline_id=launch_payload.pipeline_id if launch_payload is not None else None,
+            bearer=bearer
+        )
         agents_logger.info(f'launch_pipeline_by_query -> {len(matched_pipelines)} pipelines found')
         if len(matched_pipelines) == 0:
             raise LaunchException('Pipelines that matches user query are not found')
@@ -285,6 +308,7 @@ def launch_pipeline_by_user_query(
         return generate_pipeline_launch_payload(
             query,
             matched_pipelines[0],
+            launch_payload=launch_payload,
             bearer=bearer,
             **kwargs
         )

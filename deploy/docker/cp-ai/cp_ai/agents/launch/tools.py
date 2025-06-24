@@ -1,4 +1,5 @@
 import json
+from pydantic import BaseModel
 from cp_ai.pipeline.types import (Configuration,
                                   Pipeline,
                                   InstanceType)
@@ -29,10 +30,21 @@ class LaunchException(RuntimeError):
         })
 
 
+class MissingProperty(BaseModel):
+    missing_key: str
+    description: str | None = None
+
+    def __str__(self):
+        if self.description:
+            return f'{self.missing_key} - {self.description}'
+        return self.missing_key
+
+
 def _configuration_to_json_str(
         config: Configuration,
         /,
-        exclude_parameters: list[str] | None = None
+        exclude_parameters: list[str] | None = None,
+        only_parameters: bool | None = None
 ):
     exclude = []
     if exclude_parameters is not None:
@@ -51,7 +63,7 @@ def _configuration_to_json_str(
             'description': value.description
         } for parameter, value in params_map.items() if parameter.lower() not in exclude
     }
-    return json.dumps({
+    node_config_parameters = {
         'instance_size': {
             'default_value': config.instance_size,
             'description': 'Node instance type',
@@ -71,7 +83,11 @@ def _configuration_to_json_str(
             'default_value': config.cmd_template,
             'description': 'Command',
             'required': True
-        },
+        }
+    }
+    d = node_config_parameters if not only_parameters else {}
+    return json.dumps({
+        **d,
         'parameters': params
     }, indent=' ')
 
@@ -84,7 +100,11 @@ def _fulfill_parameters_based_on_user_query(
         params: dict[str, Any] | None = None,
         generation_info_callback: Callable[[str], Any] | None = None
 ):
-    cfg = _configuration_to_json_str(configuration, exclude_parameters=exclude_parameters)
+    cfg = _configuration_to_json_str(
+        configuration,
+        exclude_parameters=exclude_parameters,
+        only_parameters=True
+    )
     user_payload = ''
     and_user_payload = ''
     if params is not None and len(params) > 0:
@@ -96,7 +116,7 @@ def _fulfill_parameters_based_on_user_query(
         and_user_payload = ' and user\'s payload'
     prompt = (f'Act as a developer that generates a payload (JSON object) to the API endpoint '
               f'that submits a cloud-based job.\n'
-              f'Your goal is to fulfill parameters based on the user\'s query.\n'
+              f'Your goal is to fulfill parameters based on the user\'s query{and_user_payload}.\n'
               f'Here\'s the payload schema:\n'
               f'```json\n'
               f'{cfg}\n'
@@ -107,9 +127,9 @@ def _fulfill_parameters_based_on_user_query(
               f'----------\n'
               f'{user_payload}\n\n'
               'Your goal is to generate a JSON object of format `{"parameter_name": "parameter_value"}` '
-              f'based on the user\'s query{and_user_payload}; '
-              f'if some parameter is missing in user\'s query{and_user_payload}, and does not have '
-              f'default value, skip this parameter.\n'
+              f'based on the user\'s query{and_user_payload}.\n'
+              f'<important>If some parameter is missing in user\'s query{and_user_payload}, and does not have '
+              f'default value, SKIP THIS PARAMETER</important>.\n'
               f'User may also request to add custom parameters '
               f'(parameters that are NOT related to the node / cluster / cloud configuration or settings), '
               f'that are not presented in schema; include these parameters as well.\n'
@@ -156,7 +176,8 @@ def extract_instance_type_from_query(
               f'----------------\n\n'
               f'Please, answer "YES" if user asks to submit some specific instance type, for example, '
               f'm5.2xlarge (AWS), n2-standard-8 (GCP), Standard_D8s_v3 (Azure), '
-              f'or by specifying not instance cpu / memory / gpu requirements.\n\n'
+              f'or by specifying not instance cpu / memory / gpu requirements, '
+              f'or if `instance_type` field is specified.\n\n'
               f'Otherwise, if user does not mention any node instance type requirements, answer "NO".\n\n'
               f'Your answer as a plain text, "YES" or "NO":')
     has_requirements_resp = llm_simple_query(prompt).strip().lower()
@@ -229,15 +250,12 @@ def generate_launch_payload(
         configuration: Configuration,
         /,
         user_query: str,
-        instance_type: str | None = None,
-        instance_disk: str | None = None,
-        cmd_template: str | None = None,
-        parameters: dict[str, str | bool | float | int | None] | None = None,
         pipeline: Pipeline | None = None,
         pipeline_version: str | None = None,
         spot: bool | None = None,
         bearer: str | None = None,
-        generation_info_callback: Callable[[str], Any] | None = None
+        generation_info_callback: Callable[[str], Any] | None = None,
+        launch_payload: LaunchPayload | None = None,
 ) -> LaunchPayload:
     caps = get_run_capabilities_parameters()
     sys_params = get_system_parameters()
@@ -265,6 +283,7 @@ def generate_launch_payload(
     if spot is None:
         spot = False
     # instance type
+    instance_type = None
     if instance_type is None:
         instance_type = extract_instance_type_from_query(
             user_query,
@@ -274,28 +293,40 @@ def generate_launch_payload(
             bearer=bearer,
             generation_info_callback=generation_info_callback
         )
+    if instance_type is None and launch_payload is not None:
+        instance_type = launch_payload.instance_type
     if instance_type is None:
         instance_type = configuration.instance_size
+    missing: list[MissingProperty] = []
     if instance_type is None:
-        # todo: load available instance types, check user query
-        raise LaunchException('Please specify node instance type')
+        missing.append(MissingProperty(missing_key='instance type',
+                                       description='a node instance type'))
     # -------------
     # instance disk
+    instance_disk = None
     if not instance_disk:
         instance_disk = extract_instance_disk_from_query(
             user_query,
             bearer=bearer,
             generation_info_callback=generation_info_callback
         )
+    if not instance_disk and launch_payload is not None:
+        instance_disk = launch_payload.disk
     if not instance_disk:
         instance_disk = configuration.instance_disk
     if not instance_disk:
-        raise LaunchException('Please specify node instance disk size (GB)')
+        missing.append(MissingProperty(missing_key='node disk size',
+                                       description='a node disk size in GB'))
     # -------------
     # cmd template
+    cmd_template = None
+    if cmd_template is None and launch_payload is not None:
+        cmd_template = launch_payload.cmd
     if cmd_template is None:
         cmd_template = configuration.cmd_template
     if cmd_template is None:
+        missing.append(MissingProperty(missing_key='command template (cmd_template)',
+                                       description='a main command to be executed'))
         raise LaunchException('Please specify cmd template')
     # ------------
     # parameters
@@ -303,7 +334,7 @@ def generate_launch_payload(
         user_query,
         configuration,
         exclude_parameters=system_parameters,
-        params=parameters,
+        params=launch_payload.parameters if launch_payload is not None else None,
         generation_info_callback=generation_info_callback
     )
     params = {}
@@ -314,12 +345,29 @@ def generate_launch_payload(
             value = parameters.get(parameter)
             if isinstance(value, dict):
                 value = value.get('value', None)
+        elif (
+                launch_payload is not None and
+                launch_payload.parameters is not None and
+                parameter in launch_payload.parameters
+        ):
+            value = launch_payload.parameters.get(parameter)
+            if isinstance(value, dict):
+                value = value.get('value', None)
         if value is None and parameter_config.is_required:
-            raise LaunchException(
-                f'Please specify "{parameter}" parameter.\n'
-                f'{json.dumps(parameter_config.model_dump())}'
-            )
+            desc = parameter_config.type
+            if parameter_config.description:
+                desc = f'{parameter_config.type}, {parameter_config.description}'
+            missing.append(MissingProperty(missing_key=f'parameter "{parameter}"',
+                                           description=desc))
         params.update({parameter: {'value': value}})
+    if len(missing) > 0:
+        details = '\n'.join(f'- {m.__str__()}' for m in missing)
+        raise LaunchException('Please specify required fields:',
+                              details)
+    if launch_payload is not None:
+        for parameter, parameter_value in launch_payload.parameters.items():
+            if parameter_value is not None and parameter not in params:
+                params.update({parameter: {'value': parameter_value}})
     if parameters is not None:
         for parameter, parameter_value in parameters.items():
             if parameter_value is not None:
