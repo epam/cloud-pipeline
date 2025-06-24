@@ -59,6 +59,9 @@ class CpAiSettings(BaseModel):
     _CP_AI_API_LOGS: str | None = os.environ.get('CP_AI_API_LOGS', None)
     _CP_AI_AGENT_LOGS: str | None = os.environ.get('CP_AI_AGENT_LOGS', None)
     _CP_AI_DOCUMENTS_LOGS: str | None = os.environ.get('CP_AI_DOCUMENTS_LOGS', None)
+    _CP_AI_CP_RESTAPI_LOGS: str | None = os.environ.get('CP_AI_CP_RESTAPI_LOGS', None)
+
+    CP_VERIFY_RESTAPI_CERT: bool | str = os.environ.get('CP_VERIFY_RESTAPI_CERT', True)
     # ----------------
 
     @property
@@ -78,5 +81,20 @@ class CpAiSettings(BaseModel):
         if self._CP_AI_DOCUMENTS_LOGS is not None:
             return self._CP_AI_DOCUMENTS_LOGS
         return os.path.join(self.CP_AI_LOGS_DIR, 'documents.log')
+
+    @property
+    def cp_restapi_logs_file(self) -> str:
+        if self._CP_AI_CP_RESTAPI_LOGS is not None:
+            return self._CP_AI_CP_RESTAPI_LOGS
+        return os.path.join(self.CP_AI_LOGS_DIR, 'restapi.log')
+
+    @property
+    def verify_restapi_cert(self):
+        value = self.CP_VERIFY_RESTAPI_CERT
+        if value is not None:
+            if isinstance(value, bool):
+                return value
+            return str(value).lower() in {'true', 'yes'}
+        return True
 
 cp_ai_settings = CpAiSettings()

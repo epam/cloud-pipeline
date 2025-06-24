@@ -66,7 +66,9 @@ def perform_cp_api_request(
         bearer: str | None = None
 ) -> Any:
     cp_api_url = get_cp_api_endpoint(uri)
-    response = requests.get(cp_api_url, headers=get_cp_request_headers(bearer=bearer))
+    response = requests.get(cp_api_url,
+                            headers=get_cp_request_headers(bearer=bearer),
+                            verify=cp_ai_settings.verify_restapi_cert)
     if response.status_code != 200:
         raise CloudPipelineApiError(f'"{uri}": status {response.status_code}')
     o = response.json()
