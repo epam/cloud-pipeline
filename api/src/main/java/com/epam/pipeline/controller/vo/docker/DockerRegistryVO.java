@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.vo.docker;
 
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -35,6 +36,7 @@ public class DockerRegistryVO {
     private boolean pipelineAuth = false;
     private String externalUrl;
     private boolean securityScanEnabled;
+    private CloudProvider provider;
 
     public DockerRegistry convertToDockerRegistry() {
         DockerRegistry registry = new DockerRegistry();
@@ -47,6 +49,7 @@ public class DockerRegistryVO {
         registry.setPipelineAuth(isPipelineAuth());
         registry.setExternalUrl(getExternalUrl());
         registry.setSecurityScanEnabled(isSecurityScanEnabled());
+        registry.setProvider(getProvider());
         return registry;
     }
 
