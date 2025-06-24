@@ -154,9 +154,20 @@ def _fulfill_parameters_based_on_user_query(
 
     # sometimes model responds with {"parameters": {...}} format
     parsed = reformat('parameters', parsed)
-    result = parsed
-    if params is not None:
-        result.update(params)
+    result = {}
+    if parsed is not None and isinstance(parsed, dict):
+        for p, v in parsed.items():
+            if v is not None and isinstance(v, dict):
+                v = v.get('value', None)
+            if v is not None:
+                result.update({p: v})
+    if params is not None and isinstance(params, dict):
+        for p, v in params.items():
+            if v is not None and isinstance(v, dict):
+                v = v.get('value', None)
+            if v is not None:
+                result.update({p: v})
+    result = {v: p for v, p in result.items() if p not in {'instance_size', 'instance_disk', 'disk', 'instance_type'}}
     agents_logger.info(f'fulfilled parameters: {repr(result)}')
     return result
 
