@@ -71,28 +71,11 @@ function extractJsonFromText (message) {
   return payload;
 }
 
-function processLinks (message) {
-  const variants = [
-    [';https://', 'https://'],
-    [';http://', 'http://'],
-    ['http://', '\n\nhttp://'],
-    ['https://', '\n\nhttps://']
-  ];
-  let text = message.text || '';
-  variants.forEach(([pattern, replacement]) => {
-    text = text.replaceAll(pattern, replacement);
-  });
-  return {
-    ...message,
-    text
-  };
-}
-
 export function processMessage (message) {
   if (message.fromUser) {
     return message;
   }
-  const messageWithLinks = processLinks(message);
+  const messageWithLinks = message;
   const {payloadText, payload} = extractJsonFromText(messageWithLinks) || {};
   if (!payload) {
     return {...messageWithLinks, parts: []};

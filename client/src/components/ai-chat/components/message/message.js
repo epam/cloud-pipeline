@@ -66,7 +66,7 @@ export default class Message extends React.Component {
         <div>
           {this.message.parts.map((part, index) => {
             if (part.isText && part.value) {
-              return <Markdown key={index} md={part.value} />;
+              return <Markdown key={index} md={part.value} target="_blank" />;
             }
             if (part.isPayload) {
               const hasText = this.message.parts.some(
@@ -91,11 +91,12 @@ export default class Message extends React.Component {
       );
     }
     return (
-      <Markdown md={this.message.text} />
+      <Markdown md={this.message.text} target="_blank" />
     );
   };
 
   render () {
+    console.log(this.props, this.message);
     return (
       <div
         style={this.props.style}
