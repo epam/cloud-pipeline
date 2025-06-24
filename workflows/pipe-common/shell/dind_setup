@@ -180,6 +180,15 @@ if [ "$CP_CAP_DIND_DEBUG" == "true" ]; then
     _DIND_DEBUG=",\"debug\": $CP_CAP_DIND_DEBUG"
 fi
 
+if [ "$CP_CAP_DIND_EXTRA_ARGS" ]; then
+    IFS=',' read -r -a _DIND_EXTRA_ARGS_ARR <<< "$CP_CAP_DIND_EXTRA_ARGS"
+    for _extra_arg in ${_DIND_EXTRA_ARGS_ARR[@]}; do
+        _extra_arg_name=$(echo "$_extra_arg" | cut -f1 -d'=')
+        _extra_arg_val=$(echo "$_extra_arg" | cut -f2 -d'=')
+        _DIND_EXTRA_ARGS="${_DIND_EXTRA_ARGS%,},\"$_extra_arg_name\": $_extra_arg_val"
+    done
+fi
+
 pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
 mkdir -p "$DIND_DATA_ROOT"
 mkdir -p "/etc/docker"
@@ -189,6 +198,7 @@ cat <<EOT > /etc/docker/daemon.json
   "storage-driver": "$DIND_STORAGE_DRIVER"
   $_DIND_REGISTRY_MIRRORS
   $_DIND_DEBUG
+  $_DIND_EXTRA_ARGS
 
 }
 EOT
