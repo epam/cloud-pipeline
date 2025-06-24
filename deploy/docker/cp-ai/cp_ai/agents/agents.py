@@ -8,8 +8,9 @@ from .tools import (get_command_to_run_compute_instance,
                     get_command_to_run_pipeline,
                     stop_compute_instance,
                     get_compute_instance_state)
+from .utilities import extract_launch_payload
 from cp_ai.database import search_platform_documentation
-from cp_ai.llm import llm, llm_simple_query
+from cp_ai.llm import llm
 
 
 def build_tool(
@@ -57,6 +58,7 @@ async def answer_using_default_agent(
 
     last_message = _messages.pop()
     history = '\n\n'.join([m.__str__() for m in _messages])
+    last_launch_payload = extract_launch_payload(history)
     user_query = last_message.content
     prompt = f'''
         This is user query, provide an answer for this query using provided agents or general LLM knowledge:
@@ -71,7 +73,8 @@ async def answer_using_default_agent(
         - If 'LaunchException' is returned from some of the agent, STOP execution and request details from user considering LaunchException info.
         - Use Markdown format; include all available links and references (prefer format [entity name](entity url)].
         '''
-    default_agent = get_default_agent(**kwargs)
+    default_agent = get_default_agent(launch_payload=last_launch_payload,
+                                      **kwargs)
     return await default_agent.astream_chat(
         message=prompt,
     )

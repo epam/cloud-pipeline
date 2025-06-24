@@ -257,12 +257,13 @@ def extract_launch_payload(
 ) -> LaunchPayload | None:
     if payload is not None:
         try:
-            payload = re.sub(r'^\s*```(json)?|```\s*$', '', payload, flags=re.DOTALL).strip()
-            payload = re.sub(r'^\s*`|`\s*$', '', payload, flags=re.DOTALL).strip()
-            m = re.match(f'^\s*<<<LAUNCH:?(.+)>>>\s*$', payload, re.DOTALL)
-            if m is not None:
-                payload = m.group(1)
-                return LaunchPayload(**json.loads(payload))
+            matches = re.findall(r'<<<LAUNCH:?(.*?)>>>', payload)
+            if matches:
+                last_launch = matches[-1]
+            else:
+                last_launch = None
+            if last_launch is not None:
+                return LaunchPayload(**json.loads(last_launch))
             return LaunchPayload(**json.loads(payload))
         except:
             return None

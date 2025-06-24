@@ -20,27 +20,21 @@ def get_pipeline_id(pipeline_name: str) -> str:
 
 def get_command_to_run_pipeline(
         user_query: str,
-        launch_payload: str | None = None,
         **kwargs
 ):
     """Useful to get a command to launch a **specific pipeline** (specified by name, identifier or by description).
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines pipeline, parameters and environment information.
-    Optional inputs:
-    - payload: str - if context contains relevant `<<<LAUNCH:...>>>` block, pass it here
     """
-    payload = extract_launch_payload(launch_payload)
     return launch_pipeline_by_user_query(
         user_query,
-        launch_payload=payload,
         **kwargs
     )
 
 
 def get_command_to_run_compute_instance(
         user_query: str,
-        launch_payload: str | None = None,
         **kwargs
 ):
     """Useful to get a command to launch a specific compute instance (not a pipeline),
@@ -48,13 +42,9 @@ def get_command_to_run_compute_instance(
     This function returns launch command or provides missing parameters that user needs to fulfil.
     Required inputs:
     - user_query: str - a user query that defines tool (or image), parameters and environment information.
-    Optional inputs:
-    - payload: str - if context contains relevant `<<<LAUNCH:...>>>` block, pass it here
     """
-    payload = extract_launch_payload(launch_payload)
     return launch_tool_by_user_query(
         user_query,
-        launch_payload=payload,
         **kwargs
     )
 
