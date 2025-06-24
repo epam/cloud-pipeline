@@ -96,7 +96,6 @@ export default class Message extends React.Component {
   };
 
   render () {
-    console.log(this.props, this.message);
     return (
       <div
         style={this.props.style}
