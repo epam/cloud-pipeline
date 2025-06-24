@@ -367,7 +367,7 @@ def generate_launch_payload(
     if launch_payload is not None:
         for parameter, parameter_value in launch_payload.parameters.items():
             if parameter_value is not None and parameter not in params:
-                params.update({parameter: {'value': parameter_value}})
+                params.update({parameter: parameter_value})
     if parameters is not None:
         for parameter, parameter_value in parameters.items():
             if parameter_value is not None:
