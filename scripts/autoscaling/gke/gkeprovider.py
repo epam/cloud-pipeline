@@ -60,7 +60,10 @@ class GKEInstanceProvider(object):
 
     def find_and_tag_instance(self, old_id, new_id):
         instance = self.__find_instance(old_id)
+        if not instance:
+            raise RuntimeError(f'Failed to find an instance for run {old_id}')
         self.__apply_tags(instance, GKEInstanceProvider.run_id_tag(new_id))
+        return instance.name
 
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
