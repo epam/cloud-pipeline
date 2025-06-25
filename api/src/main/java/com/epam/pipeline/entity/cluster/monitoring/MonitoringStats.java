@@ -103,5 +103,6 @@ public class MonitoringStats {
         private MonitoringMetrics gpuMemoryUtilization;
         private MonitoringMetrics gpuMemoryUsed;
         private MonitoringMetrics activeGpus;
+        private MonitoringMetrics gpuMemoryFree;
     }
 }

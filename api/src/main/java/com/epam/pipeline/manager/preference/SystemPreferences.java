@@ -1447,6 +1447,13 @@ public class SystemPreferences {
     public static final StringPreference GCP_LOGGING_SINK_LABEL_VALUE = new StringPreference(
             "gcp.logging.sink.label.value", "pipeline-api", GCP_GROUP, isNotBlank);
 
+    public static final LongPreference CLUSTER_MONITORING_GCP_MINIMAL_INTERVAL = new LongPreference(
+            "cluster.monitoring.gcp.minimal.interval", TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES),
+            CLUSTER_GROUP, isGreaterThan(0L));
+
+    public static final IntPreference CLUSTER_MONITORING_GCP_INTERVALS_NUMBER = new IntPreference(
+            "cluster.monitoring.gcp.intervals.number", 10, CLUSTER_GROUP, isGreaterThan(0));
+
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
             "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);

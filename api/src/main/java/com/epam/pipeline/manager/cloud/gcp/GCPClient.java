@@ -18,20 +18,30 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.wrappers.GCPInstancesClientWrapper;
+import com.epam.pipeline.manager.cloud.gcp.wrappers.GCPMachineTypesClientWrapper;
+import com.epam.pipeline.manager.cloud.gcp.wrappers.GCPMetricServiceClientWrapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.iamcredentials.v1.IAMCredentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.compute.v1.InstancesClient;
+import com.google.cloud.compute.v1.InstancesSettings;
+import com.google.cloud.compute.v1.MachineTypesClient;
+import com.google.cloud.compute.v1.MachineTypesSettings;
 import com.google.cloud.http.HttpTransportOptions;
 import com.google.cloud.logging.Logging;
 import com.google.cloud.logging.LoggingOptions;
+import com.google.cloud.monitoring.v3.MetricServiceClient;
+import com.google.cloud.monitoring.v3.MetricServiceSettings;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import org.apache.commons.lang3.StringUtils;
@@ -130,6 +140,22 @@ public class GCPClient {
                 .setCredentials(createCredentials(region))
                 .build()
                 .getService();
+    }
+
+    public GCPMetricServiceClientWrapper buildMetricsClient(final  GCPRegion region) throws IOException {
+        return new GCPMetricServiceClientWrapper(MetricServiceClient.create(MetricServiceSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(createCredentials(region)))
+                .build()));
+    }
+
+    public GCPInstancesClientWrapper buildInstancesClient(final  GCPRegion region) throws IOException {
+        return new GCPInstancesClientWrapper(InstancesClient.create(InstancesSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(createCredentials(region))).build()));
+    }
+
+    public GCPMachineTypesClientWrapper buildMachineTypesClient(final GCPRegion region) throws IOException {
+        return new GCPMachineTypesClientWrapper(MachineTypesClient.create(MachineTypesSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(createCredentials(region))).build()));
     }
 
     @Deprecated
