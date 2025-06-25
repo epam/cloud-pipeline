@@ -141,7 +141,6 @@ dependencies {
     compile "com.google.apis:google-api-services-iamcredentials:v1-rev32-1.25.0"
     compile "com.google.cloud:google-cloud-storage:1.100.0"
     compile "com.google.cloud:google-cloud-bigquery:2.49.0"
-    compile "com.google.cloud:google-cloud-storage:1.70.0"
     compile "com.google.code.gson:gson:2.10.1"
 
     testCompile group: "org.springframework.security", name: "spring-security-test", version: "4.2.2.RELEASE"
