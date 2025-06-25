@@ -56,15 +56,12 @@ async def answer_using_default_agent(
     if message is not None:
         _messages.append(map_message(message))
 
-    last_message = _messages.pop()
     history = '\n\n'.join([m.__str__() for m in _messages])
     last_launch_payload = extract_launch_payload(history)
-    user_query = last_message.content
     prompt = f'''
         This is user query, provide an answer for this query using provided agents or general LLM knowledge:
         -------------
         {history}
-        {user_query}
         -------------
         IMPORTANT: 
         - You must include any and all blocks that look like `<<<...>>>` verbatim and exactly as they appeared in the tool output.
