@@ -551,7 +551,10 @@ function getParameterConfig (
       visible,
       validation,
       description,
-      fallbackConfig = false
+      fallbackConfig = false,
+      // eslint-disable-next-line camelcase
+      pretty_name,
+      prettyName = pretty_name
     } = parameter;
     const readOnly = detached &&
       pipeline &&
@@ -560,6 +563,7 @@ function getParameterConfig (
     if (VERBOSE) {
       console.groupCollapsed(name);
       console.log(parameter);
+      console.log('prettyName', prettyName);
       console.log('type', type);
       console.log('value', value);
       console.log('resolvedValue', resolvedValue);
@@ -583,6 +587,7 @@ function getParameterConfig (
     return {
       configId,
       name,
+      prettyName,
       type,
       description,
       value: typedValue(value),
