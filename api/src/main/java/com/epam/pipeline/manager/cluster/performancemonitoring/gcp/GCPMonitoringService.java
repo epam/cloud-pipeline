@@ -24,6 +24,9 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringMetrics;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
 import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -164,6 +167,20 @@ public class GCPMonitoringService implements UsageMonitoringManager {
                                       final String podId,
                                       final String dockerImage) {
         return 0;
+    }
+
+    @Override
+    public NetworkEventFilter getPlatformNetworkStatsFilters() {
+        return null;
+    }
+
+    @Override
+    public List<HistogramBin> getPlatformNetworkStats(final HistogramType histogramType,
+                                                      final LocalDateTime from,
+                                                      final LocalDateTime to,
+                                                      final Integer intervals,
+                                                      final NetworkEventFilter filter) {
+        return Collections.emptyList();
     }
 
     @Override
