@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.scheduling.ScheduleProviderManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -117,6 +118,9 @@ public class JdbcTestBeans {
 
     @SpyBean
     protected RunConfigurationManager spyRunConfigurationManager;
+
+    @MockBean
+    protected PreferenceManager preferenceManager;
 
     @Bean
     protected IssueMapper spyIssueMapper() {
