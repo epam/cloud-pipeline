@@ -46,7 +46,7 @@ from src.config import Config
 
 import requests
 
-from src.utilities.storage_path_permissions_manager import get_manager
+from src.utilities.storage_path_permissions_manager import get_permissions_manager
 
 requests.urllib3.disable_warnings()
 import botocore.vendored.requests.packages.urllib3 as boto_urllib3
@@ -639,9 +639,12 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = self.bucket.bucket.path
         prefix = StorageOperations.get_prefix(relative_path)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix, write_required=True)
 
         if not recursive and not hard_delete:
             delete_items = []
+            if not permissions_manager.is_file_allowed(prefix):
+                return
             if version is not None:
                 delete_items.append(dict(Key=prefix, VersionId=version))
             else:
@@ -682,11 +685,12 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
             pages = paginator.paginate(**operation_parameters)
             delete_items = []
             for page in pages:
-                S3BucketOperations.process_listing(page, 'Contents', delete_items, delimiter, exclude, include, prefix)
+                S3BucketOperations.process_listing(page, 'Contents', delete_items, delimiter, exclude, include, prefix,
+                                                   permissions_manager)
                 S3BucketOperations.process_listing(page, 'Versions', delete_items, delimiter, exclude, include, prefix,
-                                                   versions=True)
+                                                   permissions_manager, versions=True)
                 S3BucketOperations.process_listing(page, 'DeleteMarkers', delete_items, delimiter, exclude, include,
-                                                   prefix, versions=True)
+                                                   prefix, permissions_manager, versions=True)
                 delete_items, flushing_items = S3BucketOperations.split_by_aws_limit(delete_items)
                 if flushing_items:
                     self._delete_objects(client, bucket, hard_delete, flushing_items)
@@ -901,7 +905,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item_keys = collections.OrderedDict()
         items_count = 0
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
-        permissions_manager = get_manager(self.bucket.bucket, prefix)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix)
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
@@ -960,7 +964,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         items = []
         items_count = 0
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
-        permissions_manager = get_manager(self.bucket.bucket, prefix)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix)
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
@@ -994,7 +998,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
-        permissions_manager = get_manager(self.bucket.bucket, prefix)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix)
         items = []
 
         for page in page_iterator:
@@ -1369,14 +1373,14 @@ class S3BucketOperations(object):
         return StorageOperations.remove_double_slashes(path)
 
     @staticmethod
-    def process_listing(page, name, items, delimiter, exclude, include, prefix, versions=False):
+    def process_listing(page, name, items, delimiter, exclude, include, prefix, permissions_manager, versions=False):
         found_file = False
         if name in page:
             if not versions:
                 single_file_item = S3BucketOperations.get_single_file_item(name, page, prefix)
                 if single_file_item:
                     S3BucketOperations.add_item_to_deletion(single_file_item, prefix, delimiter, include, exclude,
-                                                            versions, items)
+                                                            versions, items, permissions_manager)
                     return True
             for item in page[name]:
                 if item is None:
@@ -1385,7 +1389,8 @@ class S3BucketOperations(object):
                     found_file = True
                 if S3BucketOperations.expect_to_delete_file(prefix, item):
                     continue
-                S3BucketOperations.add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, items)
+                S3BucketOperations.add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, items,
+                                                        permissions_manager)
         return found_file
 
     @staticmethod
@@ -1405,12 +1410,14 @@ class S3BucketOperations(object):
                and not item['Key'].startswith(prefix + S3BucketOperations.S3_PATH_SEPARATOR)
 
     @staticmethod
-    def add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, items):
+    def add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, items, permissions_manager):
         name = S3BucketOperations.get_item_name(item['Key'], prefix=prefix)
         name = S3BucketOperations.get_prefix(delimiter, name)
         if not PatternMatcher.match_any(name, include):
             return
         if PatternMatcher.match_any(name, exclude, default=False):
+            return
+        if not permissions_manager.is_file_allowed(name):
             return
         if versions:
             items.append(dict(Key=item['Key'], VersionId=item['VersionId']))

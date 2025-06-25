@@ -58,16 +58,18 @@ class StoragePathPermission:
         return StoragePathPermission(data.get('folderPath'), data.get('fileName'), data.get('mask'))
 
 
-def get_manager(storage, root_path):
+def get_permissions_manager(storage, root_path, write_required=False):
     if not storage.path_permissions_enabled:
-        return AbstractStoragePathPermissionsManager()
+        return DefaultStoragePathPermissionsManager()
     current_user = User.whoami()
     if is_user_admin_or_owner(current_user, storage.owner):
-        return AbstractStoragePathPermissionsManager()
-    return StoragePathPermissionsManager(storage.identifier, root_path)
+        return DefaultStoragePathPermissionsManager()
+    if write_required:
+        return StoragePathWritePermissionsManager(storage.identifier, root_path)
+    return StoragePathReadPermissionsManager(storage.identifier, root_path)
 
 
-class AbstractStoragePathPermissionsManager:
+class DefaultStoragePathPermissionsManager:
     """
     This is a default implementation - shall be used for admins/owners and
     storages that do not support storage path permissions.
@@ -80,20 +82,46 @@ class AbstractStoragePathPermissionsManager:
         return True
 
 
-class StoragePathPermissionsManager(AbstractStoragePathPermissionsManager):
-
+class StoragePathReadPermissionsManager(DefaultStoragePathPermissionsManager):
 
     def __init__(self, storage_id, root_path):
+        self._inner = StoragePathPermissionsManager(storage_id, root_path)
+
+    def is_file_allowed(self, file_path):
+        return self._inner.is_file_allowed(file_path)
+
+    def is_folder_allowed(self, folder_path):
+        return self._inner.is_folder_allowed(folder_path)
+
+
+class StoragePathWritePermissionsManager(DefaultStoragePathPermissionsManager):
+
+    def __init__(self, storage_id, root_path):
+        self._inner = StoragePathPermissionsManager(storage_id, root_path, write_required=True)
+
+    def is_file_allowed(self, file_path):
+        return self._inner.is_file_allowed(file_path)
+
+    def is_folder_allowed(self, folder_path):
+        return self._inner.is_folder_allowed(folder_path)
+
+
+class StoragePathPermissionsManager:
+
+    def __init__(self, storage_id, root_path, write_required=False):
         self._delimiter = '/'
         if root_path and root_path is not self._delimiter:
             self._root_path = self._delimiter + str(root_path).strip(self._delimiter) + self._delimiter
         else:
             self._root_path = self._delimiter
         self._has_permissions_on_root = False
-        self._init_permissions(storage_id)
+        self._init_permissions(storage_id, write_required)
 
-    def _init_permissions(self, storage_id):
+    def _init_permissions(self, storage_id, write_required=False):
         self._raw_permissions = self._fetch(storage_id)
+        if write_required:
+            # filter out read-only permissions
+            self._raw_permissions = [p for p in self._fetch(storage_id) if p.mask & 4 != 0]
         self._folder_permissions = pygtrie.CharTrie(
             self._permissions_to_dict(self._raw_permissions))
 
