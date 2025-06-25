@@ -1418,6 +1418,15 @@ public class SystemPreferences {
     public static final LongPreference GCP_LOGGING_BIG_QUERY_MAX_BYTES = new LongPreference(
             "gcp.logging.bigquery.max.bytes", 100_000_000L, GCP_GROUP, isNotBlank);
 
+    public static final StringPreference GCP_LOGGING_LOG_NAME = new StringPreference(
+            "gcp.logging.log.name", "security_log", GCP_GROUP, isNotBlank);
+
+    public static final StringPreference GCP_LOGGING_SINK_LABEL_KEY = new StringPreference(
+            "gcp.logging.sink.label.key", "application-label", GCP_GROUP, isNotBlank);
+
+    public static final StringPreference GCP_LOGGING_SINK_LABEL_VALUE = new StringPreference(
+            "gcp.logging.sink.label.value", "pipeline-api", GCP_GROUP, isNotBlank);
+
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
             "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);

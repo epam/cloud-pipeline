@@ -30,6 +30,8 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.http.HttpTransportOptions;
+import com.google.cloud.logging.Logging;
+import com.google.cloud.logging.LoggingOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import org.apache.commons.lang3.StringUtils;
@@ -111,6 +113,14 @@ public class GCPClient {
                         .setReadTimeout(readTimeoutMills)
                         .setConnectTimeout(connectTimeout)
                         .build())
+                .build()
+                .getService();
+    }
+
+    public Logging buildCloudLoggingClient(final GCPRegion region) throws IOException {
+        return LoggingOptions.newBuilder()
+                .setProjectId(region.getProject())
+                .setCredentials(createCredentials(region))
                 .build()
                 .getService();
     }
