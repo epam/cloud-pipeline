@@ -37,6 +37,17 @@ function generate_params_file() {
     echo
 }
 
+function generate_extra_nf_config_option() {
+    all_extra_options_names=$(printenv | sed 's;=.*;;' | grep '^CP_NF_EXTRA_OPTION_')
+    for extra_option_name in $all_extra_options_names; do
+        [[ "$extra_option_name" == *_PARAM_TYPE ]]  && continue
+        extra_option_name_clean=$(echo "$extra_option_name" | sed 's/CP_NF_EXTRA_OPTION_//')
+        extra_option_string="$extra_option_name_clean = ${!extra_option_name}"
+        echo "[INFO] Added extra option to ${NEXTFLOW_CONFIG}: $extra_option_string"
+        echo "$extra_option_string" >> $NEXTFLOW_CONFIG
+    done
+}
+
 CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
 CP_NF_CACHEDIR="${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}"
 CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
@@ -91,6 +102,8 @@ if [ "$CP_CAP_SGE" == "true" ]; then
     echo "process.queue = 'main.q'" >> $NEXTFLOW_CONFIG
     echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
 fi
+
+generate_extra_nf_config_option
 #
 
 # NF Handler parameters
