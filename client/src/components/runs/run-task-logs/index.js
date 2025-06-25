@@ -540,7 +540,7 @@ class RunTaskLogs extends React.Component {
       event.stopPropagation();
       return false;
     }
-    if (/^KeyG$/i.test(event.code) && (event.ctrlKey || event.metaKey)) {
+    if (/^Enter$/i.test(event.code)) {
       if (event.shiftKey) {
         this.previousSearchResult();
       } else {
