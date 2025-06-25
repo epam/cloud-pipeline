@@ -16,13 +16,18 @@ import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.FieldValueList;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.TableResult;
+import com.google.cloud.logging.Logging;
+import com.google.cloud.logging.Payload;
+import com.google.cloud.logging.Severity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.map.SingletonMap;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,9 +39,13 @@ import org.springframework.util.Assert;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +68,7 @@ public class GCPLogManager implements LogManager {
     private static final String HOSTNAMES_ALIAS = "hostnames";
     private static final String JSON_PAYLOAD = "json_payload";
     private static final String COUNT_COLUMN = "COUNT(1) as count";
-    private static final DateTimeFormatter LOCAL_DATE_TO_BIGQUERY_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
-    private static final DateTimeFormatter BIG_QUERY_TO_LOCAL_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private static final String ZONED_DATE_TIME_TO_BIGQUERY_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
     private static final String SQL_SELECT_TEMPLATE = "SELECT %s FROM `%s._AllLogs` WHERE json_payload IS NOT NULL ";
     private static final String SQL_POSTFIX_TEMPLATE = "%s ORDER BY %s %s, %s %s LIMIT %s";
     private static final String DICTIONARY_QUERY_COLUMNS = String.join(", ",
@@ -90,6 +97,7 @@ public class GCPLogManager implements LogManager {
     private final CloudRegionDao cloudRegionDao;
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
+    private final AuthManager authManager;
 
     /**
      * Retrieves available filter values for the log entries.
@@ -176,8 +184,72 @@ public class GCPLogManager implements LogManager {
     }
 
     @Override
-    public void save(List<LogEntry> logEntries) {
-        throw new UnsupportedOperationException("Not supported currently.");
+    public void save(final List<LogEntry> logEntries) {
+        log.debug("Saving log entries to GCP Cloud Logging ({})...", logEntries.size());
+        if (logEntries.isEmpty()) {
+            return;
+        }
+
+        final String logName = preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_LOG_NAME);
+        Map<String, String> labels = new SingletonMap(
+                preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_SINK_LABEL_KEY),
+                preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_SINK_LABEL_VALUE));
+
+        final GCPRegion gcpRegion = (GCPRegion) cloudRegionDao.loadDefaultRegion()
+                .filter(r -> GCP == r.getProvider())
+                .orElseThrow(() -> new ObjectNotFoundException("No Default Region for GCP"));
+
+        try {
+            final Logging logging = gcpClient.buildCloudLoggingClient(gcpRegion);
+            // Convert LogEntry list to GCP LogEntry objects
+            final List<com.google.cloud.logging.LogEntry> gcpLogEntries = logEntries.stream()
+                    .map(e -> toGcpLogEntry(e, labels))
+                    .collect(Collectors.toList());
+
+            // Write logs in bulk
+            logging.write(gcpLogEntries, Logging.WriteOption.logName(logName));
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+    }
+
+    private com.google.cloud.logging.LogEntry toGcpLogEntry(final LogEntry logEntry, final Map<String, String> labels) {
+        final Map<String, Object> payload = new HashMap<>();
+        payload.put(ID, logEntry.getEventId().toString());
+        payload.put(MESSAGE_TIMESTAMP, toUnifiedBigQueryFormat(logEntry.getMessageTimestamp()));
+        payload.put(HOSTNAME, logEntry.getHostname());
+        payload.put(SERVICE_NAME, logEntry.getServiceName());
+        payload.put(TYPE, logEntry.getType());
+        payload.put(USER, logEntry.getUser());
+        payload.put(MESSAGE, logEntry.getMessage());
+        payload.put(SEVERITY, logEntry.getSeverity());
+        payload.put(SERVICE_ACCOUNT, authManager.isServiceUser(logEntry.getUser()));
+        payload.put(STORAGE_ID, logEntry.getStorageId());
+
+        // Build GCP LogEntry
+        return com.google.cloud.logging.LogEntry
+                .newBuilder(Payload.JsonPayload.of(payload))
+                .setLabels(labels)
+                .setSeverity(mapSeverity(logEntry.getSeverity()))
+                .build();
+    }
+
+    private Severity mapSeverity(final String severity) {
+        if (severity == null) {
+            return Severity.DEFAULT;
+        }
+        switch (severity.toUpperCase()) {
+            case "ERROR":
+                return Severity.ERROR;
+            case "WARN":
+                return Severity.WARNING;
+            case "INFO":
+                return Severity.INFO;
+            case "DEBUG":
+                return Severity.DEBUG;
+            default:
+                return Severity.DEFAULT;
+        }
     }
 
     private String constructQueryFilter(final LogFilter logFilter) {
@@ -326,9 +398,18 @@ public class GCPLogManager implements LogManager {
         if (fieldValue.isNull()) {
             return null;
         }
-        String timestampValue = fieldValue.getStringValue();
+        final String timestampValue = fieldValue.getStringValue();
 
-        return timestampValue != null ? LocalDateTime.parse(timestampValue, BIG_QUERY_TO_LOCAL_DATE_FORMATTER) : null;
+        if (StringUtils.isNotBlank(timestampValue)) {
+            try {
+                return LocalDateTime.parse(timestampValue,
+                        DateTimeFormatter.ofPattern(ZONED_DATE_TIME_TO_BIGQUERY_FORMAT));
+            } catch (DateTimeParseException ex) {
+                return LocalDateTime.parse(timestampValue, DATE_TIME_FORMATTER);
+            }
+        }
+
+        return null;
     }
 
     private void applyOrderBasedPagination(final StringBuilder whereClause, final LogFilter logFilter) {
@@ -381,16 +462,14 @@ public class GCPLogManager implements LogManager {
 
         if (timestampFrom != null && timestampTo != null) {
             appendCondition(whereClause,
-                    String.format("%s BETWEEN '%s+0000' AND '%s+0000'",
-                            timestampField,
-                            LOCAL_DATE_TO_BIGQUERY_FORMATTER.format(timestampFrom),
-                            LOCAL_DATE_TO_BIGQUERY_FORMATTER.format(timestampTo)));
+                    String.format("%s BETWEEN '%s' AND '%s'", timestampField,
+                            toUnifiedBigQueryFormat(timestampFrom), toUnifiedBigQueryFormat(timestampTo)));
         } else if (timestampFrom != null) {
-            appendCondition(whereClause, String.format("%s >= '%s+0000'", timestampField,
-                    LOCAL_DATE_TO_BIGQUERY_FORMATTER.format(timestampFrom)));
+            appendCondition(whereClause, String.format("%s >= '%s'", timestampField,
+                    toUnifiedBigQueryFormat(timestampFrom)));
         } else {
-            appendCondition(whereClause, String.format("%s <= '%s+0000'", timestampField,
-                    LOCAL_DATE_TO_BIGQUERY_FORMATTER.format(timestampTo)));
+            appendCondition(whereClause, String.format("%s <= '%s'", timestampField,
+                    toUnifiedBigQueryFormat(timestampTo)));
         }
     }
 
@@ -467,5 +546,10 @@ public class GCPLogManager implements LogManager {
 
     private String getTableName() {
         return preferenceManager.getPreference(SystemPreferences.GCP_LOGGING_BIG_QUERY_TABLE_NAME);
+    }
+
+    public static String toUnifiedBigQueryFormat(final LocalDateTime localDateTime) {
+        final ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of("UTC"));
+        return zonedDateTime.format(DateTimeFormatter.ofPattern(ZONED_DATE_TIME_TO_BIGQUERY_FORMAT));
     }
 }
