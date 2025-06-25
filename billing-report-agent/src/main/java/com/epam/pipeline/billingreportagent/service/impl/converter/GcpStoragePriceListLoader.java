@@ -17,17 +17,22 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.client.gcp.GCPPriceApiService;
+import com.epam.pipeline.client.gcp.GCPPriceApiServiceFactory;
+import com.epam.pipeline.entity.gcp.price.BillingAccountPriceResponse;
+import com.epam.pipeline.entity.gcp.price.Tier;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.cloudbilling.Cloudbilling;
-import com.google.api.services.cloudbilling.model.ListServicesResponse;
 import com.google.api.services.cloudbilling.model.ListSkusResponse;
-import com.google.api.services.cloudbilling.model.Service;
+import com.google.api.services.cloudbilling.model.Money;
 import com.google.api.services.cloudbilling.model.Sku;
 import com.google.api.services.cloudbilling.model.TierRate;
+import com.google.auth.oauth2.GoogleCredentials;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -37,17 +42,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class GcpStoragePriceListLoader implements StoragePriceListLoader{
-
-    private static final String GCP_STORAGE_SERVICES_FAMILY = "Cloud Storage";
+    private final String billingAccountId;
+    private static final String GCP_STORAGE_SERVICE = "services/95FF-2EF5-5EA1";
     private static final List<String> BILLING_SCOPES =
             Collections.singletonList("https://www.googleapis.com/auth/cloud-platform");
     private static final List<String> SUPPORTED_STORAGE = Arrays.asList("RegionalStorage", "MultiRegionalStorage");
+
+    private static final String PRICE_TEMPLATE = "billingAccounts/%s/skus/%s/price";
+
+    private static final int BILLING_ACCOUNT_SKUS_PAGE_SIZE = 5000;
+
+    public GcpStoragePriceListLoader(final String billingAccountId) {
+        this.billingAccountId = billingAccountId;
+    }
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() throws IOException, GeneralSecurityException {
@@ -56,23 +70,74 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
                 JacksonFactory.getDefaultInstance(), credentials.createScoped(BILLING_SCOPES))
                 .setApplicationName("Cloud Pipeline Billing Agent")
                 .build();
-        final ListServicesResponse services = cloudBilling.services().list().execute();
-        final Service cloudStorageService = services.getServices().stream()
-            .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
-            .findAny()
-            .orElseThrow(() -> new IllegalStateException("No services received from GCP!"));
 
         final ListSkusResponse skuResponse = cloudBilling.services()
             .skus()
-            .list(cloudStorageService.getName())
+            .list(GCP_STORAGE_SERVICE)
             .execute();
 
-        return skuResponse.getSkus().stream()
-            .filter(sku -> SUPPORTED_STORAGE.contains(sku.getCategory().getResourceGroup()))
+        Map<String, Sku> skuMap = skuResponse.getSkus()
+                .stream()
+                .filter(sku -> SUPPORTED_STORAGE.contains(sku.getCategory().getResourceGroup()))
+                .collect(Collectors.toMap(s ->
+                        String.format(PRICE_TEMPLATE, billingAccountId, s.getSkuId()), Function.identity()));
+
+        if (StringUtils.isNotBlank(billingAccountId)) {
+            GCPPriceApiService gcpPriceApiService = new GCPPriceApiServiceFactory().buildClient(generateToken());
+            String currencyCode = extractCurrency(skuMap);
+
+            String pageToken = null;
+            do {
+                BillingAccountPriceResponse billingAccPrice = gcpPriceApiService.getAllPrices(billingAccountId,
+                    currencyCode, pageToken, BILLING_ACCOUNT_SKUS_PAGE_SIZE).execute().body();
+
+                pageToken = billingAccPrice.getNextPageToken();
+
+                billingAccPrice.getBillingAccountPrices().stream().forEach(element -> {
+                    final String key = element.getName();
+                    if (skuMap.containsKey(key)) {
+                        List<TierRate> tierRates = skuMap.get(key).getPricingInfo().get(0)
+                            .getPricingExpression().getTieredRates();
+                        for (int i = 0; i < tierRates.size(); i++) {
+                            Tier currTier = element.getRate().getTiers().get(i);
+                            if (currTier != null) {
+                                Double startAmount = Double.valueOf(currTier.getStartAmount().getValue());
+                                tierRates.get(i).setStartUsageAmount(startAmount);
+                                Money currMoney = tierRates.get(i).getUnitPrice();
+                                currMoney.setUnits(currTier.getContractPrice().getUnits());
+                                currMoney.setNanos(currTier.getContractPrice().getNanos());
+                            }
+                        }
+                    }
+                });
+            } while (StringUtils.isNotBlank(pageToken));
+        }
+
+        return skuMap.values().stream()
             .map(this::convertSku)
             .map(Map::entrySet)
             .flatMap(Set::stream)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1));
+    }
+
+    private String generateToken() throws IOException {
+        GoogleCredentials googleCredentials = GoogleCredentials.getApplicationDefault().createScoped(BILLING_SCOPES);
+        googleCredentials.refreshIfExpired();
+        return googleCredentials.getAccessToken().getTokenValue();
+    }
+
+    private String extractCurrency(final Map<String, Sku> skuMap) {
+        return skuMap.values().stream()
+            .filter(Objects::nonNull)
+            .map(sku -> sku.getPricingInfo())
+            .filter(list -> list != null && !list.isEmpty())
+            .map(list -> list.get(0).getPricingExpression())
+            .filter(Objects::nonNull)
+            .map(expr -> expr.getTieredRates())
+            .filter(list -> list != null && !list.isEmpty())
+            .map(list -> list.get(0).getUnitPrice().getCurrencyCode())
+            .findFirst()
+            .orElse("USD");
     }
 
     private Map<String, StoragePricing> convertSku(final Sku sku) {

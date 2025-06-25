@@ -79,6 +79,9 @@ public class CommonSyncConfiguration {
     @Value("${sync.storage.historical.billing.generation:false}")
     private boolean enableStorageHistoricalBillingGeneration;
 
+    @Value("${gcp.billing.account.id}")
+    private String gcpBillingAccountId;
+
     @Bean
     public BulkRequestSender bulkRequestSender(
             final ElasticsearchServiceClient elasticsearchClient) {
@@ -222,7 +225,7 @@ public class CommonSyncConfiguration {
                                               final CloudPipelineAPIClient apiClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new GcpStoragePriceListLoader());
+                new StoragePricingService(new GcpStoragePriceListLoader(gcpBillingAccountId));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,

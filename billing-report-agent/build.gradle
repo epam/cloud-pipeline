@@ -64,7 +64,7 @@ dependencies {
 
     // GCP
     implementation group:'com.google.apis', name:'google-api-services-cloudbilling', version: gcpBillingSdkVersion
-
+    implementation 'com.google.cloud:google-cloud-billing:2.60.0'
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 
