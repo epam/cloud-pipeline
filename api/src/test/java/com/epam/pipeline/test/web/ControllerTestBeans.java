@@ -25,6 +25,7 @@ import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
 import com.epam.pipeline.acl.gcp.GCPRegistryApiService;
 import com.epam.pipeline.acl.datastorage.permissions.StoragePathPermissionsApiService;
+import com.epam.pipeline.acl.gcp.GCPRegistryApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;

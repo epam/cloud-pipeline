@@ -1426,6 +1426,18 @@ public class SystemPreferences {
             "gcp.artifact.registry.notification.audience",
             "/pipeline/restapi/gcpRegistry/notify", GCP_GROUP, isNotBlank);
 
+    public static final StringPreference GCP_LOGGING_BIG_QUERY_TABLE_NAME = new StringPreference(
+            "gcp.logging.bigquery.table.name", "pipeline_cloud_logging_table", GCP_GROUP, isNotBlank);
+
+    public static final IntPreference GCP_LOGGING_READ_TIMEOUT_MILLS = new IntPreference(
+            "gcp.logging.bigquery.read.timeout.mills", 20_000, GCP_GROUP, isGreaterThan(2000));
+
+    public static final IntPreference GCP_LOGGING_CONNECT_TIMEOUT_MILLS = new IntPreference(
+            "gcp.logging.bigquery.connect.timeout.mills", 20_000, GCP_GROUP, isGreaterThan(2000));
+
+    public static final LongPreference GCP_LOGGING_BIG_QUERY_MAX_BYTES = new LongPreference(
+            "gcp.logging.bigquery.max.bytes", 100_000_000L, GCP_GROUP, isNotBlank);
+
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
             "billing.reports.user.name.attribute", null, BILLING_GROUP, pass);

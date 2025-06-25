@@ -27,6 +27,9 @@ import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.iamcredentials.v1.IAMCredentials;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.http.HttpTransportOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import org.apache.commons.lang3.StringUtils;
@@ -102,6 +105,21 @@ public class GCPClient {
         GoogleCredentials credential = createCredentials(region).createScoped(BILLING_SCOPES);
         credential.refreshIfExpired();
         return credential.getAccessToken().getTokenValue();
+    }
+
+    @Deprecated
+    public BigQuery buildBigQueryClient(final GCPRegion region, int readTimeoutMills, int connectTimeout)
+            throws IOException {
+        return BigQueryOptions.newBuilder()
+                .setProjectId(region.getProject())
+                .setCredentials(createCredentials(region))
+                .setTransportOptions(HttpTransportOptions
+                        .newBuilder()
+                        .setReadTimeout(readTimeoutMills)
+                        .setConnectTimeout(connectTimeout)
+                        .build())
+                .build()
+                .getService();
     }
 
     @Deprecated

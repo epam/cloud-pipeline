@@ -92,7 +92,7 @@ import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
-import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.log.ElasticLogManager;
 import com.epam.pipeline.manager.log.storage.StorageRequestManager;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
@@ -224,7 +224,7 @@ public class AclTestBeans {
     protected CacheManager mockCacheManager;
 
     @MockBean
-    protected LogManager mockLogManager;
+    protected ElasticLogManager mockLogManager;
 
     @MockBean
     protected BillingManager mockBillingManager;

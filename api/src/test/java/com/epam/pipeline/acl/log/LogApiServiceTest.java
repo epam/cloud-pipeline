@@ -18,7 +18,7 @@ package com.epam.pipeline.acl.log;
 
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.log.ElasticLogManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class LogApiServiceTest extends AbstractAclTest {
     private LogApiService logApiService;
 
     @Autowired
-    private LogManager mockLogManager;
+    private ElasticLogManager mockLogManager;
 
     private final LogPagination logPagination = LogPagination.builder().build();
 
