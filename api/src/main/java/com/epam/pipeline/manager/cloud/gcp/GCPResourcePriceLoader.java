@@ -67,7 +67,7 @@ public class GCPResourcePriceLoader {
 
     private final GCPClient gcpClient;
 
-    @Value("${gcp.billing.account.id}")
+    @Value("${gcp.billing.account.id:}")
     private String gcpBillingAccountId;
 
     /**
