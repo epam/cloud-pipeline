@@ -13,6 +13,7 @@ nav:
   - v.0.15: 'release_notes/v.0.15/v.0.15_-_Release_notes.md'
   - v.0.16: 'release_notes/v.0.16/v.0.16_-_Release_notes.md'
   - v.0.17: 'release_notes/v.0.17/v.0.17_-_Release_notes.md'
+  - v.0.20: 'release_notes/v.0.20/v.0.20_-_Release_notes.md'
 - User guide:
   - Contents: 'manual/Cloud_Pipeline_-_Manual.md'
   - 1. Quick start: 'manual/01_Quick_start/1._Quick_start.md'
@@ -40,6 +41,7 @@ nav:
     - 6.3. Delete and unregister Pipeline: 'manual/06_Manage_Pipeline/6.3._Delete_a_pipeline.md'
     - 6.4. Work with AWS HealthOmics Workflow: 'manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow.md'
     - 6.5. Pipeline configuration: 'manual/06_Manage_Pipeline/6.5._Pipeline_configuration.md'
+    - 6.6. Pre-packaged pipelines: 'manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md'
   - 7. Manage Detached configuration:
     - 7.0. Overview: 'manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration.md'
     - 7.1. Create and customize Detached configuration: 'manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md'
@@ -85,6 +87,8 @@ nav:
     - 11.3. Sharing with other users: 'manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md'
     - 11.4. Automatic labels and actions for the runs: 'manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md'
     - 11.5. Archive completed runs: 'manual/11_Manage_Runs/11.5._Archive_runs.md'
+    - 11.6. Nextflow runs visualization: 'manual/11_Manage_Runs/11.6._Nextflow_runs_visualization.md'
+    - 11.7. GUI plugins for run pages: 'manual/11_Manage_Runs/11.7._Plugins_framework.md'
   - 12. Manage settings:
     - 12.0. Overview: 'manual/12_Manage_Settings/12._Manage_Settings.md'
     - 12.1. Add a new system event: 'manual/12_Manage_Settings/12.1._Add_a_new_system_event.md'
@@ -127,6 +131,7 @@ nav:
     - 17.1. Faceted filters search using tags: 'manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md'
   - 18. Home page: 'manual/18_Home_page/18._Home_page.md'
   - 19. Global search: 'manual/19_Search/19._Global_search.md'
+  - 20. Chatbot: 'manual/20_Chatbot/20._Chatbot.md'
   - Appendix A. Instance and Docker container lifecycles: 'manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md'
   - Appendix B. Working with a Project: 'manual/Appendix_B/Appendix_B._Working_with_a_Project.md'
   - Appendix C. Working with autoscaled cluster runs: 'manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md'
@@ -149,7 +154,10 @@ nav:
       - AWS:
         - Terraform: 'installation/native/aws/terraform/README.md'
         - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
+      - GCP:
+        - Terraform: 'installation/native/gcp/terraform/README.md'
   - Management:
-    - Environments sync: 'installation/management/environments_sync.md'
-  - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
-  - Support Windows runs: 'installation/support_windows_runs.md'
+    - Environments sync: 'operation/environments_sync/environments_sync.md'
+  - Change Kubernetes certificates: 'operation/change_kube_certificates.md'
+  - Support Windows runs: 'operation/support_windows_runs.md'
+  - GUI plugins development: 'operation/plugins_development.md'

@@ -1502,7 +1502,7 @@ Synchronization can be performed with or without synchronization of attributes (
 
 During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
 
-For details and examples see [here](../../installation/management/environments_sync.md).
+For details and examples see [here](../../operation/environments_sync/environments_sync.md).
 
 ## Data access audit
 
