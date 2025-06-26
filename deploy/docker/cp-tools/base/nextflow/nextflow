@@ -41,10 +41,8 @@ function generate_extra_nf_config_option() {
     all_extra_options_names=$(printenv | sed 's;=.*;;' | grep '^CP_NF_EXTRA_OPTION_')
     for extra_option_name in $all_extra_options_names; do
         [[ "$extra_option_name" == *_PARAM_TYPE ]]  && continue
-        extra_option_name_clean=$(echo "$extra_option_name" | sed 's/CP_NF_EXTRA_OPTION_//')
-        extra_option_string="$extra_option_name_clean = ${!extra_option_name}"
-        echo "[INFO] Added extra option to ${NEXTFLOW_CONFIG}: $extra_option_string"
-        echo "$extra_option_string" >> $NEXTFLOW_CONFIG
+        echo "[INFO] Added extra option to ${NEXTFLOW_CONFIG} from ${extra_option_name}: ${!extra_option_name}"
+        echo "${!extra_option_name}" >> $NEXTFLOW_CONFIG
     done
 }
 
