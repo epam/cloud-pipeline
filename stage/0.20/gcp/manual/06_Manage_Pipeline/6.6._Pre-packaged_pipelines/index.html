@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>6.6. Pre-packaged pipelines - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "6.6. Pre-packaged pipelines";
+        var mkdocs_page_input_path = "manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.20/v.0.20_-_Release_notes/">v.0.20</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">6. Manage Pipeline</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">6.6. Pre-packaged pipelines</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#nextflow-pipelines">NextFlow pipelines</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#rnaseq">Rnaseq</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#scrnaseq">Scrnaseq</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#sarek">Sarek</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#methylseq">Methylseq</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#proteinfold">Proteinfold</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#active-learning-pipeline">Active Learning Pipeline</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#running-nextflow-pipelines-on-batch-in-google-cloud">Running Nextflow pipelines on Batch in Google Cloud</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/">11.6. Nextflow runs visualization</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="#">Cloud native</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" href="#">AWS</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>6. Manage Pipeline &raquo;</li>
+      <li>6.6. Pre-packaged pipelines</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="66-pre-packaged-pipelines">6.6. Pre-packaged pipelines</h1>
+<ul>
+<li><a href="#nextflow-pipelines">NextFlow pipelines</a><ul>
+<li><a href="#rnaseq">Rnaseq</a></li>
+<li><a href="#scrnaseq">Scrnaseq</a></li>
+<li><a href="#sarek">Sarek</a></li>
+<li><a href="#methylseq">Methylseq</a></li>
+<li><a href="#proteinfold">Proteinfold</a></li>
+<li><a href="#active-learning-pipeline">Active Learning Pipeline</a></li>
+<li><a href="#running-nextflow-pipelines-on-batch-in-google-cloud">Running Nextflow pipelines on Batch in Google Cloud</a></li>
+</ul>
+</li>
+</ul>
+<p>This page contains some examples of the pre-packaged pipelines that could be deployed simultaneously with the Cloud Pipeline platform.</p>
+<p>General user journey for the usage of any prepared pipeline is the following:</p>
+<ol>
+<li>Upload the data, that the pipeline will work with, to the input data storage.</li>
+<li>Prepare a place for the output data in some storage - where results will be loaded once pipeline is completed.</li>
+<li>Open the <strong>Library</strong> and find the pipeline.</li>
+<li>Select a pipeline version that should be launched if there are several ones.</li>
+<li>At the <strong>Launch form</strong>:<ul>
+<li>select a pipeline configuration if needed or leave the default</li>
+<li>specify values of the pipeline parameters - here, paths to the input data and output results shall be specified, and other parameters if necessary</li>
+</ul>
+</li>
+<li>Launch a pipeline run.</li>
+<li>If necessary, monitor the pipeline execution from the <strong>Run logs</strong> page of the launched pipeline.</li>
+<li>Once the pipeline run is completed, navigate to the output path - to review pipeline results.</li>
+</ol>
+<blockquote>
+<p>For more details:</p>
+<ul>
+<li>a simple example of the preparation and pipeline launch - <a href="../../01_Quick_start/1._Quick_start/">Quick start</a></li>
+<li>how to launch a pipeline - <a href="../6.2._Launch_a_pipeline/">Pipeline launch</a></li>
+<li>additionally, about the pipeline launch and results review - <a href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/#testing-an-existing-pipeline-object">Appendix E. Pipeline objects concept</a></li>
+</ul>
+</blockquote>
+<h2 id="nextflow-pipelines">NextFlow pipelines</h2>
+<p><a href="https://www.nextflow.io/index.html">Nextflow</a> pipelines are workflows constructed from individual, parallel processes that perform computational tasks.<br />
+Processes communicate via channels, which act as queues, enabling a reactive dataflow model.<br />
+This allows for efficient parallelization and scaling, making Nextflow a powerful tool for data-intensive workflows.</p>
+<blockquote>
+<p>All NextFlow pipelines runs in the Cloud Pipeline platform support special NextFlow visualization - for details see <a href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/">here</a>.<br />
+Additionally, via the <a href="../../11_Manage_Runs/11.7._Plugins_framework/">GUI plugins</a> custom NextFlow view for the <strong>Launch form</strong> can be configured.</p>
+</blockquote>
+<h3 id="rnaseq">Rnaseq</h3>
+<p><a href="https://nf-co.re/rnaseq/"><strong>Rnaseq</strong></a> is a bioinformatics pipeline that can be used to analyse RNA sequencing data obtained from organisms with a reference genome and annotation.<br />
+It takes a samplesheet and FASTQ files as input, performs quality control (QC), trimming and (pseudo-)alignment, and produces a gene expression matrix and extensive QC report.</p>
+<p>Features that need to be taken into account when preparing and running <strong>Rnaseq</strong> via the Cloud Pipeline platform:</p>
+<p>Pipeline overview:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_01.png" /></p>
+<p>Pipeline parameters:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_02.png" /></p>
+<ul>
+<li><strong><code>samplesheet_path</code></strong> - input path to the sheet (<code>CSV</code>) containing metadata about samples to process</li>
+<li><strong><code>custom_config_path</code></strong> - path to the custom Nextflow config for the pipeline including paths to the reference genome <code>fasta</code> and reference annotation</li>
+<li><strong><code>output_storage</code></strong> - output path where the results will be saved</li>
+</ul>
+<p>Example and format of the <code>samplesheet</code> file - each row represents a fastq file (single-end) or a pair of fastq files (paired end) for a sample with the strandedness value:</p>
+<pre><code class="language-csv">sample,fastq_1,fastq_2,strandedness
+SAMPLE1,&lt;PATH_TO_SAMPLE1_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE1_2_FASTQ&gt;,auto
+SAMPLE2,&lt;PATH_TO_SAMPLE2_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE2_2_FASTQ&gt;,auto
+SAMPLE3,&lt;PATH_TO_SAMPLE3_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE3_2_FASTQ&gt;,reverse
+...
+</code></pre>
+<p>Example and format of the <code>custom_config</code> file, more details about pipeline steps - you can find in the main <strong><code>README.md</code></strong> in pipeline documents.</p>
+<p>Output results example:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_03.png" /></p>
+<h3 id="scrnaseq">Scrnaseq</h3>
+<p><a href="https://nf-co.re/scrnaseq/"><strong>Scrnaseq</strong></a> is a bioinformatics analysis pipeline for processing 10x Genomics single-cell RNA-seq data, offering support for various alignment tools and downstream analyses.<br />
+Pipeline supports:</p>
+<ul>
+<li><code>SimpleAF</code> (<code>Alevin-Fry</code>) + <code>AlevinQC</code></li>
+<li><code>STARSolo</code></li>
+<li><code>Kallisto</code> + <code>BUStools</code></li>
+<li><code>Cellranger</code></li>
+<li><code>Universc</code></li>
+</ul>
+<p>Features that need to be taken into account when preparing and running <strong>Scrnaseq</strong> via the Cloud Pipeline platform:</p>
+<p>Pipeline overview:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_04.png" /></p>
+<p>Pipeline parameters:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_05.png" /></p>
+<ul>
+<li><strong><code>samplesheet_path</code></strong> - input path to the sheet (<code>CSV</code>) containing metadata about samples to process</li>
+<li><strong><code>custom_config_path</code></strong> - path to the custom Nextflow config for the pipeline including paths to the reference genome <code>fasta</code> and reference annotation</li>
+<li><strong><code>output_storage</code></strong> - output path where the results will be saved</li>
+</ul>
+<p>Example and format of the <code>samplesheet</code> file - each row represents a fastq file (single-end) or a pair of fastq files (paired end) for a sample with number of expected cells:</p>
+<pre><code class="language-csv">sample,fastq_1,fastq_2,expected_cells
+SAMPLE1,&lt;PATH_TO_SAMPLE1_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE1_2_FASTQ&gt;,10000
+SAMPLE2,&lt;PATH_TO_SAMPLE2_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE2_2_FASTQ&gt;,10000
+SAMPLE3,&lt;PATH_TO_SAMPLE3_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE3_2_FASTQ&gt;,20000
+...
+</code></pre>
+<p>Example and format of the <code>custom_config</code> file, more details about pipeline steps - you can find in the main <strong><code>README.md</code></strong> in pipeline documents.</p>
+<p>Output results example:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_06.png" /></p>
+<h3 id="sarek">Sarek</h3>
+<p><a href="https://nf-co.re/sarek/"><strong>Sarek</strong></a> is a workflow designed to detect variants on whole genome or targeted sequencing data.<br />
+Initially designed for Human, and Mouse, it can work on any species with a reference genome. Sarek can also handle tumour / normal pairs and could include additional relapses.</p>
+<p>Features that need to be taken into account when preparing and running <strong>Sarek</strong> via the Cloud Pipeline platform:</p>
+<p>Pipeline overview:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_07.png" /></p>
+<p>Pipeline parameters:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_08.png" /></p>
+<ul>
+<li><strong><code>samplesheet_path</code></strong> - input path to the sheet (<code>CSV</code>) containing metadata about samples to process</li>
+<li><strong><code>custom_config_path</code></strong> - path to the custom Nextflow config for the pipeline including paths to the reference genome <code>fasta</code> and reference annotation</li>
+<li><strong><code>output_storage</code></strong> - output path where the results will be saved<br />
+<strong><em>Note</em></strong>: there are several <code>LFS</code> parameters - these are Cloud Pipeline platform settings, they are required for the correct pipeline execution and should not be changed by the user</li>
+</ul>
+<p>Example and format of the <code>samplesheet</code> file - each row represents a pair of fastq files (paired end) for a sample with patient ID and lane ID:</p>
+<pre><code class="language-csv">patient,sample,lane,fastq_1,fastq_2
+ID1,SAMPLE1,LANE1,&lt;PATH_TO_ID1_SAMPLE1_LANE1_1_FASTQ&gt;,&lt;PATH_TO_ID1_SAMPLE1_LANE1_2_FASTQ&gt;
+ID1,SAMPLE1,LANE2,&lt;PATH_TO_ID1_SAMPLE1_LANE2_1_FASTQ&gt;,&lt;PATH_TO_ID1_SAMPLE1_LANE2_2_FASTQ&gt;
+...
+</code></pre>
+<p>Example and format of the <code>custom_config</code> file, more details about pipeline steps - you can find in the main <strong><code>README.md</code></strong> in pipeline documents.</p>
+<p>Output results example:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_09.png" /></p>
+<h3 id="methylseq">Methylseq</h3>
+<p><a href="https://nf-co.re/methylseq/"><strong>Methylseq</strong></a> is a bioinformatics analysis pipeline used for Methylation (Bisulfite) sequencing data.<br />
+It pre-processes raw data from <code>FastQ</code> inputs, aligns the reads and performs extensive quality-control on the results.</p>
+<p>Features that need to be taken into account when preparing and running <strong>Methylseq</strong> via the Cloud Pipeline platform:</p>
+<p>Pipeline overview:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_10.png" /></p>
+<p>Pipeline parameters:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_11.png" /></p>
+<ul>
+<li><strong><code>samplesheet_path</code></strong> - input path to the sheet (<code>CSV</code>) containing metadata about samples to process</li>
+<li><strong><code>custom_config_path</code></strong> - path to the custom Nextflow config for the pipeline including paths to the reference genome <code>fasta</code> and reference annotation</li>
+<li><strong><code>output_storage</code></strong> - output path where the results will be saved</li>
+<li><strong><code>NextFlow -params-file</code></strong> - path to the pipeline <code>JSON</code>/<code>YAML</code> file with workflow parameters to be not overridden by configs</li>
+<li><strong><code>NextFlow -dump-channels</code></strong> - allows to dump channels output for debugging purpose</li>
+</ul>
+<p>Example and format of the <code>samplesheet</code> file - each row represents a fastq file (single-end) or a pair of fastq files (paired end) for a sample with the genome name:</p>
+<pre><code class="language-csv">sample,fastq_1,fastq_2,genome
+SAMPLE1,&lt;PATH_TO_SAMPLE1_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE1_2_FASTQ&gt;,GENOME1
+SAMPLE2,&lt;PATH_TO_SAMPLE2_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE2_2_FASTQ&gt;,GENOME1
+SAMPLE3,&lt;PATH_TO_SAMPLE3_1_FASTQ&gt;,&lt;PATH_TO_SAMPLE3_2_FASTQ&gt;,GENOME2
+...
+</code></pre>
+<p>Example and format of the <code>custom_config</code> file, more details about pipeline steps - you can find in the main <strong><code>README.md</code></strong> in pipeline documents.</p>
+<p>Output results example:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_12.png" /></p>
+<h3 id="proteinfold">Proteinfold</h3>
+<p><a href="https://nf-co.re/proteinfold/"><strong>Proteinfold</strong></a> is a bioinformatics analysis pipeline for Protein 3D structure prediction.<br />
+It leverages deep learning models like <code>AlphaFold2</code>, <code>RoseTTAFold</code> and <code>ESMFold</code> to predict protein structures from amino acid sequences.</p>
+<p>Features that need to be taken into account when preparing and running <strong>Proteinfold</strong> via the Cloud Pipeline platform:</p>
+<p>Pipeline overview:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_13.png" /></p>
+<p>Currently, two configurations are supported for the launch:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_14.png" /></p>
+<ul>
+<li><strong>alphafold2</strong> - uses <code>AlphaFold2</code> model for the pipeline processing</li>
+<li><strong>esmfold</strong> - uses <code>ESMFold</code> model for the pipeline processing</li>
+</ul>
+<p>Pipeline parameters:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_15.png" /></p>
+<ul>
+<li><strong><code>samplesheet_path</code></strong> - input path to the sheet (<code>CSV</code>) containing metadata about samples to process</li>
+<li><strong><code>output_storage</code></strong> - output path where the results will be saved</li>
+<li><strong><code>custom_config_path</code></strong> - path to the custom config for the pipeline containing model settings and NextFlow executor settings</li>
+<li><strong><code>NextFlow -params-file</code></strong> - path to the pipeline <code>JSON</code>/<code>YAML</code> file with workflow parameters to be not overridden by configs</li>
+<li><strong><code>NextFlow -dump-channels</code></strong> - allows to dump channels output for debugging purpose<br />
+<strong><em>Note</em></strong>: <code>CP_LOCALIZE_FROM_FILES_RECURSIVE</code> - this is a Cloud Pipeline platform setting, that is required for the correct pipeline execution and should not be changed by the user</li>
+</ul>
+<p>Example and format of the <code>samplesheet</code> file - each row represents a sequence with its fasta:</p>
+<pre><code class="language-csv">sequence,fasta
+SEQUENCE1,&lt;PATH_TO_SEQUENCE1_FASTA&gt;
+SEQUENCE2,&lt;PATH_TO_SEQUENCE2_FASTA&gt;
+...
+</code></pre>
+<p>Example and format of the <code>custom_config</code> file, more details about pipeline steps - you can find in the main <strong><code>README.md</code></strong> in pipeline documents.</p>
+<p>Output results example:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_16.png" /></p>
+<h3 id="active-learning-pipeline">Active Learning Pipeline</h3>
+<p><strong>Al-docking</strong> is an active learning-driven molecular docking pipeline that ingests 3D receptor structures and a chemical compound database.<br />
+It iteratively performs docking simulations (<code>QuickVina</code>) and trains machine learning models (<code>DGL</code>, <code>PyTorch</code>) over protein structure files to prioritize promising ligands, producing docking score prediction results, trained models, and a summary report with progress through iteration figures.  </p>
+<p>Features that need to be taken into account when preparing and running <strong>Al-docking</strong> via the Cloud Pipeline platform:</p>
+<p>Pipeline overview:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_19.png" /></p>
+<p>Pipeline parameters:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_17.png" /></p>
+<ul>
+<li><strong><code>receptor_sheet</code></strong> - input path to the sheet (<code>CSV</code>) containing metadata about receptor target structures to process</li>
+<li><strong><code>NextFlow -params-file</code></strong> - path to the pipeline <code>JSON</code>/<code>YAML</code> file with workflow parameters to be not overridden by configs</li>
+<li><strong><code>Cache .zip</code></strong> - path to the cache <code>ZIP</code> file with ligands prepared and docking results</li>
+<li><strong><code>output_storage</code></strong> - output path where the results will be saved</li>
+<li><strong><code>custom_config_path</code></strong> - path to the custom config containing compound database settings and NextFlow executor settings</li>
+<li><strong><code>NextFlow -dump-channels</code></strong> - allows to dump channels output for debugging purpose  </li>
+</ul>
+<p>Example and format of the <code>receptor_sheet</code> file - each row represents a receptor with its <code>PDB</code> path and pocket configuration for ligands' docking:</p>
+<pre><code class="language-csv">id,pdb,pocket_config
+RECEPTOR1,&lt;PATH_TO_RCEPTOR1_PDB&gt;,&lt;PATH_TO_RCEPTOR1_POCKET_CONFIG&gt;
+RECEPTOR2,&lt;PATH_TO_RCEPTOR2_PDB&gt;,&lt;PATH_TO_RCEPTOR2_POCKET_CONFIG&gt;
+...
+</code></pre>
+<p>Example of the pocket config file:</p>
+<pre><code>receptor = &lt;PATH_TO_RCEPTOR1_PDB&gt;
+
+center_x = 14.455
+center_y = 75.815
+center_z = 36.333
+
+size_x = 66.724
+size_y = 108.143
+size_z = 111.314
+</code></pre>
+<p>Example and format of the <code>custom_config</code> file, more details about pipeline steps - you can find in the main <strong><code>README.md</code></strong> in pipeline documents.</p>
+<p>Output results example:<br />
+<img alt="CP_PreparedPipelineExamples" src="../attachments/PrePackagedPipelines_18.png" /></p>
+<hr />
+<h3 id="running-nextflow-pipelines-on-batch-in-google-cloud">Running Nextflow pipelines on Batch in Google Cloud</h3>
+<p>This section describes how to extend Cloud Pipeline's main execution backend to run a Nextflow pipeline on Batch in Google Cloud deployment.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: tutorial runs the sample pipeline from Nextflow based on <a href="#rnaseq">RNA-Seq</a>.</p>
+</blockquote>
+<p>In a nutshell, to enable Batch using for Nextflow pipeline runs, the following conditions shall be met:</p>
+<ul>
+<li>Nextflow pipeline (based on Nextflow docker image) is used for the launch.</li>
+<li>In the <code>cluster.networks.config</code> System Preference, configuration section of the machine image, used for the running Nextflow pipelines, contains additional specification that includes GCP service account details. And such service account has corresponding permissions required for running the Batch job.</li>
+<li><code>nextflow.config</code> of the pipeline contains special <code>google-batch</code> profile, that is used for the Nextflow pipeline run.</li>
+</ul>
+<p>Now, let's take a closer look:</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: before the beginning, make sure that your GCP project has a Virtual Private Cloud (VPC) network with a valid networking configuration.</p>
+</blockquote>
+<ol>
+<li>Navigate to the <a href="../../12_Manage_Settings/12._Manage_Settings/#preferences"><strong>System Preferences</strong></a> section and find the <code>cluster.networks.config</code> preference.</li>
+<li>In <code>amis</code> section, create an item for the machine image that will be used for the running Nextflow pipelines on Batch, e.g. copy the existing general one image item:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_01.png" /></li>
+<li>To the created machine image item, add a Nextflow docker image in the format <code>"docker_image": "&lt;nextflow_docker_image&gt;</code>, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_02.png" /></li>
+<li>
+<p>To the created machine image item, add an additional specification that includes GCP service account details in the following format:  </p>
+<pre><code>"additional_spec": {
+    "serviceAccounts": [
+        {
+            "email": "&lt;gcp_service_account_name&gt;",
+            "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+            ]
+        }
+    ]
+}
+</code></pre>
+<p>Where <code>&lt;gcp_service_account_name&gt;</code> - name of your <a href="https://cloud.google.com/compute/docs/access/service-accounts">GCP service account</a>. You can find it in the settings of your Google Cloud <a href="../../12_Manage_Settings/12._Manage_Settings/#cloud-regions">region</a>, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_06.png" /><br />
+⚠️ Please note, service account must have the necessary permissions to allow the Batch service agent to create and access resources for Batch jobs. The following IAM roles shall be granted for the service account on the current GCP project:  </p>
+<ul>
+<li><a href="https://cloud.google.com/iam/docs/roles-permissions/batch#batch.agentReporter">Batch Agent Reporter</a> (<code>roles/batch.agentReporter</code>)</li>
+<li><a href="https://cloud.google.com/iam/docs/roles-permissions/storage#storage.admin">Storage Admin</a> (<code>roles/storage.admin</code>)</li>
+<li><a href="https://cloud.google.com/iam/docs/roles-permissions/logging#logging.logWriter">Logs Writer</a> (<code>roles/logging.logWriter</code>)<br />
+Example of the filled in specification:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_03.png" /></li>
+</ul>
+</li>
+<li>
+<p>Save the changes you made in the preference.</p>
+</li>
+<li>Open a Nextflow pipeline that you want to launch on Batch in GCP. For our example, we will use <a href="#rnaseq">RNA-Seq</a>.</li>
+<li>Navigate to the <strong>CODE</strong> tab of the pipeline:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_04.png" /></li>
+<li>Open <code>nextflow.config</code> file that defines Nextflow-specific details of the pipeline configuration:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_05.png" /></li>
+<li>
+<p>To the section <code>profiles</code> of the config file, insert a new profile for running on Batch in GCP, e.g. <code>'google-batch'</code>. This profile should contain the following:</p>
+<pre><code>'google-batch' {
+    params.transcriptome = 'gs://rnaseq-nf/data/ggal/transcript.fa'
+    params.reads = 'gs://rnaseq-nf/data/ggal/gut_{1,2}.fq'
+    params.multiqc = 'gs://rnaseq-nf/multiqc'
+    params.outdir = '&lt;gs_output_path&gt;'
+    process.executor = 'google-batch'
+    process.container = 'quay.io/nextflow/rnaseq-nf:v1.1'
+    workDir = '&lt;gs_workdir_path&gt;'
+    google {
+        region  = '&lt;gcp_region&gt;'
+        project = '&lt;project_id&gt;'
+        location = '&lt;gcp_region&gt;'
+        batch {
+            serviceAccountEmail = '&lt;gcp_service_account_name&gt;'
+            network = 'global/networks/&lt;gcp_network&gt;'
+            subnetwork = 'regions/&lt;gcp_region&gt;/subnetworks/&lt;gcp_subnetwork&gt;'
+            allowedLocations = ['regions/&lt;gcp_region&gt;']
+        }       
+    }
+}
+</code></pre>
+<p>Where shall be specified:  </p>
+<ul>
+<li><code>&lt;gs_output_path&gt;</code> - path inside your Google Cloud storage where results will be output</li>
+<li><code>&lt;gs_workdir_path&gt;</code> - path inside your Google Cloud storage where logs and intermediate results will be stored</li>
+<li><code>&lt;gcp_region&gt;</code> - name of the GCP region that is used.</li>
+<li><code>&lt;project_id&gt;</code> - your GCP project ID. You can find it in the settings of your Google Cloud <a href="../../12_Manage_Settings/12._Manage_Settings/#cloud-regions">region</a>, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_07.png" /></li>
+<li><code>&lt;gcp_service_account_name&gt;</code> - name of your <a href="https://cloud.google.com/compute/docs/access/service-accounts">GCP service account</a>. You can find it in the settings of your Google Cloud <a href="../../12_Manage_Settings/12._Manage_Settings/#cloud-regions">region</a>, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_06.png" /></li>
+<li><code>&lt;gcp_network&gt;</code> - name of your job's network</li>
+<li><code>&lt;gcp_subnetwork&gt;</code> - name of your job's subnetwork<br />
+You can find values for network and subnetwork in the <code>cluster.networks.config</code> <a href="../../12_Manage_Settings/12._Manage_Settings/#preferences">preference</a>, in section of the GCP region definition, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_08.png" /><br />
+Example of the filled in profile:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_09.png" /></li>
+</ul>
+</li>
+<li>
+<p>Save changed <code>nextflow.config</code> file.</p>
+</li>
+<li>
+<p>Specify the use of the just-created profile for the main <code>nextflow run</code> command of your pipeline using the <code>-profile</code> option, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_10.png" /></p>
+<blockquote>
+<p>Another place, where this command may be specified - main script at the <strong>CODE</strong> tab of the pipeline page, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_11.png" /></p>
+</blockquote>
+<p>Save changes.</p>
+</li>
+<li>
+<p>Now, you may launch your Nextflow pipeline as <a href="../6.2._Launch_a_pipeline/">usual</a>.</p>
+</li>
+<li>During the pipeline running, you may follow the Nextflow Batch execution logs in the console, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_12.png" /></li>
+<li>After the pipeline finishes running, it stores result files by the output path inside Google Cloud storage that was specified in the <code>'google-batch'</code> profile of the pipeline's <code>nextflow.config</code> file previously.<br />
+    You may view them using <strong>Library</strong> GUI, e.g.:<br />
+<img alt="CP_NextflowPipelineOnBatch" src="../attachments/NextflowBatchPipeline_13.png" /></li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../6.5._Pipeline_configuration/" class="btn btn-neutral float-left" title="6.5. Pipeline configuration"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/" class="btn btn-neutral float-right" title="7.0. Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../6.5._Pipeline_configuration/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

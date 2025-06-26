@@ -57,6 +57,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.20/v.0.20_-_Release_notes/">v.0.20</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">User guide</span></p>
               <ul class="current">
@@ -115,6 +117,8 @@
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.6._Pre-packaged_pipelines/">6.6. Pre-packaged pipelines</a>
                 </li>
     </ul>
                   </li>
@@ -216,6 +220,10 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/">11.6. Nextflow runs visualization</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
@@ -268,6 +276,10 @@
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#nat-gateway">NAT gateway</a>
     </li>
+    <li class="toctree-l4"><a class="reference internal" href="#system-jobs">System jobs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#dts">DTS</a>
+    </li>
         </ul>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#my-profile">My profile</a>
@@ -275,6 +287,8 @@
     <li class="toctree-l4"><a class="reference internal" href="#profile">Profile</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#appearance">Appearance</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#statistics">Statistics</a>
     </li>
         </ul>
     </li>
@@ -368,6 +382,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
@@ -418,19 +434,27 @@
                 </li>
     </ul>
                 </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
     </ul>
                 </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../../installation/management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
                   </li>
               </ul>
       </div>
@@ -483,11 +507,14 @@ To open System Settings click the <strong>gear</strong> icon on the main menu in
 <li><a href="#system-management">System management</a><ul>
 <li><a href="#system-logs">System logs</a></li>
 <li><a href="#nat-gateway">NAT gateway</a></li>
+<li><a href="#system-jobs">System jobs</a></li>
+<li><a href="#dts">DTS</a></li>
 </ul>
 </li>
 <li><a href="#my-profile">My profile</a><ul>
 <li><a href="#profile">Profile</a></li>
 <li><a href="#appearance">Appearance</a></li>
+<li><a href="#statistics">Statistics</a></li>
 </ul>
 </li>
 </ul>
@@ -633,7 +660,7 @@ System roles is one of the principal tool for managing security access to the ob
 <tr>
 <td><strong>4</strong></td>
 <td><strong>Import users</strong></td>
-<td>Allows to import users from the list in <code>.csv</code> format.</td>
+<td>Allows to import users from the list in <code>.csv</code> format. More details see <a href="../12.3._Create_a_new_user/#import-users">here</a>.</td>
 </tr>
 <tr>
 <td><strong>5</strong></td>
@@ -973,27 +1000,35 @@ On the left you can see a list of the email notification templates.</p>
 </tr>
 <tr>
 <td><strong>FULL_NODE_POOL</strong></td>
-<td>tells that all nodes of some node pool(s) are already in use</td>
+<td>tells that all nodes of some node pool(s) are already in use. See details <a href="../12.9._Change_email_notification/#full-node-pool">here</a></td>
+</tr>
+<tr>
+<td><strong>HIGH_CONSUMED_NETWORK_BANDWIDTH</strong></td>
+<td>tells that network consuming is higher than a bandwidth threshold for a specific period of time. See details <a href="../12.9._Change_email_notification/#high-consumed-network-bandwidth-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>HIGH_CONSUMED_RESOURCES</strong></td>
-<td>tells that memory or disk consuming is higher than a threshold value for a specific period of time</td>
+<td>tells that memory or disk consuming is higher than a threshold value for a specific period of time. See details <a href="../12.9._Change_email_notification/#high-consumed-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>IDLE_RUN</strong></td>
-<td>tells that the job is idle for a long time</td>
+<td>tells that the job is idle for a long time. See details <a href="../12.9._Change_email_notification/#idle-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>IDLE_RUN_PAUSED</strong></td>
-<td>tells that the job was paused because it was idle for a long time</td>
+<td>tells that the job was paused because it was idle for a long time. See details <a href="../12.9._Change_email_notification/#idle-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>IDLE_RUN_STOPPED</strong></td>
-<td>tells that the job was stopped because it was idle for a long time</td>
+<td>tells that the job was stopped because it was idle for a long time. See details <a href="../12.9._Change_email_notification/#idle-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>INACTIVE_USERS</strong></td>
 <td>tells that some users are not active for a long period of time</td>
+</tr>
+<tr>
+<td><strong>LDAP_BLOCKED_POSTPONED_USERS</strong></td>
+<td>tells that specific users were blocked in LDAP therefore they will be blocked and in the Platform in several days</td>
 </tr>
 <tr>
 <td><strong>LDAP_BLOCKED_USERS</strong></td>
@@ -1005,11 +1040,11 @@ On the left you can see a list of the email notification templates.</p>
 </tr>
 <tr>
 <td><strong>LONG_PAUSED</strong></td>
-<td>tells that the job has been paused for a long time</td>
+<td>tells that the job has been paused for a long time. See details <a href="../12.9._Change_email_notification/#notifications-for-long-paused-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>LONG_PAUSED_STOPPED</strong></td>
-<td>tells that the job, that has been paused for a long time, is stopped at the moment</td>
+<td>tells that the job, that has been paused for a long time, is stopped at the moment. See details <a href="../12.9._Change_email_notification/#notifications-for-long-paused-runs">here</a></td>
 </tr>
 <tr>
 <td><strong>LONG_RUNNING</strong></td>
@@ -1113,32 +1148,103 @@ Via this form, admins can create/remove network routes from private subnet(s) to
 </ul>
 <p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_26.png" /></p>
 <p>For more details see <a href="../12.14._NAT_gateway/">here</a>.</p>
+<h3 id="system-jobs">System jobs</h3>
+<p>The <strong>System jobs</strong> subtab allows to create and easily launch system scripts for different needs:</p>
+<ul>
+<li>to get some system statistics or system information about the current Platform state (for example, collect information about all storages that have specific size, list all unattached EBS volumes, set some s3 bucket policy to all storages, etc.)</li>
+<li>to create some sort of automation scripts - with help of <code>Kubectl</code>, <code>pipe</code> CLI, Cloud Pipeline API, Cloud CLI</li>
+</ul>
+<p>This subtab contains:</p>
+<ul>
+<li>list of all stored system jobs (scripts)</li>
+<li>history of the selected job runs</li>
+<li>controls to manage the selected job (launch/view details/view and download logs etc.)</li>
+</ul>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_39.png" /></p>
+<p>For more details see <a href="../12.15._System_jobs/">here</a>.</p>
+<h3 id="dts">DTS</h3>
+<p>The <strong>DTS</strong> subtab allows to create and configure data transfer services (DTS).<br />
+Via these services automatic data transfer can be executed, for example, between some local workstation or network host and datastorage available on the Cloud Pipeline Platform. Such services can be helpful for the periodic loading of raw data to the Cloud storage.</p>
+<p>The <strong>DTS</strong> subtab contains:</p>
+<ul>
+<li>list of all created DTS</li>
+<li>selected DTS details:<ul>
+<li>schedule rules</li>
+<li>key-value pairs of metadata needed for the correct DTS work</li>
+<li>extra preferences</li>
+<li>logs of previous transfers</li>
+</ul>
+</li>
+<li>controls to manage the selected DTS (create/edit/remove etc.)</li>
+</ul>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_40.png" /></p>
 <hr />
 <h2 id="my-profile">My profile</h2>
 <p>The <strong>My profile</strong> tab allows:</p>
 <ul>
 <li>to view main info about the current user</li>
-<li>to configure the view of the Platform pages (for the current user)</li>
+<li>to configure the view (UI theme) of the Platform pages for the current user</li>
+<li>to view statistics of the Platform usage by the current user</li>
 </ul>
 <h3 id="profile">Profile</h3>
 <p>The <strong>Profile</strong> subtab allows to view the following info for the current loginned user:</p>
 <ul>
 <li>registration user info (username, name, last name, etc.)</li>
 <li>roles assigned to the user</li>
-<li>user attributes (metadata)</li>
+<li>groups assigned to the user</li>
+<li>attributes section:<ul>
+<li>set of different options that could be configured as default settings for the Platform usage by the current user</li>
+<li>user metadata</li>
+</ul>
+</li>
 </ul>
 <p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_27.png" /></p>
+<p><strong>Attributes</strong> section allows to configure the following options:</p>
+<ul>
+<li><em>Limit mounts</em> - list of storages that will be mounted to the user runs by default. See example of that option configuration <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</li>
+<li><em>Run capabilities</em> - list of capabilities that will be enabled in the user runs by default. See example of that option configuration <a href="../../10_Manage_Tools/10.9._Run_capabilities/#109-run-capabilities">here</a>.</li>
+<li><em>SSH terminal theme</em> - allows to set default theme of the web-terminal for the user runs. See details <a href="../../15_Interactive_services/15.2._Using_Terminal_access/#terminal-view">here</a>.</li>
+<li><em>Mute email notifications</em> - allows to "mute" push-notifications in the GUI, i.e. notifications will still appear in the <strong>Notifications</strong> section, but corresponding pushs will not be showing. See example of that option configuration <a href="../12.9._Change_email_notification/#mute-notifications">here</a>.</li>
+<li><em>User metadata</em> - key-value pairs of attributes that can be assigned to the user. They are fully the same that can be managed via the user form - see details <a href="../12.4._Edit_delete_a_user/#attributes">here</a>.</li>
+</ul>
 <h3 id="appearance">Appearance</h3>
 <p>The <strong>Appearance</strong> subtab allows to select the UI theme(s) - to configure the view of the Platform pages for the current user.</p>
 <p>User can select a single theme that will always shown:<br />
 <img alt="CP_ManageSettings" src="../attachments/ManageSettings_28.png" /></p>
 <p>Or configure synchronization with system preferences and automatically switch between day and night themes:<br />
 <img alt="CP_ManageSettings" src="../attachments/ManageSettings_29.png" /></p>
+<h3 id="statistics">Statistics</h3>
+<p>The Statistics subtab allows to view main summary statistics of the Platform usage by the current loginned user for a specific month:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_41.png" /></p>
+<p>Subtab contains sections:</p>
+<ul>
+<li>summary section:<ul>
+<li>controls to switch a month to view statistics. By default, the current calendar month is being selected</li>
+<li>most used tools (top 3) in the selected month</li>
+<li>most used pipelines (top 3) in the selected month</li>
+<li>last login date</li>
+<li>summary costs of the Platform usage (on compute instances and datastorages) by the current user:<ul>
+<li>in the selected month</li>
+<li>in the month preciding the selected month</li>
+</ul>
+</li>
+<li>button to download a list of all user runs performed in the selected month
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_42.png" /></li>
+</ul>
+</li>
+<li>detailed usage section - section with two tabs:<ul>
+<li><em>Compute instances</em> (opened by default) - costs and usage of different instances launched by the user in the selected month. Statistics are aggregated by the tool names used for the instances runs<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_43.png" /></li>
+<li><em>Storages</em> - costs and volumes of datastorages owned by the current user. Statistics are displayed for the selected month<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_44.png" /></li>
+</ul>
+</li>
+</ul>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../11_Manage_Runs/11.5._Archive_runs/" class="btn btn-neutral float-left" title="11.5. Archive completed runs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../11_Manage_Runs/11.7._Plugins_framework/" class="btn btn-neutral float-left" title="11.7. GUI plugins for run pages"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../12.1._Add_a_new_system_event/" class="btn btn-neutral float-right" title="12.1. Add a new system event">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -1162,7 +1268,7 @@ Via this form, admins can create/remove network routes from private subnet(s) to
   <span class="rst-current-version" data-toggle="rst-current-version">
     
     
-      <span><a href="../../11_Manage_Runs/11.5._Archive_runs/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../../11_Manage_Runs/11.7._Plugins_framework/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../12.1._Add_a_new_system_event/" style="color: #fcfcfc">Next &raquo;</a></span>

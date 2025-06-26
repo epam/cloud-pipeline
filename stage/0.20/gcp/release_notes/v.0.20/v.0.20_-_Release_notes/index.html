@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>v.0.20 - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "v.0.20";
+        var mkdocs_page_input_path = "release_notes/v.0.20/v.0.20_-_Release_notes.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">v.0.20</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#visualization-of-nextflow-pipeline-execution">Visualization of Nextflow pipeline execution</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#visualization-of-genomics-pipeline-results">Visualization of genomics pipeline results</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#gui-plugins-framework">GUI plugins framework</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#gemini-integration-platforms-chatbot">Gemini Integration: platform's chatbot</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pre-packaged-pipelines-for-genomics">Pre-packaged pipelines for genomics</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#rnaseq">Rnaseq</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scrnaseq">Scrnaseq</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#sarek">Sarek</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#methylseq">Methylseq</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#proteinfold">Proteinfold</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#active-learning-pipeline">Active Learning Pipeline</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#google-native-infrastructure-integration">Google-native infrastructure integration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#compute-engines-management-google-kubernetes-engine-integration">Compute engines management: Google Kubernetes Engine integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#platform-database-google-cloud-sql-integration">Platform database: Google Cloud SQL integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#docker-images-storing-google-artifact-registry-integration">Docker images storing: Google Artifact Registry integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#resource-monitoring-google-cloud-monitoring-integration">Resource monitoring: Google Cloud Monitoring integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#terraform-based-platform-deployment-on-google-cloud">Terraform-based platform deployment on Google Cloud</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-logs-google-cloud-logging-integration">System logs: Google Cloud Logging integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#billing-google-cloud-billing-integration">Billing: Google Cloud Billing integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#data-catalog-improvements-and-google-cloud-integration">Data catalog: improvements and Google Cloud integration</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#instability-of-security-logs">Instability of security logs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#low-performance-for-large-indices">Low performance for large indices</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#duplication-of-indices">Duplication of indices</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipeline-execution-google-batch-integration">Pipeline execution: Google Batch integration</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/">6.6. Pre-packaged pipelines</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.6._Nextflow_runs_visualization/">11.6. Nextflow runs visualization</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="#">Cloud native</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" href="#">AWS</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>Release notes &raquo;</li>
+      <li>v.0.20</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="cloud-pipeline-v020-release-notes">Cloud Pipeline v.0.20 - Release notes</h1>
+<ul>
+<li><a href="#visualization-of-nextflow-pipeline-execution">Visualization of Nextflow pipeline execution</a></li>
+<li><a href="#visualization-of-genomics-pipeline-results">Visualization of genomics pipeline results</a></li>
+<li><a href="#gui-plugins-framework">GUI plugins framework</a></li>
+<li><a href="#gemini-integration-platforms-chatbot">Gemini Integration: platform's chatbot</a></li>
+<li><a href="#pre-packaged-pipelines-for-genomics">Pre-packaged pipelines for genomics</a><ul>
+<li><a href="#rnaseq">Rnaseq</a></li>
+<li><a href="#scrnaseq">Scrnaseq</a></li>
+<li><a href="#sarek">Sarek</a></li>
+<li><a href="#methylseq">Methylseq</a></li>
+<li><a href="#proteinfold">Proteinfold</a></li>
+<li><a href="#active-learning-pipeline">Active Learning Pipeline</a></li>
+</ul>
+</li>
+<li><a href="#google-native-infrastructure-integration">Google-native infrastructure integration</a><ul>
+<li><a href="#compute-engines-management-google-kubernetes-engine-integration">Compute engines management: Google Kubernetes Engine integration</a></li>
+<li><a href="#platform-database-google-cloud-sql-integration">Platform database: Google Cloud SQL integration</a></li>
+<li><a href="#docker-images-storing-google-artifact-registry-integration">Docker images storing: Google Artifact Registry integration</a></li>
+<li><a href="#resource-monitoring-google-cloud-monitoring-integration">Resource monitoring: Google Cloud Monitoring integration</a></li>
+<li><a href="#terraform-based-platform-deployment-on-google-cloud">Terraform-based platform deployment on Google Cloud</a></li>
+<li><a href="#system-logs-google-cloud-logging-integration">System logs: Google Cloud Logging integration</a></li>
+<li><a href="#billing-google-cloud-billing-integration">Billing: Google Cloud Billing integration</a></li>
+<li><a href="#data-catalog-improvements-and-google-cloud-integration">Data catalog: improvements and Google Cloud integration</a></li>
+<li><a href="#pipeline-execution-google-batch-integration">Pipeline execution: Google Batch integration</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="visualization-of-nextflow-pipeline-execution">Visualization of Nextflow pipeline execution</h2>
+<p><strong>Run logs</strong> page of the Cloud Pipeline platform allows to view different run information like timings, instance info, run parameters, console output, etc.<br />
+In some cases, current view could be insufficient or, on the contrary, excessive - for example, for Nextflow runs.<br />
+For such runs, it could be useful to view separate Nextflow tasks and processes, their metrics and separate logs.</p>
+<p>In the current version, the ability to change the view of the <strong>Run logs</strong> page was implemented.<br />
+This view tailored for Nextflow pipeline runs and enabled for them by default:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_1.png" /></p>
+<p>This view includes:</p>
+<ul>
+<li>header with general run info and main controls</li>
+<li>set of tabs</li>
+</ul>
+<p>Almost the whole functionality of the "original" <strong>Run logs</strong> page is organised and distributed between header and set of tabs.<br />
+The only difference is the <strong>Tasks</strong> tab in the set - this tab contains visualization of specific Nextflow pipeline execution details:</p>
+<ul>
+<li>full list of Nextflow processes and short summary over task statuses per each process<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_2.png" /></li>
+<li>task statuses of all/selected processes as an horizontal bar graph<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_3.png" /></li>
+<li>list of tasks and their metrics of all/selected processes as a table<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_4.png" /></li>
+</ul>
+<p>User can click any task in the tasks list, and task details will be opened in a separate pop-up:</p>
+<ul>
+<li><strong>Command</strong> - displays the command that is executed in the selected task<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_5.png" /></li>
+<li><strong>Metrics</strong> - displays all non-empty task metrics like CPU and memory usage, realtime of the task execution, disk usage<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_6.png" /></li>
+<li><strong>Task log</strong> - displays task execution logs<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowVisualization_7.png" /></li>
+</ul>
+<p>For more details about visualization of Nextflow pipeline execution integrated to the Cloud Pipeline GUI, see <a href="../../../manual/11_Manage_Runs/11.6._Nextflow_runs_visualization/#tasks-tab">here</a>.</p>
+<h2 id="visualization-of-genomics-pipeline-results">Visualization of genomics pipeline results</h2>
+<p>During genomics pipeline execution, different auxiliary output documents may be generated.<br />
+Once pipeline is completed, user might want to view/download such documents.<br />
+As these documents can be located in different places of the output directory, it can be hard to find files of interest manually.  </p>
+<p>Therefore, in the current version a separate previewer for pipeline output documents was implemented.<br />
+List of documents, retrieved from the pipeline's output directory and available for the preview after the pipeline has completed, can be found at the <strong>Reports</strong> tab of the <strong>Run logs</strong> page:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Reports_1.png" /></p>
+<p>Each path in the documents table is presented as a hyperlink - by click it, a corresponding document will be opened in a preview pop-up, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Reports_2.png" /></p>
+<p>Within the preview pop-up, user can:</p>
+<ul>
+<li>view name and full path of the report document</li>
+<li>view document preview</li>
+<li>download the document as a raw file to the local workstation</li>
+</ul>
+<p>At least, the following formats are supported for the previewing: <code>HTML</code>, <code>PNG</code>, <code>CSV</code>, <code>TSV</code>, <code>JSON</code>, <code>TXT</code> and other plain text files.<br />
+Preview for other binary files is not supported but these files can be easily downloaded to the local workstation via the preview pop-up.</p>
+<p>For more details about visualization of genomics pipeline results see <a href="../../../manual/11_Manage_Runs/11.6._Nextflow_runs_visualization/#reports-tab">here</a>.</p>
+<p>Please note, not all pipeline output files are displayed in the <strong>Reports</strong> tab.<br />
+Here, only documents are available that were loaded whithin special <code>Pipeline Results</code> storage rules, that are defined in the pipeline settings.<br />
+For more details about storage rules see <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#storage-rules">here</a>.</p>
+<h2 id="gui-plugins-framework">GUI plugins framework</h2>
+<p>Cloud Pipeline provides wide abilities to launch different tools and pipelines allowing to customize settings and parameters for such runs.<br />
+But in some cases, the appearance of separate platform pages could confuse general users cause of the large amount of different configurable options, seem overloaded or just unfamiliar.<br />
+For such cases, it would be convenient to setup a custom UI for specific pages - to simplify them, or make them similar to other third-party solutions as users used to.</p>
+<p>In <strong><code>v0.20</code></strong>, GUI plugins framework was implemented.<br />
+This framework allows external developers to extend the visualization capabilities of Cloud Pipeline by developing custom UI plugins for platform pages.<br />
+Then, that plugins for specific pages can be easily enabled in the Cloud Pipeline deployment for separate tools/pipelines and users.</p>
+<p>GUI plugins framework implies the following usage workflow:</p>
+<ul>
+<li>Developer creates a new custom UI plugin</li>
+<li>System administrator adds this plugin to the server side</li>
+<li>Then, via the platform GUI, administrator or user with enough permissions:<ul>
+<li>selects tool/pipeline for which the plugin shall be enabled<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Plugins_1.png" /></li>
+<li>selects a base page that shall be replaced by the plugin, plugin itself, and user(s)/user group(s) for which that plugin shall be applied<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Plugins_2.png" /></li>
+</ul>
+</li>
+<li>After, when any user (from the assigned ones at the previous step) tries to launch selected tool/pipeline and opens the page for which the plugin was configured - that user will see only custom configured UI from the plugin, not the base UI of the page.<br />
+    For example, enabled Nextflow plugin for the tool/pipeline <strong>Launch form</strong> page:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Plugins_3.png" /></li>
+</ul>
+<p>For more details and example see <a href="../../../manual/11_Manage_Runs/11.7._Plugins_framework/">here</a>.</p>
+<h2 id="gemini-integration-platforms-chatbot">Gemini Integration: platform's chatbot</h2>
+<p>Currently, Cloud Pipeline platform is quite large and has a lot of functionality.<br />
+There is a scope of the documentation that describes platform features and can help users to perform some tasks.<br />
+But sometimes it could be difficult to find exactly necessary manual or execute a task without special experience.  </p>
+<p>To address these diffuculties, in the current version, an AI-powered chatbot (based on <a href="https://deepmind.google/models/gemini/">Gemini LLM</a>) was integrated to the platform, enabling users to ask questions about the platform usage or request assistance in launching certain jobs.</p>
+<p>Chatbot is being opened from the main sidebar and looks like this when started:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_1.png" /></p>
+<p>To start a conversation, user should specify a question and click the <strong>submit</strong> button (or press the <em>Enter</em> key).<br />
+Once the request is submitted, chatbot starts the analysis of the submitted request, then generates the response and outputs it to the chat content form, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_2.png" /></p>
+<p>In addition to the general text responses, chatbot may generate:</p>
+<ul>
+<li>"how-to" instructions and platform-reference information based on the documentation, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_3.png" /><br />
+    Such responses may include formatted text and hyperlinks to the platform documentation.</li>
+<li>information based on the content from Issues of the platform's <a href="https://github.com/epam/cloud-pipeline">GitHub page</a> - in cases, when user requests help on the corresponding platform features that were mentioned in such Issues, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_4.png" /><br />
+    Such responses may include formatted text and hyperlinks to the GitHub Issues.</li>
+<li>when the chatbot recognizes a request to perform a task (launch a pipeline/tool), the response contains the prepared "card" that allows to launch a task, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_5.png" /><br />
+    Such "card" contains:  <ul>
+<li>object (tool/pipeline) name and version</li>
+<li><strong>Environment</strong> section that shows main execution settings that will be used for the run</li>
+<li><strong>Parameters</strong> section that shows all task parameters and their values</li>
+<li>button to confirm task execution<br />
+User can ask the chatbot to correct something in settings/parameters of the suggested task execution, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_6.png" /><br />
+When all settings/parameters are configured, user can click the <strong>Launch</strong> button to submit job execution.<br />
+Once the launch is confirmed, corresponding information will appear as a response from the chatbot - this response includes state and ID of the launched task, e.g.:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_Chatbot_7.png" /></li>
+</ul>
+</li>
+</ul>
+<p>For more details and examples of the chatbot using, see <a href="../../../manual/20_Chatbot/20._Chatbot/">here</a>.</p>
+<h2 id="pre-packaged-pipelines-for-genomics">Pre-packaged pipelines for genomics</h2>
+<p>In the current version, a set of pre-packaged pipelines, that could be deployed simultaneously with the Cloud Pipeline platform, was added.<br />
+They are pre-configured and allow users to easily execute their genomics workflows "out of the box".<br />
+Pre-packaged pipelines, added to the Cloud Pipeline platform within this version, are related to the <a href="https://www.nextflow.io/">Nextflow</a> pipelines and include:</p>
+<h3 id="rnaseq">Rnaseq</h3>
+<p><strong>Rnaseq</strong> is a bioinformatics pipeline that can be used to analyse RNA sequencing data obtained from organisms with a reference genome and annotation.<br />
+It takes a samplesheet and FASTQ files as input, performs quality control (QC), trimming and (pseudo-)alignment, and produces a gene expression matrix and extensive QC report.</p>
+<p><img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_PrePackagedPipeline_1.png" /></p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#rnaseq">here</a>.</p>
+<h3 id="scrnaseq">Scrnaseq</h3>
+<p><strong>Scrnaseq</strong> is a bioinformatics analysis pipeline for processing 10x Genomics single-cell RNA-seq data, offering support for various alignment tools and downstream analyses, and supporting:</p>
+<ul>
+<li><code>SimpleAF</code> (<code>Alevin-Fry</code>) + <code>AlevinQC</code></li>
+<li><code>STARSolo</code></li>
+<li><code>Kallisto</code> + <code>BUStools</code></li>
+<li><code>Cellranger</code></li>
+<li><code>Universc</code></li>
+</ul>
+<p><img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_PrePackagedPipeline_2.png" /></p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#scrnaseq">here</a>.</p>
+<h3 id="sarek">Sarek</h3>
+<p><strong>Sarek</strong> is a workflow designed to detect variants on whole genome or targeted sequencing data.<br />
+Initially designed for Human, and Mouse, it can work on any species with a reference genome. Sarek can also handle tumour / normal pairs and could include additional relapses.</p>
+<p><img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_PrePackagedPipeline_3.png" /></p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#sarek">here</a>.</p>
+<h3 id="methylseq">Methylseq</h3>
+<p><strong>Methylseq</strong> is a bioinformatics analysis pipeline used for Methylation (Bisulfite) sequencing data.<br />
+It pre-processes raw data from <code>FastQ</code> inputs, aligns the reads and performs extensive quality-control on the results.</p>
+<p><img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_PrePackagedPipeline_4.png" /></p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#methylseq">here</a>.</p>
+<h3 id="proteinfold">Proteinfold</h3>
+<p><strong>Proteinfold</strong> is a bioinformatics analysis pipeline for Protein 3D structure prediction.<br />
+It leverages deep learning models like <code>AlphaFold2</code>, <code>RoseTTAFold</code> and <code>ESMFold</code> to predict protein structures from amino acid sequences.<br />
+For sequences already existing in Protein Database, their structures are obtained from the database without a fold calculating.</p>
+<p><img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_PrePackagedPipeline_5.png" /></p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#proteinfold">here</a>.</p>
+<h3 id="active-learning-pipeline">Active Learning Pipeline</h3>
+<p><strong>Al-docking</strong> is an active learning-driven molecular docking pipeline that ingests 3D receptor structures and a chemical compound database.<br />
+It iteratively performs docking simulations (<code>QuickVina</code>) and trains machine learning models (<code>DGL</code>, <code>PyTorch</code>) over protein structure files to prioritize promising ligands, producing docking score prediction results, trained models, and a summary report with progress through iteration figures.<br />
+Totally, it allows to predict drug candidates using active learning from a set of small molecule 2D input structures or protein structure files.</p>
+<p><img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_PrePackagedPipeline_6.png" /></p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#active-learning-pipeline">here</a>.</p>
+<h2 id="google-native-infrastructure-integration">Google-native infrastructure integration</h2>
+<p><a href="../../v.0.16/v.0.16_-_Release_notes/#google-cloud-platform-support">Previously</a>, the support of <a href="https://cloud.google.com/">Google Cloud Platform</a> (GCP) resources in Cloud Pipeline (in terms of data storages and compute engine instances) was implemented.</p>
+<p>And in the current version, one of the major features implemented is the core integration of the Cloud Pipeline solution with native GCP services.<br />
+As a result of this integration Cloud Pipeline platform leverages GCP services to provide a scalable, intelligent, and user-friendly platform for managing and running genomics pipelines and HPC tasks.</p>
+<p>In the context of the integration of Cloud Pipeline with GCP, the process of replacing the on-premises general infrastructure components with GCP-native solutions was carried out.<br />
+This replacement includes the following core systems and components:</p>
+<ul>
+<li>self-hosted <code>Kubernetes</code> was replaced with <a href="https://cloud.google.com/kubernetes-engine"><code>Google Kubernetes Engine (GKE)</code></a></li>
+<li>self-hosted <code>PostgreSQL</code> database was replaced with <a href="https://cloud.google.com/sql"><code>Cloud SQL</code></a></li>
+<li>self-hosted <code>Docker Registry</code> was replaced with <a href="https://cloud.google.com/artifact-registry/docs"><code>Artifact Registry</code></a></li>
+<li>built-in <code>Kubernetes</code> node monitoring functionality was replaced with <a href="https://cloud.google.com/monitoring"><code>Cloud Monitoring</code></a></li>
+<li>additionally, Terraform-based code scripts for automated deployment of the Cloud Pipeline platform on GCP was provided</li>
+</ul>
+<p>In addition, several Cloud Pipeline application services have been implemented using GCP-native services.<br />
+This includes:</p>
+<ul>
+<li>support <a href="https://developers.google.com/maps/documentation/mobility/operations/cloud-logging"><code>Cloud Logging</code></a> for system logs storage</li>
+<li>support <a href="https://cloud.google.com/billing/docs"><code>Cloud Billing</code></a> for billing reports generation</li>
+<li>improved stability and scalability of platform’s data catalog feature</li>
+<li>support <a href="https://cloud.google.com/batch"><code>GCP Batch</code></a> for pipeline execution</li>
+</ul>
+<p>The resulting Cloud Pipeline deployment using GCP-native services and infrastructure is shown below:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_GCP_01.png" /></p>
+<h3 id="compute-engines-management-google-kubernetes-engine-integration">Compute engines management: Google Kubernetes Engine integration</h3>
+<p>Previously, only one approach for the management of compute engine instances was supported - using self-hosted <code>Kubernetes</code> configuration.<br />
+Since the current <strong><code>v0.20</code></strong>, Cloud Pipeline platform could be deployed with <a href="https://cloud.google.com/kubernetes-engine"><code>Google Kubernetes Engine</code></a> as the core hosting and execution platform on GCP.<br />
+In terms of the GUI and the general platform use, for the end user everything remains the same.</p>
+<h3 id="platform-database-google-cloud-sql-integration">Platform database: Google Cloud SQL integration</h3>
+<p>Previously, only one approach for the storing the state of the Cloud Pipeline platform deployment was supported - using self-hosted <code>PostgreSQL 16</code> instance.<br />
+Since the current <strong><code>v0.20</code></strong>, Cloud Pipeline platform could be deployed with <a href="https://cloud.google.com/sql"><code>Google Cloud SQL</code></a> database for the storing the platform state. It provides better reliability and easier support for Cloud Pipeline deployment on GCP.<br />
+In terms of the GUI and the general platform use, for the end user everything remains the same.</p>
+<h3 id="docker-images-storing-google-artifact-registry-integration">Docker images storing: Google Artifact Registry integration</h3>
+<p>Previously, only one approach for the storing docker images and Linux software packages for the Cloud Pipeline platform was supported - using self-hosted <code>Docker Registry</code>.<br />
+Since the current <strong><code>v0.20</code></strong>, Cloud Pipeline platform could be deployed with <a href="https://cloud.google.com/artifact-registry/docs"><code>Google Artifact Registry</code></a> repository that allows to store docker images and Linux software packages needed to start workloads and install missing dependencies in a same way.<br />
+In terms of the GUI and the general platform use, for the end user everything remains the same.</p>
+<h3 id="resource-monitoring-google-cloud-monitoring-integration">Resource monitoring: Google Cloud Monitoring integration</h3>
+<p>In Cloud Pipeline, lots of metrics to monitor cluster compute nodes are collected.<br />
+For users, these metrics are available via the <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#monitor"><strong>Cluster Monitor</strong></a> form.  </p>
+<p>Previously, built-in <code>Kubernetes</code> functionality was used to monitor compute nodes metrics.</p>
+<p>In <strong><code>v0.20</code></strong>, new ability is integrated to the Cloud Pipeline platform - <a href="https://cloud.google.com/monitoring"><code>Google Cloud Monitoring</code></a> to monitor metrics on Google Compute Engine nodes.<br />
+In case of <code>Google Cloud Monitoring</code>:</p>
+<ul>
+<li>metrics are collected within built-in Google Cloud services (for such metrics like CPU utilization and Network traffic tracking) and special <a href="https://cloud.google.com/monitoring/api/metrics_opsagent"><code>Ops Agent</code></a> (for such metrics like memory and disk usage)</li>
+<li>the following metrics are monitored:<ul>
+<li><code>CPU Utilization</code>: load and <code>max</code> usage</li>
+<li><code>Memory Usage</code>: used and <code>max</code> memory</li>
+<li><code>Disk Usage</code>: per-device capacity and free space</li>
+<li><code>Network Traffic</code>: sent/received bytes summary</li>
+<li><code>GPU Utilization</code>: <code>avg</code>, <code>min</code>, <code>max</code> usages</li>
+<li><code>GPU Memory Usage</code>: <code>avg</code>, <code>min</code>, <code>max</code> memory</li>
+<li><code>GPU Processes Utilization</code>: <code>avg</code>, <code>min</code>, <code>max</code> usages</li>
+</ul>
+</li>
+<li>in terms of the <strong>Cluster Monitor</strong> usage and the GUI, for the end user everything remains the same<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_MetricsMonitoring_1.png" /></li>
+</ul>
+<p>Besides, new <strong>System Preferences</strong> were added to have the ability to configure <code>Google Cloud Monitoring</code> in the Cloud Pipeline platform:</p>
+<ul>
+<li><strong><code>cluster.monitoring.gcp.intervals.number</code></strong> - sets a number of intervals in monitoring period by which metrics should be received</li>
+<li><strong><code>cluster.monitoring.gcp.minimal.interval</code></strong> - defines minimum interval (in seconds) between metrics taking.<br />
+    This interval duration will be used for metrics taking only in case when monitoring period divided on <code>cluster.monitoring.gcp.intervals.number</code> is smaller than this interval</li>
+</ul>
+<p>For more technical details about metrics getting, see <a href="https://github.com/epam/cloud-pipeline/issues/3969#issuecomment-2879486629">here</a>.</p>
+<h3 id="terraform-based-platform-deployment-on-google-cloud">Terraform-based platform deployment on Google Cloud</h3>
+<p>From the current version, any new Cloud Pipeline platform release can be easily deployed on Google Cloud Platform using <a href="https://developer.hashicorp.com/terraform"><strong><code>Terraform</code></strong></a>.</p>
+<p>A full technical guidance how to deploy infrastructure using <code>Terraform</code> and install Cloud Pipeline on Google Cloud, see in the <a href="../../../installation/native/gcp/terraform/">Platform on GCP deployment manual</a>.<br />
+That guidance provisions everything needed to run Cloud Pipeline reliably and securely, including:</p>
+<ul>
+<li><strong>Google Kubernetes Engine (GKE) cluster</strong></li>
+<li><strong>Filestore (NFS)</strong></li>
+<li><strong>Cloud SQL (Private IP)</strong></li>
+<li><strong>Cloud Storage bucket</strong></li>
+<li><strong>Artifact Registry</strong></li>
+<li><strong>Firewall rules</strong></li>
+<li><strong>Jump Host</strong></li>
+</ul>
+<h3 id="system-logs-google-cloud-logging-integration">System logs: Google Cloud Logging integration</h3>
+<p>In Cloud Pipeline, <a href="../../../manual/12_Manage_Settings/12.12._System_logs/">Security logging</a> is supported.<br />
+Platform records audit trail events like:</p>
+<ul>
+<li>users' authentication attempts</li>
+<li>users' profiles modifications</li>
+<li>platform objects' permissions management</li>
+<li>access to interactive applications from pipeline runs</li>
+<li>access to the data</li>
+</ul>
+<p>Previously, only one approach for such logging was supported - logs were collected/managed to the index database (based on <code>ElasticSearch</code>) and backed up to the preconfigured data storage.</p>
+<p>In <strong><code>v0.20</code></strong>, new approach is implemented - ability to switch logging to <a href="https://cloud.google.com/logging/docs/overview"><code>Google Cloud Logging</code></a> was added.<br />
+In case of enabled <code>Google Cloud Logging</code>:</p>
+<ul>
+<li><a href="https://cloud.google.com/logging/docs/agent/ops-agent"><code>Ops Agent</code></a> is used to collect log data from the Cloud Pipeline platform deployment to the linked Google Cloud project</li>
+<li><a href="https://cloud.google.com/bigquery"><code>BigQuery</code></a> dataset within Sink connector is used to access, manage and store logs</li>
+<li>in terms of the <strong>System logs</strong> usage and the GUI, for the end user everything remains the same<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_SystemLogs_1.png" /></li>
+</ul>
+<p>Switching between <code>Google Cloud Logging</code> and <code>ElasticSearch</code> is enabled via a configuration flag in application properties - system administrators should set <strong><code>logging.provider=gcp</code></strong> or <strong><code>logging.provider=elastic</code></strong> to select a provider for system logs.</p>
+<p>Besides, new <strong>System Preferences</strong> were added to have the ability to configure <code>Google Cloud Logging</code> in the Cloud Pipeline platform:</p>
+<ul>
+<li><strong><code>gcp.logging.log.name</code></strong> - logname for Google Cloud Logging</li>
+<li><strong><code>gcp.logging.sink.label.key</code></strong> - key of the label that defines from where the log comes. It is necessary for the Sink connector that redirects the log to <code>BigQuery</code></li>
+<li><strong><code>gcp.logging.sink.label.value</code></strong> - value of the label that defines from where the log comes. It is necessary for the Sink connector that redirects the log to <code>BigQuery</code></li>
+<li><strong><code>gcp.logging.bigquery.table.name</code></strong> - specifies the <code>BigQuery</code> project table name</li>
+<li><strong><code>gcp.logging.bigquery.read.timeout.mills</code></strong> - sets the read timeout (in milliseconds) for <code>BigQuery</code> read operations</li>
+<li><strong><code>gcp.logging.bigquery.connect.timeout.mills</code></strong> - sets the connection timeout (in milliseconds) for the <code>BigQuery</code> client</li>
+<li><strong><code>gcp.logging.bigquery.max.bytes</code></strong> - sets the maximum limit (in bytes) that could be fetched per request</li>
+</ul>
+<h3 id="billing-google-cloud-billing-integration">Billing: Google Cloud Billing integration</h3>
+<p>Cloud Pipeline platform has integrated billing service.<br />
+It allows to get from Cloud provider and then process, track and display the associated costs for using platform resources by the users.<br />
+Costs on compute instances launch are available from runs pages. Additionally, there is a separate <a href="../../../manual/Appendix_D/Appendix_D._Costs_management/#billing-reports"><strong>Billing Dashboard</strong></a> to monitor platform expenses.</p>
+<p>Cloud Pipeline already supports billing functionality for different Cloud providers, including Google Cloud.<br />
+But in the current version, default collecting of the billing information for the Google Cloud provider was supplemented with the using of <a href="https://cloud.google.com/billing/docs"><code>Cloud Billing</code></a> API for more accuracy.</p>
+<p>A new <strong>System Preference</strong> was added - <strong><code>gcp.billing.account.id</code></strong><br />
+This preference allows to specify billing account ID of the GCP account used in the current Cloud Pipeline deployment. And if this preference is set (billing account is specified):</p>
+<ul>
+<li>GCP billing prices associated with the specific account will be retrieved.<br />
+    Such account-specific prices retrieving enables more granular and accurate price calculations in the Cloud Pipeline platform based on some discounts for a billing account</li>
+<li>Prices are now fetched from the following endpoint: <code>https://cloudbilling.googleapis.com/v1beta/billingAccounts/&lt;BILLING_ACCOUNT_ID&gt;/skus/-/price?currencyCode=&lt;CURRENCY&gt;</code><br />
+<strong><em>Note</em></strong>: API requires the <code>billing.billingAccountSkus.list</code> permission to function properly.</li>
+<li>in terms of the GUI of different platform pages displaying billing information, for the end user everything remains the same</li>
+</ul>
+<p>If <code>gcp.billing.account.id</code> preference is not set and GCP is the current Cloud provider of the Cloud Pipeline platform, for all billing calculations default GCP prices will be retrieved without taking into account possible discounts of the specific billing account.</p>
+<h3 id="data-catalog-improvements-and-google-cloud-integration">Data catalog: improvements and Google Cloud integration</h3>
+<p>Cloud Pipeline platform has integrated system of the displaying and searching over the platform objects (runs, tools, pipelines, data storage files and folders, and others) - <a href="../../../manual/19_Search/19._Global_search/#advanced-search">Data Catalog</a>.<br />
+It allows easily find and filter necessary objects and data, and then open them or navigate for the further work with.</p>
+<p>In the current version, some issues, that were previously observed with the Data Catalog time to time, were solved including:</p>
+<ul>
+<li>instability of security logs</li>
+<li>low performance for large indices</li>
+<li>duplication of indices</li>
+</ul>
+<h4 id="instability-of-security-logs">Instability of security logs</h4>
+<p>Previously, System Logs could be partially unavailable or not stored due to <code>ElasticSearch</code> issues.<br />
+These issues could caused to hardly track security events and analyze historical data.<br />
+In <strong><code>v0.20</code></strong>, such instability of security logs was addressed via the <a href="#system-logs-google-cloud-logging-integration">Google Cloud Logging integration</a>.<br />
+Now, audit logs are stored and managed using more stable Google Cloud APIs.</p>
+<h4 id="low-performance-for-large-indices">Low performance for large indices</h4>
+<p>Performance of the previous implementation of the Data Catalog based on <code>ElasticSearch</code> could degrade with large indices due to various factors like improper shard allocation, high ingestion rates, and resource limitations.<br />
+In <strong><code>v0.20</code></strong>, the following measures were taken to avoid a performance decrease:</p>
+<ul>
+<li>Support of the multi node deployment for <code>ElasticSearch</code> on Google Kubernetes Engine is implemented.<br />
+    This offers several advantages - higher availability, scalability, and efficient resource utilization. By distributing <code>Elasticsearch</code> across multiple nodes within a cluster, Cloud Pipeline gains resilience against node failures, enabling search and catalog engine to remain operational even if one or more nodes go down. This distributed architecture also allows for horizontal scaling via adding more nodes to handle increased data volume and query load. That all allows to improve service performance.</li>
+<li>Ability to exclude files from indexing and search availability.</li>
+</ul>
+<p>The last measure reduces the amount of data the system needs to process, store, and update, thereby lowering resource consumption.<br />
+This improves query performance by keeping the index smaller and more efficient, focusing only on relevant, necessary data.<br />
+To exclude certain data from indexing, users can use the <strong>System Preference</strong> <strong><code>search.storage.elements.settings</code></strong>.<br />
+It has a format of <code>JSON</code> array. To exclude data from indexing, the following item shall be added to the preference value:</p>
+<pre><code class="language-json">{
+    &quot;storageName&quot;: &lt;STORAGE_NAME&gt;,
+    &quot;hiddenFilePathGlobs&quot;: [
+        &lt;GLOB1&gt;,
+        &lt;GLOB2&gt;,
+        ...
+    ]
+}
+</code></pre>
+<p>Where, <code>&lt;STORAGE_NAME&gt;</code> is an exact storage name or a wildcard for a storage name (e.g. "Home-Storage-*"), <code>&lt;GLOB&gt;</code> - path glob to a directory or a file within a storage, which will be hidden during the indexing.  </p>
+<blockquote>
+<p>In reality, hidden files are excluded from the index and search, but their total size is taken into account for the catalog engine, reducing the number of data files that will be in the index (not changing the total volume of files).<br />
+For example, if for a storage <code>"hiddenFilePathGlobs": ["temp/**"]</code> was configured, the following situation with this storage will be in terms of files availability for the search:</p>
+<pre><code>File                    Size    Hidden (not available for search)
+data/file1.txt          10G     false
+data/file2.txt          20G     false
+temp/file3.txt          15G     true
+temp/file4.txt          15G     true
+temp/interim/file5.txt  10G     true
+temp/interim/file6.txt  10G     true
+
+Total size:             80G
+Number of documents:    6
+</code></pre>
+<p>And for the catalog engine in terms of the index, hidden files will be like the one file without content but with the size of all hidden files matched that glob, i.e.:</p>
+<pre><code>File                    Size    Hidden (not available for search)
+data/file1.txt          10G     false
+data/file2.txt          20G     false
+.temp                   50G     true -&gt; no content
+
+Total size:             80G
+Number of documents:    3
+</code></pre>
+</blockquote>
+<h4 id="duplication-of-indices">Duplication of indices</h4>
+<p>From time to time, in the <code>ElasticSearch</code> database duplicated, unused or detached indices are occurred.<br />
+It may lead to wasting extra space, consuming more system resources, and slowing down query performance.</p>
+<p>To prevent such situation, in <strong><code>v0.20</code></strong>, extended clean up logic for indices was added to <code>ElasticSearch</code> agent service implementation.<br />
+This allows to easily remove identified duplicated, unused or detached indices from alias during the regular index management in automatic mode.</p>
+<h3 id="pipeline-execution-google-batch-integration">Pipeline execution: Google Batch integration</h3>
+<p>In the current version, the ability that extends Cloud Pipeline's main execution backend to run Nextflow pipelines on <a href="https://cloud.google.com/batch"><code>Batch</code></a> in Google Cloud deployment was added.</p>
+<p>From now on, to enable Batch using for Nextflow pipeline runs on GCP, it is enough to meet the following conditions:</p>
+<ul>
+<li>Nextflow pipeline based on Nextflow docker image shall be used for the run.</li>
+<li>In the <code>cluster.networks.config</code> System Preference, configuration section of the machine image, that is used for the running Nextflow pipelines, shall contain additional specification that includes GCP service account details:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowBatchGCP_01.png" /></li>
+<li><code>nextflow.config</code> of the pipeline shall contain special <code>google-batch</code> profile, that is used for the Nextflow pipeline run:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowBatchGCP_02.png" /></li>
+<li>Pipeline's <code>nextflow run</code> command shall use created <code>google-batch</code> profile:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowBatchGCP_03.png" /></li>
+</ul>
+<p>During the such pipeline run, Nextflow Batch execution logs will be diplayed in the console:<br />
+<img alt="CP_v.0.20_ReleaseNotes" src="../attachments/RN020_NextflowBatchGCP_04.png" /></p>
+<p>For more details, see <a href="../../../manual/06_Manage_Pipeline/6.6._Pre-packaged_pipelines/#running-nextflow-pipelines-on-batch-in-google-cloud">here</a>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../v.0.17/v.0.17_-_Release_notes/" class="btn btn-neutral float-left" title="v.0.17"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../../manual/Cloud_Pipeline_-_Manual/" class="btn btn-neutral float-right" title="Contents">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../v.0.17/v.0.17_-_Release_notes/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../../manual/Cloud_Pipeline_-_Manual/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

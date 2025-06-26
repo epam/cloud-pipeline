@@ -57,6 +57,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.20/v.0.20_-_Release_notes/">v.0.20</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">User guide</span></p>
               <ul class="current">
@@ -155,6 +157,8 @@
                 <li class="toctree-l2"><a class="reference internal" href="../6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.6._Pre-packaged_pipelines/">6.6. Pre-packaged pipelines</a>
                 </li>
     </ul>
                   </li>
@@ -256,6 +260,10 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/">11.6. Nextflow runs visualization</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -350,6 +358,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
@@ -400,19 +410,27 @@
                 </li>
     </ul>
                 </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
     </ul>
                 </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../../installation/management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
                   </li>
               </ul>
       </div>
@@ -539,15 +557,36 @@ To change default pipeline configuration:</p>
 <li>Now this will be the default pipeline configuration for the pipeline execution.</li>
 </ol>
 <h3 id="adddelete-storage-rules-optional">Add/delete storage rules (optional)</h3>
-<p>This section allows configuring what data will be transferred to an STS after pipeline execution.<br />
-To add a new rule:</p>
+<p><strong>STORAGE RULES</strong> section allows to configure which data from the pipeline output after pipeline execution:</p>
+<ul>
+<li>will be transferred to an STS</li>
+<li>will be displayed in the <a href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/#reports-tab"><strong>Reports tab</strong></a> of the pipeline <strong>Run details</strong> page</li>
+</ul>
+<p>To add a new rule:</p>
 <ol>
-<li>Click the <strong>Add new rule</strong> button. A pop-up will appear.<br />
+<li>Click the <strong>Add new rule</strong> button:<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_15.png" /></li>
-<li>Enter File mask and then tick the box "Move to STS" to move pipeline output data to STS after pipeline execution.<br />
-<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_16.png" /><br />
-<strong><em>Note</em></strong>: If many rules with different Masks are present all of them are checked one by one. If a file corresponds to any of rules - it will be uploaded to the bucket.</li>
-<li>To delete storage rule click the <strong>Delete</strong> button in the right part of the storage rule's row.</li>
+<li>Pop-up will appear:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_63.png" /></li>
+<li>Specify a value to the <strong>File mask</strong> field. This value will define a relative path to specific data inside <code>$ANALYSIS_DIR</code>, and all output data from the <code>$ANALYSIS_DIR</code> matching this mask will be uploaded to the STS after the pipeline execution.</li>
+<li>Tick the box <strong>Move to STS</strong>:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_64.png" /></li>
+<li>If you want that output data matching the <strong>File mask</strong> will be available in the <strong>Reports tab</strong> of the pipeline <strong>Run details</strong> page, tick the box <strong>Pipeline results</strong>. Please note, this checkbox enabling automatically ticks the <strong>Move to STS</strong> box, even if it is not ticked previously.</li>
+<li>Specify a value to the <strong>Name</strong> field. Please note, this field value is optional until the <strong>Pipeline results</strong> box is not ticked.</li>
+<li>Click the <strong>Create</strong> button:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_16.png" /></li>
+<li>Created rule will appear in the list:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_65.png" /></li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: if many rules with different masks are presented, each of them is checked one by one. If a file corresponds to any of rules - it will be uploaded to the bucket.</p>
+</blockquote>
+<p>To remove an existing rule:</p>
+<ol>
+<li>Click the <strong>Delete</strong> button in the storage rule's row, e.g.:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_66.png" /></li>
+<li>Confirm the deletion:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_67.png" /></li>
 </ol>
 <h2 id="edit-a-pipeline-info">Edit a pipeline info</h2>
 <p>To edit a pipeline info:</p>

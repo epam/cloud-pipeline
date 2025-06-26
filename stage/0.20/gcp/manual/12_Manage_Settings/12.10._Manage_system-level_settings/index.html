@@ -57,6 +57,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.20/v.0.20_-_Release_notes/">v.0.20</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">User guide</span></p>
               <ul class="current">
@@ -115,6 +117,8 @@
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.6._Pre-packaged_pipelines/">6.6. Pre-packaged pipelines</a>
                 </li>
     </ul>
                   </li>
@@ -215,6 +219,10 @@
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/">11.6. Nextflow runs visualization</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
                 </li>
     </ul>
                   </li>
@@ -362,6 +370,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
@@ -412,19 +422,27 @@
                 </li>
     </ul>
                 </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
     </ul>
                 </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../../installation/management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
                   </li>
               </ul>
       </div>
@@ -693,12 +711,20 @@
 <td>How often autoscaler checks what tasks are executed on each node (in milliseconds)</td>
 </tr>
 <tr>
-<td><strong><code>cluster.monitoring.elastic.minimal.interval</code></strong></td>
-<td></td>
+<td><strong><code>cluster.monitoring.elastic.intervals.number</code></strong></td>
+<td>A number of intervals in monitoring period by which metrics should be received. Any requested monitoring period will be divided on this number, and for each received interval metrics will be taken separately.<br>Related to metrics monitoring within <code>ElasticSearch</code></td>
 </tr>
 <tr>
-<td><strong><code>cluster.monitoring.elastic.intervals.number</code></strong></td>
-<td></td>
+<td><strong><code>cluster.monitoring.elastic.minimal.interval</code></strong></td>
+<td>Defines minimum interval (in seconds) between metrics taking. This interval duration will be used for metrics taking only in case when monitoring period divided on <code>cluster.monitoring.gcp.intervals.number</code> is smaller than this interval.<br>Related to metrics monitoring within <code>ElasticSearch</code></td>
+</tr>
+<tr>
+<td><strong><code>cluster.monitoring.gcp.intervals.number</code></strong></td>
+<td>A number of intervals in monitoring period by which metrics should be received. Any requested monitoring period will be divided on this number, and for each received interval metrics will be taken separately.<br>Related to metrics monitoring within <code>Google Cloud Monitoring</code></td>
+</tr>
+<tr>
+<td><strong><code>cluster.monitoring.gcp.minimal.interval</code></strong></td>
+<td>Defines minimum interval (in seconds) between metrics taking. This interval duration will be used for metrics taking only in case when monitoring period divided on <code>cluster.monitoring.gcp.intervals.number</code> is smaller than this interval.<br>Related to metrics monitoring within <code>Google Cloud Monitoring</code></td>
 </tr>
 <tr>
 <td><strong><code>cloud.provider.default</code></strong></td>
@@ -1093,12 +1119,44 @@
 </thead>
 <tbody>
 <tr>
+<td><strong><code>gcp.billing.account.id</code></strong></td>
+<td>GCP billing account ID. If it is set, GCP billing prices associated with the specific billing accoount will be retrieved (not default GCP prices)</td>
+</tr>
+<tr>
 <td><strong><code>gcp.sku.mapping</code></strong></td>
 <td></td>
 </tr>
 <tr>
 <td><strong><code>gcp.regions.list</code></strong></td>
 <td></td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.log.name</code></strong></td>
+<td>Logname for Google Cloud Logging</td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.sink.label.key</code></strong></td>
+<td>Key of the label that defines from where the log comes.<br>It is necessary for the Sink connector that redirects the log to <code>BigQuery</code></td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.sink.label.value</code></strong></td>
+<td>Value of the label that defines from where the log comes.<br>It is necessary for the Sink connector that redirects the log to <code>BigQuery</code></td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.bigquery.table.name</code></strong></td>
+<td>Specifies the <code>BigQuery</code> project table name</td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.bigquery.read.timeout.mills</code></strong></td>
+<td>Sets the read timeout (in milliseconds) for <code>BigQuery</code> read operations</td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.bigquery.connect.timeout.mills</code></strong></td>
+<td>Sets the connection timeout (in milliseconds) for the <code>BigQuery</code> client</td>
+</tr>
+<tr>
+<td><strong><code>gcp.logging.bigquery.max.bytes</code></strong></td>
+<td>Sets the maximum limit (in bytes) that could be fetched per request</td>
 </tr>
 </tbody>
 </table>
@@ -1350,6 +1408,10 @@
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong><code>misc.ai.preferences</code></strong></td>
+<td>Allows to configure GUI chatbot visualization and other settings</td>
+</tr>
 <tr>
 <td><strong><code>misc.metadata.sensitive.keys</code></strong></td>
 <td>Allows to specify the list of the metadata that will not be exported during the users export operation</td>

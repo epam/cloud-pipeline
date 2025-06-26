@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>11.6. Nextflow runs visualization - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "11.6. Nextflow runs visualization";
+        var mkdocs_page_input_path = "manual/11_Manage_Runs/11.6._Nextflow_runs_visualization.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.20/v.0.20_-_Release_notes/">v.0.20</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.6._Pre-packaged_pipelines/">6.6. Pre-packaged pipelines</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">11. Manage Runs</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">11.6. Nextflow runs visualization</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#general-information">General information</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#controls">Controls</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#run-details-tabset">Run details tabset</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#tasks-tab">Tasks tab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration-tab">Configuration tab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#logs-tab">Logs tab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#reports-tab">Reports tab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#launch-command-tab">Launch command tab</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#visualization-setup">Visualization setup</a>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="#">Cloud native</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" href="#">AWS</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>11. Manage Runs &raquo;</li>
+      <li>11.6. Nextflow runs visualization</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="visualization-of-nextflow-pipeline-execution">Visualization of Nextflow pipeline execution</h1>
+<ul>
+<li><a href="#general-information">General information</a></li>
+<li><a href="#controls">Controls</a></li>
+<li><a href="#run-details-tabset">Run details tabset</a><ul>
+<li><a href="#tasks-tab">Nextflow tasks</a><ul>
+<li><a href="#processes">Processes</a></li>
+<li><a href="#tasks-statuses">Tasks statuses</a></li>
+<li><a href="#tasks">Tasks</a><ul>
+<li><a href="#task-details">Task details</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#configuration-tab">Configuration</a><ul>
+<li><a href="#instance">Instance</a></li>
+<li><a href="#parameters">Parameters</a></li>
+</ul>
+</li>
+<li><a href="#logs-tab">Logs</a></li>
+<li><a href="#reports-tab">Reports</a><ul>
+<li><a href="#document-preview">Document preview</a></li>
+</ul>
+</li>
+<li><a href="#launch-command-tab">Launch command</a></li>
+</ul>
+</li>
+<li><a href="#visualization-setup">Visualization setup</a></li>
+</ul>
+<p><strong>Run logs</strong> page of the Cloud Pipeline platform allows to view different information about the run, e.g.:</p>
+<ul>
+<li>general run information</li>
+<li>instance info</li>
+<li>run parameters and their values</li>
+<li>list and timings of the separate tasks performed during the run execution</li>
+<li>detailed console output of the performed tasks</li>
+<li>etc.</li>
+</ul>
+<p>These details are displayed similarly for all runs - see <a href="../11._Manage_Runs/#run-information-page">Run logs</a> page for more information.<br />
+But for <a href="https://www.nextflow.io/">Nextflow</a> pipeline runs, this page has a different view and allows to view as mentioned and additional information:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_01.png" /></p>
+<p>This page consists of several sections:</p>
+<h2 id="general-information">General information</h2>
+<p>This section is located in the left-top corner of the page and displays general information about a pipeline run, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_02.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Field/Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>State icon</strong></td>
+<td>State of the run. Help tooltips are provided when hovering a run state icon, e.g.:<br /><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_03.png" /></td>
+</tr>
+<tr>
+<td><strong>Run ID</strong></td>
+<td>Unique ID of the run</td>
+</tr>
+<tr>
+<td><strong>Owner</strong></td>
+<td>Name of the user who started pipeline</td>
+</tr>
+<tr>
+<td><strong>Pipeline name</strong></td>
+<td>Name and version of the running pipeline</td>
+</tr>
+<tr>
+<td><strong>Endpoint</strong></td>
+<td>Endpoint hyperlink(s) for the interactive service(s) launched with the pipeline. For more details see <a href="../../15_Interactive_services/15._Interactive_services/">15. Interactive services</a>.<br>For example, here may be <code>SGEStat</code> endpoint to view SGE engine usage statistics (for corresponding runs).</td>
+</tr>
+<tr>
+<td><strong>SSH</strong></td>
+<td>Hyperlink to ssh to the running instance filesystem. See <a href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using Terminal access</a> for more details</td>
+</tr>
+<tr>
+<td><strong>BROWSE</strong></td>
+<td>Hyperlink to open the filesystem of the running instance in a Storage browser Web GUI - so the user can view, download, upload, delete files and folders for the current active run.<br>See <a href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a> for more details.</td>
+</tr>
+<tr>
+<td><strong>Timings</strong></td>
+<td>Time points when a pipeline was: <ul><li>scheduled</li><li>started</li><li>finished or current duration for active run</li></ul>Click the row for more details:<br><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_04.png" /></td>
+</tr>
+<tr>
+<td><strong>Estimated price</strong></td>
+<td>Price of the pipeline run according to its duration and selected instance type</td>
+</tr>
+</tbody>
+</table>
+<h2 id="controls">Controls</h2>
+<p>This section is located in the right-top corner of the page and includes a couple of controls that allow to manage the run lifecycle.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: completed and active runs have different controls.</p>
+</blockquote>
+<p>For example, controls of the running on-demand pipeline:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_05.png" /></p>
+<p>Possible controls in this section:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PAUSE</strong></td>
+<td>allows to pause a run (<em>only for <strong>On-demand</strong> non-cluster runs</em>)</td>
+</tr>
+<tr>
+<td><strong>RERUN</strong></td>
+<td>allows to rerun completed runs</td>
+</tr>
+<tr>
+<td><strong>RESUME</strong></td>
+<td>allows to resume a paused run (<em>only for <strong>On-demand</strong> non-cluster runs</em>)</td>
+</tr>
+<tr>
+<td><strong>STOP</strong></td>
+<td>allows to stop a running pipeline</td>
+</tr>
+<tr>
+<td><strong>TERMINATE</strong></td>
+<td>allows to terminate a compute node of the paused run without its resuming (<em>only for <strong>On-demand</strong> non-cluster runs</em>)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="run-details-tabset">Run details tabset</h2>
+<p>This section represents a set of tabs with all the main info about the pipeline run - Nextflow tasks and processes, run logs, instance info, run parameters and their values, detailed console output, etc.</p>
+<h3 id="tasks-tab">Tasks tab</h3>
+<p>Tab contains visualization of specific Nextflow pipeline execution details:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_17.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: this tab is opened by default for the Nextflow pipeline runs. Content of the tab is refreshed automatically during the pipeline execution.</p>
+</blockquote>
+<p>Tasks tab includes panel:</p>
+<ul>
+<li><a href="#processes"><strong>Processes</strong></a> - displays the full list of Nextflow run processes</li>
+<li><a href="#tasks-statuses"><strong>Tasks statuses</strong></a> - displays a summary over task statuses of all/selected processes</li>
+<li><a href="#tasks"><strong>Tasks</strong></a> - displays list of tasks of all/selected processes and allows to view:<ul>
+<li>CPU, memory, disk and other utilization per task</li>
+<li>command, metrics, and logs per task</li>
+</ul>
+</li>
+</ul>
+<h4 id="processes">Processes</h4>
+<p>This panel displays the full list of run processes and short summary over task statuses per each process:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_18.png" /></p>
+<p>Each process in the list is presented via the following items:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_19.png" /></p>
+<ul>
+<li><strong>Name</strong> (<strong>1</strong>) - full process name</li>
+<li><strong>Statuses summary</strong> (<strong>2</strong>) - short summary over the task statuses in the process. Includes a status icon and a count of the task with that status in the current process. If there are tasks with different statuses in the process - their summary is shown separately divided by <code>/</code> - e.g., 58 completed tasks and 6 failed: <img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_20.png" /></li>
+<li><strong>Statuses graph</strong> (<strong>3</strong>) - horizontal bar graph showing summary over the task statuses in the process. Each status is displayed in its own color</li>
+</ul>
+<p>Panel displays the total number of processes in the panel header.<br />
+You can filter the displayed processes list using the corresponding bar above the list, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_21.png" /></p>
+<p>By default, <strong>Tasks</strong> tab displays tasks and their statuses for all Nextflow processes.<br />
+You may view <a href="#tasks">Tasks</a> and <a href="#tasks-statuses">Tasks statuses</a> for a specific Nextflow process - click the process in the list and panels will correspondingly redrawn for only selected process tasks, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_22.png" /></p>
+<h4 id="tasks-statuses">Tasks statuses</h4>
+<p>This panel displays the list of task statuses of all/selected processes as an horizontal bar graph:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_23.png" /></p>
+<p>Each status in the list is presented via the following items:</p>
+<ul>
+<li><strong>Status name + icon</strong> - each status is displayed in its own color</li>
+<li><strong>Tasks count</strong> - number of tasks with this status in all/selected processes</li>
+<li><strong>Status graph</strong> - horizontal bar displaying ratio of tasks count with this status to the total count of tasks in all/selected processes. Bar is displayed in status own color</li>
+</ul>
+<h4 id="tasks">Tasks</h4>
+<p>This panel displays list of tasks and their metrics of all/selected processes as a table:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_24.png" /></p>
+<p>By default, panel displays the total number of tasks in all processes in the panel header.<br />
+If you select any <a href="#processes">process</a>, selected process name and the number of tasks in that selected process, and the total number of tasks in all processes (divided by <code>/</code>) will be shown in the panel header, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_25.png" /></p>
+<p>Table of task details contains the following columns:</p>
+<ul>
+<li><strong>##</strong> - task ID</li>
+<li><strong>Process</strong> - name of the Nextflow process to which the task belongs</li>
+<li><strong>Tag</strong> - user provided identifier associated with the task. Matches the task ID if not specified separately</li>
+<li><strong>Status</strong> - task status</li>
+<li><strong>Started</strong> - timestamp when task execution has started</li>
+<li><strong>Finished</strong> - timestamp when task execution has completed</li>
+<li><em>metrics</em> - different task metrics, including CPU and memory usage, realtime of the task execution, disk usage (read/write processes), etc.<br />
+    Description of possible task metrics you can find in the <a href="https://www.nextflow.io/docs/latest/reports.html#trace-fields">Nextflow documentation</a>.</li>
+</ul>
+<p>Tasks table supports sorting by <strong>Process</strong>, <strong>Tag</strong> and <strong>Status</strong> columns.<br />
+To sort the table by any of these columns, click its header. To sort in reverse order, click the column header again.</p>
+<p>Tasks table supports filtering by <strong>Tag</strong> and <strong>Status</strong> columns.<br />
+To filter the table by tag value:</p>
+<ul>
+<li>click the filter icon in the <strong>Tag</strong> column header</li>
+<li>specify the tag value by which you want to filter the table:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_26.png" /></li>
+<li>press Enter key, table will be filtered, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_27.png" /></li>
+</ul>
+<p>To filter the table by status value:</p>
+<ul>
+<li>click the filter icon in the <strong>Status</strong> column header</li>
+<li>select one or several statuses by which you want to filter the table</li>
+<li>table will be filtered automatically, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_28.png" /></li>
+</ul>
+<h5 id="task-details">Task details</h5>
+<p>By click any task in the list, task details will be opened in a separate pop-up, e.g.:</p>
+<ul>
+<li><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_29.png" /></li>
+<li><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_30.png" /></li>
+</ul>
+<p>This pop-up contains tabs:</p>
+<ul>
+<li><strong>Command</strong> (<em>see the image above</em>) - displays the command that is executed in the selected task</li>
+<li><strong>Metrics</strong> - displays all non-empty task metrics like CPU and memory usage, realtime of the task execution, disk usage, etc.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_31.png" /><br />
+    Description of possible metrics you can find in the <a href="https://www.nextflow.io/docs/latest/reports.html#trace-fields">Nextflow documentation</a>.</li>
+<li><strong>Task log</strong> - displays task execution logs, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_32.png" /></li>
+</ul>
+<h3 id="configuration-tab">Configuration tab</h3>
+<p>Tab contains details about the configuration used for the pipeline run and includes subsections:</p>
+<ul>
+<li>instance</li>
+<li>parameters</li>
+</ul>
+<p><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_06.png" /></p>
+<h4 id="instance">Instance</h4>
+<p>This subsection lists calculation node and execution environment details that were assigned to the run when it was launched, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_07.png" /></p>
+<blockquote>
+<p><strong><em>Notes</em></strong>:</p>
+<ul>
+<li>node IP is presented as a hyperlink. Click it if you want to navigate to the <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#node-information-page">node details</a>, where technical information and resources utilization is available.</li>
+<li>Docker image name is presented as a hyperlink. Click it if you want to navigate to a specific <a href="../../10_Manage_Tools/10._Manage_Tools/#description-tab">tool details</a> page.</li>
+</ul>
+</blockquote>
+<h4 id="parameters">Parameters</h4>
+<p>This subsection lists parameters and their values that were assigned to the run when it was launched, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_08.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: path parameters (with types <code>input</code>/<code>output</code>/<code>common</code>/<code>path</code>) are presented as hyperlinks. By click such hyperlinks, you will navigate to the appropriate location in datastorages hierarchy.</p>
+</blockquote>
+<p>By default, all parameters values are shown in the resolved view, i.e. in view that will be used directly in the run execution.<br />
+To view original (unresolved) parameter values, i.e. in view how these values were determined in the pipeline configuration before the launch, click the corresponding button in the bottom of the subsection, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_09.png" /><br />
+Original values view:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_10.png" /></p>
+<h3 id="logs-tab">Logs tab</h3>
+<p>Tab contains log details for all pipeline tasks (please not to be confused with Nextflow tasks).<br />
+These tasks are platform tasks related to the node initialization and run - like environment launch, mount of datastorages to the environment, accessory services setup, etc.</p>
+<p><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_11.png" /></p>
+<p>Here you can view console output from a whole pipeline or a selected task.<br />
+It also shows a run failure cause if a run failed.</p>
+<p>On the tab's left side, there is a list of all available tasks at the moment.<br />
+Click the task, to view its specific logs, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_12.png" /></p>
+<p>You can use the search bar above the task list, to filter tasks list, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_13.png" /></p>
+<p>By default, task timings are hidden. But you can show/hide them using the <strong><em>clock</em></strong> button above the tasks list, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_14.png" /></p>
+<p>To hide the tasks panel, use the corresponding button above the list.<br />
+When tasks are hidden, only console output is shown.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: the <strong>Follow log</strong> control in the right-top corner of the console section enables auto scrolling of the console output.<br>It is useful for logs monitoring. Follow log is enabled by default, tick the box to turn it off.<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_15.png" /></p>
+</blockquote>
+<h3 id="reports-tab">Reports tab</h3>
+<p>Tab contains a list of documents retrieved from the pipeline's output directory after the pipeline has completed:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_37.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: list includes only documents loaded whithin special <code>Pipeline Results</code> storage rules, that are defined in the pipeline settings.<br />
+For more details about pipeline storage rules see <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#storage-rules">here</a>.<br />
+How to add a <code>Pipeline Results</code> storage rule that will allow to display pipeline output data in the <strong>Reports</strong> tab, see <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#adddelete-storage-rules-optional">here</a>.</p>
+</blockquote>
+<p>Documents list is presented in a table view with the following columns:</p>
+<ul>
+<li><strong>Name</strong> - name of the <code>Pipeline Results</code> storage rule by which documents were loaded</li>
+<li><strong>Mask</strong> - path mask from the <code>Pipeline Results</code> storage rule which was used to extract current documents from the whole pipeline output</li>
+<li><strong>Path</strong> - list of full paths to documents loaded within the current <code>Pipeline Results</code> storage rule</li>
+</ul>
+<p>If the list of documents for a single rule is too large, only several first documents are shown, other documents will be hidden. To view them, click the corresponding control and the full documents list will appear in a tooltip, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_38.png" /></p>
+<p>Table supports sorting by <strong>Name</strong> and <strong>Mask</strong> columns.<br />
+To sort the table by any of these columns, click its header. To sort in reverse order, click the column header again.</p>
+<h4 id="document-preview">Document preview</h4>
+<p>Each path in the documents table is presented as a hyperlink - by click it, a corresponding document will be opened in a preview pop-up.  </p>
+<p>This pop-up includes:</p>
+<ul>
+<li>details section with fields/controls:<ul>
+<li><strong>Name</strong> - label with the name of the <code>Pipeline Result</code> storage rule by which that document was loaded</li>
+<li><strong>Path</strong> - label with the full path to the document in the datastorage</li>
+<li><strong>Open in a new tab</strong> (<em>only for <code>HTML</code> documents</em>) - button to open the document in a new tab</li>
+<li><strong>Download file</strong> - button to download the document as a raw file to the local workstation</li>
+</ul>
+</li>
+<li>preview section - main section with the document preview. According to the document type, view can vary:<ul>
+<li><code>HTML</code> - report document is displayed as a formatted HTML-page inside a frame, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_39.png" /></li>
+<li><code>PNG</code> - report document is displayed as an image, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_42.png" /></li>
+<li><code>CSV</code> / <code>TSV</code> - report document is displayed as a formatted table, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_40.png" /></li>
+<li><code>JSON</code> - report document is displayed as a formatted JSON, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_41.png" /></li>
+<li>other text files - report document is displayed a plain text, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_43.png" /></li>
+<li>binary files - notification is shown about the impossibility of previewing, e.g.:
+    <img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_44.png" /></li>
+</ul>
+</li>
+</ul>
+<h3 id="launch-command-tab">Launch command tab</h3>
+<p>Tab allows to view the prepared CLI <code>pipe run</code> command/API POST request that can be used to run the identical pipeline as the current one.</p>
+<p><img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_16.png" /></p>
+<p>Tab contains subtabs:</p>
+<ul>
+<li><strong>CLI - Windows</strong> - to get prepared <code>pipe run</code> CLI command for a pipeline launch for Windows OS</li>
+<li><strong>CLI - Linux</strong> - to get prepared <code>pipe run</code> CLI command for a pipeline launch for Linux OS</li>
+<li><strong>API</strong> - to get prepared API POST request for a pipeline launch</li>
+</ul>
+<hr />
+<h2 id="visualization-setup">Visualization setup</h2>
+<blockquote>
+<p>User shall have <strong>ROLE_ADMIN</strong> to perform configuration described in the current section.</p>
+</blockquote>
+<p>Above described behavior and view of the <strong>Run logs</strong> page (<em>Nextflow-mode</em>) could be pre-configured during the platform deployment.<br />
+It is not a default setting for all runs, this mode is automatically enabled only for launching Nextflow runs - in case, when Nextflow Docker image including the additional component <code>nf-weblog-handler</code> is deployed to the platform.<br />
+This handler can utilize Nextflow feature <code>-with-weblog</code> to redirect events to Cloud Pipeline <code>run/{runId}/engine/tasks</code> API.</p>
+<p>If necessary, ability to enable the <em>Nextflow-mode</em> for any pipeline/tool run can be configured manually:</p>
+<ul>
+<li>Open <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/"><strong>System Preferences</strong></a>.</li>
+<li>Find <code>launch.run.sync.runtime.data</code> system preference that allows to configure data runtime synchronization for the run.</li>
+<li>Add new value to this system preference specifying paths where to store the Nextflow trace (<code>NF_TRACE</code>) and task logs (<code>NF_TASK</code>), and make preference visible:</li>
+</ul>
+<pre><code class="language-json">{
+    &quot;syncTimeout&quot;: 60,
+    &quot;data&quot;: {
+        &quot;NF_TRACE&quot;: {
+            &quot;runFolderPathPrefix&quot;: &quot;&lt;storage_folder_path&gt;&quot;
+        },
+        &quot;NF_TASK&quot;: {
+            &quot;runFolderPathPrefix&quot;: &quot;&lt;storage_folder_path&gt;&quot;,
+            &quot;dataPathPrefix&quot;: &quot;workdir&quot;
+        }
+    }
+}
+</code></pre>
+<ul>
+<li>Save changes, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_34.png" /></li>
+<li>Find <code>launch.capabilities</code> system preference that allows to create custom run capabilities.</li>
+<li>Add new capability in this system preference, and make it visible:</li>
+</ul>
+<pre><code class="language-json">&quot;NF_EVENT_HANDLER&quot;: {
+    &quot;description&quot;: &quot;Enables Nextflow WebLog event handler.&quot;,
+    &quot;commands&quot;: [
+        &quot;[ -f /opt/nf-weblog-handler/nf-weblog-handler.sh ] &amp;&amp; /opt/nf-weblog-handler/nf-weblog-handler.sh --start --enable-runtime-data -p $CP_NF_WEBLOG_HANDLER_PORT || exit 1&quot;
+    ],
+    &quot;params&quot;: {
+        &quot;CP_SYNC_TO_STORAGE_BATCH_MODE&quot;: &quot;1&quot;,
+        &quot;CP_RUN_ENGINE_TYPE&quot;: &quot;NEXTFLOW&quot;,
+        &quot;CP_NF_WEBLOG_HANDLER_ENABLED&quot;: &quot;1&quot;,
+        &quot;CP_NF_WEBLOG_HANDLER_PORT&quot;: &quot;8080&quot;,
+        &quot;CP_NF_WEBLOG_HANDLER_LOG_FILE&quot;: &quot;/var/log/nf_weblog_handler.log&quot;
+    }
+}
+</code></pre>
+<ul>
+<li>Save changes:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_33.png" /></li>
+</ul>
+<p>After that, user can easily enable <em>Nextflow-mode</em> for the run:</p>
+<ol>
+<li>For the particular tool or pipeline, select <code>NF_EVENT_HANDLER</code> capability before the run:
+    <img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_35.png" /></li>
+<li>Launch workload and Nextflow wrapper will automatically start using it, even for non-Nextflow Docker images, e.g.:<br />
+<img alt="CP_NextflowVisualization" src="../attachments/NextflowVisualization_36.png" /></li>
+</ol>
+<blockquote>
+<p>For more details about Docker configuration to enable Nextflow visualization see <a href="https://github.com/epam/cloud-pipeline/blob/develop/deploy/docker/cp-tools/base/nextflow/howto.md">here</a>.</p>
+</blockquote>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../11.5._Archive_runs/" class="btn btn-neutral float-left" title="11.5. Archive completed runs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../11.7._Plugins_framework/" class="btn btn-neutral float-right" title="11.7. GUI plugins for run pages">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../11.5._Archive_runs/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../11.7._Plugins_framework/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

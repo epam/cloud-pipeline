@@ -57,6 +57,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.20/v.0.20_-_Release_notes/">v.0.20</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">User guide</span></p>
               <ul class="current">
@@ -85,6 +87,12 @@
     <li class="toctree-l3"><a class="reference internal" href="#settings">Settings</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#search">Search</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#billing">Billing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#chatbot">Chatbot</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#notifications">Notifications</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#logout">Logout</a>
     </li>
@@ -139,6 +147,8 @@
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.6._Pre-packaged_pipelines/">6.6. Pre-packaged pipelines</a>
                 </li>
     </ul>
                   </li>
@@ -240,6 +250,10 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.6._Nextflow_runs_visualization/">11.6. Nextflow runs visualization</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.7._Plugins_framework/">11.7. GUI plugins for run pages</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -334,6 +348,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
@@ -384,19 +400,27 @@
                 </li>
     </ul>
                 </li>
+                <li class="toctree-l3"><a class="reference internal" href="#">GCP</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/gcp/terraform/">Terraform</a>
+                </li>
+    </ul>
+                </li>
     </ul>
                 </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
     <ul>
-                <li class="toctree-l2"><a class="" href="../../../installation/management/environments_sync.md">Environments sync</a>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
                 </li>
     </ul>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/change_kube_certificates.md">Change Kubernetes certificates</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
                   </li>
-                  <li class="toctree-l1"><a class="" href="../../../installation/support_windows_runs.md">Support Windows runs</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/plugins_development/">GUI plugins development</a>
                   </li>
               </ul>
       </div>
@@ -434,32 +458,38 @@
 <li><a href="#runs">Runs</a></li>
 <li><a href="#settings">Settings</a></li>
 <li><a href="#search">Search</a></li>
+<li><a href="#billing">Billing</a></li>
+<li><a href="#chatbot">Chatbot</a></li>
+<li><a href="#notifications">Notifications</a></li>
 <li><a href="#logout">Logout</a></li>
 </ul>
 </li>
 </ul>
 <h2 id="user-journey-in-a-nutshell">User Journey in a nutshell</h2>
-<p><strong>Cloud Pipeline (CP)</strong> is a cloud-based web application which allows users to solve a wide range of analytical tasks and includes:</p>
+<p><strong>Cloud Pipeline</strong> is a cloud-based web application which allows users to solve a wide range of analytical tasks and includes:</p>
 <ul>
 <li><strong>Data processing</strong>: you can create data processing pipelines and run them in the cloud in an automated way.</li>
-<li><strong>Data storing</strong>: create your data storage, download or upload data from it or edit text files within <strong>CP</strong> UI. File version control is supported.</li>
+<li><strong>Data storing</strong>: create your data storage, download or upload data from it or edit text files within <strong>Cloud Pipeline</strong> UI. File version control is supported.</li>
 <li><strong>Tool management</strong>: you can create and deploy your own calculation environment using Docker's container concept.</li>
 </ul>
 <p>This Manual is mostly around data processing lifecycle which, in a nutshell, can be described in these several steps:</p>
 <ol>
-<li>To run a user's calculation script it shall be registered in <strong>CP</strong> as a <strong>pipeline</strong>. The script could be created in <strong>CP</strong> environment or uploaded from the local machine. See more details <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6. Manage Pipeline</a>.<br />
+<li>To run a user's calculation script it shall be registered in <strong>Cloud Pipeline</strong> as a <strong>pipeline</strong>. The script could be created in <strong>Cloud Pipeline</strong> environment or uploaded from the local machine. See more details <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6. Manage Pipeline</a>.<br />
 <strong><em>Note</em></strong>: If you need to run a pipeline in different environments simultaneously or set a specific type of data, you can use detach configuration object. See more <a href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7. Manage Detached configuration</a>.</li>
-<li>To store pipeline's inputs and outputs data files the <strong>Data Storage</strong> shall be determined in <strong>CP</strong>. Learn more <a href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8. Manage Data Storage</a>.</li>
-<li>Almost every pipeline requires a specific package of software to run it, which is defined in a docker image. So when a user starts a pipeline, <strong>CP</strong> starts a new cloud instance (nodes) and runs a docker image at it. See more details <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage Cluster nodes</a> and <a href="../../10_Manage_Tools/10._Manage_Tools/">10. Manage Tools</a>.</li>
-<li>When the environment is set, pipeline starts execution. A user in <strong>CP</strong> can change and save configurations of the run. Learn more <a href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a pipeline</a>.</li>
-<li>A user can monitor the status of active and completed runs and usage of active instances in <strong>CP</strong>. Learn more <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a> and <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage Cluster nodes</a>.</li>
+<li>To store pipeline's inputs and outputs data files the <strong>Data Storage</strong> shall be determined in <strong>Cloud Pipeline</strong>. Learn more <a href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8. Manage Data Storage</a>.</li>
+<li>Almost every pipeline requires a specific package of software to run it, which is defined in a docker image. So when a user starts a pipeline, <strong>Cloud Pipeline</strong> starts a new cloud instance (nodes) and runs a docker image at it. See more details <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage Cluster nodes</a> and <a href="../../10_Manage_Tools/10._Manage_Tools/">10. Manage Tools</a>.</li>
+<li>When the environment is set, pipeline starts execution. A user in <strong>Cloud Pipeline</strong> can change and save configurations of the run. Learn more <a href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a pipeline</a>.</li>
+<li>A user can monitor the status of active and completed runs and usage of active instances in <strong>Cloud Pipeline</strong>. Learn more <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a> and <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage Cluster nodes</a>.</li>
 </ol>
-<p><strong><em>Note</em></strong>: <strong>CP</strong> can run a docker image at instance without any pipeline at all if needed. There just will be an instance with some installed and running software. A user can SSH to it or use it in the interactive mode.</p>
-<p>Also, <strong>CP</strong> supports CLI, which duplicates some of GUI features and has extra features unavailable via GUI, such as automation of interaction with <strong>CP</strong> during the pipeline script running, or uploading considerable amount of data (more than 5 Gb), etc. The basics of CLI you can learn <a href="../../14_CLI/14._Command-line_interface/">here</a>.</p>
+<p><strong><em>Note</em></strong>: <strong>Cloud Pipeline</strong> can run a docker image at instance without any pipeline at all if needed. There just will be an instance with some installed and running software. A user can SSH to it or use it in the interactive mode.</p>
+<p>Also, <strong>Cloud Pipeline</strong> supports CLI, which duplicates some of GUI features and has extra features unavailable via GUI, such as automation of interaction with <strong>Cloud Pipeline</strong> during the pipeline script running, or uploading considerable amount of data (more than 5 Gb), etc. The basics of CLI you can learn <a href="../../14_CLI/14._Command-line_interface/">here</a>.</p>
 <p><img alt="CP_Overview" src="../attachments/Overview_1.png" /></p>
 <h2 id="gui-menu-tab-bar">GUI menu tab bar</h2>
-<p>There are several menu tabs at the left edge of <strong>CP</strong> window.<br />
+<p>There are several items in the main menu at the left side of the <strong>Cloud Pipeline</strong> window:<br />
 <img alt="CP_Overview" src="../attachments/Overview_2.png" /></p>
+<blockquote>
+<p>Please note, some menu items may be hidden in certain deployment or be unavailable for users due to their roles and permissions.</p>
+</blockquote>
 <h3 id="home">Home</h3>
 <p><strong>Home</strong> space is opened by default when Cloud Pipeline is loaded. It provides "personal" and often-used information for a user.<br />
 By default, this dashboard shows 3 widgets:</p>
@@ -487,7 +517,7 @@ Learn more about <strong>Home</strong> tab <a href="../../18_Home_page/18._Hom
 <p>The tab consists of two panels:</p>
 <ul>
 <li><strong>"Hierarchy"</strong> view (see the picture below, <strong>2</strong>) displays a hierarchical-structured list of pipelines, folders, storages and machine configurations, etc.<br />
-    Use the "<strong>Search</strong>" field to find a <strong>CP</strong> object by a name.
+    Use the "<strong>Search</strong>" field to find a <strong>Cloud Pipeline</strong> object by a name.
     "<strong>Collapse/Expand</strong>" button (see the picture below, <strong>1</strong>) at the bottom-left corner of the screen: use it to collapse or expand <strong>"Hierarchy"</strong> view.</li>
 <li><strong>"Details"</strong> view (see the picture below, <strong>3</strong>) shows details of a selected item in hierarchy panel. Depends on a selected type of object it has a very different view. You can learn about each on respective pages of the manual.</li>
 </ul>
@@ -498,21 +528,36 @@ Learn more about <strong>Home</strong> tab <a href="../../18_Home_page/18._Hom
 <h3 id="tools">Tools</h3>
 <p><strong>Tools</strong> space displays available Docker images and their tools, organized in tool groups and docker registries. You can edit information about them and run nodes with any Docker image in this tab. See more details <a href="../../10_Manage_Tools/10._Manage_Tools/">10. Manage Tools</a>.</p>
 <h3 id="runs">Runs</h3>
-<p>This space helps you monitor the state of your run instances. You can get parameters and logs of a specific run, stop a run, rerun a completed run. Learn more <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a>.</p>
+<p>This space helps you monitor the state of your run instances. You can get parameters and logs of a specific run, stop a run, rerun a completed run. Learn more in <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a>.</p>
 <h3 id="settings">Settings</h3>
 <p>This tab opens a <strong>Settings</strong> window which allows:</p>
 <ul>
-<li>generate a CLI installation and configuration commands to set CLI for <strong>CP</strong>,</li>
+<li>generate a CLI installation and configuration commands to set CLI for <strong>Cloud Pipeline</strong>,</li>
 <li>manage system events notifications,</li>
 <li>manage roles and permissions.</li>
 </ul>
-<p>See more details <a href="../../12_Manage_Settings/12._Manage_Settings/">12. Manage Settings</a>.</p>
+<p>See more details in <a href="../../12_Manage_Settings/12._Manage_Settings/">12. Manage Settings</a>.</p>
 <h3 id="search">Search</h3>
-<p>It's a search field which allows searching specific runs by its "Run ID" or "Parameters".</p>
+<p>This menu allows to open the search form - to find any platform data and objects.<br />
+See more details in <a href="../../19_Search/19._Global_search/">19. Global Search</a>.</p>
+<h3 id="billing">Billing</h3>
+<p>This menu item allows to view the information on the platform's compute and storage costs - in the form of various types of reports.<br />
+See more details in <a href="../../Appendix_D/Appendix_D._Costs_management/#billing-reports">Appendix D. Costs management</a>.</p>
+<h3 id="chatbot">Chatbot</h3>
+<p>This menu allows to open the platform-integrated AI-powered chatbot, enabling users to perform the following tasks:</p>
+<ul>
+<li>obtain help on the use of platform features</li>
+<li>assist with the data search, analysis and workflows launch</li>
+</ul>
+<p>See more details in <a href="../../20_Chatbot/20._Chatbot/">20. Chatbot</a>.</p>
+<h3 id="notifications">Notifications</h3>
+<p>All email notifications, that are sending by <strong>Cloud Pipeline</strong> platform to users (for various events - see the full list <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">here</a>), are also duplicated as push notifications.<br />
+This menu allows to view all notifications sent to the current user right in the platform GUI.</p>
+<p>See more details in <a href="../../12_Manage_Settings/12.9._Change_email_notification/#push-notifications">12.9 Email Notifications</a>.</p>
 <h3 id="logout">Logout</h3>
 <p>This is a <strong>Logout</strong> button which logs you out.<br />
 <strong><em>Note</em></strong>: if automatic logging-in is configured, you will be re-logged at once.<br />
-<strong><em>Note</em></strong>: if any changes occur in the <strong>CP</strong> application during an authorized session, the changes are applied after re-login.</p>
+<strong><em>Note</em></strong>: if any changes occur in the <strong>Cloud Pipeline</strong> application during an authorized session, the changes are applied after re-login.</p>
               
             </div>
           </div><footer>
