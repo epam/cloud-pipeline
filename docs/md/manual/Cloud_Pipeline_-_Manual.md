@@ -102,6 +102,7 @@
     - [17.1. Faceted filters search using tags](17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md)
 - [18. Home page](18_Home_page/18._Home_page.md)
 - [19. Global search](19_Search/19._Global_search.md)
+- [20. Chatbot](20_Chatbot/20._Chatbot.md)
 - [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)
 - [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)
 - [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
@@ -163,8 +164,11 @@ Learn how to manage custom sets of "key-values" attributes for data storage 
 [18. Home page](18_Home_page/18._Home_page.md)  
 Get details about homepage widgets, how to configure homepage view.
 
-[19. Global search](19_Search/19._Global_search.md)
+[19. Global search](19_Search/19._Global_search.md)  
 How to search objects over the Platform.
+
+[20. Chatbot](20_Chatbot/20._Chatbot.md)  
+How to use integrated AI-chatbot to obtain help on the platform features' use and assist with the data analysis and worflows launch.
 
 [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)  
 Learn basics about instance and Docker container lifecycle.

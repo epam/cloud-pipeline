@@ -131,6 +131,7 @@ nav:
     - 17.1. Faceted filters search using tags: 'manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md'
   - 18. Home page: 'manual/18_Home_page/18._Home_page.md'
   - 19. Global search: 'manual/19_Search/19._Global_search.md'
+  - 20. Chatbot: 'manual/20_Chatbot/20._Chatbot.md'
   - Appendix A. Instance and Docker container lifecycles: 'manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md'
   - Appendix B. Working with a Project: 'manual/Appendix_B/Appendix_B._Working_with_a_Project.md'
   - Appendix C. Working with autoscaled cluster runs: 'manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md'

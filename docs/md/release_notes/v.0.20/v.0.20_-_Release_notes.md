@@ -3,6 +3,7 @@
 - [Visualization of Nextflow pipeline execution](#visualization-of-nextflow-pipeline-execution)
 - [Visualization of genomics pipeline results](#visualization-of-genomics-pipeline-results)
 - [GUI plugins framework](#gui-plugins-framework)
+- [Gemini Integration: platform's chatbot](#gemini-integration-platforms-chatbot)
 - [Pre-packaged pipelines for genomics](#pre-packaged-pipelines-for-genomics)
     - [Rnaseq](#rnaseq)
     - [Scrnaseq](#scrnaseq)
@@ -109,6 +110,44 @@ GUI plugins framework implies the following usage workflow:
     ![CP_v.0.20_ReleaseNotes](attachments/RN020_Plugins_3.png)
 
 For more details and example see [here](../../manual/11_Manage_Runs/11.7._Plugins_framework.md).
+
+## Gemini Integration: platform's chatbot
+
+Currently, Cloud Pipeline platform is quite large and has a lot of functionality.  
+There is a scope of the documentation that describes platform features and can help users to perform some tasks.  
+But sometimes it could be difficult to find exactly necessary manual or execute a task without special experience.  
+
+To address these diffuculties, in the current version, an AI-powered chatbot (based on [Gemini LLM](https://deepmind.google/models/gemini/)) was integrated to the platform, enabling users to ask questions about the platform usage or request assistance in launching certain jobs.
+
+Chatbot is being opened from the main sidebar and looks like this when started:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_1.png)
+
+To start a conversation, user should specify a question and click the **submit** button (or press the _Enter_ key).  
+Once the request is submitted, chatbot starts the analysis of the submitted request, then generates the response and outputs it to the chat content form, e.g.:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_2.png)
+
+In addition to the general text responses, chatbot may generate:
+
+- "how-to" instructions and platform-reference information based on the documentation, e.g.:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_3.png)  
+    Such responses may include formatted text and hyperlinks to the platform documentation.
+- information based on the content from Issues of the platform's [GitHub page](https://github.com/epam/cloud-pipeline) - in cases, when user requests help on the corresponding platform features that were mentioned in such Issues, e.g.:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_4.png)  
+    Such responses may include formatted text and hyperlinks to the GitHub Issues.
+- when the chatbot recognizes a request to perform a task (launch a pipeline/tool), the response contains the prepared "card" that allows to launch a task, e.g.:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_5.png)  
+    Such "card" contains:  
+    - object (tool/pipeline) name and version
+    - **Environment** section that shows main execution settings that will be used for the run
+    - **Parameters** section that shows all task parameters and their values
+    - button to confirm task execution  
+    User can ask the chatbot to correct something in settings/parameters of the suggested task execution, e.g.:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_6.png)  
+    When all settings/parameters are configured, user can click the **Launch** button to submit job execution.  
+    Once the launch is confirmed, corresponding information will appear as a response from the chatbot - this response includes state and ID of the launched task, e.g.:  
+    ![CP_v.0.20_ReleaseNotes](attachments/RN020_Chatbot_7.png)
+
+For more details and examples of the chatbot using, see [here](../../manual/20_Chatbot/20._Chatbot.md).
 
 ## Pre-packaged pipelines for genomics
 
