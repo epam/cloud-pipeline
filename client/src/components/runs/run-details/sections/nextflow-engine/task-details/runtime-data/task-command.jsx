@@ -91,6 +91,7 @@ function TaskCommand (props) {
       {...props}
       component={Renderer}
       detailsType="command"
+      reload={false}
       passErrorToContent
     />
   );
