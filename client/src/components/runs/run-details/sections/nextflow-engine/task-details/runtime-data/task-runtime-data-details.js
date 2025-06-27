@@ -200,6 +200,7 @@ const TaskRuntimeDataDetailsProps = {
     'run',
     'begin'
   ]),
+  passErrorToContent: PropTypes.bool,
   reload: PropTypes.oneOfType([PropTypes.bool, PropTypes.number])
 };
 
@@ -207,7 +208,8 @@ TaskRuntimeDataDetails.propTypes = {
   ...TaskRuntimeDataDetailsProps,
   component: PropTypes.func,
   errorMessage: PropTypes.string,
-  errorMessageRunning: PropTypes.string
+  errorMessageRunning: PropTypes.string,
+  passErrorToContent: PropTypes.bool
 };
 
 export {TaskRuntimeDataDetails, TaskRuntimeDataDetailsProps};

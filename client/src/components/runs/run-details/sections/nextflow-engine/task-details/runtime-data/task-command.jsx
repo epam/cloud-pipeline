@@ -82,7 +82,8 @@ Renderer.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   task: PropTypes.object,
-  data: PropTypes.string
+  data: PropTypes.string,
+  passErrorToContent: PropTypes.bool
 };
 
 function TaskCommand (props) {
