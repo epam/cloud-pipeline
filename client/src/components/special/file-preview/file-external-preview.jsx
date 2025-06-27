@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import {Button} from 'antd';
 import {getStorageLinkInfo} from '../data-storage-link/utilities';
 import {getStaticResourceUrl} from '../../../models/static-resources';
+import {externalPreviewConfiguration} from './utils';
 
 @inject('preferences', 'dataStorageAvailable')
 @observer
@@ -12,6 +13,12 @@ class FileExternalPreview extends React.Component {
   state = {
     info: undefined
   };
+
+  get previewConfiguration () {
+    const {filePath} = this.props;
+    const {configuration} = externalPreviewConfiguration(filePath);
+    return configuration || {};
+  }
 
   componentDidMount () {
     this.updateFileInfo();
@@ -62,13 +69,17 @@ class FileExternalPreview extends React.Component {
       event.preventDefault();
     }
     const {info} = this.state;
+    const {url, internalUrl} = this.previewConfiguration;
     const {
       storage,
       relativePath
     } = info ?? {};
+    if (url && internalUrl) {
+      window.open(`/#/${url}`, '_blank');
+      return;
+    }
     if (storage && relativePath) {
-      const url = getStaticResourceUrl(storage.name, relativePath);
-      window.open(url, '_blank');
+      window.open(url || getStaticResourceUrl(storage.name, relativePath), '_blank');
     }
   };
 
@@ -91,12 +102,17 @@ class FileExternalPreview extends React.Component {
       relativePath,
       storage
     } = info || {};
+    const {alwaysAvailable} = this.previewConfiguration;
     if (!relativePath || !storage) {
       return null;
     }
     const externalPreviewAvailable = preferences.dataStorageItemPreviewMasks
       .some(mask => mask.test(relativePath));
-    if (checkPreviewAvailability && !externalPreviewAvailable) {
+    if (
+      !alwaysAvailable &&
+      checkPreviewAvailability &&
+      !externalPreviewAvailable
+    ) {
       return null;
     }
     if (/^link$/i.test(mode)) {

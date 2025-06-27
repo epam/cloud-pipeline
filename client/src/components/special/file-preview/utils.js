@@ -73,3 +73,25 @@ export async function getFilePreviewConfiguration (filePath) {
     path: relativePath
   };
 }
+
+export function externalPreviewConfiguration (filePath) {
+  const info = getStorageLinkInfo({
+    path: filePath,
+    storages: dataStorageAvailable.value ?? [],
+    isFolder: false
+  });
+  const {
+    storage,
+    relativePath
+  } = info ?? {};
+  const ext = filePath.split('.').pop().toLowerCase();
+  let renderer = renderers.find((renderer) =>
+    typeof renderer.testExtension === 'function' &&
+    renderer.testExtension(ext));
+  const configuration = renderer.getPreviewConfiguration
+    ? renderer.getPreviewConfiguration({storage, relativePath})
+    : null;
+  return {
+    configuration
+  };
+}
