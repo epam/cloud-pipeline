@@ -20,3 +20,8 @@ table.runtime-metrics-table {
 .task-command-code-editor {
   border: none;
 }
+
+.error-component-container {
+  display: flex;
+  flex: 1 0;
+}

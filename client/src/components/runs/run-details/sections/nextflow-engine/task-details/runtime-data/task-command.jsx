@@ -9,11 +9,12 @@ function Renderer (props) {
     className,
     style,
     data,
-    task
+    task,
+    errorComponent
   } = props;
   const {attributes = {}} = task || {};
   const {workdir, env = ''} = attributes || {};
-  const envs = env.split(/\s/)
+  const envs = (env || '').split(/\s/)
     .map((o) => o.trim())
     .filter((o) => o.length > 0)
     .map((o) => {
@@ -27,7 +28,11 @@ function Renderer (props) {
   return (
     <div
       className={className}
-      style={style}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        ...style
+      }}
     >
       <table className={styles.runtimeMetricsTable}>
         <tbody>
@@ -57,11 +62,18 @@ function Renderer (props) {
           }
         </tbody>
       </table>
-      <CodeEditor
-        className={styles.taskCommandCodeEditor}
-        code={data}
-        readOnly
-      />
+      {errorComponent ? (
+        <div className={styles.errorComponentContainer}>
+          {errorComponent}
+        </div>
+      ) : null}
+      {!errorComponent ? (
+        <CodeEditor
+          className={styles.taskCommandCodeEditor}
+          code={data}
+          readOnly
+        />
+      ) : null}
     </div>
   );
 }
@@ -79,7 +91,7 @@ function TaskCommand (props) {
       {...props}
       component={Renderer}
       detailsType="command"
-      reload={false}
+      passErrorToContent
     />
   );
 }

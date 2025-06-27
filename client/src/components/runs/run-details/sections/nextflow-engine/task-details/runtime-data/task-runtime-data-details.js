@@ -127,7 +127,8 @@ class TaskRuntimeDataDetails extends React.Component {
       component,
       errorMessage = NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,
       errorMessageRunning = NO_DATA_AVAILABLE_RUNNING_JOB_MESSAGE,
-      run
+      run,
+      passErrorToContent = false
     } = this.props;
     if (!task) {
       return null;
@@ -156,26 +157,31 @@ class TaskRuntimeDataDetails extends React.Component {
         </div>
       );
     }
-    if (error || !data) {
-      return (
-        <div
-          className={classNames(className)}
-          style={style}
-        >
-          <div className={styles.runtimeDataStateContainer}>
-            <div style={{display: 'flex', alignItems: 'center'}}>
-              <Alert
-                type="warning"
-                message={completed ? errorMessage : errorMessageRunning}
-              />
-            </div>
+    const errorComponent = error || !data ? (
+      <div
+        className={classNames(className)}
+        style={style}
+      >
+        <div className={styles.runtimeDataStateContainer}>
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <Alert
+              type="warning"
+              message={completed ? errorMessage : errorMessageRunning}
+            />
           </div>
         </div>
-      );
+      </div>
+    ) : null;
+    if (!passErrorToContent && errorComponent) {
+      return errorComponent;
     }
     return React.createElement(
       component,
-      {...this.props, data}
+      {
+        ...this.props,
+        data,
+        ...(passErrorToContent && errorComponent ? {errorComponent} : {})
+      }
     );
   }
 }
