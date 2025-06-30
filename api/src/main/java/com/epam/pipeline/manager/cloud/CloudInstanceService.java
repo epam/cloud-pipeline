@@ -27,7 +27,9 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +49,13 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     Logger log = LoggerFactory.getLogger(AutoscalerServiceImpl.class);
     int TIME_DELIMITER = 60;
     int TIME_TO_SHUT_DOWN_NODE = 1;
+
+    default Map<String, String> getPoolLabels(final NodePool pool) {
+        final Map<String, String> instanceLabels = new HashMap<>();
+        instanceLabels.put(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
+        instanceLabels.putAll(MapUtils.emptyIfNull(pool.getKubeLabels()));
+        return instanceLabels;
+    }
 
     /**
      * Creates new instance using specified cloud and adds it to cluster
