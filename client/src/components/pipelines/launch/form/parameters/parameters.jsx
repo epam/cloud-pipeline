@@ -8,7 +8,7 @@ import LoadingView from '../../../../special/LoadingView';
 import {
   hasResolvedValues,
   isCapabilityParameter,
-  isGPUScalingParameter,
+  isGPUScalingParameter, isReservationRequestParameter,
   isReservedParameter,
   mapSystemParameter, toggleResolvedValues
 } from '../utilities/parameter-utilities';
@@ -155,6 +155,7 @@ class Parameters extends Component {
         ? parameter.system &&
         !isReservedParameter(parameter.name) &&
         !isCapabilityParameter(parameter.name) &&
+        !isReservationRequestParameter(parameter.name) &&
         !isGPUScalingParameter(parameter.name)
         : !parameter.system)
       .map((parameter) => system ? mapSystemParameter(parameter) : parameter);

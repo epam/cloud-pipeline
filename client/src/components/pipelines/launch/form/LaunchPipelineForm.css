@@ -309,6 +309,11 @@
   text-align: center;
 }
 
+.reservation-parameters {
+  margin-left: 150px;
+  margin-right: 32px;
+}
+
 .fire-cloud-sign-in-container {
   display: flex;
   flex-direction: column;

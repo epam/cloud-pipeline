@@ -153,6 +153,11 @@ import Parameters from './parameters/parameters';
 import AddParameterButton from './parameters/add-parameter-button';
 import {getParameterKeyClassName} from './parameters/utilities';
 import ParametersPayloadSelector from './parameters/payload/selector';
+import ReservationParameters from './components/reservation-parameters';
+import {
+  buildLaunchParametersFromReservationParameters,
+  readReservationParameters
+} from './components/reservation-parameters/utilities';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -365,7 +370,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     isRawEditEnabled: false,
     parameterType: undefined,
     selectedParameter: undefined,
-    highlightedParameterSection: undefined
+    highlightedParameterSection: undefined,
+    reservationParameters: undefined
   };
 
   formItemLayout = {
@@ -510,7 +516,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         });
         const {values} = await validateFields();
         checkIfNotAborted();
-        const payload = values ? this.generateLaunchPayload(values) : undefined;
+        const payload = values ? await this.generateLaunchPayload(values) : undefined;
         await this.validateUserTags(payload);
       } catch (error) {
         if (error instanceof FormFieldChangedAbortedError) {
@@ -527,7 +533,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (!this.props.detached && !this.props.editConfigurationMode) {
         this.props.form.validateFields(async (err, values) => {
           if (!err && this.validateFireCloudConnections()) {
-            this.launchCommandPayload = this.generateLaunchPayload(values);
+            this.launchCommandPayload = await this.generateLaunchPayload(values);
           } else {
             this.launchCommandPayload = undefined;
           }
@@ -939,7 +945,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     this.props.form.validateFields(async (errors, values) => {
-      const userTagsValid = await this.validateUserTags(this.generateLaunchPayload(values));
+      const userTagsValid = await this.validateUserTags(await this.generateLaunchPayload(values));
       const parametersValidationResult = await this.getParametersValidationResult(true);
       const {
         nonValidParameter
@@ -950,17 +956,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         nonValidParameter ? {[nonValidParameter.system ? SYSTEM_PARAMETERS : PARAMETERS]: {
           [getParameterKeyClassName(nonValidParameter)]: false
         }} : undefined);
+      if (err) {
+        console.warn('Validation error');
+        console.log(err);
+        if (nonValidParameter) {
+          console.log('not valid parameter:');
+          console.log(nonValidParameter);
+        }
+      }
       if (!err && this.validateFireCloudConnections()) {
         let payload;
         try {
           if (this.props.editConfigurationMode) {
-            payload = this.generateConfigurationPayload(values);
+            payload = await this.generateConfigurationPayload(values, {
+              skipReservationParameters: false,
+              applyAdditionalParameters: false
+            });
           } else if (this.props.detached) {
             // single payload
-            payload = this.generateLaunchPayload(values);
+            payload = await this.generateLaunchPayload(values);
           } else {
             // multiple payloads
-            payload = this.generateLaunchPayloads(values);
+            payload = await this.generateLaunchPayloads(values);
           }
         } catch (e) {
           message.error(e.message, 5);
@@ -988,9 +1005,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   run = ({key}, entitiesIds, metadataClass, expansionExpression, folderId) => {
-    this.props.form.validateFields((err, values) => {
+    this.props.form.validateFields(async (err, values) => {
       if (!err && this.validateFireCloudConnections()) {
-        const payload = this.generateConfigurationPayload(values);
+        const payload = await this.generateConfigurationPayload(values, {
+          skipReservationParameters: true
+        });
         switch (key) {
           case RUN_SELECTED_KEY:
             if (this.props.runConfiguration) {
@@ -1087,6 +1106,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       );
     }
     const isRawEditEnabled = this.props.parameters.raw;
+    const reservationParameters = readReservationParameters(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -1109,6 +1129,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledPriceType: autoScaledPriceTypeValue,
         fsConfig: fsConfigValue,
         runCapabilities,
+        reservationParameters,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -1171,6 +1192,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledPriceType: autoScaledPriceTypeValue,
         fsConfig: fsConfigValue,
         runCapabilities,
+        reservationParameters,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -1217,7 +1239,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   };
 
-  generateConfigurationPayload = (values) => {
+  generateConfigurationPayload = async (values, options = {}) => {
+    const {
+      skipReservationParameters = false,
+      applyAdditionalReservationParameters = true
+    } = options || {};
     let cmd = values[ADVANCED].cmdTemplate;
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
       cmd = this.toolDefaultCmd;
@@ -1229,8 +1255,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters,
       conditionalParameters
     } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
+    const instanceType = values[EXEC_ENVIRONMENT].type;
     let payload = {
-      instance_size: values[EXEC_ENVIRONMENT].type,
+      instance_size: instanceType,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
       stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
@@ -1354,6 +1381,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.parameters,
       this.currentCloudRegionProvider
     );
+    if (!skipReservationParameters) {
+      const {
+        parameters: appliedReservationParameters
+      } = await buildLaunchParametersFromReservationParameters(
+        this.state.reservationParameters,
+        instanceType,
+        payload.parameters,
+        {
+          applyAdditionalParameters: applyAdditionalReservationParameters
+        }
+      );
+      payload.parameters = appliedReservationParameters;
+    }
     payload.parameters = applyCapabilities(
       payload.parameters,
       this.state.runCapabilities,
@@ -1393,15 +1433,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return payload;
   };
 
-  generateLaunchPayload = (values, parametersPayloadId = undefined) => {
+  generateLaunchPayload = async (values, parametersPayloadId = undefined) => {
     let cmd = values[ADVANCED].cmdTemplate;
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
       cmd = this.toolDefaultCmd;
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
+    const instanceType = values[EXEC_ENVIRONMENT].type;
     const payload = {
-      instanceType: values[EXEC_ENVIRONMENT].type,
+      instanceType,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
       cmdTemplate: cmd,
@@ -1572,6 +1613,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.props.continueRun) {
       payload.params = generateContinueRunParameters(this.props.continueRun, payload.params);
     }
+    const {
+      parameters: appliedReservationParameters,
+      podAssignPolicy
+    } = await buildLaunchParametersFromReservationParameters(
+      this.state.reservationParameters,
+      instanceType,
+      payload.params
+    );
+    payload.params = appliedReservationParameters;
+    payload.podAssignPolicy = podAssignPolicy;
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1581,7 +1632,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return payload;
   };
 
-  generateLaunchPayloads = (values) => {
+  generateLaunchPayloads = async (values) => {
     const parametersPayloads = this.getParametersPayloads();
     if (parametersPayloads.length === 0) {
       const payload = this.getParametersPayloads() || {};
@@ -1591,7 +1642,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       });
     }
     const payloads = parametersPayloads.filter((p) => p.enabled);
-    return payloads.map((p) => this.generateLaunchPayload(values, p.id));
+    return Promise.all(
+      payloads.map((p) => this.generateLaunchPayload(values, p.id))
+    );
   };
 
   getSectionFieldDecorator = (section) => (name, ...opts) => {
@@ -2796,6 +2849,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </Select>
         )}
       </FormItem>
+    );
+  };
+
+  renderReservationParametersSelector = () => {
+    const {
+      detached
+    } = this.props;
+    if (detached) {
+      return null;
+    }
+    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+    const {
+      reservationParameters
+    } = this.state;
+    const onChange = (p) => {
+      this.setState({
+        reservationParameters: p
+      }, this.formFieldsChanged);
+    };
+    return (
+      <ReservationParameters
+        className={styles.reservationParameters}
+        instanceType={instanceType}
+        parameters={reservationParameters}
+        onChange={onChange}
+      />
     );
   };
 
@@ -4931,6 +5011,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         hints.instanceTypeHint
                       )
                     }
+                    {this.renderReservationParametersSelector()}
                     {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
                     {!this.isWindowsPlatform &&
                     !this.state.fireCloudMethodName &&

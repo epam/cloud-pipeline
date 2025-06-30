@@ -1071,6 +1071,19 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
+  @computed
+  get launchReservationParameters () {
+    const value = this.getPreferenceValue('launch.reservation.parameters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.reservation.parameters" preference:', e.message);
+      }
+    }
+    return undefined;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

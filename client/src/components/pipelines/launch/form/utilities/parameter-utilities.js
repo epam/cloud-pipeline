@@ -17,7 +17,7 @@
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
-import {reservedParameters} from './parameters';
+import {CP_CAP_REQUESTS_CPU, CP_CAP_REQUESTS_GPU, CP_CAP_REQUESTS_RAM, reservedParameters} from './parameters';
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
 
@@ -532,6 +532,7 @@ function getParameterConfig (
   const configId = condition ? `condition: ${condition}` : 'default';
   const system = isSystemParameter(name) ||
     isCapabilityParameter(name) ||
+    isReservationRequestParameter(name) ||
     isReservedParameter(name) ||
     isGPUScalingParameter(name);
   if (typeof parameter === 'object') {
@@ -828,6 +829,20 @@ function validateParameter (parameter, parameters, rawEdit = false) {
   if (VERBOSE) {
     console.groupCollapsed(parameter.name);
   }
+  const isReservationParameter = isReservationRequestParameter(parameter.name);
+  if (isReservationParameter) {
+    if (VERBOSE) {
+      console.log('skipping validation: is reservation request parameter');
+      console.groupEnd();
+    }
+    const {valid} = parameter;
+    return {
+      error: undefined,
+      nameError: undefined,
+      valid: true,
+      modified: valid === undefined ? {...parameter, valid: true} : undefined
+    };
+  }
   const actualConfig = getActualParameterConfig(parameter, parameters);
   const currentConfig = parameter.config;
   const configChanged = actualConfig.configId !== currentConfig.configId;
@@ -875,6 +890,7 @@ function validateParameter (parameter, parameters, rawEdit = false) {
       (
         isReservedParameter(parameter.name) ||
         isCapabilityParameter(parameter.name) ||
+        isReservationRequestParameter(parameter.name) ||
         isGPUScalingParameter(parameter.name) ||
         isSystemParameter(parameter.name))
     ) {
@@ -991,6 +1007,9 @@ function validateParameters (parameters, rawEdit = false) {
     modifiedParameters = result;
   }
   if (VERBOSE) {
+    if (modifiedParameters) {
+      console.log('validation result', modifiedParameters);
+    }
     console.groupEnd();
   }
   return {changed, parameters: modifiedParameters};
@@ -1192,6 +1211,28 @@ export function getCapabilitiesParameters (prefs = preferences) {
 }
 
 /**
+ * Returns all reservation request parameters
+ * @param [prefs]
+ * @returns {string[]}
+ */
+export function getReservationRequestParameters (prefs = preferences) {
+  if (prefs.loaded) {
+    const reservationParameters = prefs.launchReservationParameters || {};
+    const result = [];
+    for (const cfg of Object.values(reservationParameters || {})) {
+      const {
+        parameters = {}
+      } = cfg || {};
+      for (const p of Object.keys(parameters || {})) {
+        result.push(p);
+      }
+    }
+    return [...(new Set(result))];
+  }
+  return [];
+}
+
+/**
  * Checks if parameter is a capabilities parameter
  * @param {string} parameterName
  * @param {{preferences}} [options]
@@ -1202,6 +1243,20 @@ export function isCapabilityParameter (parameterName, options = {}) {
     preferences: prefs = preferences
   } = options || {};
   const params = getCapabilitiesParameters(prefs);
+  return params.some((p) => p.toLowerCase() === parameterName.toLowerCase());
+}
+
+/**
+ * Checks if parameter is a reservation request parameter
+ * @param {string} parameterName
+ * @param {{preferences}} [options]
+ * @returns {boolean}
+ */
+export function isReservationRequestParameter (parameterName, options = {}) {
+  const {
+    preferences: prefs = preferences
+  } = options || {};
+  const params = getReservationRequestParameters(prefs);
   return params.some((p) => p.toLowerCase() === parameterName.toLowerCase());
 }
 
@@ -1260,6 +1315,7 @@ export function parametersToPayloadParams (parameters = []) {
   };
   return parameters
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
       !isReservedParameter(parameter.name))
     .reduce((acc, cur) => ({
@@ -1302,6 +1358,7 @@ export function parametersToConfigurationParams (parameters = []) {
     return p;
   };
   const filtered = parameters.filter((parameter) => !isCapabilityParameter(parameter.name) &&
+    !isReservationRequestParameter(parameter.name) &&
     !isGPUScalingParameter(parameter.name) &&
     !isReservedParameter(parameter.name));
   for (const parameter of filtered) {

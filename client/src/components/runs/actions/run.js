@@ -76,6 +76,9 @@ import {
   getAllowedStoragesForCloudRegion
 } from '../../../utils/limit-mounts/check-cloud-region-rules';
 import {getUserTagsValidationResult} from '../run-tags/utilities';
+import {
+  ensureValidReservationParametersForLaunchPayloads
+} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -394,6 +397,7 @@ function runFn (
     for (const p of payloadsArray) {
       p.params = applyCustomCapabilitiesParameters(p.params, stores.preferences);
     }
+    await ensureValidReservationParametersForLaunchPayloads(payloadsArray);
     const launchFn = async () => {
       const messageVersion = payload.runNameAlias
         ? `${launchName}:${launchVersion}`
@@ -589,6 +593,7 @@ function runFn (
               if (singlePayload.runNameAlias) {
                 delete singlePayload.runNameAlias;
               }
+              await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
               try {
                 await PipelineRunner.send({...singlePayload, force: true});
                 if (PipelineRunner.error) {

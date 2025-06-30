@@ -41,6 +41,7 @@ import {
   getFsConfigFromParameters
 } from './configure-fs/utilities';
 import {parametersModified} from "./parameter-utilities";
+import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -312,8 +313,13 @@ export default function (props, state, options) {
     formParameters = {},
     initialParameters = {}
   } = options;
-  const {parameters: fsConfigParams = {}} = parameters || {};
-  const initialFsConfig = getFsConfigFromParameters(fsConfigParams);
+  const {parameters: configParams = {}} = parameters || {};
+  const initialFsConfig = getFsConfigFromParameters(configParams);
+  const initialReservationRequestParameters = readReservationParameters(configParams);
+  const reservationRequestParametersModified = reservationParametersDiffer(
+    initialReservationRequestParameters,
+    state.reservationParameters
+  );
   const {fsConfig} = state;
   const fsConfigModified = !fsConfigsAreEqual(fsConfig, initialFsConfig);
   // configuration name check
@@ -366,6 +372,8 @@ export default function (props, state, options) {
     checkRootEntityModified(props, state) ||
     // check notifications
     notificationsCheck(parameters, form) ||
+    // reservation parameters
+    reservationRequestParametersModified ||
     // raw mode
     rawEditCheck(parameters, state);
 }
