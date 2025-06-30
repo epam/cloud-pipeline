@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.pipeline.run;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
+import lombok.Data;
 import lombok.ToString;
 import lombok.Value;
 import org.apache.commons.collections4.ListUtils;
@@ -35,13 +36,26 @@ import java.util.stream.Collectors;
  * @see RunAssignPolicy.PodAssignSelector and
  * @see RunAssignPolicy.PodAssignTolerance for mode informations
  * */
-@Value
+@Data
 @Builder
 @ToString
 public class RunAssignPolicy {
 
     PodAssignSelector selector;
     List<PodAssignTolerance> tolerances;
+    boolean skipContainerRequests;
+
+    public RunAssignPolicy() {
+        this.skipContainerRequests = true;
+    }
+
+    public RunAssignPolicy(final PodAssignSelector selector,
+                           final List<PodAssignTolerance> tolerances,
+                           final boolean skipContainerRequests) {
+        this.selector = selector;
+        this.tolerances = tolerances;
+        this.skipContainerRequests = skipContainerRequests;
+    }
 
     public boolean isMatch(final String label, final String value) {
         if (!isValid()) {

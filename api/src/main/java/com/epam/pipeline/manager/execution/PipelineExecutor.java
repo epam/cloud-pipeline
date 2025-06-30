@@ -159,9 +159,11 @@ public class PipelineExecutor {
             final OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             final ObjectMeta metadata = getObjectMeta(run, labels);
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
+            boolean assignContainerRequests = podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel) ||
+                    !podAssignPolicy.isSkipContainerRequests();
             final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.loadTolerances(),
                     run.getActualDockerImage(), command, imagePullPolicy,
-                    podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
+                    assignContainerRequests,
                     verifiedKubeServiceAccount, commandTemplate);
             final Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             final Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
@@ -210,7 +212,7 @@ public class PipelineExecutor {
     private PodSpec getPodSpec(final PipelineRun run, final List<EnvVar> envVars, final String secretName,
                                final Map<String, String> nodeSelector, final Map<String, String> nodeTolerances,
                                final String dockerImage, final String command, final ImagePullPolicy imagePullPolicy,
-                               final boolean isParentPod, final String kubeServiceAccount,
+                               final boolean assignContainerRequests, final String kubeServiceAccount,
                                final OSSpecificLaunchCommandTemplate template) {
         final PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
@@ -240,9 +242,12 @@ public class PipelineExecutor {
             spec.setHostNetwork(true);
         }
 
-        spec.setContainers(Collections.singletonList(getContainer(run,
-                envVars, dockerImage, command, imagePullPolicy,
-                isDockerInDockerEnabled, isSystemdEnabled, isParentPod, template, commonMounts)));
+        spec.setContainers(Collections.singletonList(
+                getContainer(
+                        run, envVars, dockerImage, command, imagePullPolicy, isDockerInDockerEnabled,
+                        isSystemdEnabled, assignContainerRequests, template, commonMounts
+                )
+        ));
         return spec;
     }
 
@@ -292,7 +297,7 @@ public class PipelineExecutor {
                                    final ImagePullPolicy imagePullPolicy,
                                    final boolean isDockerInDockerEnabled,
                                    final boolean isSystemdEnabled,
-                                   final boolean isParentPod,
+                                   final boolean assignContainerRequests,
                                    final OSSpecificLaunchCommandTemplate template,
                                    final List<DockerMount> commonMounts) {
         Container container = new Container();
@@ -314,8 +319,7 @@ public class PipelineExecutor {
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
         container.setTerminationMessagePath("/dev/termination-log");
         container.setImagePullPolicy(imagePullPolicy.getName());
-        container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
-        if (isParentPod) {
+        if (assignContainerRequests) {
             buildContainerResources(run, envVars, container);
         }
         return container;
