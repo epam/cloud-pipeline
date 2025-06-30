@@ -32,6 +32,7 @@ import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
 import {checkTerminateNodeErrors} from './constants';
 
+@inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
   const {from, to, type} = location?.query;
   return {
@@ -42,7 +43,6 @@ import {checkTerminateNodeErrors} from './constants';
     machineType: type
   };
 })
-@inject('authenticatedUserInfo', 'preferences')
 @observer
 class ClusterNode extends Component {
   state = {
@@ -257,7 +257,7 @@ class ClusterNode extends Component {
           child,
           {
             node: this.props.node,
-            chartsData: {...(this.props.chartsData || {})},
+            chartsData: this.props.chartsData,
             nodeName: this.props.name,
             isCloudNode: this.isCloudNode
           }
