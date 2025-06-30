@@ -77,6 +77,7 @@ class EditHotNodePool extends React.Component {
     initialInstanceType: undefined,
     dockerImages: [],
     initialDockerImages: [],
+    labels: [],
     schedule: [],
     initialSchedule: [],
     count: undefined,
@@ -211,7 +212,8 @@ class EditHotNodePool extends React.Component {
         maxSize,
         scaleDownThreshold,
         scaleUpThreshold,
-        scaleStep
+        scaleStep,
+        kubeLabels: labels = {}
       } = pool;
       const {
         scheduleEntries: schedule = []
@@ -223,6 +225,11 @@ class EditHotNodePool extends React.Component {
         initialInstanceType: instanceType,
         dockerImages: dockerImages.slice().map((image, id) => ({image, id, removed: false})),
         initialDockerImages: dockerImages.slice(),
+        labels: Object.entries(labels || {}).map(([key, value]) => ({
+          key,
+          name: key,
+          value
+        })),
         schedule: schedule.slice().map((s, i) => ({...s, id: i})),
         initialSchedule: schedule.slice().map(sc => ({...sc})),
         count,
@@ -277,7 +284,8 @@ class EditHotNodePool extends React.Component {
         initialInstanceType: undefined,
         dockerImages: [],
         initialDockerImages: [],
-        schedule: [{id: 0}],
+        labels: [],
+        schedule: [],
         initialSchedule: [],
         count: undefined,
         initialCount: undefined,
@@ -397,7 +405,8 @@ class EditHotNodePool extends React.Component {
       maxSize,
       scaleDownThreshold,
       scaleUpThreshold,
-      scaleStep
+      scaleStep,
+      labels = []
     } = this.state;
     let diskError,
       instanceTypeError,
@@ -411,7 +420,8 @@ class EditHotNodePool extends React.Component {
       maxSizeError,
       scaleDownThresholdError,
       scaleUpThresholdError,
-      scaleStepError;
+      scaleStepError,
+      labelsError;
     if (
       Number.isNaN(Number(disk)) ||
       Number(disk) < DISK_MIN_SIZE ||
@@ -431,9 +441,7 @@ class EditHotNodePool extends React.Component {
     } else if ((new Set(images)).size < images.length) {
       dockerImagesError = 'Duplicates are not allowed';
     }
-    if (!schedule || !schedule.length) {
-      scheduleError = 'Schedule is required';
-    } else if (schedule.map(scheduleIsValid).filter(o => !o).length > 0) {
+    if (schedule.map(scheduleIsValid).filter(o => !o).length > 0) {
       scheduleError = 'Invalid schedule';
     }
     if (!name) {
@@ -510,6 +518,12 @@ class EditHotNodePool extends React.Component {
         countError = `Count should be a positive value or zero (pool is disabled)`;
       }
     }
+    const labelsNames = [...new Set(labels.map((lb) => (lb.name || '').trim().toLowerCase()))];
+    if (labels.some((lb) => (lb.name || '').trim().length === 0)) {
+      labelsError = 'There are invalid node labels';
+    } else if (labelsNames.length < labels.length) {
+      labelsError = 'There are duplicate node labels';
+    }
     const valid = !diskError &&
       !instanceTypeError &&
       !dockerImagesError &&
@@ -522,7 +536,8 @@ class EditHotNodePool extends React.Component {
       !maxSizeError &&
       !scaleDownThresholdError &&
       !scaleUpThresholdError &&
-      !scaleStepError;
+      !scaleStepError &&
+      !labelsError;
     return {
       valid,
       errors: {
@@ -538,7 +553,8 @@ class EditHotNodePool extends React.Component {
         maxSize: maxSizeError,
         scaleDownThreshold: scaleDownThresholdError,
         scaleUpThreshold: scaleUpThresholdError,
-        scaleStep: scaleStepError
+        scaleStep: scaleStepError,
+        labelsError
       }
     };
   };
@@ -627,7 +643,8 @@ class EditHotNodePool extends React.Component {
           maxSize: true,
           scaleDownThreshold: true,
           scaleUpThreshold: true,
-          scaleStep: true
+          scaleStep: true,
+          labels: true
         }
       });
     } else if (onSave) {
@@ -637,7 +654,6 @@ class EditHotNodePool extends React.Component {
         schedule,
         dockerImages,
         instanceType,
-        initialSchedule,
         name,
         spot: priceType,
         region: regionId,
@@ -648,7 +664,8 @@ class EditHotNodePool extends React.Component {
         maxSize,
         scaleDownThreshold,
         scaleUpThreshold,
-        scaleStep
+        scaleStep,
+        labels
       } = this.state;
       const payload = {
         count: autoscaled ? minSize : count,
@@ -667,17 +684,18 @@ class EditHotNodePool extends React.Component {
         maxSize: autoscaled ? maxSize : undefined,
         scaleDownThreshold: autoscaled ? scaleDownThreshold : undefined,
         scaleUpThreshold: autoscaled ? scaleUpThreshold : undefined,
-        scaleStep: autoscaled ? scaleStep : undefined
+        scaleStep: autoscaled ? scaleStep : undefined,
+        kubeLabels: labels.reduce((acc, label) => ({
+          ...acc,
+          [label.name]: label.value
+        }), {})
       };
-      const scheduleModified = !compareSchedulesArray(schedule, initialSchedule);
       onSave(
         payload,
-        scheduleModified
-          ? {
-            scheduleEntries: schedule.map(({id, ...s}) => s),
-            name
-          }
-          : undefined
+        schedule.length > 0 ? {
+          scheduleEntries: schedule.map(({id, ...s}) => s),
+          name
+        } : undefined
       );
     }
   };
@@ -1572,6 +1590,148 @@ class EditHotNodePool extends React.Component {
     );
   };
 
+  renderLabelsControl = (readOnly) => {
+    const {
+      disabled
+    } = this.props;
+    const {
+      validation,
+      labels = []
+    } = this.state;
+    if (labels.length === 0 && readOnly) {
+      return null;
+    }
+    const addNodeLabel = () => {
+      let idx = 0;
+      const existing = [...new Set(labels.map((lb) => lb.key))];
+      const generate = () => {
+        idx += 1;
+        return `node-label-${idx}`;
+      };
+      let nodeLabelKey = generate();
+      while (existing.includes(nodeLabelKey)) {
+        nodeLabelKey = generate();
+      }
+      this.setState({
+        labels: [...labels, {key: nodeLabelKey, name: '', value: ''}]
+      }, this.onChange);
+    };
+    const renderLabelControl = (label) => {
+      const duplicate = labels
+        // eslint-disable-next-line max-len
+        .filter((lb) => (lb.name || '').trim().toLowerCase() === (label.name || '').trim().toLowerCase())
+        .length > 1;
+      const wrongName = (label.name || '').trim().length === 0;
+      const onRemoveNodeLabel = () => {
+        this.setState({
+          labels: labels.filter(o => o.key !== label.key)
+        }, this.onChange);
+      };
+      const onRenameLabel = (event) => {
+        const result = labels.slice();
+        const idx = result.findIndex(o => o.key === label.key);
+        if (idx >= 0) {
+          result.splice(idx, 1, {
+            ...label,
+            name: event.target.value
+          });
+          this.setState({labels: result}, this.onChange);
+        }
+      };
+      const onChangeLabelValue = (event) => {
+        const result = labels.slice();
+        const idx = result.findIndex(o => o.key === label.key);
+        if (idx >= 0) {
+          result.splice(idx, 1, {
+            ...label,
+            value: event.target.value
+          });
+          this.setState({labels: result}, this.onChange);
+        }
+      };
+      const st = {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        margin: '2px 0',
+        lineHeight: '24px',
+        width: '100%'
+      };
+      if (readOnly) {
+        return (
+          <div
+            key={label.key}
+            style={st}
+          >
+            <span>{label.name}:</span>
+            <span
+              style={{flex: 1, overflow: 'auto', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+            >
+              {label.value}
+            </span>
+          </div>
+        );
+      }
+      return (
+        <div
+          key={label.key}
+          style={st}
+        >
+          <Input
+            className={classNames({'cp-error': duplicate || wrongName})}
+            style={{flex: 1, marginRight: 5}}
+            value={label.name}
+            onChange={onRenameLabel}
+          />
+          <Input
+            style={{flex: 2, marginRight: 5}}
+            value={label.value}
+            onChange={onChangeLabelValue}
+          />
+          <Button size="small" onClick={onRemoveNodeLabel} type="danger">
+            <Icon type="delete" />
+          </Button>
+        </div>
+      );
+    };
+    return (
+      <div>
+        <div
+          className={classNames(styles.formRow, styles.multiRow)}
+        >
+          <span className={styles.label}>
+            Labels:
+          </span>
+          <div className={styles.column}>
+            {labels.map(renderLabelControl)}
+            {
+              !readOnly && (
+                <div>
+                  <Button
+                    disabled={disabled}
+                    onClick={addNodeLabel}
+                    type="dashed"
+                  >
+                    <Icon type="plus" />
+                    Add node label
+                  </Button>
+                </div>
+              )
+            }
+          </div>
+        </div>
+        {
+          validation.labelsError && (
+            <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
+              {validation.labelsError}
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
   renderFiltersControl = () => {
     const {
       disabled
@@ -1658,6 +1818,7 @@ class EditHotNodePool extends React.Component {
         {this.renderInstanceImageControl(!isNew)}
         {this.renderDiskControl(!isNew)}
         {this.renderDockerImagesControl(!isNew)}
+        {this.renderLabelsControl(!isNew)}
         <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
           <h2>Filters</h2>
         </div>

@@ -34,6 +34,24 @@ import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolSchedu
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
 
+async function updateSchedule (payload, scheduleId) {
+  const scheduleRequest = new HotNodePoolScheduleUpdate();
+  await scheduleRequest.send({...(payload || {}), id: scheduleId});
+  if (scheduleRequest.error || !scheduleRequest.loaded) {
+    throw new Error(scheduleRequest.error || 'Error creating schedule');
+  }
+  const {id} = scheduleRequest.value;
+  return id;
+}
+
+async function removeSchedule (scheduleId) {
+  const scheduleDeleteRequest = new HotNodePoolScheduleDelete(scheduleId);
+  await scheduleDeleteRequest.send();
+  if (scheduleDeleteRequest.error || !scheduleDeleteRequest.loaded) {
+    throw new Error(scheduleDeleteRequest.error || 'Error removing schedule');
+  }
+}
+
 @inject(() => {
   return {
     pools,
@@ -140,58 +158,42 @@ class HotCluster extends React.Component {
   onSaveEditablePool = async (pool, schedule) => {
     const {createNewPool, editablePool} = this.state;
     const {pools, clusterNodes: nodes} = this.props;
-    if (createNewPool) {
-      const hide = message.loading('Creating new pool...', -1);
-      const scheduleRequest = new HotNodePoolScheduleUpdate();
-      await scheduleRequest.send(schedule);
-      if (scheduleRequest.error || !scheduleRequest.loaded) {
-        hide();
-        message.error(scheduleRequest.error || 'Error creating schedule', 5);
+    const loadingTitle = createNewPool ? 'Creating new pool...' : 'Update pool...';
+    const hide = message.loading(loadingTitle, -1);
+    try {
+      const {id, schedule: currentSchedule} = editablePool || {};
+      const currentPoolId = createNewPool ? undefined : id;
+      const currentScheduleId = currentSchedule && !createNewPool
+        ? currentSchedule.id
+        : undefined;
+      let scheduleId = currentScheduleId;
+      const hasSchedule = schedule &&
+        schedule.scheduleEntries &&
+        schedule.scheduleEntries.length > 0;
+      if (hasSchedule) {
+        scheduleId = await updateSchedule(schedule, scheduleId);
       } else {
-        const {id: scheduleId} = scheduleRequest.value;
-        const request = new HotNodePoolUpdate();
-        await request.send({
-          scheduleId,
-          ...pool
-        });
-        if (request.error) {
-          hide();
-          message.error(request.error || 'Error creating pool', 5);
-        } else {
-          await pools.fetch();
-          await nodes.fetch();
-          hide();
-        }
-      }
-    } else if (editablePool) {
-      const {id, schedule: currentSchedule} = editablePool;
-      const hide = message.loading('Creating new pool...', -1);
-      let scheduleId = currentSchedule ? currentSchedule.id : undefined;
-      if (schedule) {
-        const scheduleRequest = new HotNodePoolScheduleUpdate();
-        await scheduleRequest.send({...schedule, id: scheduleId});
-        if (scheduleRequest.error || !scheduleRequest.loaded) {
-          hide();
-          message.error(scheduleRequest.error || 'Error updating schedule', 5);
-          return;
-        } else {
-          scheduleId = scheduleRequest.value.id;
-        }
+        scheduleId = undefined;
       }
       const request = new HotNodePoolUpdate();
       await request.send({
-        id,
+        id: currentPoolId,
         scheduleId,
         ...pool
       });
       if (request.error) {
-        hide();
-        message.error(request.error || 'Error creating pool', 5);
-      } else {
-        await pools.fetch();
-        await nodes.fetch();
-        hide();
+        const errorTitle = createNewPool ? 'Error creating pool' : 'Error updating pool';
+        const message = `${errorTitle}: ${request.error}`;
+        throw new Error(message);
       }
+      if (currentScheduleId && !hasSchedule) {
+        await removeSchedule(currentScheduleId);
+      }
+      await Promise.all([pools.fetch(), nodes.fetch()]);
+    } catch (error) {
+      message.error(error.message, 5);
+    } finally {
+      hide();
     }
     this.closeEditPoolModal();
   };
