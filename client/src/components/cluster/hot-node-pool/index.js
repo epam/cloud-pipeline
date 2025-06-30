@@ -142,32 +142,36 @@ class HotCluster extends React.Component {
     const {pools, clusterNodes: nodes} = this.props;
     if (createNewPool) {
       const hide = message.loading('Creating new pool...', -1);
-      const scheduleRequest = new HotNodePoolScheduleUpdate();
-      await scheduleRequest.send(schedule);
-      if (scheduleRequest.error || !scheduleRequest.loaded) {
-        hide();
-        message.error(scheduleRequest.error || 'Error creating schedule', 5);
-      } else {
-        const {id: scheduleId} = scheduleRequest.value;
-        const request = new HotNodePoolUpdate();
-        await request.send({
-          scheduleId,
-          ...pool
-        });
-        if (request.error) {
+      let scheduleId;
+      if (schedule && schedule.length > 0) {
+        const scheduleRequest = new HotNodePoolScheduleUpdate();
+        await scheduleRequest.send(schedule);
+        if (scheduleRequest.error || !scheduleRequest.loaded) {
           hide();
-          message.error(request.error || 'Error creating pool', 5);
-        } else {
-          await pools.fetch();
-          await nodes.fetch();
-          hide();
+          message.error(scheduleRequest.error || 'Error creating schedule', 5);
+          return;
         }
+        const {id} = scheduleRequest.value;
+        scheduleId = id;
+      }
+      const request = new HotNodePoolUpdate();
+      await request.send({
+        scheduleId,
+        ...pool
+      });
+      if (request.error) {
+        hide();
+        message.error(request.error || 'Error creating pool', 5);
+      } else {
+        await pools.fetch();
+        await nodes.fetch();
+        hide();
       }
     } else if (editablePool) {
       const {id, schedule: currentSchedule} = editablePool;
       const hide = message.loading('Creating new pool...', -1);
       let scheduleId = currentSchedule ? currentSchedule.id : undefined;
-      if (schedule) {
+      if (schedule && schedule.length > 0) {
         const scheduleRequest = new HotNodePoolScheduleUpdate();
         await scheduleRequest.send({...schedule, id: scheduleId});
         if (scheduleRequest.error || !scheduleRequest.loaded) {
@@ -177,6 +181,25 @@ class HotCluster extends React.Component {
         } else {
           scheduleId = scheduleRequest.value.id;
         }
+      } else if (scheduleId) {
+        const scheduleDeleteRequest = new HotNodePoolScheduleDelete(scheduleId);
+        await scheduleDeleteRequest.send();
+        if (scheduleDeleteRequest.error || !scheduleDeleteRequest.loaded) {
+          hide();
+          message.error(scheduleDeleteRequest.error || 'Error removing schedule', 5);
+          return;
+        }
+        scheduleId = undefined;
+      } else {
+        const scheduleRequest = new HotNodePoolScheduleUpdate();
+        await scheduleRequest.send(schedule);
+        if (scheduleRequest.error || !scheduleRequest.loaded) {
+          hide();
+          message.error(scheduleRequest.error || 'Error creating schedule', 5);
+          return;
+        }
+        const {id} = scheduleRequest.value;
+        scheduleId = id;
       }
       const request = new HotNodePoolUpdate();
       await request.send({
