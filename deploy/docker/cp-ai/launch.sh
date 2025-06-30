@@ -53,6 +53,9 @@ EOM
 mongod --config "$MONGODB_CONFIG_PATH" &
 MONGO_PID=$!
 
+echo "Starting celery worker"
+celery -A cp-ai.celery.tasks worker -l info
+
 echo "Creating documents index"
 python -m cp_ai.database.create
 

@@ -12,3 +12,5 @@ pydantic==2.10.3
 chromadb==0.6.3
 requests==2.32.4
 pymongo==4.13.0
+celery==5.4.0
+redis==5.2.1
