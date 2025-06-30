@@ -5307,12 +5307,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const {
           entries = []
         } = req1.value || {};
-        const metadataEntityFieldsRequest = new MetadataEntityFields(currentProjectId);
-        await metadataEntityFieldsRequest.fetch();
-        if (metadataEntityFieldsRequest.error) {
-          message.error(metadataEntityFieldsRequest.error, 5);
+        let currentMetadataEntity = [];
+        if (currentProjectId) {
+          const metadataEntityFieldsRequest = new MetadataEntityFields(currentProjectId);
+          await metadataEntityFieldsRequest.fetch();
+          if (metadataEntityFieldsRequest.error) {
+            message.error(metadataEntityFieldsRequest.error, 5);
+          }
+          currentMetadataEntity = metadataEntityFieldsRequest.value || [];
         }
-        const currentMetadataEntity = metadataEntityFieldsRequest.value || [];
         commitState((cur) => ({
           ...cur,
           detachedConfigurations: entries,
