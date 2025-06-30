@@ -396,24 +396,31 @@ public class PipelineManager implements SecuredEntityManager {
         final String sourceProjectName = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final String uuid = PasswordGenerator.generateRandomString(20);
         final String newPipelineName = buildCopyProjectName(sourceProjectName, uuid, newName);
-        final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
-        final String newRepository =
-                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
-        final String newRepositorySsh =
-                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
         final Long sourcePipelineId = loadedPipeline.getId();
 
-        loadedPipeline.setRepository(newRepository);
-        loadedPipeline.setRepositorySsh(newRepositorySsh);
         loadedPipeline.setName(newPipelineName);
         loadedPipeline.setParentFolderId(parentFolderId);
         setFolderIfPresent(loadedPipeline);
         loadedPipeline.setOwner(securityManager.getAuthorizedUser());
-        loadedPipeline.setRepositoryType(null);
         loadedPipeline.setLocked(false);
+
+        final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
+        if (RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType())) {
+            final String newRepository =
+                    GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
+            final String newRepositorySsh =
+                    GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
+
+            loadedPipeline.setRepository(newRepository);
+            loadedPipeline.setRepositorySsh(newRepositorySsh);
+        }
+
         final Pipeline newPipeline = crudManager.savePipeline(loadedPipeline);
         copyStorageRules(sourcePipelineId, newPipeline.getId());
-        gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+
+        if (RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType())) {
+            gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+        }
         return newPipeline;
     }
 
