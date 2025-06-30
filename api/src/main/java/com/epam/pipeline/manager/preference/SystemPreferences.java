@@ -62,6 +62,7 @@ import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
+import com.epam.pipeline.manager.cluster.container.ResourcesParameter;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -792,6 +793,14 @@ public class SystemPreferences {
     public static final StringPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY = new StringPreference(
             "launch.container.memory.resource.policy", ContainerMemoryResourcePolicy.DEFAULT.name(),
             LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
+    public static final ObjectPreference<Map<String, ResourcesParameter>> LAUNCH_CONTAINER_REQUESTS_MAPPING =
+            new ObjectPreference<>("launch.container.requests.mapping", null,
+                    new TypeReference<Map<String, ResourcesParameter>>() {},
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, ResourcesParameter>>() {}));
+    public static final ObjectPreference<Map<String, Object>> LAUNCH_RESERVATION_PARAMS =
+            new ObjectPreference<>("launch.reservation.parameters", null,
+                    new TypeReference<Map<String, Object>>() {},
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(

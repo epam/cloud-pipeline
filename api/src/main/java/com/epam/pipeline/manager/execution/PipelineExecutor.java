@@ -29,6 +29,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
+import com.epam.pipeline.manager.cluster.container.ResourcesParameter;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -404,9 +405,24 @@ public class PipelineExecutor {
     }
 
     private ContainerResources buildResources(final PipelineRun run, final List<EnvVar> envVars) {
-        return ContainerResources.merge(
+        final ContainerResources defaultResources = ContainerResources.merge(
                 buildCpuResources(run, envVars),
                 buildMemoryResources(run, envVars));
+        final Map<String, ResourcesParameter> mapping =
+                preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_REQUESTS_MAPPING);
+        MapUtils.emptyIfNull(mapping).forEach((parameter, resource) -> {
+            getParameter(envVars, parameter)
+                    .filter(StringUtils::isNotBlank)
+                    .ifPresent(value -> {
+                        if (resource.isLimits()) {
+                            defaultResources.getLimits().put(resource.getName(), new Quantity(value));
+                        }
+                        if (resource.isRequests()) {
+                            defaultResources.getRequests().put(resource.getName(), new Quantity(value));
+                        }
+                    });
+        });
+        return defaultResources;
     }
 
     private ContainerResources buildMemoryResources(final PipelineRun run, final List<EnvVar> envVars) {
