@@ -4,6 +4,7 @@ import uvicorn
 from http.cookies import SimpleCookie
 from fastapi import FastAPI, Depends, Cookie
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from llama_index.core.llms import ChatMessage
 from pydantic import BaseModel
 from cp_ai.common.types import Chat, Message
@@ -11,7 +12,7 @@ import cp_ai.database.chats.methods as chats
 from cp_ai.agents import answer_using_default_agent
 from cp_ai.api.utilities.logger import api_logger
 from cp_ai.api.utilities.decorators import app_response
-
+from cp_ai.celery.tasks import assist, get_celery_task_status, stream_celery_task_response
 
 app = FastAPI()
 sio_server = socketio.AsyncServer(
@@ -138,6 +139,43 @@ async def handle_message(sid, request_data: dict):
         await sio_server.emit('error', e.__str__(), to=sid)
 
     await sio_server.emit('done', 'done', to=sid)
+
+@sio_server.on('assistant_celery')
+async def handle_message(sid, request_data: dict):
+    try:
+        bearer = await _get_bearer_from_socket_session(sid)
+        api_logger.info(f'socket "assistant" event:\nsid: {sid}\nbearer: {bearer}\n\nPayload:\n{repr(request_data)}')
+        chat_id = request_data.get('chat_id')
+        if chat_id is None:
+            raise RuntimeError('chat identifier is not specified')
+        chat_messages = chats.get_messages(chat_id)
+        messages = [ ChatMessage.from_str(dict(m)['content'], dict(m)['role']) for m in chat_messages ]
+        task = assist.delay(messages=messages,
+                            chat_id=chat_id,
+                            bearer=bearer)
+        await sio_server.emit('task_id', task.id, to=sid)
+
+    except Exception as e:
+        api_logger.error('error handling user message', exc_info=e)
+        await sio_server.emit('error', e.__str__(), to=sid)
+
+
+@app.get("/assistant_celery/{task_id}/status")
+async def get_task_status(task_id: str):
+    try:
+        return get_celery_task_status(task_id=task_id)
+    except Exception as e:
+        api_logger.error('error getting llm status', exc_info=e)
+        return {"error": e.__str__()}
+
+@app.get("/assistant_celery/{task_id}/result")
+async def get_task_result(task_id: str):
+    try:
+        return StreamingResponse(stream_celery_task_response(task_id),
+                                 media_type="text/plain")
+    except Exception as e:
+        api_logger.error('error getting llm result', exc_info=e)
+        return e.__str__()
 
 @sio_server.on('assistant_test')
 async def handle_message(sid, request_data: dict):

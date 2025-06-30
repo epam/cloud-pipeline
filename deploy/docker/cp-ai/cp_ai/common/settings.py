@@ -54,6 +54,12 @@ class CpAiSettings(BaseModel):
     CHATS_DB_NAME: str = os.environ.get('CHATS_DB_NAME', 'chatbot-db')
     # ------------------
 
+    # Celery settings
+    CP_AI_SERVICE_BROKER: str | None =os.environ.get('CP_AI_SERVICE_BROKER', 'redis://localhost:6379')
+    CP_AI_SERVICE_BACKEND: str | None = os.environ.get('CP_AI_SERVICE_BACKEND', 'redis://localhost:6379')
+    CP_AI_RESPONSE_TIMEOUT: int | None = os.environ.get('CP_AI_RESPONSE_TIMEOUT', 30)
+    # ------------------
+
     # General settings
     CP_AI_LOGS_DIR: str = os.environ.get('CP_AI_LOGS_DIR', '/var/log')
     _CP_AI_API_LOGS: str | None = os.environ.get('CP_AI_API_LOGS', None)

@@ -7,7 +7,8 @@ RUN yum update -y && \
     unzip \
     git \
     nginx \
-    bzip2
+    bzip2 \
+    redis
 
 # Install MongoDB
 RUN dnf install -y dnf-utils && \

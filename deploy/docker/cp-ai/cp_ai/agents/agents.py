@@ -78,3 +78,41 @@ async def answer_using_default_agent(
     return await default_agent.astream_chat(
         message=prompt,
     )
+
+def answer_using_default_agent_sync(
+        message: str | ChatMessage | None = None,
+        messages: list[Union[ChatMessage, str]] | None = None,
+        **kwargs
+) -> StreamingAgentChatResponse:
+    def map_message(m: Union[ChatMessage, str]):
+        if isinstance(m, str):
+            return ChatMessage(content=m)
+        return m
+    if messages is None:
+        messages = []
+    _messages = [map_message(m) for m in messages]
+    if message is not None:
+        _messages.append(map_message(message))
+
+    last_message = _messages.pop()
+    history = '\n\n'.join([m.__str__() for m in _messages])
+    last_launch_payload = extract_launch_payload(history)
+    user_query = last_message.content
+    prompt = f'''
+        This is user query, provide an answer for this query using provided agents or general LLM knowledge:
+        -------------
+        {history}
+        {user_query}
+        -------------
+        IMPORTANT: 
+        - You must include any and all blocks that look like `<<<...>>>` verbatim and exactly as they appeared in the tool output.
+        - Do not rephrase, omit, or filter out these `<<<...>>>` blocks. Treat them as immutable text.
+        - If the tool output contains **references**, include such references to the final response.
+        - If 'LaunchException' is returned from some of the agent, STOP execution and request details from user considering LaunchException info.
+        - Use Markdown format; include all available links and references (prefer format [entity name](entity url)].
+        '''
+    default_agent = get_default_agent(launch_payload=last_launch_payload,
+                                      **kwargs)
+    return default_agent.stream_chat(
+        message=prompt,
+    )
