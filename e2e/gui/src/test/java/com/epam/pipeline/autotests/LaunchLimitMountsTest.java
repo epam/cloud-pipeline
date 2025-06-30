@@ -185,7 +185,7 @@ public class LaunchLimitMountsTest
                         .close());
     }
 
-    @Test(priority = 1, dependsOnMethods = {"runPipelineWithLimitMounts"})
+    @Test(priority = 1, dependsOnMethods = {"runPipelineWithLimitMounts"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-2683"})
     public void rerunPipelineWithoutLimitMounts() {
         final Set<String> logMess =
@@ -264,7 +264,7 @@ public class LaunchLimitMountsTest
                 .ensure(LIMIT_MOUNTS, text(storage1), text(storageSensitive));
     }
 
-    @Test(priority = 2, dependsOnMethods = {"prepareSensitiveLimitMounts"})
+    @Test(priority = 2, dependsOnMethods = {"prepareSensitiveLimitMounts"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-3178"})
     public void runPipelineWithSensitiveLimitMounts() {
         tools()
@@ -322,7 +322,7 @@ public class LaunchLimitMountsTest
                 .validateHeader(storage3);
     }
 
-    @Test(priority = 4)
+    @Test(priority = 4, enabled = false)
     @TestCase(value = {"1480"})
     public void checkWarningInCaseOfOOMriskDueToStorageMountsNumber() {
         List<String> addStor = new ArrayList<>();

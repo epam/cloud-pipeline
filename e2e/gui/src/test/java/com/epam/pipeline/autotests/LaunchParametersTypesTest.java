@@ -21,6 +21,8 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.io.File;
+
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -63,6 +65,7 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .clickAddOutputParameter()
                 .setName("output_parameter")
                 .openPathAdditionDialog()

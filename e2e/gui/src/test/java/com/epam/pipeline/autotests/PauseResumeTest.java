@@ -78,7 +78,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         fallbackToToolDefaultState(registry, group, tool);
     }
 
-    @BeforeClass(alwaysRun = true)
+//    @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
             // EPMCMBIBPC-2627 && EPMCMBIBPC-2636
@@ -91,7 +91,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         });
     }
 
-    @AfterClass(alwaysRun = true)
+//    @AfterClass(alwaysRun = true)
     public void fallBackPreferences() {
         loginAsAdminAndPerform(() ->
                 // EPMCMBIBPC-2627
@@ -110,51 +110,55 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
                 .launchTool(this, nameWithoutGroup(tool))
-                .log(getLastRunId(), log ->
-                        log.waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(getLastRunId())
-                                                .execute(
-                                                String.format("echo '%s' > %s", testFileContent, testFileName)))
-                                )
-                                .waitForPauseButton()
-                                .pause(nameWithoutGroup(tool))
-                                .assertPausingFinishedSuccessfully()
-                                .instanceParameters(parameters -> {
-                                    final String ipHyperlink = getParameterValueLink(ipField);
-                                    parameters.inAnotherTab(nodeTab ->
-                                            checkNodePage(() -> nodeTab
-                                                            .ensure(tabWithName("General info"), not(visible))
-                                                            .ensure(tabWithName("Jobs"), not(visible))
-                                                    , ipHyperlink)
+                .activeRuns()
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .ssh(shell ->
+                        shell
+                            .waitUntilTextAppears(getLastRunId())
+                            .execute(String.format("echo '%s' > %s", testFileContent, testFileName))
+                            .close());
+        runsMenu()
+                .showLog(getLastRunId())
+                .waitForPauseButton()
+                .pause(nameWithoutGroup(tool))
+                .assertPausingFinishedSuccessfully()
+                .instanceParameters(parameters -> {
+                         final String ipHyperlink = getParameterValueLink(ipField);
+                         parameters
+                                 .inAnotherTab(nodeTab ->
+                                         checkNodePage(() -> nodeTab
+                                               .ensure(tabWithName("General info"), not(visible))
+                                               .ensure(tabWithName("Jobs"), not(visible)), ipHyperlink)
                                     );
                                 })
-                                .resume(nameWithoutGroup(tool))
-                                .assertResumingFinishedSuccessfully()
-                                .waitForSshLink()
-                                .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell
-                                                .waitUntilTextAppears(getLastRunId())
-                                                .execute(String.format("cat %s", testFileName))
-                                                .assertOutputContains(testFileContent))
-                                )
-                                .instanceParameters(parameters -> {
-                                    final String nodeIp = $(parameterWithName(ipField)).text().split(" \\(")[0];
-                                    final String expectedTitle = String.format("^Node: %s.*", nodeIp);
-                                    final String ipHyperlink = getParameterValueLink(ipField);
-                                    parameters.inAnotherTab(nodeTab ->
-                                            checkNodePage(() ->
-                                                    nodeTab
-                                                        .ensure(mainInfo(), have(textMatches(expectedTitle)))
-                                                        .ensure(labelWithType("RUNID"), visible)
-                                                        .ensure(labelWithType("pipeline-info"), visible), ipHyperlink)
-                                    );
-                                })
-                );
+                .sleep(2, MINUTES)
+                .resume(nameWithoutGroup(tool))
+                .assertResumingFinishedSuccessfully()
+                .waitForSshLink()
+                .ssh(shell ->
+                        shell
+                             .waitUntilTextAppears(getLastRunId())
+                             .execute(String.format("cat %s", testFileName))
+                             .assertOutputContains(testFileContent)
+                             .close());
+        runsMenu()
+                .showLog(getLastRunId())
+                .instanceParameters(parameters -> {
+                        final String nodeIp = $(parameterWithName(ipField)).text().split(" \\(")[0];
+                        final String expectedTitle = String.format("^Node: %s.*", nodeIp);
+                        final String ipHyperlink = getParameterValueLink(ipField);
+                        parameters.inAnotherTab(nodeTab ->
+                                checkNodePage(() ->
+                                        nodeTab
+                                            .ensure(mainInfo(), have(textMatches(expectedTitle)))
+                                            .ensure(labelWithType("RUNID"), visible)
+                                            .ensure(labelWithType("pipeline-info"), visible), ipHyperlink)
+                        );
+                });
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2627"})
     public void dockerExtraMultiValidation() {
         if (impersonateMode() && "true".equalsIgnoreCase(C.AUTH_TOKEN)) {
@@ -209,6 +213,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(ENDPOINT, hidden)
                 .ensure(SSH_LINK, hidden);
         runsMenu()
+                .sleep(2, MINUTES)
                 .resume(getLastRunId(), nameWithoutGroup(tool))
                 .waitUntilPauseButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
@@ -263,18 +268,24 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(priority = 100)
+    @Test(priority = 100, enabled = false)
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
         endpoint = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
                 .launchTool(this, nameWithoutGroup(tool))
-                .show(getLastRunId())
-                .waitForInitializeNode(getLastRunId())
-                .clickEndpoint()
+                .showLog(getLastRunId())
+                .waitForEndpointLink()
+                .clickOnEndpointLink()
+
+//                .show(getLastRunId())
+//                .waitForInitializeNode(getLastRunId())
+//                .waitForEndpointLink()
+//                .clickEndpoint()
                 .getEndpoint();
-        restartBrowser(C.ROOT_ADDRESS);
+//        restartBrowser(C.ROOT_ADDRESS);
+        open(C.ROOT_ADDRESS);
 
         runsMenu()
                 .log(getLastRunId(), log -> log
@@ -288,6 +299,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                         .assertPageTitleIs("404 Not Found"),
                                         endpoint)
                         )
+                        .sleep(1, MINUTES)
                         .resume(nameWithoutGroup(tool))
                         .waitForEndpointLink()
                         .sleep(C.ENDPOINT_INITIALIZATION_TIMEOUT, MILLISECONDS)

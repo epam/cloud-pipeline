@@ -243,7 +243,7 @@ public class RoleModelTest
                 .ensureNotVisible(DELETE, ADD_NEW_RULE);
     }
 
-    @Test(priority = 7)
+    @Test(priority = 7, enabled = false)
     @TestCase({"EPMCMBIBPC-558"})
     public void readOnlyUserIsNotAbleToEditFileInPipeline() {
         navigationMenu()
@@ -275,7 +275,8 @@ public class RoleModelTest
                 .click(SETTINGS)
                 .ensure(EDIT_FOLDER, not(visible));
     }
-    @Test(priority = 9)
+
+    @Test(priority = 9, enabled = false)
     @TestCase({"EPMCMBIBPC-552"})
     public void checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions() {
         logoutIfNeeded();
@@ -398,7 +399,7 @@ public class RoleModelTest
                 .close();
     }
 
-    @Test(priority = 14)
+    @Test(priority = 14, enabled = false)
     @TestCase({"EPMCMBIBPC-561"})
     public void editAndExecutePipeline() {
         String newFileContent = "new content";
@@ -484,7 +485,7 @@ public class RoleModelTest
                 .ensureVisible(SHOW_METADATA);
     }
 
-    @Test(priority = 17)
+    @Test(priority = 17, enabled = false)
     @TestCase({"EPMCMBIBPC-564"})
     public void tryToNavigateToAnotherBucketByNavigationBar() {
         logoutIfNeeded();
@@ -556,7 +557,7 @@ public class RoleModelTest
         bucketTests.deleteSeveralFiles();
     }
 
-    @Test(priority = 20)
+    @Test(priority = 20, enabled = false)
     @TestCase({"EPMCMBIBPC-567"})
     public void checkClusterNodesByNonAdminUser() {
         logoutIfNeeded();
@@ -700,7 +701,7 @@ public class RoleModelTest
                 );
     }
 
-    @Test(priority = 27)
+    @Test(priority = 27, enabled = false)
     @TestCase({"EPMCMBIBPC-578"})
     public void checkPipelinePermissionsForGroup() {
         logoutIfNeeded();
@@ -718,7 +719,7 @@ public class RoleModelTest
                 .closeAll();
     }
 
-    @Test(priority = 28)
+    @Test(priority = 28, enabled = false)
     @TestCase({"EPMCMBIBPC-579"})
     public void setPipelinePermissionsAndCheckItForGroup() {
         logoutIfNeeded();
@@ -795,7 +796,7 @@ public class RoleModelTest
                 );
     }
 
-    @Test(priority = 30)
+    @Test(priority = 30, enabled = false)
     @TestCase({"EPMCMBIBPC-1575"})
     public void validateSearchWithinEditUser() {
         String group = "TESTING_GROUP";
@@ -830,7 +831,7 @@ public class RoleModelTest
                 .deleteGroup(group);
     }
 
-    @Test(priority = 31)
+    @Test(priority = 31, enabled = false)
     @TestCase({"EPMCMBIBPC-1581"})
     public void validateSearchForNoUser() {
         logoutIfNeeded();

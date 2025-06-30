@@ -218,10 +218,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         private void removeEntryIfExist(String title) {
             sleep(1, SECONDS);
-            while (!getEntry(title).isDisplayed()
-                    && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
-                click(byTitle(NEXT_PAGE));
-            }
             performIf(byXpath(format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", title)),
                     exist, entry -> removeEntry(getEntry(title))
             );
@@ -426,11 +422,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public EditNotificationPopup edit() {
+                $$(byId("notification-close-button")).forEach(el -> el.click());
                 click(EDIT);
                 return new EditNotificationPopup(this.parentAO);
             }
 
             public ConfirmationPopupAO<SystemEventsAO> delete() {
+                $$(byId("notification-close-button")).forEach(el -> el.click());
                 click(DELETE);
                 return new ConfirmationPopupAO<>(this.parentAO);
             }

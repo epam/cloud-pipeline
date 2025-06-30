@@ -311,7 +311,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRunIfPresent(String id) {
         activeRuns().viewAvailableActiveRuns();
-        sleep(10, SECONDS);
+        sleep(20, SECONDS);
         if (isActiveRun(id)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);

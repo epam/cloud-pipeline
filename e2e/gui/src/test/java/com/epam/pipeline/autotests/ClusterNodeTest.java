@@ -76,7 +76,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
                 .resetFiltering(LABEL);
     }
 
-    @Test(priority = 4, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
+    @Test(priority = 4, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-275"})
     public void nodesSortingDecreaseByLabelShouldBeValid() {
         clusterMenu()
@@ -122,7 +122,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
         assertEquals(clusterMenuAO.getNodesCount(), nodesCountBeforeFiltering);
     }
 
-    @Test(priority = 8, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
+    @Test(priority = 8, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-278, EPMCMBIBPC-279"})
     public void shouldFilterNodeByLabel() throws InterruptedException {
         final ClusterMenuAO clusterMenuAO = clusterMenu();

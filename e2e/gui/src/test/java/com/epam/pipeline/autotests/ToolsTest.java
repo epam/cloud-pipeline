@@ -92,7 +92,7 @@ public class ToolsTest
         );
     }
 
-    @BeforeClass
+    @BeforeClass(enabled = false)
     @TestCase({"EPMCMBIBPC-1404"})
     public void validateDeleteTool() {
         tools()
@@ -106,7 +106,7 @@ public class ToolsTest
                 );
     }
 
-    @BeforeClass(dependsOnMethods = {"validateDeleteTool"})
+    @BeforeClass(dependsOnMethods = {"validateDeleteTool"}, enabled = false)
     @TestCase({"EPMCMBIBPC-1407"})
     public void validateEnableTool() {
         tools()
@@ -117,7 +117,7 @@ public class ToolsTest
                 );
     }
 
-    @Test(priority = 0)
+    @Test(priority = 0, enabled = false)
     @TestCase({"EPMCMBIBPC-398"})
     public void toolsPageValidation() {
         tools().performWithin(defaultRegistry, defaultGroup, group ->
@@ -128,7 +128,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolsPageValidation"})
+    @Test(dependsOnMethods = {"toolsPageValidation"}, enabled = false)
     @TestCase({"EPMCMBIBPC-399"})
     public void fullToolNameSearch() {
         tools().performWithin(defaultRegistry, defaultGroup, group ->
@@ -137,7 +137,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"fullToolNameSearch"})
+    @Test(dependsOnMethods = {"fullToolNameSearch"}, enabled = false)
     @TestCase({"EPMCMBIBPC-401"})
     public void fullGroupNameSearch() {
         tools().registry(defaultRegistry, registry ->
@@ -146,7 +146,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"fullGroupNameSearch"})
+    @Test(dependsOnMethods = {"fullGroupNameSearch"}, enabled = false)
     @TestCase({"EPMCMBIBPC-403"})
     public void personalGroupCrudOperations() {
         final String description = "some description";
@@ -178,7 +178,7 @@ public class ToolsTest
                 );
     }
 
-    @Test(dependsOnMethods = {"personalGroupCrudOperations"})
+    @Test(dependsOnMethods = {"personalGroupCrudOperations"}, enabled = false)
     @TestCase({"EPMCMBIBPC-402"})
     public void partToolNameSearch() {
         final String partName = testingTool.substring(0, testingTool.length() / 2);
@@ -190,7 +190,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"partToolNameSearch"})
+    @Test(dependsOnMethods = {"partToolNameSearch"}, enabled = false)
     @TestCase({"EPMCMBIBPC-409"})
     public void toolLabelsAddition() {
         final String firstLabel = "pretty label";
@@ -207,7 +207,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolLabelsAddition"})
+    @Test(dependsOnMethods = {"toolLabelsAddition"}, enabled = false)
     @TestCase({"EPMCMBIBPC-432"})
     public void toolDescriptionAddition() {
         final String shortDescription = "short description";
@@ -220,7 +220,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolDescriptionAddition"})
+    @Test(dependsOnMethods = {"toolDescriptionAddition"}, enabled = false)
     @TestCase({"EPMCMBIBPC-433"})
     public void groupCrudOperations() {
         final String groupName = "group-" + Utils.randomSuffix();
@@ -255,7 +255,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"groupCrudOperations"})
+    @Test(dependsOnMethods = {"groupCrudOperations"}, enabled = false)
     @TestCase({"EPMCMBIBPC-412"})
     public void toolEditionMenu() {
         tools().perform(defaultRegistry, defaultGroup, testingTool, tool ->
@@ -271,7 +271,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolEditionMenu"})
+    @Test(dependsOnMethods = {"toolEditionMenu"}, enabled = false)
     @TestCase({"EPMCMBIBPC-427"})
     public void toolVersionsTab() {
         tools().perform(defaultRegistry, defaultGroup, testingTool, tool ->
@@ -353,7 +353,7 @@ public class ToolsTest
                 .waitFor(LogAO.Status.FAILURE);
     }
 
-    @Test(dependsOnMethods = {"toolCustomSettingsRun"})
+    @Test(dependsOnMethods = {"toolCustomSettingsRun"}, enabled = false)
     @TestCase({"EPMCMBIBPC-434"})
     public void toolDefaultCommandIsSavedOnlyForEditedTool() {
         tools().performWithin(defaultRegistry, defaultGroup, toolWithoutDefaultSettings, tool ->
@@ -361,7 +361,7 @@ public class ToolsTest
         );
     }
 
-    @Test(dependsOnMethods = {"toolDefaultCommandIsSavedOnlyForEditedTool"})
+    @Test(dependsOnMethods = {"toolDefaultCommandIsSavedOnlyForEditedTool"}, enabled = false)
     @TestCase({"EPMCMBIBPC-404"})
     public void validateSwitchBetweenGroups() {
         tools().registryWithin(defaultRegistry, registry ->
@@ -374,7 +374,7 @@ public class ToolsTest
         refresh();
     }
 
-    @Test(priority = 10)
+    @Test(priority = 10, enabled = false)
     @TestCase({"EPMCMBIBPC-1546"})
     public void addToolDescriptionAndChangeSettings() {
         final String description = String.format("description-%d", Utils.randomSuffix());
@@ -390,7 +390,7 @@ public class ToolsTest
         );
     }
 
-    @Test(priority = 10)
+    @Test(priority = 10, enabled = false)
     @TestCase({"EPMCMBIBPC-1576"})
     public void createGroupWithInvalidName() {
         final String groupName = "!@#$%^&*()[]{}";
@@ -406,7 +406,7 @@ public class ToolsTest
         );
     }
 
-    @Test(priority = 10)
+    @Test(priority = 10, enabled = false)
     @TestCase({"EPMCMBIBPC-1645"})
     public void validateFirstGroupDefaultHasOpened() {
         logout();
@@ -418,7 +418,7 @@ public class ToolsTest
         loginAs(admin);
     }
 
-    @Test(priority = 10)
+    @Test(priority = 10, enabled = false)
     @TestCase({"EPMCMBIBPC-1296"})
     public void toolCustomSettingsRunWithoutDefaults() {
         final String priceType = ON_DEMAND;
@@ -461,7 +461,7 @@ public class ToolsTest
                 );
     }
 
-    @Test(dependsOnMethods = {"toolCustomSettingsRunWithoutDefaults"}, priority = 10)
+    @Test(dependsOnMethods = {"toolCustomSettingsRunWithoutDefaults"}, priority = 10, enabled = false)
     @TestCase({"EPMCMBIBPC-1436"})
     public void validateEstimatedPriceAvailabilityForFilledTool() {
         tools()

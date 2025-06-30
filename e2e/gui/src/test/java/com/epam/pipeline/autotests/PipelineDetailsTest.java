@@ -50,7 +50,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DOCUMENTS_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DOWNLOAD;
-import static com.epam.pipeline.autotests.ao.Primitive.GRAPH_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.HISTORY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
@@ -85,18 +84,18 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
 
     @Test(priority = 0)
     @TestCase(value = {"EPMCMBIBPC-343"})
-    public void luigiPipelineTabsShouldBeValid() {
+    public void pipelineTabsShouldBeValid() {
         navigationMenu()
                 .library()
-                .createPipeline(Template.LUIGI, pipelineName)
+                .createPipeline(Template.SHELL, pipelineName)
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .codeTab()
-                .ensureVisible(CODE_TAB, CONFIGURATION_TAB, GRAPH_TAB, DOCUMENTS_TAB, HISTORY_TAB, STORAGE_RULES_TAB)
+                .ensureVisible(CODE_TAB, CONFIGURATION_TAB, DOCUMENTS_TAB, HISTORY_TAB, STORAGE_RULES_TAB)
                 .tabShouldBeActive(CODE_TAB);
     }
 
-    @Test(dependsOnMethods = {"luigiPipelineTabsShouldBeValid"})
+    @Test(dependsOnMethods = {"pipelineTabsShouldBeValid"})
     @TestCase(value = {"EPMCMBIBPC-339"})
     public void shouldCreateFolderInPipeline() {
         codeTab()

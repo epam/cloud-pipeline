@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -88,6 +89,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .firstVersion()
                 .runPipeline()
                 .doNotMountStoragesSelect(true)
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(pipelineRunID = getLastRunId())
                 .waitForCompletion();

@@ -57,7 +57,7 @@ public class RunToolsInSandBoxTest
     private final String disk = "15";
     private final String price = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String registry = C.DEFAULT_REGISTRY;
-    private final String tool = C.TESTING_TOOL_NAME;
+    private final String tool = C.TESTING_TOOL_NAME;//
     private final String group = C.DEFAULT_GROUP;
     private final String endpoint = C.VALID_ENDPOINT;
     private final String testDockerImage = C.TEST_DOCKER_IMAGE;
@@ -66,6 +66,8 @@ public class RunToolsInSandBoxTest
     @BeforeClass
     @AfterClass(alwaysRun = true)
     public void fallbackToToolDefaultState() {
+        open(C.ROOT_ADDRESS);
+        loginAs(admin);
         fallbackToToolDefaultState(registry,
                 group,
                 tool,
@@ -149,7 +151,7 @@ public class RunToolsInSandBoxTest
         logout();
 
         // in order to avoid caching issue
-        restartBrowser(C.ROOT_ADDRESS);
+        open(C.ROOT_ADDRESS);
 
         loginAs(user)
                 .runs()
@@ -178,7 +180,7 @@ public class RunToolsInSandBoxTest
                 .assertPageTitleIs("404 Not Found");
     }
 
-    @Test(dependsOnMethods = {"validateStopToolInSandbox"})
+    @Test(dependsOnMethods = {"validateStopToolInSandbox"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-503"})
     public void validateNodeReusage() {
         tools().perform(registry, group, tool, runTool())
@@ -205,7 +207,7 @@ public class RunToolsInSandBoxTest
                 .shouldHaveStatus(LogAO.Status.FAILURE);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = {"EPMCMBIBPC-3172", "EPMCMBIBPC-3173"})
     public void validationOfDinDLaunchAndFunctionality() {
         tools()

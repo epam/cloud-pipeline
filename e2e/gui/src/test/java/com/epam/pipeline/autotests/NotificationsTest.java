@@ -36,6 +36,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.lang.String.format;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 
 public class NotificationsTest extends AbstractBfxPipelineTest implements Authorization {
 
@@ -97,7 +98,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .searchForTableEntry(warningActiveNotification)
                 .ensureSeverityIconIs(severity.name());
         if(!impersonateMode()) {
-            refresh();
+            getWebDriver().navigate().refresh();
             validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
             closeNotification(warningActiveNotification);
         }
@@ -122,7 +123,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     public void validateActivateNotification() {
         changeStateOf(infoNotification);
 
-        refresh();
+        getWebDriver().navigate().refresh();
         new NotificationAO(infoNotification)
                 .ensureSeverityIs("Info")
                 .ensureTitleIs(infoNotification)
@@ -146,7 +147,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         changeStateOf(warningNotification);
         changeStateOf(criticalNotification);
 
-        refresh();
+        getWebDriver().navigate().refresh();
         validateActiveNotification(infoNotification, infoNotificationBodyText, INFO);
         validateActiveNotification(warningNotification, warningNotificationBodyText, WARNING);
         validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
@@ -171,7 +172,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
                 .click(EXPAND)
                 .ensureBodyHasText(infoEditedBodyText);
-        refresh();
+        getWebDriver().navigate().refresh();
         validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
         closeNotification(infoEditedTitle);
     }
@@ -187,7 +188,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureTitleIs(format(deletionMessageFormat, warningNotification))
                 .ok();
 
-        refresh();
+        getWebDriver().navigate().refresh();
         ensureNotificationIsAbsent(warningNotification);
         closeNotification(infoNotification);
         closeNotification(criticalNotification);
@@ -197,7 +198,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @TestCase(value = {"EPMCMBIBPC-1221"})
     public void validateCloseActiveNotification() {
         closeNotification(criticalNotification);
-        refresh();
+        getWebDriver().navigate().refresh();
         validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
     }
 
@@ -210,7 +211,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
             changeStateOf(criticalNotification);
         }
 
-        refresh();
+        getWebDriver().navigate().refresh();
         ensureNotificationIsAbsent(infoEditedTitle);
         ensureNotificationIsAbsent(warningActiveNotification);
         ensureNotificationIsAbsent(criticalNotification);

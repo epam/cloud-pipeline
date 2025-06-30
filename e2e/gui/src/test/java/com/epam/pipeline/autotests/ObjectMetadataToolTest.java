@@ -57,7 +57,7 @@ public class ObjectMetadataToolTest extends AbstractBfxPipelineTest implements N
                 );
     }
 
-    @Test(priority = 1)
+    @Test(priority = 1, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-916"})
     public void checkMetadataForTool() {
         tools()

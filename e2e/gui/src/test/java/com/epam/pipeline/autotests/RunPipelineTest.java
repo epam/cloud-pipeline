@@ -39,7 +39,6 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.*;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.*;
@@ -59,6 +58,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.openqa.selenium.By.className;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 
 public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implements Authorization {
     private String pipeline100 = resourceName("epmcmbibpc-100");
@@ -171,7 +171,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-305")
     public void pipelineLogPageShouldBeValid() {
         sleep(1, SECONDS);
-        refresh();
+        getWebDriver().navigate().refresh();
         final String runId = getLastRunId();
         runsMenu()
             .activeRuns()
@@ -288,7 +288,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         final By nonMasterNode = Combiners.select(
                 and("node neither master nor windows", not(master()), not(windows())),
                 node(), "any non-master node");
-        refresh();
+        getWebDriver().navigate().refresh();
         clusterMenu()
             .filterByHasRunId()
             .click(nonMasterNode, NodePage::new)

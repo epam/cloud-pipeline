@@ -36,12 +36,12 @@ import java.nio.file.Paths;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.StorageContentAO.folderWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
 public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigation {
@@ -131,7 +131,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .createStorage(storage)
             .messageShouldAppear(format("'%s' already exist", storage));
         clickCanceButtonlIfItIsDisplayed();
-        refresh();
+        getWebDriver().navigate().refresh();
     }
 
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})
@@ -155,7 +155,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
                 format("Storage path '%s/' for bucket '%s' already exists.", folder,
                     format("%s%s", STORAGE_PREFIX, storage)));
 
-        refresh();
+        getWebDriver().navigate().refresh();
     }
 
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})
@@ -581,7 +581,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     }
 
     private void reloadPageAndWait() {
-        refresh();
+        getWebDriver().navigate().refresh();
         $(byClassName("pipelines-library-tree-node-folder_root")).should(appear);
     }
 

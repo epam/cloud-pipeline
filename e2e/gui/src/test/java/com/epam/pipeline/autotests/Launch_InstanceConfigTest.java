@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunningTest {
 
-    private final String dockerImage = String.format("%s/library/%s", C.DEFAULT_REGISTRY_IP, C.LUIGI_IMAGE);
+    private final String dockerImage = String.format("%s/%s", C.DEFAULT_REGISTRY_IP, C.TESTING_TOOL_NAME);
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String instanceDisk = "25";
 

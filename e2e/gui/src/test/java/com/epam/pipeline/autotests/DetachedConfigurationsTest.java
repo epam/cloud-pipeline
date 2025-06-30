@@ -44,6 +44,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Configuration.priceType;
 import static com.epam.pipeline.autotests.ao.Configuration.startIdle;
@@ -158,7 +159,7 @@ public class DetachedConfigurationsTest
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
-                refresh();
+                getWebDriver().navigate().refresh();
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
@@ -168,7 +169,7 @@ public class DetachedConfigurationsTest
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineProfile1611, profile -> {
-                refresh();
+                getWebDriver().navigate().refresh();
                 profile
                     .addStringParameter(stringParameter, stringParameterValue)
                     .addPathParameter(pathParameter, pathParameterValue)
@@ -179,7 +180,7 @@ public class DetachedConfigurationsTest
                     .click(SAVE)
                     .waitUntilSaveEnding(pipelineProfile1611);
             });
-        refresh();
+        getWebDriver().navigate().refresh();
         library().clickRoot();
     }
 
@@ -480,7 +481,7 @@ public class DetachedConfigurationsTest
         final String parameterName = "name";
         final String parameterValue = "value";
 
-        refresh();
+        getWebDriver().navigate().refresh();
         library()
             .createConfiguration(configuration1601)
             .configurationWithin(configuration1601, configuration -> configuration.expandTabs(parametersTab)
@@ -596,7 +597,7 @@ public class DetachedConfigurationsTest
     @Test(priority = 3)
     @TestCase("EPMCMBIBPC-1140")
     public void validationOfConfigWithEmptyParametersInDetachConfiguration() {
-        refresh();
+        getWebDriver().navigate().refresh();
         library()
             .createConfiguration(runWithParametersConfiguration)
             .configurationWithin(runWithParametersConfiguration, configuration -> {
@@ -664,7 +665,7 @@ public class DetachedConfigurationsTest
                 .click(SAVE)
                 .ensureDisable(SAVE)
             );
-        refresh();
+        getWebDriver().navigate().refresh();
         library()
             .configurationWithin(runWithParametersConfiguration, configuration -> {
                 configuration.selectProfile(secondConfigurationProfile)

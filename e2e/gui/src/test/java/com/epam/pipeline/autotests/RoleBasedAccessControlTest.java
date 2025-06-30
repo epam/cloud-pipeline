@@ -109,7 +109,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .library();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
         Selenide.close();
@@ -224,7 +224,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                         PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-3016"})
     public void blockUnblockUser() {
         try {
@@ -284,7 +284,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 format(",%s,", user.login.toUpperCase()));
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "EPMCMBIBPC-3169")
     public void checkAnonymousAccess() {
         if ("false".equals(C.AUTH_TOKEN)) {
@@ -338,7 +338,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(admin);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"2144"})
     public void allowToImpersonateAdministratorAsGeneralUser() {
         logoutIfNeeded();

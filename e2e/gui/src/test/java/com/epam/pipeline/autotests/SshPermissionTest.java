@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -93,6 +94,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .setCommand(sleepingCommand)
                 .launch(this);
         runsMenu()

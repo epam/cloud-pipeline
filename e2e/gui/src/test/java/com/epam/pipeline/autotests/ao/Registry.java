@@ -60,7 +60,9 @@ public class Registry implements AccessObject<Registry> {
         sleep(1, SECONDS);
         if (!get(GROUP).getText().equals(groupName)) {
             click(GROUP);
-            $(byText("All groups")).shouldBe(visible).click();
+            if($(byText("All groups")).is(visible)) {
+                $(byText("All groups")).shouldBe(visible).click();
+            }
             get(GROUPS_LIST).find(button(groupName)).shouldBe(visible).click();
             ensure(GROUP, text(groupName));
         }
