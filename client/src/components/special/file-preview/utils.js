@@ -88,10 +88,7 @@ export function externalPreviewConfiguration (filePath) {
   let renderer = renderers.find((renderer) =>
     typeof renderer.testExtension === 'function' &&
     renderer.testExtension(ext));
-  const configuration = renderer.getPreviewConfiguration
+  return renderer && renderer.getPreviewConfiguration
     ? renderer.getPreviewConfiguration({storage, relativePath})
-    : null;
-  return {
-    configuration
-  };
+    : undefined;
 }

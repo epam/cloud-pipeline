@@ -16,8 +16,7 @@ class FileExternalPreview extends React.Component {
 
   get previewConfiguration () {
     const {filePath} = this.props;
-    const {configuration} = externalPreviewConfiguration(filePath);
-    return configuration || {};
+    return externalPreviewConfiguration(filePath) || {};
   }
 
   componentDidMount () {
