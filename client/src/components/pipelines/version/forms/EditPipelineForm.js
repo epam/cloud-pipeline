@@ -172,15 +172,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     e.preventDefault();
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        if (!this.state.editRepositorySettings) {
-          values.repository = undefined;
-          values.token = undefined;
-          values.repositoryType = undefined;
-          values.branch = undefined;
-          values.configurationPath = undefined;
-        } else {
-          values.token = values.token || '';
-        }
         this.props.onSubmit(values);
       }
     });
