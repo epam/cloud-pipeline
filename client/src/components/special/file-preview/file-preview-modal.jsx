@@ -19,9 +19,9 @@ export const FilePreviewModal = (
   return (
     <Modal
       className={classNames(className, styles.filePreviewModal)}
-      style={style}
+      style={{top: 40, ...style}}
       bodyStyle={{
-        maxHeight: 'calc(80vh - 200px)',
+        maxHeight: '85vh',
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column'
