@@ -639,7 +639,8 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = self.bucket.bucket.path
         prefix = StorageOperations.get_prefix(relative_path)
-        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix, write_required=True)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix, write_required=True, quite=False,
+                                                      root_file_flag=self.bucket.is_file())
 
         if not recursive and not hard_delete:
             delete_items = []
@@ -905,7 +906,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item_keys = collections.OrderedDict()
         items_count = 0
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
-        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix,
+                                                      root_file_flag=self.bucket.is_file_flag)
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
@@ -928,7 +930,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                         else:
                             if version_not_restored:
                                 restore_status = None
-                    if not permissions_manager.is_file_allowed(name):
+                    if not permissions_manager.is_file_allowed(version.get('Key')):
                         continue
                     item = self.get_file_object(version, name, version=True, lifecycle_status=restore_status)
                     self.process_version(item, item_keys, name)
@@ -964,7 +966,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         items = []
         items_count = 0
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
-        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix,
+                                                      root_file_flag=self.bucket.is_file_flag)
 
         for page in page_iterator:
             if 'CommonPrefixes' in page:
@@ -982,7 +985,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                         lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
                         if not show_archive and not lifecycle_status:
                             continue
-                    if not permissions_manager.is_file_allowed(name):
+                    if not permissions_manager.is_file_allowed(file.get('Key')):
                         continue
                     item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
                     items.append(item)
@@ -998,7 +1001,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
         lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
-        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix)
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix,
+                                                      root_file_flag=self.bucket.is_file_flag)
         items = []
 
         for page in page_iterator:
@@ -1016,7 +1020,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                         lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
                         if not show_archive and not lifecycle_status:
                             continue
-                    if not permissions_manager.is_file_allowed(name):
+                    if not permissions_manager.is_file_allowed(file.get('Key')):
                         continue
                     item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
                     items.append(item)
@@ -1417,7 +1421,7 @@ class S3BucketOperations(object):
             return
         if PatternMatcher.match_any(name, exclude, default=False):
             return
-        if not permissions_manager.is_file_allowed(name):
+        if not permissions_manager.is_file_allowed(item['Key']):
             return
         if versions:
             items.append(dict(Key=item['Key'], VersionId=item['VersionId']))

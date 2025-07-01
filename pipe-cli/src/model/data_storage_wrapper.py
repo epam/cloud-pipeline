@@ -21,6 +21,7 @@ from ftplib import FTP, error_temp
 from future.standard_library import install_aliases
 
 from ..utilities.encoding_utilities import to_unicode, to_string
+from ..utilities.storage_path_permissions_manager import DefaultStoragePathPermissionsManager
 
 install_aliases()
 
@@ -135,6 +136,7 @@ class DataStorageWrapper(object):
         self.path = path
         self.items = []
         self.path_separator = StorageOperations.PATH_SEPARATOR
+        self.path_permissions_manager = DefaultStoragePathPermissionsManager()
 
     @classmethod
     def get_wrapper(cls, uri, symlinks=None):
@@ -279,6 +281,12 @@ class DataStorageWrapper(object):
         return self.path \
             if self.path.endswith(self.path_separator) \
             else self.path + self.path_separator
+
+    def set_path_permissions_manager(self, path_permissions_manager):
+        self.path_permissions_manager = path_permissions_manager
+
+    def get_path_permissions_manager(self):
+        return self.path_permissions_manager
 
 
 class CloudDataStorageWrapper(DataStorageWrapper):
