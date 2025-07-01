@@ -24,6 +24,7 @@
   display: inline-flex;
   flex-direction: column;
   padding-right: 10px;
+  padding-bottom: 2px;
 }
 
 .report-file-preview-header-action {

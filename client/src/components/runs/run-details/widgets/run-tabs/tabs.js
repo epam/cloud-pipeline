@@ -10,7 +10,6 @@ import RunLaunchCommandSection from '../../sections/launch-command';
 import InitializeWrapper from '../../sections/common/initialize-wrapper';
 import preferencesStore from '../../../../../models/preferences/PreferencesLoad';
 import {inject, observer} from 'mobx-react';
-import styles from '../run-header/run-endpoints/run-endpoints.css';
 
 const iconStyle = {fontSize: '1.1rem'};
 
