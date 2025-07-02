@@ -391,4 +391,4 @@ class StoragePathPermissionsRefresherDaemon:
                 logging.warning('Interrupted.')
                 raise
             except Exception:
-                logging.warning('Disk buffer ttl daemon iteration has failed.', exc_info=True)
+                logging.warning('Storage path permissions refresh daemon iteration has failed.', exc_info=True)
