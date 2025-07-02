@@ -49,6 +49,9 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.Watch;
+import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.codec.binary.Base64;
@@ -852,9 +855,17 @@ public class KubernetesManager {
                 .list();
     }
 
-    public Set<String> getAvailableNodesIds(KubernetesClient client) {
-        NodeList nodeList = getAvailableNodes(client);
-        return convertKubeItemsToRunIdSet(nodeList.getItems());
+    public Set<String> getSchedulableNodesIds(KubernetesClient client) {
+        FilterWatchListDeletable<Node, NodeList, Boolean, Watch, Watcher<Node>> nodeList =
+                client.nodes()
+                        .withLabel(KubernetesConstants.RUN_ID_LABEL)
+                        .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL);
+        final Map<String, String> skipLabels =
+                preferenceManager.getPreference(SystemPreferences.KUBE_NODE_SKIP_REASSIGN_LABELS);
+        if (MapUtils.isNotEmpty(skipLabels)) {
+            nodeList = nodeList.withoutLabels(skipLabels);
+        }
+        return convertKubeItemsToRunIdSet(nodeList.list().getItems());
     }
 
     public Set<String> getAllPodIds(KubernetesClient client) {
