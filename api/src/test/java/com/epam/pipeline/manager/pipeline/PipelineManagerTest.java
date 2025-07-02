@@ -32,6 +32,8 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,6 +95,9 @@ public class PipelineManagerTest {
 
     @Mock
     private PipelineRunDao pipelineRunDao;
+
+    @Mock
+    private PreferenceManager preferenceManager;
 
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
@@ -305,6 +310,7 @@ public class PipelineManagerTest {
         final PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setPipelineName(REPOSITORY_NAME);
         doReturn(Collections.singletonList(pipelineRun)).when(pipelineRunDao).loadAllRunsForPipeline(any());
+        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.GIT_REPOSITORY_RENAME_REPO);
 
         final Pipeline pipeline = new Pipeline();
         pipeline.setName(REPOSITORY_NAME);
