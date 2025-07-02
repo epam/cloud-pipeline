@@ -40,7 +40,7 @@ from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.printing.storage import print_storage_items, init_items_table
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
-from src.utilities.storage_path_permissions import verify_storage_path_permissions_allowed
+from src.utilities.storage_path_permissions_manager import get_permissions_manager
 from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
@@ -176,6 +176,10 @@ class DataStorageOperations(object):
         audit_ctx = auditing()
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
                                                            events=audit_ctx.container, command=command)
+        cls._init_permissions_managers(source_wrapper=source_wrapper,
+                                       destination_wrapper=destination_wrapper,
+                                       clean_flag=clean,
+                                       quite_flag=quiet)
 
         batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.LOCAL
                                                                       or source_wrapper.get_type() == WrapperType.S3)
@@ -302,6 +306,23 @@ class DataStorageOperations(object):
         return items
 
     @classmethod
+    def _init_permissions_managers(cls, source_wrapper, destination_wrapper, clean_flag, quite_flag):
+        if source_wrapper.get_type() == WrapperType.S3:
+            source_wrapper.set_path_permissions_manager(get_permissions_manager(storage=source_wrapper.bucket,
+                                                                                root_path=source_wrapper.path,
+                                                                                write_required=clean_flag,
+                                                                                quite=quite_flag,
+                                                                                root_file_flag=source_wrapper.is_file()))
+        if destination_wrapper.get_type() == WrapperType.S3:
+            destination_wrapper.set_path_permissions_manager(get_permissions_manager(
+                storage=destination_wrapper.bucket,
+                root_path=destination_wrapper.path,
+                write_required=True,
+                quite=quite_flag,
+                root_file_flag=destination_wrapper.is_file(),
+                is_destination=True))
+
+    @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
                       include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                       unsafe_chars, unsafe_chars_replacement, empty_files):
@@ -329,6 +350,11 @@ class DataStorageOperations(object):
             if source_wrapper.is_local() and not os.access(to_string(full_path), permission_to_check):
                 continue
             if source_wrapper.is_file() and not source_wrapper.path == full_path:
+                continue
+            if not source_wrapper.get_path_permissions_manager().is_file_allowed(full_path):
+                continue
+            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path)
+            if not destination_wrapper.get_path_permissions_manager().is_file_allowed(destination_key):
                 continue
             if not include and not exclude and not skip_existing and not verify_destination:
                 if not source_wrapper.is_file():
@@ -358,7 +384,6 @@ class DataStorageOperations(object):
                 filtered_items.append(item)
                 continue
 
-            destination_key = manager.get_destination_key(destination_wrapper, destination_relative_path)
             if skip_existing and sync_newer:
                 destination_size, destination_modification_datetime = \
                     manager.get_destination_object_head(destination_wrapper, destination_key)
@@ -513,8 +538,6 @@ class DataStorageOperations(object):
             if root_bucket is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
-            if root_bucket.type == 'S3':
-                verify_storage_path_permissions_allowed(root_bucket)
             if show_archive and root_bucket.type != 'S3':
                 click.echo('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
