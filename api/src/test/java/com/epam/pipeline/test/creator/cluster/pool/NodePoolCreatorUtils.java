@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public final class NodePoolCreatorUtils {
 
@@ -46,6 +47,7 @@ public final class NodePoolCreatorUtils {
     public static final int POOL_SCALE_STEP = 2;
     public static final double POOL_SCALE_DOWN_THRESHOLD = 25.0;
     public static final double POOL_SCALE_UP_THRESHOLD = 75.0;
+    public static final Map<String, String> POOL_KUBE_LABELS = Collections.singletonMap("key-1-test", "value-1-test");
 
     private NodePoolCreatorUtils() {
         //no op
@@ -68,6 +70,7 @@ public final class NodePoolCreatorUtils {
         pool.setScaleStep(POOL_SCALE_STEP);
         pool.setScaleDownThreshold(POOL_SCALE_DOWN_THRESHOLD);
         pool.setScaleUpThreshold(POOL_SCALE_UP_THRESHOLD);
+        pool.setKubeLabels(POOL_KUBE_LABELS);
         return pool;
     }
 
