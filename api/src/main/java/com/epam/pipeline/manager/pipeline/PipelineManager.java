@@ -392,10 +392,12 @@ public class PipelineManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
         final Pipeline loadedPipeline = load(id);
+        final boolean isGitlabPipeline = RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType());
 
         final String sourceProjectName = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final String uuid = PasswordGenerator.generateRandomString(20);
-        final String newPipelineName = buildCopyProjectName(sourceProjectName, uuid, newName);
+        final String newPipelineName = buildCopyProjectName(sourceProjectName, uuid, newName,
+                isGitlabPipeline);
         final Long sourcePipelineId = loadedPipeline.getId();
 
         loadedPipeline.setName(newPipelineName);
@@ -405,7 +407,7 @@ public class PipelineManager implements SecuredEntityManager {
         loadedPipeline.setLocked(false);
 
         final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
-        if (RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType())) {
+        if (isGitlabPipeline) {
             final String newRepository =
                     GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
             final String newRepositorySsh =
@@ -418,7 +420,7 @@ public class PipelineManager implements SecuredEntityManager {
         final Pipeline newPipeline = crudManager.savePipeline(loadedPipeline);
         copyStorageRules(sourcePipelineId, newPipeline.getId());
 
-        if (RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType())) {
+        if (isGitlabPipeline) {
             gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
         }
         return newPipeline;
@@ -446,10 +448,12 @@ public class PipelineManager implements SecuredEntityManager {
     }
 
     private String buildCopyProjectName(final String sourceProjectName, final String uuid,
-                                        final String newProjectName) {
+                                        final String newProjectName, final boolean isGitlabPipeline) {
         if (StringUtils.isNotBlank(newProjectName)) {
-            Assert.isTrue(!gitManager.checkProjectExists(newProjectName),
-                    messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, newProjectName));
+            if (isGitlabPipeline) {
+                Assert.isTrue(!gitManager.checkProjectExists(newProjectName),
+                        messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, newProjectName));
+            }
             return newProjectName;
         }
         return String.format("%s_copy%s", sourceProjectName, uuid);
