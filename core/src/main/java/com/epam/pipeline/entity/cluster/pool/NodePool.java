@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -45,6 +46,7 @@ public class NodePool implements NodePoolInfo {
     private Double scaleUpThreshold;
     private Double scaleDownThreshold;
     private Integer scaleStep;
+    private Map<String, String> kubeLabels;
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {

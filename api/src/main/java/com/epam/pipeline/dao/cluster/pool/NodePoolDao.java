@@ -113,7 +113,8 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         POOL_MAX_SIZE,
         POOL_UP_THRESHOLD,
         POOL_DOWN_THRESHOLD,
-        POOL_SCALE_STEP;
+        POOL_SCALE_STEP,
+        POOL_KUBE_LABELS;
 
         public static final String DOCKER_IMAGE_DELIMITER = ",";
 
@@ -143,6 +144,10 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
             params.addValue(NodeScheduleParameters.SCHEDULE_ID.name(),
                     Optional.ofNullable(pool.getSchedule())
                             .map(NodeSchedule::getId)
+                            .orElse(null));
+            params.addValue(POOL_KUBE_LABELS.name(),
+                    Optional.ofNullable(pool.getKubeLabels())
+                            .map(JsonMapper::convertDataToJsonStringForQuery)
                             .orElse(null));
             return params;
         }
@@ -195,6 +200,10 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     .filter(StringUtils::isNotBlank)
                     .map(NodePoolParameters::parseFilter)
                     .ifPresent(pool::setFilter);
+            Optional.ofNullable(rs.getString(POOL_KUBE_LABELS.name()))
+                    .filter(StringUtils::isNotBlank)
+                    .map(NodePoolParameters::parseKubeLabels)
+                    .ifPresent(pool::setKubeLabels);
             return pool;
         }
 
@@ -224,6 +233,15 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         private static PoolFilter parseFilter(final String filter) {
             try {
                 return JsonMapper.parseData(filter, new TypeReference<PoolFilter>() {});
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage(), e);
+                return null;
+            }
+        }
+
+        private static Map<String, String> parseKubeLabels(final String kubeLabels) {
+            try {
+                return JsonMapper.parseData(kubeLabels, new TypeReference<Map<String, String>>() {});
             } catch (IllegalArgumentException e) {
                 log.error(e.getMessage(), e);
                 return null;
