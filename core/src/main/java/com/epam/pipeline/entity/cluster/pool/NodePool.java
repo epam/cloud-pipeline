@@ -54,7 +54,7 @@ public class NodePool implements NodePoolInfo {
         }
         return Optional.ofNullable(schedule)
                 .map(s -> s.isActive(timestamp))
-                .orElse(false);
+                .orElse(true);
     }
 
     @Override
