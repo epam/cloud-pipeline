@@ -163,7 +163,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             Config config = new Config();
             Set<String> scheduledRuns = new HashSet<>();
             try (KubernetesClient client = kubernetesManager.getKubernetesClient(config)) {
-                Set<String> nodes = kubernetesManager.getAvailableNodesIds(client);
+                Set<String> nodes = kubernetesManager.getSchedulableNodesIds(client);
                 checkPendingPods(scheduledRuns, client, nodes);
                 Set<String> pods = kubernetesManager.getAllPodIds(client);
                 scaleDownHandler.checkFreeNodes(scheduledRuns, client, pods);
