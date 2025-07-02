@@ -767,6 +767,10 @@ public class SystemPreferences {
             "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
     public static final LongPreference KUBE_POD_HANG_PERIOD_SECONDS = new LongPreference(
             "launch.kube.pod.hang.period.seconds", 300L, LAUNCH_GROUP, pass, false);
+    public static final ObjectPreference<Map<String, String>> KUBE_NODE_SKIP_REASSIGN_LABELS = new ObjectPreference<>(
+            "launch.kube.skip.reassign.labels", null, new TypeReference<Map<String, String>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
