@@ -23,6 +23,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.C.SSH_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.lang.System.currentTimeMillis;
 import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
@@ -286,7 +287,11 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForNestedRunsLink() {
-        get(NESTED_RUNS).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        long startTime = currentTimeMillis();
+        while(!get(NESTED_RUNS).exists() &&
+                (currentTimeMillis()-startTime) < SSH_LINK_APPEARING_TIMEOUT) {
+            ensure(STATUS, not(completed));
+        }
         return this;
     }
 

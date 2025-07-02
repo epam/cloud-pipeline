@@ -94,6 +94,7 @@ const columns = [
     }
   },
   ...[
+    'native_id',
     'cpus',
     'memory',
     'disk',

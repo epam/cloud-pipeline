@@ -8,6 +8,9 @@
   min-height: 200px;
 }
 
+.file-preview-miew-renderer,
 .file-preview-html-renderer {
-  height: calc(70vh - 210px);
+  /* modal height minus preview-header minus body paddings */
+  height: calc(85vh - 100px);
+  overflow: hidden;
 }

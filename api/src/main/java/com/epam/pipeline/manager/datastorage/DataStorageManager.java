@@ -1042,6 +1042,8 @@ public class DataStorageManager implements SecuredEntityManager {
                                                 final AbstractCloudRegion target,
                                                 final MountStorageRule rule) {
         switch (rule) {
+            case REGION:
+                return Objects.equals(source.getRegionCode(), target.getRegionCode());
             case CLOUD:
                 return source.getProvider().equals(target.getProvider());
             case ALL:

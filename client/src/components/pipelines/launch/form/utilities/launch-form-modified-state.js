@@ -15,9 +15,7 @@
  */
 import {
   ADVANCED,
-  EXEC_ENVIRONMENT,
-  PARAMETERS,
-  SYSTEM_PARAMETERS
+  EXEC_ENVIRONMENT
 } from './launch-form-sections';
 import {
   autoScaledClusterEnabled,
@@ -42,6 +40,8 @@ import {
   fsConfigsAreEqual,
   getFsConfigFromParameters
 } from './configure-fs/utilities';
+import {parametersModified} from "./parameter-utilities";
+import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -205,12 +205,7 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
   return code !== parameters['cmd_template'];
 }
 
-function parametersCheck (form, parameters, state, preferences) {
-  if (!formItemInitialized(form, PARAMETERS) || !formItemInitialized(form, SYSTEM_PARAMETERS)) {
-    return false;
-  }
-  const formParams = form.getFieldValue(PARAMETERS);
-  const formSystemParams = form.getFieldValue(SYSTEM_PARAMETERS);
+function parametersCheck (formParameters, parameters, state, preferences) {
   const formValue = {};
   const prettyNames = {};
   if (formParams && formParams.keys) {
@@ -314,10 +309,17 @@ function rawEditCheck (parameters, state) {
 export default function (props, state, options) {
   const {form, parameters, preferences} = props;
   const {
-    defaultCloudRegionId
+    defaultCloudRegionId,
+    formParameters = {},
+    initialParameters = {}
   } = options;
-  const {parameters: initialParameters} = parameters || {};
-  const initialFsConfig = getFsConfigFromParameters(initialParameters);
+  const {parameters: configParams = {}} = parameters || {};
+  const initialFsConfig = getFsConfigFromParameters(configParams);
+  const initialReservationRequestParameters = readReservationParameters(configParams);
+  const reservationRequestParametersModified = reservationParametersDiffer(
+    initialReservationRequestParameters,
+    state.reservationParameters
+  );
   const {fsConfig} = state;
   const fsConfigModified = !fsConfigsAreEqual(fsConfig, initialFsConfig);
   // configuration name check
@@ -363,13 +365,15 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters, state, preferences) ||
+    parametersModified(formParameters, initialParameters) ||
     // check additional run capabilities
     runCapabilitiesCheck(state, parameters, preferences) ||
     // check root entity id
     checkRootEntityModified(props, state) ||
     // check notifications
     notificationsCheck(parameters, form) ||
+    // reservation parameters
+    reservationRequestParametersModified ||
     // raw mode
     rawEditCheck(parameters, state);
 }

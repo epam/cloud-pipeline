@@ -27,7 +27,8 @@ function ParametersLimitMounts (props) {
     style,
     parametersStore,
     disabled,
-    tool
+    tool,
+    cloudRegion
   } = props;
   if (!parametersStore) {
     return null;
@@ -64,6 +65,7 @@ function ParametersLimitMounts (props) {
               onChange={parametersStore.onChangeLimitMounts}
               value={parametersStore.limitMounts}
               allowSensitive={tool ? tool.allowSensitive : false}
+              cloudRegion={cloudRegion}
             />
           </div>
         )
@@ -76,7 +78,8 @@ ParametersLimitMounts.propTypes = {
   className: PropTypes.string,
   disabled: PropTypes.bool,
   style: PropTypes.object,
-  tool: PropTypes.object
+  tool: PropTypes.object,
+  cloudRegion: PropTypes.object
 };
 
 export default injectParametersStore(observer(ParametersLimitMounts));

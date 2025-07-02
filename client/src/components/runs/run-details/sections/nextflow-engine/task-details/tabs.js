@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import TaskRuntimePlainTextLogs from './runtime-data/task-runtime-plain-text-logs';
 import styles from './task-details.css';
 import TaskRuntimeMetrics from './runtime-data/task-runtime-metrics';
+import TaskCommand from './runtime-data/task-command';
 
 const iconStyle = {fontSize: '1.1rem'};
 
@@ -12,13 +13,10 @@ export const taskDetailsCommand = {
   title: 'Command',
   icon: <Icon type="code-o" style={iconStyle} />,
   render: (task, props) => (
-    <TaskRuntimePlainTextLogs
+    <TaskCommand
       {...props}
-      reload={false}
       className={classNames(props?.className, styles.noPadding)}
       task={task}
-      detailsType="command"
-      asCommand
     />
   )
 };

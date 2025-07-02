@@ -1114,6 +1114,40 @@ class Logs extends localization.LocalizedReactComponent {
     };
   };
 
+  get pipelineTaskName () {
+    const {run = {}} = this.state;
+    const {
+      pipelineName,
+      podId
+    } = run;
+    return pipelineName || podId || undefined;
+  }
+
+  get jobIsRunning () {
+    const {run = {}} = this.state;
+    const {status} = run;
+    return ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'].includes(status);
+  }
+
+  get showLogsDate () {
+    const taskName = this.props.task ? this.props.task.name : undefined;
+    const {pipelineTaskName} = this;
+    if (
+      taskName &&
+      (
+        /^console$/i.test(taskName) ||
+        (
+          !this.jobIsRunning &&
+          pipelineTaskName &&
+          pipelineTaskName.toLowerCase() === taskName.toLowerCase()
+        )
+      )
+    ) {
+      return false;
+    }
+    return undefined;
+  }
+
   renderContentGraphMode () {
     const {run} = this.state;
     if (!run) {
@@ -1180,6 +1214,7 @@ class Logs extends localization.LocalizedReactComponent {
                 className={styles.logs}
                 runId={Number(this.props.runId)}
                 taskName={this.props.task ? this.props.task.name : undefined}
+                showDate={this.showLogsDate}
                 taskParameters={this.props.task ? this.props.task.parameters : undefined}
                 taskInstance={this.props.task ? this.props.task.instance : undefined}
                 autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
@@ -1308,6 +1343,7 @@ class Logs extends localization.LocalizedReactComponent {
               className={styles.logs}
               runId={Number(this.props.runId)}
               taskName={this.props.task ? this.props.task.name : undefined}
+              showDate={this.showLogsDate}
               taskParameters={this.props.task ? this.props.task.parameters : undefined}
               taskInstance={this.props.task ? this.props.task.instance : undefined}
               autoUpdate={/^(running|pausing|resuming)$/i.test(status)}

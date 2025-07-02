@@ -24,6 +24,8 @@ class CustomTagsControl extends React.PureComponent {
       style,
       disabled,
       tags = {},
+      validation = [],
+      payload,
       buttonText
     } = this.props;
 
@@ -36,6 +38,8 @@ class CustomTagsControl extends React.PureComponent {
       >
         <CustomTagsButton
           tags={tags}
+          validation={validation}
+          payload={payload}
           disabled={disabled}
           onClick={this.onOpen}
           buttonText={buttonText}
@@ -45,6 +49,7 @@ class CustomTagsControl extends React.PureComponent {
           onCancel={this.onClose}
           onSave={this.onSave}
           tags={tags}
+          payload={payload}
         />
       </div>
     );
@@ -56,6 +61,8 @@ CustomTagsControl.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   tags: PropTypes.object,
+  validation: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
+  payload: PropTypes.object,
   onChange: PropTypes.func,
   buttonText: PropTypes.node
 };

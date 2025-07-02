@@ -19,9 +19,9 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
@@ -225,7 +225,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                 .createFileWithContent(testFile, testFile);
         tools()
                 .perform(registry, anotherGroup, testTool, ToolTab::runWithCustomSettings)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForSshLink()

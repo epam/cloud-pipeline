@@ -22,6 +22,7 @@ import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -54,7 +55,6 @@ import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -257,7 +257,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .clickOnPipeline(pipeline312)
             .firstVersion()
             .runPipeline()
-            .setPriceType(ON_DEMAND)
+            .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
             .launch(this)
             .showLog(getLastRunId())
             .waitForCompletion();

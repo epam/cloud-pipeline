@@ -1,3 +1,5 @@
+import {getAllowedStoragesForCloudRegion} from './check-cloud-region-rules';
+
 const MatchingRules = {
   identifier: 'identifier',
   path: 'path'
@@ -121,6 +123,8 @@ export function getLimitMountsParameterValue (storages, originalParameterValue =
  * @typedef {Object} CorrectLimitMountsParameterValueOptions
  * @property {boolean} [allowSensitive=true]
  * @property {boolean} [keepUnmappedIdentifiers=false]
+ * @property {Object} [cloudRegion=undefined]
+ * @property {Object} [cloudRegions=undefined]
  */
 
 /**
@@ -142,14 +146,17 @@ export function correctLimitMountsParameterValue (
   }
   const {
     allowSensitive = true,
-    keepUnmappedIdentifiers = false
+    keepUnmappedIdentifiers = false,
+    cloudRegion,
+    cloudRegions
   } = options || {};
-  const result = getLimitMountsStoragesParsingRules(limitMountsString || '', storages)
+  const allowedStorages = getAllowedStoragesForCloudRegion(storages, cloudRegion, cloudRegions);
+  const result = getLimitMountsStoragesParsingRules(limitMountsString || '', allowedStorages)
     .filter((rule) => allowSensitive || !rule.storage.sensitive)
     .map((rule) => rule.value)
     .concat(
       keepUnmappedIdentifiers
-        ? getLimitMountsUnmappedStorageIdentifiers(limitMountsString || '', storages)
+        ? getLimitMountsUnmappedStorageIdentifiers(limitMountsString || '', allowedStorages)
         : []
     );
   if (result.length > 0) {

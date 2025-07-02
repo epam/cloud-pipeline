@@ -1,7 +1,7 @@
 # Launch parameters testcases
 
 | Case ID | Description/name |
-|-------------------------------------------------------------|---|
+| ---|---|
 | [**1900_1**](1900/1900_1.md) | Implement kubernetes dns custom hosts management |
 | [**1900_2**](1900/1900_2.md) | Support dns hosts management in sge autoscaler |
 | [**223**](223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) |
@@ -38,9 +38,15 @@
 | [**3122_2**](3122_insufficient_capacity/3122_2.md) | Restart jobs in other regions shouldn't work for cluster run |
 | [**3122_3**](3122_insufficient_capacity/3122_3.md) | Restart jobs in other regions shouldn't work for run with cloud dependent parameters |
 | [**3122_4**](3122_insufficient_capacity/3122_4.md) | Run jobs in case of insufficient capacity for region without Run shift policy flag |
+| [**3298_1**](3122_insufficient_capacity/3298_1.md) | Restart jobs in other regions shouldn't work if Allow reschedule option is disabled |
+| [**3298_2**](3122_insufficient_capacity/3298_2.md) | Restart jobs in other regions should work if Allow reschedule option is enabled |
 | [**3300**](3300.md) | Display warning for tools with/without CUDA toolkit |
 | [**3417**](3417.md) | Add kubernetes support to grid engine autoscaler |
 | [**3433**](3433.md) | Allow to use r6i instance family in the SGE hybrid autoscaling |
+| [**3971_1**](3971_cloud_region/3971_1.md) | Mount rules: Mount None Storages located in cloud region |
+| [**3971_2**](3971_cloud_region/3971_2.md) | Mount rules: Mount Storages located in the same cloud region with instance |
+| [**3971_3**](3971_cloud_region/3971_3.md) | Mount rules: check Mount Storages located in the certain region via pipe CLI |
+| [**3971_4**](3971_cloud_region/3971_4.md) | Mount rules: check filter storages for cloud region in Launch confirmation |
 | [**783**](783.md) | Check the configure CPU resource |
 | [**913**](913.md) | Add support for autoscaling filesystem for AWS |
 | [**TC-PARAMETERS-1**](TC-PARAMETERS-1.md) | Check the configure allowed instance types |
@@ -49,3 +55,4 @@
 | [**TC-PARAMETERS-4**](TC-PARAMETERS-4.md) | Node memory limits |
 | [**TC-PARAMETERS-5**](TC-PARAMETERS-5.md) | Link storage with their URLs and not only with their IDs |
 | [**TC-PARAMETERS-6**](SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration |
+| [**TC-PARAMETERS-7**](TC-PARAMETERS-7.md) | Check 'conda' run capability |

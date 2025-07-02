@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE=nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
+ARG BASE_IMAGE=library/rockylinux:8.7
 FROM ${BASE_IMAGE}
 
 # Common applications
-RUN apt update && \
-    apt install -y wget \
+RUN yum install -y wget \
                    git \
                    curl \
-                   openjdk-11-jdk \
-                    graphviz \
-                   python && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+                   java-17-openjdk \
+                   graphviz \
+                   python2 && \
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script
-ENV NXF_VER="24.10.4"
+ENV NXF_VER="25.04.3"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 

@@ -21,7 +21,8 @@ import {Row, Spin} from 'antd';
 function LoadingView (
   {
     className,
-    style
+    style,
+    children
   }
 ) {
   return (
@@ -32,14 +33,18 @@ function LoadingView (
       align="middle"
       style={Object.assign({height: '100%', width: '100%'}, style || {})}
     >
-      <Spin />
+      <div style={{display: 'inline-flex', alignItems: 'center'}}>
+        <Spin style={{margin: '0 5px'}} />
+        {children}
+      </div>
     </Row>
   );
 }
 
 LoadingView.propTypes = {
   className: PropTypes.string,
-  style: PropTypes.object
+  style: PropTypes.object,
+  children: PropTypes.node
 };
 
 export default LoadingView;

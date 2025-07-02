@@ -61,37 +61,18 @@ function checkPermission (parameter, storageList, permissionChecker, permissionN
   return errors;
 }
 
-function getPaths (formParameters, defaultParameters, types) {
-  const result = [];
-  if (
-    formParameters &&
-    formParameters.hasOwnProperty('params') &&
-    formParameters.hasOwnProperty('keys')
-  ) {
-    result.push(
-      ...(
-        Object.values(formParameters.params)
-          .filter(p => formParameters.keys.indexOf(p.key) >= 0 && types.indexOf(p.type) >= 0)
-      )
-    );
-  } else if (defaultParameters) {
-    result.push(
-      ...(
-        Object.entries(defaultParameters)
-          .map(([name, param]) => ({name, ...param}))
-          .filter(p => types.indexOf(p.type) >= 0)
-      )
-    );
-  }
-  return result;
+function getPaths (parameters, types) {
+  return Object.entries(parameters || {})
+    .map(([name, param]) => ({name, ...param}))
+    .filter(p => types.indexOf(p.type) >= 0)
 }
 
-export function getInputPaths (formParameters, defaultParameters) {
-  return getPaths(formParameters, defaultParameters, ['input', 'common']);
+export function getInputPaths (parameters) {
+  return getPaths(parameters, ['input', 'common']);
 }
 
-export function getOutputPaths (formParameters, defaultParameters) {
-  return getPaths(formParameters, defaultParameters, ['output']);
+export function getOutputPaths (parameters) {
+  return getPaths(parameters, ['output']);
 }
 
 function parameterChanged (oldParameter, newParameter) {

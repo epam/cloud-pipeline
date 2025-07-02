@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage.lustre;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.pricing.AWSPricing;
 import com.amazonaws.services.pricing.AWSPricingClientBuilder;
+import com.amazonaws.services.pricing.model.AWSPricingException;
 import com.amazonaws.services.pricing.model.Filter;
 import com.amazonaws.services.pricing.model.GetProductsRequest;
 import com.amazonaws.services.pricing.model.GetProductsResult;
@@ -38,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,29 +80,34 @@ public class LustreFSPriceLoader {
     }
 
     private List<AwsPricingCard> loadPrices(final LustreFS lustre, final AwsRegion region) {
-        final AWSPricing pricingClient = AWSPricingClientBuilder
-                .standard()
-                .withRegion(Regions.EU_CENTRAL_1)
-                .build();
+        try{
+            final AWSPricing pricingClient = AWSPricingClientBuilder
+                    .standard()
+                    .withRegion(Regions.EU_CENTRAL_1)
+                    .build();
 
-        final List<AwsPricingCard> allPrices = new ArrayList<>();
-        String nextToken = null;
-        do {
-            final GetProductsRequest request = new GetProductsRequest()
-                    .withServiceCode(FSX_SERVICE_CODE)
-                    .withFormatVersion(AWS_PRICE_FORMAT_VERSION)
-                    .withNextToken(nextToken)
-                    .withFilters(getFilters(lustre, region));
+            final List<AwsPricingCard> allPrices = new ArrayList<>();
+            String nextToken = null;
+            do {
+                final GetProductsRequest request = new GetProductsRequest()
+                        .withServiceCode(FSX_SERVICE_CODE)
+                        .withFormatVersion(AWS_PRICE_FORMAT_VERSION)
+                        .withNextToken(nextToken)
+                        .withFilters(getFilters(lustre, region));
 
-            final GetProductsResult result = pricingClient.getProducts(request);
-            result.getPriceList().stream()
-                    .map(this::parseAwsPricingCard)
-                    .forEach(allPrices::add);
+                final GetProductsResult result = pricingClient.getProducts(request);
+                result.getPriceList().stream()
+                        .map(this::parseAwsPricingCard)
+                        .forEach(allPrices::add);
 
-            nextToken = result.getNextToken();
-        } while (nextToken != null);
+                nextToken = result.getNextToken();
+            } while (nextToken != null);
 
-        return allPrices;
+            return allPrices;
+        } catch (final AWSPricingException exception) {
+            log.error(exception.getMessage(), exception);
+            return Collections.emptyList();
+        }
     }
 
     private List<Filter> getFilters(final LustreFS lustre, final AwsRegion region) {

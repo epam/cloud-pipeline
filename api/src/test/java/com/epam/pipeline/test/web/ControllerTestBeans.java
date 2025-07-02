@@ -30,6 +30,8 @@ import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.pipeline.issue.GitlabIssueApiService;
+import com.epam.pipeline.acl.plugin.PluginAssignmentService;
+import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.report.ReportApiService;
@@ -298,4 +300,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected StoragePathPermissionsApiService storagePathPermissionsApiService;
+
+    @MockBean
+    protected PluginService pluginService;
+
+    @MockBean
+    protected PluginAssignmentService pluginAssignmentService;
 }

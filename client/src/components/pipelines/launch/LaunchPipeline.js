@@ -16,8 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
-import {Alert, Card, Modal, message} from 'antd';
+import {observable, isObservableArray} from 'mobx';
+import {Card, Modal, message, Alert} from 'antd';
 import classNames from 'classnames';
 import localization from '../../../utils/localization';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -39,8 +39,20 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
 import getToolLaunchingOptions from './utilities/get-tool-launching-options';
 import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
 import roleModel from '../../../utils/roleModel';
+import {LaunchFormPlugin} from '../../plugins';
+import {LoadingUtilities} from './utilities/loading-utilities';
+import {getRunLaunchPayload, getToolLaunchPayload} from './utilities/payload-utilities';
 
 const DTS_ENVIRONMENT = 'DTS';
+
+const TOOL_STATE_KEY = 'tool';
+const PIPELINE_STATE_KEY = 'pipeline';
+const CONFIGURATIONS_STATE_KEY = 'configurations';
+const VERSIONED_STORAGE_STATE_KEY = 'versionedStorage';
+const RUN_STATE_KEY = 'run';
+const PREFERENCES_STATE_KEY = 'preferences';
+
+const PAYLOAD_STATE_KEY = 'parameters';
 
 @localization.localizedComponent
 @submitsRun
@@ -54,7 +66,6 @@ const DTS_ENVIRONMENT = 'DTS';
   if (isVersionedStorage) {
     versionedStorageLaunchInfo = {
       toolId: components.tool,
-      tool: components.tool ? new LoadTool(components.tool) : undefined,
       version: components.tool && components.version
         ? components.version
         : undefined
@@ -62,19 +73,14 @@ const DTS_ENVIRONMENT = 'DTS';
   }
   const continueRun = `${components.continue || 'false'}`.trim().toLowerCase() === 'true';
   return {
-    allowedInstanceTypes: allowedInstanceTypes,
+    allowedInstanceTypes,
     preferences,
-    pipeline: params.id ? pipelines.getPipeline(params.id) : undefined,
-    run: params.runId ? pipelineRun.run(params.runId, {refresh: true}) : undefined,
     pipelineId: params.id,
     version: params.version,
     runId: params.runId,
     configurationName: params.configuration,
     image: params.image,
     toolVersion: params.image ? components.version : undefined,
-    configurations: params.id && params.version && !isVersionedStorage
-      ? new PipelineConfigurations(params.id, params.version)
-      : undefined,
     isVersionedStorage,
     versionedStorageLaunchInfo,
     continueRun: continueRun && params.runId ? params.runId : undefined
@@ -93,34 +99,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   @observable allowedInstanceTypes;
-  @observable versionedStoragesLaunchPayload;
-  @observable toolRequest;
-  @observable toolPending = false;
-  @observable settingsRequest;
-  @observable settingsPending = false;
 
-  get pipelinePending () {
-    return !!this.props.pipeline && this.props.pipeline.pending;
-  }
-
-  get configurationsPending () {
-    return !!this.props.configurations && this.props.configurations.pending;
-  }
-
-  get runPending () {
-    return !!this.props.run && this.props.run.pending;
-  }
-
-  get versionedStoragesLaunchPayloadPending () {
-    return this.props.isVersionedStorage &&
-      (
-        !this.versionedStoragesLaunchPayload ||
-        (
-          this.versionedStoragesLaunchPayload.pending &&
-          !this.versionedStoragesLaunchPayload.loaded
-        )
-      );
-  }
+  loadingUtilities = new LoadingUtilities();
 
   get currentMetadataEntity () {
     const {currentMetadataEntity} = this.state;
@@ -130,23 +110,10 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return [];
   }
 
-  getPipelineParameter = (parameterName) => {
-    const configuration = this.getConfigurationParameters();
-    if (configuration && configuration.parameters) {
-      for (let key in configuration.parameters) {
-        if (configuration.parameters.hasOwnProperty(key) && parameterName === key) {
-          return configuration.parameters[key];
-        }
-      }
-    }
-    return null;
-  };
-
-  @computed
-  get configurationId () {
-    const {run} = this.props;
-    if (run?.value?.configurationId) {
-      return `${run.value.configurationId}`;
+  get runConfigurationId () {
+    const {value: run} = this.loadingUtilities.getLoadingState(RUN_STATE_KEY, this.state);
+    if (run?.configurationId) {
+      return `${run.configurationId}`;
     }
     return null;
   }
@@ -158,183 +125,34 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return this.props.configurationName;
   }
 
+  get configurations () {
+    const {value: configurations} = this.loadingUtilities
+      .getLoadingState(CONFIGURATIONS_STATE_KEY, this.state);
+    if (
+      configurations &&
+      (Array.isArray(configurations) || isObservableArray(configurations))
+    ) {
+      return configurations;
+    }
+    return undefined;
+  }
+
   get currentConfiguration () {
-    if (!this.props.configurations ||
-      this.props.configurations.pending ||
-      this.props.configurations.error) {
-      return undefined;
-    }
-    let configuration;
-    if (this.configurationName) {
-      [configuration] = (this.props.configurations.value || []).filter(c => {
-        return c.name.toLowerCase() === this.configurationName.toLowerCase();
-      });
-    }
-    if (!configuration) {
-      [configuration] = (this.props.configurations.value || []).filter(c => c.default);
-    }
-    if (!configuration && (this.props.configurations.value || []).length > 0) {
-      configuration = this.props.configurations.value[0];
-    }
-    return configuration;
-  };
-
-  getConfigurationParameters = () => {
-    if (!this.props.configurations ||
-      this.props.configurations.pending ||
-      this.props.configurations.error) {
-      return undefined;
-    }
-    let configuration;
-    if (this.configurationName) {
-      [configuration] = (this.props.configurations.value || []).filter(c => {
-        return c.name.toLowerCase() === this.configurationName.toLowerCase();
-      });
-    }
-    if (!configuration) {
-      [configuration] = (this.props.configurations.value || []).filter(c => c.default);
-    }
-    if (!configuration) {
-      return undefined;
-    }
-    return {
-      allowedInstanceTypes: this.props.allowedInstanceTypes,
-      ...configuration.configuration
-    };
-  };
-
-  getParameters = () => {
-    if (
-      this.toolRequest &&
-      !this.toolPending &&
-      !this.toolRequest.error &&
-      this.settingsRequest &&
-      !this.settingsPending &&
-      !this.settingsRequest.error
-    ) {
-      const toolVersion = (this.props.toolVersion || 'latest').toLowerCase();
-      const [versionSettings] = (this.settingsRequest.value || [])
-        .filter(v => (v.version || '').toLowerCase() === toolVersion);
-      const [defaultVersionSettings] = (this.settingsRequest.value || [])
-        .filter(v => (v.version || '').toLowerCase() === 'latest');
-      const versionSettingValue = (settingName) => {
-        if (versionSettings &&
-          versionSettings.settings &&
-          versionSettings.settings.length &&
-          versionSettings.settings[0].configuration) {
-          return versionSettings.settings[0].configuration[settingName];
-        }
-        if (defaultVersionSettings &&
-          defaultVersionSettings.settings &&
-          defaultVersionSettings.settings.length &&
-          defaultVersionSettings.settings[0].configuration) {
-          return defaultVersionSettings.settings[0].configuration[settingName];
-        }
-        return null;
-      };
-      const parameterIsNotEmpty = (parameter, additionalCriteria) =>
-        parameter !== null &&
-        parameter !== undefined &&
-        `${parameter}`.trim().length > 0 &&
-        (!additionalCriteria || additionalCriteria(parameter));
-      const image = `${this.toolRequest.value.registry}/${this.toolRequest.value.image}`;
-      return {
-        cmd_template: versionSettingValue('cmd_template') || this.toolRequest.value.defaultCommand,
-        docker_image: this.props.toolVersion
-          ? `${image}:${this.props.toolVersion}`
-          : image,
-        instance_disk: +versionSettingValue('instance_disk') || this.toolRequest.value.disk,
-        instance_size: versionSettingValue('instance_size') || this.toolRequest.value.instanceType,
-        is_spot: versionSettingValue('is_spot'),
-        parameters: versionSettingValue('parameters'),
-        node_count: parameterIsNotEmpty(versionSettingValue('node_count'))
-          ? +versionSettingValue('node_count')
-          : undefined,
-        cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
-          ? versionSettingValue('cloudRegionId')
-          : undefined,
-        notifications: versionSettingValue('notifications') || []
-      };
-    }
-    if (this.props.run && !this.runPending && !this.props.run.error) {
-      const parameters = {
-        cmd_template: this.props.run.value.cmdTemplate,
-        docker_image: this.props.run.value.dockerImage,
-        is_spot: this.props.preferences.useSpot
-      };
-      if (this.props.run.value.instance) {
-        parameters.instance_size = this.props.run.value.instance.nodeType;
-        parameters.instance_disk = this.props.run.value.instance.nodeDisk;
-        parameters.is_spot = this.props.run.value.instance.spot;
-        parameters.cloudRegionId = this.props.run.value.instance.cloudRegionId;
+    const {configurations, configurationName} = this;
+    if (configurations) {
+      const defaultConfiguration = configurations.find((cfg) => cfg.default) || configurations[0];
+      if (configurationName) {
+        const cfgName = configurationName.toLowerCase();
+        return configurations.find((cfg) => (cfg.name || '').toLowerCase() === cfgName) ||
+          defaultConfiguration;
       }
-      parameters.parameters = {};
-      if (this.props.run.value.pipelineRunParameters) {
-        for (let i = 0; i < this.props.run.value.pipelineRunParameters.length; i++) {
-          const param = this.props.run.value.pipelineRunParameters[i];
-          if (param.name && param.value) {
-            const parameterInfo = this.getPipelineParameter(param.name);
-            const type = param.type
-              ? param.type
-              : (parameterInfo && parameterInfo.type ? parameterInfo.type : 'string');
-            const required = parameterInfo && parameterInfo.required
-              ? parameterInfo.required : false;
-            parameters.parameters[param.name] = {
-              ...(parameterInfo || {}),
-              value: param.value,
-              resolvedValue: param.resolvedValue,
-              type,
-              required,
-              enum: param.enum
-            };
-          }
-        }
-      }
-      return parameters;
+      return defaultConfiguration;
     }
-    const configurationParameters = this.getConfigurationParameters();
-    if (configurationParameters) {
-      return configurationParameters;
-    }
-    if (
-      this.props.isVersionedStorage &&
-      this.versionedStoragesLaunchPayload &&
-      this.versionedStoragesLaunchPayload.loaded &&
-      this.versionedStoragesLaunchPayload.value
-    ) {
-      const payload = this.versionedStoragesLaunchPayload.value;
-      return {
-        cmd_template: payload.cmdTemplate,
-        docker_image: payload.dockerImage,
-        is_spot: payload.isSpot,
-        instance_size: payload.instanceType,
-        instance_disk: payload.hddSize,
-        node_count: payload.nodeCount,
-        timeout: payload.timeout,
-        parameters: {...(payload.params || {})},
-        cloudRegionId: payload.cloudRegionId,
-        allowedInstanceTypes: this.props.allowedInstanceTypes,
-        pipelineId: this.props.pipelineId ? +(this.props.pipelineId) : undefined,
-        pipelineVersion: this.props.version
-      };
-    }
-    return {
-      allowedInstanceTypes: this.props.allowedInstanceTypes,
-      parameters: {}
-    };
-  };
-
-  getConfigurations = () => {
-    if (!!this.props.configurations &&
-      !this.props.configurations.pending &&
-      !this.props.configurations.error) {
-      return (this.props.configurations.value || []).map(c => c);
-    }
-    return [];
+    return undefined;
   };
 
   getCurrentProject = async () => {
-    const folderProjectRequest = new FolderProject(this.configurationId, 'CONFIGURATION');
+    const folderProjectRequest = new FolderProject(this.runConfigurationId, 'CONFIGURATION');
     await folderProjectRequest.fetch();
     if (folderProjectRequest.error) {
       message.error(folderProjectRequest.error, 5);
@@ -353,30 +171,33 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return metadataEntityFieldsRequest.value;
   };
 
-  launch = async (payload, hostedApplicationConfiguration, platform, skipCheck) => {
+  launch = async (payloads, hostedApplicationConfiguration, platform, skipCheck) => {
     this.setState({pending: true}, async () => {
-      payload.configurationName = this.currentConfiguration
-        ? this.currentConfiguration.name
-        : this.configurationName;
-      const runResolved = await run(this)(
-        payload,
-        true,
-        undefined,
-        undefined,
-        this.allowedInstanceTypes,
-        hostedApplicationConfiguration,
-        platform,
-        skipCheck
-      );
+      const {currentConfiguration} = this;
+      const payloadsArray = Array.isArray(payloads) ? payloads : [payloads];
+      let runResolved;
+      if (payloadsArray.length > 0) {
+        payloadsArray.forEach((p) => {
+          p.configurationName = currentConfiguration
+            ? currentConfiguration.name
+            : this.configurationName;
+        });
+        runResolved = await run(this)(
+          payloadsArray,
+          true,
+          undefined,
+          undefined,
+          this.allowedInstanceTypes,
+          hostedApplicationConfiguration,
+          platform,
+          skipCheck
+        );
+      }
       this.setState({pending: false});
       if (runResolved) {
         SessionStorageWrapper.navigateToActiveRuns(this.props.router);
       }
     });
-  };
-
-  showMetadataBrowser = () => {
-    this.setState({showMetadataBrowser: true});
   };
 
   closeMetadataBrowser = () => {
@@ -412,7 +233,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   selectMetadataConfirm = async (entitiesIds) => {
     const {runPayload} = this.state;
     let configuration;
-    const configurationRequest = new ConfigurationLoad(this.configurationId);
+    const configurationRequest = new ConfigurationLoad(this.runConfigurationId);
     await configurationRequest.fetch();
     if (configurationRequest.error) {
       message.error(configurationRequest.error, 5);
@@ -497,7 +318,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       const hide = message.loading('Launching...', 0);
       const request = new ConfigurationRun();
       await request.send({
-        id: this.configurationId,
+        id: this.runConfigurationId,
         entries: [configuration],
         entitiesIds: entitiesIds
       });
@@ -518,167 +339,342 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   onPipelineChanged = (pipelineId, pipelineVersion) => {
     const {router, continueRun, configurationName = 'default'} = this.props;
     if (continueRun) {
+      // eslint-disable-next-line max-len
       router.push(`/launch/${pipelineId}/${pipelineVersion}/${configurationName}/${continueRun}?continue=true`);
     } else {
       router.push(`/launch/${pipelineId}/${pipelineVersion}`);
     }
   };
 
-  loadTool = async (image) => {
-    if (!image) {
-      return;
-    }
-    this.toolRequest = new LoadTool(image);
-    this.toolPending = true;
-    await this.toolRequest.fetch();
-    if (this.toolRequest.error) {
-      message.error(this.toolRequest.error, 5);
-    }
-    this.toolPending = false;
-  };
-
-  loadSettings = async (image) => {
-    if (!image) {
-      return;
-    }
-    this.settingsRequest = new LoadToolVersionSettings(image);
-    this.settingsPending = true;
-    await this.settingsRequest.fetch();
-    if (this.settingsRequest.error) {
-      message.error(this.settingsRequest.error, 5);
-    }
-    this.settingsPending = false;
-  };
-
   componentDidMount () {
-    this.loadVersionedStorageLaunchPayload();
-    this.loadTool(this.props.image);
-    this.loadSettings(this.props.image);
+    this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps) {
-    if (this.props.image !== prevProps.image) {
-      this.loadTool(this.props.image);
-      this.loadSettings(this.props.image);
-    }
-    const parameters = this.getParameters();
-    if (!this.allowedInstanceTypes) {
-      this.allowedInstanceTypes = this.props.image
-        ? this.props.allowedInstanceTypes.getAllowedTypes(this.props.image)
-        : new AllowedInstanceTypes();
-    }
-    if (parameters) {
-      this.allowedInstanceTypes.setParameters({
-        isSpot: parameters.is_spot,
-        regionId: parameters.cloudRegionId,
-        toolId: this.props.image,
-        requestAllRegionsForProviders: ['GCP']
-      });
-    }
-    if (
-      (!this.versionedStoragesLaunchPayload && this.props.versionedStorageLaunchInfo) ||
+  componentDidUpdate (prevProps, prevState) {
+    const propChanged = (prop) => prevProps[prop] !== this.props[prop];
+    const imageChanged = propChanged('image');
+    const toolVersionChanged = propChanged('toolVersion');
+    const pipelineIdChanged = propChanged('pipelineId');
+    const versionChanged = propChanged('version');
+
+    const configurationName = this.state.configName || this.props.configurationName;
+    const prevConfigurationName = prevState.configName || prevProps.configurationName;
+    const configurationChanged = configurationName !== prevConfigurationName;
+
+    const runIdChanged = propChanged('runId');
+    const versionedStorageChanged = propChanged('isVersionedStorage') ||
       !versionedStorageLaunchInfoEqual(
         prevProps.versionedStorageLaunchInfo,
         this.props.versionedStorageLaunchInfo
-      )
+      );
+    if (
+      imageChanged ||
+      toolVersionChanged ||
+      pipelineIdChanged ||
+      versionChanged ||
+      configurationChanged ||
+      runIdChanged ||
+      versionedStorageChanged
     ) {
-      this.loadVersionedStorageLaunchPayload();
+      this.updateFromProps();
     }
   }
 
-  loadVersionedStorageLaunchPayload = () => {
+  updateFromProps = () => {
     const {
-      versionedStorageLaunchInfo,
-      isVersionedStorage
+      image,
+      toolVersion,
+      pipelineId,
+      version: pipelineVersion,
+      runId,
+      isVersionedStorage,
+      pipelines,
+      versionedStorageLaunchInfo = {},
+      preferences
     } = this.props;
-    if (!isVersionedStorage) {
-      this.versionedStoragesLaunchPayload = undefined;
-    } else if (versionedStorageLaunchInfo && versionedStorageLaunchInfo.tool) {
-      this.versionedStoragesLaunchPayload = {
-        loaded: false,
-        pending: true
-      };
-      versionedStorageLaunchInfo.tool
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (versionedStorageLaunchInfo.tool.loaded) {
+    const {
+      toolId: vsToolId,
+      version: vsVersion
+    } = versionedStorageLaunchInfo;
+    (async () => {
+      try {
+        const setState = (s) => this.setState(s);
+        const preferencesRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          PREFERENCES_STATE_KEY,
+          'preferences',
+          async () => preferences.fetchIfNeededOrWait(),
+          setState
+        );
+        const toolInfoRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          TOOL_STATE_KEY,
+          image,
+          async () => {
+            if (!image) {
+              return undefined;
+            }
+            console.log('Launch Form: fetching tool info', image);
+            const settingsRequest = new LoadToolVersionSettings(image);
+            const toolRequest = new LoadTool(image);
+            await Promise.all([
+              settingsRequest.fetch(),
+              toolRequest.fetch()
+            ]);
+            if (toolRequest.error) {
+              throw new Error(toolRequest.error);
+            }
+            const tool = toolRequest.value;
+            const settings = settingsRequest.value;
+            return {
+              tool,
+              settings
+            };
+          },
+          setState
+        );
+        const runIdRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          RUN_STATE_KEY,
+          runId,
+          async () => {
+            if (!runId) {
+              return undefined;
+            }
+            console.log('Launch Form: fetching run info', runId);
+            const request = pipelineRun.run(runId, {refresh: true});
+            await request.fetch();
+            if (request.error) {
+              throw new Error(request.error);
+            }
+            return request.value;
+          },
+          setState
+        );
+        const pipelineRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          PIPELINE_STATE_KEY,
+          pipelineId,
+          async () => {
+            if (!pipelineId) {
+              return undefined;
+            }
+            console.log('Launch Form: fetching pipeline info', pipelineId);
+            const request = pipelines.getPipeline(pipelineId);
+            await request.fetch();
+            if (request.error) {
+              throw new Error(request.error);
+            }
+            return request.value;
+          },
+          setState
+        );
+        const configurationsRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          CONFIGURATIONS_STATE_KEY,
+          pipelineId && pipelineVersion && !isVersionedStorage
+            ? `${pipelineId}:${pipelineVersion}`
+            : undefined,
+          async () => {
+            if (!pipelineId || !pipelineVersion || isVersionedStorage) {
+              return [];
+            }
+            console.log('Launch Form: fetching pipeline configurations', pipelineId);
+            const request = new PipelineConfigurations(
+              pipelineId,
+              pipelineVersion
+            );
+            await request.fetch();
+            if (request.error) {
+              throw new Error(request.error);
+            }
+            return (request.value || []).map((c) => ({
+              ...c
+            }));
+          },
+          setState
+        );
+        const versionedStorageToolRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          'vsTool',
+          vsToolId,
+          async () => {
+            if (!vsToolId) {
+              return undefined;
+            }
+            console.log('Launch Form: fetching vs tool info', vsToolId);
+            const toolRequest = new LoadTool(vsToolId);
+            await toolRequest.fetch();
+            if (toolRequest.error) {
+              throw new Error(toolRequest.error);
+            }
+            return toolRequest.value;
+          },
+          setState
+        );
+        const versionedStoragePayloadRequest = this.loadingUtilities.loadWithSetStateCallbacks(
+          VERSIONED_STORAGE_STATE_KEY,
+          vsToolId && vsVersion ? `${vsToolId}:${vsVersion}` : undefined,
+          async () => {
+            const tool = await versionedStorageToolRequest;
+            if (!tool) {
+              return undefined;
+            }
+            console.log('Launch Form: fetching vs payload', vsToolId, vsVersion);
             return getToolLaunchingOptions(
               this.props,
-              versionedStorageLaunchInfo.tool.value,
-              versionedStorageLaunchInfo.version
+              tool,
+              vsVersion
             );
-          } else {
-            throw new Error(versionedStorageLaunchInfo.tool.error || '');
-          }
-        })
-        .then(launchPayload => {
-          this.versionedStoragesLaunchPayload = {
-            loaded: true,
-            pending: false,
-            value: launchPayload
-          };
-        })
-        .catch((e) => {
-          this.versionedStoragesLaunchPayload = {
-            pending: false,
-            loaded: false,
-            error: e.message
-          };
+          },
+          setState
+        );
+        const payloadRequest = await this.loadingUtilities.loadWithSetStateCallbacks(
+          PAYLOAD_STATE_KEY,
+          {},
+          async () => {
+            console.log('Launch Form: updating payload');
+            const [
+              // eslint-disable-next-line no-unused-vars
+              _,
+              toolInfo,
+              runInfo,
+              // eslint-disable-next-line no-unused-vars
+              pipelineInfo,
+              // eslint-disable-next-line no-unused-vars
+              configurations = [],
+              vsPayload
+            ] = await Promise.all([
+              preferencesRequest,
+              toolInfoRequest,
+              runIdRequest,
+              pipelineRequest,
+              configurationsRequest,
+              versionedStoragePayloadRequest
+            ]);
+            const {
+              tool,
+              settings
+            } = toolInfo || {};
+            const {currentConfiguration} = this;
+            const configuration = currentConfiguration
+              ? currentConfiguration.configuration
+              : undefined;
+            if (tool && settings) {
+              return getToolLaunchPayload({
+                tool,
+                settings,
+                toolVersion
+              });
+            }
+            if (runInfo) {
+              return getRunLaunchPayload({
+                run: runInfo,
+                configuration,
+                preferences
+              });
+            }
+            if (configuration) {
+              return configuration;
+            }
+            if (vsPayload) {
+              return {
+                cmd_template: vsPayload.cmdTemplate,
+                docker_image: vsPayload.dockerImage,
+                is_spot: vsPayload.isSpot,
+                instance_size: vsPayload.instanceType,
+                instance_disk: vsPayload.hddSize,
+                node_count: vsPayload.nodeCount,
+                timeout: vsPayload.timeout,
+                parameters: {...(vsPayload.params || {})},
+                cloudRegionId: vsPayload.cloudRegionId,
+                pipelineId: pipelineId !== undefined &&
+                pipelineId !== null &&
+                !Number.isNaN(pipelineId)
+                  ? Number(pipelineId)
+                  : undefined,
+                pipelineVersion
+              };
+            }
+            return {
+              parameters: {}
+            };
+          },
+          setState
+        );
+        console.log(`Launch Form: payload updated`, payloadRequest);
+        if (!this.allowedInstanceTypes) {
+          this.allowedInstanceTypes = image
+            ? this.props.allowedInstanceTypes.getAllowedTypes(image)
+            : new AllowedInstanceTypes();
+        }
+        this.allowedInstanceTypes.setParameters({
+          isSpot: payloadRequest.is_spot,
+          regionId: payloadRequest.cloudRegionId,
+          toolId: image,
+          requestAllRegionsForProviders: ['GCP']
         });
-    } else {
-      this.versionedStoragesLaunchPayload = {
-        loaded: true
-      };
-    }
+      } catch (error) {
+        message.error(error.message, 5);
+        console.error(error);
+      }
+    })();
   };
 
   render () {
-    if (this.pipelinePending ||
-      this.configurationsPending ||
-      this.runPending ||
-      this.toolPending ||
-      this.settingsPending ||
-      this.versionedStoragesLaunchPayloadPending ||
-      (!this.props.preferences.loaded && this.props.preferences.pending) ||
-      !this.allowedInstanceTypes) {
+    return (
+      <LaunchFormPlugin
+        style={{width: '100%', height: '100%', overflow: 'auto'}}
+        pipelineId={this.props.pipelineId}
+        pipelineVersion={this.props.version}
+        pipelineConfiguration={this.props.configurationName}
+        runId={this.props.runId}
+        toolId={this.props.image}
+        toolVersion={this.props.toolVersion}
+      >
+        {this.renderDefault()}
+      </LaunchFormPlugin>
+    );
+  }
+
+  getLoadingStateErrors = () => {
+    const getErrors = (...states) => states
+      .map((st) => this.loadingUtilities.getLoadingState(st, this.state).error)
+      .filter(Boolean);
+    return getErrors(
+      PIPELINE_STATE_KEY,
+      TOOL_STATE_KEY,
+      CONFIGURATIONS_STATE_KEY,
+      RUN_STATE_KEY,
+      VERSIONED_STORAGE_STATE_KEY,
+      PREFERENCES_STATE_KEY,
+      PAYLOAD_STATE_KEY
+    );
+  };
+
+  renderDefault () {
+    const {
+      pending: payloadPending,
+      value: parameters = {},
+      error
+    } = this.loadingUtilities.getLoadingState(PAYLOAD_STATE_KEY, this.state);
+    const {
+      value: pipeline
+    } = this.loadingUtilities.getLoadingState(PIPELINE_STATE_KEY, this.state);
+    const errors = this.getLoadingStateErrors();
+    if (payloadPending) {
       return <LoadingView />;
     }
-    if (this.props.pipeline && this.props.pipeline.error) {
-      return <Alert type="warning" message={this.props.pipeline.error} />;
+    if (error) {
+      return <Alert type="error" message={error} />;
     }
-    const pipelineType = this.props.pipeline?.value?.pipelineType || '';
+    const alerts = errors.map((er) => ({
+      message: er,
+      type: 'warning'
+    }));
+    if (!this.allowedInstanceTypes) {
+      return <LoadingView />;
+    }
+    const {
+      configurations,
+      currentConfiguration
+    } = this;
+    const pipelineType = pipeline?.pipelineType || '';
     const isVersioned = pipelineType.toLowerCase() === 'versioned_storage';
-    const alerts = [];
-    if (this.props.configurations && this.props.configurations.error) {
-      alerts.push({
-        message: this.props.configurations.error,
-        type: 'warning'
-      });
-    }
-    if (this.props.run && this.props.run.error) {
-      alerts.push({
-        message: this.props.run.error,
-        type: 'warning'
-      });
-    }
-    if (this.toolRequest && this.toolRequest.error) {
-      alerts.push({
-        message: this.toolRequest.error,
-        type: 'warning'
-      });
-    }
-    if (this.settingsPending && this.settingsRequest.error) {
-      alerts.push({
-        message: this.settingsRequest.error,
-        type: 'warning'
-      });
-    }
-    if (this.versionedStoragesLaunchPayload && this.versionedStoragesLaunchPayload.error) {
-      alerts.push({
-        message: this.versionedStoragesLaunchPayload.error,
-        type: 'warning'
-      });
-    }
     if (isVersioned) {
       alerts.push({
         message: [
@@ -688,7 +684,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         type: 'info'
       });
     }
-    const parameters = this.getParameters();
     return (
       <Card
         bodyStyle={{padding: 0, margin: 0}}
@@ -706,21 +701,21 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           editConfigurationMode={false}
           currentConfigurationName={
-            this.currentConfiguration
-              ? this.currentConfiguration.name
+            currentConfiguration
+              ? currentConfiguration.name
               : this.configurationName
           }
-          pipeline={this.props.pipeline ? this.props.pipeline.value : undefined}
+          pipeline={pipeline}
           allowedInstanceTypes={this.allowedInstanceTypes}
           version={this.props.version}
           parameters={parameters}
-          configurations={this.getConfigurations()}
+          configurations={configurations}
           alerts={alerts}
           onConfigurationChanged={this.onConfigurationChanged}
           onPipelineChanged={this.onPipelineChanged}
           onLaunch={this.launch}
           runConfiguration={this.prepareRunPayload}
-          runConfigurationId={this.configurationId}
+          runConfigurationId={this.runConfigurationId}
           isDetachedConfiguration={false}
           continueRun={this.props.continueRun}
         />

@@ -16,12 +16,11 @@
 
 import React from 'react';
 import {inject, observer, Provider} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, isObservableArray} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
   Button,
-  Icon,
   message,
   Row,
   Select,
@@ -30,7 +29,6 @@ import {
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeServices';
-import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
@@ -39,7 +37,6 @@ import AllowedInstancesCountWarning from
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 import {
@@ -73,8 +70,15 @@ import {
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
 import RunModal from '../../main/RunModal';
 import checkToolVersionErrors from '../utilities/check-tool-version-errors';
-import CustomTagsControl from "../../pipelines/launch/form/components/custom-tags/control";
-import RunPayloadEstimatedPriceAlert from "./run-payload-estimated-price-alert";
+import CustomTagsControl from '../../pipelines/launch/form/components/custom-tags/control';
+import RunPayloadEstimatedPriceAlert from './run-payload-estimated-price-alert';
+import {
+  getAllowedStoragesForCloudRegion
+} from '../../../utils/limit-mounts/check-cloud-region-rules';
+import {getUserTagsValidationResult} from '../run-tags/utilities';
+import {
+  ensureValidReservationParametersForLaunchPayloads
+} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -261,7 +265,7 @@ async function runHostedApp (runId, configuration) {
 }
 
 function runFn (
-  payload,
+  payloads,
   confirm,
   title,
   warning,
@@ -272,6 +276,20 @@ function runFn (
   platform,
   skipCheck
 ) {
+  const payloadsArray = Array.isArray(payloads) || isObservableArray(payloads)
+    ? payloads
+    : [payloads];
+  const setPayloadParameter = (parameterName, value) => {
+    for (const payload of payloadsArray) {
+      if (!payload.params) {
+        payload.params = {};
+      }
+      const v = payload.params[parameterName] || {type: 'string', value: undefined};
+      v.value = value;
+      payload.params[parameterName] = v;
+    }
+  };
+  const [payload] = payloadsArray;
   return new Promise(async (resolve) => {
     let launchName;
     let launchVersion;
@@ -342,12 +360,12 @@ function runFn (
             )
           );
         if (filtered.length) {
-          payload.params[CP_CAP_LIMIT_MOUNTS].value = getLimitMountsParameterValue(
+          setPayloadParameter(CP_CAP_LIMIT_MOUNTS, getLimitMountsParameterValue(
             filtered,
             cpCapLimitMountsParameter
-          );
+          ));
         } else {
-          payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+          setPayloadParameter(CP_CAP_LIMIT_MOUNTS, 'None');
         }
       }
     }
@@ -376,7 +394,10 @@ function runFn (
       scheduleRules = payload.scheduleRules;
       delete payload.scheduleRules;
     }
-    payload.params = applyCustomCapabilitiesParameters(payload.params, stores.preferences);
+    for (const p of payloadsArray) {
+      p.params = applyCustomCapabilitiesParameters(p.params, stores.preferences);
+    }
+    await ensureValidReservationParametersForLaunchPayloads(payloadsArray);
     const launchFn = async () => {
       const messageVersion = payload.runNameAlias
         ? `${launchName}:${launchVersion}`
@@ -389,7 +410,9 @@ function runFn (
         };
         delete payload.runNameAlias;
       }
-      await PipelineRunner.send({...payload, force: true});
+      for (const p of payloadsArray) {
+        await PipelineRunner.send({...p, force: true});
+      }
       hide();
       if (PipelineRunner.error) {
         message.error(PipelineRunner.error);
@@ -407,8 +430,9 @@ function runFn (
     if (!confirm) {
       await launchFn();
     } else {
-      const inputs = getInputPaths(null, payload.params);
-      const outputs = getOutputPaths(null, payload.params);
+      // todo: permission errors for input / output paths
+      const inputs = getInputPaths(payload.params);
+      const outputs = getOutputPaths(payload.params);
       const {errors: permissionErrors} = await performAsyncCheck({
         ...stores,
         dataStorages: dataStorageAvailable,
@@ -487,80 +511,113 @@ function runFn (
         closable: false,
         okText: 'Launch',
         onOk: async function () {
-          if (component) {
-            if (component.state.runCapabilities) {
-              payload.params = updateCapabilities(
-                payload.params,
-                component.state.runCapabilities,
+          const runSinglePayload = async (idx = 0) => {
+            if (idx >= payloadsArray.length) {
+              return;
+            }
+            const singlePayload = payloadsArray[idx];
+            const launchPostfix = payloadsArray.length > 1
+              ? `${idx + 1} / ${payloadsArray.length}`
+              : undefined;
+            console.log(`launch payload ${launchPostfix || ''}:`, singlePayload);
+            if (component) {
+              if (component.state.runCapabilities) {
+                singlePayload.params = updateCapabilities(
+                  singlePayload.params,
+                  component.state.runCapabilities,
+                  stores.preferences
+                );
+              }
+              singlePayload.params = applyCustomCapabilitiesParameters(
+                singlePayload.params,
                 stores.preferences
               );
-            }
-            payload.params = applyCustomCapabilitiesParameters(
-              payload.params,
-              stores.preferences
-            );
-            if (
-              checkRequiredCapabilitiesErrors(
-                getEnabledCapabilities(payload.params),
-                stores.preferences
-              )
-            ) {
-              const error = 'You need to specify required capabilities';
-              message.error(error, 5);
-              return Promise.reject(new Error(error));
-            }
-            payload.isSpot = component.state.isSpot;
-            payload.instanceType = component.state.instanceType;
-            payload.hddSize = component.state.hddSize;
-            payload.tags = component.state.tags;
-            if (component.state.limitMounts !== component.props.limitMounts) {
-              const {limitMounts} = component.state;
-              if (limitMounts) {
-                if (!payload.params) {
-                  payload.params = {};
+              if (
+                checkRequiredCapabilitiesErrors(
+                  getEnabledCapabilities(singlePayload.params),
+                  stores.preferences
+                )
+              ) {
+                const error = 'You need to specify required capabilities';
+                message.error(error, 5);
+                return Promise.reject(new Error(error));
+              }
+              if (component.state.tagsValidation && component.state.tagsValidation.length > 0) {
+                const error = 'You need to specify required tags';
+                message.error(error, 5);
+                return Promise.reject(new Error(error));
+              }
+              singlePayload.isSpot = component.state.isSpot;
+              singlePayload.instanceType = component.state.instanceType;
+              singlePayload.hddSize = component.state.hddSize;
+              singlePayload.tags = component.state.tags;
+              if (component.state.limitMounts !== component.props.limitMounts) {
+                const {limitMounts} = component.state;
+                if (limitMounts) {
+                  if (!singlePayload.params) {
+                    singlePayload.params = {};
+                  }
+                  singlePayload.params[CP_CAP_LIMIT_MOUNTS] = {
+                    type: 'string',
+                    required: false,
+                    value: limitMounts
+                  };
+                } else if (singlePayload.params && singlePayload.params[CP_CAP_LIMIT_MOUNTS]) {
+                  delete singlePayload.params[CP_CAP_LIMIT_MOUNTS];
                 }
-                payload.params[CP_CAP_LIMIT_MOUNTS] = {
-                  type: 'string',
-                  required: false,
-                  value: limitMounts
+              }
+              if (component.state.runNameAlias) {
+                singlePayload.tags = {
+                  alias: component.state.runNameAlias
                 };
-              } else if (payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]) {
-                delete payload.params[CP_CAP_LIMIT_MOUNTS];
               }
             }
-            if (component.state.runNameAlias) {
-              payload.tags = {
-                alias: component.state.runNameAlias
-              };
+            if (!singlePayload.instanceType) {
+              throw new Error('You should select instance type');
+            } else {
+              const version = singlePayload.runNameAlias
+                ? `${launchName}:${launchVersion}`
+                : launchVersion;
+              let details = [
+                version,
+                launchPostfix
+              ].filter(Boolean).join(' ');
+              if (details.length > 0) {
+                details = ` (${details})`;
+              }
+              const hide = message
+                .loading(
+                  `Launching ${singlePayload.runNameAlias || launchName}${details}...`,
+                  0
+                );
+              if (singlePayload.runNameAlias) {
+                delete singlePayload.runNameAlias;
+              }
+              await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
+              try {
+                await PipelineRunner.send({...singlePayload, force: true});
+                if (PipelineRunner.error) {
+                  message.error(PipelineRunner.error);
+                  throw new Error(PipelineRunner.error);
+                } else {
+                  if (scheduleRules && scheduleRules.length > 0) {
+                    await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
+                  }
+                  await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
+                }
+              } finally {
+                hide();
+              }
             }
-          }
-          if (!payload.instanceType) {
-            message.error('You should select instance type');
+            return runSinglePayload(idx + 1);
+          };
+          try {
+            await runSinglePayload();
+            resolve(true);
+            callbackFn && callbackFn(true);
+          } catch (error) {
             resolve(false);
             callbackFn && callbackFn(false);
-          } else {
-            const version = payload.runNameAlias
-              ? `${launchName}:${launchVersion}`
-              : launchVersion;
-            const hide = message
-              .loading(`Launching ${payload.runNameAlias || launchName} (${version})...`, -1);
-            if (payload.runNameAlias) {
-              delete payload.runNameAlias;
-            }
-            await PipelineRunner.send({...payload, force: true});
-            hide();
-            if (PipelineRunner.error) {
-              message.error(PipelineRunner.error);
-              resolve(false);
-              callbackFn && callbackFn(false);
-            } else {
-              if (scheduleRules && scheduleRules.length > 0) {
-                await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
-              }
-              await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-              resolve(true);
-              callbackFn && callbackFn(true);
-            }
           }
         },
         onCancel () {
@@ -634,6 +691,8 @@ export class RunConfirmation extends React.Component {
     onChangeRunCapabilities: PropTypes.func,
     showRunCapabilities: PropTypes.bool,
     tags: PropTypes.object,
+    tagsPayload: PropTypes.object,
+    tagsValidation: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
     onChangeTags: PropTypes.func,
     pipelineId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     pipelineVersion: PropTypes.string,
@@ -668,7 +727,10 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get dataStorages () {
-    return (this.props.dataStorages || []).map(d => d);
+    const {cloudRegions = []} = this.props;
+    const cloudRegion = this.currentRegion;
+    const storages = (this.props.dataStorages || []).map(d => d);
+    return getAllowedStoragesForCloudRegion(storages, cloudRegion, cloudRegions);
   }
 
   @computed
@@ -1265,6 +1327,8 @@ export class RunConfirmation extends React.Component {
         >
           <CustomTagsControl
             tags={this.props.tags}
+            payload={this.props.tagsPayload}
+            validation={this.props.tagsValidation}
             onChange={this.props.onChangeTags}
           />
         </div>
@@ -1370,7 +1434,9 @@ class RunSpotConfirmationWithPrice extends React.Component {
     limitMounts: null,
     runNameAlias: null,
     runCapabilities: null,
-    tags: {}
+    tags: {},
+    tagsPayload: {},
+    tagsValidation: []
   };
 
   get runCapabilitiesError () {
@@ -1383,16 +1449,58 @@ class RunSpotConfirmationWithPrice extends React.Component {
     return false;
   }
 
+  getUserTagsLaunchPayload () {
+    const {
+      parameters,
+      dockerImage,
+      nodeCount
+    } = this.props;
+    const {
+      instanceType
+    } = this.state;
+    return {
+      dockerImage,
+      instanceType,
+      nodeCount,
+      params: parameters
+    };
+  }
+
+  updateUserTagsValidationInfo = async () => {
+    const info = await this.getUserTagsValidationInfo();
+    const {
+      validation = [],
+      payload
+    } = info || {};
+    this.setState({
+      tagsValidation: validation,
+      tagsPayload: payload
+    });
+  };
+
+  getUserTagsValidationInfo = async () => {
+    const {tags} = this.state;
+    const payload = this.getUserTagsLaunchPayload();
+    if (payload) {
+      const validation = await getUserTagsValidationResult(tags, {launchPayload: payload});
+      return {
+        validation,
+        payload
+      };
+    }
+    return undefined;
+  };
+
   onChangeSpotType = (isSpot) => {
     this.setState({
       isSpot
-    });
+    }, this.updateUserTagsValidationInfo);
   };
 
   onChangeInstanceType = (instanceType) => {
     this.setState({
       instanceType
-    });
+    }, this.updateUserTagsValidationInfo);
   };
 
   onChangeLimitMounts = (limitMounts) => {
@@ -1400,24 +1508,34 @@ class RunSpotConfirmationWithPrice extends React.Component {
       limitMounts
     }, async () => {
       this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(limitMounts);
+      await this.updateUserTagsValidationInfo();
     });
   };
 
   onChangeHddSize = (hddSize) => {
     this.setState({
       hddSize
-    });
+    }, this.updateUserTagsValidationInfo);
   };
 
   onChangeRunNameAlias = (alias) => {
-    this.setState({runNameAlias: alias});
+    this.setState(
+      {runNameAlias: alias},
+      this.updateUserTagsValidationInfo
+    );
   };
 
   onChangeRunCapabilities = (capabilities) => {
-    this.setState({runCapabilities: (capabilities || []).slice()});
+    this.setState(
+      {runCapabilities: (capabilities || []).slice()},
+      this.updateUserTagsValidationInfo
+    );
   };
 
-  onChangeTags = (tags) => this.setState({tags});
+  onChangeTags = (tags) => this.setState(
+    {tags},
+    this.updateUserTagsValidationInfo
+  );
 
   renderModalTitle = () => {
     const {
@@ -1503,6 +1621,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
             dockerRegistries={this.props.dockerRegistries}
             usersInfo={this.props.usersInfo}
             tags={this.state.tags}
+            tagsPayload={this.state.tagsPayload}
+            tagsValidation={this.state.tagsValidation}
             onChangeTags={this.onChangeTags}
             pipelineId={this.props.pipelineId}
             pipelineVersion={this.props.pipelineVersion}
@@ -1545,7 +1665,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
       hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts,
       runCapabilities: getEnabledCapabilities(this.props.parameters),
-      tags: this.props.tags || {},
-    });
+      tags: this.props.tags || {}
+    }, this.updateUserTagsValidationInfo);
   }
 }

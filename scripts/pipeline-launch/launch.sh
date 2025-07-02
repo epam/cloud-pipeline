@@ -88,6 +88,8 @@ function clone_repository {
                   if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ]; then
                         git -c http.sslVerify=false submodule init
                         git -c http.sslVerify=false submodule update
+                  elif [ "$CP_GIT_RECURSIVE_CLONE_SINGLE_CMD" = "true" ]; then
+                        git -c http.sslVerify=false submodule update --init --recursive
                   fi
 
                   _CLONE_RESULT=$?
@@ -2666,7 +2668,17 @@ then
 fi
 
 echo "Prepare profile credentials"
-$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+CP_CLOUD_CREDENTIALS_PATHS="${CP_CLOUD_CREDENTIALS_PATHS:-"$HOME $OWNER_HOME"}"
+_cloud_credentials_paths=($CP_CLOUD_CREDENTIALS_PATHS)
+for _cred_profile_home_dir in ${_cloud_credentials_paths[@]}; do
+      echo "Writing cloud credentials to $_cred_profile_home_dir"
+      $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py \
+            --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py \
+            --python-path=$CP_PYTHON2_PATH \
+            --config-file=$_cred_profile_home_dir/.aws/config \
+            --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+done
+
 _PROFILE_CREDENTIALS_WRITER_RESULT=$?
 if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
 then

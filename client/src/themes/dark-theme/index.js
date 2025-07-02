@@ -20,6 +20,7 @@ export default {
   identifier: 'dark-theme',
   name: 'Dark',
   extends: 'light-theme',
+  dark: true,
   predefined: true,
   configuration: {
     '@application-background-color': 'rgb(14, 17, 22)',

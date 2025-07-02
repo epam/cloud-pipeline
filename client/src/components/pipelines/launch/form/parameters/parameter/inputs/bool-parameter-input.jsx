@@ -10,7 +10,6 @@ function LaunchFormBoolParameterInput (props) {
     style,
     value,
     onChange,
-    readOnly,
     disabled
   } = props;
   const checked = value ? String(value).toLowerCase() === 'true' : false;
@@ -25,8 +24,10 @@ function LaunchFormBoolParameterInput (props) {
       style={style}
       checked={checked}
       onChange={onCheckboxValueChange}
-      disabled={readOnly || disabled}
-    />
+      disabled={disabled}
+    >
+      Enabled
+    </Checkbox>
   );
 }
 
@@ -36,8 +37,12 @@ LaunchFormBoolParameterInput.propTypes = {
   value: PropTypes.any,
   required: PropTypes.bool,
   onChange: PropTypes.func,
-  readOnly: PropTypes.bool,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  currentProjectMetadata: PropTypes.object,
+  currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  rootEntityId: PropTypes.string,
+  metadataAutoComplete: PropTypes.bool
 };
 
 export default LaunchFormBoolParameterInput;

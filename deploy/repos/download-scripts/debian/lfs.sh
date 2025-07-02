@@ -4,21 +4,24 @@ set -e
 
 # LizardFS
 apt update
-apt install lsb-release gnupg wget -y
+apt install lsb-release gnupg wget curl apt-transport-https -y
+
+curl -sk "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/cloud-pipeline.key" | apt-key add -
 
 source /etc/os-release
 if [ "$ID" == "debian" ]; then
-    # If it is debian (especially v8 - "jessie") - use /debian/ repository
-    _repository=debian
-    _release="$(lsb_release -sc)"
+    sed -i "1 i\deb https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/debian/8 stable main" /etc/apt/sources.list
 else
-    # Use xenial release even for 18.04
-    _repository=ubuntu
-    _release=xenial
+    sed -i "1 i\deb https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/ubuntu/16.04 stable main" /etc/apt/sources.list
 fi
 
-
-wget -O - http://dev.lizardfs.com/old-packages/lizardfs.key | apt-key add -
-sed -i "1 i\deb [trusted=yes] http://dev.lizardfs.com/old-packages/$_repository/$_release $_release main" /etc/apt/sources.list
-apt update
-apt install --download-only -t $_release lizardfs-chunkserver lizardfs-master lizardfs-client -y
+apt-get update -y --allow-insecure-repositories
+apt install -y --download-only -t stable \
+    lizardfs-chunkserver \
+    lizardfs-master \
+    lizardfs-client \
+    bash-completion \
+    libfuse2 \
+    libexpat1 \
+    ucf \
+    libxml2

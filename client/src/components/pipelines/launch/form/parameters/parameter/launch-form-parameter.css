@@ -1,3 +1,7 @@
 .launch-form-parameter {
+  margin: 7px 0;
+}
 
+.launch-form-parameter > *:not(:last-child) {
+  margin-bottom: 2px;
 }

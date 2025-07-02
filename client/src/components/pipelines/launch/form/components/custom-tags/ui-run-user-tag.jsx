@@ -10,8 +10,10 @@ function UIRunUserTag (props) {
     style,
     tagConfiguration,
     tagValue,
-    onChange
+    onChange,
+    validation
   } = props;
+  const {error} = validation || {};
   const onTagValueChange = (event) => {
     if (typeof onChange === 'function') {
       onChange(event.target.value);
@@ -19,19 +21,30 @@ function UIRunUserTag (props) {
   };
   return (
     <div
-      className={classNames(
-        className,
-        styles.uiRunTag
-      )}
+      className={classNames(className, styles.uiRunTag)}
       style={style}
     >
       <span className={styles.title}>
         {tagConfiguration.display ?? tagConfiguration.tag}
       </span>
-      <Input
-        className={styles.value} value={tagValue || ''}
-        onChange={onTagValueChange}
-      />
+      <div
+        className={classNames(
+          styles.value
+        )}
+      >
+        <Input
+          className={classNames(styles.valueInput, {'cp-error': Boolean(error)})}
+          value={tagValue || ''}
+          onChange={onTagValueChange}
+        />
+        {
+          error && (
+            <div className={classNames('cp-error', styles.validationError)}>
+              {error}
+            </div>
+          )
+        }
+      </div>
     </div>
   );
 }
@@ -41,7 +54,8 @@ UIRunUserTag.propTypes = {
   style: PropTypes.object,
   tagConfiguration: PropTypes.object,
   tagValue: PropTypes.string,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  validation: PropTypes.object
 };
 
 export default UIRunUserTag;

@@ -40,6 +40,8 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
@@ -104,6 +106,9 @@ public class PipelineManager implements SecuredEntityManager {
 
     @Autowired
     private PipelineRepositoryService pipelineRepositoryService;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
 
@@ -215,8 +220,7 @@ public class PipelineManager implements SecuredEntityManager {
         if (!previousName.equals(pipelineVOName)) {
             updatePipelineNameForRuns(pipelineVO.getId(), pipelineVOName);
         }
-
-        if (projectNameUpdated) {
+        if (projectNameUpdated && preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_RENAME_REPO)) {
             pipelineRepositoryService.updateRepositoryName(dbPipeline, currentProjectPath, newProjectName);
         }
         return dbPipeline;
@@ -392,24 +396,31 @@ public class PipelineManager implements SecuredEntityManager {
         final String sourceProjectName = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final String uuid = PasswordGenerator.generateRandomString(20);
         final String newPipelineName = buildCopyProjectName(sourceProjectName, uuid, newName);
-        final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
-        final String newRepository =
-                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
-        final String newRepositorySsh =
-                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
         final Long sourcePipelineId = loadedPipeline.getId();
 
-        loadedPipeline.setRepository(newRepository);
-        loadedPipeline.setRepositorySsh(newRepositorySsh);
         loadedPipeline.setName(newPipelineName);
         loadedPipeline.setParentFolderId(parentFolderId);
         setFolderIfPresent(loadedPipeline);
         loadedPipeline.setOwner(securityManager.getAuthorizedUser());
-        loadedPipeline.setRepositoryType(null);
         loadedPipeline.setLocked(false);
+
+        final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
+        if (RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType())) {
+            final String newRepository =
+                    GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
+            final String newRepositorySsh =
+                    GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
+
+            loadedPipeline.setRepository(newRepository);
+            loadedPipeline.setRepositorySsh(newRepositorySsh);
+        }
+
         final Pipeline newPipeline = crudManager.savePipeline(loadedPipeline);
         copyStorageRules(sourcePipelineId, newPipeline.getId());
-        gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+
+        if (RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType())) {
+            gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+        }
         return newPipeline;
     }
 

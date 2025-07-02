@@ -1,0 +1,23 @@
+--- fluent.py	2025-05-30 15:12:52.057150010 +0000
++++ fluent_patched.py	2025-05-30 15:15:16.832573768 +0000
+@@ -196,6 +196,9 @@
+     # so that subprocess can inherit it.
+     MLFLOW_EXPERIMENT_ID.set(_active_experiment_id)
+
++    import subprocess
++    subprocess.run(["pipe_tag", "CP_MLFLOW_EXPERIMENT_ID", str(_active_experiment_id)])
++
+     return experiment
+
+
+@@ -343,6 +346,10 @@
+                                      run_id params.child tags.mlflow.runName
+         0  7d175204675e40328e46d9a6a5a7ee6a          yes           CHILD_RUN
+     """
++    if not tags:
++        tags = {}
++    tags['CP_RUN_ID'] = os.environ['RUN_ID']
++
+     active_run_stack = _active_run_stack.get()
+     _validate_experiment_id_type(experiment_id)
+     # back compat for int experiment_id

@@ -29,6 +29,8 @@ import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
+import com.epam.pipeline.mapper.plugin.UIPluginAssignmentMapper;
+import com.epam.pipeline.mapper.plugin.UIPluginMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -171,5 +173,15 @@ public class MappersConfiguration {
     @Bean
     public RunnerSidMapper runnerSidMapper() {
         return Mappers.getMapper(RunnerSidMapper.class);
+    }
+
+    @Bean
+    public UIPluginMapper uiPluginMapper() {
+        return Mappers.getMapper(UIPluginMapper.class);
+    }
+
+    @Bean
+    public UIPluginAssignmentMapper uiPluginAssignmentMapper() {
+        return Mappers.getMapper(UIPluginAssignmentMapper.class);
     }
 }

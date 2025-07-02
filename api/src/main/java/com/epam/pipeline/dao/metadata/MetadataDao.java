@@ -125,6 +125,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         return items.isEmpty() ? null : items.get(0);
     }
 
+    public MetadataEntry loadMetadataItemWithSecrets(final EntityVO entity,
+                                                     final List<String> keys) {
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
+                MetadataParameters.getParameters(entity),
+                MetadataParameters.getRowMapper(keys));
+        return items.isEmpty() ? null : items.get(0);
+    }
+
     public boolean hasMetadata(EntityVO entity) {
         List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
                 MetadataParameters.getParameters(entity), 

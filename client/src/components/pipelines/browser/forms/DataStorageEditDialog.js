@@ -123,6 +123,72 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
+  @computed
+  get isAdvancedUser () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        roles = []
+      } = authenticatedUserInfo.value;
+      return roles.some(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  }
+
+  @computed
+  get isUserDefaultStorage () {
+    const {
+      authenticatedUserInfo,
+      dataStorage
+    } = this.props;
+    if (dataStorage && authenticatedUserInfo.loaded) {
+      const {
+        defaultStorageId
+      } = authenticatedUserInfo.value;
+      return Number(dataStorage.id) === Number(defaultStorageId);
+    }
+    return undefined;
+  }
+
+  @computed
+  get permissionsRestrictions () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    const isAdmin = authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.value &&
+      authenticatedUserInfo.value.admin;
+    const {isAdvancedUser, isUserDefaultStorage} = this;
+    if (preferences.loaded && !isAdmin && !isAdvancedUser) {
+      const restrictions = preferences.uiStoragesPermissionsRestrictions;
+      const readOnlyRoles = restrictions
+        .filter((r) => r.readonly)
+        .filter((r) => r.onlyDefaultStorage ? isUserDefaultStorage : true)
+        .map((r) => r.role);
+      const defaultMask = restrictions.map((rule) => ({
+        role: rule.role,
+        mask: rule.defaultMask
+      }));
+      const enabledMask = restrictions.map((rule) => ({
+        role: rule.role,
+        mask: rule.enabledMask
+      }));
+      return {
+        defaultMask,
+        enabledMask,
+        readOnlyRoles
+      };
+    }
+    return {
+      defaultMask: [],
+      enabledMask: [],
+      readOnlyRoles: []
+    };
+  }
+
   openDeleteDialog = () => {
     this.setState({deleteDialogVisible: true});
   };
@@ -457,6 +523,9 @@ export class DataStorageEditDialog extends React.Component {
       this.setState({activeTab: 'info'});
     };
     const skipPolicyFlagVisible = !this.props.dataStorage;
+
+    const {defaultMask, enabledMask, readOnlyRoles} = this.permissionsRestrictions;
+
     return (
       <Modal
         maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
@@ -790,7 +859,11 @@ export class DataStorageEditDialog extends React.Component {
                 <PermissionsForm
                   readonly={isReadOnly}
                   objectIdentifier={this.props.dataStorage.id}
-                  objectType="DATA_STORAGE" />
+                  objectType="DATA_STORAGE"
+                  defaultMask={defaultMask}
+                  enabledMask={enabledMask}
+                  readOnlyRoles={readOnlyRoles}
+                />
               </Tabs.TabPane>
             }
             {this.transitionRulesAvailable && (

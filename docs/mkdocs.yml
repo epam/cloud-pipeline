@@ -150,6 +150,6 @@ nav:
         - Terraform: 'installation/native/aws/terraform/README.md'
         - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
   - Management:
-    - Environments sync: 'installation/management/environments_sync.md'
-  - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
-  - Support Windows runs: 'installation/support_windows_runs.md'
+    - Environments sync: 'operation/environments_sync/environments_sync.md'
+  - Change Kubernetes certificates: 'operation/change_kube_certificates.md'
+  - Support Windows runs: 'operation/support_windows_runs.md'

@@ -231,6 +231,40 @@ class RunLogsSection extends React.Component {
 
   onSplitPanelSizeChange = (size) => this.setState({size});
 
+  get pipelineTaskName () {
+    const {run = {}} = this.props;
+    const {
+      pipelineName,
+      podId
+    } = run;
+    return pipelineName || podId || undefined;
+  }
+
+  get jobIsRunning () {
+    const {run = {}} = this.props;
+    const {status} = run;
+    return ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'].includes(status);
+  }
+
+  get showLogsDate () {
+    const {task} = this.state;
+    const {pipelineTaskName} = this;
+    if (
+      task &&
+      (
+        /^console$/i.test(task.name) ||
+        (
+          !this.jobIsRunning &&
+          pipelineTaskName &&
+          pipelineTaskName.toLowerCase() === task.name.toLowerCase()
+        )
+      )
+    ) {
+      return false;
+    }
+    return undefined;
+  }
+
   render () {
     const {
       className,
@@ -299,6 +333,7 @@ class RunLogsSection extends React.Component {
                   className={styles.logs}
                   runId={run.id}
                   taskName={task ? task.name : undefined}
+                  showDate={this.showLogsDate}
                   taskParameters={task ? task.parameters : undefined}
                   taskInstance={task ? task.instance : undefined}
                   autoUpdate={/^(running|pausing|resuming)$/i.test(status)}

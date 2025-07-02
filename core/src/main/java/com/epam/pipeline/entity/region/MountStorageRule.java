@@ -17,5 +17,5 @@
 package com.epam.pipeline.entity.region;
 
 public enum MountStorageRule {
-    NONE, ALL, CLOUD
+    NONE, ALL, CLOUD, REGION
 }

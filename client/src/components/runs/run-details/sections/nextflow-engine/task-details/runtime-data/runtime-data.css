@@ -16,3 +16,12 @@ table.runtime-metrics-table {
   border-collapse: collapse;
   width: 100%;
 }
+
+.task-command-code-editor {
+  border: none;
+}
+
+.error-component-container {
+  display: flex;
+  flex: 1 0;
+}

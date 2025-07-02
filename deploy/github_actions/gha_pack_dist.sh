@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,39 +14,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
 CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
+CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
+
+# Setup python2
+cd /opt
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
+source /opt/conda/etc/profile.d/conda.sh
+conda activate
+cd -
+#
+
+# Setup node
+source ~/.nvm/nvm.sh
+nvm install 14.21.3
+nvm use 14.21.3
+echo "node binary: $(which node)"
+#
 
 # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
 function download_gradle_dependencies() {
-    ./gradlew buildDependents \
-              -x test \
-              -x :pipe-cli:buildLinux \
-              -x :pipe-cli:buildMac \
-              -x :pipe-cli:buildMacPy3 \
-              -x :pipe-cli:buildWin \
-              -x :client:buildUI \
-              -x :cloud-pipeline-webdav-client:buildLinux \
-              -x :cloud-pipeline-webdav-client:buildWin \
-              -x :cloud-pipeline-webdav-client:buildCli \
-              -x :fs-browser:build \
-              -x :data-sharing-service:client:buildUI \
-              -x :data-sharing-service:api:build \
-              -x :data-sharing-service:buildAll \
-              -x :data-sharing-service:buildFast \
-              -x :data-transfer-service:bootJar \
-              -x :data-transfer-service:build \
-              -x :data-transfer-service:bundleWindows \
-              -x :data-transfer-service:bundleLinux \
-              -x :workflows:buildGpuStat \
-              -Pfast \
-              --no-daemon
+    ./gradlew clean buildDependents -Pfast -x test --no-daemon
 
     if [ "$?" != 0 ]; then
         echo "Problem with resolving gradle dependencies..."
         return 1
     fi
 }
+
+function get_pipe_binaries() {
+  _suffix="$1"
+  _OSX_CLI_TAR_NAME="pipe-osx-full${_suffix}.$CLOUD_PIPELINE_BUILD_NUMBER.tar.gz"
+  _OSX_CLI_PATH=$(mktemp -d)
+  aws s3 cp --no-progress s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
+  tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
+
+  mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx* ${API_STATIC_PATH}/
+  mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
+}
+
+pip install PyYAML==3.12
+pip install mkdocs==1.0.4
 
 _BUILD_EXIT_CODE=1
 try_count=0
@@ -62,76 +71,32 @@ while [ $_BUILD_EXIT_CODE != 0 ] && [ $try_count -lt "$CLOUD_PIPELINE_BUILD_RETR
 	try_count=$(( $try_count + 1 ))
 done
 
-# Fail script if any command will fail
 set -e
-
-python -m pip install mkdocs
 
 API_STATIC_PATH=api/src/main/resources/static
 rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 mkdir -p ${API_STATIC_PATH}
 
-aws s3 cp --no-progress --recursive s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/ ${API_STATIC_PATH}/
+get_pipe_binaries
+get_pipe_binaries "-arm"
 
-ls -lh ${API_STATIC_PATH}/pipe \
-       ${API_STATIC_PATH}/pipe.tar.gz \
-       ${API_STATIC_PATH}/pipe-el6 \
-       ${API_STATIC_PATH}/pipe-el6.tar.gz \
-       ${API_STATIC_PATH}/pipe-osx \
-       ${API_STATIC_PATH}/pipe-osx.tar.gz \
-       ${API_STATIC_PATH}/pipe.zip \
-       ${API_STATIC_PATH}/client.tar.gz \
-       ${API_STATIC_PATH}/cloud-data-linux.tar.gz \
-       ${API_STATIC_PATH}/cloud-data-win64.zip \
-       ${API_STATIC_PATH}/fsbrowser.tar.gz \
-       ${API_STATIC_PATH}/gpustat.tar.gz \
-       ${API_STATIC_PATH}/data-sharing-service.jar \
-       ${API_STATIC_PATH}/data-transfer-service.jar \
-       ${API_STATIC_PATH}/data-transfer-service-windows.zip \
-       ${API_STATIC_PATH}/data-transfer-service-linux.zip
+_BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
+mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
+mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
 
-tar -xzf ${API_STATIC_PATH}/client.tar.gz -C ${API_STATIC_PATH}
-rm -f ${API_STATIC_PATH}/client.tar.gz
-
-mkdir -p data-sharing-service/api/build/libs
-mv ${API_STATIC_PATH}/data-sharing-service.jar data-sharing-service/api/build/libs/data-sharing-service.jar
-
-mkdir -p data-transfer-service/build/libs \
-         data-transfer-service/build/distributions
-mv ${API_STATIC_PATH}/data-transfer-service.jar data-transfer-service/build/libs/data-transfer-service.jar
-mv ${API_STATIC_PATH}/data-transfer-service-windows.zip data-transfer-service/build/distributions/data-transfer-service-windows.zip
-mv ${API_STATIC_PATH}/data-transfer-service-linux.zip data-transfer-service/build/distributions/data-transfer-service-linux.zip
-
-./gradlew distTar \
-          -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
-          -Pprofile=release \
-          -x test \
-          -x :pipe-cli:buildLinux \
-          -x :pipe-cli:buildMac \
-          -x :pipe-cli:buildMacPy3 \
-          -x :pipe-cli:buildWin \
-          -x :client:buildUI \
-          -x :cloud-pipeline-webdav-client:buildLinux \
-          -x :cloud-pipeline-webdav-client:buildWin \
-          -x :cloud-pipeline-webdav-client:buildCli \
-          -x :fs-browser:build \
-          -x :data-sharing-service:client:buildUI \
-          -x :data-sharing-service:api:build \
-          -x :data-sharing-service:buildAll \
-          -x :data-sharing-service:buildFast \
-          -x :data-transfer-service:bootJar \
-          -x :data-transfer-service:build \
-          -x :data-transfer-service:bundleWindows \
-          -x :data-transfer-service:bundleLinux \
-          -x :workflows:buildGpuStat \
-          -Pfast \
-          --no-daemon
-
-DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
-
-ls -lh $DIST_TGZ_NAME
+./gradlew distTar   -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
+                    -Pprofile=release \
+                    -x test \
+                    -Pfast \
+                    --no-daemon
 
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/gha/${GITHUB_REF_NAME}/
+    DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
+
+    # Publish repackaged distribution tgz to S3 into builds/ prefix
+    # Only if it is one of the allowed branches and it is a push (not PR)
+    if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] ; then
+            aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
+    fi
 fi

@@ -18,6 +18,8 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.dao.plugin.UIPluginAssignmentRepository;
+import com.epam.pipeline.dao.plugin.UIPluginRepository;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -186,6 +188,11 @@ public class TestApplication {
 
     @MockBean
     public InstanceOfferScheduler instanceOfferScheduler;
+
+    @MockBean
+    protected UIPluginRepository pluginRepository;
+    @MockBean
+    protected UIPluginAssignmentRepository assignmentRepository;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

@@ -1,6 +1,6 @@
 const CP_RUN_ENGINE_TYPE = 'CP_RUN_ENGINE_TYPE';
 
-export function isNextflowEngine (run) {
+function getRunEngineType (run) {
   if (!run) {
     return false;
   }
@@ -8,9 +8,22 @@ export function isNextflowEngine (run) {
     pipelineRunParameters = []
   } = run;
   const cpRunEngineType = pipelineRunParameters.find((prp) => prp.name === CP_RUN_ENGINE_TYPE);
-  return cpRunEngineType && cpRunEngineType.value
-    ? /^nextflow$/i.test(cpRunEngineType.value)
+  return cpRunEngineType ? cpRunEngineType.value : undefined;
+}
+
+function checkRunEngine (run, engine) {
+  const cpRunEngineType = getRunEngineType(run);
+  return cpRunEngineType
+    ? engine.toLowerCase() === cpRunEngineType.toLowerCase()
     : false;
+}
+
+export function isNextflowEngine (run) {
+  return checkRunEngine(run, 'nextflow');
+}
+
+export function isMlflowEngine (run) {
+  return checkRunEngine(run, 'mlflow');
 }
 
 export function isRunCompleted (run) {

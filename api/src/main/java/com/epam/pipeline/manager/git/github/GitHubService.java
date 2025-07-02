@@ -107,10 +107,10 @@ public class GitHubService implements GitClientService {
 
     @Override
     public GitProject renameRepository(final String currentRepositoryPath, final String newName, final String token) {
-        final GitHubRepository repository = GitHubRepository.builder()
-                .name(newName)
-                .build();
-        final GitHubRepository updatedRepository = getClient(currentRepositoryPath, token).updateRepository(repository);
+        final GitHubClient client = getClient(currentRepositoryPath, token);
+        final GitHubRepository repository = client.getRepository();
+        repository.setName(newName);
+        final GitHubRepository updatedRepository = client.updateRepository(repository);
         return mapper.toGitRepository(updatedRepository);
     }
 

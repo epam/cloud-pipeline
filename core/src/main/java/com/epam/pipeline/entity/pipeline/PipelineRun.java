@@ -150,6 +150,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     public PipelineRun() {
         this.terminating = false;
         this.tags = new HashMap<>();
+        this.setCreatedDate(null);
     }
 
     public PipelineRun(Long id, String name) {
