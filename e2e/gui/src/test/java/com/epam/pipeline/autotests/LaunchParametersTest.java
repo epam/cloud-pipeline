@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.ConfigurationPermission;
 import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
@@ -66,7 +67,6 @@ import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
@@ -474,7 +474,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .expandTab(EXEC_ENVIRONMENT)
                     .expandTab(ADVANCED_PANEL)
                     .setTypeValue(format(testInstance, "xlarge"))
-                    .setPriceType(ON_DEMAND)
+                    .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                     .doNotMountStoragesSelect(true)
                     .enableClusterLaunch()
                     .clusterSettingsForm("Auto-scaled cluster")
@@ -512,7 +512,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .doNotMountStoragesSelect(true)
                 .setDisk("25")
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .click(START_IDLE)
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
@@ -555,7 +555,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .expandTab(ADVANCED_PANEL)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm("Auto-scaled cluster")

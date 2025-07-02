@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
 
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.exist;
@@ -54,7 +55,7 @@ public class RunToolsInSandBoxTest
     private final String command = "nginx -g \"daemon off;\"";
     private final String type = C.DEFAULT_INSTANCE;
     private final String disk = "15";
-    private final String price = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String price = DEFAULT_INSTANCE_PRICE_TYPE;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
@@ -73,6 +74,13 @@ public class RunToolsInSandBoxTest
                 type,
                 price,
                 disk);
+    }
+
+    @BeforeMethod
+    public void openApplication() {
+        open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @Test
@@ -119,14 +127,12 @@ public class RunToolsInSandBoxTest
             if (endpointPage != null) {
                 endpointPage.closeTab();
             }
-            open(C.ROOT_ADDRESS);
         }
     }
 
     @Test(dependsOnMethods = {"validatePipelineIsLaunchedForToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-496"})
     public void validateUsernameOnPipelinePage() {
-        open(C.ROOT_ADDRESS);
         runsMenu()
                 .show(getLastRunId())
                 .ensureHasOwner(getUserNameByAccountLogin(admin.login));
@@ -135,7 +141,6 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = "validateUsernameOnPipelinePage")
     @TestCase(value = {"EPMCMBIBPC-500"})
     public void checkToolAccessibilityForAnotherUser() {
-        open(C.ROOT_ADDRESS);
         String pipelineUrl =
                 runsMenu()
                         .show(getLastRunId())
@@ -155,16 +160,11 @@ public class RunToolsInSandBoxTest
                 .sleep(5, SECONDS)
                 .screenshot("test500screenshot")
                 .assertPageTitleIs("401 Authorization Required");
-
-        open(C.ROOT_ADDRESS);
-        logout();
-        loginAs(admin);
     }
 
     @Test(dependsOnMethods = {"checkToolAccessibilityForAnotherUser"})
     @TestCase(value = {"EPMCMBIBPC-501"})
     public void validateStopToolInSandbox() {
-        open(C.ROOT_ADDRESS);
         nodeName = clusterMenu()
                 .waitForTheNode(nameWithoutGroup(tool), getLastRunId())
                 .getNodeName(getLastRunId());
@@ -181,8 +181,6 @@ public class RunToolsInSandBoxTest
     @Test(dependsOnMethods = {"validateStopToolInSandbox"})
     @TestCase(value = {"EPMCMBIBPC-503"})
     public void validateNodeReusage() {
-        open(C.ROOT_ADDRESS);
-
         tools().perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
                 .launchTool(this, nameWithoutGroup(tool));
@@ -214,7 +212,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .selectRunCapability("DinD")
                 .click(START_IDLE)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
@@ -244,7 +242,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .selectRunCapability("Singularity")
                 .click(START_IDLE)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)

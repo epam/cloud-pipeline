@@ -105,7 +105,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
     @Test(priority = 7, dependsOnMethods = {"startAndStopPipelineAfterNodeAppear"})
     @TestCase(value = {"EPMCMBIBPC-276, EPMCMBIBPC-277"})
     public void shouldFilterNodeByAddress() throws InterruptedException {
-        final ClusterMenuAO clusterMenuAO = clusterMenu();
+        final ClusterMenuAO clusterMenuAO = clusterMenu().sortByDecrease(DATE);
 
         final String ip = clusterMenuAO.getNodeAddress(getRunId());
         final int nodesCountBeforeFiltering = clusterMenuAO.getNodesCount();
@@ -144,7 +144,8 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
     @TestCase(value = {"EPMCMBIBPC-270"})
     public void shouldTerminateNode() {
         clusterMenu()
-            .removeNode(getRunId())
-            .validateThereIsNoNode(getRunId());
+                .sortByDecrease(DATE)
+                .removeNode(getRunId())
+                .validateThereIsNoNode(getRunId());
     }
 }

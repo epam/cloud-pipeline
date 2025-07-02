@@ -21,6 +21,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -124,8 +125,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public LogAO showLog(String runId) {
         sleep(1, SECONDS);
         show(runId);
-        sleep(3, SECONDS);
-        if (new LogAO().get(STATUS).exists()) {
+        if ($(byClassName("log__run-title")).$(withText("Run"))
+                .waitUntil(appears, DEFAULT_TIMEOUT).exists()) {
             return new LogAO();
         }
         show(runId);

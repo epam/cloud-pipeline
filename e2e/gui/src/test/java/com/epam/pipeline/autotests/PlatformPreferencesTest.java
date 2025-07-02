@@ -28,13 +28,15 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
+import static com.epam.pipeline.autotests.utils.C.ROOT_ADDRESS;
 import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.SupportButton;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -64,6 +66,12 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
     private final String group = C.DEFAULT_GROUP;
     private final String clusterSettingForm = "Cluster";
 
+    @BeforeMethod
+    public void reopenApplication() {
+        open(ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
+    }
 
     @Test
     @TestCase(value = {"897"})
@@ -206,38 +214,33 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
     public void allowToSpecifyLustreFSTypeAndThoughput() {
         logout();
         loginAs(user);
-        try {
-            final LogAO logAO = tools()
-                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                    .expandTab(EXEC_ENVIRONMENT)
-                    .enableClusterLaunch()
-                    .clusterSettingsForm(clusterSettingForm)
-                    .clusterEnableCheckboxSelect("Enable GridEngine")
-                    .setFileSystemParameter(FILE_SYSTEM_TYPE, "LustreFS")
-                    .ensureVisible(DEPLOYMENT_TYPE)
-                    .setFileSystemParameter(DEPLOYMENT_TYPE, "PERSISTENT_2")
-                    .ensureVisible(THROUGHPUT, IOPS)
-                    .setFileSystemVolume("1200")
-                    .setFileSystemParameter(THROUGHPUT, "500")
-                    .ok()
-                    .launch(this)
-                    .showLog(getLastRunId())
-                    .waitForSshLink()
-                    .waitForTask(INITIALIZE_SHARED_FS)
-                    .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
-                    .clickTaskWithName(INITIALIZE_SHARED_FS);
+        final LogAO logAO = tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .enableClusterLaunch()
+                .clusterSettingsForm(clusterSettingForm)
+                .clusterEnableCheckboxSelect("Enable GridEngine")
+                .setFileSystemParameter(FILE_SYSTEM_TYPE, "LustreFS")
+                .ensureVisible(DEPLOYMENT_TYPE)
+                .setFileSystemParameter(DEPLOYMENT_TYPE, "PERSISTENT_2")
+                .ensureVisible(THROUGHPUT, IOPS)
+                .setFileSystemVolume("1200")
+                .setFileSystemParameter(THROUGHPUT, "500")
+                .ok()
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .waitForTask(INITIALIZE_SHARED_FS)
+                .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
+                .clickTaskWithName(INITIALIZE_SHARED_FS);
 
-            final Set<String> logMess = logAO.logMessages().collect(toSet());
-            logAO
-                    .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
-                            "?size=1200&type=PERSISTENT_2&throughput=500")
-                    .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
-                    .waitForTask(INITIALIZE_ENVIRONMENT)
-                    .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
-        } finally {
-            logoutIfNeeded();
-            loginAs(admin);
-        }
+        final Set<String> logMess = logAO.logMessages().collect(toSet());
+        logAO
+                .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
+                        "?size=1200&type=PERSISTENT_2&throughput=500")
+                .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
+                .waitForTask(INITIALIZE_ENVIRONMENT)
+                .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
     }
 
     @CloudProviderOnly(values = {Cloud.AWS})
@@ -246,37 +249,32 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
     public void allowToSpecifyLustreFSmetadataIOPS() {
         logout();
         loginAs(user);
-        try {
-            final LogAO logAO = tools()
-                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                    .expandTab(EXEC_ENVIRONMENT)
-                    .enableClusterLaunch()
-                    .clusterSettingsForm(clusterSettingForm)
-                    .clusterEnableCheckboxSelect("Enable GridEngine")
-                    .setFileSystemParameter(FILE_SYSTEM_TYPE, "LustreFS")
-                    .setFileSystemParameter(DEPLOYMENT_TYPE, "PERSISTENT_2")
-                    .setFileSystemVolume("1200")
-                    .setFileSystemParameter(THROUGHPUT, "500")
-                    .setFileSystemParameter(IOPS, "1500")
-                    .ok()
-                    .launch(this)
-                    .showLog(getLastRunId())
-                    .waitForSshLink()
-                    .waitForTask(INITIALIZE_SHARED_FS)
-                    .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
-                    .clickTaskWithName(INITIALIZE_SHARED_FS);
+        final LogAO logAO = tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .enableClusterLaunch()
+                .clusterSettingsForm(clusterSettingForm)
+                .clusterEnableCheckboxSelect("Enable GridEngine")
+                .setFileSystemParameter(FILE_SYSTEM_TYPE, "LustreFS")
+                .setFileSystemParameter(DEPLOYMENT_TYPE, "PERSISTENT_2")
+                .setFileSystemVolume("1200")
+                .setFileSystemParameter(THROUGHPUT, "500")
+                .setFileSystemParameter(IOPS, "1500")
+                .ok()
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .waitForTask(INITIALIZE_SHARED_FS)
+                .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
+                .clickTaskWithName(INITIALIZE_SHARED_FS);
 
-            final Set<String> logMess = logAO.logMessages().collect(toSet());
-            logAO
-                    .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
-                            "?size=1200&type=PERSISTENT_2&throughput=500&iops=1500")
-                    .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
-                    .waitForTask(INITIALIZE_ENVIRONMENT)
-                    .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
-        } finally {
-            logoutIfNeeded();
-            loginAs(admin);
-        }
+        final Set<String> logMess = logAO.logMessages().collect(toSet());
+        logAO
+                .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
+                        "?size=1200&type=PERSISTENT_2&throughput=500&iops=1500")
+                .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
+                .waitForTask(INITIALIZE_ENVIRONMENT)
+                .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
     }
 
     @Test
@@ -288,37 +286,33 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         String[] messages = {
                 "stress: FAIL: \\[\\d*\\] \\(\\d*\\) <-- worker \\d* got signal 9",
                 "stress: FAIL: \\[\\d*\\] \\(\\d*\\) failed run completed in \\d*s"};
-        try {
-            tools()
-                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                    .expandTab(EXEC_ENVIRONMENT)
-                    .expandTab(ADVANCED_PANEL)
-                    .setTypeValue("c5.xlarge")
-                    .setPriceType(ON_DEMAND)
-                    .doNotMountStoragesSelect(true)
-                    .launchTool(this, Utils.nameWithoutGroup(tool))
-                    .showLog(getLastRunId())
-                    .waitForSshLink()
-                    .ssh(shell -> shell
-                            .waitUntilTextAppears(getLastRunId())
-                            .execute("yum install -y stress")
-                            .assertNextStringIsVisible("Complete!",
-                                    format("pipeline-%s", getLastRunId()))
-                            .execute(command)
-                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 3)
-                            .assertPageContainsStringsWithRegex(command, messages)
-                            .close());
-            final LogAO logAO = runsMenu()
-                    .showLog(getLastRunId())
-                    .shouldHaveRunningStatus()
-                    .clickTaskWithName("OOM Logs");
-            final Set<String> logMess = logAO.logMessages().collect(toSet());
-            assertTrue(logMess.stream()
-                    .anyMatch(Pattern.compile(logMessage)
-                            .asPredicate()), format("Message '%s' isn't found", logMessage));
-        } finally {
-            open(C.ROOT_ADDRESS);
-        }
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .expandTab(ADVANCED_PANEL)
+                .setTypeValue("c5.xlarge")
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
+                        .execute("yum install -y stress")
+                        .assertNextStringIsVisible("Complete!",
+                                format("pipeline-%s", getLastRunId()))
+                        .execute(command)
+                        .waitUntilTextAppearsSeveralTimes(getLastRunId(), 3)
+                        .assertPageContainsStringsWithRegex(command, messages)
+                        .close());
+        final LogAO logAO = runsMenu()
+                .showLog(getLastRunId())
+                .shouldHaveRunningStatus()
+                .clickTaskWithName("OOM Logs");
+        final Set<String> logMess = logAO.logMessages().collect(toSet());
+        assertTrue(logMess.stream()
+                .anyMatch(Pattern.compile(logMessage)
+                        .asPredicate()), format("Message '%s' isn't found", logMessage));
     }
 
     private void checkClusterAwsEBSvolumeTypeInLog(Set<String> logMess) {

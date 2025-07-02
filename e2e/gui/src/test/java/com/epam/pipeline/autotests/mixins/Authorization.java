@@ -59,9 +59,17 @@ public interface Authorization extends Navigation {
     default NavigationMenuAO loginAs(Account account) {
         if (impersonateMode()) {
             if (C.LOGIN.equalsIgnoreCase(account.login)) {
+                navigationMenu()
+                        .settings()
+                        .switchToMyProfile()
+                        .validateUserName(account.login);
                 return new NavigationMenuAO();
             }
             impersonateAs(account.login);
+            navigationMenu()
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(account.login);
             return new NavigationMenuAO();
         }
         sleep(LOGIN_DELAY);

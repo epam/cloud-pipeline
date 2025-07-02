@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
@@ -426,6 +427,7 @@ public class LaunchLimitMountsTest
                 }))
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)

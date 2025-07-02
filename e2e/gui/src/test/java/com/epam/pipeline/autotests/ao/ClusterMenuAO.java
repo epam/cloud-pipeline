@@ -22,6 +22,7 @@ import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
@@ -136,6 +137,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     private void waitForRunIdAppearing(String runId) {
         for (int i = 0; i < 320; i++) {
             $(button("Refresh")).click();
+            sortByDecrease(DATE);
             if ($(byText(runIdLabelText(runId))).exists()) {
                 break;
             }
@@ -236,22 +238,22 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO sortByIncrease(HeaderColumn column) {
-        SelenideElement createdHeaderButton = $$("th").findBy(cssClass(column.cssClass));
-        createdHeaderButton.find(".ant-table-column-sorter-up").click();
-
-        createdHeaderButton.find(".ant-table-column-sorter-up").shouldHave(cssClass("on"));
-        createdHeaderButton.find(".ant-table-column-sorter-down").shouldHave(cssClass("off"));
-
+        SelenideElement createdHeaderButtonUp = $$("th").findBy(cssClass(column.cssClass))
+                .find(".ant-table-column-sorter-up").waitUntil(exist, DEFAULT_TIMEOUT);
+        if (createdHeaderButtonUp.has(cssClass("off"))) {
+            createdHeaderButtonUp.click();
+        }
+        createdHeaderButtonUp.shouldHave(cssClass("on"));
         return this;
     }
 
     public ClusterMenuAO sortByDecrease(HeaderColumn column) {
-        SelenideElement createdHeaderButton = $$("th").findBy(cssClass(column.cssClass));
-        createdHeaderButton.find(".ant-table-column-sorter-down").click();
-
-        createdHeaderButton.find(".ant-table-column-sorter-up").shouldHave(cssClass("off"));
-        createdHeaderButton.find(".ant-table-column-sorter-down").shouldHave(cssClass("on"));
-
+        SelenideElement createdHeaderButtonDown = $$("th").findBy(cssClass(column.cssClass))
+                .find(".ant-table-column-sorter-down").waitUntil(exist, DEFAULT_TIMEOUT);
+        if (createdHeaderButtonDown.has(cssClass("off"))) {
+            createdHeaderButtonDown.click();
+        }
+        createdHeaderButtonDown.shouldHave(cssClass("on"));
         return this;
     }
 
@@ -289,6 +291,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void validateSortedBy(HeaderColumn column, Comparator<String> comparator) {
+        $(className("ant-table-placeholder")).waitUntil(not(exist), DEFAULT_TIMEOUT);
         ElementsCollection dates = column == HeaderColumn.LABEL
                 ? $$("span").filterBy(id("label-RUNID"))
                 : $$("td").filterBy(cssClass(column.cssClass));

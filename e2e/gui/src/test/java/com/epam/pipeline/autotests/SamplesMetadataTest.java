@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Selectors.withText;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -24,6 +23,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -151,6 +151,12 @@ public class SamplesMetadataTest
 
     private List<String> selectedSampleName = new ArrayList<>();
 
+    @BeforeMethod
+    public void refreshPage() {
+        refresh();
+        sleep(5, SECONDS);
+    }
+
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
         open(C.ROOT_ADDRESS);
@@ -191,7 +197,6 @@ public class SamplesMetadataTest
     @Test
     @TestCase({"EPMCMBIBPC-1411"})
     public void createProjectFolder() {
-        refresh();
         library()
                 .createFolder(project)
                 .clickOnFolder(project)

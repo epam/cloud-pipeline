@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.ao.SystemManagementAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
@@ -54,7 +55,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -229,7 +229,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .getInternalIP(server1Port80ExternalIPAddress, PORT_80);
         tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .doNotMountStoragesSelect(true)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()

@@ -329,5 +329,6 @@ public enum Primitive {
     DEPLOYMENT_TYPE,
     THROUGHPUT,
     IOPS,
-    VOLUME
+    VOLUME,
+    TOOL_VERSION
 }

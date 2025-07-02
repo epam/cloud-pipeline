@@ -33,7 +33,7 @@ function sig_handler {
 function recording() {
     output_file="${STAND_NAME}_${CURRENT_DATE}_${ITERATION}.flv"
     echo "Starting recording: $output_file"
-    nohup /tmp/vnc2flv-20100207/tools/flvrec.py -d -o "${output_file}" -P "${PASSWORD_FILE}" localhost:1 &> $RECORDING_LOG &
+    nohup /tmp/vnc2flv-20100207/tools/flvrec.py -o "${output_file}" -P "${PASSWORD_FILE}" localhost:1 &> $RECORDING_LOG &
     RECORD_PID=$!
     echo "Started recording with pid: $RECORD_PID"
     wait $RECORD_PID

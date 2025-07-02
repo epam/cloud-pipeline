@@ -87,6 +87,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(pipelineRunID = getLastRunId())
                 .waitForCompletion();
@@ -132,6 +133,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
         navigationMenu()
                 .runs()
                 .completedRuns()
+                .resetMouse()
                 .filterBy(DOCKER_IMAGE, group, nameWithoutGroup(tool))
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(firstToolRunID)

@@ -15,14 +15,17 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selenide.open;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.ROOT_ADDRESS;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -54,6 +57,11 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     private final String tempAlias = "epmcmbi-nfs-test-temp-alias-" + Utils.randomSuffix();
     private final String NfsMountNameSpaces = "nfs mount name with spaces";
     private final String folderNameWithSpaces = "epmcmbi test folder with spaces" + Utils.randomSuffix();
+
+    @BeforeMethod
+    public void reopenApplication() {
+        open(ROOT_ADDRESS);
+    }
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -153,8 +161,8 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     public void createFolderInDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
                 .selectStorage(storage)
-                .createFolder(folder)
-                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
+                .createFolderWithError(folder,
+                        String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
         clickCancelButtonIfItIsDisplayed();
         refresh();
     }
