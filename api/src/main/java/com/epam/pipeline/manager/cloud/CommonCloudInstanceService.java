@@ -82,7 +82,10 @@ public class CommonCloudInstanceService {
                                          final Long oldId,
                                          final Long newId,
                                          final Map<String, String> envVars) {
-        return runNodeReassignScript(cmdExecutor, command, String.valueOf(oldId), String.valueOf(newId), envVars);
+        final Map<String, String> mergedEnvVars = CommonUtils.mergeMaps(
+                envVars,
+                buildPipeAuthEnvVars(newId));
+        return runNodeReassignScript(cmdExecutor, command, String.valueOf(oldId), String.valueOf(newId), mergedEnvVars);
     }
 
     public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,
