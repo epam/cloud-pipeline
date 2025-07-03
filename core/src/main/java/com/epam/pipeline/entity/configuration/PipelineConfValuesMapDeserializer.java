@@ -48,6 +48,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String DESCRIPTION_FIELD = "description";
     private static final String VISIBLE_FIELD = "visible";
     private static final String VALIDATION_FIELD = "validation";
+    private static final String ANNOTATION_FIELD = "annotation";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
     private final ObjectMapper mapper;
 
@@ -111,6 +112,11 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 if (hasValue(validation) && validation.isArray()) {
                     parameter.setValidation(mapper.readValue(validation.traverse(),
                             new TypeReference<List<Map<String, String>>>(){}));
+                }
+                final JsonNode annotation = child.get(ANNOTATION_FIELD);
+                if (hasValue(annotation) && annotation.isObject()) {
+                    parameter.setAnnotation(mapper.readValue(annotation.traverse(),
+                            new TypeReference<Map<String, Object>>(){}));
                 }
             }
             parameters.put(name, parameter);

@@ -62,6 +62,7 @@ public class PipeConfValueVO {
     private List<Object> availableValues;
 
     private List<Map<String, String>> validation;
+    private Map<String, Object> annotation;
 
     /**
      * String expression to determine visibility of a param
