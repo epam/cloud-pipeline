@@ -17,20 +17,18 @@
 package com.epam.pipeline.entity.run;
 
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
-import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @Builder
-public class EngineRunTaskStatsEntity {
-    private EngineType engineType;
+public class EngineRunTaskGroupStatsEntity {
     private String taskGroup;
     private Date startDateTime;
-    private EngineTaskStatus status;
-    private Long tasksCount;
+    private Map<EngineTaskStatus, Long> statusCounts;
 }
