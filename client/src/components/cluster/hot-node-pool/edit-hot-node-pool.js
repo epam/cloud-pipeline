@@ -692,10 +692,10 @@ class EditHotNodePool extends React.Component {
       };
       onSave(
         payload,
-        {
-          scheduleEntries: schedule.length > 0 ? schedule.map(({id, ...s}) => s) : undefined,
+        schedule.length > 0 ? {
+          scheduleEntries: schedule.map(({id, ...s}) => s),
           name
-        }
+        } : undefined
       );
     }
   };
