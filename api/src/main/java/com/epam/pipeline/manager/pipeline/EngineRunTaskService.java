@@ -22,20 +22,20 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
 import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
-import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,13 +59,9 @@ public class EngineRunTaskService {
                 .size();
     }
 
-    public Map<String, Map<EngineTaskStatus, Long>> loadTasksStats(final Long runId, final EngineType engineType) {
+    public Map<String, EngineRunTaskGroupStatsEntity> loadTasksStats(final Long runId, final EngineType engineType) {
         runCRUDService.loadRunById(runId);
-        return ListUtils.emptyIfNull(engineRunTaskDao.loadStats(runId, engineType)).stream()
-                .filter(stats -> Objects.nonNull(stats.getTaskGroup()))
-                .collect(Collectors.groupingBy(EngineRunTaskStatsEntity::getTaskGroup,
-                                Collectors.toMap(EngineRunTaskStatsEntity::getStatus,
-                                        EngineRunTaskStatsEntity::getTasksCount)));
+        return calculateTaskGroupStatistic(engineRunTaskDao.loadStats(runId, engineType));
     }
 
     public PagedResult<List<EngineRunTask>> loadTasks(final Long runId, final EngineType engineType,
@@ -76,6 +72,32 @@ public class EngineRunTaskService {
         runCRUDService.loadRunById(runId);
         return new PagedResult<>(engineRunTaskDao.filterTasksByRunIdAndTypeAndFilter(runId, engineType, filter),
                 engineRunTaskDao.countTasksByRunIdAndTypeAndFilter(runId, engineType, filter));
+    }
+
+    protected static Map<String, EngineRunTaskGroupStatsEntity> calculateTaskGroupStatistic(
+            final List<EngineRunTaskStatsEntity> taskGroupStatistics) {
+        final Map<String, EngineRunTaskGroupStatsEntity> result = new HashMap<>();
+        for (EngineRunTaskStatsEntity taskGroupStatisticForStatus : taskGroupStatistics) {
+            final Date taskGroupStartDateForStatus = taskGroupStatisticForStatus.getStartDateTime();
+            final EngineRunTaskGroupStatsEntity currentTaskGroupStatistic = result.computeIfAbsent(
+                taskGroupStatisticForStatus.getTaskGroup(),
+                (taskGroup) -> new EngineRunTaskGroupStatsEntity(
+                        taskGroup,
+                        taskGroupStartDateForStatus,
+                        new HashMap<>()
+                )
+            );
+            currentTaskGroupStatistic.getStatusCounts()
+                    .put(taskGroupStatisticForStatus.getStatus(), taskGroupStatisticForStatus.getTasksCount());
+            final boolean startDateShouldBeUpdated = taskGroupStartDateForStatus != null &&
+                    (currentTaskGroupStatistic.getStartDateTime() == null
+                            || taskGroupStartDateForStatus.compareTo(currentTaskGroupStatistic.getStartDateTime()) < 0
+                    );
+            if (startDateShouldBeUpdated) {
+                currentTaskGroupStatistic.setStartDateTime(taskGroupStartDateForStatus);
+            }
+        }
+        return result;
     }
 
     private EngineRunTask validateEvent(final EngineRunTask task) {

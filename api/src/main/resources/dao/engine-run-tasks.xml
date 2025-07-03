@@ -75,7 +75,8 @@
                         engine_type,
                         task_group,
                         status,
-                        COUNT(*) AS tasks_count
+                        COUNT(*) AS tasks_count,
+                        min (start_date) AS start_date
                     FROM
                         pipeline.engine_run_task
                     WHERE run_id = :RUN_ID AND engine_type = :ENGINE_TYPE AND task_group IS NOT NULL
@@ -83,6 +84,7 @@
                         engine_type,
                         task_group,
                         status
+                    ORDER BY start_date
                 ]]>
             </value>
         </property>

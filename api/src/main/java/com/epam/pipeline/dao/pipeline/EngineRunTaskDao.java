@@ -219,6 +219,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                     .taskGroup(rs.getString(TASK_GROUP.name()))
                     .status(EngineTaskStatus.valueOf(rs.getString(STATUS.name())))
                     .tasksCount(rs.getLong(TASKS_COUNT.name()))
+                    .startDateTime(getDataTime(rs, START_DATE.name()))
                     .build();
         }
 

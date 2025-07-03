@@ -45,7 +45,6 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
-import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
@@ -56,6 +55,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
+import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -690,7 +690,7 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Loads engine task statistics for run and engine type",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(
+    public Result<Map<String, EngineRunTaskGroupStatsEntity>> loadEngineRunTasksStats(
             @PathVariable(value = RUN_ID) final Long runId,
             @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
         return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
