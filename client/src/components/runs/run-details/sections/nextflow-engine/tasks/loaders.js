@@ -1,3 +1,4 @@
+import moment from 'moment-timezone';
 import GetRunEngineTasksStats from '../../../../../../models/run-engines/fetch-tasks-stats';
 import {NEXTFLOW_ENGINE_TYPE} from '../../../../../../models/run-engines/engines';
 import GetRunEngineTasksFilter from '../../../../../../models/run-engines/fetch-tasks';
@@ -164,19 +165,26 @@ async function loadProcesses (opts) {
   }
   const stats = [];
   let total = 0;
-  for (const key of Object.keys(request.value || {})) {
+  for (const value of Object.values(request.value || {})) {
+    const {
+      startDateTime,
+      statusCounts,
+      taskGroup
+    } = value || {};
+    const date = moment.utc(startDateTime);
     const processStats = {
-      key,
-      name: key,
+      key: taskGroup,
+      name: taskGroup,
+      date: date.isValid() ? date.unix() : Infinity,
       stats: []
     };
-    const data = request.value[key] || {};
-    for (const [status, count] of Object.entries(data)) {
+    for (const [status, count] of Object.entries(statusCounts || {})) {
       processStats.stats.push({status, count});
       total += count;
     }
     stats.push(processStats);
   }
+  stats.sort((a, b) => a.date - b.date);
   return {stats, total};
 }
 
