@@ -101,47 +101,22 @@ function pipelineCheck (props, state) {
   const {
     pipeline,
     version,
-    pipelineConfiguration,
-    fireCloudMethod
+    pipelineConfiguration
   } = props;
   const initial = {
     pipeline: pipeline ? +pipeline.id : null,
     version,
-    pipelineConfiguration,
-    fireCloudMethodName: fireCloudMethod
-      ? fireCloudMethod.name : null,
-    fireCloudMethodNamespace: fireCloudMethod
-      ? fireCloudMethod.namespace : null,
-    fireCloudMethodSnapshot: fireCloudMethod
-      ? fireCloudMethod.snapshot : null,
-    fireCloudMethodConfiguration: fireCloudMethod
-      ? fireCloudMethod.configuration : null,
-    fireCloudMethodConfigurationSnapshot: fireCloudMethod
-      ? fireCloudMethod.configurationSnapshot : null
+    pipelineConfiguration
   };
   const current = {
     pipeline: state.pipeline ? +state.pipeline.id : null,
     version: state.version,
-    pipelineConfiguration: state.pipelineConfiguration,
-    fireCloudMethodName: state.fireCloudMethodName,
-    fireCloudMethodNamespace: state.fireCloudMethodNamespace,
-    fireCloudMethodSnapshot: state.fireCloudMethodSnapshot,
-    fireCloudMethodConfiguration: state.fireCloudMethodConfiguration,
-    fireCloudMethodConfigurationSnapshot: state.fireCloudMethodConfigurationSnapshot,
-    fireCloudInputsLength: Object.keys(state.fireCloudInputs).length,
-    fireCloudOutputsLength: Object.keys(state.fireCloudOutputs).length
+    pipelineConfiguration: state.pipelineConfiguration
   };
   return (
     initial.pipeline !== current.pipeline ||
     initial.version !== current.version ||
-    initial.pipelineConfiguration !== current.pipelineConfiguration ||
-    initial.fireCloudMethodName !== current.fireCloudMethodName ||
-    initial.fireCloudMethodNamespace !== current.fireCloudMethodNamespace ||
-    initial.fireCloudMethodSnapshot !== current.fireCloudMethodSnapshot ||
-    initial.fireCloudMethodConfiguration !== current.fireCloudMethodConfiguration ||
-    initial.fireCloudMethodConfigurationSnapshot !== current.fireCloudMethodConfigurationSnapshot ||
-    current.fireCloudInputsLength > 0 ||
-    current.fireCloudInputsLength > 0
+    initial.pipelineConfiguration !== current.pipelineConfiguration
   );
 }
 
