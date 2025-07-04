@@ -330,12 +330,18 @@ class StoragePathWritePermissionsFilterFS(ChainingService):
                 self._check_access(path, mode, method_name)
                 return attr(*args, **kwargs)
             elif method_name == 'create':
-                path = args[0] or kwargs.get('path')
+                path = args[0]
+                if path is None:
+                    path = kwargs.get('path')
                 self._permissions_manager.can_write_to_path(path)
                 return attr(*args, **kwargs)
             elif method_name == 'open':
-                path = args[0] or kwargs.get('path')
-                flags = args[1] or kwargs.get('flags')
+                path = args[0]
+                if path is None:
+                    path = kwargs.get('path')
+                flags = args[1]
+                if flags is None:
+                    flags = kwargs.get('flags')
                 if flags & os.O_CREAT:
                     self._permissions_manager.can_write_to_path(path)
                 if (flags & os.O_WRONLY) or (flags & os.O_RDWR) or (flags & os.O_APPEND) or (flags & os.O_TRUNC):
