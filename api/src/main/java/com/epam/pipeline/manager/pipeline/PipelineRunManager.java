@@ -72,6 +72,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.audit.CommonAuditClient;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
@@ -250,6 +251,9 @@ public class PipelineRunManager {
 
     @Autowired
     private CloudFacade cloudFacade;
+
+    @Autowired
+    private CommonAuditClient auditClient;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1080,6 +1084,9 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         pipelineRunDao.deleteRunSids(runId);
         pipelineRunDao.createRunSids(runId, runSids);
+        ListUtils.emptyIfNull(runSids).forEach(entry -> auditClient.log(String.format(
+                "Run #%s shared with %s %s with access type %s.", runId,
+                entry.getIsPrincipal() ? "user" : "group", entry.getName(), entry.getAccessType())));
         pipelineRun.setRunSids(runSids);
         return pipelineRun;
     }
