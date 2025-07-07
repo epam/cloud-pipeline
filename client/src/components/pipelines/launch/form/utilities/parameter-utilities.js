@@ -344,6 +344,7 @@ window.launchFormVerbose = function (vb = true) {
  * @property [resolvedValue]
  * @property {boolean} [system]
  * @property {boolean} [userParameter]
+ * @property {object} [restConfig]
  * @property {boolean} [fallbackConfig]
  */
 
@@ -555,7 +556,8 @@ function getParameterConfig (
       fallbackConfig = false,
       // eslint-disable-next-line camelcase
       pretty_name,
-      prettyName = pretty_name
+      prettyName = pretty_name,
+      ...rest
     } = parameter;
     const readOnly = detached &&
       pipeline &&
@@ -575,6 +577,7 @@ function getParameterConfig (
       console.log('validation', validation);
       console.log('enum', enumerationRaw);
       console.log('visible', visible);
+      console.log('rest config', rest);
       console.log('fallback config', fallbackConfig);
       console.groupEnd();
     }
@@ -605,6 +608,7 @@ function getParameterConfig (
       validation,
       condition,
       system,
+      restConfig: rest,
       fallbackConfig
     };
   }
@@ -1288,6 +1292,7 @@ export function isGPUScalingParameter (parameterName, options = {}) {
  */
 function parameterConfigToPayloadConfig (parameterConfig) {
   return {
+    ...(parameterConfig.restConfig || {}),
     type: parameterConfig.type,
     value: getTypedValue(parameterConfig.value, parameterConfig.type),
     no_override: parameterConfig.noOverride,
