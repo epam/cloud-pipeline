@@ -75,7 +75,7 @@ from pipefuse.archived import ArchivedFilesFilterFileSystemClient, ArchivedAttri
 from pipefuse.storageclassfilter import StorageClassFilterFileSystemClient
 from src.common.audit import LoggingAuditConsumer, ChunkingAuditConsumer, \
     SetAuditContainer, AuditDaemon, DelayingAuditContainer, StoragePathAuditConsumer, \
-    CloudPipelineAuditConsumer
+    CloudPipelineAuditConsumer, DataAccessEvent, DataAccessType
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
