@@ -34,7 +34,7 @@ RUN mkdir -p /opt/local/mamba && \
     curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
     export PATH=$PATH:/opt/local/mamba/bin && \
     export MAMBA_ROOT_PREFIX=/opt/local/mamba && \
-    eval "$(micromamba shell hook --shell bash)" && \
+    eval "$(micromamba shell hook --shell posix)" && \
     micromamba create -n py3 && \
     micromamba activate py3 && \
     micromamba install -y python==3.10 && \
