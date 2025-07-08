@@ -326,7 +326,7 @@ class CloudPipelineAuditConsumer(AuditConsumer):
         run_id = os.getenv('RUN_ID')
         if not run_id:
             return ''
-        return '[#%s] ' % run_id
+        return '[run_id #%s] ' % run_id
 
 
 class AuditDaemon:

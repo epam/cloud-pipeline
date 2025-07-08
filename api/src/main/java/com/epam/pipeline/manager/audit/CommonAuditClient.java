@@ -20,6 +20,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+/**
+ * This class shall be used to support common audit logs.
+ * There are two options to support audit logging:
+ * - wire this client to desired bean and log message
+ * - process method/class that contains audit log directly in {@link com.epam.pipeline.security.SecurityLogAspect}
+ * @see com.epam.pipeline.security.SecurityLogAspect#AUDIT_RELATED_METHODS_POINTCUT
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
