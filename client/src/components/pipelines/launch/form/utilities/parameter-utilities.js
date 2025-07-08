@@ -1191,10 +1191,14 @@ export function mapSystemParameter (parameter, options = {}) {
 
 /**
  * Returns all capabilities parameters
- * @param [prefs]
+ * @param {{preferences?: PreferencesLoad, onlyCapabilityFlags?: boolean}} [options]
  * @returns {string[]}
  */
-export function getCapabilitiesParameters (prefs = preferences) {
+export function getCapabilitiesParameters (options = {}) {
+  const {
+    preferences: prefs = preferences,
+    onlyCapabilityFlags = true
+  } = options || {};
   if (prefs.loaded) {
     const capabilities = prefs.launchCapabilities || [];
     const getParameters = (capability) => {
@@ -1206,7 +1210,7 @@ export function getCapabilitiesParameters (prefs = preferences) {
       } = capability;
       return [value]
         .concat(children.reduce((acc, cur) => acc.concat(getParameters(cur)), []))
-        .concat(Object.keys(params));
+        .concat(onlyCapabilityFlags ? [] : Object.keys(params));
     };
     return capabilities
       .reduce((acc, cur) => acc.concat(getParameters(cur)), []);
@@ -1239,14 +1243,11 @@ export function getReservationRequestParameters (prefs = preferences) {
 /**
  * Checks if parameter is a capabilities parameter
  * @param {string} parameterName
- * @param {{preferences}} [options]
+ * @param {{preferences?: PreferencesLoad, onlyCapabilityFlags?: boolean}} [options]
  * @returns {boolean}
  */
 export function isCapabilityParameter (parameterName, options = {}) {
-  const {
-    preferences: prefs = preferences
-  } = options || {};
-  const params = getCapabilitiesParameters(prefs);
+  const params = getCapabilitiesParameters(options);
   return params.some((p) => p.toLowerCase() === parameterName.toLowerCase());
 }
 
@@ -1362,10 +1363,11 @@ export function parametersToConfigurationParams (parameters = []) {
     set[parameter.name] = p;
     return p;
   };
-  const filtered = parameters.filter((parameter) => !isCapabilityParameter(parameter.name) &&
-    !isReservationRequestParameter(parameter.name) &&
-    !isGPUScalingParameter(parameter.name) &&
-    !isReservedParameter(parameter.name));
+  const filtered = parameters
+    .filter((parameter) => !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
+      !isGPUScalingParameter(parameter.name) &&
+      !isReservedParameter(parameter.name));
   for (const parameter of filtered) {
     const current = findParameterConfig(parameter, parameters);
     for (const cfg of parameter.configs) {

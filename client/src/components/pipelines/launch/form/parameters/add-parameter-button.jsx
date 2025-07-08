@@ -43,7 +43,13 @@ class AddParameterButton extends React.Component {
       .concat(reservedParameters)
       .concat(preferences.loaded ? getGPUScalingSkippedParameters(preferences) : []);
     return (
-      <Button className={className} style={style} disabled={disabled} onClick={onOpen}>
+      <Button
+        id="add-system-parameter-button"
+        className={className}
+        style={style}
+        disabled={disabled}
+        onClick={onOpen}
+      >
         <span>Add system parameter</span>
         <SystemParametersBrowser
           visible={visible}
