@@ -62,7 +62,8 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.security.saml.impersonation.ImpersonationManager.check(..))";
 
     public static final String AUDIT_RELATED_METHODS_POINTCUT =
-            "execution(* com.epam.pipeline.manager.audit.AuditClient.put(..))";
+            "execution(* com.epam.pipeline.manager.audit.AuditClient.put(..))" +
+                    "|| execution(* com.epam.pipeline.manager.audit.CommonAuditClient.log(..))";
 
     public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.create*(..))" +
