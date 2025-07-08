@@ -160,6 +160,13 @@ class PipelineVersionPicker extends React.PureComponent {
       pipelineVersion !== version &&
       typeof onPipelineVersionChange === 'function'
     ) {
+      const {versions = []} = this.state;
+      const existing = (versions || [])
+        .find((v) => (v.name || '').toLowerCase() === version.trim().toLowerCase());
+      const realVersion = existing || version.trim().toLowerCase().startsWith('draft-')
+        ? version
+        : `draft-${version}`;
+      console.log(version, existing, realVersion);
       this.setState({filter: version});
       Modal.confirm({
         title: <span>Are you sure you want to change version to <b>{version}</b>?</span>,
@@ -168,7 +175,7 @@ class PipelineVersionPicker extends React.PureComponent {
         },
         content: <div>Current parameters and values may be lost.</div>,
         onOk: () => {
-          onPipelineVersionChange(version);
+          onPipelineVersionChange(realVersion);
           this.setState({filter: undefined});
         },
         onCancel: () => {
