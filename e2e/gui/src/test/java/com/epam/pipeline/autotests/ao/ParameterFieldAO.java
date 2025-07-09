@@ -41,7 +41,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     public final By nameInput;
     public final By valueInput;
     public final By removeButton;
-    public static final String idTemplate = "parameters.params.param_%d.%s";
+//    public static final String idTemplate = "parameters.params.param_%d.%s";
 
     protected ParameterFieldAO(final By qualifier) {
         this(
@@ -85,14 +85,17 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     /**
-     * @param index The numerical part of {@code id} attribute of the field you search.
+     * @param index The numerical part of {@code id} attribute of the field you search.//$(byId("launch-pipeline-parameters-panel"))
+     * //        .$(byClassName(format("launch-form-parameter-key-parameter_%s", 0))).$(byClassName("arameter-name-input__parameter-name")).click();
+     * //setValue(
+     *         $(byId("launch-pipeline-parameters-panel"))
+     *         .$(byClassName(format("launch-form-parameter-key-parameter_%s", 0))).$(byClassName("aunch-form-parameter-input__launch-parameter-input"))
+     * //                , name);
      */
     public static ParameterFieldAO parameterByIndex(final int index) {
-        final String controlClass = "ant-form-item-control";
-        final String templateId = parameterId("key", index);
-        final By parameterField = byXpath(format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//@id = '%s']",
-                controlClass, templateId
+        final By parameterField = className(format(
+                ".//*[contains(concat(' ', @class, ' '), ' %s ')]",
+                format("launch-form-parameter-key-parameter_%s", index)
         ));
         return new ParameterFieldAO(parameterField);
     }
@@ -101,12 +104,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @param name Value of the parameter's name.
      */
     public static ParameterFieldAO parameterByName(final String name) {
-        final String controlClass = "ant-form-item-control";
-        final By parameterField = byXpath(format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//input[@placeholder = 'Name' and @value = '%s']]",
-                controlClass, name
-        ));
-        return new ParameterFieldAO(parameterField);
+        return new ParameterFieldAO(className(format("launch-form-parameter-%s", name)));
     }
 
     /**
@@ -122,9 +120,8 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     public int index() {
-        final String key = context().find(inputByIdSuffix("key")).val();
-        final String index = key.replace("param_", "");
-        return Integer.parseInt(index);
+        final String parameterId = context().getAttribute("class");
+        return Integer.parseInt(parameterId.replaceAll("\\D+", ""));
     }
 
     @Override
@@ -156,9 +153,9 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @param entry Entry is all the part after the last dot in the id attribute of an input.
      * @param index Index is a digit part of
      */
-    private static String parameterId(final String entry, final int index) {
-        return format(idTemplate, index, entry);
-    }
+//    private static String parameterId(final String entry, final int index) {
+//        return format(idTemplate, index, entry);
+//    }
 
     /**
      * This XPath is a simple ends-with function, but the original function is not supported by chrome.

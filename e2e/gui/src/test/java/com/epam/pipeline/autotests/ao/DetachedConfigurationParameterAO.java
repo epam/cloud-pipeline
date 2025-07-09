@@ -25,7 +25,6 @@ import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.ParameterFieldAO.idTemplate;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.lang.String.format;
 
@@ -35,15 +34,15 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
     private final Configuration configuration;
 
     public DetachedConfigurationParameterAO(Configuration configuration, int parameterIndex) {
-        final SelenideElement parameter = $(byClassName(format("param_%d", parameterIndex)));
+        final SelenideElement parameter = $(byId("launch-pipeline-parameters-panel"))
+                .$(byClassName(format("launch-form-parameter-key-parameter_%s", parameterIndex)));
         this.configuration = configuration;
 
         this.elements = initialiseElements(
-                entry(PARAMETER_FIELD, parameter.$(byClassName("cp-text-not-important"))),
-                entry(PARAMETER_NAME, $(byId(format(idTemplate, parameterIndex, "name")))),
-                entry(PARAMETER_VALUE, parameter.$(byClassName("launch-pipeline-form__parameter-value"))
-                        .$("input")),
-                entry(REMOVE_PARAMETER, parameter.find(byId("remove-parameter-button")))
+                entry(PARAMETER_FIELD, parameter.$(byClassName("arameter-name-input__parameter-name"))),
+                entry(PARAMETER_NAME, parameter.$(byClassName("arameter-name-input__parameter-name-input"))),
+                entry(PARAMETER_VALUE, parameter.$(byClassName("aunch-form-parameter-input__launch-parameter-input"))),
+                entry(REMOVE_PARAMETER, parameter.$(byClassName("dynamic-delete-button")))
         );
     }
 

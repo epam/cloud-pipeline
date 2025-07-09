@@ -384,8 +384,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         $(byText(parameterType)).shouldBe(visible).click();
 
         final String parameterId = $(byId("launch-pipeline-parameters-panel"))
-                .$$(byClassName("launch-pipeline-form__parameter-name-container")).last().$x(".//input")
-                .getAttribute("id");
+                .$$(byClassName("aunch-form-parameter__launch-form-parameter")).last()
+                .getAttribute("class");
 
         parameterIndex = Integer.parseInt(parameterId.replaceAll("\\D+", ""));
 

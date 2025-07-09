@@ -134,27 +134,38 @@ public class Utils {
                 .perform();
     }
 
-    public static void sendKeysWithSlashes(final String text) {
+//    public static void sendKeysWithSlashes(final String text) {
         //////////////////////////////////////////////////////////////////////////
         // ! WARNING: there is robot to fix forward slashed issue
         // https://sqa.stackexchange.com/questions/25038/selenium-send-keys-on-chromium-confused-by-forward-slashes
         // http://grokbase.com/t/gg/selenium-users/149s9xe7r5/send-keys-and-slash-character
-        for (String s : text.split("")) {
-            if (s.equals("/")) {
-                Robot robot;
-                try {
-                    robot = new Robot();
-                } catch (AWTException e) {
-                    throw new RuntimeException("Something wrong with robot", e);
-                }
-                robot.keyPress('/');
-                robot.keyRelease('/');
-                continue;
-            }
-            actions().sendKeys(s).perform();
-        }
-        //////////////////////////////////////////////////////////////////////////
+//        for (String s : text.split("")) {
+//            if (s.equals("/")) {
+//                Robot robot;
+//                try {
+//                    robot = new Robot();
+//                } catch (AWTException e) {
+//                    throw new RuntimeException("Something wrong with robot", e);
+//                }
+//                robot.keyPress('/');
+//                robot.keyRelease('/');
+//                continue;
+//            }
+//            actions().sendKeys(s).perform();
+//}
+        public static void sendKeysWithSlashes(final String text) {
+            //////////////////////////////////////////////////////////////////////////
+            // ! WARNING: there is robot to fix forward slashed issue
+            // https://sqa.stackexchange.com/questions/25038/selenium-send-keys-on-chromium-confused-by-forward-slashes
+            // http://grokbase.com/t/gg/selenium-users/149s9xe7r5/send-keys-and-slash-character
+            final StringSelection stringSelection = new StringSelection(text);
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(stringSelection, null);
+            actions().sendKeys(Keys.chord(Keys.CONTROL, "v"))
+                    .perform();
     }
+        //////////////////////////////////////////////////////////////////////////
+
 
     public static void pasteText(final SelenideElement field, final String text) {
         final StringSelection stringSelection = new StringSelection(text);
