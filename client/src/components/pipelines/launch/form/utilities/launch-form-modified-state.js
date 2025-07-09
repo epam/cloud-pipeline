@@ -121,11 +121,8 @@ function pipelineCheck (props, state) {
 }
 
 function executionEnvironmentCheck (props, state, {execEnvSelectValue}) {
-  const {
-    fireCloudMethod
-  } = props;
   const initial = {
-    isDts: !!fireCloudMethod,
+    isDts: false,
     execEnvSelectValue
   };
   return initial.isDts !== state.isDts ||
