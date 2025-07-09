@@ -25,7 +25,6 @@ import notifications from '../../models/notifications/ActiveNotifications';
 import userNotifications from '../../models/notifications/CurrentUserNotifications';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
-import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
 import runDefaultParameters from '../../models/pipelines/PipelineRunDefaultParameters';
 import configurations from '../../models/configuration/Configurations';
 import AllConfigurations from '../../models/configuration/ConfigurationsLoadAll';
@@ -76,7 +75,6 @@ const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
-const fireCloudMethods = new FireCloudMethods(googleApi);
 const users = new Users();
 const usersInfo = new UsersInfo();
 const allowedInstanceTypes = new AllowedInstanceTypes();
@@ -123,7 +121,6 @@ const Root = () =>
     {...{
       routing,
       googleApi,
-      fireCloudMethods,
       localization,
       history,
       preferences,

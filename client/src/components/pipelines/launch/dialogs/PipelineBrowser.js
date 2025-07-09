@@ -24,7 +24,6 @@ import SplitPane from 'react-split-pane';
 import {Modal, Button, Row, Col, Alert, Icon, Tree, Input} from 'antd';
 import Folder from '../../browser/Folder';
 import Pipeline from '../../browser/Pipeline';
-import FireCloudBrowser from '../../browser/FireCloudBrowser';
 import pipelinesLibrary from '../../../../models/folders/FolderLoadTree';
 import LoadingView from '../../../special/LoadingView';
 import {
@@ -44,7 +43,7 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 @connect({
   pipelinesLibrary
 })
-@inject('fireCloudMethods', 'preferences')
+@inject('preferences')
 @inject(() => ({
   library: pipelinesLibrary
 }))
@@ -59,11 +58,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     pipelineName: PropTypes.string,
     version: PropTypes.string,
     pipelineConfiguration: PropTypes.string,
-    fireCloudMethod: PropTypes.string,
-    fireCloudNamespace: PropTypes.string,
-    fireCloudMethodSnapshot: PropTypes.string,
-    fireCloudMethodConfiguration: PropTypes.string,
-    fireCloudMethodConfigurationSnapshot: PropTypes.string,
     visible: PropTypes.bool,
     onSelect: PropTypes.func,
     onCancel: PropTypes.func,
@@ -75,12 +69,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   state = {
     folderId: null,
     pipelineId: null,
-    fireCloud: false,
-    fireCloudMethod: this.props.fireCloudMethod || null,
-    fireCloudNamespace: this.props.fireCloudNamespace || null,
-    fireCloudMethodSnapshot: this.props.fireCloudMethodSnapshot || null,
-    fireCloudMethodConfiguration: this.props.fireCloudMethodConfiguration || null,
-    fireCloudMethodConfigurationSnapshot: this.props.fireCloudMethodConfigurationSnapshot || null,
     selectedPipeline: null,
     expandedKeys: [],
     selectedKeys: [],
@@ -92,11 +80,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   onClearSelectionClicked = () => {
     this.setState({
       selectedPipeline: null,
-      fireCloudMethod: null,
-      fireCloudNamespace: null,
-      fireCloudMethodSnapshot: null,
-      fireCloudMethodConfiguration: null,
-      fireCloudMethodConfigurationSnapshot: null,
       selectionChanged: true
     });
   };
@@ -106,11 +89,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       this.props.onCancel();
       this.setState({
         selectedPipeline: null,
-        fireCloudMethod: null,
-        fireCloudNamespace: null,
-        fireCloudMethodSnapshot: null,
-        fireCloudMethodConfiguration: null,
-        fireCloudMethodConfigurationSnapshot: null,
         selectionChanged: false
       });
     }
@@ -118,27 +96,10 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
 
   onSelectClicked = async () => {
     if (this.props.onSelect) {
-      let result = false;
-      if (!this.state.fireCloud) {
-        result = await this.props.onSelect(this.state.selectedPipeline);
-      } else {
-        result = await this.props.onSelect({
-          name: this.state.fireCloudMethod,
-          namespace: this.state.fireCloudNamespace,
-          snapshot: this.state.fireCloudMethodSnapshot,
-          configuration: this.state.fireCloudMethodConfiguration,
-          configurationSnapshot: this.state.fireCloudMethodConfigurationSnapshot
-        }, true);
-      }
+      let result = await this.props.onSelect(this.state.selectedPipeline);
       if (result) {
         this.setState({
           selectedPipeline: null,
-          fireCloud: false,
-          fireCloudNamespace: null,
-          fireCloudMethod: null,
-          fireCloudMethodSnapshot: null,
-          fireCloudMethodConfiguration: null,
-          fireCloudMethodConfigurationSnapshot: null,
           selectionChanged: false
         });
       }
@@ -162,16 +123,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         } else {
           icon = 'hdd';
         }
-        break;
-      case ItemTypes.fireCloud:
-        icon = 'cloud-o';
-        style.color = '#2796dd';
-        style.fontWeight = 'bold';
-        break;
-      case ItemTypes.fireCloudMethod:
-        icon = 'fork';
-        style.color = '#2796dd';
-        style.fontWeight = 'bold';
         break;
     }
     let name = item.name;
@@ -242,10 +193,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       this.onSelectPipeline(item);
     } else if (item.type === ItemTypes.folder) {
       this.onSelectFolder(item.id);
-    } else if (item.type === ItemTypes.fireCloud) {
-      this.onSelectFireCloud();
-    } else if (item.type === ItemTypes.fireCloudMethod) {
-      this.onSelectFireCloudMethod(item.id, item.namespace);
     }
   };
 
@@ -257,20 +204,12 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     return {};
   }
 
-  @computed
-  get fireCloudItems () {
-    if (this.props.fireCloudMethods.loaded) {
-      return (this.props.fireCloudMethods.value || []).map(m => m);
-    }
-    return [];
-  }
-
   generateTree () {
     if (!this.rootItems) {
       this.rootItems = generateTreeData(
-        {...this.libraryItems, fireCloud: {methods: this.fireCloudItems}},
+        {...this.libraryItems},
         {
-          types: [ItemTypes.pipeline, ItemTypes.fireCloud],
+          types: [ItemTypes.pipeline],
           filter: this.props.hiddenObjectsTreeFilter()
         }
       );
@@ -288,43 +227,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     );
   }
 
-  onSelectFireCloud = () => {
-    this.props.fireCloudMethods.fetch();
-    let expandedKeys = this.state.expandedKeys;
-    if (this.rootItems) {
-      const item = getTreeItemByKey(ItemTypes.fireCloud, this.rootItems);
-      if (item) {
-        expandItem(item, this.rootItems);
-        expandedKeys = getExpandedKeys(this.rootItems);
-      }
-    }
-    this.setState({
-      fireCloud: true,
-      fireCloudNamespace: null,
-      fireCloudMethod: null,
-      fireCloudMethodSnapshot: null,
-      fireCloudMethodConfiguration: null,
-      fireCloudMethodConfigurationSnapshot: null,
-      pipelineId: null,
-      folderId: null,
-      selectedKeys: [ItemTypes.fireCloud],
-      expandedKeys
-    });
-  };
-
-  onSelectFireCloudMethod = (id, namespace) => {
-    this.setState({
-      fireCloud: true,
-      fireCloudNamespace: namespace,
-      fireCloudMethod: id,
-      fireCloudMethodSnapshot: null,
-      fireCloudMethodConfiguration: null,
-      fireCloudMethodConfigurationSnapshot: null,
-      pipelineId: null,
-      folderId: null
-    });
-  };
-
   onSelectFolder = (id) => {
     let expandedKeys = this.state.expandedKeys;
     if (this.rootItems) {
@@ -335,12 +237,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       }
     }
     this.setState({
-      fireCloud: false,
-      fireCloudNamespace: null,
-      fireCloudMethod: null,
-      fireCloudMethodSnapshot: null,
-      fireCloudMethodConfiguration: null,
-      fireCloudMethodConfigurationSnapshot: null,
       pipelineId: null,
       folderId: id,
       selectedKeys: [`${ItemTypes.folder}_${id}`],
@@ -359,12 +255,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       }
     }
     this.setState({
-      fireCloud: false,
-      fireCloudNamespace: null,
-      fireCloudMethod: null,
-      fireCloudMethodSnapshot: null,
-      fireCloudMethodConfiguration: null,
-      fireCloudMethodConfigurationSnapshot: null,
       pipelineId: id,
       folderId: null,
       selectedKeys: [`${ItemTypes.pipeline}_${id}`],
@@ -390,42 +280,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     }
   };
 
-  onFireCloudItemSelect = (fireCloudItem) => {
-    this.setState({
-      fireCloudNamespace: fireCloudItem.namespace,
-      fireCloudMethod: fireCloudItem.name,
-      fireCloudMethodSnapshot: fireCloudItem.snapshot,
-      fireCloudMethodConfiguration: fireCloudItem.configuration,
-      fireCloudMethodConfigurationSnapshot: fireCloudItem.configurationSnapshot,
-      selectedPipeline: null,
-      selectionChanged: true
-    });
-  };
-
-  onNewFireCloudItemSelect = async (fireCloudItem) => {
-    if (this.props.onSelect) {
-      const result = await this.props.onSelect({
-        name: fireCloudItem.name,
-        namespace: fireCloudItem.namespace,
-        snapshot: fireCloudItem.snapshot,
-        configuration: null,
-        configurationSnapshot: null
-      }, true);
-      if (result) {
-        this.setState({
-          selectedPipeline: null,
-          fireCloud: false,
-          fireCloudNamespace: null,
-          fireCloudMethod: null,
-          fireCloudMethodSnapshot: null,
-          fireCloudMethodConfiguration: null,
-          fireCloudMethodConfigurationSnapshot: null,
-          selectionChanged: false
-        });
-      }
-    }
-  };
-
   onSearchChanged = async (e) => {
     await search(e, this.rootItems);
     const expandedKeys = getExpandedKeys(this.rootItems);
@@ -443,24 +297,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         overflowY: 'auto',
         overflowX: 'hidden'
       };
-      if (this.state.fireCloud) {
-        listingContainerStyle.width = '100%';
-        listingContainerStyle.height = '100%';
-        listingContainerStyle.display = 'flex';
-        listingContainerStyle.flexDirection = 'column';
-        pane2Style.overflowY = 'inherit';
-        listingContent = (
-          <FireCloudBrowser
-            onFireCloudItemSelect={this.onFireCloudItemSelect}
-            onNewFireCloudItemSelect={this.onNewFireCloudItemSelect}
-            namespace={this.state.fireCloudNamespace}
-            method={this.state.fireCloudMethod}
-            snapshot={this.state.fireCloudMethodSnapshot}
-            configuration={this.state.fireCloudMethodConfiguration}
-            configurationSnapshot={this.state.fireCloudMethodConfigurationSnapshot}
-          />
-        );
-      } else if (this.state.pipelineId) {
+      if (this.state.pipelineId) {
         let selectedVersion, selectedConfiguration;
         if (
           this.state.selectedPipeline &&
@@ -556,9 +393,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   }
 
   updateState = () => {
-    if (this.props.pipelineId && this.props.version &&
-      !this.props.fireCloudMethod && !this.props.fireCloudNamespace &&
-      !this.props.fireCloudMethodSnapshot) {
+    if (this.props.pipelineId && this.props.version) {
       let expandedKeys = this.state.expandedKeys;
       if (this.rootItems) {
         const item = getTreeItemByKey(
@@ -571,12 +406,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         }
       }
       this.setState({
-        fireCloud: false,
-        fireCloudNamespace: null,
-        fireCloudMethod: null,
-        fireCloudMethodSnapshot: null,
-        fireCloudMethodConfiguration: null,
-        fireCloudMethodConfigurationSnapshot: null,
         folderId: null,
         pipelineId: this.props.pipelineId,
         selectedPipeline: {
@@ -588,30 +417,8 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
         expandedKeys,
         selectionChanged: false
       });
-    } else if (this.props.fireCloudMethod && this.props.fireCloudNamespace &&
-      this.props.fireCloudMethodSnapshot) {
-      this.setState({
-        fireCloud: true,
-        fireCloudNamespace: this.props.fireCloudNamespace,
-        fireCloudMethod: this.props.fireCloudMethod,
-        fireCloudMethodSnapshot: this.props.fireCloudMethodSnapshot,
-        fireCloudMethodConfiguration: this.props.fireCloudMethodConfiguration,
-        fireCloudMethodConfigurationSnapshot: this.props.fireCloudMethodConfigurationSnapshot,
-        folderId: null,
-        pipelineId: null,
-        selectedPipeline: null,
-        expandedKeys: [],
-        selectedKeys: [ItemTypes.fireCloud],
-        selectionChanged: false
-      });
     } else {
       this.setState({
-        fireCloud: false,
-        fireCloudNamespace: null,
-        fireCloudMethod: null,
-        fireCloudMethodSnapshot: null,
-        fireCloudMethodConfiguration: null,
-        fireCloudMethodConfigurationSnapshot: null,
         folderId: null,
         pipelineId: null,
         selectedPipeline: null,
@@ -641,13 +448,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     if (prevProps.pipelineId !== this.props.pipelineId ||
       prevProps.version !== this.props.version ||
       prevProps.pipelineConfiguration !== this.props.pipelineConfiguration ||
-      prevProps.visible !== this.props.visible ||
-      this.props.fireCloudMethod !== prevProps.fireCloudMethod ||
-      this.props.fireCloudNamespace !== prevProps.fireCloudNamespace ||
-      this.props.fireCloudMethodSnapshot !== prevProps.fireCloudMethodSnapshot ||
-      this.props.fireCloudMethodConfiguration !== prevProps.fireCloudMethodConfiguration ||
-      this.props.fireCloudMethodConfigurationSnapshot !==
-      prevProps.fireCloudMethodConfigurationSnapshot
+      prevProps.visible !== this.props.visible
     ) {
       this.updateState();
     } else if (!this.state.treeReady && this.rootItems && this.rootItems.length > 0) {
