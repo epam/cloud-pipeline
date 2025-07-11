@@ -161,4 +161,8 @@ public class ClusterApiService {
                                                           final NetworkEventFilter filter) {
         return usageMonitoringManager.getPlatformNetworkStats(histogramType, from, to, intervals, filter);
     }
+
+    public InstanceType loadInstanceType(final String instanceType) {
+        return instanceOfferManager.loadInstanceType(instanceType);
+    }
 }
