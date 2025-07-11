@@ -505,10 +505,10 @@ public class PipelineExecutor {
                     securityContext.setRunAsUser(context.getRunAsUser());
                     securityContext.setAllowPrivilegeEscalation(context.getAllowPrivilegeEscalation());
                     securityContext.setReadOnlyRootFilesystem(context.getReadOnlyRootFilesystem());
-                    if (Objects.nonNull(securityContext.getCapabilities())) {
+                    if (Objects.nonNull(context.getCapabilities())) {
                         final Capabilities capabilities = new Capabilities();
-                        capabilities.setAdd(securityContext.getCapabilities().getAdd());
-                        capabilities.setDrop(securityContext.getCapabilities().getDrop());
+                        capabilities.setAdd(context.getCapabilities().getAdd());
+                        capabilities.setDrop(context.getCapabilities().getDrop());
                         securityContext.setCapabilities(capabilities);
                     }
                     return securityContext;
