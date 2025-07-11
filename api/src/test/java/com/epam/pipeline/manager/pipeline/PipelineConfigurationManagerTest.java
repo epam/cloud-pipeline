@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -138,8 +138,8 @@ public class PipelineConfigurationManagerTest {
     public void shouldPropagateRunAssignPolicyFromStartObjectToConfiguration() {
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setPodAssignPolicy(
-            RunAssignPolicy.builder().selector(
-                RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+            RunContainerSpec.builder().selector(
+                RunContainerSpec.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
             ).build()
         );
         final PipelineConfiguration config = pipelineConfigurationManager
@@ -173,8 +173,8 @@ public class PipelineConfigurationManagerTest {
     public void shouldFailIfBothRunAssignPolicyOrParentNodeIdIsProvided() {
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setPodAssignPolicy(
-                RunAssignPolicy.builder().selector(
-                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+                RunContainerSpec.builder().selector(
+                        RunContainerSpec.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
                 ).build()
         );
         runVO.setParentNodeId(1L);
@@ -187,8 +187,8 @@ public class PipelineConfigurationManagerTest {
         runVO.setParentNodeId(2L);
         PipelineConfiguration defaultConfig = new PipelineConfiguration();
         defaultConfig.setPodAssignPolicy(
-                RunAssignPolicy.builder().selector(
-                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+                RunContainerSpec.builder().selector(
+                        RunContainerSpec.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
                 ).build()
         );
         PipelineConfiguration config = pipelineConfigurationManager.mergeParameters(runVO, defaultConfig);
@@ -199,14 +199,14 @@ public class PipelineConfigurationManagerTest {
 
         runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setPodAssignPolicy(
-                RunAssignPolicy.builder().selector(
-                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+                RunContainerSpec.builder().selector(
+                        RunContainerSpec.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
                 ).build()
         );
         defaultConfig = new PipelineConfiguration();
         defaultConfig.setPodAssignPolicy(
-                RunAssignPolicy.builder().selector(
-                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL)
+                RunContainerSpec.builder().selector(
+                        RunContainerSpec.PodAssignSelector.builder().label(NODE_LABEL)
                                 .value(OTHER_NODE_LABEL_VALUE).build()
                 ).build()
         );
@@ -296,7 +296,7 @@ public class PipelineConfigurationManagerTest {
     private PipelineConfiguration buildConfigWithParams(final Map<String, PipeConfValueVO> parameters) {
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setParameters(parameters);
-        configuration.setPodAssignPolicy(RunAssignPolicy.builder().build());
+        configuration.setPodAssignPolicy(RunContainerSpec.builder().build());
         return configuration;
     }
 }

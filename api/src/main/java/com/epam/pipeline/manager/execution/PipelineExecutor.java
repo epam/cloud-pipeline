@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
@@ -36,6 +36,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.Capabilities;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -69,6 +71,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -115,14 +118,14 @@ public class PipelineExecutor {
 
     public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
                               final List<String> endpoints, final String pipelineId,
-                              final RunAssignPolicy podAssignPolicy, final String secretName, final String clusterId) {
+                              final RunContainerSpec podAssignPolicy, final String secretName, final String clusterId) {
         launchRootPod(command, run, envVars, endpoints, pipelineId, podAssignPolicy,
                 secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null, null);
     }
 
     public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
                               final List<String> endpoints, final String pipelineId,
-                              final RunAssignPolicy podAssignPolicy, final String secretName, final String clusterId,
+                              final RunContainerSpec podAssignPolicy, final String secretName, final String clusterId,
                               final ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
                               final String kubeServiceAccount,
                               final OSSpecificLaunchCommandTemplate commandTemplate) {
@@ -164,7 +167,7 @@ public class PipelineExecutor {
             final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.loadTolerances(),
                     run.getActualDockerImage(), command, imagePullPolicy,
                     assignContainerRequests,
-                    verifiedKubeServiceAccount, commandTemplate);
+                    verifiedKubeServiceAccount, commandTemplate, podAssignPolicy);
             final Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             final Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
@@ -213,7 +216,7 @@ public class PipelineExecutor {
                                final Map<String, String> nodeSelector, final Map<String, String> nodeTolerances,
                                final String dockerImage, final String command, final ImagePullPolicy imagePullPolicy,
                                final boolean assignContainerRequests, final String kubeServiceAccount,
-                               final OSSpecificLaunchCommandTemplate template) {
+                               final OSSpecificLaunchCommandTemplate template, final RunContainerSpec policy) {
         final PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(
@@ -245,7 +248,7 @@ public class PipelineExecutor {
         spec.setContainers(Collections.singletonList(
                 getContainer(
                         run, envVars, dockerImage, command, imagePullPolicy, isDockerInDockerEnabled,
-                        isSystemdEnabled, assignContainerRequests, template, commonMounts
+                        isSystemdEnabled, assignContainerRequests, template, commonMounts, policy
                 )
         ));
         return spec;
@@ -299,14 +302,13 @@ public class PipelineExecutor {
                                    final boolean isSystemdEnabled,
                                    final boolean assignContainerRequests,
                                    final OSSpecificLaunchCommandTemplate template,
-                                   final List<DockerMount> commonMounts) {
+                                   final List<DockerMount> commonMounts,
+                                   final RunContainerSpec policy) {
         Container container = new Container();
         container.setName("pipeline");
-        SecurityContext securityContext = new SecurityContext();
-        securityContext.setPrivileged(true);
-        container.setSecurityContext(securityContext);
         container.setEnv(envVars);
         container.setImage(dockerImage);
+        container.setSecurityContext(buildSecurityContext(policy));
         String entryPoint = Optional.ofNullable(template.getEntrypoint()).orElse("/bin/bash");
         container.setCommand(Collections.singletonList(entryPoint));
         if (!StringUtils.isEmpty(command)) {
@@ -494,4 +496,26 @@ public class PipelineExecutor {
         return labels;
     }
 
+    private SecurityContext buildSecurityContext(final RunContainerSpec policy) {
+        return Optional.ofNullable(policy.getSecurityContext())
+                .map(context -> {
+                    final SecurityContext securityContext = new SecurityContext();
+                    securityContext.setPrivileged(context.getPrivileged());
+                    securityContext.setRunAsNonRoot(context.getRunAsNonRoot());
+                    securityContext.setRunAsUser(context.getRunAsUser());
+                    securityContext.setAllowPrivilegeEscalation(context.getAllowPrivilegeEscalation());
+                    securityContext.setReadOnlyRootFilesystem(context.getReadOnlyRootFilesystem());
+                    if (Objects.nonNull(securityContext.getCapabilities())) {
+                        final Capabilities capabilities = new Capabilities();
+                        capabilities.setAdd(securityContext.getCapabilities().getAdd());
+                        capabilities.setDrop(securityContext.getCapabilities().getDrop());
+                        securityContext.setCapabilities(capabilities);
+                    }
+                    return securityContext;
+                }).orElseGet(() -> {
+                    final SecurityContext securityContext = new SecurityContext();
+                    securityContext.setPrivileged(true);
+                    return securityContext;
+                });
+    }
 }

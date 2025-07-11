@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.pipeline.run;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfValuesMapDeserializer;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
@@ -45,7 +46,7 @@ public class PipelineStart {
     private String workerCmd;
     // TODO: Should be relatively easy to switch to runAssignPolicy in the feature
     private Long parentRunId;
-    private RunAssignPolicy podAssignPolicy;
+    private RunContainerSpec podAssignPolicy;
     private Boolean isSpot;
     private List<RunSid> runSids;
     private Long cloudRegionId;

@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -157,7 +157,7 @@ public class PipelineConfiguration implements Cloneable {
 
     private Map<String, String> kubeLabels;
 
-    private RunAssignPolicy podAssignPolicy;
+    private RunContainerSpec podAssignPolicy;
 
     private String kubeServiceAccount;
 
