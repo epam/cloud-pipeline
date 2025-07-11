@@ -222,6 +222,19 @@ public class ClusterController extends AbstractRestController {
             : Result.success(clusterApiService.getAllowedInstanceTypes(regionId, spot));
     }
 
+    @GetMapping(value = "/cluster/instance")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns description of an instance type",
+            notes = "Includes information on cpu, ram cpu resources",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<InstanceType> loadInstanceType(@RequestParam final String instanceType) {
+        return Result.success(clusterApiService.loadInstanceType(instanceType));
+    }
+
     @RequestMapping(value = "/cluster/instance/allowed", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
