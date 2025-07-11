@@ -15,6 +15,7 @@
  */
 
 import {parseDate} from '../../special/heat-map-chart/utils';
+import InstanceTypeInfo from '../../../models/utils/instance-type-info';
 
 export const COLORS = {
   activeGpus: '#108ee9',
@@ -131,6 +132,29 @@ function extractHeatmapData ({
       min: 0
     }
   ].filter(dataset => !hideDatasets.includes(dataset.key));
-};
+}
+
+const instanceTypesInfoCache = new Map();
+
+async function getInstanceTypeInfoFn (instanceType) {
+  const request = new InstanceTypeInfo(instanceType);
+  await request.fetch();
+  if (request.error) {
+    return undefined;
+  }
+  return request.value || {};
+}
+
+export async function getInstanceTypeInfo (instanceType) {
+  if (!instanceType) {
+    return undefined;
+  }
+  const key = instanceType.toLowerCase();
+  if (!instanceTypesInfoCache.has(key)) {
+    const promise = getInstanceTypeInfoFn(instanceType);
+    instanceTypesInfoCache.set(key, promise);
+  }
+  return instanceTypesInfoCache.get(key);
+}
 
 export {extractHeatmapData, extractTimelineData};
