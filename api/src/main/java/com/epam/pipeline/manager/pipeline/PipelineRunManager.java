@@ -60,7 +60,7 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -491,18 +491,18 @@ public class PipelineRunManager {
         MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
     }
 
-    private RunAssignPolicy getDefaultPodAssignPolicy(final PipelineRun run) {
-        return RunAssignPolicy.builder()
+    private RunContainerSpec getDefaultPodAssignPolicy(final PipelineRun run) {
+        return RunContainerSpec.builder()
                 .selector(
-                        RunAssignPolicy.PodAssignSelector.builder()
+                        RunContainerSpec.PodAssignSelector.builder()
                                 .label(KubernetesConstants.RUN_ID_LABEL)
                                 .value(run.getId().toString()).build())
                 .tolerances(Arrays.asList(
-                        RunAssignPolicy.PodAssignTolerance.builder()
+                        RunContainerSpec.PodAssignTolerance.builder()
                                 .label(KubernetesConstants.KUBE_UNREACHABLE_NODE_LABEL)
                                 .value(StringUtils.EMPTY)
                                 .build(),
-                        RunAssignPolicy.PodAssignTolerance.builder()
+                        RunContainerSpec.PodAssignTolerance.builder()
                                 .label(KubernetesConstants.KUBE_NOT_READY_NODE_LABEL)
                                 .value(StringUtils.EMPTY)
                                 .build()))
@@ -1201,9 +1201,9 @@ public class PipelineRunManager {
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
         configuration.setPodAssignPolicy(
-            RunAssignPolicy.builder()
+            RunContainerSpec.builder()
                 .selector(
-                    RunAssignPolicy.PodAssignSelector.builder()
+                    RunContainerSpec.PodAssignSelector.builder()
                             .label(KubernetesConstants.RUN_ID_LABEL)
                             .value(restartedRun.getId().toString()).build())
                 .build()

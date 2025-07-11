@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
@@ -304,7 +304,7 @@ public class PipelineLauncher {
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
-    private void markRunOnParentNode(final PipelineRun run, final RunAssignPolicy assignPolicy,
+    private void markRunOnParentNode(final PipelineRun run, final RunContainerSpec assignPolicy,
                                      final Map<SystemParams, String> systemParams) {
         if (assignPolicy != null && assignPolicy.isValid()) {
             assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)

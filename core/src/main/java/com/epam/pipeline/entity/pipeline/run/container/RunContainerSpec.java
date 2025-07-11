@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline.run;
+package com.epam.pipeline.entity.pipeline.run.container;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
@@ -32,29 +32,33 @@ import java.util.stream.Collectors;
 
 
 /**
- * Object to describe assign strategy of a run pod to a node.
- * @see RunAssignPolicy.PodAssignSelector and
- * @see RunAssignPolicy.PodAssignTolerance for mode informations
+ * Object to describe additional k8s container spec,
+ * including assign strategy of a run pod to a node and security context
+ * @see RunContainerSpec.PodAssignSelector and
+ * @see RunContainerSpec.PodAssignTolerance for mode informations
  * */
 @Data
 @Builder
 @ToString
-public class RunAssignPolicy {
+public class RunContainerSpec {
 
     PodAssignSelector selector;
     List<PodAssignTolerance> tolerances;
     boolean skipContainerRequests;
+    ContainerSecurityContext securityContext;
 
-    public RunAssignPolicy() {
+    public RunContainerSpec() {
         this.skipContainerRequests = true;
     }
 
-    public RunAssignPolicy(final PodAssignSelector selector,
-                           final List<PodAssignTolerance> tolerances,
-                           final boolean skipContainerRequests) {
+    public RunContainerSpec(final PodAssignSelector selector,
+                            final List<PodAssignTolerance> tolerances,
+                            final boolean skipContainerRequests,
+                            final ContainerSecurityContext securityContext) {
         this.selector = selector;
         this.tolerances = tolerances;
         this.skipContainerRequests = skipContainerRequests;
+        this.securityContext = securityContext;
     }
 
     public boolean isMatch(final String label, final String value) {
