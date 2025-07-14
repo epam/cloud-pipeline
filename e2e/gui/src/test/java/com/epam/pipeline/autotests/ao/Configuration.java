@@ -267,16 +267,10 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration addStringParameter(final String name, final String value) {
-        profile.clickAddStringParameter()
-                .setName(name)
-                .also(parameter -> parameter.get(PARAMETER_NAME)
-                        .closest(".ant-row")
-                        .closest(".ant-row")
-                        .find(byClassName("ant-select-search__field"))
-                        .setValue(value)
-                );
+        profile.addStringParameter(name, value);
         return this;
     }
+
 
     public Configuration setParameter(final String name, final String value) {
         final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);

@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
 import com.codeborne.selenide.SelenideElement;
 
@@ -28,14 +29,17 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.lang.String.format;
 
-public class DetachedConfigurationParameterAO implements AccessObject<DetachedConfigurationParameterAO>{
+public class DetachedConfigurationParameterAO
+        extends ParameterFieldAO
+        implements AccessObject<ParameterFieldAO>{
 
     private final Map<Primitive, SelenideElement> elements;
     private final Configuration configuration;
 
     public DetachedConfigurationParameterAO(Configuration configuration, int parameterIndex) {
-        final SelenideElement parameter = $(byId("launch-pipeline-parameters-panel"))
-                .$(byClassName(format("launch-form-parameter-key-parameter_%s", parameterIndex)));
+        super(parameterByIndex(parameterIndex));
+        final SelenideElement parameter = $(byClassName(format("launch-form-parameter-key-parameter_%s",
+                parameterIndex)));
         this.configuration = configuration;
 
         this.elements = initialiseElements(
@@ -50,13 +54,11 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
         if (get(PARAMETER_FIELD).exists()) {
             get(PARAMETER_FIELD).click();
         }
-        setValue(PARAMETER_NAME, name).resetMouse();
-        return this;
+        return (DetachedConfigurationParameterAO) setValue(get(PARAMETER_NAME), name);
     }
 
     public DetachedConfigurationParameterAO setValue(String value) {
-        setValue(PARAMETER_VALUE, value).resetMouse();
-        return this;
+        return (DetachedConfigurationParameterAO) setValue(this.valueInput, value);
     }
 
     public DetachedConfigurationParameterAO typeValue(String value) {
@@ -70,7 +72,7 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
     }
 
     public DetachedConfigurationParameterAO validateParameter(String name, String value) {
-        ensure(PARAMETER_NAME, Condition.have(value(name)));
+        ensure(PARAMETER_FIELD, Condition.have(text(name)));
         ensure(PARAMETER_VALUE, Condition.have(value(value)));
         return this;
     }
