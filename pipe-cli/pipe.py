@@ -1313,12 +1313,13 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[skip] skips empty files transferring.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip']),
+              type=click.Choice(['fail', 'fail-after', 'skip', 'retry']),
               help='Configure how singular file processing failures should affect overall command execution. '
                    'Allowed values: \n'
                    '[fail] fails immediately (default); \n'
                    '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures.')
+                   '[skip] skips all failures;'
+                   '[retry] retries all failures.')
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
 @click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
