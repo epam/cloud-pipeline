@@ -41,13 +41,15 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
         this.elements = initialiseElements(
                 entry(PARAMETER_FIELD, parameter.$(byClassName("arameter-name-input__parameter-name"))),
                 entry(PARAMETER_NAME, parameter.$(byClassName("arameter-name-input__parameter-name-input"))),
-                entry(PARAMETER_VALUE, parameter.$(byClassName("aunch-form-parameter-input__launch-parameter-input"))),
+                entry(PARAMETER_VALUE, parameter.$(byClassName("ant-form-item-control")).$x(".//input")),
                 entry(REMOVE_PARAMETER, parameter.$(byClassName("dynamic-delete-button")))
         );
     }
 
     public DetachedConfigurationParameterAO setName(String name) {
-        get(PARAMETER_FIELD).click();
+        if (get(PARAMETER_FIELD).exists()) {
+            get(PARAMETER_FIELD).click();
+        }
         setValue(PARAMETER_NAME, name).resetMouse();
         return this;
     }

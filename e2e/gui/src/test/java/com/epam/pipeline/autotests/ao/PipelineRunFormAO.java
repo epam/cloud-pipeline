@@ -398,9 +398,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO inputSystemParameterValue(String parameter, String value) {
-        String inputFieldID = $(byXpath(format("//input[@value='%s']", parameter))).attr("id")
-                .replace(".name", ".value");
-        $(byXpath(format("//input[@id='%s']", inputFieldID))).shouldBe(enabled).setValue(value);
+        int inputFieldID = parameterByName(parameter).index();
+        new RunParameterAO(this, inputFieldID).setValue(value);
         return this;
     }
 
