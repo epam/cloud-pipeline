@@ -31,6 +31,8 @@ import colors, {
   textColor
 } from './charts/utils/colors';
 import styles from './hot-cluster-usage.css';
+import PoolsHardwareChart from './charts/pools-hardware-chart';
+import {HARDWARE_MAPPING} from './charts/utils/hardware-chart-utils';
 
 @inject('themes')
 @inject((stores, params) => {
@@ -152,7 +154,8 @@ class HotClusterUsage extends React.Component {
         state.pools = state.data.map(item => ({
           ...(item.pool || {}),
           id: Number(item.poolId),
-          name: item.poolName
+          name: item.poolName,
+          resourceSharingPool: item.resourceSharingPool || false
         }));
         if (!state.data || !state.pools.find(o => o.id === currentPoolId)) {
           state.currentPoolId = (state.pools[0] || {}).id;
@@ -219,6 +222,9 @@ class HotClusterUsage extends React.Component {
       error,
       pending
     } = this.state;
+    const currentPoolData = (data || [])
+      .find(({poolId}) => poolId === currentPoolId);
+    const {poolName, resourceSharingPool = false} = currentPoolData || {};
     return (
       <div>
         <ControlRow
@@ -255,6 +261,7 @@ class HotClusterUsage extends React.Component {
                 textColor={this.textColor}
                 period={period}
                 periodType={periodType}
+                containerStyle={{width: 'calc(50% - 3px)'}}
               />
               <PoolChart
                 rawData={data}
@@ -269,7 +276,27 @@ class HotClusterUsage extends React.Component {
                 textColor={this.textColor}
                 period={period}
                 periodType={periodType}
+                containerStyle={{width: 'calc(50% - 3px)'}}
               />
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.runs,
+                    HARDWARE_MAPPING.runsPending
+                  ]}
+                  title={poolName ? `${poolName} - jobs status` : 'Jobs status'}
+                  units=""
+                  colors={this.colors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  limitColor={this.limitColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
             </div>
           )
         }
