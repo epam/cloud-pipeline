@@ -51,7 +51,6 @@ class BaseChart extends React.Component {
       const {start} = getPeriod(periodType, period);
       const xAxisLabel = start.format(format);
       const chartOptions = {
-        ...rest,
         plugins: optPlugins,
         elements: {
           line: {
@@ -123,7 +122,8 @@ class BaseChart extends React.Component {
             }
           }
         },
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        ...rest
       };
       if (this.chart) {
         this.chart.data = data;

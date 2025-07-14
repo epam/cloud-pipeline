@@ -31,6 +31,8 @@ import colors, {
   textColor
 } from './charts/utils/colors';
 import styles from './hot-cluster-usage.css';
+import PoolsHardwareChart from './charts/pools-hardware-chart';
+import {HARDWARE_MAPPING} from './charts/utils/hardware-chart-utils';
 
 @inject('themes')
 @inject((stores, params) => {
@@ -219,6 +221,8 @@ class HotClusterUsage extends React.Component {
       error,
       pending
     } = this.state;
+    const currentPoolData = (data || [])
+      .find(({poolId}) => poolId === currentPoolId);
     return (
       <div>
         <ControlRow
@@ -255,6 +259,7 @@ class HotClusterUsage extends React.Component {
                 textColor={this.textColor}
                 period={period}
                 periodType={periodType}
+                containerStyle={{width: 'calc(50% - 3px)'}}
               />
               <PoolChart
                 rawData={data}
@@ -269,6 +274,58 @@ class HotClusterUsage extends React.Component {
                 textColor={this.textColor}
                 period={period}
                 periodType={periodType}
+                containerStyle={{width: 'calc(50% - 3px)'}}
+              />
+              <PoolsHardwareChart
+                rawData={currentPoolData}
+                mappings={[
+                  HARDWARE_MAPPING.cpu,
+                  HARDWARE_MAPPING.cpuPending
+                ]}
+                title="CPU statistics"
+                units=""
+                colors={this.colors}
+                textColor={this.textColor}
+                backgroundColor={this.backgroundColor}
+                lineColor={this.lineColor}
+                limitColor={this.limitColor}
+                period={period}
+                periodType={periodType}
+                style={{width: 'calc(50% - 3px)'}}
+              />
+              <PoolsHardwareChart
+                rawData={currentPoolData}
+                mappings={[
+                  HARDWARE_MAPPING.gpu,
+                  HARDWARE_MAPPING.gpuPending
+                ]}
+                title="GPU statistics"
+                units=""
+                colors={this.colors}
+                textColor={this.textColor}
+                backgroundColor={this.backgroundColor}
+                limitColor={this.limitColor}
+                lineColor={this.lineColor}
+                period={period}
+                periodType={periodType}
+                style={{width: 'calc(50% - 3px)'}}
+              />
+              <PoolsHardwareChart
+                rawData={currentPoolData}
+                mappings={[
+                  HARDWARE_MAPPING.ram,
+                  HARDWARE_MAPPING.ramPending
+                ]}
+                title="RAM statistics"
+                units=""
+                colors={this.colors}
+                textColor={this.textColor}
+                backgroundColor={this.backgroundColor}
+                limitColor={this.limitColor}
+                lineColor={this.lineColor}
+                period={period}
+                periodType={periodType}
+                style={{width: 'calc(50% - 3px)'}}
               />
             </div>
           )
