@@ -37,12 +37,14 @@ export const HARDWARE_MAPPING = {
   },
   ram: {
     title: 'RAM',
-    key: 'ram'
+    key: 'ram',
+    valueFormatter: (value) => value
   },
   ramPending: {
     title: 'RAM pending',
     key: 'ramPending',
-    type: 'pending'
+    type: 'pending',
+    valueFormatter: (value) => value
   }
 };
 
@@ -64,16 +66,17 @@ export function extractHardwareData (
     };
   }
   const records = data.records.filter(record => !!record.measureTime);
-  const extractData = (records, label, key) => {
+  const extractData = (records, label, key, valueFormatter) => {
     const record = records.find(record => record.measureTime === label);
     // todo: delete mock
-    return Math.ceil(Math.random() * 10);
-    return record?.[key] || 0;
+    const value = Math.ceil(Math.random() * 10);
+    // const value = record?.[key] || 0;
+    return valueFormatter ? valueFormatter(value) : value;
   };
   const labels = records.map(record => record.measureTime);
-  const datasets = mappings.map(({key, title, type}, index) => ({
+  const datasets = mappings.map(({key, title, type, valueFormatter}, index) => ({
     label: title,
-    data: labels.map(label => extractData(records, label, key)),
+    data: labels.map(label => extractData(records, label, key, valueFormatter)),
     backgroundColor: type === 'pending'
       ? backgroundColor
       : getColor(index, colors),

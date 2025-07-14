@@ -111,7 +111,8 @@ PoolsHardwareChart.PropTypes = {
   mappings: PropTypes.arrayOf(PropTypes.shape({
     title: PropTypes.string,
     key: PropTypes.string,
-    type: PropTypes.string
+    type: PropTypes.string,
+    valueFormatter: PropTypes.func
   })),
   units: PropTypes.string,
   colors: PropTypes.array,
