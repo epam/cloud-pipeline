@@ -52,9 +52,9 @@ export async function getReservationParametersConfig (instanceType) {
   const {launchReservationParameters = {}} = preferences;
   if (instanceType && launchReservationParameters) {
     for (const [key, cfg] of Object.entries(launchReservationParameters || {})) {
-      let l = key.replaceAll('*', '____STAR____');
+      let l = key.replace(/\*/g, '____STAR____');
       l = escapeRegExp(l);
-      l = l.replaceAll('____STAR____', '.*');
+      l = l.replace(/____STAR____/g, '.*');
       const reg = new RegExp(`^${l}$`, 'i');
       if (reg.test(instanceType)) {
         return cfg;
