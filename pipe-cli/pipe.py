@@ -70,6 +70,13 @@ STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination 
                                                 'exists an error will be occurred. Cannot be used in combination' \
                                                 ' with --force (-f) option: if --force (-f) specified ' \
                                                 '--verify-destination (-vd) will be ignored.'
+ON_FAILURES_OPTION_CHOICES = ['fail', 'fail-after', 'skip', 'retry']
+ON_FAILURES_OPTION_DESCRIPTION = 'Configure how singular file processing failures should affect overall command execution. '\
+                                 'Allowed values: \n'\
+                                 '[fail] fails immediately (default); \n'\
+                                 '[fail-after] fails only after all files are processed; \n'\
+                                 '[skip] skips all failures;'\
+                                 '[retry] retries all failures.'
 
 
 def silent_print_api_version():
@@ -1201,12 +1208,8 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    'The option has effect only if --unsafe-chars option is set to replace value.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip']),
-              help='Configure how singular file processing failures should affect overall command execution. '
-                   'Allowed values: \n'
-                   '[fail] fails immediately (default); \n'
-                   '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures.')
+              type=click.Choice(ON_FAILURES_OPTION_CHOICES),
+              help=ON_FAILURES_OPTION_DESCRIPTION)
 @click.option('--on-empty-files', required=False, default='allow',
               envvar='CP_CLI_TRANSFER_EMPTY_FILES',
               help='Configure how empty files should be handled. '
@@ -1313,13 +1316,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[skip] skips empty files transferring.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip', 'retry']),
-              help='Configure how singular file processing failures should affect overall command execution. '
-                   'Allowed values: \n'
-                   '[fail] fails immediately (default); \n'
-                   '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures;'
-                   '[retry] retries all failures.')
+              type=click.Choice(ON_FAILURES_OPTION_CHOICES),
+              help=ON_FAILURES_OPTION_DESCRIPTION)
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
 @click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
