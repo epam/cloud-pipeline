@@ -343,15 +343,19 @@ class DataStorageOperations(object):
             try:
                 transfer_workers = cls._start_multiprocess_transfer(items, transfer_params, audit_ctx,
                                                                     failed_items_queue)
-                items = cls._fetch_batch_items(items_iterator, transfer_params.manager, transfer_params.source_wrapper,
-                                               transfer_params.destination_wrapper,
-                                               permission_to_check, include, exclude, force,
-                                               transfer_params.quiet, skip_existing,
-                                               sync_newer, verify_destination, on_unsafe_chars,
-                                               on_unsafe_chars_replacement, on_empty_files)
-                cls._handle_keyboard_interrupt(transfer_workers)
-            except StopIteration:
-                break
+                try:
+                    items = cls._fetch_batch_items(items_iterator, transfer_params.manager,
+                                                   transfer_params.source_wrapper,
+                                                   transfer_params.destination_wrapper,
+                                                   permission_to_check, include, exclude, force,
+                                                   transfer_params.quiet, skip_existing,
+                                                   sync_newer, verify_destination, on_unsafe_chars,
+                                                   on_unsafe_chars_replacement, on_empty_files)
+
+                except StopIteration:
+                    break
+                finally:
+                    cls._handle_keyboard_interrupt(transfer_workers)
             finally:
                 cls._retry_transfer(failed_items_queue, transfer_params, audit_ctx)
 
