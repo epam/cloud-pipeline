@@ -407,20 +407,25 @@ function define_distro_name_and_version {
       CP_OS=
       CP_OS_FAMILY=
       CP_VER=
+      # Codename is supported for Ubuntu only
+      CP_OS_CODENAME=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
             . /etc/os-release
             CP_OS=$ID
             CP_VER=$VERSION_ID
+            CP_OS_CODENAME=$VERSION_CODENAME
       elif type lsb_release >/dev/null 2>&1; then
             # linuxbase.org
             CP_OS=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
-            CP_VER=$(lsb_release -sc | tr '[:upper:]' '[:lower:]')
+            CP_VER=$(lsb_release -sr | tr '[:upper:]' '[:lower:]')
+            CP_OS_CODENAME=$(lsb_release -sc | tr '[:upper:]' '[:lower:]')
       elif [ -f /etc/lsb-release ]; then
             # For some versions of Debian/Ubuntu without lsb_release command
             . /etc/lsb-release
             CP_OS=$DISTRIB_ID
             CP_VER=$DISTRIB_RELEASE
+            CP_OS_CODENAME=$DISTRIB_CODENAME
       elif [ -f /etc/debian_version ]; then
             # Older Debian/Ubuntu/etc.
             CP_OS=debian
@@ -447,6 +452,7 @@ function define_distro_name_and_version {
       export CP_OS_FAMILY
       export CP_VER
       export CP_VER_MAJOR="${CP_VER%%.*}"
+      export CP_OS_CODENAME
 
 
 }
@@ -461,6 +467,102 @@ function configure_package_manager {
             mkdir -p /etc/apt/apt.conf.d/
             echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
             apt-get update -y --allow-insecure-repositories
+      fi
+
+      # Add a mirror repo
+      if [ "${CP_REPO_EXTRA_ENABLED,,}" == 'true' ]; then
+            if [ "$CP_OS" == "ubuntu" ]; then
+                  if [ -z "$CP_REPO_BASE_EXTRA_URL_UBUNTU" ] && [ "$CP_REPO_BASE_EXTRA_URL_DEFAULT" ]; then
+                        CP_REPO_BASE_EXTRA_URL_UBUNTU="$CP_REPO_BASE_EXTRA_URL_DEFAULT/ubuntu"
+                  fi
+                  
+                  if [ "$CP_REPO_BASE_EXTRA_URL_UBUNTU" ]; then
+                        echo "Extra repositories mirror is being configured: $CP_REPO_BASE_EXTRA_URL_UBUNTU"
+
+                        if [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]; then
+                              echo "[INFO] Default repositories list (/etc/apt/sources.list) is requested to be delete via CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS"
+                              echo "" > /etc/apt/sources.list
+                        fi
+
+                        if [ "$CP_OS_CODENAME" ]; then
+                              mkdir -p /etc/apt/sources.list.d
+                              cat > /etc/apt/sources.list.d/cloud-pipeline-extra.list<<EOF
+deb ${CP_REPO_BASE_EXTRA_URL_UBUNTU} ${CP_OS_CODENAME} main restricted universe multiverse
+deb ${CP_REPO_BASE_EXTRA_URL_UBUNTU} ${CP_OS_CODENAME}-security main restricted universe multiverse
+deb ${CP_REPO_BASE_EXTRA_URL_UBUNTU} ${CP_OS_CODENAME}-updates main restricted universe multiverse
+EOF
+                        else
+                              echo "[WARN] CP_OS_CODENAME is not avaialble for ${CP_OS}, extra repositories mirrors will not be configured"
+                        fi
+                  else
+                        echo "[WARN] Extra repositories mirrors are requested for ${CP_OS}, but no URL is provided via CP_REPO_BASE_EXTRA_URL_UBUNTU or CP_REPO_BASE_EXTRA_URL_DEFAULT"
+                  fi
+            fi
+            if [ "$CP_OS" == "rocky" ]; then
+                  echo "[WARN] Extra repositories mirrors are requested for ${CP_OS}, but it is not supported yet"
+#                   cat > /etc/yum.repos.d/cloud-pipeline-extra.repo <<EOF
+# [appstream]
+# name=Rocky Linux \$releasever - AppStream
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/AppStream/\$basearch/os/
+# gpgcheck=0
+# enabled=1
+
+# [baseos]
+# name=Rocky Linux \$releasever - BaseOS
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/BaseOS/\$basearch/os/
+# gpgcheck=0
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/BaseOS/\$basearch/os/
+# enabled=1
+
+# [devel]
+# name=Rocky Linux \$releasever - Devel WARNING! FOR BUILDROOT AND KOJI USE
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/Devel/\$basearch/os/
+# gpgcheck=0
+# enabled=1
+
+# [extras]
+# name=Rocky Linux \$releasever - Extras
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/extras/\$basearch/os/
+# gpgcheck=0
+# enabled=1
+
+# [ha]
+# name=Rocky Linux \$releasever - HighAvailability
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/HighAvailability/\$basearch/os/
+# gpgcheck=0
+# enabled=0
+
+# [nfv]
+# name=Rocky Linux \$releasever - NFV
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/nfv/\$basearch/os/
+# gpgcheck=0
+# enabled=0
+
+# [plus]
+# name=Rocky Linux \$releasever - Plus
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/plus/\$basearch/os/
+# gpgcheck=0
+# enabled=1
+
+# [powertools]
+# name=Rocky Linux \$releasever - PowerTools
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/PowerTools/\$basearch/os/
+# gpgcheck=0
+# enabled=1
+
+# [rt]
+# name=Rocky Linux \$releasever - Realtime
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/RT/\$basearch/os/
+# gpgcheck=0
+# enabled=0
+
+# [resilient-storage]
+# name=Rocky Linux \$releasever - ResilientStorage
+# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/ResilientStorage/\$basearch/os/
+# gpgcheck=0
+# enabled=0
+# EOF
+            fi
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages

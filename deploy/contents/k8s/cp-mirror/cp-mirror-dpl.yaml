@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-mirror
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-mirror: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-mirror: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-mirror
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:monitoring-service-$CP_VERSION
+          imagePullPolicy: "IfNotPresent"
+          command: [ "/init" ]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/mirror/logs
+              name: mirror-logs
+            - mountPath: /opt/mirror/data
+              name: mirror-data
+      volumes:
+        - name: mirror-logs
+          hostPath:
+            path: /opt/mirror/logs
+        - name: mirror-data
+          hostPath:
+            path: /mirror
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
