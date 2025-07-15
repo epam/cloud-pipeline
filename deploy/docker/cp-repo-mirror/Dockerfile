@@ -6,3 +6,5 @@ RUN yum install -y wget \
                    curl \
                    nginx
 ADD nginx.conf /etc/nginx/nginx.conf
+ADD init /init
+RUN chmod +x /init
