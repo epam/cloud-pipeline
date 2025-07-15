@@ -629,7 +629,7 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, "")
                                 .setValue(pathParameterValue2)
                                 .validateParameter(pathParameterName, pathParameterValue2)
-                                .ensure(PARAMETER_NAME, disabled);
+                                .ensure(PARAMETER_FIELD, disabled);
                         configuration
                                 .click(SAVE)
                                 .ensureDisable(SAVE);
@@ -773,6 +773,7 @@ public class DetachedConfigurationsTest
     @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-1604"})
     public void deleteDetachedConfigurationValidation() {
+        refresh();
         library()
             .removeConfiguration(mainConfiguration)
             .ensure(configurationWithName(mainConfiguration), not(visible));
