@@ -264,8 +264,8 @@ class DataStorageOperations(object):
                 if not failed_items:
                     # no failures
                     return
-                logging.debug(u"Found {} failed items. Retrying {}/{}.".format(len(failed_items),
-                                                                               attempt, retry_attempts))
+                logging.debug(u"Found {} failed items. Retry attempts {}/{}.".format(len(failed_items),
+                                                                                     attempt, retry_attempts))
                 failed_items_queue = multiprocessing.Queue()
                 if params.threads:
                     cls._multiprocess_transfer_items(failed_items, params, audit_ctx, failed_items_queue)
