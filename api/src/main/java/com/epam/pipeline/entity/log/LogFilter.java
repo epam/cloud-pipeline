@@ -33,4 +33,5 @@ public class LogFilter {
     private Boolean includeServiceAccountEvents;
     private LogPaginationRequest pagination;
     private String sortOrder;
+    private Long storageId;
 }
