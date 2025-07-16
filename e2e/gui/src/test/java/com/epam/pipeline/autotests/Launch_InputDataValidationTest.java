@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -116,6 +117,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .sleep(1, SECONDS)
                 .showLog(getRunId())
