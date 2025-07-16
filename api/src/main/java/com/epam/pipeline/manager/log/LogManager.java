@@ -352,7 +352,9 @@ public class LogManager {
         if (StringUtils.isNotEmpty(logFilter.getMessage())) {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
-
+        if (Objects.nonNull(logFilter.getStorageId())) {
+            boolQuery.filter(QueryBuilders.matchQuery(STORAGE_ID + KEYWORD, logFilter.getStorageId()));
+        }
         ElasticsearchUtils.addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
                 logFilter.getMessageTimestampTo(), MESSAGE_TIMESTAMP);
         return boolQuery;
