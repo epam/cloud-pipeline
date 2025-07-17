@@ -35,11 +35,17 @@ function LaunchFormEnumParameterInput (props) {
     className,
     style,
     value: valueProps,
+    parameter,
     onChange,
-    disabled,
-    enumeration: enumerationProps = []
+    disabled
   } = props;
-  const enumeration = enumerationProps.map(mapEnumerationItem);
+  const {
+    config = {}
+  } = parameter || {};
+  const {
+    enumeration: enumerationProps = []
+  } = config;
+  const enumeration = (enumerationProps || []).map(mapEnumerationItem);
   const value = valueProps ? String(valueProps) : undefined;
   const onInputChange = (e) => {
     if (typeof onChange === 'function') {
@@ -68,7 +74,7 @@ LaunchFormEnumParameterInput.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   value: PropTypes.any,
-  enumeration: PropTypes.any,
+  parameter: PropTypes.object,
   required: PropTypes.bool,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,

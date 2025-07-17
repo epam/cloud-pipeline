@@ -2,9 +2,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './launch-form-parameter-input.css';
-import {Icon, Input} from 'antd';
+import {Icon} from 'antd';
 import BucketBrowser from '../../../../dialogs/BucketBrowser';
-import MetadataAutoComplete from "./metadata-auto-complete";
+import MetadataAutoComplete from './metadata-auto-complete';
 
 function getIcon (pathType) {
   switch (pathType) {
@@ -47,7 +47,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
     const {
       className,
       style,
-      pathType = 'path',
+      parameter,
       onChange,
       value,
       disabled,
@@ -57,6 +57,12 @@ class LaunchFormPathParameterInput extends React.PureComponent {
       rootEntityId,
       metadataAutoComplete
     } = this.props;
+    let {
+      type: pathType = 'path'
+    } = parameter;
+    if (typeof pathType !== 'string' || !['path', 'common', 'input', 'output'].includes(pathType)) {
+      pathType = 'path';
+    }
     const icon = getIcon(pathType);
     const onPathChange = (path) => {
       if (typeof onChange === 'function') {
@@ -72,8 +78,8 @@ class LaunchFormPathParameterInput extends React.PureComponent {
     const {
       bucketBrowserOpened
     } = this.state;
-    const isOutputType = typeof pathType === 'string' && pathType.toLowerCase() === 'output';
-    const isPathType = typeof pathType === 'string' && pathType.toLowerCase() === 'path';
+    const isOutputType = pathType.toLowerCase() === 'output';
+    const isPathType = pathType.toLowerCase() === 'path';
     return (
       <div
         className={classNames(className, styles.launchParameterInput)}
@@ -120,7 +126,7 @@ LaunchFormPathParameterInput.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   value: PropTypes.any,
-  pathType: PropTypes.string,
+  parameter: PropTypes.object,
   required: PropTypes.bool,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,

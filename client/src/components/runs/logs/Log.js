@@ -106,6 +106,9 @@ import {checkRunActionAvailable, runActions} from '../actions/actions-availabili
 import {
   findReservationParameterConfig
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import {normalizeRunParameters} from './misc/post-process-run';
+// eslint-disable-next-line max-len
+import ParameterValueRepresentation from '../../pipelines/launch/form/parameters/parameter/representation';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -552,9 +555,9 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const valueSelector = () => {
       if (this.state.resolvedValues) {
-        return runParameter.resolvedValue || runParameter.value || '';
+        return String(runParameter.resolvedValue || runParameter.value || '');
       }
-      return runParameter.value || '';
+      return String(runParameter.value || '');
     };
     if (/^(input|output|common|path)$/i.test(runParameter.type)) {
       const valueParts = valueSelector().split(/[,|]/);
@@ -647,7 +650,17 @@ class Logs extends localization.LocalizedReactComponent {
         </tr>
       );
     }
-    let values = (valueSelector() || '').split(',').map(v => v.trim());
+    const v = valueSelector();
+    if (/^object$/i.test(runParameter.type)) {
+      return (
+        <tr
+          key={runParameter.name}>
+          <td className={styles.taskParameterName}>{runParameter.name}:</td>
+          <td><ParameterValueRepresentation value={v} showBase64Tag /></td>
+        </tr>
+      );
+    }
+    let values = v.split(',').map(v => v.trim());
     if (values.length === 1) {
       return (
         <tr
@@ -2140,7 +2153,8 @@ class Logs extends localization.LocalizedReactComponent {
           </table>
         </div>;
 
-      let filteredRunParameters = (pipelineRunParameters || []).filter(p => p.name && p.value);
+      let filteredRunParameters = normalizeRunParameters(pipelineRunParameters || [])
+        .filter(p => p.name && p.value);
       const getParameterType = p => {
         switch ((p.type || '').toLowerCase()) {
           case 'common':
