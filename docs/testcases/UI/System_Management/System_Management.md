@@ -22,3 +22,5 @@ This folder contains testcases to check System Management.
 | [**3059_5**](3059-3075_audit_pipe_mount_operation/3059_5.md) | Audit of Sharing storage data access |
 | [**3059_6**](3059-3075_audit_pipe_mount_operation/3059_6.md) | Audit of partially sharing storage Data access |
 | [**3075**](3059-3075_audit_pipe_mount_operation/3075.md)   | Audit pipe mount operations |
+| [**4024_1**](3059-3075_audit_pipe_mount_operation/4024_1.md)   | Audit mount events |
+| [**4024_2**](3059-3075_audit_pipe_mount_operation/4024_2.md)   | Audit run sharing event |
