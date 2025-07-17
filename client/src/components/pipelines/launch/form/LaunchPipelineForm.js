@@ -2580,7 +2580,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderParameters = (system = false) => {
     const parameters = this.getParameters();
-    const {isRawEditEnabled} = this.state;
+    const {isRawEditEnabled, pipeline} = this.state;
+    const {detached} = this.props;
+    const pipelineSelected = pipeline !== undefined && pipeline !== null;
     return [
       <Parameters
         key={`${system ? 'system' : 'default'}-parameters`}
@@ -2601,8 +2603,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         navigationRef={system ? undefined : (div) => {
           this.parametersNavigationWrapperRef = div;
         }}
-        detached={this.props.detached}
-        pipeline={this.state.pipeline !== undefined && this.state.pipeline !== null}
+        detached={detached}
+        pipeline={pipelineSelected}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -2618,7 +2620,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           parameters={parameters}
           onChange={this.onParametersChange}
           system={system}
-          disabled={this.props.readOnly && !this.props.canExecute}
+          disabled={(this.props.readOnly && !this.props.canExecute) || (detached && pipeline)}
         />
       </div>
     ];

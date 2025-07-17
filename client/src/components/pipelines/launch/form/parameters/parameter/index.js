@@ -53,6 +53,7 @@ function LaunchFormParameter (props) {
       style={style}
     >
       <ParameterNameInput
+        disabled={disabled || (detached && pipeline)}
         rawEdit={rawEdit}
         parameter={parameter}
         onChange={onChange}
