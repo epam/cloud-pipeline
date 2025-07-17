@@ -16,25 +16,24 @@
 
 package com.epam.pipeline.entity.git;
 
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.Arguments;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(Enclosed.class)
-public class GitRepositoryUrlTest {
+class GitRepositoryUrlTest {
 
-    @RunWith(Parameterized.class)
-    public static class DataDriven {
+    @Nested
+    @DisplayName("Positive cases")
+    class Positive {
 
         private static final String URL_WITH_USERNAME_AND_PASSWORD =
                 "https://username:pAssw0rd@git.company-name-42.com/graphic/awesome-game.git";
@@ -50,113 +49,63 @@ public class GitRepositoryUrlTest {
         private static final String PROJECT = "awesome-game";
         private static final String USERNAME = "username";
         private static final String PASSWORD = "pAssw0rd";
-        private final String caseName;
-        final String url;
-        final String protocol;
-        final String host;
-        final Optional<String> namespace;
-        final Optional<String> project;
-        final Optional<String> userName;
-        final Optional<String> password;
 
-        public DataDriven(final String caseName,
-                          final String url,
-                          final String protocol,
-                          final Optional<String> userName,
-                          final Optional<String> password,
-                          final String host,
-                          final Optional<String> namespace,
-                          final Optional<String> project) {
-            this.caseName = caseName;
-            this.url = url;
-            this.protocol = protocol;
-            this.host = host;
-            this.namespace = namespace;
-            this.project = project;
-            this.userName = userName;
-            this.password = password;
+        static Stream<Arguments> provideData() {
+            return Stream.of(
+                    Arguments.of("simple url", SIMPLE_URL, PROTOCOL, empty(), empty(), HOST, empty(), empty()),
+                    Arguments.of("url with namespace", URL_WTH_NAMESPACE, PROTOCOL, empty(), empty(), HOST,
+                        of(NAMESPACE), empty()),
+                    Arguments.of("url with namespace and project", URL_WITH_NAMESPACE_AND_PROJECT, PROTOCOL, empty(),
+                        empty(), HOST, of(NAMESPACE), of(PROJECT)),
+                    Arguments.of("url with username", URL_WITH_USERNAME, PROTOCOL, of(USERNAME), empty(), HOST,
+                        of(NAMESPACE), of(PROJECT)),
+                    Arguments.of("url with username and password", URL_WITH_USERNAME_AND_PASSWORD, PROTOCOL,
+                        of(USERNAME), of(PASSWORD), HOST, of(NAMESPACE), of(PROJECT)),
+                    Arguments.of("url with username, password and port",
+                        "https://username:pAssw0rd@git.company-name-42.com:42/graphic/awesome-game.git", PROTOCOL,
+                        of(USERNAME), of(PASSWORD), "git.company-name-42.com:42", of(NAMESPACE), of(PROJECT))
+            );
         }
 
-        @Parameters(name = "{index}: when {0} passed")
-        public static Collection<Object[]> data() {
-            return Arrays.asList(new Object[][] {
-                {
-                    "simple url",
-                    SIMPLE_URL,
-                    PROTOCOL, empty(), empty(), HOST, empty(), empty()
-                },
-                {
-                    "url with namespace",
-                    URL_WTH_NAMESPACE,
-                    PROTOCOL, empty(), empty(), HOST, of(NAMESPACE), empty()
-                },
-                {
-                    "url with namespace and project",
-                    URL_WITH_NAMESPACE_AND_PROJECT,
-                    PROTOCOL, empty(), empty(), HOST, of(NAMESPACE), of(PROJECT)
-                },
-                {
-                    "url with username",
-                    URL_WITH_USERNAME,
-                    PROTOCOL, of(USERNAME), empty(), HOST, of(NAMESPACE), of(PROJECT)
-                },
-                {
-                    "url with both username and password",
-                    URL_WITH_USERNAME_AND_PASSWORD,
-                    PROTOCOL, of(USERNAME), of(PASSWORD), HOST, of(NAMESPACE), of(PROJECT)
-                },
-                {
-                    "url with username, password and port",
-                    "https://username:pAssw0rd@git.company-name-42.com:42/graphic/awesome-game.git",
-                    PROTOCOL, of(USERNAME), of(PASSWORD), "git.company-name-42.com:42", of(NAMESPACE), of(PROJECT)
-                },
-            });
-        }
+        @ParameterizedTest(name = "{index}: {0}")
+        @MethodSource("provideData")
+        void shouldProperlyInitialize(String caseName,
+                                      String url,
+                                      String protocol,
+                                      Optional<String> username,
+                                      Optional<String> password,
+                                      String host,
+                                      Optional<String> namespace,
+                                      Optional<String> project) {
 
-        @Test
-        public void shouldProperlyInitialize() {
-            final GitRepositoryUrl gitRepositoryUrl = GitRepositoryUrl.from(url);
+            GitRepositoryUrl gitRepositoryUrl = GitRepositoryUrl.from(url);
+
             assertEquals(protocol, gitRepositoryUrl.getProtocol());
             assertEquals(host, gitRepositoryUrl.getHost());
             assertEquals(namespace, gitRepositoryUrl.getNamespace());
             assertEquals(project, gitRepositoryUrl.getProject());
-            assertEquals(userName, gitRepositoryUrl.getUsername());
+            assertEquals(username, gitRepositoryUrl.getUsername());
             assertEquals(password, gitRepositoryUrl.getPassword());
         }
     }
 
-    @RunWith(Parameterized.class)
-    public static class Negative {
+    @Nested
+    @DisplayName("Negative cases")
+    class Negative {
 
-        private final String caseName;
-        private final String url;
-
-        public Negative(final String caseName, final String url) {
-            this.caseName = caseName;
-            this.url = url;
+        static Stream<Arguments> provideData() {
+            return Stream.of(
+                    Arguments.of("null", null),
+                    Arguments.of("empty", ""),
+                    Arguments.of("password without username",
+                            "https://:pAssw0rd@git.company-name-42.com/graphic/awesome-game.git")
+            );
         }
 
-        @Parameters(name = "{index}: when {0} passed")
-        public static Collection<Object[]> data() {
-            return Arrays.asList(new Object[][] {
-                {
-                    "null",
-                    null
-                },
-                {
-                    "url is empty string",
-                    ""
-                },
-                {
-                    "url with password but without username",
-                    "https://:pAssw0rd@git.company-name-42.com/graphic/awesome-game.git"
-                }
-            });
-        }
-
-        @Test(expected = Exception.class)
-        public void shouldThrowException() {
-            GitRepositoryUrl.from(url);
+        @ParameterizedTest(name = "{index}: {0}")
+        @MethodSource("provideData")
+        void shouldThrowException(String caseName, String url) {
+            assertThrows(Exception.class, () -> GitRepositoryUrl.from(url));
         }
     }
 }

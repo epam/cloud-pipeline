@@ -15,28 +15,30 @@
  */
 
 plugins {
-    id "java"
-    id "jacoco"
-    id "io.spring.dependency-management" version "1.0.6.RELEASE"
-    id "org.springframework.boot" version "2.0.2.RELEASE"
-    id "org.sonarqube" version "2.6.1"
+    id 'java'
+    id 'jacoco'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'org.sonarqube' version '2.6.1'
 }
 
 group "com.epam.pipeline"
 
-
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar() // Modern way to create sources jar
+}
 
 bootJar {
-    archiveName "vm-monitor.jar"
+    archiveFileName = "vm-monitor.jar"
     manifest {
         attributes(
-                "Implementation-Version": "$version")
+                "Implementation-Version": version)
     }
 }
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 }
 
@@ -47,23 +49,22 @@ dependencies {
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
     }
 
     //SpringBoot
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
-
-    // Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-data-jpa", version: springBootVersion
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-log4j2", version: springBootVersion
 
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
 
     // Retrofit
     implementation group: "com.squareup.retrofit2", name: "retrofit", version: retrofitVersion
     implementation group: "com.squareup.retrofit2", name: "converter-jackson", version: retrofitVersion
+    implementation group: "com.squareup.retrofit2", name: "converter-scalars", version: retrofitVersion
     implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttpVersion
 
     // Jackson
@@ -71,6 +72,8 @@ dependencies {
 
     //Email notifications
     implementation group: 'org.apache.commons', name: 'commons-email', version: '1.5'
+    implementation group: 'org.apache.commons', name: "commons-collections4", version: "4.0"
+    implementation 'commons-io:commons-io:2.4'
     implementation group: 'org.apache.velocity', name: 'velocity', version: '1.7'
     implementation group: 'org.apache.velocity', name: 'velocity-tools', version: '2.0'
 
@@ -90,18 +93,10 @@ dependencies {
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
-    testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
-
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
-    testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
+    testAnnotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
 }
 
 test {
     useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
+    reports.html.required = true
 }

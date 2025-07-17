@@ -1,6 +1,6 @@
 rootProject.name = 'pipeline'
 
-include 'core'
+/*include 'core'
 include 'api'
 include 'client'
 include 'pipe-cli'
@@ -8,10 +8,12 @@ include 'jwt-generator'
 include 'notifier:smtp'
 include 'docker-comp-scan'
 include 'elasticsearch-agent'
-include 'cloud-pipeline-common:model'
+include 'core'
+include 'data-transfer-service'*/
 include 'cloud-pipeline-common:event-sourcing-java-client'
-include 'data-transfer-service'
+include 'cloud-pipeline-common:model'
 include 'vm-monitor'
+/*
 include 'data-sharing-service'
 include 'data-sharing-service:api'
 include 'data-sharing-service:client'
@@ -23,3 +25,4 @@ include 'git-reader'
 include 'monitoring-service'
 include 'storage-lifecycle-service'
 include 'workflows'
+*/

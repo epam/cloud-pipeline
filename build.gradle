@@ -41,9 +41,9 @@ task cleanPipe(type: Delete) {
 task buildPipe(type: Tar, dependsOn: cleanPipe) {
     group = 'build'
     from("$project.rootDir/workflows/pipe-common/")
-    baseName = 'pipe-common'
-    destinationDir = file("$project.rootDir/dist/")
-    extension = 'tar.gz'
+    archiveBaseName = 'pipe-common'
+    destinationDirectory = file("$project.rootDir/dist/")
+    archiveExtension = 'tar.gz'
     compression = Compression.GZIP
     doLast {
         delete "$project.rootDir/api/src/main/resources/static/pipe-common.tar.gz"
@@ -66,9 +66,9 @@ task buildDoc(type: Tar) {
     dependsOn runMkdocs
     from("$rootDir/docs/site") {
     }
-    archiveName = "cloud-pipeline-docs.tar.gz"
-    destinationDir file("$rootDir/dist")
-    extension = 'tar.gz'
+    archiveFileName = "cloud-pipeline-docs.tar.gz"
+    destinationDirectory = file("$rootDir/dist")
+    archiveExtension = 'tar.gz'
     compression = Compression.GZIP
 }
 
@@ -187,10 +187,10 @@ task installDist() {
 }
 
 task distZip(type: Zip, dependsOn: installDist) {
-    version = project.version
+    version = project.version.toString()
     group = "distribution"
-    archiveName "cloud-pipeline.${version}.zip"
-    destinationDir(file("$project.buildDir/install/dist"))
+    archiveFileName = "cloud-pipeline.${version}.zip"
+    destinationDirectory = file("$project.buildDir/install/dist")
     from("$project.buildDir/install/bin/") {
         into "bin/"
     }
@@ -201,17 +201,17 @@ task distTar(type: Tar, dependsOn: installDist) {
     version = project.version
     group = "distribution"
     compression = Compression.GZIP
-    archiveName "cloud-pipeline.${version}.tgz"
-    destinationDir(file("$project.buildDir/install/dist"))
+    archiveFileName = "cloud-pipeline.${version}.tgz"
+    destinationDirectory = file("$project.buildDir/install/dist")
     from("$project.buildDir/install/bin/") {
         into "bin/"
     }
     include "**/**"
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.10.2'
-    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+wrapper {
+    gradleVersion = '8.7'
+    distributionType = Wrapper.DistributionType.ALL
 }
 
 task clean(type: Delete) {
