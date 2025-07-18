@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
@@ -153,6 +154,11 @@ public class ClusterApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<PodInstance> getCorePods() {
         return podsManager.getCorePods();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PodInstance> getPodsByLabels(final Map<String, String> labels) {
+        return podsManager.getPodsByLabels(labels);
     }
 
     @PreAuthorize(ADMIN_ONLY)

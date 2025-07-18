@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -78,5 +79,13 @@ public class ContainerInstance {
             return containers.stream().map(c -> new ContainerInstance(c, statuses)).collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    public boolean isRunning() {
+        return Objects.nonNull(status) && ContainerInstanceStatus.RUNNING.equals(status.getStatus());
+    }
+
+    public boolean isPending() {
+        return Objects.nonNull(status) && ContainerInstanceStatus.WAITING.equals(status.getStatus());
     }
 }

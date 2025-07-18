@@ -21,10 +21,14 @@ import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
+import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.user.OnlineUsers;
 import org.apache.commons.collections4.ListUtils;
@@ -34,6 +38,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -108,5 +113,13 @@ public class CloudPipelineAPIClient {
 
     public void archiveRuns() {
         executor.execute(cloudPipelineAPI.archiveRuns());
+    }
+
+    public List<PodInstance> filterPods(final Map<String, String> monitoredLabels) {
+        return executor.execute(cloudPipelineAPI.filterPods(monitoredLabels));
+    }
+
+    public List<NodeInstance> filterNodes(final FilterNodesVO filter, final MachineType machineType) {
+        return executor.execute(cloudPipelineAPI.filterNodes(filter, machineType));
     }
 }

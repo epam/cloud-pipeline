@@ -44,8 +44,8 @@ public class NodePoolUsageEntity {
     private LocalDateTime logDate;
 
     private Long nodePoolId;
-
     private Integer totalNodesCount;
-
     private Integer occupiedNodesCount;
+    private Integer pendingRunsCount;
+    private Integer activeRunsCount;
 }

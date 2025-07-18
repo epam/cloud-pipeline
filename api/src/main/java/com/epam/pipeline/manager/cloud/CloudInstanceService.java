@@ -55,7 +55,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     default Map<String, String> getPoolLabels(final NodePool pool) {
         final Map<String, String> instanceLabels = new HashMap<>();
         instanceLabels.put(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
-        instanceLabels.putAll(MapUtils.emptyIfNull(pool.getKubeLabels()));
+        MapUtils.emptyIfNull(pool.getKubeLabels())
+                .forEach((key, label) -> instanceLabels.put(key, label.getValue()));
         return instanceLabels;
     }
 
