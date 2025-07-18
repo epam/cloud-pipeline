@@ -24,6 +24,11 @@ import lombok.Setter;
 @Setter
 public class ContainerInstanceStatus {
 
+    public static final String RUNNING = "Running";
+    public static final String TERMINATED = "Terminated";
+    public static final String WAITING = "Waiting";
+    public static final String UNKNOWN = "Unknown";
+
     private String status;
     private String reason;
     private String message;
@@ -34,19 +39,19 @@ public class ContainerInstanceStatus {
     public ContainerInstanceStatus(ContainerState state) {
         this();
         if (state.getRunning() != null) {
-            this.status = "Running";
+            this.status = RUNNING;
             this.timestamp = state.getRunning().getStartedAt();
         } else if (state.getTerminated() != null) {
-            this.status = "Terminated";
+            this.status = TERMINATED;
             this.timestamp = state.getTerminated().getFinishedAt();
             this.message = state.getTerminated().getMessage();
             this.reason = state.getTerminated().getReason();
         } else if (state.getWaiting() != null) {
-            this.status = "Waiting";
+            this.status = WAITING;
             this.message = state.getWaiting().getMessage();
             this.reason = state.getWaiting().getReason();
         } else {
-            this.status = "Unknown";
+            this.status = UNKNOWN;
         }
     }
 
