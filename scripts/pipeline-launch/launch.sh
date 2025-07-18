@@ -499,69 +499,77 @@ EOF
                   fi
             fi
             if [ "$CP_OS" == "rocky" ]; then
-                  echo "[WARN] Extra repositories mirrors are requested for ${CP_OS}, but it is not supported yet"
-#                   cat > /etc/yum.repos.d/cloud-pipeline-extra.repo <<EOF
-# [appstream]
-# name=Rocky Linux \$releasever - AppStream
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/AppStream/\$basearch/os/
-# gpgcheck=0
-# enabled=1
+                  if [ -z "$CP_REPO_BASE_EXTRA_URL_ROCKY" ] && [ "$CP_REPO_BASE_EXTRA_URL_DEFAULT" ]; then
+                        CP_REPO_BASE_EXTRA_URL_ROCKY="$CP_REPO_BASE_EXTRA_URL_DEFAULT/rocky"
+                  fi
+                  
+                  if [ "$CP_REPO_BASE_EXTRA_URL_ROCKY" ]; then
+                        echo "Extra repositories mirror is being configured: $CP_REPO_BASE_EXTRA_URL_ROCKY"
 
-# [baseos]
-# name=Rocky Linux \$releasever - BaseOS
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/BaseOS/\$basearch/os/
-# gpgcheck=0
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/BaseOS/\$basearch/os/
-# enabled=1
+                        if [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]; then
+                              echo "[INFO] Default repositories list (/etc/yum.repos.d/) is requested to be delete via CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS"
+                              rm -f /etc/yum.repos.d/Rocky-*.repo
+                        fi
 
-# [devel]
-# name=Rocky Linux \$releasever - Devel WARNING! FOR BUILDROOT AND KOJI USE
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/Devel/\$basearch/os/
-# gpgcheck=0
-# enabled=1
+                        cat > /etc/yum.repos.d/cloud-pipeline-extra.repo <<EOF
+[appstream]
+name=Rocky Linux ${CP_VER} - AppStream
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/AppStream/\$basearch/os/
+gpgcheck=0
+enabled=1
 
-# [extras]
-# name=Rocky Linux \$releasever - Extras
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/extras/\$basearch/os/
-# gpgcheck=0
-# enabled=1
+[baseos]
+name=Rocky Linux ${CP_VER} - BaseOS
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/BaseOS/\$basearch/os/
+gpgcheck=0
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/BaseOS/\$basearch/os/
+enabled=1
 
-# [ha]
-# name=Rocky Linux \$releasever - HighAvailability
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/HighAvailability/\$basearch/os/
-# gpgcheck=0
-# enabled=0
+[extras]
+name=Rocky Linux ${CP_VER} - Extras
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/extras/\$basearch/os/
+gpgcheck=0
+enabled=1
 
-# [nfv]
-# name=Rocky Linux \$releasever - NFV
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/nfv/\$basearch/os/
-# gpgcheck=0
-# enabled=0
+[ha]
+name=Rocky Linux ${CP_VER} - HighAvailability
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/HighAvailability/\$basearch/os/
+gpgcheck=0
+enabled=0
 
-# [plus]
-# name=Rocky Linux \$releasever - Plus
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/plus/\$basearch/os/
-# gpgcheck=0
-# enabled=1
+[nfv]
+name=Rocky Linux ${CP_VER} - NFV
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/nfv/\$basearch/os/
+gpgcheck=0
+enabled=0
 
-# [powertools]
-# name=Rocky Linux \$releasever - PowerTools
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/PowerTools/\$basearch/os/
-# gpgcheck=0
-# enabled=1
+[plus]
+name=Rocky Linux ${CP_VER} - Plus
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/plus/\$basearch/os/
+gpgcheck=0
+enabled=1
 
-# [rt]
-# name=Rocky Linux \$releasever - Realtime
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/RT/\$basearch/os/
-# gpgcheck=0
-# enabled=0
+[powertools]
+name=Rocky Linux ${CP_VER} - PowerTools
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/PowerTools/\$basearch/os/
+gpgcheck=0
+enabled=1
 
-# [resilient-storage]
-# name=Rocky Linux \$releasever - ResilientStorage
-# baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/\$releasever/ResilientStorage/\$basearch/os/
-# gpgcheck=0
-# enabled=0
-# EOF
+[rt]
+name=Rocky Linux ${CP_VER} - Realtime
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/RT/\$basearch/os/
+gpgcheck=0
+enabled=0
+
+[resilient-storage]
+name=Rocky Linux ${CP_VER} - ResilientStorage
+baseurl=${CP_REPO_BASE_EXTRA_URL_ROCKY}/${CP_VER}/ResilientStorage/\$basearch/os/
+gpgcheck=0
+enabled=0
+EOF
+                  else
+                        echo "[WARN] Extra repositories mirrors are requested for ${CP_OS}, but no URL is provided via CP_REPO_BASE_EXTRA_URL_UBUNTU or CP_REPO_BASE_EXTRA_URL_DEFAULT"
+                  fi
             fi
       fi
 
