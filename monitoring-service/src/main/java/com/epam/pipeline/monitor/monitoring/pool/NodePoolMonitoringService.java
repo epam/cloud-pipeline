@@ -16,16 +16,26 @@
 
 package com.epam.pipeline.monitor.monitoring.pool;
 
+import com.epam.pipeline.entity.cluster.ContainerInstance;
+import com.epam.pipeline.entity.cluster.MachineType;
+import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
+import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,10 +68,46 @@ public class NodePoolMonitoringService implements MonitoringService {
         final long activePoolRuns = client.loadRunsByPool(pool.getId()).stream()
                 .filter(run -> Objects.nonNull(run.getInstance()) && Objects.nonNull(run.getInstance().getPoolId()))
                 .count();
-        return NodePoolUsage.builder()
+        final NodePoolUsage.NodePoolUsageBuilder builder = NodePoolUsage.builder()
                 .nodePoolId(pool.getId())
                 .totalNodesCount(pool.getCount())
-                .occupiedNodesCount(Math.toIntExact(activePoolRuns))
+                .occupiedNodesCount(Math.toIntExact(activePoolRuns));
+        addRunMetrics(pool, builder);
+        return builder
                 .build();
+    }
+
+    private void addRunMetrics(final NodePool pool,
+                               final NodePoolUsage.NodePoolUsageBuilder builder) {
+        final Map<String, String> monitoredLabels = MapUtils.emptyIfNull(pool.getKubeLabels())
+                .entrySet()
+                .stream()
+                .filter(entry -> Objects.nonNull(entry.getKey()) &&
+                        Objects.nonNull(entry.getValue())
+                        && entry.getValue().isMonitored())
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
+        if (MapUtils.isEmpty(monitoredLabels)) {
+            return;
+        }
+        final List<PodInstance> pods = ListUtils.emptyIfNull(client.filterPods(monitoredLabels));
+        builder.pendingRunsCount(pods.stream()
+                .filter(pod -> ListUtils.emptyIfNull(pod.getContainers())
+                        .stream()
+                        .anyMatch(ContainerInstance::isPending))
+                .count());
+
+        //Load all nodes by labels
+        final FilterNodesVO filter = new FilterNodesVO();
+        final Map<String, String> poolLabels = new HashMap<>();
+        filter.setLabels(poolLabels);
+        final Set<String> poolNodes = ListUtils.emptyIfNull(client.filterNodes(filter, MachineType.KUBE))
+                .stream().map(NodeInstance::getName)
+                .collect(Collectors.toSet());
+        builder.activeRunsCount(pods.stream()
+                .filter(pod -> poolNodes.contains(pod.getName()) &&
+                        ListUtils.emptyIfNull(pod.getContainers())
+                                .stream()
+                                .allMatch(ContainerInstance::isRunning))
+                .count());
     }
 }

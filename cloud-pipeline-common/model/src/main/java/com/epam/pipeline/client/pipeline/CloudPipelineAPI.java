@@ -19,8 +19,10 @@ package com.epam.pipeline.client.pipeline;
 import com.epam.pipeline.entity.app.ApplicationInfo;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -351,4 +353,11 @@ public interface CloudPipelineAPI {
 
     @POST("runs/archive")
     Call<Result<Boolean>> archiveRuns();
+
+    @POST("cluster/pods/filter")
+    Call<Result<List<PodInstance>>> filterPods(@Body Map<String, String> monitoredLabels);
+
+    @POST("cluster/node/filter")
+    Call<Result<List<NodeInstance>>> filterNodes(@Body FilterNodesVO filter,
+                                                 @Query("machineType") MachineType machineType);
 }
