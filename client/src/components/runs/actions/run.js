@@ -77,7 +77,8 @@ import {
 } from '../../../utils/limit-mounts/check-cloud-region-rules';
 import {getUserTagsValidationResult} from '../run-tags/utilities';
 import {
-  ensureValidReservationParametersForLaunchPayloads
+  ensureValidReservationParametersForLaunchPayloads,
+  findReservationParameterConfig
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
@@ -818,6 +819,14 @@ export class RunConfirmation extends React.Component {
     return false;
   }
 
+  get isInstanceTypeWithReservation () {
+    const {
+      preferences
+    } = this.props;
+    const {name} = this.currentInstanceType || {};
+    return Boolean(findReservationParameterConfig(name, preferences));
+  }
+
   setOnDemand = (onDemand) => {
     this.setState({
       isSpot: !onDemand
@@ -951,6 +960,7 @@ export class RunConfirmation extends React.Component {
     const {size, allowedWarning} = this.props.versionErrors || {};
     const {soft, hard} = size || {};
     const {hasStorageConflicts} = this.state;
+    const {isInstanceTypeWithReservation} = this;
     return (
       <div>
         {allowedWarning ? (
@@ -991,7 +1001,10 @@ export class RunConfirmation extends React.Component {
             message={this.props.warning} />
         }
         {
-          this.props.onDemandSelectionAvailable && this.props.isSpot && this.state.isSpot &&
+          this.props.onDemandSelectionAvailable &&
+          this.props.isSpot &&
+          this.state.isSpot &&
+          !isInstanceTypeWithReservation &&
           <Alert
             style={{margin: 2}}
             key="spot warning"
@@ -1312,16 +1325,20 @@ export class RunConfirmation extends React.Component {
             showIcon
           />
         </Provider>
-        <RunPayloadEstimatedPriceAlert
-          style={{margin: 2}}
-          pipelineId={this.props.pipelineId}
-          pipelineVersion={this.props.pipelineVersion}
-          pipelineConfiguration={this.props.pipelineConfiguration}
-          instanceType={this.state.instanceType}
-          instanceDisk={this.props.hddSize}
-          spot={this.state.isSpot}
-          regionId={this.props.cloudRegionId}
-        />
+        {
+          !isInstanceTypeWithReservation && (
+            <RunPayloadEstimatedPriceAlert
+              style={{margin: 2}}
+              pipelineId={this.props.pipelineId}
+              pipelineVersion={this.props.pipelineVersion}
+              pipelineConfiguration={this.props.pipelineConfiguration}
+              instanceType={this.state.instanceType}
+              instanceDisk={this.props.hddSize}
+              spot={this.state.isSpot}
+              regionId={this.props.cloudRegionId}
+            />
+          )
+        }
         <div
           style={{margin: 2, padding: '10px 0'}}
         >

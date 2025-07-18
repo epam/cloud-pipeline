@@ -103,6 +103,9 @@ import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import {
+  findReservationParameterConfig
+} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1783,6 +1786,8 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
+    const {nodeType: instanceType} = instance || {};
+    const isReservationParameterInstance = Boolean(findReservationParameterConfig(instanceType));
 
     if (pending || !run) {
       Title = <h1>Run </h1>;
@@ -2061,7 +2066,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       let price;
-      if (pricePerHour) {
+      if (pricePerHour && !isReservationParameterInstance) {
         const adjustPrice = (value) => {
           if (value === 0) {
             return 0;

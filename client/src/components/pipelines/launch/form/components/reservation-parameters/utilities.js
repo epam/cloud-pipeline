@@ -47,9 +47,8 @@ export function reservationParametersDiffer (a, b) {
   return aCpu !== bCpu || aGpu !== bGpu || aRam !== bRam;
 }
 
-export async function getReservationParametersConfig (instanceType) {
-  await preferences.fetchIfNeededOrWait();
-  const {launchReservationParameters = {}} = preferences;
+export function findReservationParameterConfig (instanceType, prefs = preferences) {
+  const {launchReservationParameters = {}} = prefs;
   if (instanceType && launchReservationParameters) {
     for (const [key, cfg] of Object.entries(launchReservationParameters || {})) {
       let l = key.replace(/\*/g, '____STAR____');
@@ -62,6 +61,11 @@ export async function getReservationParametersConfig (instanceType) {
     }
   }
   return undefined;
+}
+
+export async function getReservationParametersConfig (instanceType) {
+  await preferences.fetchIfNeededOrWait();
+  return findReservationParameterConfig(instanceType, preferences);
 }
 
 export async function getInstanceType (instanceType) {

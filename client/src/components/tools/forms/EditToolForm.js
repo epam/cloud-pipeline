@@ -114,10 +114,11 @@ import {
 import ConfigurePlugins from '../../plugins/configure';
 import ReservationParameters from '../../pipelines/launch/form/components/reservation-parameters';
 import {
-  buildLaunchParametersFromReservationParameters,
+  buildLaunchParametersFromReservationParameters, findReservationParameterConfig,
   readReservationParameters,
   reservationParametersDiffer
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import {EXEC_ENVIRONMENT} from "../../pipelines/launch/form/utilities/launch-form-sections";
 
 const Panels = {
   endpoints: 'endpoints',
@@ -811,6 +812,14 @@ export default class EditToolForm extends React.Component {
       .filter(v => availableMasterNodeTypes.indexOf(v.isSpot) >= 0);
   }
 
+  get isInstanceTypeWithReservation () {
+    const {
+      preferences
+    } = this.props;
+    const instanceTypeValue = this.props.form.getFieldValue('instanceType');
+    return Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+  }
+
   @computed
   get multiplyValueBy () {
     if (this.state.launchCluster) {
@@ -1250,6 +1259,7 @@ export default class EditToolForm extends React.Component {
   });
 
   renderExecutionEnvironment = () => {
+    const {isInstanceTypeWithReservation} = this;
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
       let allowSensitive = getFieldValue('allowSensitive');
@@ -1286,9 +1296,16 @@ export default class EditToolForm extends React.Component {
                       placeholder="Instance type"
                       optionFilterProp="children"
                       filterOption={
-                      (input, option) =>
-                        option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-                      {getSelectOptions(this.allowedInstanceTypes)}
+                        (input, option) =>
+                          (option.props.searchValue || option.props.value)
+                            .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                      {
+                        getSelectOptions(
+                          this.allowedInstanceTypes, {
+                            showReservationTag: true,
+                            preferences: this.props.preferences
+                          })
+                      }
                     </Select>
                 )}
               </Form.Item>
@@ -1330,7 +1347,10 @@ export default class EditToolForm extends React.Component {
                   {
                     initialValue: this.getPriceTypeInitialValue()
                   })(
-                    <Select disabled={this.state.pending || this.props.readOnly} onChange={this.handleIsSpotChange}>
+                    <Select
+                      disabled={this.state.pending || this.props.readOnly || isInstanceTypeWithReservation}
+                      onChange={this.handleIsSpotChange}
+                    >
                     {
                       this.allowedPriceTypes
                         .map(t => <Select.Option key={`${t.isSpot}`}>{t.name}</Select.Option>)

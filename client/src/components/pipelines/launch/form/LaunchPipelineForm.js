@@ -156,6 +156,7 @@ import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
 import {
   buildLaunchParametersFromReservationParameters,
+  findReservationParameterConfig,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
 
@@ -860,6 +861,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {detachedConfigurations = []} = this.state;
     const {currentConfigurationName} = this.props;
     return detachedConfigurations.find((d) => d.name === currentConfigurationName);
+  }
+
+  getIsInstanceTypeWithReservation () {
+    const {
+      detached,
+      preferences
+    } = this.props;
+    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return detached
+      ? false
+      : Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
   }
 
   getDefaultRootEntityId () {
@@ -1999,7 +2011,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       averagePrice,
       pending
     } = this.state.estimatedPrice;
-    if (pending || !this.estimatedPriceSectionVisible) {
+    const isInstanceTypeWithReservation = this.getIsInstanceTypeWithReservation();
+    if (isInstanceTypeWithReservation || pending || !this.estimatedPriceSectionVisible) {
       return undefined;
     }
     let priceContent;
@@ -2838,13 +2851,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             onChange={this.instanceTypeChanged}
             filterOption={
               (input, option) =>
-                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                (option.props.searchValue || option.props.value)
+                  .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
               getSelectOptions(
                 this.instanceTypes,
                 {
                   hyperThreadingDisabled: this.hyperThreadingDisabled,
-                  displayRegion: this.instanceTypesMergedForRegions
+                  displayRegion: this.instanceTypesMergedForRegions,
+                  preferences: this.props.preferences,
+                  showReservationTag: !this.props.detached
                 }
               )
             }
@@ -3415,6 +3431,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    const isInstanceTypeWithReservation = this.getIsInstanceTypeWithReservation();
     const initialValue = this.correctPriceTypeValue(this.getDefaultValue('is_spot'));
     return (
       <FormItem
@@ -3443,6 +3460,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Select
                   onSelect={(isSpot) => this.evaluateEstimatedPrice({isSpot})}
                   disabled={
+                    isInstanceTypeWithReservation ||
                     !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
                     this.props.defaultPriceTypeIsLoading
