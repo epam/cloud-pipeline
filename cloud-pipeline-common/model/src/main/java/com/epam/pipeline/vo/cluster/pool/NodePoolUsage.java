@@ -33,4 +33,6 @@ public class NodePoolUsage {
     private Long nodePoolId;
     private Integer totalNodesCount;
     private Integer occupiedNodesCount;
+    private Long pendingRunsCount;
+    private Long activeRunsCount;
 }
