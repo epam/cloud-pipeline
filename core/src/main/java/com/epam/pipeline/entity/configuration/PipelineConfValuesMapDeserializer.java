@@ -121,7 +121,8 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 }
                 final JsonNode scheme = child.get(SCHEME_FIELD);
                 if (hasValue(scheme) && scheme.isObject()) {
-                    parameter.setScheme(mapper.readValues(scheme.traverse(), new TypeReference<Object>(){}));
+                    parameter.setScheme(mapper.readValue(scheme.traverse(),
+                            new TypeReference<Map<String, Object>>(){}));
                 }
             }
             parameters.put(name, parameter);

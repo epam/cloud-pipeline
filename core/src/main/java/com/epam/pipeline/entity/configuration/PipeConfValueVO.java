@@ -63,7 +63,7 @@ public class PipeConfValueVO {
 
     private List<Map<String, String>> validation;
     private Map<String, Object> annotation;
-    private Object scheme;
+    private Map<String, Object> scheme;
 
     /**
      * String expression to determine visibility of a param

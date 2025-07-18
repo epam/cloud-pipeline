@@ -70,7 +70,7 @@ public class PipelineRunTest {
     public void shouldParseParamWithTypeValueParam() {
         PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setParams(glueParams(glueParam(PARAM1_NAME, PARAM1_VALUE, PARAM1_TYPE),
-                glueParam(PARAM2_NAME, PARAM2_VALUE, PARAM2_TYPE)));
+                glueParam(PARAM2_NAME, "value====", PARAM2_TYPE)));
         pipelineRun.parseParameters();
         List<PipelineRunParameter> pipelineRunParameters = pipelineRun.getPipelineRunParameters();
         assertThat(pipelineRunParameters.size(), is(2));
@@ -80,7 +80,7 @@ public class PipelineRunTest {
         assertThat(pipelineRunParameters.get(0).getType(), is(PARAM1_TYPE));
 
         assertThat(pipelineRunParameters.get(1).getName(), is(PARAM2_NAME));
-        assertThat(pipelineRunParameters.get(1).getValue(), is(PARAM2_VALUE));
+        assertThat(pipelineRunParameters.get(1).getValue(), is("value===="));
         assertThat(pipelineRunParameters.get(1).getType(), is(PARAM2_TYPE));
     }
 
