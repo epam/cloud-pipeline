@@ -41,6 +41,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class NodePoolMonitoringService implements MonitoringService {
+
+    private static final String NODE_POOL_ID_LABEL = "pool_id";
+
     private final CloudPipelineAPIClient client;
     private final String monitorEnabledPreferenceName;
 
@@ -99,12 +102,13 @@ public class NodePoolMonitoringService implements MonitoringService {
         //Load all nodes by labels
         final FilterNodesVO filter = new FilterNodesVO();
         final Map<String, String> poolLabels = new HashMap<>();
+        poolLabels.put(NODE_POOL_ID_LABEL, pool.getId().toString());
         filter.setLabels(poolLabels);
         final Set<String> poolNodes = ListUtils.emptyIfNull(client.filterNodes(filter, MachineType.KUBE))
                 .stream().map(NodeInstance::getName)
                 .collect(Collectors.toSet());
         builder.activeRunsCount(pods.stream()
-                .filter(pod -> poolNodes.contains(pod.getName()) &&
+                .filter(pod -> poolNodes.contains(pod.getNodeName()) &&
                         ListUtils.emptyIfNull(pod.getContainers())
                                 .stream()
                                 .allMatch(ContainerInstance::isRunning))
