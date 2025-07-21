@@ -152,6 +152,10 @@ public class PipelineExecutor {
                         podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
                     labels.put(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE);
                 }
+                // for non-standard pod assign policy, save selector to pod labels
+                if (!podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
+                    labels.put(podAssignPolicy.getSelector().getLabel(), podAssignPolicy.getSelector().getValue());
+                }
                 labels.put(KubernetesConstants.RUN_ID_LABEL, runIdLabel);
             } else {
                 nodeSelector.put("skill", "luigi");
