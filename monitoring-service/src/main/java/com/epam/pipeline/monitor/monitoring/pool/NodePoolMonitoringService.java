@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 public class NodePoolMonitoringService implements MonitoringService {
 
     private static final String NODE_POOL_ID_LABEL = "pool_id";
+    private static final String PENDING_PHASE = "Pending";
 
     private final CloudPipelineAPIClient client;
     private final String monitorEnabledPreferenceName;
@@ -94,7 +95,8 @@ public class NodePoolMonitoringService implements MonitoringService {
         }
         final List<PodInstance> pods = ListUtils.emptyIfNull(client.filterPods(monitoredLabels));
         builder.pendingRunsCount(pods.stream()
-                .filter(pod -> ListUtils.emptyIfNull(pod.getContainers())
+                .filter(pod -> PENDING_PHASE.equals(pod.getPhase()) &&
+                        ListUtils.emptyIfNull(pod.getContainers())
                         .stream()
                         .anyMatch(ContainerInstance::isPending))
                 .count());
