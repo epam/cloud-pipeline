@@ -31,4 +31,6 @@ public class NodePoolUsageReportRecord {
     private Integer utilization;
     private Integer nodesCount;
     private Integer occupiedNodesCount;
+    private Integer pendingRunsCount;
+    private Integer activeRunsCount;
 }

@@ -102,11 +102,15 @@ public class NodePoolReportService {
         final Integer nodesCount = calculateSampleMax(NodePoolUsage::getTotalNodesCount, hourUsages);
         final Integer occupiedNodesCount = calculateSampleMax(NodePoolUsage::getOccupiedNodesCount, hourUsages);
         final Integer utilization = calculateSampleMax(this::calculateHourUtilization, hourUsages);
+        final Integer activeRunsCount = calculateSampleMax(NodePoolUsage::getActiveRunsCount, hourUsages);
+        final Integer pendingRunsCount = calculateSampleMax(NodePoolUsage::getPendingRunsCount, hourUsages);
         return NodePoolUsageReportRecord.builder()
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
                 .occupiedNodesCount(occupiedNodesCount)
                 .nodesCount(nodesCount)
+                .activeRunsCount(activeRunsCount)
+                .pendingRunsCount(pendingRunsCount)
                 .utilization(utilization)
                 .build();
     }
@@ -145,6 +149,8 @@ public class NodePoolReportService {
                         NodePoolUsageReportRecord::getOccupiedNodesCount, hourlyUsage))
                 .nodesCount(calculateSampleMedian(NodePoolUsageReportRecord::getNodesCount, hourlyUsage))
                 .utilization(calculateSampleMedian(NodePoolUsageReportRecord::getUtilization, hourlyUsage))
+                .activeRunsCount(calculateSampleMedian(NodePoolUsageReportRecord::getActiveRunsCount, hourlyUsage))
+                .pendingRunsCount(calculateSampleMedian(NodePoolUsageReportRecord::getPendingRunsCount, hourlyUsage))
                 .build();
     }
 
