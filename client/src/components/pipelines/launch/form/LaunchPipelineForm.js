@@ -2633,7 +2633,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           parameters={parameters}
           onChange={this.onParametersChange}
           system={system}
-          disabled={(this.props.readOnly && !this.props.canExecute) || (detached && pipeline)}
+          disabled={(this.props.readOnly && !this.props.canExecute) || (!!detached && !!pipeline)}
         />
       </div>
     ];

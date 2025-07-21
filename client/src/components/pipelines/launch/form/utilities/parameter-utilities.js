@@ -486,23 +486,55 @@ async function mergeParametersWithConfiguration (parameters, options) {
   const cfg = configurationParameters ||
     await readParametersFromConfiguration(configuration, options);
   const result = cfg.map((p) => ({...p}));
-  for (const [name, value] of Object.entries(parameters || {})) {
-    const existing = result.find((p) => p.name === name);
-    const d = getParameterConfig(name, value, {detached, pipeline});
-    if (existing) {
-      if (d.value !== undefined && d.value !== null) {
-        existing.value = d.value;
+  if (VERBOSE) {
+    console.groupCollapsed('Merging parameters');
+    console.log('parameters to merge:', parameters);
+    console.log('current parameters:', result.map((r) => ({...r})));
+    console.log('detached configuration:', Boolean(detached));
+    console.log('pipeline assigned:', Boolean(pipeline));
+  }
+  try {
+    for (const [name, value] of Object.entries(parameters || {})) {
+      if (VERBOSE) {
+        console.groupCollapsed(name);
       }
-    } else {
-      result.push({
-        key: generateKey(result),
-        name,
-        type: d.type,
-        value: d.value,
-        config: d,
-        configs: [d],
-        system: d.system
-      });
+      const existing = result.find((p) => p.name === name);
+      const d = getParameterConfig(name, value, {detached, pipeline});
+      if (existing) {
+        if (d.value !== undefined && d.value !== null) {
+          if (VERBOSE) {
+            console.log('current value:', existing.value);
+            console.log('new value:', d.value);
+          }
+          existing.value = d.value;
+        } else if (VERBOSE) {
+          console.log('current value:', existing.value);
+        }
+      } else if (!detached || !pipeline) {
+        if (VERBOSE) {
+          console.log('setting value:', d.value);
+        }
+        result.push({
+          key: generateKey(result),
+          name,
+          type: d.type,
+          value: d.value,
+          config: d,
+          configs: [d],
+          system: d.system
+        });
+      } else {
+        console.log('skipping');
+      }
+      if (VERBOSE) {
+        console.groupEnd();
+      }
+    }
+  } catch (error) {
+    console.warn(`error merging parameters: ${error.message}`);
+  } finally {
+    if (VERBOSE) {
+      console.groupEnd();
     }
   }
   return result;
