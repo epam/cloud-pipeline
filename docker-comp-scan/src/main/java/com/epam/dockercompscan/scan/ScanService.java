@@ -154,8 +154,8 @@ public class ScanService {
         try (ArchiveInputStream tarStream = new TarArchiveInputStream(gzipInputStream)) {
             ArchiveEntry entry;
             while ((entry = tarStream.getNextEntry()) != null) {
+                String entryName = entry.getName();
                 try {
-                    String entryName = entry.getName();
                     final File entryFile = new File(layerFolder, entryName);
                     if (entry.isDirectory()) {
                         Files.createDirectories(entryFile.toPath());
