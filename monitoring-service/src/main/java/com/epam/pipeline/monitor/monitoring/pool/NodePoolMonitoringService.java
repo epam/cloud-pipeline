@@ -95,7 +95,7 @@ public class NodePoolMonitoringService implements MonitoringService {
         }
         final List<PodInstance> pods = ListUtils.emptyIfNull(client.filterPods(monitoredLabels));
         builder.pendingRunsCount(pods.stream()
-                .filter(pod -> PENDING_PHASE.equals(pod.getPhase()) &&
+                .filter(pod -> PENDING_PHASE.equals(pod.getPhase()) ||
                         ListUtils.emptyIfNull(pod.getContainers())
                         .stream()
                         .anyMatch(ContainerInstance::isPending))
