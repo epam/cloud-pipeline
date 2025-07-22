@@ -17,7 +17,10 @@
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
-import {reservedParameters} from './parameters';
+import {
+  systemCapabilitiesParameters,
+  reservedParameters
+} from './parameters';
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
 import {base64toString, stringToBase64} from '../../../../../utils/base64';
@@ -1497,8 +1500,11 @@ export function getCapabilitiesParameters (options = {}) {
         .concat(children.reduce((acc, cur) => acc.concat(getParameters(cur)), []))
         .concat(onlyCapabilityFlags ? [] : Object.keys(params));
     };
-    return capabilities
-      .reduce((acc, cur) => acc.concat(getParameters(cur)), []);
+    return systemCapabilitiesParameters.slice()
+      .concat(
+        capabilities
+          .reduce((acc, cur) => acc.concat(getParameters(cur)), [])
+      );
   }
   return [];
 }
