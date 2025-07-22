@@ -45,10 +45,17 @@ export const HARDWARE_MAPPING = {
     key: 'ramPending',
     type: 'pending',
     valueFormatter: (value) => value
+  },
+  runs: {
+    title: 'Jobs',
+    key: 'activeRunsCount'
+  },
+  runsPending: {
+    title: 'Pending jobs',
+    key: 'pendingRunsCount',
+    type: 'pending'
   }
 };
-
-const CAPACITY_MOCK = 18;
 
 export function extractHardwareData (
   data,
@@ -65,12 +72,10 @@ export function extractHardwareData (
       labels: []
     };
   }
-  const records = data.records.filter(record => !!record.measureTime);
+  const records = data.originalRecords.filter(record => !!record.measureTime);
   const extractData = (records, label, key, valueFormatter) => {
     const record = records.find(record => record.measureTime === label);
-    // todo: delete mock
-    const value = Math.ceil(Math.random() * 10);
-    // const value = record?.[key] || 0;
+    const value = record?.[key] || 0;
     return valueFormatter ? valueFormatter(value) : value;
   };
   const labels = records.map(record => record.measureTime);
@@ -86,17 +91,29 @@ export function extractHardwareData (
     fill: false,
     borderWidth: 1
   }));
-  const capacity = CAPACITY_MOCK;
-  return {
-    datasets: [...datasets, {
+  const capacity = undefined;
+  let max = 0;
+  if (capacity) {
+    max = capacity;
+    datasets.push({
       type: 'line',
       label: 'Capacity',
       borderColor: limitColor,
       fill: false,
       data: labels.map(l => capacity),
       pointRadius: 0
-    }],
+    });
+  }
+  for (let i = 0; i < labels.length; i++) {
+    const v = datasets.reduce((acc, d) => acc + (d.data || [])[i] || 0, 0);
+    if (v > max) {
+      max = v;
+    }
+  }
+  return {
+    datasets,
     entries: labels,
-    labels: labels.map(label => label)
+    labels: labels.map(label => label),
+    max
   };
 }

@@ -31,6 +31,22 @@ function getNumber (o) {
   return number;
 }
 
+const resourceSharingKeys = [
+  'activeRunsCount',
+  'pendingRunsCount'
+];
+
+function isResourceSharingRecord (record) {
+  if (typeof record === 'object') {
+    return resourceSharingKeys.some((k) => Object.hasOwnProperty.call(record, k));
+  }
+  return false;
+}
+
+function isResourceSharingRecords (records = []) {
+  return records.some(isResourceSharingRecord);
+}
+
 function processPoolUsage (poolId, data, pools = [], options = {}) {
   const poolUsage = (data || []).find(o => Number(o.poolId) === Number(poolId)) ||
     {records: []};
@@ -57,9 +73,15 @@ function processPoolUsage (poolId, data, pools = [], options = {}) {
     return undefined;
   };
   const ticks = [];
+  const mainTicks = [];
   let tick = moment(start);
   while (tick <= end) {
     ticks.push({
+      tick: moment(tick),
+      show: true,
+      display: tick.format(labelFormat)
+    });
+    mainTicks.push({
       tick: moment(tick),
       show: true,
       display: tick.format(labelFormat)
@@ -73,7 +95,7 @@ function processPoolUsage (poolId, data, pools = [], options = {}) {
     }
     tick = tick.add(1, step);
   }
-  const processedRecords = ticks.map(tick => {
+  const processRecordForTick = (tick) => {
     const record = records
       .find(o => displayDate(o.periodStart, format) === tick.tick.format(format));
     return {
@@ -84,14 +106,20 @@ function processPoolUsage (poolId, data, pools = [], options = {}) {
       tooltip: tooltip(record),
       poolUtilization: record ? getNumber(record.utilization) : undefined,
       poolUsage: record ? getNumber(record.occupiedNodesCount) : undefined,
-      poolLimit: record ? getNumber(record.nodesCount) : undefined
+      poolLimit: record ? getNumber(record.nodesCount) : undefined,
+      activeRunsCount: record ? getNumber(record.activeRunsCount) : undefined,
+      pendingRunsCount: record ? getNumber(record.pendingRunsCount) : undefined
     };
-  });
+  };
+  const processedRecords = ticks.map(processRecordForTick);
+  const mainProcessedRecords = mainTicks.map(processRecordForTick);
   return {
     poolId,
     pool,
     poolName: pool ? pool.name : `Pool #${poolId}`,
-    records: processedRecords
+    records: processedRecords,
+    originalRecords: mainProcessedRecords,
+    resourceSharingPool: isResourceSharingRecords(records)
   };
 }
 

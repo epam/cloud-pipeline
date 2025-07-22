@@ -33,6 +33,17 @@ function PoolsHardwareChart ({
   period,
   periodType
 }) {
+  const data = extractHardwareData(
+    rawData,
+    mappings,
+    colors,
+    lineColor,
+    limitColor,
+    backgroundColor
+  );
+  const {
+    max
+  } = data || {};
   const options = {
     animation: {duration: 0},
     title: {
@@ -55,7 +66,9 @@ function PoolsHardwareChart ({
         stacked: true,
         ticks: {
           beginAtZero: true,
-          fontColor: textColor
+          fontColor: textColor,
+          stepSize: 1,
+          max: Math.ceil(max * 1.1) // +10%
         },
         gridLines: {
           color: lineColor
@@ -68,14 +81,6 @@ function PoolsHardwareChart ({
       }
     }
   };
-  const data = extractHardwareData(
-    rawData,
-    mappings,
-    colors,
-    lineColor,
-    limitColor,
-    backgroundColor
-  );
   return (
     <div
       style={

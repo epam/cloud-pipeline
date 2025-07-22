@@ -154,7 +154,8 @@ class HotClusterUsage extends React.Component {
         state.pools = state.data.map(item => ({
           ...(item.pool || {}),
           id: Number(item.poolId),
-          name: item.poolName
+          name: item.poolName,
+          resourceSharingPool: item.resourceSharingPool || false
         }));
         if (!state.data || !state.pools.find(o => o.id === currentPoolId)) {
           state.currentPoolId = (state.pools[0] || {}).id;
@@ -223,6 +224,7 @@ class HotClusterUsage extends React.Component {
     } = this.state;
     const currentPoolData = (data || [])
       .find(({poolId}) => poolId === currentPoolId);
+    const {poolName, resourceSharingPool = false} = currentPoolData || {};
     return (
       <div>
         <ControlRow
@@ -276,57 +278,25 @@ class HotClusterUsage extends React.Component {
                 periodType={periodType}
                 containerStyle={{width: 'calc(50% - 3px)'}}
               />
-              <PoolsHardwareChart
-                rawData={currentPoolData}
-                mappings={[
-                  HARDWARE_MAPPING.cpu,
-                  HARDWARE_MAPPING.cpuPending
-                ]}
-                title="CPU statistics"
-                units=""
-                colors={this.colors}
-                textColor={this.textColor}
-                backgroundColor={this.backgroundColor}
-                lineColor={this.lineColor}
-                limitColor={this.limitColor}
-                period={period}
-                periodType={periodType}
-                style={{width: 'calc(50% - 3px)'}}
-              />
-              <PoolsHardwareChart
-                rawData={currentPoolData}
-                mappings={[
-                  HARDWARE_MAPPING.gpu,
-                  HARDWARE_MAPPING.gpuPending
-                ]}
-                title="GPU statistics"
-                units=""
-                colors={this.colors}
-                textColor={this.textColor}
-                backgroundColor={this.backgroundColor}
-                limitColor={this.limitColor}
-                lineColor={this.lineColor}
-                period={period}
-                periodType={periodType}
-                style={{width: 'calc(50% - 3px)'}}
-              />
-              <PoolsHardwareChart
-                rawData={currentPoolData}
-                mappings={[
-                  HARDWARE_MAPPING.ram,
-                  HARDWARE_MAPPING.ramPending
-                ]}
-                title="RAM statistics"
-                units=""
-                colors={this.colors}
-                textColor={this.textColor}
-                backgroundColor={this.backgroundColor}
-                limitColor={this.limitColor}
-                lineColor={this.lineColor}
-                period={period}
-                periodType={periodType}
-                style={{width: 'calc(50% - 3px)'}}
-              />
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.runs,
+                    HARDWARE_MAPPING.runsPending
+                  ]}
+                  title={poolName ? `${poolName} - jobs status` : 'Jobs status'}
+                  units=""
+                  colors={this.colors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  limitColor={this.limitColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
             </div>
           )
         }

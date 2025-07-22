@@ -130,8 +130,11 @@ function PoolCard ({
     kubeLabels = {}
   } = pool;
   const {
-    [CP_USE_NODES_COUNT_INFORMATION]: cpUseNodesCountInformationLabel = true
+    [CP_USE_NODES_COUNT_INFORMATION]: cpUseNodesCountInformationLabelValue
   } = kubeLabels;
+  const {
+    value: cpUseNodesCountInformationLabel = true
+  } = cpUseNodesCountInformationLabelValue || {};
   const cpUseNodesCountInformation = String(cpUseNodesCountInformationLabel)
     .toLowerCase() === 'true';
   const poolNodes = (nodes || [])

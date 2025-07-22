@@ -228,7 +228,7 @@ class EditHotNodePool extends React.Component {
         labels: Object.entries(labels || {}).map(([key, value]) => ({
           key,
           name: key,
-          value
+          ...value
         })),
         schedule: schedule.slice().map((s, i) => ({...s, id: i})),
         initialSchedule: schedule.slice().map(sc => ({...sc})),
@@ -687,7 +687,10 @@ class EditHotNodePool extends React.Component {
         scaleStep: autoscaled ? scaleStep : undefined,
         kubeLabels: labels.reduce((acc, label) => ({
           ...acc,
-          [label.name]: label.value
+          [label.name]: {
+            value: label.value,
+            monitored: label.monitored || false
+          }
         }), {})
       };
       onSave(
@@ -1613,7 +1616,7 @@ class EditHotNodePool extends React.Component {
         nodeLabelKey = generate();
       }
       this.setState({
-        labels: [...labels, {key: nodeLabelKey, name: '', value: ''}]
+        labels: [...labels, {key: nodeLabelKey, name: '', value: '', monitored: false}]
       }, this.onChange);
     };
     const renderLabelControl = (label) => {
@@ -1649,6 +1652,17 @@ class EditHotNodePool extends React.Component {
           this.setState({labels: result}, this.onChange);
         }
       };
+      const onChangeLabelMonitored = (event) => {
+        const result = labels.slice();
+        const idx = result.findIndex(o => o.key === label.key);
+        if (idx >= 0) {
+          result.splice(idx, 1, {
+            ...label,
+            monitored: event.target.checked
+          });
+          this.setState({labels: result}, this.onChange);
+        }
+      };
       const st = {
         display: 'flex',
         flexDirection: 'row',
@@ -1664,12 +1678,24 @@ class EditHotNodePool extends React.Component {
             key={label.key}
             style={st}
           >
-            <span>{label.name}:</span>
+            <span style={{flexShrink: 0}}>
+              {label.name}:
+            </span>
             <span
-              style={{flex: 1, overflow: 'auto', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+              style={{
+                flexShrink: 1,
+                overflow: 'auto',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
             >
               {label.value}
             </span>
+            {
+              label.monitored && (
+                <span style={{flexShrink: 0}}>(monitored)</span>
+              )
+            }
           </div>
         );
       }
@@ -1689,6 +1715,13 @@ class EditHotNodePool extends React.Component {
             value={label.value}
             onChange={onChangeLabelValue}
           />
+          <Checkbox
+            style={{flexShrink: 0, marginRight: 5}}
+            checked={label.monitored}
+            onChange={onChangeLabelMonitored}
+          >
+            Monitored
+          </Checkbox>
           <Button size="small" onClick={onRemoveNodeLabel} type="danger">
             <Icon type="delete" />
           </Button>
