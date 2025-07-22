@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import itertools
-
+import time
 import click
 import logging
 import multiprocessing
@@ -49,6 +49,7 @@ DEFAULT_BATCH_SIZE = 1000
 BATCH_SIZE = int(os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE))
 ASYNC_BATCH_ENABLE = str(os.getenv('CP_CLI_STORAGE_ASYNC_BATCH_ENABLE', 'false')).lower() == 'true'
 TRANSFER_RETRY_ATTEMPTS = int(os.getenv('CP_CLI_TRANSFER_RETRY_ATTEMPTS', 3))
+TRANSFER_RETRY_TIMEOUT = int(os.getenv('CP_CLI_TRANSFER_RETRY_TIMEOUT'), 15) # seconds
 ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
@@ -252,7 +253,7 @@ class DataStorageOperations(object):
         if failed_items_queue is None:
             # not enabled
             return
-        retry_attempts = int(os.getenv('CP_TRANSFER_RETRY_ATTEMPTS', 3))
+        retry_attempts = TRANSFER_RETRY_ATTEMPTS
         if retry_attempts == 0:
             # not enabled
             return
@@ -273,6 +274,7 @@ class DataStorageOperations(object):
                     cls._transfer_items(failed_items, params, lock=None, failed_items_queue=failed_items_queue)
             except Exception as e:
                 logging.error(u"Retry failed: %s", e)
+                time.sleep(TRANSFER_RETRY_TIMEOUT)
 
     @classmethod
     def _transfer_batch_items(cls, transfer_params, audit_ctx,
