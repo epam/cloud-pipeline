@@ -7,7 +7,7 @@ const defaultRendererKey = '__default__';
 export function registerRenderer (type, renderer, defaultRenderer = false) {
   parameterRenderers[type.toLowerCase()] = renderer;
   if (defaultRenderer) {
-    parameterRenderers['defaultRendererKey'] = renderer;
+    parameterRenderers[defaultRendererKey] = renderer;
   }
 }
 
