@@ -49,7 +49,7 @@ DEFAULT_BATCH_SIZE = 1000
 BATCH_SIZE = int(os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE))
 ASYNC_BATCH_ENABLE = str(os.getenv('CP_CLI_STORAGE_ASYNC_BATCH_ENABLE', 'false')).lower() == 'true'
 TRANSFER_RETRY_ATTEMPTS = int(os.getenv('CP_CLI_TRANSFER_RETRY_ATTEMPTS', 3))
-TRANSFER_RETRY_TIMEOUT = int(os.getenv('CP_CLI_TRANSFER_RETRY_TIMEOUT'), 15) # seconds
+TRANSFER_RETRY_TIMEOUT = int(os.getenv('CP_CLI_TRANSFER_RETRY_TIMEOUT', 15)) # seconds
 ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
@@ -254,10 +254,10 @@ class DataStorageOperations(object):
             # not enabled
             return
         retry_attempts = TRANSFER_RETRY_ATTEMPTS
-        if retry_attempts == 0:
+        if retry_attempts <= 0:
             # not enabled
             return
-        for attempt in range(0, retry_attempts):
+        for attempt in range(1, retry_attempts + 1):
             try:
                 failed_items = []
                 while not failed_items_queue.empty():
@@ -265,16 +265,18 @@ class DataStorageOperations(object):
                 if not failed_items:
                     # no failures
                     return
-                logging.debug(u"Found {} failed items. Retry attempts {}/{}.".format(len(failed_items),
-                                                                                     attempt, retry_attempts))
+                logging.debug(u"Found {} failed items. Retry attempt {}/{}.".format(len(failed_items),
+                                                                                    attempt, retry_attempts))
                 failed_items_queue = multiprocessing.Queue()
                 if params.threads:
                     cls._multiprocess_transfer_items(failed_items, params, audit_ctx, failed_items_queue)
                 else:
                     cls._transfer_items(failed_items, params, lock=None, failed_items_queue=failed_items_queue)
             except Exception as e:
-                logging.error(u"Retry failed: %s", e)
-                time.sleep(TRANSFER_RETRY_TIMEOUT)
+                if attempt < retry_attempts:
+                    logging.error(u"Retry attempt failed: %s. Waiting %s seconds for the next attempt..", e,
+                                  TRANSFER_RETRY_TIMEOUT)
+                    time.sleep(TRANSFER_RETRY_TIMEOUT)
 
     @classmethod
     def _transfer_batch_items(cls, transfer_params, audit_ctx,
