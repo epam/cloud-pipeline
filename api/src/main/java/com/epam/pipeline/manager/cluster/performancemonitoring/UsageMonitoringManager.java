@@ -42,7 +42,7 @@ public interface UsageMonitoringManager {
      * @return List of monitoring stats.
      */
     default List<MonitoringStats> getStatsForNode(String nodeName) {
-        return getStatsForNode(nodeName, null, null);
+        return getStatsForNode(nodeName, null, null, null);
     }
 
     /**
@@ -51,11 +51,13 @@ public interface UsageMonitoringManager {
      * @param nodeName Cluster node name.
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
+     * @param runId The run ID used for pod name construction
      * @return List of monitoring stats.
      */
     List<MonitoringStats> getStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
-                                          @Nullable LocalDateTime to);
+                                          @Nullable LocalDateTime to,
+                                          @Nullable Long runId);
 
     /**
      * Retrieves GPU monitoring stats for node.
@@ -80,13 +82,15 @@ public interface UsageMonitoringManager {
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
      * @param interval period of stats collecting
+     * @param runId The run ID
      * @return stream, containing required information in .csv format
      */
     InputStream getStatsForNodeAsInputStream(String nodeName,
                                              @Nullable LocalDateTime from,
                                              @Nullable LocalDateTime to,
                                              Duration interval,
-                                             MonitoringReportType type);
+                                             MonitoringReportType type,
+                                             @Nullable Long runId);
 
     /**
      * Retrieves number of bytes that available on a pod or node disk.

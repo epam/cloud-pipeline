@@ -106,8 +106,9 @@ public class ClusterApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
-                                                 final LocalDateTime to) {
-        return usageMonitoringManager.getStatsForNode(name, from, to);
+                                                 final LocalDateTime to,
+                                                 final Long runId) {
+        return usageMonitoringManager.getStatsForNode(name, from, to, runId);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
@@ -121,8 +122,9 @@ public class ClusterApiService {
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final MonitoringReportType type) {
-        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
+                                              final Duration interval, final MonitoringReportType type,
+                                              final Long runId) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type, runId);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {

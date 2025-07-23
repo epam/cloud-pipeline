@@ -59,8 +59,8 @@ public class GPUAggregationRequester extends AbstractGPUMetricsRequester {
 
     @Override
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                           final Duration interval) {
-        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to)
+                                           final Duration interval, final Long runId) {
+        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to, runId)
                 .size(1)
                 .aggregation(buildHistogram(interval));
         return request(from, to, aggregation);

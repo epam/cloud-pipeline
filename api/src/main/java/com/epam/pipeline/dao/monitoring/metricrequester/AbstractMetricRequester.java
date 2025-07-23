@@ -24,6 +24,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -50,12 +51,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,6 +60,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private static final String INDEX_NAME_PATTERN = "heapster-%s";
+
+    private static final String POD_NAME_PATTERN = "pipeline-%s";
 
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.STRICT_EXPAND_OPEN_CLOSED;
 
@@ -131,7 +129,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected abstract ELKUsageMetric metric();
 
     protected abstract SearchRequest buildStatsRequest(String nodeName, LocalDateTime from, LocalDateTime to,
-                                                       Duration interval);
+                                                       Duration interval, Long runId);
 
     protected abstract List<MonitoringStats> parseStatsResponse(SearchResponse response);
 
@@ -236,21 +234,27 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     @Override
     public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
-        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval);
+                                              final Duration interval, final Long runId) {
+        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval, runId);
         return parseStatsResponse(executeRequest(request));
     }
 
     protected SearchSourceBuilder statsQuery(final String nodeName, final String type,
-                                             final LocalDateTime from, final LocalDateTime to) {
+                                             final LocalDateTime from, final LocalDateTime to,
+                                             final Long runId) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
+                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
+                .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli()));
+        if (Objects.nonNull(runId)) {
+            final String podName = String.format(POD_NAME_PATTERN, runId);
+            queryBuilder.filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podName));
+        }
         return new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())));
+                .query(queryBuilder);
     }
 
     protected DateHistogramAggregationBuilder dateHistogram(final String name, final Duration interval) {
