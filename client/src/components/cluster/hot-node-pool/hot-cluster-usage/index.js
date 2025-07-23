@@ -225,6 +225,7 @@ class HotClusterUsage extends React.Component {
     const currentPoolData = (data || [])
       .find(({poolId}) => poolId === currentPoolId);
     const {poolName, resourceSharingPool = false} = currentPoolData || {};
+    const onlyResourceSharingPools = !(data || []).some((p) => !p.resourceSharingPool);
     return (
       <div>
         <ControlRow
@@ -247,45 +248,57 @@ class HotClusterUsage extends React.Component {
         {
           data && (
             <div className={styles.chartsContainer}>
-              <OverallPoolChart
-                rawData={data}
-                onClick={this.onCurrentPoolChange}
-                currentPoolId={currentPoolId}
-                title="All hot node pools usage, %"
-                units="%"
-                colors={this.colors}
-                onToggleDataset={this.toggleHiddenPools}
-                hiddenDatasets={hiddenPools}
-                backgroundColor={this.backgroundColor}
-                lineColor={this.lineColor}
-                textColor={this.textColor}
-                period={period}
-                periodType={periodType}
-                containerStyle={{width: 'calc(50% - 3px)'}}
-              />
-              <PoolChart
-                rawData={data}
-                currentPoolId={currentPoolId}
-                onCurrentPoolChange={this.onCurrentPoolChange}
-                pools={pools}
-                displayEmptyTitleRow
-                units=" active nodes"
-                colorOptions={this.clusterChartColors}
-                backgroundColor={this.backgroundColor}
-                lineColor={this.lineColor}
-                textColor={this.textColor}
-                period={period}
-                periodType={periodType}
-                containerStyle={{width: 'calc(50% - 3px)'}}
-              />
+              {!onlyResourceSharingPools && (
+                <OverallPoolChart
+                  rawData={data}
+                  onClick={this.onCurrentPoolChange}
+                  currentPoolId={currentPoolId}
+                  title="All hot node pools usage, %"
+                  units="%"
+                  colors={this.colors}
+                  onToggleDataset={this.toggleHiddenPools}
+                  hiddenDatasets={hiddenPools}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  textColor={this.textColor}
+                  period={period}
+                  periodType={periodType}
+                  containerStyle={{width: 'calc(50% - 3px)'}}
+                />
+              )}
+              {!onlyResourceSharingPools && (
+                <PoolChart
+                  rawData={data}
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  displayEmptyTitleRow
+                  units=" active nodes"
+                  colorOptions={this.clusterChartColors}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  textColor={this.textColor}
+                  period={period}
+                  periodType={periodType}
+                  containerStyle={{width: 'calc(50% - 3px)'}}
+                />
+              )}
               {resourceSharingPool && (
                 <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
                   rawData={currentPoolData}
                   mappings={[
                     HARDWARE_MAPPING.runs,
                     HARDWARE_MAPPING.runsPending
                   ]}
-                  title={poolName ? `${poolName} - jobs status` : 'Jobs status'}
+                  title={
+                    !onlyResourceSharingPools && poolName
+                      ? `${poolName} - jobs status`
+                      : 'Jobs status'
+                  }
                   units=""
                   colors={this.colors}
                   textColor={this.textColor}

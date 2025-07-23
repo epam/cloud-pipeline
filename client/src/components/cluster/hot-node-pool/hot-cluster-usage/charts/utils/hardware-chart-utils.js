@@ -92,9 +92,9 @@ export function extractHardwareData (
     borderWidth: 1
   }));
   const capacity = undefined;
-  let max = 0;
+  let max = 1;
   if (capacity) {
-    max = capacity;
+    max = Math.max(max, capacity);
     datasets.push({
       type: 'line',
       label: 'Capacity',

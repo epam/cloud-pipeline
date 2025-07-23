@@ -18,10 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from './base';
 import {extractHardwareData} from './utils/hardware-chart-utils';
+import PoolSelector from '../controls/pool-selector';
 
 function PoolsHardwareChart ({
   mappings,
   title,
+  currentPoolId,
+  onCurrentPoolChange,
+  pools,
   units,
   style,
   rawData = [],
@@ -31,7 +35,8 @@ function PoolsHardwareChart ({
   lineColor,
   limitColor,
   period,
-  periodType
+  periodType,
+  showPoolSelector = false
 }) {
   const data = extractHardwareData(
     rawData,
@@ -47,8 +52,8 @@ function PoolsHardwareChart ({
   const options = {
     animation: {duration: 0},
     title: {
-      display: !!title,
-      text: title,
+      display: !!title || showPoolSelector,
+      text: showPoolSelector ? '' : title,
       fontColor: textColor
     },
     scales: {
@@ -106,6 +111,15 @@ function PoolsHardwareChart ({
         lineColor={lineColor}
         textColor={textColor}
       />
+      {showPoolSelector && (
+        <PoolSelector
+          value={currentPoolId}
+          pools={pools}
+          onChange={onCurrentPoolChange}
+          description={(<b>{title}</b>)}
+          showPoolDescription
+        />
+      )}
     </div>
   );
 }
