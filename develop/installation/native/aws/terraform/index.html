@@ -788,6 +788,15 @@ module "cluster-infra" {
       source  = "cyrilgdn/postgresql"
       version = "1.22.0"
     }
+    helm = {
+      version = "2.17.0"
+    }
+    aws = {
+      version = "5.100.0"
+    }
+    kubernetes = {
+      version = "2.38.0"
+    }
   }
 }
 </code></pre>
@@ -851,7 +860,7 @@ output "cp_cloud_network_config" {
 </tr>
 <tr>
 <td><code>cp_edge_elb_subnet</code></td>
-<td>(<strong>Required</strong>) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId</td>
+<td>(<strong>Required</strong>) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the <code>eks_system_node_group_subnet_ids</code></td>
 </tr>
 <tr>
 <td><code>cp_edge_elb_ip</code></td>
@@ -927,6 +936,7 @@ output "cp_cloud_network_config" {
 <li>
 <p>Clone from your git repository pushed previously configuration.</p>
 </li>
+<li>Apply you deployment AWS creds</li>
 <li>
 <p>From <code>cluster-infrastructure</code> directory run <code>terraform init</code>command, output of command must be like this:</p>
 <pre><code>Terraform has been successfully initialized!
@@ -1077,50 +1087,55 @@ filesystem_type = &quot;efs&quot;
 </blockquote>
 <h2 id="cloud-pipeline-deployment">Cloud-Pipeline deployment</h2>
 <ol>
-<li>Download latest pipectl binary file.</li>
+<li>Mount created file system into instance.</li>
 <li>
-<p>Mount created file system into instance.</p>
-<ul>
-<li>
-<p>For EFS run commands (<a href="https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html">https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html</a>):</p>
-<pre><code>fs_mount=$(terraform output -raw filesystem_mount)
-sudo yum install amazon-efs-utils -y 
-sudo mount -t efs -o tls $fs_mount /opt
-</code></pre>
+<p>For EFS run commands (<a href="https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html">https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html</a>):
+    <code>fs_mount=$(terraform output -raw filesystem_mount)
+    sudo yum install amazon-efs-utils -y 
+    sudo mount -t efs -o tls $fs_mount /opt</code></p>
 </li>
 <li>
-<p>For FSx for Lustre (<a href="https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html">https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html</a>):</p>
-<pre><code>fs_mount=$(terraform output -raw filesystem_mount)
-sudo amazon-linux-extras install -y lustre
-sudo mount -t lustre -o relatime,flock $fs_mount /opt
-</code></pre>
-</li>
-</ul>
+<p>For FSx for Lustre (<a href="https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html">https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html</a>):
+    <code>fs_mount=$(terraform output -raw filesystem_mount)
+    sudo amazon-linux-extras install -y lustre
+    sudo mount -t lustre -o relatime,flock $fs_mount /opt</code></p>
 </li>
 <li>
 <p>Create ssh key from <code>cluster-infrastructure</code> deployment:</p>
-<pre><code>sudo mkdir -p /opt/root/ssh
-terraform show -json | jq -r ".values.root_module.child_modules[].resources[] | select(.address==\"$(terraform state list | grep ssh_tls_key)\") | .values.private_key_pem" &gt; /opt/root/ssh/ssh-key.pem
-</code></pre>
 </li>
-<li>
-<p>Create cluster.networks.config.json from <code>cluster-infrastructure</code> deployment:</p>
-<pre><code>terraform output -raw cp_cloud_network_config &gt; cluster.networks.config.json 
+</ol>
+<pre><code># Being in terraform deployment directory do:
+sudo mkdir -p /opt/root/ssh
+terraform show -json | jq -r &quot;.values.root_module.child_modules[].resources[] | select(.address==\&quot;$(terraform state list | grep ssh_tls_key)\&quot;) | .values.private_key_pem&quot; &gt; /opt/root/ssh/ssh-key.pem
+</code></pre>
+<ol>
+<li>Create <code>pipectl-deployment</code> directory:</li>
+</ol>
+<pre><code class="language-commandline">mkdir -p ../pipectl-deployment
+</code></pre>
+<ol>
+<li>Create cluster.networks.config.json from <code>cluster-infrastructure</code> deployment:</li>
+</ol>
+<pre><code># Being in terraform deployment directory do:
+terraform output -raw cp_cloud_network_config &gt; ../pipectl-deployment/cluster.networks.config.json 
+</code></pre>
+<ol>
+<li>Take script from the <code>cluster-infrastructure</code> deployment <a href="#outputs-table-of-cluster-infrastructure-module">output</a> and
+   run it by using bash commands. For example:</li>
+</ol>
+<pre><code># Being in terraform deployment directory do:
+terraform output -raw cp_pipectl_script | envsubst &gt; ../pipectl-deployment/deploy_cloud_pipeline.sh
+</code></pre>
+<ol>
+<li>Run deployment script:</li>
+</ol>
+<pre><code>cd ../pipectl-deployment/
+chmod +x deploy_cloud_pipeline.sh
 export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
-</code></pre>
-</li>
-<li>
-<p>Take script from the <code>cluster-infrastructure</code> deployment <a href="#outputs-table-of-cluster-infrastructure-module">output</a> and
-   run it by using bash commands. For example:</p>
-<pre><code>CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/&lt;link-to-the-desired-pipectl-version&gt;
-wget -c $CP_PIPECTL_URL -O pipectl &amp;&amp; chmod +x pipectl
-terraform output -raw cp_pipectl_script | envsubst &gt; "deploy_cloud_pipeline.sh" &amp;&amp; chmod +x deploy_cloud_pipeline.sh
 nohup ./deploy_cloud_pipeline.sh &amp;&gt; pipectl.log &amp;
 </code></pre>
-</li>
-<li>
-<p>Wait until deployment finishes (you can watch for the progress with <code>pipectl.log</code> file).</p>
-</li>
+<ol>
+<li>Wait until deployment finishes (you can watch for the progress with <code>pipectl.log</code> file).</li>
 <li>Your Cloud-Pipeline environment should be available on the provided DNS name provided during deployment (<code>cp_api_srv_host</code>).</li>
 </ol>
               
