@@ -54,6 +54,7 @@ import java.util.concurrent.Semaphore;
 import java.util.zip.GZIPInputStream;
 
 @Service
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class ScanService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScanService.class);
