@@ -70,8 +70,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
 
         network_interfaces = self.__build_networks(instance_type)
+        spot_type = utils.get_contextual_preference(utils.SPOT_INSTANCE_TYPE)
         if is_spot:
-            utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
+            utils.pipe_log('{} instance with run id: {} will be launched'.format(spot_type, run_id))
         
         maintenance_type = 'terminate'
         if ins_type.startswith('e2') and not is_spot:
@@ -81,8 +82,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'name': instance_name,
             'machineType': machine_type,
             'scheduling': {
-                'onHostMaintenance': maintenance_type,
-                'preemptible': is_spot
+                'onHostMaintenance': maintenance_type
             },
             # No need for IP forwarding as it can be used as a security breach
             'canIpForward': False,
@@ -110,6 +110,13 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             }
 
         }
+
+        if is_spot:
+            if spot_type.lower() == 'preemptible':
+                body['scheduling']['preemptible'] = True
+            elif spot_type.lower() == 'spot':
+                body['scheduling']['provisioning_model'] = 'spot'
+                body['scheduling']['instance_termination_action'] = 'DELETE'
 
         if gpu_type is not None and gpu_count > 0:
             gpu = {"guestAccelerators": [ 

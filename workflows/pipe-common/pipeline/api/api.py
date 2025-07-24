@@ -838,6 +838,18 @@ class PipelineAPI:
             raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
                                "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
 
+    def search_contextual_preferences(self, preference_name):
+        try:
+            data = {
+                "preferences": [ preference_name ]
+                }
+            result = self.execute_request(str(self.api_url) + 'contextual/preference', method='post',
+            data=json.dumps(data))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s. "
+                               "Error message: %s" % (preference_name, e.message))
+
     # "preference_level" accepts only "TOOL" value for now. Any other value will throw an error
     # "resource_id"=-1 is used when you don't need to consider the tool's setting. Only user and group
     def search_contextual_preference(self, preference_name, preference_level="TOOL", resource_id=-1):
