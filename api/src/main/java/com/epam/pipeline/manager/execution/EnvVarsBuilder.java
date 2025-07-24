@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
  */
 public final class EnvVarsBuilder {
 
+    private static final String CP_REMOVE_RUN_ENV_VARS = "CP_REMOVE_RUN_ENV_VARS";
     private static final String DASH = "-";
     private static final String UNDERSCORE = "_";
 
@@ -71,6 +73,7 @@ public final class EnvVarsBuilder {
                     String name = parameter.getKey();
                     String value = parameter.getValue().getValue();
                     String type = parameter.getValue().getType();
+
                     return matchParameterToEnvVars(name, value, type, envVarsMap);
                 })
                 .flatMap(Arrays::stream)
@@ -88,6 +91,11 @@ public final class EnvVarsBuilder {
                 .filter(e -> StringUtils.isNotBlank(e.getKey()))
                 .filter(e -> SystemParams.SECURED_PREFIXES.stream().noneMatch(prefix -> e.getKey().startsWith(prefix)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2)));
+
+        final EnvVar removeEnvVars = fullEnvVars.get(CP_REMOVE_RUN_ENV_VARS);
+        if (Objects.nonNull(removeEnvVars) && StringUtils.isNotBlank(removeEnvVars.getValue())) {
+            Arrays.asList(removeEnvVars.getValue().split(",")).forEach(fullEnvVars::remove);
+        }
         return new ArrayList<>(fullEnvVars.values());
     }
 
