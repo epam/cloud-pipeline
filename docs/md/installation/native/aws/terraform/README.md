@@ -271,6 +271,15 @@ terraform output <output name from table above>
                       source  = "cyrilgdn/postgresql"
                       version = "1.22.0"
                     }
+                    helm = {
+                      version = "2.17.0"
+                    }
+                    aws = {
+                      version = "5.100.0"
+                    }
+                    kubernetes = {
+                      version = "2.38.0"
+                    }
                   }
                 }
 
@@ -303,7 +312,7 @@ terraform output <output name from table above>
         | `eks_system_node_group_subnet_ids` | Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group. |
         | `eks_additional_role_mapping` | List of additional roles mapping for aws_auth map. |
         | `cp_edge_elb_schema` | (**Required**) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'. |
-        | `cp_edge_elb_subnet` | (**Required**) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId |
+        | `cp_edge_elb_subnet` | (**Required**) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the `eks_system_node_group_subnet_ids` |
         | `cp_edge_elb_ip` | (**Required**) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. |
         | `cp_api_srv_host` | (**Required**) API service domain name address. |
         | `cp_docker_host` | (**Required**) Docker service domain name address. |
@@ -328,7 +337,8 @@ terraform output <output name from table above>
     Where `xxxxxxxxxxxxx` is your jump-server instance ID that could be found (also with full command) from [output](#outputs-table-of-jump-server-module) of the `terraform apply` jump-server deployment.
 
 5. Clone from your git repository pushed previously configuration.
-6. From `cluster-infrastructure` directory run `terraform init`command, output of command must be like this:
+6. Apply you deployment AWS creds
+7. From `cluster-infrastructure` directory run `terraform init`command, output of command must be like this:
 
         Terraform has been successfully initialized!
 
@@ -336,7 +346,7 @@ terraform output <output name from table above>
         any changes that are required for your infrastructure. All Terraform commands
         should now work.
 
-7. After successful output of the init command run `terraform apply` and when it shows list of the planned for creation
+8. After successful output of the init command run `terraform apply` and when it shows list of the planned for creation
    resources submit with **yes**.
 
 The output can be different depending on terraform options like `cp_idp_host` or `enable_aws_omics_integration`.
