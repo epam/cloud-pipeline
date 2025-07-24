@@ -513,6 +513,7 @@ terraform output -raw cp_cloud_network_config > ../pipectl-deployment/cluster.ne
    run it by using bash commands. For example:
 ````
 # Being in terraform deployment directory do:
+export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath ../pipectl-deployment/cluster.networks.config.json)
 terraform output -raw cp_pipectl_script | envsubst > ../pipectl-deployment/deploy_cloud_pipeline.sh
 ````
 
@@ -524,7 +525,6 @@ chmod +x deploy_cloud_pipeline.sh
 CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/<link-to-the-desired-pipectl-version>
 wget -c $CP_PIPECTL_URL -O pipectl && chmod +x pipectl
 
-export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
 nohup ./deploy_cloud_pipeline.sh &> pipectl.log &
 ````
 
