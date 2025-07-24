@@ -85,6 +85,14 @@ public final class EnvVarsBuilder {
                     fullEnvVars.put(name, new EnvVar(name, value, null));
                 });
 
+        final EnvVar removeEnvVars = fullEnvVars.get(CP_REMOVE_RUN_ENV_VARS);
+        if (Objects.nonNull(removeEnvVars) && StringUtils.isNotBlank(removeEnvVars.getValue())) {
+            Arrays.asList(removeEnvVars.getValue().split(",")).forEach(key -> {
+                fullEnvVars.remove(key);
+                envVarsMap.remove(key);
+            });
+        }
+
         run.setEnvVars(MapUtils.emptyIfNull(envVarsMap)
                 .entrySet()
                 .stream()
@@ -92,10 +100,6 @@ public final class EnvVarsBuilder {
                 .filter(e -> SystemParams.SECURED_PREFIXES.stream().noneMatch(prefix -> e.getKey().startsWith(prefix)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2)));
 
-        final EnvVar removeEnvVars = fullEnvVars.get(CP_REMOVE_RUN_ENV_VARS);
-        if (Objects.nonNull(removeEnvVars) && StringUtils.isNotBlank(removeEnvVars.getValue())) {
-            Arrays.asList(removeEnvVars.getValue().split(",")).forEach(fullEnvVars::remove);
-        }
         return new ArrayList<>(fullEnvVars.values());
     }
 
