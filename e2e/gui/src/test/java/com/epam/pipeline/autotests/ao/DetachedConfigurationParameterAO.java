@@ -16,6 +16,8 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
 import com.codeborne.selenide.SelenideElement;
@@ -68,6 +70,15 @@ public class DetachedConfigurationParameterAO
 
     public DetachedConfigurationParameterAO addToValue(String value) {
         addToValue(PARAMETER_VALUE, value);
+        return this;
+    }
+
+    public DetachedConfigurationParameterAO parameterNameIsEnable(boolean isEnable) {
+        if (isEnable) {
+            ensure(PARAMETER_FIELD, have(cssClass("arameter-name-input__editing-enabled")));
+        } else {
+            ensure(PARAMETER_FIELD, have(cssClass("arameter-name-input__editing-disabled")));
+        }
         return this;
     }
 

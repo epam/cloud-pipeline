@@ -691,7 +691,9 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         for(int i = 0; i < 3; i++) {
             sizeDisk[i+1] = (int) Math.floor(sizeDisk[i] * SCALING_COEFF);
         }
-        shell.execute(format("fallocate -l %sG test.big", scaling[2] - 1));
+        String bigFileCommand = format("fallocate -l %sG test.big", scaling[2] - 1);
+        shell.execute(bigFileCommand)
+                .assertNextStringIsVisible(bigFileCommand, rootHost);
     }
 
     private void checkFilesystemSpace(ShellAO shell, int diskSize) {

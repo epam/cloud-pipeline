@@ -355,6 +355,7 @@ public class DetachedConfigurationsTest
                     .ensure(TEMPLATE, readOnlyEditor())
                     .ensure(START_IDLE, disabled)
                     .ensure(ADD_PARAMETER, disabled)
+                    .ensure(ADD_SYSTEM_PARAMETER, disabled)
             );
     }
 
@@ -629,7 +630,7 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, "")
                                 .setValue(pathParameterValue2)
                                 .validateParameter(pathParameterName, pathParameterValue2)
-                                .ensure(PARAMETER_FIELD, disabled);
+                                .parameterNameIsEnable(false);
                         configuration
                                 .click(SAVE)
                                 .ensureDisable(SAVE);
