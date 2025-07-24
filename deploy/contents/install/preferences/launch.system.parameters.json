@@ -674,5 +674,12 @@
         "description": "Instance execution workflow language: nextflow, mlflow",
         "defaultValue": "",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_REMOVE_RUN_ENV_VARS",
+        "type": "string",
+        "description": "Comma delimited list of environment variables that should be excluded from run container",
+        "defaultValue": "",
+        "passToWorkers": true
     }
 ]
