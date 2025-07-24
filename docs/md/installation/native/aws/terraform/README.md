@@ -476,37 +476,53 @@ terraform output <output name from table above>
 
 ## Cloud-Pipeline deployment
 
-1. Download latest pipectl binary file.
-2. Mount created file system into instance.
-    - For EFS run commands ([https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html](https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html)):
+1. Mount created file system into instance.
+  - For EFS run commands ([https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html](https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html)):
+    ````
+    fs_mount=$(terraform output -raw filesystem_mount)
+    sudo yum install amazon-efs-utils -y 
+    sudo mount -t efs -o tls $fs_mount /opt
+    ````
 
-            fs_mount=$(terraform output -raw filesystem_mount)
-            sudo yum install amazon-efs-utils -y 
-            sudo mount -t efs -o tls $fs_mount /opt
+  - For FSx for Lustre ([https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html](https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html)):
+    ````
+    fs_mount=$(terraform output -raw filesystem_mount)
+    sudo amazon-linux-extras install -y lustre
+    sudo mount -t lustre -o relatime,flock $fs_mount /opt
+    ````
+    
+2. Create ssh key from `cluster-infrastructure` deployment:
+````
+# Being in terraform deployment directory do:
+sudo mkdir -p /opt/root/ssh
+terraform show -json | jq -r ".values.root_module.child_modules[].resources[] | select(.address==\"$(terraform state list | grep ssh_tls_key)\") | .values.private_key_pem" > /opt/root/ssh/ssh-key.pem
+````
 
-    - For FSx for Lustre ([https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html](https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html)):
-
-            fs_mount=$(terraform output -raw filesystem_mount)
-            sudo amazon-linux-extras install -y lustre
-            sudo mount -t lustre -o relatime,flock $fs_mount /opt
-
-3. Create ssh key from `cluster-infrastructure` deployment:
-
-        sudo mkdir -p /opt/root/ssh
-        terraform show -json | jq -r ".values.root_module.child_modules[].resources[] | select(.address==\"$(terraform state list | grep ssh_tls_key)\") | .values.private_key_pem" > /opt/root/ssh/ssh-key.pem
+3. Create `pipectl-deployment` directory:
+```commandline
+mkdir -p ../pipectl-deployment
+```
 
 4. Create cluster.networks.config.json from `cluster-infrastructure` deployment:
-
-        terraform output -raw cp_cloud_network_config > cluster.networks.config.json 
-        export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
+````
+# Being in terraform deployment directory do:
+terraform output -raw cp_cloud_network_config > ../pipectl-deployment/cluster.networks.config.json 
+````
 
 5. Take script from the `cluster-infrastructure` deployment [output](#outputs-table-of-cluster-infrastructure-module) and
    run it by using bash commands. For example:
+````
+# Being in terraform deployment directory do:
+terraform output -raw cp_pipectl_script | envsubst > ../pipectl-deployment/deploy_cloud_pipeline.sh
+````
 
-        CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/<link-to-the-desired-pipectl-version>
-        wget -c $CP_PIPECTL_URL -O pipectl && chmod +x pipectl
-        terraform output -raw cp_pipectl_script | envsubst > "deploy_cloud_pipeline.sh" && chmod +x deploy_cloud_pipeline.sh
-        nohup ./deploy_cloud_pipeline.sh &> pipectl.log &
+6. Run deployment script:
+````
+cd ../pipectl-deployment/
+chmod +x deploy_cloud_pipeline.sh
+export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
+nohup ./deploy_cloud_pipeline.sh &> pipectl.log &
+````
 
-5. Wait until deployment finishes (you can watch for the progress with `pipectl.log` file).
-6. Your Cloud-Pipeline environment should be available on the provided DNS name provided during deployment (`cp_api_srv_host`).
+7. Wait until deployment finishes (you can watch for the progress with `pipectl.log` file).
+8. Your Cloud-Pipeline environment should be available on the provided DNS name provided during deployment (`cp_api_srv_host`).
