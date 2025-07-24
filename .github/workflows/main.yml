@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - develop
-      - issue-4029_cli-retry-batch
       # - 'release/**'
       # - 'stage/**'
 
