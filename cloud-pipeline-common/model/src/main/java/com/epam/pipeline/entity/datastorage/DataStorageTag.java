@@ -1,14 +1,16 @@
 package com.epam.pipeline.entity.datastorage;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 import java.time.LocalDateTime;
 
 @Value
-@Wither
+@With
 @AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class DataStorageTag {
 
     DataStorageObject object;

@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.epam.pipeline.elasticsearchagent.AbstractSpringBootApplicationTest;
+import com.epam.pipeline.elasticsearchagent.AbstractSpringApplicationTest;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
@@ -34,7 +34,10 @@ import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.Netty4Plugin;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URL;
@@ -45,9 +48,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @SuppressWarnings("unused")
 @Slf4j
-public class ElasticsearchClientTest extends AbstractSpringBootApplicationTest {
+public class ElasticsearchClientTest extends AbstractSpringApplicationTest {
 
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
     private static final String PIPELINE_TOKEN = "s3-";
@@ -64,11 +69,11 @@ public class ElasticsearchClientTest extends AbstractSpringBootApplicationTest {
     private static CreateIndexResponse createIndexResponse;
     private static String indexName;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws Exception {
         Settings settings = Settings.builder()
                 .put("path.home", "target/elasticsearch")
-                .put("transport.type", "local")
+                .put("transport.type", "netty4")
                 .put("http.enabled", true)
                 .build();
 
@@ -106,7 +111,7 @@ public class ElasticsearchClientTest extends AbstractSpringBootApplicationTest {
 
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         client = node.client();
         RestClientBuilder lowLevelClient = RestClient.builder(
@@ -114,7 +119,7 @@ public class ElasticsearchClientTest extends AbstractSpringBootApplicationTest {
         RestHighLevelClient highLevelClient = new RestHighLevelClient(lowLevelClient);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() throws Exception {
         node.close();
     }
@@ -134,7 +139,7 @@ public class ElasticsearchClientTest extends AbstractSpringBootApplicationTest {
                         .endObject()
                         .endObject())
                 .get();
-        Assert.assertEquals(STATUS_RESPONSE, indexResponse.status().getStatus());
+        assertEquals(STATUS_RESPONSE, indexResponse.status().getStatus());
 
     }
 

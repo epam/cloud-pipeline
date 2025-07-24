@@ -87,7 +87,7 @@ class GitTagEventProcessorTest extends AbstractSpringApplicationTest {
         assertEquals(1, pipelineCodeEvents.size());
         PipelineEvent event = pipelineCodeEvents.get(0);
 
-        Map<String, Object> map = objectMapper.readValue(event.getData(), new TypeReference<Map<String, String>>(){});
+        Map<String, Object> map = objectMapper.readValue(event.getData(), new TypeReference<Map<String, Object>>(){});
 
         assertAll("event",
             () -> assertEquals(PipelineEvent.ObjectType.PIPELINE_CODE, event.getObjectType()),

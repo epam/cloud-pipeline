@@ -1,26 +1,28 @@
 plugins {
-    id "java"
-    id "jacoco"
-    id "io.spring.dependency-management" version "1.0.6.RELEASE"
-    id "org.springframework.boot" version "2.0.2.RELEASE"
-    id "org.sonarqube" version "2.6.1"
+    id 'java'
+    id 'jacoco'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'org.sonarqube' version '2.6.1'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group "com.epam.pipeline"
 
-
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 bootJar {
-    archiveName "elasticsearch-agent.jar"
+    archiveFileName = "elasticsearch-agent.jar"
     manifest {
         attributes(
-                "Implementation-Version": "$version")
+                "Implementation-Version": version)
     }
 }
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 }
 
@@ -31,13 +33,16 @@ dependencies {
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
     }
-    compile("org.aspectj:aspectjweaver:1.8.8")
+    implementation("org.aspectj:aspectjweaver:1.8.8")
 
     //SpringBoot
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-jdbc", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-web", version: springBootVersion
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-log4j2", version: springBootVersion
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-data-ldap", version: springBootVersion
 
     // Elasticsearch
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
@@ -50,12 +55,6 @@ dependencies {
     //Postgres
     implementation group: "org.postgresql", name: "postgresql", version: postgresqlVersion
 
-    // Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
-
     // Apache Commons
     implementation group: "commons-io", name: "commons-io", version: apacheCommonsIOVersion
     implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
@@ -63,6 +62,7 @@ dependencies {
 
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
 
     // Retrofit
     implementation group: "com.squareup.retrofit2", name: "retrofit", version: retrofitVersion
@@ -81,31 +81,23 @@ dependencies {
     implementation group: "com.amazonaws", name: "aws-java-sdk-sts", version: awsSdkSTSVersion
     
     // Azure
-    compile group: "com.microsoft.azure", name: "azure-storage-blob", version: azureSdkBlobVersion
+    implementation group: "com.microsoft.azure", name: "azure-storage-blob", version: azureSdkBlobVersion
 
     //GS Bucket
-    compile group:"com.google.cloud", name:"google-cloud-storage", version:googleStorageSdkVersion
+    implementation group:"com.google.cloud", name:"google-cloud-storage", version:googleStorageSdkVersion
 
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    testAnnotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
     testImplementation group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
-    testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
-
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
-    testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
 
     //ShedLock
-    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: shedlockVersion
-    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: shedlockVersion
+    implementation group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: shedlockVersion
+    implementation group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: shedlockVersion
 }
 
 test {
     useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
+    reports.html.required = true
 }

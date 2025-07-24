@@ -36,7 +36,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.mchange.util.AssertException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
@@ -51,8 +51,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.elasticsearchagent.VerificationUtils.verifyStringArray;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SuppressWarnings({"PMD.TooManyStaticImports", "unchecked"})
 public final class MapperVerificationUtils {

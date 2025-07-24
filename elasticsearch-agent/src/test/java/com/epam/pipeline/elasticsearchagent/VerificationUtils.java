@@ -16,12 +16,14 @@
 package com.epam.pipeline.elasticsearchagent;
 
 import com.mchange.util.AssertException;
-import org.apache.commons.collections.CollectionUtils;
-import org.junit.Assert;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("unchecked")
 final class VerificationUtils {
@@ -36,8 +38,8 @@ final class VerificationUtils {
             return;
         }
 
-        Assert.assertEquals(expected.size(), actual.size());
-        expected.forEach(element -> Assert.assertTrue(actual.contains(element)));
+        assertEquals(expected.size(), actual.size());
+        expected.forEach(element -> assertTrue(actual.contains(element)));
     }
 
     static void verifyArray(final List<?> expected, final List<?> actual) {
@@ -47,7 +49,7 @@ final class VerificationUtils {
             }
             return;
         }
-        Assert.assertEquals(expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size());
     }
 
     private static ArrayList<String> toStringArray(final Object object) {

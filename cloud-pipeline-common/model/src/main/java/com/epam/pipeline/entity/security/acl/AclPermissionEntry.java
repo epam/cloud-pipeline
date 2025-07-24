@@ -28,9 +28,4 @@ public class AclPermissionEntry {
 
     private AclSid sid;
     private Integer mask;
-
-    public AclPermissionEntry(Sid sid, Integer mask) {
-        this.sid = new AclSid(sid);
-        this.mask = mask;
-    }
 }

@@ -1,12 +1,14 @@
 package com.epam.pipeline.entity.datastorage;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 @Value
-@Wither
+@With
 @AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class DataStorageObject {
 
     String path;
