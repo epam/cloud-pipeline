@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import itertools
-
+import time
 import click
 import datetime
 import logging
@@ -48,6 +48,8 @@ STORAGE_DETAILS_SEPARATOR = ', '
 DEFAULT_BATCH_SIZE = 1000
 BATCH_SIZE = int(os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE))
 ASYNC_BATCH_ENABLE = str(os.getenv('CP_CLI_STORAGE_ASYNC_BATCH_ENABLE', 'false')).lower() == 'true'
+TRANSFER_RETRY_ATTEMPTS = int(os.getenv('CP_CLI_TRANSFER_RETRY_ATTEMPTS', 3))
+TRANSFER_RETRY_TIMEOUT = int(os.getenv('CP_CLI_TRANSFER_RETRY_TIMEOUT', 15)) # seconds
 ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
@@ -63,11 +65,27 @@ class AllowedFailuresValues(object):
     FAIL = 'fail'
     FAIL_AFTER = 'fail-after'
     SKIP = 'skip'
+    RETRY = 'retry'
 
 
 class EmptyFilesValues(object):
     ALLOW = 'allow'
     SKIP = 'skip'
+
+
+class TransferParameters:
+
+    def __init__(self, threads, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                 io_threads, on_failures):
+        self.threads = threads
+        self.manager = manager
+        self.source_wrapper = source_wrapper
+        self.destination_wrapper = destination_wrapper
+        self.clean = clean
+        self.quiet = quiet
+        self.tags = tags
+        self.io_threads = io_threads
+        self.on_failures = on_failures
 
 
 class DataStorageOperations(object):
@@ -162,100 +180,156 @@ class DataStorageOperations(object):
                                        clean_flag=clean,
                                        quite_flag=quiet)
 
+        transfer_params = TransferParameters(threads=threads,
+                                             manager=manager,
+                                             source_wrapper=source_wrapper,
+                                             destination_wrapper=destination_wrapper,
+                                             clean=clean,
+                                             quiet=quiet,
+                                             tags=tags,
+                                             io_threads=io_threads,
+                                             on_failures=on_failures)
+
         batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.LOCAL
                                                                       or source_wrapper.get_type() == WrapperType.S3)
         if batch_allowed:
-            cls._transfer_batch_items(threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet,
-                                      tags, io_threads, on_failures,
-                                      permission_to_check, include, exclude, force, skip_existing,
-                                      verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+            cls._transfer_batch_items(transfer_params, audit_ctx, permission_to_check, include, exclude, force,
+                                      skip_existing, verify_destination, on_unsafe_chars,
+                                      on_unsafe_chars_replacement, on_empty_files)
             sys.exit(0)
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                       include, exclude, force, quiet, skip_existing, verify_destination,
                                       on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+        failed_items_queue = multiprocessing.Queue() if on_failures == AllowedFailuresValues.RETRY else None
         if threads:
-            cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             audit_ctx, clean, quiet, tags, io_threads, on_failures)
+            try:
+                cls._multiprocess_transfer_items(items, transfer_params, audit_ctx, failed_items_queue)
+            finally:
+                cls._retry_transfer(failed_items_queue, transfer_params, audit_ctx)
         else:
-            cls._transfer_items_with_audit_ctx(items, manager, source_wrapper, destination_wrapper,
-                                               audit_ctx, clean, quiet, tags, io_threads, on_failures)
+            with audit_ctx:
+                try:
+                    cls._transfer_items(items, transfer_params, lock=None, failed_items_queue=failed_items_queue)
+                finally:
+                    cls._retry_transfer(failed_items_queue, transfer_params)
 
     @classmethod
-    def _transfer_batch_items(cls, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                              quiet, tags, io_threads, on_failures,
+    def _retry_transfer(cls, failed_items_queue, params, audit_ctx=None):
+        if failed_items_queue is None:
+            # not enabled
+            return
+        retry_attempts = TRANSFER_RETRY_ATTEMPTS
+        if retry_attempts <= 0:
+            # not enabled
+            return
+        for attempt in range(1, retry_attempts + 1):
+            try:
+                failed_items = []
+                while not failed_items_queue.empty():
+                    failed_items.append(failed_items_queue.get())
+                if not failed_items:
+                    # no failures
+                    return
+                logging.debug(u"Found {} failed items. Retry attempt {}/{}.".format(len(failed_items),
+                                                                                    attempt, retry_attempts))
+                failed_items_queue = multiprocessing.Queue()
+                if params.threads:
+                    cls._multiprocess_transfer_items(failed_items, params, audit_ctx, failed_items_queue)
+                else:
+                    cls._transfer_items(failed_items, params, lock=None, failed_items_queue=failed_items_queue)
+            except Exception as e:
+                if attempt < retry_attempts:
+                    logging.error(u"Retry attempt failed: %s. Waiting %s seconds for the next attempt..", e,
+                                  TRANSFER_RETRY_TIMEOUT)
+                    time.sleep(TRANSFER_RETRY_TIMEOUT)
+
+    @classmethod
+    def _transfer_batch_items(cls, transfer_params, audit_ctx,
                               permission_to_check, include, exclude, force, skip_existing,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
-        items_iterator = iter(source_wrapper.get_items(quiet=quiet))
+        items_iterator = iter(transfer_params.source_wrapper.get_items(quiet=transfer_params.quiet))
         try:
-            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                           permission_to_check, include, exclude, force, quiet, skip_existing,
+            items = cls._fetch_batch_items(items_iterator, transfer_params.manager, transfer_params.source_wrapper,
+                                           transfer_params.destination_wrapper, permission_to_check, include,
+                                           exclude, force, transfer_params.quiet, skip_existing,
                                            verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
                                            on_empty_files)
         except StopIteration:
             return
-        if threads:
-            cls._multiprocess_transfer_batch(audit_ctx, clean,
-                                             destination_wrapper, exclude, force, include, io_threads, items,
-                                             manager, items_iterator, on_empty_files, on_failures, on_unsafe_chars,
-                                             on_unsafe_chars_replacement, permission_to_check, quiet,
-                                             skip_existing, source_wrapper, tags, threads,
+        if transfer_params.threads:
+            cls._multiprocess_transfer_batch(audit_ctx, items, transfer_params,
+                                             exclude, force, include, items_iterator, on_empty_files, on_unsafe_chars,
+                                             on_unsafe_chars_replacement, permission_to_check, skip_existing,
                                              verify_destination)
         else:
-            cls._transfer_batch(audit_ctx, clean, destination_wrapper,
-                                exclude, force, include, io_threads, items, manager, items_iterator, on_empty_files,
-                                on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
-                                quiet, skip_existing, source_wrapper, tags, verify_destination)
+            cls._transfer_batch(audit_ctx, items, transfer_params,
+                                exclude, force, include, items_iterator, on_empty_files,
+                                on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
+                                skip_existing, verify_destination)
 
     @classmethod
-    def _transfer_batch(cls, audit_ctx, clean, destination_wrapper, exclude, force,
-                        include, io_threads, items, manager, items_iterator, on_empty_files, on_failures,
-                        on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check, quiet, skip_existing,
-                        source_wrapper, tags, verify_destination):
+    def _transfer_batch(cls, audit_ctx, items, transfer_params, exclude, force, include, items_iterator, on_empty_files,
+                        on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check, skip_existing,
+                        verify_destination):
         with audit_ctx:
             while True:
+                failed_items_queue = multiprocessing.Queue() \
+                    if transfer_params.on_failures == AllowedFailuresValues.RETRY else None
                 try:
                     if ASYNC_BATCH_ENABLE:
                         with concurrent.futures.ThreadPoolExecutor(1) as executor:
-                            future = executor.submit(cls._fetch_batch_items, items_iterator, manager,
-                                                     source_wrapper, destination_wrapper, permission_to_check,
-                                                     include, exclude, force, quiet, skip_existing,
+                            future = executor.submit(cls._fetch_batch_items, items_iterator, transfer_params.manager,
+                                                     transfer_params.source_wrapper,
+                                                     transfer_params.destination_wrapper, permission_to_check,
+                                                     include, exclude, force, transfer_params.quiet, skip_existing,
                                                      verify_destination, on_unsafe_chars,
                                                      on_unsafe_chars_replacement, on_empty_files)
-                            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                                clean, quiet, tags, io_threads, on_failures, None)
+                            cls._transfer_items(items, transfer_params, lock=None,
+                                                failed_items_queue=failed_items_queue)
                             items = future.result()
                     else:
-                        cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet,
-                                            tags, io_threads, on_failures, None)
-                        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper,
-                                                       destination_wrapper,
-                                                       permission_to_check, include, exclude, force, quiet,
-                                                       skip_existing,
+                        cls._transfer_items(items, transfer_params, lock=None, failed_items_queue=failed_items_queue)
+                        items = cls._fetch_batch_items(items_iterator, transfer_params.manager,
+                                                       transfer_params.source_wrapper,
+                                                       transfer_params.destination_wrapper,
+                                                       permission_to_check, include, exclude, force,
+                                                       transfer_params.quiet, skip_existing,
                                                        verify_destination, on_unsafe_chars,
                                                        on_unsafe_chars_replacement, on_empty_files)
                 except StopIteration:
                     break
+                finally:
+                    cls._retry_transfer(failed_items_queue, transfer_params)
 
     @classmethod
-    def _multiprocess_transfer_batch(cls, audit_ctx, clean, destination_wrapper,
-                                     exclude, force, include, io_threads, items, manager, items_iterator,
-                                     on_empty_files, on_failures, on_unsafe_chars, on_unsafe_chars_replacement,
-                                     permission_to_check, quiet, skip_existing, source_wrapper, tags,
-                                     threads, verify_destination):
+    def _multiprocess_transfer_batch(cls, audit_ctx, items, transfer_params,
+                                     exclude, force, include, items_iterator,
+                                     on_empty_files, on_unsafe_chars, on_unsafe_chars_replacement,
+                                     permission_to_check, skip_existing,
+                                     verify_destination):
         while True:
+            failed_items_queue = multiprocessing.Queue() if transfer_params.on_failures == AllowedFailuresValues.RETRY else None
             try:
-                transfer_workers = cls._start_multiprocess_transfer(items, threads, manager, source_wrapper,
-                                                                    destination_wrapper, audit_ctx, clean, quiet, tags,
-                                                                    io_threads, on_failures)
-                items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                               permission_to_check, include, exclude, force, quiet, skip_existing,
-                                               verify_destination, on_unsafe_chars,
-                                               on_unsafe_chars_replacement, on_empty_files)
-                cls._handle_keyboard_interrupt(transfer_workers)
-            except StopIteration:
-                break
+                transfer_workers = cls._start_multiprocess_transfer(items, transfer_params, audit_ctx,
+                                                                    failed_items_queue)
+                try:
+                    items = cls._fetch_batch_items(items_iterator, transfer_params.manager,
+                                                   transfer_params.source_wrapper,
+                                                   transfer_params.destination_wrapper,
+                                                   permission_to_check, include, exclude, force,
+                                                   transfer_params.quiet, skip_existing,
+                                                   verify_destination, on_unsafe_chars,
+                                                   on_unsafe_chars_replacement, on_empty_files)
+
+                except StopIteration:
+                    break
+                finally:
+                    cls._handle_keyboard_interrupt(transfer_workers)
+            finally:
+                cls._retry_transfer(failed_items_queue, transfer_params, audit_ctx)
+
 
     @classmethod
     def _fetch_batch_items(cls, items_iterator, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -787,105 +861,100 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _start_multiprocess_transfer(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                     audit_ctx, clean, quiet, tags, io_threads, on_failures):
+    def _start_multiprocess_transfer(cls, sorted_items, transfer_params, audit_ctx, failed_items_queue=None):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
-        splitted_items = cls._split_items_by_process(sorted_items, threads)
+        splitted_items = cls._split_items_by_process(sorted_items, transfer_params.threads)
         lock = multiprocessing.Lock()
 
         workers = []
-        for i in range(threads):
+        for i in range(transfer_params.threads):
             process = multiprocessing.Process(target=cls._transfer_items_with_audit_ctx,
                                               args=(splitted_items[i],
-                                                    manager,
-                                                    source_wrapper,
-                                                    destination_wrapper,
+                                                    transfer_params,
                                                     audit_ctx,
-                                                    clean,
-                                                    quiet,
-                                                    tags,
-                                                    io_threads,
-                                                    on_failures,
-                                                    lock))
+                                                    lock,
+                                                    failed_items_queue))
             process.start()
             workers.append(process)
         return workers
 
     @classmethod
-    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                     audit_ctx, clean, quiet, tags, io_threads, on_failures):
-        workers = cls._start_multiprocess_transfer(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                                   audit_ctx, clean, quiet, tags, io_threads, on_failures)
+    def _multiprocess_transfer_items(cls, sorted_items, transfer_params, audit_ctx, failed_items_queue=None):
+        workers = cls._start_multiprocess_transfer(sorted_items, transfer_params, audit_ctx, failed_items_queue)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items_with_audit_ctx(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                                       quiet, tags, io_threads, on_failures, lock=None):
+    def _transfer_items_with_audit_ctx(cls, items, transfer_params, audit_ctx, lock=None, failed_items_queue=None):
         with audit_ctx:
-            cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
-                                io_threads, on_failures, lock)
+            cls._transfer_items(items, transfer_params, lock, failed_items_queue)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
-                        io_threads, on_failures, lock=None):
+    def _transfer_items(cls, items, transfer_params, lock=None, failed_items_queue=None):
         transfer_results = []
         fail_after_exception = None
         for item in items:
-            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                        source_wrapper, destination_wrapper,
+            transfer_results, fail_after_exception = cls._transfer_item(item, transfer_params,
                                                                         transfer_results,
-                                                                        clean, quiet, tags, io_threads,
-                                                                        on_failures, lock)
-        if not destination_wrapper.is_local():
-            cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                        transfer_results, clean=clean, flush_size=1)
+                                                                        lock)
+            if fail_after_exception:
+                if failed_items_queue is not None:
+                    failed_items_queue.put(item)
+        if not transfer_params.destination_wrapper.is_local():
+            cls._flush_transfer_results(transfer_params.source_wrapper, transfer_params.destination_wrapper,
+                                        transfer_results, clean=transfer_params.clean, flush_size=1)
         if fail_after_exception:
             raise fail_after_exception
 
     @classmethod
-    def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
-                       clean, quiet, tags, io_threads, on_failures, lock):
+    def _transfer_item(cls, item, transfer_params, transfer_results, lock):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
         fail_after_exception = None
         try:
-            transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                               relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, io_threads=io_threads, lock=lock)
-            if not destination_wrapper.is_local() and transfer_result:
+            transfer_result = transfer_params.manager.transfer(transfer_params.source_wrapper,
+                                                               transfer_params.destination_wrapper,
+                                                               path=full_path,
+                                                               relative_path=relative_path,
+                                                               clean=transfer_params.clean,
+                                                               quiet=transfer_params.quiet,
+                                                               size=size,
+                                                               tags=transfer_params.tags,
+                                                               io_threads=transfer_params.io_threads, lock=lock)
+            if not transfer_params.destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
-                transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                               transfer_results, clean=clean)
+                transfer_results = cls._flush_transfer_results(transfer_params.source_wrapper,
+                                                               transfer_params.destination_wrapper,
+                                                               transfer_results, clean=transfer_params.clean)
         except Exception as e:
             err_msg = str(e)
             if isinstance(e, ClientError) \
                     and err_msg and 'InvalidObjectState' in err_msg:
-                if 'storage class' in err_msg and not quiet:
+                if 'storage class' in err_msg and not transfer_params.quiet:
                     click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
                                .format(full_path))
                     return transfer_results, fail_after_exception
-                if 'access tier' in err_msg and not quiet:
+                if 'access tier' in err_msg and not transfer_params.quiet:
                     click.echo(u'File {} transferring has failed. Contact storage owner to restore file.'
                                .format(full_path))
                     return transfer_results, fail_after_exception
-            if on_failures == AllowedFailuresValues.FAIL:
+            if transfer_params.on_failures == AllowedFailuresValues.FAIL:
                 err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
                 logging.warn(err_msg)
-                if not quiet:
+                if not transfer_params.quiet:
                     click.echo(err_msg)
                 raise
-            elif on_failures == AllowedFailuresValues.FAIL_AFTER:
+            elif transfer_params.on_failures in [AllowedFailuresValues.FAIL_AFTER, AllowedFailuresValues.RETRY]:
                 err_msg = u'File transferring has failed {}. Proceeding...'.format(full_path)
                 logging.warn(err_msg)
-                if not quiet:
+                if not transfer_params.quiet:
                     click.echo(err_msg)
                 fail_after_exception = e
             else:
                 err_msg = u'File transferring has failed {}. Proceeding...'.format(full_path)
                 logging.warn(err_msg)
-                if not quiet:
+                if not transfer_params.quiet:
                     click.echo(err_msg)
         return transfer_results, fail_after_exception
 
