@@ -1131,6 +1131,10 @@ terraform output -raw cp_pipectl_script | envsubst &gt; ../pipectl-deployment/de
 </ol>
 <pre><code>cd ../pipectl-deployment/
 chmod +x deploy_cloud_pipeline.sh
+
+CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/&lt;link-to-the-desired-pipectl-version&gt;
+wget -c $CP_PIPECTL_URL -O pipectl &amp;&amp; chmod +x pipectl
+
 export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
 nohup ./deploy_cloud_pipeline.sh &amp;&gt; pipectl.log &amp;
 </code></pre>
