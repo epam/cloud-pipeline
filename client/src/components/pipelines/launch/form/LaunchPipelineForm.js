@@ -1333,6 +1333,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
+    const tags = filterVisibleTagsSync(
+      this.state.userTags,
+      this.state.userTagsVisibleTags
+    );
     const payload = {
       instanceType: values[EXEC_ENVIRONMENT].type,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
@@ -1342,10 +1346,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
-      tags: filterVisibleTagsSync(
-        this.state.userTags,
-        {visibleTags: this.state.userTagsVisibleTags}
-      ),
+      tags,
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId

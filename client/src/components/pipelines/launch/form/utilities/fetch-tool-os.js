@@ -15,86 +15,86 @@
  */
 
 import LoadToolInfo from '../../../../../models/tools/LoadToolInfo';
+import dockerRegistries from '../../../../../models/tools/DockerRegistriesTree';
 
-export default function fetchToolOS (dockerImage, dockerRegistries) {
-  if (!dockerImage || !dockerRegistries) {
-    return Promise.resolve(undefined);
+const cache = new Map();
+
+async function fetchToolOS (dockerImage, tree = dockerRegistries) {
+  if (!dockerImage) {
+    return undefined;
   }
-  return new Promise((resolve) => {
+  try {
+    await tree.fetchIfNeededOrWait();
+    if (!tree.loaded) {
+      throw new Error(`Error fetching docker images: ${tree.error}`);
+    }
     const [
       registryPath,
       groupName,
       imageAndVersion
     ] = dockerImage.split('/');
     const [image, version] = (imageAndVersion || '').split(':');
-    let toolInfoRequest;
-    dockerRegistries
-      .fetchIfNeededOrWait()
-      .then(() => {
-        if (dockerRegistries.loaded) {
-          const {
-            registries = []
-          } = dockerRegistries.value || {};
-          const registry = registries.find(o => o.path === registryPath);
-          if (!registry) {
-            throw new Error(`Registry ${registryPath} not found`);
-          }
-          const {
-            groups = []
-          } = registry;
-          const group = groups.find(g => g.name === groupName);
-          if (!group) {
-            throw new Error(`Group ${groupName} not found`);
-          }
-          const {
-            tools = []
-          } = group;
-          const tool = tools.find(o => o.image === `${groupName}/${image}`);
-          if (!tool) {
-            throw new Error(`Tool ${groupName}/${image} not found`);
-          }
-          toolInfoRequest = new LoadToolInfo(tool.id);
-          return toolInfoRequest.fetch();
-        } else {
-          throw new Error(`Error fetching docker images: ${dockerRegistries.error}`);
-        }
-      })
-      .then(() => {
-        if (toolInfoRequest && toolInfoRequest.loaded) {
-          const {
-            versions = []
-          } = toolInfoRequest.value || {};
-          const versionInfo = versions.find(v => v.version === version);
-          if (
-            versionInfo &&
-            versionInfo.scanResult &&
-            versionInfo.scanResult.toolOSVersion &&
-            versionInfo.scanResult.toolOSVersion.distribution
-          ) {
-            const {
-              distribution,
-              version: distributionVersion = ''
-            } = versionInfo.scanResult.toolOSVersion;
-            const os = [
-              distribution,
-              distributionVersion
-            ]
-              .filter(Boolean)
-              .join(' ');
-            return Promise.resolve(os);
-          } else {
-            return Promise.resolve(undefined);
-          }
-        } else {
-          throw new Error(
-            `Error fetching tool info: ${toolInfoRequest ? toolInfoRequest.error : 'unknown'}`
-          );
-        }
-      })
-      .then(resolve)
-      .catch(e => {
-        console.warn(e.message);
-        resolve(undefined);
-      });
-  });
+    const {
+      registries = []
+    } = tree.value || {};
+    const registry = registries.find(o => o.path === registryPath);
+    if (!registry) {
+      throw new Error(`Registry ${registryPath} not found`);
+    }
+    const {
+      groups = []
+    } = registry;
+    const group = groups.find(g => g.name === groupName);
+    if (!group) {
+      throw new Error(`Group ${groupName} not found`);
+    }
+    const {
+      tools = []
+    } = group;
+    const tool = tools.find(o => o.image === `${groupName}/${image}`);
+    if (!tool) {
+      throw new Error(`Tool ${groupName}/${image} not found`);
+    }
+    const toolInfoRequest = new LoadToolInfo(tool.id);
+    await toolInfoRequest.fetch();
+    if (!toolInfoRequest.loaded) {
+      throw new Error(
+        `Error fetching tool info: ${toolInfoRequest ? toolInfoRequest.error : 'unknown'}`
+      );
+    }
+    const {
+      versions = []
+    } = toolInfoRequest.value || {};
+    const versionInfo = versions.find(v => v.version === version);
+    if (
+      versionInfo &&
+      versionInfo.scanResult &&
+      versionInfo.scanResult.toolOSVersion &&
+      versionInfo.scanResult.toolOSVersion.distribution
+    ) {
+      const {
+        distribution,
+        version: distributionVersion = ''
+      } = versionInfo.scanResult.toolOSVersion;
+      return [
+        distribution,
+        distributionVersion
+      ]
+        .filter(Boolean)
+        .join(' ');
+    }
+  } catch (e) {
+    console.warn(e.message);
+  }
+  return undefined;
+}
+
+export default async function fetchToolOSCached (dockerImage, tree = dockerRegistries) {
+  if (!dockerImage) {
+    return undefined;
+  }
+  if (!cache.has(dockerImage.toLowerCase())) {
+    cache.set(dockerImage.toLowerCase(), fetchToolOS(dockerImage, tree));
+  }
+  return cache.get(dockerImage.toLowerCase());
 }
