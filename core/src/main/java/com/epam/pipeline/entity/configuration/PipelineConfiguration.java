@@ -74,6 +74,7 @@ public class PipelineConfiguration implements Cloneable {
     private static final String SHARED_WITH_ROLES = "share_with_roles";
     private static final String NOTIFICATIONS = "notifications";
     private static final String RAW_EDIT = "raw";
+    private static final String FRIENDLY_URL = "friendly_url";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -139,7 +140,7 @@ public class PipelineConfiguration implements Cloneable {
     @JsonIgnore
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
 
-    @JsonIgnore
+    @JsonProperty(value = FRIENDLY_URL)
     private String prettyUrl;
 
     @JsonIgnore
