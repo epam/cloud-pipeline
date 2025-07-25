@@ -66,7 +66,8 @@ const CAPABILITIES_OS_FILTERS = {
     'centos 7*',
     'rocky*',
     'ubuntu 18.04',
-    'ubuntu 20.04'
+    'ubuntu 20.04',
+    'ubuntu 22.04'
   ]
 };
 

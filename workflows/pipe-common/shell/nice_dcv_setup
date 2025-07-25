@@ -96,7 +96,7 @@ function install_dcv {
                      ./nice-dcv-web-viewer_2021.2.11190-1_amd64.ubuntu1804.deb \
                      ./nice-xdcv_2021.2.411-1_amd64.ubuntu1804.deb
       _pkg_result=$?
-    elif [[  "$CP_VER" == *"20.04"* ]]; then
+    elif [[  "$CP_VER" == *"20.04"* ]] || [[  "$CP_VER" == *"22.04"* ]]; then
       _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu2004-x86_64
       wget "$_dcv_distro_url/NICE-GPG-KEY"
       gpg --import NICE-GPG-KEY
