@@ -45,6 +45,16 @@ public enum Privilege {
         value.setTo(getAllowCheckbox(privilegeRow), getDenyCheckbox(privilegeRow));
     }
 
+    public void setToAllow(boolean isAllowed) {
+        SelenideElement privilegeRow = getPrivilegeRow();
+        Checkbox checkbox = new Checkbox(getCheckBoxElementByColumn(privilegeRow, 2));
+        if (isAllowed) {
+            checkbox.switchOn();
+        } else {
+            checkbox.switchOff();
+        }
+    }
+
     private Checkbox getAllowCheckbox(SelenideElement permissionRow) {
         return new Checkbox(getCheckBoxElementByColumn(permissionRow, 2));
     }

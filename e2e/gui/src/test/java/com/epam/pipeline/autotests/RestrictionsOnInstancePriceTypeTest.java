@@ -16,7 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
-import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;

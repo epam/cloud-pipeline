@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
