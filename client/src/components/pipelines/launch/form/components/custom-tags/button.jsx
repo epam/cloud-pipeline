@@ -27,7 +27,7 @@ function CustomTagsButton (props) {
     </span>
   );
 
-  const filteredTags = filterVisibleTagsSync(tags, {visibleTags});
+  const filteredTags = filterVisibleTagsSync(tags, visibleTags);
 
   if (Object.values(filteredTags ?? {}).length > 0) {
     component = (
