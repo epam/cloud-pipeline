@@ -46,13 +46,19 @@ import java.util.stream.Stream;
 
 public class RBACPermissionTest extends AbstractBfxPipelineTest implements Authorization {
 
-    private String[][] attr = {{"key1", "value1"}, {"key2", "value2"},
-                               {"key3", "value3"}, {"key4", "value4"}};
+    private final String key1 = "key1";
+    private final String value1 = "value1";
+    private final String key2 = "key2";
+    private final String value2 = "value2";
+    private String key3 = "key3";
+    private String value3 = "value3";
+    private final String key4 = "key4";
+    private final String value4 = "value4";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String mask = "*";
     private String[] initialMiscMetadataSensitiveKeys = {""};
-    private String miscMetadataSensitiveKeys = "misc.metadata.sensitive.keys";
-    private String miscMetadataSensitiveKeysTestValue = format("[\"%s\"]", attr[0][0]);
+    private final String miscMetadataSensitiveKeys = "misc.metadata.sensitive.keys";
+    private final String miscMetadataSensitiveKeysTestValue = format("[\"%s\"]", key1);
     private final String testGroup1 = "TEST_GROUP_1";
     private final String testGroup2 = "TEST_GROUP_2";
 
@@ -100,7 +106,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .edit()
                 .addAllowedLaunchOptions(toolInstanceTypesMask, "")
                 .showMetadata()
-                .deleteKeys(attr[0][0], attr[1][0], attr[2][0], attr[3][0])
+                .deleteKeys(key1, key2, key3, key4)
                 .ok();
     }
 
@@ -121,8 +127,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .isListOfRolesBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
-                .assertKeysArePresent(attr[0][0], attr[1][0], attr[2][0])
-                .assertKeysAreDisabled(attr[0][0], attr[1][0], attr[2][0])
+                .assertKeysArePresent(key1, key2, key3)
+                .assertKeysAreDisabled(key1, key2, key3)
                 .ok();
     }
 
@@ -157,14 +163,14 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .isListOfRolesBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
-                .assertKeyNotPresent(attr[0][0])
-                .assertKeysArePresent(attr[1][0], attr[2][0])
-                .deleteKeys(attr[1][0])
-                .selectKey(attr[2][0])
-                .changeValue(attr[2][1] = format("%s_new", attr[2][1]))
-                .changeKey(attr[2][0] = format("%s_new", attr[2][0]))
+                .assertKeyNotPresent(key1)
+                .assertKeysArePresent(key2, key3)
+                .deleteKeys(key2)
+                .selectKey(key3)
+                .changeValue(value3 = format("%s_new", value3))
+                .changeKey(key3 = format("%s_new", key3))
                 .close()
-                .addKeyWithValue(attr[3][0], attr[3][1])
+                .addKeyWithValue(key4, value4)
                 .ok();
         navigationMenu()
                 .settings()
@@ -173,8 +179,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .searchUserEntry(admin.login)
                 .openEditUserPopUp()
                 .showMetadata()
-                .assertKeysAreNotPresent(attr[0][0], attr[1][0])
-                .assertKeysArePresent(attr[3][0], attr[2][0])
+                .assertKeysAreNotPresent(key1, key2)
+                .assertKeysArePresent(key4, key3)
                 .ok();
     }
 
@@ -208,8 +214,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .isListOfRolesBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
-                .assertKeysArePresent(attr[2][0], attr[3][0])
-                .assertKeysAreDisabled(attr[2][0], attr[3][0])
+                .assertKeysArePresent(key3, key4)
+                .assertKeysAreDisabled(key3, key4)
                 .ok()
                 .click(IMPERSONATE);
         navigationMenu()
@@ -234,8 +240,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .isListOfUsersBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
-                .assertKeysArePresent(attr[0][0], attr[1][0], attr[2][0])
-                .assertKeysAreDisabled(attr[0][0], attr[1][0], attr[2][0])
+                .assertKeysArePresent(key1, key2, key3)
+                .assertKeysAreDisabled(key1, key2, key3)
                 .ok();
         editGroupPopup.ok();
     }
@@ -268,14 +274,14 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .addUserIfNonExist(admin.login)
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
-                .assertKeyNotPresent(attr[0][0])
-                .assertKeysArePresent(attr[1][0], attr[2][0])
-                .deleteKeys(attr[1][0])
-                .selectKey(attr[2][0])
-                .changeValue(attr[2][1] = format("%s_new", attr[2][1]))
-                .changeKey(attr[2][0] = format("%s_new", attr[2][0]))
+                .assertKeyNotPresent(key1)
+                .assertKeysArePresent(key2, key3)
+                .deleteKeys(key2)
+                .selectKey(key3)
+                .changeValue(value3 = format("%s_new", value3))
+                .changeKey(key3 = format("%s_new", key3))
                 .close()
-                .addKeyWithValue(attr[3][0], attr[3][1])
+                .addKeyWithValue(key4, value4)
                 .ok();
         EditGroupPopup editGroupPopup = navigationMenu()
                 .settings()
@@ -285,15 +291,14 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
         editGroupPopup
                 .checkUserExistsInGroup(admin.login)
                 .showMetadata()
-                .assertKeysAreNotPresent(attr[0][0], attr[1][0])
-                .assertKeysArePresent(attr[3][0], attr[2][0])
+                .assertKeysAreNotPresent(key1, key2)
+                .assertKeysArePresent(key4, key3)
                 .ok();
         editGroupPopup.ok();
     }
 
     private void loginAsUser(Account account) {
         logoutIfNeeded();
-        $(byId("navigation-button-stop-impersonation")).waitUntil(not(exist), DEFAULT_TIMEOUT);
         loginAs(account)
                 .settings()
                 .switchToMyProfile()
@@ -319,9 +324,9 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .click(PROFILE)
                 .addAllowedLaunchOptions(toolInstanceTypesMask, mask)
                 .showMetadata()
-                .addKeyWithValue(attr[0][0], attr[0][1])
-                .addKeyWithValue(attr[1][0], attr[1][1])
-                .addKeyWithValue(attr[2][0], attr[2][1])
+                .addKeyWithValue(key1, value1)
+                .addKeyWithValue(key2, value2)
+                .addKeyWithValue(key3, value3)
                 .ok();
     }
 
@@ -344,9 +349,9 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .click(PROFILE)
                 .addAllowedLaunchOptions(toolInstanceTypesMask, mask)
                 .showMetadata()
-                .addKeyWithValue(attr[0][0], attr[0][1])
-                .addKeyWithValue(attr[1][0], attr[1][1])
-                .addKeyWithValue(attr[2][0], attr[2][1])
+                .addKeyWithValue(key1, value1)
+                .addKeyWithValue(key2, value2)
+                .addKeyWithValue(key3, value3)
                 .ok();
     }
 

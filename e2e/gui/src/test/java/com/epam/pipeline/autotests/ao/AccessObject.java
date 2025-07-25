@@ -37,10 +37,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toSet;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 
@@ -67,7 +65,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
-import static org.testng.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
 public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
@@ -540,16 +537,6 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         get(combobox).shouldBe(visible).click();
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         Arrays.stream(options).forEach(option -> listDropDown.forEach(row -> row.shouldNotHave(text(option))));
-        return (ELEMENT_TYPE) this;
-    }
-
-    default ELEMENT_TYPE checkDropDownContainsValue(final Primitive combobox, final String option) {
-        sleep(1, SECONDS);
-        get(combobox).shouldBe(visible).click();
-        List<SelenideElement> lines = Selenide.$$(byClassName("ant-select-dropdown-menu-item")).stream()
-                .filter(row -> row.getAttribute("title").contains("m6i")).collect(Collectors.toList());
-        assertTrue(lines.size() > 0,
-                format("Option '%s' isn't contained in drop-down list", option));
         return (ELEMENT_TYPE) this;
     }
 
