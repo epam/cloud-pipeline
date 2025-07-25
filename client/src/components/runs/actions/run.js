@@ -75,7 +75,11 @@ import RunPayloadEstimatedPriceAlert from './run-payload-estimated-price-alert';
 import {
   getAllowedStoragesForCloudRegion
 } from '../../../utils/limit-mounts/check-cloud-region-rules';
-import {getUserTagsValidationResult} from '../run-tags/utilities';
+import {
+  filterVisibleTagsSync,
+  getUserTagsValidationResult,
+  getVisibleUserTags
+} from '../run-tags/utilities';
 import {
   ensureValidReservationParametersForLaunchPayloads,
   findReservationParameterConfig
@@ -551,7 +555,10 @@ function runFn (
               singlePayload.isSpot = component.state.isSpot;
               singlePayload.instanceType = component.state.instanceType;
               singlePayload.hddSize = component.state.hddSize;
-              singlePayload.tags = component.state.tags;
+              singlePayload.tags = filterVisibleTagsSync(
+                component.state.tags,
+                component.state.tagsVisibility
+              );
               if (component.state.limitMounts !== component.props.limitMounts) {
                 const {limitMounts} = component.state;
                 if (limitMounts) {
@@ -694,6 +701,7 @@ export class RunConfirmation extends React.Component {
     tags: PropTypes.object,
     tagsPayload: PropTypes.object,
     tagsValidation: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+    tagsVisibility: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
     onChangeTags: PropTypes.func,
     pipelineId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     pipelineVersion: PropTypes.string,
@@ -1346,6 +1354,7 @@ export class RunConfirmation extends React.Component {
             tags={this.props.tags}
             payload={this.props.tagsPayload}
             validation={this.props.tagsValidation}
+            visibleTags={this.props.tagsVisibility}
             onChange={this.props.onChangeTags}
           />
         </div>
@@ -1453,7 +1462,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
     runCapabilities: null,
     tags: {},
     tagsPayload: {},
-    tagsValidation: []
+    tagsValidation: [],
+    tagsVisibility: []
   };
 
   get runCapabilitiesError () {
@@ -1487,10 +1497,12 @@ class RunSpotConfirmationWithPrice extends React.Component {
     const info = await this.getUserTagsValidationInfo();
     const {
       validation = [],
+      visible = [],
       payload
     } = info || {};
     this.setState({
       tagsValidation: validation,
+      tagsVisibility: visible,
       tagsPayload: payload
     });
   };
@@ -1500,8 +1512,10 @@ class RunSpotConfirmationWithPrice extends React.Component {
     const payload = this.getUserTagsLaunchPayload();
     if (payload) {
       const validation = await getUserTagsValidationResult(tags, {launchPayload: payload});
+      const visible = await getVisibleUserTags(payload);
       return {
         validation,
+        visible,
         payload
       };
     }
@@ -1640,6 +1654,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
             tags={this.state.tags}
             tagsPayload={this.state.tagsPayload}
             tagsValidation={this.state.tagsValidation}
+            tagsVisibility={this.state.tagsVisibility}
             onChangeTags={this.onChangeTags}
             pipelineId={this.props.pipelineId}
             pipelineVersion={this.props.pipelineVersion}

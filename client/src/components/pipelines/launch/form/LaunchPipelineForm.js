@@ -148,7 +148,11 @@ import {
 import CustomTagsControl from './components/custom-tags/control';
 import UploadParametersButton from './components/upload-parameters-button';
 import ConfigurePlugins from '../../../plugins/configure';
-import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
+import {
+  filterVisibleTagsSync,
+  getUserTagsValidationResult,
+  getVisibleUserTags
+} from '../../../runs/run-tags/utilities';
 import Parameters from './parameters/parameters';
 import AddParameterButton from './parameters/add-parameter-button';
 import {getParameterKeyClassName} from './parameters/utilities';
@@ -279,6 +283,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   state = {
     userTags: {},
     userTagsValidation: [],
+    userTagsVisibleTags: [],
     userTagsValidationPayload: undefined,
     conditionalParameters: [],
     openedPanels: [PARAMETERS],
@@ -502,8 +507,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         );
         this.props.onModified && this.props.onModified(this.modified);
         checkIfNotAborted();
-        await this.rebuildLaunchCommand();
-        checkIfNotAborted();
         const validateFields = async () => new Promise((resolve) => {
           const onValidationChange = (formInvalid, values) => {
             resolve({values, errors: formInvalid});
@@ -519,6 +522,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         checkIfNotAborted();
         const payload = values ? await this.generateLaunchPayload(values) : undefined;
         await this.validateUserTags(payload);
+        checkIfNotAborted();
+        await this.rebuildLaunchCommand();
+        checkIfNotAborted();
       } catch (error) {
         if (error instanceof FormFieldChangedAbortedError) {
           // noop
@@ -1462,7 +1468,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
-      tags: this.state.userTags,
+      tags: filterVisibleTagsSync(
+        this.state.userTags,
+        {visibleTags: this.state.userTagsVisibleTags}
+      ),
       params: parameterUtilities.parametersToPayloadParams(this.getParameters(parametersPayloadId)),
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -2512,6 +2521,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
     let result = [];
+    let visibleTags = [];
     if (
       !this.props.detached &&
       !this.props.isDetachedConfiguration &&
@@ -2519,9 +2529,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       const {userTags} = this.state;
       result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
+      visibleTags = await getVisibleUserTags(payload);
     }
     this.setState({
       userTagsValidation: result,
+      userTagsVisibleTags: visibleTags,
       userTagsValidationPayload: payload
     }, () => {
       resolve(!result || result.length === 0);
@@ -3798,6 +3810,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       userTags,
       userTagsValidation = [],
+      userTagsVisibleTags = [],
       userTagsValidationPayload
     } = this.state;
 
@@ -3810,6 +3823,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <CustomTagsControl
           tags={userTags}
           validation={userTagsValidation}
+          visibleTags={userTagsVisibleTags}
           payload={userTagsValidationPayload}
           onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
           buttonText="Configure"
