@@ -1433,10 +1433,9 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
     public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
             "gcp.default.gpu.type", "a100", GCP_GROUP, isNotBlank);
-    public static final ObjectPreference<GCPSpotType> GCP_SPOT_INSTANCE_TYPE = new ObjectPreference<>(
-            "gcp.spot.instance.type", GCPSpotType.PREEMPTIBLE, new TypeReference<GCPSpotType>() {}, GCP_GROUP,
-            isNullOrValidJson(new TypeReference<GCPSpotType>() {}), true);
-
+    public static final StringPreference GCP_SPOT_INSTANCE_TYPE = new StringPreference(
+            "gcp.spot.instance.type", GCPSpotType.PREEMPTIBLE.name(), GCP_GROUP,
+            isValidEnum(GCPSpotType.class));
 
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
