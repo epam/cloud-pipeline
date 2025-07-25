@@ -145,7 +145,11 @@ import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import CustomTagsControl from './components/custom-tags/control';
-import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
+import {
+  filterVisibleTagsSync,
+  getUserTagsValidationResult,
+  getVisibleUserTags
+} from '../../../runs/run-tags/utilities';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -265,6 +269,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   state = {
     userTags: {},
     userTagsValidation: [],
+    userTagsVisibleTags: [],
     userTagsValidationPayload: undefined,
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
@@ -497,6 +502,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         checkIfNotAborted();
         const payload = values ? this.generateLaunchPayload(values) : undefined;
         await this.validateUserTags(payload);
+        checkIfNotAborted();
+        await this.rebuildLaunchCommand();
+        checkIfNotAborted();
       } catch (error) {
         if (error instanceof FormFieldChangedAbortedError) {
           // noop
@@ -1334,7 +1342,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
-      tags: this.state.userTags,
+      tags: filterVisibleTagsSync(
+        this.state.userTags,
+        {visibleTags: this.state.userTagsVisibleTags}
+      ),
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -2865,6 +2876,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
     let result = [];
+    let visibleTags = [];
     if (
       !this.props.detached &&
       !this.props.isDetachedConfiguration &&
@@ -2872,10 +2884,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       const {userTags} = this.state;
       result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
+      visibleTags = await getVisibleUserTags(payload);
     }
     this.setState({
       userTagsValidation: result,
-      userTagsValidationPayload: payload,
+      userTagsVisibleTags: visibleTags,
+      userTagsValidationPayload: payload
     }, () => {
       resolve(!result || result.length === 0);
     });
@@ -4587,7 +4601,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       userTags,
       userTagsValidation = [],
-      userTagsValidationPayload,
+      userTagsVisibleTags = [],
+      userTagsValidationPayload
     } = this.state;
 
     return (
@@ -4599,6 +4614,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <CustomTagsControl
           tags={userTags}
           validation={userTagsValidation}
+          visibleTags={userTagsVisibleTags}
           payload={userTagsValidationPayload}
           onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
           buttonText="Configure"
