@@ -4,6 +4,9 @@ import {Icon} from 'antd';
 import classNames from 'classnames';
 import RunTags from '../../../../../runs/run-tags';
 import styles from './custom-tags.css';
+import {
+  filterVisibleTagsSync
+} from '../../../../../runs/run-tags/utilities';
 
 function CustomTagsButton (props) {
   const {
@@ -13,7 +16,8 @@ function CustomTagsButton (props) {
     tags,
     onClick,
     buttonText = 'Configure tags',
-    validation = []
+    validation = [],
+    visibleTags = []
   } = props;
 
   let component = (
@@ -23,10 +27,12 @@ function CustomTagsButton (props) {
     </span>
   );
 
-  if (Object.values(tags ?? {}).length > 0) {
+  const filteredTags = filterVisibleTagsSync(tags, {visibleTags});
+
+  if (Object.values(filteredTags ?? {}).length > 0) {
     component = (
       <RunTags
-        run={{tags}}
+        run={{tags: filteredTags}}
         interactive={false}
         showOnlyCustomUserTags
         style={{display: 'inline-flex', flexWrap: 'wrap'}}
@@ -74,6 +80,7 @@ CustomTagsButton.propTypes = {
   disabled: PropTypes.bool,
   tags: PropTypes.object,
   validation: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
+  visibleTags: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
   payload: PropTypes.object,
   onClick: PropTypes.func,
   buttonText: PropTypes.node

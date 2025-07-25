@@ -10,22 +10,56 @@ export async function getUserTagsValidationResult (tags, opts) {
   return getUserTagsValidationResultSync(tags, opts);
 }
 
+export async function getVisibleUserTags (launchPayload) {
+  await preferences.fetchIfNeededOrWait();
+  return getVisibleUserTagsSync(launchPayload);
+}
+
 export async function getRequiredUserTags (launchPayload) {
   await preferences.fetchIfNeededOrWait();
   return getRequiredUserTagsSync(launchPayload);
 }
 
+export async function filterVisibleTags (tags, opts) {
+  await preferences.fetchIfNeededOrWait();
+  return filterVisibleTagsSync(tags, opts);
+}
+
+export function filterVisibleTagsSync (tags, opts) {
+  const {
+    launchPayload,
+    visibleTags
+  } = opts || {};
+  const visible = visibleTags === undefined
+    ? getVisibleUserTagsSync(launchPayload)
+    : visibleTags;
+  return Object.entries(tags || {})
+    .filter(([tag]) => visible.includes(tag))
+    .map(([tag, value]) => ({[tag]: value}))
+    .reduce((acc, tag) => ({
+      ...acc,
+      ...tag
+    }), {});
+}
+
 export function getUserTagsValidationResultSync (tags, opts) {
   const {
     launchPayload,
-    requiredTags
+    requiredTags,
+    visibleTags
   } = opts || {};
   const required = requiredTags === undefined
     ? getRequiredUserTagsSync(launchPayload)
     : requiredTags;
+  const visible = visibleTags === undefined
+    ? getVisibleUserTagsSync(launchPayload)
+    : visibleTags;
   const result = [];
   const runUserTags = preferences.uiRunsUserTags || [];
   for (const requiredTag of required) {
+    if (!visible.includes(requiredTag)) {
+      continue;
+    }
     const value = (tags || {})[requiredTag];
     if (value === undefined || value.trim().length === 0) {
       const tag = runUserTags.find((t) => t.tag === requiredTag);
@@ -39,7 +73,13 @@ export function getUserTagsValidationResultSync (tags, opts) {
   return result;
 }
 
-function checkTagIsRequired (config, payload) {
+function checkTagConfigMatches (config, payload) {
+  if (typeof config === 'boolean') {
+    return config;
+  }
+  if (typeof config !== 'object') {
+    return Boolean(config);
+  }
   const {
     // eslint-disable-next-line camelcase
     docker_image,
@@ -135,21 +175,33 @@ function checkTagIsRequired (config, payload) {
   return checkDockerImage() || checkInstanceType() || checkClusterSize();
 }
 
+export function userTagIsVisible (tag, launchPayload) {
+  const {
+    visible = true
+  } = tag;
+  return checkTagConfigMatches(visible, launchPayload);
+}
+
+export function userTagIsRequired (tag, launchPayload) {
+  const {
+    required = false
+  } = tag;
+  return userTagIsVisible(tag, launchPayload) && checkTagConfigMatches(required, launchPayload);
+}
+
+export function getVisibleUserTagsSync (launchPayload) {
+  if (launchPayload) {
+    const config = preferences ? preferences.uiRunsUserTags : [];
+    const tagIsVisible = (tag) => userTagIsVisible(tag, launchPayload);
+    return config.filter(tagIsVisible).map((c) => c.tag);
+  }
+  return [];
+}
+
 export function getRequiredUserTagsSync (launchPayload) {
   if (launchPayload) {
     const config = preferences ? preferences.uiRunsUserTags : [];
-    const tagIsRequired = (tag) => {
-      const {
-        required = false
-      } = tag;
-      if (typeof required === 'boolean') {
-        return required;
-      }
-      if (typeof required === 'object') {
-        return checkTagIsRequired(required, launchPayload);
-      }
-      return Boolean(required);
-    };
+    const tagIsRequired = (tag) => userTagIsRequired(tag, launchPayload);
     return config.filter(tagIsRequired).map((c) => c.tag);
   }
   return [];
