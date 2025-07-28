@@ -47,7 +47,7 @@ class SecurityAuditManager(object):
         now = datetime.datetime.utcnow()
         message_timestamp = now.strftime('%Y-%m-%d %H:%M:%S.') + '%03d' % (now.microsecond / 1000)
 
-        full_message = '[run_id %s] %s' % (
+        full_message = '[run_id #%s] %s' % (
             run_id,
             message
         )
@@ -62,4 +62,4 @@ class SecurityAuditManager(object):
             'type': 'audit',
             'user': owner
         }
-        self.pipeline_client.log_security_event(event_data)
+        self.pipeline_client.log_security_event([event_data])
