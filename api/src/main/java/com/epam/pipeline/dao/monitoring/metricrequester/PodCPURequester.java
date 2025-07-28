@@ -109,12 +109,11 @@ public class PodCPURequester extends CPURequester {
         final MonitoringStats monitoringStats = new MonitoringStats();
         Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
         final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Integer> capacity = Optional.of(4);
-//        final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
-//                .map(Object::toString)
-//                 Elastic CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
-//                .map(it -> it.substring(0, it.length() - 3))
-//                .map(Integer::valueOf);
+        final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
+                .map(Object::toString)
+                 // Elastic CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
+                .map(it -> it.substring(0, it.length() - 3))
+                .map(Integer::valueOf);
         final Optional<Double> avgUtilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
         final Optional<Double> maxUtilization = doubleValue(aggregations, MAX_AGGREGATION + CPU_UTILIZATION);
         final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
