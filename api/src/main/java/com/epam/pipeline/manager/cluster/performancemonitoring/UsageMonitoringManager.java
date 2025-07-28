@@ -82,7 +82,7 @@ public interface UsageMonitoringManager {
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
      * @param interval period of stats collecting
-     * @param runId The run ID
+     * @param runId The run ID to filter particular pod (optional)
      * @return stream, containing required information in .csv format
      */
     InputStream getStatsForNodeAsInputStream(String nodeName,
