@@ -36,7 +36,6 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -46,6 +45,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StorageBillingMapperTest {
 
@@ -109,31 +110,31 @@ public class StorageBillingMapperTest {
 
         final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
 
-        Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
+        assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        Assert.assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
+        assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
                 mappedFields.get("created_date"));
-        Assert.assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals((int) TEST_REGION_ID, mappedFields.get("cloudRegionId"));
-        Assert.assertEquals(TEST_REGION_NAME, mappedFields.get("cloud_region_name"));
-        Assert.assertEquals(TEST_REGION_PROVIDER.toString(), mappedFields.get("cloud_region_provider"));
+        assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
+        assertEquals((int) TEST_REGION_ID, mappedFields.get("cloudRegionId"));
+        assertEquals(TEST_REGION_NAME, mappedFields.get("cloud_region_name"));
+        assertEquals(TEST_REGION_PROVIDER.toString(), mappedFields.get("cloud_region_provider"));
 
-        Assert.assertEquals(storage.getId(), mappedFields.get("storage_id"));
-        Assert.assertEquals(storage.getName(), mappedFields.get("storage_name"));
-        Assert.assertEquals(storage.getPath(), mappedFields.get("storage_path"));
-        Assert.assertEquals(StorageType.OBJECT_STORAGE.toString(), mappedFields.get("storage_type"));
-        Assert.assertEquals(storage.getType().toString(), mappedFields.get("provider"));
-        Assert.assertEquals(null, mappedFields.get("file_storage_type"));
-        Assert.assertEquals(storage.getType().toString(), mappedFields.get("object_storage_type"));
-        Assert.assertEquals(AbstractEntityMapper.SIMPLE_DATE_FORMAT.format(TEST_JAVA_DATE),
+        assertEquals(storage.getId(), mappedFields.get("storage_id"));
+        assertEquals(storage.getName(), mappedFields.get("storage_name"));
+        assertEquals(storage.getPath(), mappedFields.get("storage_path"));
+        assertEquals(StorageType.OBJECT_STORAGE.toString(), mappedFields.get("storage_type"));
+        assertEquals(storage.getType().toString(), mappedFields.get("provider"));
+        assertEquals(null, mappedFields.get("file_storage_type"));
+        assertEquals(storage.getType().toString(), mappedFields.get("object_storage_type"));
+        assertEquals(AbstractEntityMapper.SIMPLE_DATE_FORMAT.format(TEST_JAVA_DATE),
                 mappedFields.get("storage_created_date"));
 
-        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes"));
-        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes_avg"));
-        Assert.assertEquals((int) TEST_COST, mappedFields.get("cost"));
+        assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes"));
+        assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes_avg"));
+        assertEquals((int) TEST_COST, mappedFields.get("cost"));
 
-        Assert.assertEquals((int) TEST_USER_ID, mappedFields.get("owner_id"));
-        Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
+        assertEquals((int) TEST_USER_ID, mappedFields.get("owner_id"));
+        assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }
 
@@ -166,30 +167,30 @@ public class StorageBillingMapperTest {
 
         final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
 
-        Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
+        assertEquals(SearchDocumentType.NFS_STORAGE.name(),
                 mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        Assert.assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
+        assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
                 mappedFields.get("created_date"));
-        Assert.assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals((int) TEST_REGION_ID, mappedFields.get("cloudRegionId"));
-        Assert.assertEquals(TEST_REGION_NAME, mappedFields.get("cloud_region_name"));
-        Assert.assertEquals(TEST_REGION_PROVIDER.toString(), mappedFields.get("cloud_region_provider"));
+        assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
+        assertEquals((int) TEST_REGION_ID, mappedFields.get("cloudRegionId"));
+        assertEquals(TEST_REGION_NAME, mappedFields.get("cloud_region_name"));
+        assertEquals(TEST_REGION_PROVIDER.toString(), mappedFields.get("cloud_region_provider"));
 
-        Assert.assertEquals(storage.getId(), mappedFields.get("storage_id"));
-        Assert.assertEquals(storage.getName(), mappedFields.get("storage_name"));
-        Assert.assertEquals(storage.getPath(), mappedFields.get("storage_path"));
-        Assert.assertEquals(StorageType.FILE_STORAGE.toString(), mappedFields.get("storage_type"));
-        Assert.assertEquals(storage.getType().toString(), mappedFields.get("provider"));
-        Assert.assertEquals(MountType.NFS.toString(), mappedFields.get("file_storage_type"));
-        Assert.assertEquals(null, mappedFields.get("object_storage_type"));
-        Assert.assertEquals(AbstractEntityMapper.SIMPLE_DATE_FORMAT.format(TEST_JAVA_DATE),
+        assertEquals(storage.getId(), mappedFields.get("storage_id"));
+        assertEquals(storage.getName(), mappedFields.get("storage_name"));
+        assertEquals(storage.getPath(), mappedFields.get("storage_path"));
+        assertEquals(StorageType.FILE_STORAGE.toString(), mappedFields.get("storage_type"));
+        assertEquals(storage.getType().toString(), mappedFields.get("provider"));
+        assertEquals(MountType.NFS.toString(), mappedFields.get("file_storage_type"));
+        assertEquals(null, mappedFields.get("object_storage_type"));
+        assertEquals(AbstractEntityMapper.SIMPLE_DATE_FORMAT.format(TEST_JAVA_DATE),
                 mappedFields.get("storage_created_date"));
 
-        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes"));
-        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes_avg"));
-        Assert.assertEquals((int) TEST_COST, mappedFields.get("cost"));
+        assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes"));
+        assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage_bytes_avg"));
+        assertEquals((int) TEST_COST, mappedFields.get("cost"));
 
-        Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
+        assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }
 }

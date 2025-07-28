@@ -46,12 +46,11 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -70,7 +69,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(MockitoExtension.class)
 @SuppressWarnings({"checkstyle:MagicNumber", "PMD.AvoidDuplicateLiterals"})
 public class StorageToRequestConverterTest {
 
@@ -144,7 +145,7 @@ public class StorageToRequestConverterTest {
         getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.AZ, MountType.SMB);
 
     @BeforeEach
-    public void init() {
+    void init() {
         final StoragePricingService testStoragePricing = createTieredStoragePricing();
         final StoragePricingService testAzureNfsStoragePricing = createAzureNfsPricing();
         final List<EntityContainer<AbstractCloudRegion>> regionContainers =
@@ -206,17 +207,17 @@ public class StorageToRequestConverterTest {
         final BigDecimal priceGbMonth =
             TIER_1_STORAGE_1_GB_DAILY_PRICE.multiply(BigDecimal.valueOf(DAYS_IN_SYNC_MONTH.longValue()));
         final long dailyCost1Gb = s3Converter.calculateDailyCost(BYTES_IN_1_GB, priceGbMonth, syncDate);
-        Assert.assertEquals(TIER_1_STORAGE_1_GB_DAILY_PRICE.scaleByPowerOfTen(2).longValue(), dailyCost1Gb);
+        assertEquals(TIER_1_STORAGE_1_GB_DAILY_PRICE.scaleByPowerOfTen(2).longValue(), dailyCost1Gb);
 
         final long dailyCost1Byte = s3Converter.calculateDailyCost(1L, priceGbMonth, syncDate);
-        Assert.assertEquals(OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE.longValue(), dailyCost1Byte);
+        assertEquals(OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE.longValue(), dailyCost1Byte);
     }
 
     @Test
     public void testCalculateDailyCostWithPricingList() {
         final LocalDate syncDate = LocalDate.of(2019, 11, 2);
         final int daysInMonth = YearMonth.of(syncDate.getYear(), syncDate.getMonthValue()).lengthOfMonth();
-        Assert.assertEquals(30, daysInMonth);
+        assertEquals(30, daysInMonth);
 
         final long totalSize = 3 * STORAGE_LIMIT_TIER_2;
         final long storageUsedTier2 = STORAGE_LIMIT_TIER_2 - STORAGE_LIMIT_TIER_1;
@@ -231,7 +232,7 @@ public class StorageToRequestConverterTest {
             s3Converter.calculateDailyCost(
                     totalSize * BYTES_IN_1_GB, STORAGE_CLASS, Regions.US_EAST_2.getName(), syncDate, null);
 
-        Assert.assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
+        assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
 
         final BigDecimal usEast2expectedPrice = US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE
                 .multiply(BigDecimal.valueOf(totalSize));
@@ -240,7 +241,7 @@ public class StorageToRequestConverterTest {
                 s3Converter.calculateDailyCost(
                         totalSize * BYTES_IN_1_GB, ARCHIVE_CLASS, Regions.US_EAST_2.getName(), syncDate, null);
 
-        Assert.assertEquals(usEast2expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForArchiveTotalSize);
+        assertEquals(usEast2expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForArchiveTotalSize);
     }
 
     @Test
@@ -313,7 +314,7 @@ public class StorageToRequestConverterTest {
         final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
                                                                                    TestUtils.COMMON_INDEX_PREFIX,
                                                                                    SYNC_START, SYNC_END);
-        Assert.assertEquals(0, requests.size());
+        assertEquals(0, requests.size());
     }
 
     @Test
@@ -324,7 +325,7 @@ public class StorageToRequestConverterTest {
         final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
                                                                                    TestUtils.COMMON_INDEX_PREFIX,
                                                                                    SYNC_START, SYNC_END);
-        Assert.assertEquals(0, requests.size());
+        assertEquals(0, requests.size());
     }
 
     private void testStorageConverting(final StorageToBillingRequestConverter converter,
@@ -341,8 +342,8 @@ public class StorageToRequestConverterTest {
                                                                           SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
-        Assert.assertEquals(expectedIndex, request.index());
-        Assert.assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
+        assertEquals(expectedIndex, request.index());
+        assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(azureStorage, requestFieldsMap, regionId, storageType, usage,
                      storageDailyPriceGb.scaleByPowerOfTen(2).longValue(), Collections.emptyMap());
     }
@@ -370,8 +371,8 @@ public class StorageToRequestConverterTest {
                 SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
-        Assert.assertEquals(expectedIndex, request.index());
-        Assert.assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
+        assertEquals(expectedIndex, request.index());
+        assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(azureStorage, requestFieldsMap, regionId, storageType, expectedTotalSize,
                 expectedTotalCost, billingDetails);
     }
@@ -387,31 +388,31 @@ public class StorageToRequestConverterTest {
     private void assertFields(final AbstractDataStorage storage, final Map<String, Object> fieldMap,
                               final Long region, final StorageType storageType, final long usage, final long cost,
                               final Map<String, StorageBillingInfo.StorageBillingInfoDetails> billingDetails) {
-        Assert.assertEquals(storage.getId().intValue(), fieldMap.get("storage_id"));
-        Assert.assertEquals(ResourceType.STORAGE.toString(), fieldMap.get("resource_type"));
-        Assert.assertEquals(region.intValue(), fieldMap.get("cloudRegionId"));
-        Assert.assertEquals(storage.getType().toString(), fieldMap.get("provider"));
-        Assert.assertEquals(storageType.toString(), fieldMap.get("storage_type"));
-        Assert.assertEquals(testUser.getUserName(), fieldMap.get("owner"));
-        Assert.assertEquals(usage, getLongValue(fieldMap.get("usage_bytes")));
-        Assert.assertEquals(cost, getLongValue(fieldMap.get("cost")));
+        assertEquals(storage.getId().intValue(), fieldMap.get("storage_id"));
+        assertEquals(ResourceType.STORAGE.toString(), fieldMap.get("resource_type"));
+        assertEquals(region.intValue(), fieldMap.get("cloudRegionId"));
+        assertEquals(storage.getType().toString(), fieldMap.get("provider"));
+        assertEquals(storageType.toString(), fieldMap.get("storage_type"));
+        assertEquals(testUser.getUserName(), fieldMap.get("owner"));
+        assertEquals(usage, getLongValue(fieldMap.get("usage_bytes")));
+        assertEquals(cost, getLongValue(fieldMap.get("cost")));
         TestUtils.verifyStringArray(USER_GROUPS, fieldMap.get("groups"));
         if (MapUtils.isNotEmpty(billingDetails)) {
             for (String storageClass : billingDetails.keySet()) {
                 final String storageClassKey = storageClass.toLowerCase(Locale.ROOT);
-                Assert.assertEquals(
+                assertEquals(
                         billingDetails.get(storageClass).getCost(),
                         getLongValue(fieldMap.get(String.format("%s_cost", storageClassKey)))
                 );
-                Assert.assertEquals(
+                assertEquals(
                         billingDetails.get(storageClass).getOldVersionCost(),
                         getLongValue(fieldMap.get(String.format("%s_ov_cost", storageClassKey)))
                 );
-                Assert.assertEquals(
+                assertEquals(
                         billingDetails.get(storageClass).getUsageBytes(),
                         getLongValue(fieldMap.get(String.format("%s_usage_bytes", storageClassKey)))
                 );
-                Assert.assertEquals(
+                assertEquals(
                         billingDetails.get(storageClass).getOldVersionUsageBytes(),
                         getLongValue(fieldMap.get(String.format("%s_ov_usage_bytes", storageClassKey)))
                 );
@@ -457,7 +458,6 @@ public class StorageToRequestConverterTest {
         testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
 
         final StoragePricingService testStoragePricing = Mockito.spy(new StoragePricingService(testPriceList));
-        Mockito.doNothing().when(testStoragePricing).updatePrices();
         return testStoragePricing;
     }
 
@@ -471,7 +471,6 @@ public class StorageToRequestConverterTest {
         testPriceListAzureNfs.put(TEST_AZURE_REGION_NAME, pricingAzureNfs);
         final StoragePricingService testAzureNfsStoragePricing =
             Mockito.spy(new StoragePricingService(testPriceListAzureNfs));
-        Mockito.doNothing().when(testAzureNfsStoragePricing).updatePrices();
         return testAzureNfsStoragePricing;
     }
 

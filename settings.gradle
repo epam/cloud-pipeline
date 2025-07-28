@@ -13,6 +13,7 @@ include 'elasticsearch-agent'
 include 'cloud-pipeline-common:event-sourcing-java-client'
 include 'cloud-pipeline-common:model'
 include 'vm-monitor'
+include 'billing-report-agent'
 /*
 include 'data-sharing-service'
 include 'data-sharing-service:api'

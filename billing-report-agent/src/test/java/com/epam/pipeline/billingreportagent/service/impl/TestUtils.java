@@ -23,19 +23,20 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.fasterxml.jackson.core.JsonFactory;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.json.JsonXContentParser;
-import org.junit.Assert;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public final class TestUtils {
 
@@ -56,8 +57,8 @@ public final class TestUtils {
             return;
         }
 
-        Assert.assertEquals(expected.size(), actual.size());
-        expected.forEach(element -> Assert.assertTrue(actual.contains(element)));
+        assertEquals(expected.size(), actual.size());
+        expected.forEach(element -> assertTrue(actual.contains(element)));
     }
 
     public static Map<String, Object> getPuttedObject(final XContentBuilder contentBuilder) throws IOException {
