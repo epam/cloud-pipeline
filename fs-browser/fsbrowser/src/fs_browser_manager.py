@@ -17,6 +17,7 @@ import uuid
 import shutil
 
 from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.audit_manager import SecurityAuditManager
 from fsbrowser.src.model.file import File
 from fsbrowser.src.model.folder import Folder
 from fsbrowser.src.pattern_utils import PatternMatcher
@@ -35,6 +36,7 @@ class FsBrowserManager(object):
         self._create_tmp_dir_if_needed(tmp)
         self.tmp = tmp
         self.exclude_list = self._parse_exclude_list(exclude, working_directory)
+        self.audit = SecurityAuditManager()
 
     def list(self, path):
         items = []
@@ -56,6 +58,7 @@ class FsBrowserManager(object):
         return items
 
     def run_download(self, path):
+        self.audit.log_read_event(path)
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         self.tasks.update({task_id: task})
@@ -81,6 +84,7 @@ class FsBrowserManager(object):
         task = self._check_task_exists(task_id)
         if task.status != TaskStatus.PENDING:
             raise RuntimeError("Failed to start upload task: expected task state 'pending' but actual %s" % task.status)
+        self.audit.log_write_event(task.upload_path)
         self.pool.apply_async(task.upload, [self.working_directory])
         return task_id
 
@@ -96,6 +100,7 @@ class FsBrowserManager(object):
         return task.to_json()
 
     def delete(self, path):
+        self.audit.log_delete_event(path)
         full_path = os.path.join(self.working_directory, path)
         if os.path.isfile(full_path):
             os.remove(full_path)
