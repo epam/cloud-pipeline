@@ -77,7 +77,7 @@ public class CPURequester extends AbstractMetricRequester {
                                               final Duration interval, final Long runId) {
 
         return request(from, to,
-                statsQuery(nodeName, NODE, from, to, runId)
+                statsQuery(nodeName, NODE, from, to, null)
                         .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
                                 .subAggregation(average(CPU_UTILIZATION, NODE_UTILIZATION))

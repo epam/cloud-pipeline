@@ -96,6 +96,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String TX_RATE = "tx_rate";
 
     protected static final String NODE = "node";
+    protected static final String POD = "pod";
     protected static final String RESOURCE_ID = "resource_id";
     protected static final String POD_CONTAINER = "pod_container";
 
@@ -162,6 +163,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new PodFSRequester(client);
             case NETWORK:
                 return new NetworkRequester(client);
+            case POD_CPU:
+                return new PodCPURequester(client);
+            case POD_MEM:
+                return new PodMemoryRequester(client);
+            case POD_NETWORK:
+                return new PodNetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }

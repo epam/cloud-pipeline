@@ -68,6 +68,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
         ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
+    private static final ELKUsageMetric[] POD_MONITORING_METRICS = {ELKUsageMetric.POD_CPU, ELKUsageMetric.POD_MEM,
+        ELKUsageMetric.POD_NETWORK, ELKUsageMetric.FS};
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
@@ -238,7 +240,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
                                            final Duration interval, final Long runId) {
-        return Stream.of(MONITORING_METRICS)
+        return Stream.of(getStatsMonitoringMetrics(runId))
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
                 .map(it -> it.requestStats(nodeName, start, end, interval, runId))
                 .flatMap(List::stream)
@@ -392,5 +394,9 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime,
                         Comparator.comparing(this::asMonitoringDateTime)))
                 .collect(Collectors.toList());
+    }
+
+    private ELKUsageMetric[] getStatsMonitoringMetrics(final Long runId) {
+        return Objects.isNull(runId) ? MONITORING_METRICS : POD_MONITORING_METRICS;
     }
 }

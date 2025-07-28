@@ -107,7 +107,7 @@ public class FSRequester extends AbstractMetricRequester {
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval, final Long runId) {
         return request(from, to,
-                statsQuery(nodeName, NODE, from, to, runId)
+                statsQuery(nodeName, NODE, from, to, null)
                         .size(0)
                         .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))

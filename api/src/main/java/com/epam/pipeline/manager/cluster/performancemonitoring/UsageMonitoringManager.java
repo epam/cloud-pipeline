@@ -51,7 +51,7 @@ public interface UsageMonitoringManager {
      * @param nodeName Cluster node name.
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
-     * @param runId The run ID used for pod name construction
+     * @param runId The run ID to filter particular pod (optional)
      * @return List of monitoring stats.
      */
     List<MonitoringStats> getStatsForNode(String nodeName,
