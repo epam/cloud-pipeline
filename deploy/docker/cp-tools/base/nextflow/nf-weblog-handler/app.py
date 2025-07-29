@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 
 from flask import Flask, request
 
@@ -37,6 +38,10 @@ if VERBOSE == 1:
 logger.setLevel(logging_level)
 
 api_client = CloudPipelineApi(API, RUN_ID, logger)
+logger.info(
+    "Configuring NextflowEventHandler with: NF_LOOKUP_FILE - {}, RUN_ID - {}, SYNC_BATCH_SIZE - {}, SYNC_BATCH_TIMEOUT - {}..."
+    .format(NF_TASK_LOOKUP_FILE, RUN_ID, SYNC_BATCH_SIZE, SYNC_BATCH_TIMEOUT)
+)
 event_handler = NextflowEventHandler(logger, api_client, NF_TASK_LOOKUP_FILE, RUN_ID, SYNC_BATCH_SIZE, SYNC_BATCH_TIMEOUT)
 event_handler.enable_sync()
 

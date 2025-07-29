@@ -16,6 +16,7 @@ import json
 import os
 import time
 import threading
+import csv
 
 from app.util import parse
 from engine_task import CloudPipelineRunEngineTask
@@ -169,7 +170,6 @@ class NextflowEventHandler(object):
     def _update_nf_lookup_file_with_events(self, event_list):
 
         def _read_nf_lookup_file(_lookup_file_path):
-            import csv
             _lookup_file_dict = {}
             if os.path.isfile(_lookup_file_path):
                 with open(_lookup_file_path, "rb") as csvfile:
@@ -181,10 +181,9 @@ class NextflowEventHandler(object):
             return _lookup_file_dict
 
         def _write_nf_lookup_file(_lookup_file_path, _lookup_file_dict):
-            import csv
             with open(_lookup_file_path, 'wb') as csvfile:
                 csv_writer = csv.writer(csvfile, delimiter='\t', quoting=csv.QUOTE_MINIMAL)
-                csv_writer.writerow('task_id', 'hash', 'process', 'tag', 'name', 'status')
+                csv_writer.writerow(['task_id', 'hash', 'process', 'tag', 'name', 'status'])
                 for task in _lookup_file_dict.values():
                     csv_writer.writerow(task)
 
@@ -192,6 +191,7 @@ class NextflowEventHandler(object):
             lookup_file_dict = _read_nf_lookup_file(self.nf_task_lookup_file)
             for event in event_list:
                 lookup_file_dict[event.taskId] = [event.taskId, event.taskKey, event.taskGroup, event.taskTag, event.taskName, event.status]
+            self.logger.info("Updating nf task lookup file with {} entries ...".format(len(lookup_file_dict)))
             _write_nf_lookup_file(self.nf_task_lookup_file, lookup_file_dict)
         pass
 
