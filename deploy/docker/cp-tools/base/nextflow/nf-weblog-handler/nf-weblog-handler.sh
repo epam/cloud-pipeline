@@ -119,6 +119,14 @@ function enable_nf_runtime_data_sync() {
     CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
     CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 
+    if [ -n "${CP_NF_TASK_LOOKUP_FILE}" ]; then
+        CP_NF_TASK_LOOKUP_FILE_PATH="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/${CP_NF_TASK_LOOKUP_FILE}"
+        # Will be used in nf-weblog-handler to populate this path
+        export CP_NF_TASK_LOOKUP_FILE_PATH
+    else
+        CP_NF_TASK_LOOKUP_FILE_PATH="$CP_NF_TRACE_FILE"
+    fi
+
     pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
     run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "$API_TOKEN")
     if [ $? -ne 0 ]; then
@@ -162,8 +170,8 @@ function enable_nf_runtime_data_sync() {
         while true; do
             sleep "$(( CP_SYNC_TO_STORAGE_TIMEOUT_SEC / 2 ))"
 
-            if [ -f "${CP_NF_TRACE_FILE}" ] ; then
-                tail -n +2 "${CP_NF_TRACE_FILE}" | while read -r task
+            if [ -f "${CP_NF_TASK_LOOKUP_FILE_PATH}" ] ; then
+                tail -n +2 "${CP_NF_TASK_LOOKUP_FILE_PATH}" | while read -r task
                 do
                     task_hash=$(echo "$task" | awk '{ print $2 }')
                     task_workdir=$(realpath "${CP_NF_WORKDIR}/$task_hash*")
