@@ -125,9 +125,7 @@ function checkTagConfigMatches (config, opts) {
     clusterSize: _clusterSize = cluster_size,
     os: _os,
     user,
-    users: _users = user,
-    group,
-    groups: _groups = group
+    users: _users = user
   } = config || {};
   const asArray = (o) => {
     if (o === undefined) {
@@ -144,7 +142,6 @@ function checkTagConfigMatches (config, opts) {
     ? Number(_clusterSize)
     : Infinity;
   const users = asArray(_users);
-  const groups = asArray(_groups);
   const os = asArray(_os);
   const {
     dockerImage: pDockerImage,
@@ -174,7 +171,7 @@ function checkTagConfigMatches (config, opts) {
   };
   const checkDockerImage = () => {
     if (dockerImage.length === 0 || pDockerImage === undefined) {
-      return false;
+      return true;
     }
     const checkSingleDockerImage = (di) => {
       const [i, v = '*'] = di.split(':');
@@ -195,7 +192,7 @@ function checkTagConfigMatches (config, opts) {
   };
   const checkInstanceType = () => {
     if (instanceType.length === 0) {
-      return false;
+      return true;
     }
     const checkSingleInstanceType = (iType) => {
       return match(iType, pInstanceType);
@@ -208,7 +205,7 @@ function checkTagConfigMatches (config, opts) {
   );
   const checkClusterSize = () => {
     if (!maxClusterSize || !Number.isFinite(clusterSize)) {
-      return false;
+      return true;
     }
     return maxClusterSize >= clusterSize;
   };
@@ -223,29 +220,26 @@ function checkTagConfigMatches (config, opts) {
     return new RegExp(`^${regExpValue}$`, 'i');
   };
   const checkOs = () => {
-    if (os.length === 0 || !currentOs) {
+    if (os.length === 0) {
+      return true;
+    }
+    if (!currentOs) {
       return false;
     }
     return os.some((o) => parseOSMask(o).test(currentOs));
   };
   const checkUser = () => {
     if (users.length === 0) {
-      return false;
+      return true;
     }
-    return users.some((u) => currentUserName.toLowerCase() === u.toLowerCase());
+    return users.some((u) => currentUserName.toLowerCase() === u.toLowerCase()) ||
+      users.some((u) => currentUserGroups.has(u.toLowerCase()));
   };
-  const checkGroups = () => {
-    if (groups.length === 0) {
-      return false;
-    }
-    return groups.some((u) => currentUserGroups.has(u.toLowerCase()));
-  };
-  return checkDockerImage() ||
-    checkInstanceType() ||
-    checkClusterSize() ||
-    checkOs() ||
-    checkUser() ||
-    checkGroups();
+  return checkDockerImage() &&
+    checkInstanceType() &&
+    checkClusterSize() &&
+    checkOs() &&
+    checkUser();
 }
 
 function userTagIsVisible (tag, opts) {
