@@ -17,22 +17,14 @@
 package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Overrides {@link CPURequester} class to support CPU usage statistics for particular pod.
@@ -78,23 +70,6 @@ public class PodCPURequester extends CPURequester {
     }
 
     @Override
-    protected List<MonitoringStats> parseStatsResponse(final SearchResponse response) {
-        return Optional.ofNullable(response.getAggregations())
-                .map(Aggregations::asList)
-                .map(List::stream)
-                .orElseGet(Stream::empty)
-                .filter(it -> CPU_HISTOGRAM.equals(it.getName()))
-                .filter(it -> it instanceof MultiBucketsAggregation)
-                .map(MultiBucketsAggregation.class::cast)
-                .findFirst()
-                .map(MultiBucketsAggregation::getBuckets)
-                .map(List::stream)
-                .orElseGet(Stream::empty)
-                .map(this::toMonitoringStats)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
         return null;
@@ -103,26 +78,5 @@ public class PodCPURequester extends CPURequester {
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
         return Collections.emptyMap();
-    }
-
-    private MonitoringStats toMonitoringStats(final MultiBucketsAggregation.Bucket bucket) {
-        final MonitoringStats monitoringStats = new MonitoringStats();
-        Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
-        final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
-                .map(Object::toString)
-                 // Elastic CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
-                .map(it -> it.substring(0, it.length() - 3))
-                .map(Integer::valueOf);
-        final Optional<Double> avgUtilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
-        final Optional<Double> maxUtilization = doubleValue(aggregations, MAX_AGGREGATION + CPU_UTILIZATION);
-        final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
-        avgUtilization.ifPresent(cpuUsage::setLoad);
-        maxUtilization.ifPresent(cpuUsage::setMax);
-        monitoringStats.setCpuUsage(cpuUsage);
-        final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
-        capacity.ifPresent(containerSpec::setNumberOfCores);
-        monitoringStats.setContainerSpec(containerSpec);
-        return monitoringStats;
     }
 }
