@@ -3,7 +3,15 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './reservation-parameters.css';
 import {InputNumber, Select, Slider} from 'antd';
-import {getReservationParametersConfig} from './utilities';
+import {
+  getReservationParametersConfig,
+  correctReservationParameters,
+  DEFAULT_RAM_REQUESTS_STEP,
+  DEFAULT_RAM_REQUESTS_UNIT,
+  getInstanceResourcesRestrictions,
+  parseRAMRequest,
+  transformBytesToK8sRAMRequest
+} from './utilities';
 
 class ReservationParameters extends React.PureComponent {
   state = {
@@ -75,44 +83,26 @@ class ReservationParameters extends React.PureComponent {
           config: undefined
         });
         const config = await getReservationParametersConfig(instanceType);
-        const {
-          cpu_requests_enabled: cpuEnabled = false,
-          gpu_requests_enabled: gpuEnabled = false,
-          ram_requests_enabled: ramEnabled = false
-        } = config || {};
-        let {
-          vcpu: cpu = 0,
-          memory: ram = 0,
-          gpu = 0
-        } = instanceTypeObj;
-        if (!cpuEnabled) {
-          cpu = 0;
-        }
-        if (!gpuEnabled) {
-          gpu = 0;
-        }
-        if (!ramEnabled) {
-          ram = 0;
-        }
         if (this.token === token) {
           const {
             parameters = {}
           } = this.state;
-          let {
+          const {
             cpu: pCpu = 1,
             ram: pRam = 1,
             gpu: pGpu = 1
-          } = parameters;
-          pCpu = Math.max(1, Math.min(pCpu, cpu));
-          pGpu = Math.max(1, Math.min(pGpu, gpu));
-          pRam = Math.max(1, Math.min(pRam, ram));
+          } = correctReservationParameters(parameters, {
+            config,
+            instanceType
+          });
           this.setState({
             config,
             instanceType: {
               name: instanceType,
-              ram,
-              cpu,
-              gpu
+              ...getInstanceResourcesRestrictions({
+                config,
+                instanceType: instanceTypeObj
+              })
             },
             parameters: {
               cpu: pCpu,
@@ -168,8 +158,12 @@ class ReservationParameters extends React.PureComponent {
     }
     const {
       enabledKey = `${key}_requests_enabled`,
+      step = 1,
+      formatter = o => String(o),
       title = `${key.toUpperCase()} request`,
-      slider = false
+      slider: sliderRaw = false,
+      inputValueConverter = o => o,
+      inputValueFormatter = o => o
     } = options || {};
     const {
       [enabledKey]: enabled = false
@@ -188,8 +182,33 @@ class ReservationParameters extends React.PureComponent {
         }, this.reportChange);
       }
     };
-    const {[key]: available} = instanceType;
-    if (enabled && available > 0) {
+    const onChangeInput = (val) => {
+      const n = Number(val);
+      if (!Number.isNaN(n) && !/[.,]$/.test(val)) {
+        this.setState({
+          parameters: {
+            ...parameters,
+            [key]: inputValueFormatter(n)
+          }
+        }, this.reportChange);
+      }
+    };
+    const {[key]: range} = instanceType;
+    const [, max = 1] = range || [];
+    const maxInput = parseFloat(inputValueConverter(max));
+    let slider = sliderRaw;
+    const values = [];
+    if (!slider && step > 0) {
+      let v = step;
+      while (v <= max) {
+        values.push(v);
+        v += step;
+      }
+      if (values.length >= 100) {
+        slider = true;
+      }
+    }
+    if (enabled && max > 0) {
       const component = (() => {
         if (slider) {
           const onKeyPress = (evt) => {
@@ -208,26 +227,24 @@ class ReservationParameters extends React.PureComponent {
             >
               <Slider
                 style={{flex: 1, marginRight: 5}}
-                min={1}
-                max={available}
+                min={step}
+                max={Math.floor(max / step) * step}
                 value={value}
                 onChange={onChange}
-                step={1}
+                tipFormatter={formatter}
+                step={step}
               />
               <InputNumber
                 style={{flexShrink: 0, width: 100, marginRight: 0}}
-                value={value}
+                value={parseFloat(inputValueConverter(value))}
                 min={1}
-                max={available}
-                onChange={onChange}
+                max={maxInput}
+                onChange={onChangeInput}
                 onKeyDown={onKeyPress}
               />
             </div>
           );
         }
-        const values = (new Array(available))
-          .fill(1)
-          .map((_, i) => i + 1);
         return (
           <Select
             className={styles.reservationParameterInput}
@@ -237,7 +254,7 @@ class ReservationParameters extends React.PureComponent {
             {
               values.map((value) => (
                 <Select.Option key={`${key}-${value}`} value={String(value)}>
-                  {value > 0 ? String(value) : 'Not set'}
+                  {value > 0 ? formatter(value) : 'Not set'}
                 </Select.Option>
               ))
             }
@@ -256,11 +273,52 @@ class ReservationParameters extends React.PureComponent {
     return null;
   };
 
-  renderCpuRequests = () => this.renderRequestsSelector('cpu');
+  renderCpuRequests = () => this.renderRequestsSelector(
+    'cpu',
+    {
+      reserved: 1
+    }
+  );
 
-  renderRamRequests = () => this.renderRequestsSelector('ram', {slider: true, title: 'RAM request (GB)'});
+  renderRamRequests = () => {
+    const {
+      config,
+      instanceType
+    } = this.state;
+    if (!config || !instanceType) {
+      return null;
+    }
+    const {
+      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT,
+      ram_requests_step: ramRequestsStep = DEFAULT_RAM_REQUESTS_STEP
+    } = config;
+    const step = parseRAMRequest(ramRequestsStep, ramRequestsUnit);
+    const decimal = !ramRequestsUnit.includes('i');
+    return this.renderRequestsSelector(
+      'ram',
+      {
+        slider: true,
+        title: `RAM request (${ramRequestsUnit})`,
+        reserved: 1,
+        step,
+        inputValueConverter: o => transformBytesToK8sRAMRequest(
+          o,
+          {unit: ramRequestsUnit}
+        ),
+        inputValueFormatter: o => parseRAMRequest(o, ramRequestsUnit),
+        formatter: o => transformBytesToK8sRAMRequest(
+          o,
+          {appendBytesLetter: true, decimal}
+        )
+      });
+  }
 
-  renderGpuRequests = () => this.renderRequestsSelector('gpu');
+  renderGpuRequests = () => this.renderRequestsSelector(
+    'gpu',
+    {
+      reserved: 0
+    }
+  );
 
   render () {
     const {
