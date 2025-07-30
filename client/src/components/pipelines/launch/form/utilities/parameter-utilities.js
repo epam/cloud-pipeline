@@ -1193,32 +1193,41 @@ function validateParameter (parameter, parameters, rawEdit = false) {
     }
   } catch (e) {
     nameError = e.message;
+    if (VERBOSE) {
+      console.log('name', parameter.name);
+      console.log('name error:', nameError);
+    }
   }
   try {
-    if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
-      value = actualConfig.enumeration.find((o) => o === value);
-      if (!value) {
+    if (actualConfig.visible) {
+      if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
+        value = actualConfig.enumeration.find((o) => o === value);
+        if (!value) {
+          value = actualConfig.value;
+        }
+      } else if (configChanged) {
         value = actualConfig.value;
       }
-    } else if (configChanged) {
-      value = actualConfig.value;
-    }
-    newParameter.value = value;
-    if (!rawEdit) {
-      const validationError = getParameterValidationError(parameters, actualConfig);
-      if (validationError) {
-        throw new Error(validationError);
+      newParameter.value = value;
+      if (!rawEdit) {
+        const validationError = getParameterValidationError(parameters, actualConfig);
+        if (validationError) {
+          throw new Error(validationError);
+        }
+      }
+      if (
+        actualConfig.required &&
+        (value === undefined || value === null || String(value).trim() === '')
+      ) {
+        throw new Error('Required');
       }
     }
-    if (
-      actualConfig.required &&
-      (value === undefined || value === null || String(value).trim() === '')
-    ) {
-      throw new Error('Required');
-    }
-    // todo: validation
   } catch (e) {
     error = e.message;
+    if (VERBOSE) {
+      console.log('value', newParameter.value);
+      console.log('value error:', error);
+    }
   }
   const valid = error === undefined && nameError === undefined;
   modified |= parameter.error !== error ||

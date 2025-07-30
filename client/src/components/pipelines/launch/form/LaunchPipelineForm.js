@@ -5382,7 +5382,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       pipeline
     } = this.state;
-    this.abortLoading('parametersChanged');
     this.wrapLoading('parameters', async (commitState) => {
       let params = [];
       try {
@@ -5484,13 +5483,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onParametersChange = (newParameters) => {
-    this.wrapLoading('parametersChanged', async (commitState) => {
-      const current = this.getCurrentParametersPayload();
-      await this.updateParametersPayload({
-        ...current,
-        parameters: newParameters
-      });
-      this.onValidateParameters(commitState);
+    const current = this.getCurrentParametersPayload();
+    const payload = {
+      ...current,
+      parameters: newParameters
+    };
+    const {parametersPayloads = []} = this.state;
+    const idx = parametersPayloads.findIndex(p => p.id === payload.id);
+    const updated = parametersPayloads.slice();
+    if (idx >= 0) {
+      updated.splice(idx, 1, {...payload});
+    } else {
+      updated.push(payload);
+    }
+    this.setState({
+      parametersPayloads: updated
+    }, () => {
+      this.onValidateParameters();
       this.formFieldsChanged();
     });
   };
