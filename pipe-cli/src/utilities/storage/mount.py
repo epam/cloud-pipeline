@@ -44,7 +44,7 @@ class AbstractMount(object):
 
     def get_mount_storage_cmd(self, config, mountpoint, options, custom_options, bucket, mode, threading=False,
                               log_level=None, show_archive=False):
-        additional_args = self._append_arguments(['--bucket', bucket], threading, log_level, custom_options,
+        additional_args = self._append_arguments(['--bucket', '"' + bucket + '"'], threading, log_level, custom_options,
                                                  show_archive)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
