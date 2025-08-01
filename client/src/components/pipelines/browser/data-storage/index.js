@@ -115,6 +115,8 @@ import {
   StorageItemPermissionsButton,
   StorageItemPermissionsModal
 } from './components/storage-item-permissions';
+import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
+import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -1098,6 +1100,20 @@ export default class DataStorage extends React.Component {
     this.setState({itemsToDelete: null});
   };
 
+  copyPathsToClipboard = (items = []) => {
+    if (!items.length) {
+      return null;
+    }
+    const paths = items
+      .map(item => getDataStorageItemFullPath(item, this.storage.info))
+      .filter(Boolean);
+    copyTextToClipboard(paths.join('\n')).then(() => {
+      message.info(`Path${paths.length > 1 ? 's' : ''} copied to clipboard`, 3);
+    }).catch((error) => {
+      message.error(error.message, 3);
+    });
+  };
+
   removeItemConfirm = (event, item) => {
     event.stopPropagation();
     if (this.showVersions) {
@@ -1514,7 +1530,7 @@ export default class DataStorage extends React.Component {
   };
 
   onNgbFileActionClick = async (file, event) => {
-    const {storageId, path, preferences} = this.props;
+    const {storageId, preferences} = this.props;
     event && event.stopPropagation();
     const fileName = getNgbFileName(file.path);
     const hide = message.loading((<span>Opening <b>{fileName}</b>...</span>), 0);
@@ -1807,10 +1823,26 @@ export default class DataStorage extends React.Component {
         const highlightedText = this.storage.filtersApplied && search
           ? highlightText(text, search)
           : text;
-        if (item.latest) {
-          return <span>{highlightedText} (latest)</span>;
-        }
-        return highlightedText;
+        const name = (
+          <span>
+            {highlightedText} {item.latest ? '(latest)' : null}
+          </span>
+        );
+        return (
+          <span>
+            {name}
+            {item.selectable ? (
+              <Icon
+                className={styles.copyUrl}
+                type="link"
+                onClick={event => {
+                  event.stopPropagation();
+                  this.copyPathsToClipboard([item]);
+                }}
+              />) : null
+            }
+          </span>
+        );
       },
       filterDropdown: (
         <InputFilter
@@ -2273,7 +2305,8 @@ export default class DataStorage extends React.Component {
       download: 'download',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
-      permissions: 'permissions'
+      permissions: 'permissions',
+      copyPaths: 'copyPaths'
     };
     const clearAction = {
       key: Keys.clear,
@@ -2344,6 +2377,12 @@ export default class DataStorage extends React.Component {
         (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
       icon: 'link'
     };
+    const copyPathsAction = {
+      key: Keys.copyPaths,
+      title: 'Copy Paths',
+      icon: 'link',
+      available: this.clearSelectionVisible
+    };
     const removeAllAction = {
       key: Keys.removeAll,
       title: 'Remove',
@@ -2371,6 +2410,7 @@ export default class DataStorage extends React.Component {
     appendAction(restoreAction);
     appendAction(restoreOmicsAction);
     appendAction(generateURLAction);
+    appendAction(copyPathsAction);
     appendAction(downloadAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
@@ -2411,6 +2451,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
+          break;
+        case Keys.copyPaths:
+          this.copyPathsToClipboard(selectedItems);
           break;
         case Keys.downloadOmics:
           handleDownloadOmicsItems(preferences, omicsItemsForDownload, omicsDownloadConfig);
@@ -2668,7 +2711,7 @@ export default class DataStorage extends React.Component {
         title={title}
         rowKey="key"
         pagination={false}
-        rowClassName={(item) => classNames({
+        rowClassName={(item) => classNames(styles.row, {
           [styles[item.type.toLowerCase()]]: true,
           'cp-storage-deleted-row': !!item.deleteMarker
         })}
@@ -2963,6 +3006,7 @@ export default class DataStorage extends React.Component {
             <Row style={{marginLeft: 5}}>
               <DataStorageNavigation
                 path={this.props.path}
+                showCopyPath
                 storage={this.storage.info}
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />

@@ -17,8 +17,26 @@
 .path-components-container {
   cursor: text;
   width: 100%;
+  display: flex;
+  gap: 5px;
+  align-items: center;
 }
 
 .breadcrumb-item {
   padding: 5px 0;
+}
+
+.copy-path {
+  cursor: pointer;
+  transform: scale(1);
+  transition: transform 0.15s ease;
+  visibility: visible;
+}
+
+.copy-path:hover {
+  transform: scale(1.1);
+}
+
+.copy-path.hidden {
+  visibility: hidden;
 }
