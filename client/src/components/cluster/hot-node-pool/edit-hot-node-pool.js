@@ -436,9 +436,7 @@ class EditHotNodePool extends React.Component {
       .filter(o => !o.removed)
       .map(o => (o.image || '').trim())
       .filter(Boolean);
-    if (images.length === 0) {
-      dockerImagesError = 'You must provide at least 1 docker image';
-    } else if ((new Set(images)).size < images.length) {
+    if ((new Set(images)).size < images.length) {
       dockerImagesError = 'Duplicates are not allowed';
     }
     if (schedule.map(scheduleIsValid).filter(o => !o).length > 0) {
@@ -1543,6 +1541,7 @@ class EditHotNodePool extends React.Component {
     const isDuplicateImage = (image) => {
       return images.filter(o => o === image).length > 1;
     };
+    const filteredDockerImages = dockerImages.filter(o => !o.removed);
     return (
       <div>
         <div
@@ -1553,18 +1552,16 @@ class EditHotNodePool extends React.Component {
           </span>
           <div className={styles.column}>
             {
-              dockerImages
-                .filter(o => !o.removed)
-                .map((image) => (
-                  <AddDockerRegistryControl
-                    key={image.id}
-                    disabled={disabled || readOnly}
-                    duplicate={isDuplicateImage(image.image)}
-                    docker={image.image}
-                    onChange={this.onChangeDockerImage(image.id)}
-                    onRemove={this.onRemoveDockerImage(image.id)}
-                  />
-                ))
+              filteredDockerImages.map((image) => (
+                <AddDockerRegistryControl
+                  key={image.id}
+                  disabled={disabled || readOnly}
+                  duplicate={isDuplicateImage(image.image)}
+                  docker={image.image}
+                  onChange={this.onChangeDockerImage(image.id)}
+                  onRemove={this.onRemoveDockerImage(image.id)}
+                />
+              ))
             }
             {
               !readOnly && (
@@ -1580,6 +1577,9 @@ class EditHotNodePool extends React.Component {
                 </div>
               )
             }
+            {readOnly && filteredDockerImages.length === 0 ? (
+              <span>Not specified</span>
+            ) : null}
           </div>
         </div>
         {
