@@ -116,8 +116,9 @@ public class ClusterApiService {
                                                  final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
-        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
+                                                 final boolean squashCharts,
+                                                 final Long runId) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)

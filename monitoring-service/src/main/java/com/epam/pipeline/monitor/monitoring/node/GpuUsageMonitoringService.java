@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.IntSummaryStatistics;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,11 +94,19 @@ public class GpuUsageMonitoringService implements MonitoringService {
                             calculateUtilization(value.getMemoryUsed(), value.getMemoryTotal())))
                     .collect(Collectors.toList()));
             usage.setStats(collectSummaries(usage.getUsages()));
+            usage.setStatsByRun(collectSummariesByRun(usage.getUsages()));
             return usage;
         } catch (Exception e) {
             log.error("Failed to collect gpu statistics.", e);
             return null;
         }
+    }
+
+    private Map<Long, GpuUsageStats> collectSummariesByRun(final List<NodeReporterGpuUsages> usages) {
+        return usages.stream()
+                .filter(u -> Objects.nonNull(u.getRunId()))
+                .collect(Collectors.groupingBy(NodeReporterGpuUsages::getRunId,
+                        Collectors.collectingAndThen(Collectors.toList(), this::collectSummaries)));
     }
 
     private GpuUsageStats collectSummaries(final List<NodeReporterGpuUsages> usages) {

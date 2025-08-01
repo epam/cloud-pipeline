@@ -277,8 +277,9 @@ public class ClusterController extends AbstractRestController {
             @RequestParam(value = TO, required = false) final LocalDateTime to,
             @RequestParam final List<GpuMetricsGranularity> granularity,
             @RequestParam(required = false, defaultValue = FALSE)
-            final boolean squashCharts) {
-        return Result.success(clusterApiService.getGpuStatsForNode(name, from, to, granularity, squashCharts));
+            final boolean squashCharts,
+            @RequestParam(required = false) final Long runId) {
+        return Result.success(clusterApiService.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId));
     }
 
     @GetMapping("/cluster/node/{name}/usage/report")

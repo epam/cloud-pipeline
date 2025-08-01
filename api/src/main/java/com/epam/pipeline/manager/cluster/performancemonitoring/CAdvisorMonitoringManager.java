@@ -123,7 +123,7 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
+                                                 final boolean squashCharts, final Long runId) {
         throw new UnsupportedOperationException("GPU statistic is not available for CAdvisor metrics");
     }
 
