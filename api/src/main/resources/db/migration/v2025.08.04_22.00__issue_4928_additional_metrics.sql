@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.node_pool_usage ADD requests_stats TEXT;
