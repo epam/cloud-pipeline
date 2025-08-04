@@ -1,10 +1,11 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,24 +17,14 @@
 package com.epam.pipeline.entity.cluster.pool;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class NodePoolUsage {
-    private Long id;
-    private LocalDateTime logDate;
-    private Long nodePoolId;
-    private Integer totalNodesCount;
-    private Integer occupiedNodesCount;
-    private Integer pendingRunsCount;
-    private Integer activeRunsCount;
-    private Map<String, Requests> requestsStats;
+@NoArgsConstructor
+public class Requests {
+    private Long active;
+    private Long pending;
+    private Long total;
 }
