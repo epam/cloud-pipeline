@@ -79,7 +79,7 @@ public final class GpuMonitorIndexHelper {
         indexRequests.add(
                 buildGpuStatsIndexRequest(indexName, usages.getStats(), nodeName, timestamp, null));
         MapUtils.emptyIfNull(usages.getStatsByRun()).forEach((runId, usage)
-                -> buildGpuStatsIndexRequest(indexName, usage, nodeName, timestamp, runId));
+                -> indexRequests.add(buildGpuStatsIndexRequest(indexName, usage, nodeName, timestamp, runId)));
         return indexRequests;
     }
 
