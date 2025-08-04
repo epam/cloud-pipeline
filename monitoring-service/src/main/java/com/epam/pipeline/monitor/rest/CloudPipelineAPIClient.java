@@ -19,6 +19,7 @@ package com.epam.pipeline.monitor.rest;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MachineType;
@@ -31,6 +32,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.user.OnlineUsers;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,6 +79,14 @@ public class CloudPipelineAPIClient {
             return false;
         }
         return Boolean.parseBoolean(preference.getValue());
+    }
+
+    public <T> T getObjectPreference(final String preferenceName) {
+        final Preference preference = executor.execute(cloudPipelineAPI.loadPreference(preferenceName));
+        if (Objects.isNull(preference) || StringUtils.isBlank(preference.getValue())) {
+            return null;
+        }
+        return JsonMapper.parseData(preference.getValue(), new TypeReference<T>() {});
     }
 
     public List<Preference> getAllPreferences() {

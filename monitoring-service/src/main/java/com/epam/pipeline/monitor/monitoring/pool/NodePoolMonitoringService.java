@@ -23,11 +23,16 @@ import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
+import com.epam.pipeline.utils.KubernetesMemoryParser;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.vo.cluster.pool.Requests;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -47,12 +52,15 @@ public class NodePoolMonitoringService implements MonitoringService {
 
     private final CloudPipelineAPIClient client;
     private final String monitorEnabledPreferenceName;
+    private final String requestsNamePreferenceName;
 
-    public NodePoolMonitoringService(final CloudPipelineAPIClient client,
-                                     @Value("${preference.name.usage.node.pool.enable}")
-                                         final String monitorEnabledPreferenceName) {
+    public NodePoolMonitoringService(
+            final CloudPipelineAPIClient client,
+            @Value("${preference.name.usage.node.pool.enable}") final String monitorEnabledPreferenceName,
+            @Value("${preference.name.usage.node.pool.request.names}") final String requestsNamePreferenceName) {
         this.client = client;
         this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
+        this.requestsNamePreferenceName = requestsNamePreferenceName;
     }
 
     @Override
@@ -77,8 +85,7 @@ public class NodePoolMonitoringService implements MonitoringService {
                 .totalNodesCount(pool.getCount())
                 .occupiedNodesCount(Math.toIntExact(activePoolRuns));
         addRunMetrics(pool, builder);
-        return builder
-                .build();
+        return builder.build();
     }
 
     private void addRunMetrics(final NodePool pool,
@@ -94,26 +101,81 @@ public class NodePoolMonitoringService implements MonitoringService {
             return;
         }
         final List<PodInstance> pods = ListUtils.emptyIfNull(client.filterPods(monitoredLabels));
-        builder.pendingRunsCount(pods.stream()
+        final List<PodInstance> pendingPods = pods.stream()
                 .filter(pod -> PENDING_PHASE.equals(pod.getPhase()) ||
                         ListUtils.emptyIfNull(pod.getContainers())
-                        .stream()
-                        .anyMatch(ContainerInstance::isPending))
-                .count());
+                                .stream()
+                                .anyMatch(ContainerInstance::isPending)).collect(Collectors.toList());
+        builder.pendingRunsCount((long) pendingPods.size());
 
         //Load all nodes by labels
         final FilterNodesVO filter = new FilterNodesVO();
         final Map<String, String> poolLabels = new HashMap<>();
         poolLabels.put(NODE_POOL_ID_LABEL, pool.getId().toString());
         filter.setLabels(poolLabels);
-        final Set<String> poolNodes = ListUtils.emptyIfNull(client.filterNodes(filter, MachineType.KUBE))
+        final List<NodeInstance> poolNodes = ListUtils.emptyIfNull(client.filterNodes(filter, MachineType.KUBE));
+        final Set<String> poolNodeNames = ListUtils.emptyIfNull(poolNodes)
                 .stream().map(NodeInstance::getName)
                 .collect(Collectors.toSet());
-        builder.activeRunsCount(pods.stream()
-                .filter(pod -> poolNodes.contains(pod.getNodeName()) &&
+        final List<PodInstance> activePods = pods.stream()
+                .filter(pod -> poolNodeNames.contains(pod.getNodeName()) &&
                         ListUtils.emptyIfNull(pod.getContainers())
                                 .stream()
-                                .allMatch(ContainerInstance::isRunning))
-                .count());
+                                .allMatch(ContainerInstance::isRunning)).collect(Collectors.toList());
+        builder.activeRunsCount((long) activePods.size());
+        addRequests(builder, pendingPods, activePods, poolNodes);
+    }
+
+    private void addRequests(final NodePoolUsage.NodePoolUsageBuilder builder,
+                             final List<PodInstance> pendingPods,
+                             final List<PodInstance> activePods,
+                             final List<NodeInstance> nodes) {
+        final List<String> monitoredRequests = client.getObjectPreference(requestsNamePreferenceName);
+        if (CollectionUtils.isEmpty(monitoredRequests)) {
+            return;
+        }
+        final Map<String, Requests> result = new HashMap<>();
+        monitoredRequests.forEach(requestName -> {
+            final Requests requests = new Requests();
+            requests.setTotal(nodes.stream()
+                    .mapToLong(node ->
+                            parseRequest(node.getCapacity().getOrDefault(requestName, StringUtils.EMPTY)))
+                    .sum());
+            requests.setPending(pendingPods.stream()
+                    .mapToLong(pod -> pod.getContainers().stream()
+                            .mapToLong(container ->
+                                    parseRequest(container.getRequests().getOrDefault(requestName, StringUtils.EMPTY)))
+                            .sum())
+                    .sum());
+            requests.setActive(activePods.stream()
+                    .mapToLong(pod -> pod.getContainers().stream()
+                            .mapToLong(container ->
+                                    parseRequest(container.getRequests().getOrDefault(requestName, StringUtils.EMPTY)))
+                            .sum())
+                    .sum());
+            if (Objects.nonNull(requests.getActive())
+                    || Objects.nonNull(requests.getPending())
+                    || Objects.nonNull(requests.getTotal())) {
+                result.put(requestName, requests);
+            }
+        });
+        if(!MapUtils.isEmpty(result)) {
+            builder.requestsStats(result);
+        }
+    }
+
+    private Long parseRequest(final String value) {
+        if (StringUtils.isBlank(value)) {
+            return 0L;
+        }
+        if (NumberUtils.isDigits(value)) {
+            return Long.parseLong(value);
+        }
+        final Long memoryValue = KubernetesMemoryParser.parseMemoryToBytes(value);
+        if (Objects.isNull(memoryValue)) {
+            log.error("Failed to parse k8s request value {}", value);
+            return 0L;
+        }
+        return memoryValue;
     }
 }
