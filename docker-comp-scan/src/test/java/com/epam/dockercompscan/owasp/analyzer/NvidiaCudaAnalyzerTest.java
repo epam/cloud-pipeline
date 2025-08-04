@@ -16,10 +16,11 @@
 
 package com.epam.dockercompscan.owasp.analyzer;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.Dependency;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class NvidiaCudaAnalyzerTest {
     private final NvidiaCudaAnalyzer nvidiaCudaAnalyzer = new NvidiaCudaAnalyzer();
@@ -29,7 +30,7 @@ public class NvidiaCudaAnalyzerTest {
         final Dependency dependency = new Dependency();
         nvidiaCudaAnalyzer.analyzeDependency(dependency, null);
 
-        Assert.assertEquals(NvidiaCudaAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
-        Assert.assertEquals(NvidiaCudaAnalyzer.DEPENDENCY_NAME, dependency.getName());
+        assertEquals(NvidiaCudaAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
+        assertEquals(NvidiaCudaAnalyzer.DEPENDENCY_NAME, dependency.getName());
     }
 }

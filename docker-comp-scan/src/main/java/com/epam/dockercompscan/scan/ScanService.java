@@ -32,13 +32,13 @@ import org.apache.commons.io.FileUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
 
-import javax.annotation.PostConstruct;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -54,7 +54,7 @@ import java.util.concurrent.Semaphore;
 import java.util.zip.GZIPInputStream;
 
 @Service
-public class ScanService {
+public class ScanService implements InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScanService.class);
 
@@ -75,8 +75,8 @@ public class ScanService {
 
     private Semaphore scanSlots;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() throws Exception {
         scanSlots = new Semaphore(numberOfScanningThreads);
     }
 

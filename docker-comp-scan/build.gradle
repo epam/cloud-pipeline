@@ -1,52 +1,47 @@
 plugins {
     id 'idea'
     id 'java'
-    id "org.sonarqube" version "2.6.1"
-    id 'org.springframework.boot' version "1.5.2.RELEASE"
-    id "io.spring.dependency-management" version "1.0.0.RELEASE"
+    id 'org.sonarqube' version '2.6.1'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group 'com.epam.pipeline'
 version '1.0'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 repositories {
     mavenCentral()
 }
 
 jar {
-    archiveName "docker-comp-scan.jar"
+    archiveFileName = 'docker-comp-scan.jar'
+}
+
+configurations {
+    all*.exclude module: 'spring-boot-starter-logging'
+    all*.exclude group: 'commons-logging', module: 'commons-logging'
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'com.google.code.findbugs:annotations:3.0.1'
+    implementation 'com.google.guava:guava:26.0-jre'
+    implementation 'org.apache.commons:commons-compress:1.18'
+    implementation 'org.owasp:dependency-check-core:3.3.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.6'
+    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    implementation 'org.projectlombok:lombok:1.18.34'
 
-    configurations {
-        all*.exclude module : 'spring-boot-starter-logging'
-    }
-    compile('org.springframework.boot:spring-boot-starter-actuator')
-    compile('org.springframework.boot:spring-boot-starter-web')
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
-
-    compile group: 'com.google.code.findbugs', name: 'annotations', version: '3.0.1'
-
-    compile group: 'com.google.guava', name: 'guava', version: '26.0-jre'
-    compile group: 'org.apache.commons', name: 'commons-compress', version: '1.18'
-    compile group: 'org.owasp', name: 'dependency-check-core', version: '3.3.2'
-
-    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.6'
-
-    compile 'com.squareup.okhttp3:okhttp:3.11.0'
-
-    compileOnly "org.projectlombok:lombok:1.16.16"
-    testCompileOnly "org.projectlombok:lombok:1.16.16"
-
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-test'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
