@@ -155,40 +155,42 @@ export default class DataStorageNavigation extends React.Component {
           )
         }
         onClick={this.setEditableMode(true)}>
-        {showCopyPath ? (
-          <Icon
-            className={classNames('cp-primary', styles.copyPath, {
-              [styles.hidden]: this.state.editable
-            })}
-            type="link"
-            onClick={event => {
-              event.stopPropagation();
-              this.onCopyPathClick();
-            }}
-          />
-        ) : null}
         {!this.state.editable ? (
-          <Breadcrumb style={{padding: 5}}>
-            {this.getComponents().map(part => {
-              if (part.canNavigate) {
-                return (
-                  <Breadcrumb.Item
-                    className={styles.breadcrumbItem}
-                    key={part.key}>
-                    <a onClick={(event) => this.navigate(event, part.url)}>
-                      {decodeURIComponent(part.title)}
-                    </a>
-                  </Breadcrumb.Item>
-                );
-              } else {
-                return (
-                  <Breadcrumb.Item
-                    className={styles.breadcrumbItem}
-                    key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
-                );
-              }
-            })}
-          </Breadcrumb>
+          <div className={styles.breadcrumbsContainer}>
+            <Breadcrumb style={{padding: 5, marginLeft: 3}}>
+              {this.getComponents().map(part => {
+                if (part.canNavigate) {
+                  return (
+                    <Breadcrumb.Item
+                      className={styles.breadcrumbItem}
+                      key={part.key}>
+                      <a onClick={(event) => this.navigate(event, part.url)}>
+                        {decodeURIComponent(part.title)}
+                      </a>
+                    </Breadcrumb.Item>
+                  );
+                } else {
+                  return (
+                    <Breadcrumb.Item
+                      className={styles.breadcrumbItem}
+                      key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
+                  );
+                }
+              })}
+            </Breadcrumb>
+            {showCopyPath ? (
+              <Icon
+                className={classNames('cp-primary', styles.copyPath, {
+                  [styles.hidden]: this.state.editable
+                })}
+                type="link"
+                onClick={event => {
+                  event.stopPropagation();
+                  this.onCopyPathClick();
+                }}
+              />
+            ) : null}
+          </div>
         ) : null}
         {this.state.editable &&
           <Input
