@@ -47,6 +47,7 @@ import java.util.Objects;
 public class CloudPipelineAPIClient {
     private final CloudPipelineAPI cloudPipelineAPI;
     private final CloudPipelineApiExecutor executor;
+    private final JsonMapper jsonMapper;
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") final String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") final String cloudPipelineToken,
@@ -55,6 +56,7 @@ public class CloudPipelineAPIClient {
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
         this.executor = cloudPipelineApiExecutor;
+        this.jsonMapper = new JsonMapper();
     }
 
     public OnlineUsers saveOnlineUsers() {
@@ -86,7 +88,7 @@ public class CloudPipelineAPIClient {
         if (Objects.isNull(preference) || StringUtils.isBlank(preference.getValue())) {
             return null;
         }
-        return JsonMapper.parseData(preference.getValue(), new TypeReference<T>() {});
+        return jsonMapper.parseData(preference.getValue(), new TypeReference<T>() {});
     }
 
     public List<Preference> getAllPreferences() {
