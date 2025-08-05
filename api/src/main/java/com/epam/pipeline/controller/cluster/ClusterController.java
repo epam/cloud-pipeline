@@ -256,8 +256,9 @@ public class ClusterController extends AbstractRestController {
             @DateTimeFormat(pattern = DATE_TIME_FORMAT)
             @RequestParam(value = FROM, required = false) final LocalDateTime from,
             @DateTimeFormat(pattern = DATE_TIME_FORMAT)
-            @RequestParam(value = TO, required = false) final LocalDateTime to) {
-        return Result.success(clusterApiService.getStatsForNode(name, from, to));
+            @RequestParam(value = TO, required = false) final LocalDateTime to,
+            @RequestParam(required = false) final Long runId) {
+        return Result.success(clusterApiService.getStatsForNode(name, from, to, runId));
     }
 
     @GetMapping("/cluster/node/{name}/usage/gpus")
@@ -276,8 +277,9 @@ public class ClusterController extends AbstractRestController {
             @RequestParam(value = TO, required = false) final LocalDateTime to,
             @RequestParam final List<GpuMetricsGranularity> granularity,
             @RequestParam(required = false, defaultValue = FALSE)
-            final boolean squashCharts) {
-        return Result.success(clusterApiService.getGpuStatsForNode(name, from, to, granularity, squashCharts));
+            final boolean squashCharts,
+            @RequestParam(required = false) final Long runId) {
+        return Result.success(clusterApiService.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId));
     }
 
     @GetMapping("/cluster/node/{name}/usage/report")
@@ -294,10 +296,11 @@ public class ClusterController extends AbstractRestController {
         @RequestParam(value = FROM, required = false) final LocalDateTime from,
         @DateTimeFormat(pattern = DATE_TIME_FORMAT)
         @RequestParam(value = TO, required = false) final LocalDateTime to,
+        @RequestParam(required = false) final Long runId,
         @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
         @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
         final HttpServletResponse response) throws IOException {
-        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type);
+        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type, runId);
         final String reportName =
             String.format(REPORT_NAME_TEMPLATE, name, from, to, interval, type.name().toLowerCase())
                 .replace(TIME_SEPARATION_CHAR, UNDERSCORE);
