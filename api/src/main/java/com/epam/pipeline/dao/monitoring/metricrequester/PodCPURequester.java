@@ -1,0 +1,82 @@
+/*
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.dao.monitoring.metricrequester;
+
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+
+/**
+ * Overrides {@link CPURequester} class to support CPU usage statistics for particular pod.
+ * Since heapster provides different metrics fields for pod and node usage statistics the following mapping applied:
+ * <p> - cpu/node_capacity -> cpu/limit
+ * <p> - cpu/node_utilization -> cpu/usage_rate / cpu/limit
+ * <p> Where
+ * <p> cpu/usage_rate - CPU usage on all cores in millicores.
+ * <p> cpu/limit - CPU hard limit in millicores.
+ * <p> where 1 CPU = 1000 millicores
+ */
+public class PodCPURequester extends CPURequester {
+
+    PodCPURequester(final HeapsterElasticRestHighLevelClient client) {
+        super(client);
+    }
+
+    @Override
+    protected ELKUsageMetric metric() {
+        return ELKUsageMetric.POD_CPU;
+    }
+
+    @Override
+    protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from,
+                                              final LocalDateTime to, final Duration interval,
+                                              final Long runId) {
+        return request(from, to,
+                statsQuery(nodeName, POD, from, to, runId)
+                        .size(0)
+                        .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
+                                .subAggregation(average(CPU_CAPACITY, LIMIT))
+                                .subAggregation(average(USAGE_RATE, USAGE_RATE))
+                                .subAggregation(division(AVG_AGGREGATION + CPU_UTILIZATION,
+                                        AVG_AGGREGATION + USAGE_RATE,
+                                        AVG_AGGREGATION + CPU_CAPACITY))
+                                .subAggregation(max(CPU_CAPACITY, LIMIT))
+                                .subAggregation(max(USAGE_RATE, USAGE_RATE))
+                                .subAggregation(division(MAX_AGGREGATION + CPU_UTILIZATION,
+                                        MAX_AGGREGATION + USAGE_RATE,
+                                        MAX_AGGREGATION + CPU_CAPACITY))
+                        )
+        );
+    }
+
+    @Override
+    public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
+                                      final LocalDateTime to, final Map<String, String> additional) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Double> parseResponse(final SearchResponse response) {
+        return Collections.emptyMap();
+    }
+}

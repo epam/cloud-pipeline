@@ -36,6 +36,10 @@ spec:
           mountPath: "/opt/node-reporter/logs"
         - name: cp-node-reporter-resources
           mountPath: "/opt/node-reporter/resources"
+        - name: docker-sock
+          mountPath: "/var/run/docker.sock"
+        - name: docker-bin
+          mountPath: "/usr/bin/docker"
         envFrom:
         - configMapRef:
             name: cp-config-global
@@ -71,5 +75,11 @@ spec:
       - name: cp-node-reporter-resources
         hostPath:
           path: "/opt/node-reporter/resources"
+      - name: docker-sock
+        hostPath:
+          path: "/var/run/docker.sock"
+      - name: docker-bin
+        hostPath:
+          path: "/usr/bin/docker"
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
