@@ -132,6 +132,7 @@ class Parameters extends Component {
       system,
       rawEdit = false,
       editConfiguration = false,
+      currentCloudRegionId,
       currentProjectId,
       currentProjectMetadata,
       currentMetadataEntity,
@@ -286,6 +287,7 @@ class Parameters extends Component {
                       onRemoveParameter={onParameterRemoved}
                       editConfiguration={editConfiguration}
                       rawEdit={rawEdit}
+                      currentCloudRegionId={currentCloudRegionId}
                       currentProjectId={currentProjectId}
                       currentProjectMetadata={currentProjectMetadata}
                       currentMetadataEntity={currentMetadataEntity}
@@ -314,6 +316,7 @@ Parameters.propTypes = {
   system: PropTypes.bool,
   rawEdit: PropTypes.bool,
   editConfiguration: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

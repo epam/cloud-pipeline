@@ -51,6 +51,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
       onChange,
       value,
       disabled,
+      currentCloudRegionId,
       currentProjectId,
       currentMetadataEntity,
       currentProjectMetadata,
@@ -116,6 +117,9 @@ class LaunchFormPathParameterInput extends React.PureComponent {
           allowBucketSelection={isPathType}
           checkWritePermissions={isOutputType}
           bucketTypes={getBucketTypes(pathType)}
+          cloudRegionId={currentCloudRegionId}
+          filterObjectStorages={false}
+          filterNonObjectStorages
         />
       </div>
     );
@@ -130,6 +134,7 @@ LaunchFormPathParameterInput.propTypes = {
   required: PropTypes.bool,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

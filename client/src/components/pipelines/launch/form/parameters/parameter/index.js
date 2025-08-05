@@ -17,6 +17,7 @@ function LaunchFormParameter (props) {
     onRemoveParameter,
     rawEdit,
     editConfiguration,
+    currentCloudRegionId,
     currentProjectId,
     currentProjectMetadata,
     currentMetadataEntity,
@@ -71,6 +72,7 @@ function LaunchFormParameter (props) {
             onChange={onChange}
             disabled={disabled}
             rawEdit={rawEdit}
+            currentCloudRegionId={currentCloudRegionId}
             currentProjectId={currentProjectId}
             currentProjectMetadata={currentProjectMetadata}
             currentMetadataEntity={currentMetadataEntity}
@@ -130,6 +132,7 @@ LaunchFormParameter.propTypes = {
   onRemoveParameter: PropTypes.func,
   editConfiguration: PropTypes.bool,
   rawEdit: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

@@ -45,6 +45,9 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import UploadFilesArea from './upload-files-area';
 import FileUploadList from '../../../../utils/files-upload/file-upload-list';
 import UploadFilesList from './upload-files-list';
+import {
+  getAllowedStoragesForCloudRegion
+} from '../../../../utils/limit-mounts/check-cloud-region-rules';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -91,7 +94,7 @@ export function getDataStorageItemFullPath (item, bucket) {
 @connect({
   pipelinesLibrary
 })
-@inject('dtsList', 'preferences', 'uiLaunchParametersConfiguration')
+@inject('dtsList', 'preferences', 'uiLaunchParametersConfiguration', 'awsRegions')
 @inject(() => ({
   storages: dataStorages,
   library: pipelinesLibrary
@@ -120,7 +123,24 @@ export default class BucketBrowser extends React.Component {
         OMICS_SEQ_BUCKET_TYPE
       ])
     ),
-    uploadFilesAllowed: PropTypes.bool
+    uploadFilesAllowed: PropTypes.bool,
+    /**
+     * If cloud region is set, storages will be filtered by this region
+     * (also see `filterObjectStorages` / `filterNonObjectStorages` properties)
+     */
+    cloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    /**
+     * If cloud region is set (`cloudRegionId`),
+     * object storages will be filtered by this region.
+     * Default value: true
+     */
+    filterObjectStorages: PropTypes.bool,
+    /**
+     * If cloud region is set (`cloudRegionId`),
+     * non-object storages will be filtered by this region.
+     * Default value: true
+     */
+    filterNonObjectStorages: PropTypes.bool
   };
 
   @observable
@@ -149,6 +169,30 @@ export default class BucketBrowser extends React.Component {
     return uploadFilesAllowed &&
       uiLaunchParametersConfiguration &&
       uiLaunchParametersConfiguration.localFiles.enabled;
+  }
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
+
+  @computed
+  get currentCloudRegion () {
+    const {
+      cloudRegionId
+    } = this.props;
+    return cloudRegionId
+      ? this.awsRegions.find(r => `${r.id}` === `${cloudRegionId}`)
+      : undefined;
+  }
+
+  @computed
+  get storages () {
+    const {storages} = this.props;
+    return storages.loaded ? (storages.value || []).map(r => r) : [];
   }
 
   get storageIsFetching () {
@@ -650,14 +694,19 @@ export default class BucketBrowser extends React.Component {
     }
   };
 
-  postprocessTree (items) {
+  postprocessTree (items, options = {}) {
+    const {
+      allowed
+    } = options || {};
     const result = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type === ItemTypes.storage) {
-        result.push(item);
+        if (!allowed || allowed.some((st) => st.id === item.id)) {
+          result.push(item);
+        }
       } else if (item.type === ItemTypes.folder && item.children && item.children.length) {
-        item.children = this.postprocessTree(item.children);
+        item.children = this.postprocessTree(item.children, options);
         if (item.children.length) {
           result.push(item);
         }
@@ -669,7 +718,31 @@ export default class BucketBrowser extends React.Component {
   generateTree () {
     if (this.props.library.loaded &&
       this.props.dtsList.loaded &&
+      this.props.storages.loaded &&
+      this.props.awsRegions.loaded &&
       !this.rootItems) {
+      const {currentCloudRegion, awsRegions = []} = this;
+      const filterStorages = currentCloudRegion !== undefined;
+      const {
+        filterObjectStorages = true,
+        filterNonObjectStorages = true
+      } = this.props;
+      let objectStorages = this.storages.filter((st) => st.type !== NFS_BUCKET_TYPE);
+      if (filterStorages && filterObjectStorages) {
+        objectStorages = getAllowedStoragesForCloudRegion(
+          objectStorages,
+          currentCloudRegion,
+          awsRegions
+        );
+      }
+      let nonObjectStorages = this.storages.filter((st) => st.type === NFS_BUCKET_TYPE);
+      if (filterStorages && filterNonObjectStorages) {
+        nonObjectStorages = getAllowedStoragesForCloudRegion(
+          nonObjectStorages,
+          currentCloudRegion,
+          awsRegions
+        );
+      }
       this.rootItems = [
         ...(this.props.dtsList.value || [])
           .filter(r => {
@@ -720,7 +793,10 @@ export default class BucketBrowser extends React.Component {
                 }
               )
             }
-          )
+          ),
+          {
+            allowed: objectStorages.concat(nonObjectStorages)
+          }
         )];
     }
     return (
@@ -1115,6 +1191,14 @@ export default class BucketBrowser extends React.Component {
       });
     } else if (this.storage && !this.storage.pending && !this.state.pagePerformed) {
       this.performPage();
+    }
+
+    if (
+      this.props.cloudRegionId !== prevProps.cloudRegionId ||
+      this.props.filterObjectStorages !== prevProps.filterObjectStorages ||
+      this.props.filterNonObjectStorages !== prevProps.filterNonObjectStorages
+    ) {
+      this.rootItems = null;
     }
 
     if (this.props.visible && this.props.visible !== prevProps.visible) {

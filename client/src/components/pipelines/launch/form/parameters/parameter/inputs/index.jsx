@@ -31,6 +31,7 @@ LaunchFormParameterInput.propTypes = {
   onChange: PropTypes.func,
   disabled: PropTypes.bool,
   rawEdit: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

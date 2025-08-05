@@ -2618,6 +2618,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         system={system}
         rawEdit={isRawEditEnabled}
         editConfiguration={this.props.editConfigurationMode}
+        currentCloudRegionId={this.currentCloudRegionId}
         currentProjectId={this.state.currentProjectId}
         currentProjectMetadata={this.state.currentProjectMetadata}
         currentMetadataEntity={this.state.currentMetadataEntity}

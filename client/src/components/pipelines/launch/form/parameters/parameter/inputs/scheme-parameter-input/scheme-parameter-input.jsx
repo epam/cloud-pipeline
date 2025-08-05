@@ -46,7 +46,7 @@ class LaunchFormSchemeParameterInput extends React.Component {
       properties = []
     } = scheme;
     const propsCount = (properties || []).length;
-    const modalWidth = Math.min(95, Math.max(50, propsCount * 15));
+    const modalWidth = Math.min(95, Math.max(75, propsCount * 15));
     const {modalVisible} = this.state;
     return (
       <div
