@@ -74,10 +74,10 @@ public class CPURequester extends AbstractMetricRequester {
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
+                                              final Duration interval, final Long runId) {
 
         return request(from, to,
-                statsQuery(nodeName, NODE, from, to)
+                statsQuery(nodeName, NODE, from, to, null)
                         .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
                                 .subAggregation(average(CPU_UTILIZATION, NODE_UTILIZATION))

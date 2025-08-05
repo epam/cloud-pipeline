@@ -68,6 +68,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
         ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
+    private static final ELKUsageMetric[] POD_MONITORING_METRICS = {ELKUsageMetric.POD_CPU, ELKUsageMetric.POD_MEM,
+        ELKUsageMetric.POD_NETWORK, ELKUsageMetric.FS};
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
@@ -100,14 +102,14 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
-                                                 final LocalDateTime to) {
+                                                 final LocalDateTime to, final Long runId) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate(HEAPSTER_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         final Duration interval = interval(start, end);
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
-                ? getStats(nodeName, start, end, interval)
+                ? getStats(nodeName, start, end, interval, runId)
                 : Collections.emptyList();
     }
 
@@ -115,7 +117,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
+                                                 final boolean squashCharts,
+                                                 final Long runId) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate(GPU_STAT_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
@@ -123,7 +126,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final Duration totalDuration = Duration.between(start, end);
         final Duration interval = squashCharts ? totalDuration : interval(start, end);
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
-                ? getGpuStats(nodeName, start, end, interval, totalDuration, granularity)
+                ? getGpuStats(nodeName, start, end, interval, totalDuration, granularity, runId)
                 : GpuMonitoringStats.builder().build();
     }
 
@@ -132,7 +135,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                                                     final LocalDateTime from,
                                                     final LocalDateTime to,
                                                     final Duration interval,
-                                                    final MonitoringReportType type) {
+                                                    final MonitoringReportType type,
+                                                    final Long runId) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate(HEAPSTER_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
@@ -144,7 +148,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final AbstractMonitoringStatsWriter statsWriter = Optional.ofNullable(statsWriters.get(type))
             .orElseThrow(() -> new IllegalArgumentException(
                 messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE)));
-        return statsWriter.convertStatsToFile(getStats(nodeName, start, end, adjustedDuration));
+        return statsWriter.convertStatsToFile(getStats(nodeName, start, end, adjustedDuration, runId));
     }
 
     @Override
@@ -155,7 +159,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .requestStats(nodeName,
                         DateUtils.nowUTC().minus(duration.multipliedBy(Math.max(numberOfIntervals(), TWO))),
                         DateUtils.nowUTC(),
-                        duration
+                        duration,
+                        null
                 );
         Assert.isTrue(CollectionUtils.isNotEmpty(monitoringStats),
                 messageHelper.getMessage(MessageConstants.ERROR_GET_NODE_STAT, nodeName));
@@ -213,17 +218,18 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private GpuMonitoringStats getGpuStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
                                            final Duration interval, final Duration totalDuration,
-                                           final List<GpuMetricsGranularity> granularity) {
+                                           final List<GpuMetricsGranularity> granularity, final Long runId) {
         try {
             final GPUAggregationRequester aggregationRequester = new GPUAggregationRequester(client);
             final GpuMonitoringStats.GpuMonitoringStatsBuilder results = GpuMonitoringStats.builder();
             if (GpuMetricsGranularity.hasGlobal(granularity)) {
-                results.global(aggregationRequester.requestStats(nodeName, start, end, totalDuration).stream()
+                results.global(aggregationRequester.requestStats(nodeName, start, end, totalDuration, runId).stream()
                         .findFirst()
                         .flatMap(stats -> statsWithinRegion(stats, start, end, totalDuration))
                         .orElse(null));
             }
-            return results.charts(getGpuCharts(granularity, aggregationRequester, interval, nodeName, start, end))
+            return results
+                    .charts(getGpuCharts(granularity, aggregationRequester, interval, nodeName, start, end, runId))
                     .build();
         } catch (ElasticsearchStatusException e) {
             if (e.getDetailedMessage().contains("index_not_found_exception")) {
@@ -235,10 +241,10 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
-                                           final Duration interval) {
-        return Stream.of(MONITORING_METRICS)
+                                           final Duration interval, final Long runId) {
+        return Stream.of(getStatsMonitoringMetrics(runId))
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
-                .map(it -> it.requestStats(nodeName, start, end, interval))
+                .map(it -> it.requestStats(nodeName, start, end, interval, runId))
                 .flatMap(List::stream)
                 .collect(Collectors.groupingBy(MonitoringStats::getStartTime, Collectors.reducing(this::mergeStats)))
                 .values()
@@ -349,15 +355,16 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private List<MonitoringStats> getGpuCharts(final List<GpuMetricsGranularity> loadTypes,
                                                final GPUAggregationRequester aggregationRequester,
                                                final Duration interval, final String nodeName,
-                                               final LocalDateTime start, final LocalDateTime end) {
+                                               final LocalDateTime start, final LocalDateTime end,
+                                               final Long runId) {
         if (!GpuMetricsGranularity.hasAggregations(loadTypes) && !GpuMetricsGranularity.hasDetails(loadTypes)) {
             return null;
         }
         if (GpuMetricsGranularity.hasDetails(loadTypes) && GpuMetricsGranularity.hasAggregations(loadTypes)) {
             final List<MonitoringStats> charts = new ArrayList<>(aggregationRequester
-                    .requestStats(nodeName, start, end, interval));
+                    .requestStats(nodeName, start, end, interval, runId));
             final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
-            charts.addAll(detailsRequester.requestStats(nodeName, start, end, interval));
+            charts.addAll(detailsRequester.requestStats(nodeName, start, end, interval, runId));
             return sortGpuCharts(charts.stream()
                     .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
                             Collectors.reducing(this::mergeGpuStats)))
@@ -379,7 +386,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private List<MonitoringStats> requestCharts(final AbstractMetricRequester requester, final Duration interval,
                                                 final String nodeName, final LocalDateTime start,
                                                 final LocalDateTime end) {
-        return requester.requestStats(nodeName, start, end, interval).stream()
+        return requester.requestStats(nodeName, start, end, interval, null).stream()
                 .map(stats -> statsWithinRegion(stats, start, end, interval).orElse(null))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -390,5 +397,9 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime,
                         Comparator.comparing(this::asMonitoringDateTime)))
                 .collect(Collectors.toList());
+    }
+
+    private ELKUsageMetric[] getStatsMonitoringMetrics(final Long runId) {
+        return Objects.isNull(runId) ? MONITORING_METRICS : POD_MONITORING_METRICS;
     }
 }

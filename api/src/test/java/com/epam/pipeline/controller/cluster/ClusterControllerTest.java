@@ -277,11 +277,11 @@ public class ClusterControllerTest extends AbstractControllerTest {
         params.add(FROM, from.format(REQUEST_FORMATTER));
         params.add(TO, to.format(REQUEST_FORMATTER));
         Mockito.doReturn(monitoringStats).when(mockClusterApiService)
-                .getStatsForNode(NAME, from, to);
+                .getStatsForNode(NAME, from, to, null);
 
         final MvcResult mvcResult = performRequest(get(String.format(NODE_USAGE_URL, NAME)).params(params));
 
-        Mockito.verify(mockClusterApiService).getStatsForNode(NAME, from, to);
+        Mockito.verify(mockClusterApiService).getStatsForNode(NAME, from, to, null);
         assertResponse(mvcResult, monitoringStats, NodeCreatorUtils.MONITORING_STATS_TYPE);
     }
 
@@ -301,14 +301,14 @@ public class ClusterControllerTest extends AbstractControllerTest {
         params.add(INTERVAL, DURATION_AS_STRING);
         params.add(REPORT_TYPE, MonitoringReportType.CSV.toString());
         Mockito.doReturn(inputStream).when(mockClusterApiService)
-                .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1), MonitoringReportType.CSV);
+                .getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1), MonitoringReportType.CSV, null);
 
         final MvcResult mvcResult = performRequest(
                 get(String.format(NODE_STATISTICS_URL, NAME)).params(params), OCTET_STREAM_CONTENT_TYPE
         );
 
         Mockito.verify(mockClusterApiService).getUsageStatisticsFile(NAME, from, to, Duration.ofHours(1),
-                                                                     MonitoringReportType.CSV);
+                                                                     MonitoringReportType.CSV, null);
         final String actualResponseData = mvcResult.getResponse().getContentAsString();
         final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
         Assert.assertEquals(TEST_DATA, actualResponseData);
