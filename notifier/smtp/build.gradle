@@ -1,59 +1,52 @@
-
-buildscript {
-    repositories { mavenCentral() }
-}
-
 plugins {
     id 'java'
-    id 'org.springframework.boot' version "1.5.2.RELEASE"
-    id "io.spring.dependency-management" version "1.0.0.RELEASE"
-    id "org.sonarqube" version "2.6.1"
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.sonarqube' version '2.6.1'
 }
+
 group 'com.epam.pipeline'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 repositories {
     mavenCentral()
 }
 
-ext { springBootVersion = '1.5.2.RELEASE' }
+ext {
+    springBootVersion = '3.5.3'
+}
 
-dependencies {
-    // Spring Boot
-    configurations {
-        all*.exclude module : 'spring-boot-starter-logging'
-    }
-    compile project(':core')
-
-    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.16'
-
-    // Logging
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
-
-    //DB
-    compile group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
-    compile('org.springframework.boot:spring-boot-starter-data-jpa')
-    compile group: 'com.zaxxer', name: 'HikariCP', version: '3.2.0'
-    compile group: 'org.hibernate', name: 'hibernate-java8', version: '5.0.12.Final'
-
-    //Email notifications
-    compile group: 'org.apache.commons', name: 'commons-email', version: '1.5'
-    compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
-    compile group: 'org.apache.velocity', name: 'velocity-tools', version: '2.0'
-
-    //Tests
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'com.h2database', name: 'h2', version: '1.4.197'
-    testCompile group: 'com.icegreen', name: 'greenmail', version: '1.5.7'
-    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: project.ext.springBootVersion
+configurations {
+    all*.exclude module: 'spring-boot-starter-logging'
+    all*.exclude group: 'commons-logging', module: 'commons-logging'
 }
 
 jar {
-    archiveName "notifier.jar"
+    archiveFileName = 'notifier.jar'
+}
+
+dependencies {
+
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation project(':core')
+    implementation 'org.postgresql:postgresql:42.7.3'
+    implementation 'com.zaxxer:HikariCP:3.2.0'
+    implementation 'org.apache.commons:commons-collections4:4.0'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.8.7'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.8.7'
+    implementation 'org.apache.commons:commons-email:1.5'
+    implementation 'org.apache.velocity:velocity:1.7'
+    implementation 'org.apache.velocity:velocity-tools:2.0'
+    implementation 'org.projectlombok:lombok:1.18.34'
+
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.h2database:h2:1.4.197'
+    testImplementation 'com.icegreen:greenmail:2.1.0'
 }

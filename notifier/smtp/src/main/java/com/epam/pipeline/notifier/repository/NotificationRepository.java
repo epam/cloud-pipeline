@@ -44,5 +44,6 @@ public interface NotificationRepository extends JpaRepository<NotificationMessag
      * @param id   id of {@link NotificationMessage} to be deleted
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    int deleteById(Long id);
+    @Query("delete from NotificationMessage n where n.id = :id")
+    int removeById(Long id);
 }

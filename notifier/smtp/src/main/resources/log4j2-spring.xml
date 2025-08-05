@@ -8,7 +8,7 @@
             <PatternLayout>
                 <pattern>
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
-                </pattern>>
+                </pattern>
             </PatternLayout>
         </Console>
         <RollingFile  name="App-Appender" fileName="${log-path}/notifier.log"
@@ -23,18 +23,18 @@
                 </Delete>
             </DefaultRolloverStrategy>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
             </Policies>
             <PatternLayout>
                 <pattern>
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
                       filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
             <Filters>
-                <ThresholdFilter level="ERROR" onMatch="ACCEPT" />
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT"/>
             </Filters>
             <DefaultRolloverStrategy>
                 <Delete basePath="${log-path}" maxDepth="1">
@@ -46,14 +46,14 @@
                 </Delete>
             </DefaultRolloverStrategy>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
             </Policies>
             <PatternLayout>
                 <pattern>
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
         <RollingFile  name="Error-Appender" fileName="${log-path}/error.log"
                       filePattern="${log-path}/error-%d{yyyyMMdd}.log">
             <Filters>
@@ -69,14 +69,14 @@
                 </Delete>
             </DefaultRolloverStrategy>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
             </Policies>
             <PatternLayout>
                 <pattern>
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
     </Appenders>
     <Loggers>
         <Logger name="com.epam.pipeline" level="debug" additivity="true">

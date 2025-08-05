@@ -59,10 +59,10 @@ public class NotificationService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void sendNotification() {
         LOGGER.debug("Start scheduled notification loop...");
-        Pageable limit = new PageRequest(0, notificationAtTime);
+        Pageable limit = PageRequest.of(0, notificationAtTime);
         List<NotificationMessage> result = notificationRepository.loadNotification(limit);
         result.forEach(message -> {
-            notificationRepository.deleteById(message.getId());
+            notificationRepository.removeById(message.getId());
 
             for (NotificationManager notificationManager : notificationManagers) {
                 CompletableFuture.runAsync(

@@ -173,12 +173,12 @@ public class SMTPNotificationManager implements NotificationManager {
             LOGGER.info("toUserId is not set for message {}", message.getId());
             return null;
         }
-        PipelineUser targetUser = userRepository.findOne(message.getToUserId());
-        if (targetUser == null) {
+        Optional<PipelineUser> targetUser = userRepository.findById(message.getToUserId());
+        if (targetUser.isEmpty()) {
             LOGGER.info("Cannot find user with id {} for message {}", message.getToUserId(), message.getId());
             return null;
         }
-        return targetUser.getEmail();
+        return targetUser.get().getEmail();
     }
 
     private void sleepIfRequired(final long delay) {

@@ -18,12 +18,14 @@ package com.epam.pipeline.notifier.repository;
 
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.notifier.AbstractSpringTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UserRepositoryTest extends AbstractSpringTest {
 
@@ -40,8 +42,8 @@ public class UserRepositoryTest extends AbstractSpringTest {
 
 
         List<PipelineUser> users = userRepository.findByIdIn(Collections.singletonList(user.getId()));
-        Assert.assertTrue(users.size() == 1);
-        Assert.assertEquals(USER_NAME, users.get(0).getUserName());
+        assertTrue(users.size() == 1);
+        assertEquals(USER_NAME, users.get(0).getUserName());
     }
 
 }
