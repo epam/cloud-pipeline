@@ -87,18 +87,22 @@ class DockerClient:
         pass
 
     def inspect(self, container_hash):
-        process = subprocess.Popen(['docker', 'inspect', container_hash],
-                                   stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        stdout = process.stdout
-        stderr = process.stderr
-        exit_code = process.wait()
-        if exit_code != 0:
-            raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
+        try:
+            process = subprocess.Popen(['docker', 'inspect', container_hash],
+                                       stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            stdout = process.stdout
+            stderr = process.stderr
+            exit_code = process.wait()
+            if exit_code != 0:
+                raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
 
-        container_info = json.loads(stdout.read())
-        if not container_info:
+            container_info = json.loads(stdout.read())
+            if not container_info:
+                return None
+            return container_info[0]
+        except Exception as e:
+            logging.exception(f'Docker inspect failed with error: {e}')
             return None
-        return container_info[0]
 
 
 class StatType(Enum):
@@ -299,7 +303,7 @@ class GPUStatProcessor:
 
     @staticmethod
     def _find_env_value(container_info: dict, target_env: str):
-        envs = container_info.get('Config', {}).get('Env', {})
+        envs = container_info.get('Config', {}).get('Env', [])
         for env in envs:
             if str(env).startswith(target_env):
                 return str(env).lstrip(target_env + '=')
