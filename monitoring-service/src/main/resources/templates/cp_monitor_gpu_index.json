@@ -48,6 +48,14 @@
                 }
               }
             },
+            "pod_name": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
             "type": {
               "type": "keyword"
             },
@@ -140,6 +148,14 @@
         "MetricsTags": {
           "properties": {
             "nodename": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "pod_name": {
               "type": "text",
               "fields": {
                 "raw": {

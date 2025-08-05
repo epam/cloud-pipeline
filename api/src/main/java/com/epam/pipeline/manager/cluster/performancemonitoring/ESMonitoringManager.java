@@ -117,7 +117,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
+                                                 final boolean squashCharts,
+                                                 final Long runId) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate(GPU_STAT_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
@@ -125,7 +126,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final Duration totalDuration = Duration.between(start, end);
         final Duration interval = squashCharts ? totalDuration : interval(start, end);
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
-                ? getGpuStats(nodeName, start, end, interval, totalDuration, granularity)
+                ? getGpuStats(nodeName, start, end, interval, totalDuration, granularity, runId)
                 : GpuMonitoringStats.builder().build();
     }
 
@@ -217,17 +218,18 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private GpuMonitoringStats getGpuStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
                                            final Duration interval, final Duration totalDuration,
-                                           final List<GpuMetricsGranularity> granularity) {
+                                           final List<GpuMetricsGranularity> granularity, final Long runId) {
         try {
             final GPUAggregationRequester aggregationRequester = new GPUAggregationRequester(client);
             final GpuMonitoringStats.GpuMonitoringStatsBuilder results = GpuMonitoringStats.builder();
             if (GpuMetricsGranularity.hasGlobal(granularity)) {
-                results.global(aggregationRequester.requestStats(nodeName, start, end, totalDuration, null).stream()
+                results.global(aggregationRequester.requestStats(nodeName, start, end, totalDuration, runId).stream()
                         .findFirst()
                         .flatMap(stats -> statsWithinRegion(stats, start, end, totalDuration))
                         .orElse(null));
             }
-            return results.charts(getGpuCharts(granularity, aggregationRequester, interval, nodeName, start, end))
+            return results
+                    .charts(getGpuCharts(granularity, aggregationRequester, interval, nodeName, start, end, runId))
                     .build();
         } catch (ElasticsearchStatusException e) {
             if (e.getDetailedMessage().contains("index_not_found_exception")) {
@@ -353,15 +355,16 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private List<MonitoringStats> getGpuCharts(final List<GpuMetricsGranularity> loadTypes,
                                                final GPUAggregationRequester aggregationRequester,
                                                final Duration interval, final String nodeName,
-                                               final LocalDateTime start, final LocalDateTime end) {
+                                               final LocalDateTime start, final LocalDateTime end,
+                                               final Long runId) {
         if (!GpuMetricsGranularity.hasAggregations(loadTypes) && !GpuMetricsGranularity.hasDetails(loadTypes)) {
             return null;
         }
         if (GpuMetricsGranularity.hasDetails(loadTypes) && GpuMetricsGranularity.hasAggregations(loadTypes)) {
             final List<MonitoringStats> charts = new ArrayList<>(aggregationRequester
-                    .requestStats(nodeName, start, end, interval, null));
+                    .requestStats(nodeName, start, end, interval, runId));
             final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
-            charts.addAll(detailsRequester.requestStats(nodeName, start, end, interval, null));
+            charts.addAll(detailsRequester.requestStats(nodeName, start, end, interval, runId));
             return sortGpuCharts(charts.stream()
                     .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
                             Collectors.reducing(this::mergeGpuStats)))

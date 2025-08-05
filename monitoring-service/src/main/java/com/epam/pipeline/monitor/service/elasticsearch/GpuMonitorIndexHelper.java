@@ -23,6 +23,7 @@ import com.epam.pipeline.monitor.model.node.GpuUsages;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -30,6 +31,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -58,25 +60,34 @@ public final class GpuMonitorIndexHelper {
     private static final String MAX_MEMORY_USED_FIELD = "gpu_aggs/max_used_memory";
     private static final String INDEX_FIELD = "index";
     private static final String NODENAME_FIELD = "nodename";
+    private static final String POD_NAME_FIELD = "pod_name";
     private static final String TYPE_FIELD = "type";
     private static final String DEVICE_NAME_FIELD = "device_name";
     private static final String NODE_TYPE = "node";
+    private static final String POD_TYPE = "pod";
     private static final String VALUE_FIELD = "value";
     private static final DateTimeFormatter TIMESTAMP_FIELD_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    private static final String POD_NAME_PREFIX = "pipeline-";
 
     public static List<IndexRequest> buildIndexRequests(final String indexName, final GpuUsages usages) {
         final String timestamp = usages.getTimestamp().format(TIMESTAMP_FIELD_FORMATTER);
+        final String nodeName = usages.getNodename();
         final List<IndexRequest> indexRequests = ListUtils.emptyIfNull(usages.getUsages()).stream()
-                .map(usage -> buildGpuIndexRequest(indexName, usage, usages.getNodename(), timestamp))
+                .map(usage -> buildGpuIndexRequest(indexName, usage, nodeName, timestamp))
                 .collect(Collectors.toList());
-        indexRequests.add(buildGpuStatsIndexRequest(indexName, usages.getStats(), usages.getNodename(), timestamp));
+        indexRequests.add(
+                buildGpuStatsIndexRequest(indexName, usages.getStats(), nodeName, timestamp, null));
+        MapUtils.emptyIfNull(usages.getStatsByRun()).forEach((runId, usage)
+                -> indexRequests.add(buildGpuStatsIndexRequest(indexName, usage, nodeName, timestamp, runId)));
         return indexRequests;
     }
 
     private static IndexRequest buildGpuStatsIndexRequest(final String indexName, final GpuUsageStats stats,
-                                                          final String nodename, final String timestamp) {
-        return buildIndexRequest(indexName, GPU_AGGS_INDEX_TYPE, buildGpuStatDocument(stats, nodename, timestamp));
+                                                          final String nodename, final String timestamp,
+                                                          final Long runId) {
+        return buildIndexRequest(indexName, GPU_AGGS_INDEX_TYPE,
+                buildGpuStatDocument(stats, nodename, timestamp, runId));
     }
 
     private static IndexRequest buildGpuIndexRequest(final String indexName, final NodeReporterGpuUsages usages,
@@ -110,8 +121,11 @@ public final class GpuMonitorIndexHelper {
                     .field(INDEX_FIELD, usages.getIndex())
                     .field(NODENAME_FIELD, nodename)
                     .field(TYPE_FIELD, NODE_TYPE)
-                    .field(DEVICE_NAME_FIELD, usages.getName())
-                    .endObject();
+                    .field(DEVICE_NAME_FIELD, usages.getName());
+            if (Objects.nonNull(usages.getRunId())) {
+                jsonBuilder.field(POD_NAME_FIELD, toPodName(usages.getRunId()));
+            }
+            jsonBuilder.endObject();
 
             return jsonBuilder.endObject();
         } catch (IOException e) {
@@ -120,7 +134,7 @@ public final class GpuMonitorIndexHelper {
     }
 
     private static XContentBuilder buildGpuStatDocument(final GpuUsageStats stats, final String nodename,
-                                                        final String timestamp) {
+                                                        final String timestamp, final Long runId) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             jsonBuilder.startObject();
 
@@ -138,9 +152,12 @@ public final class GpuMonitorIndexHelper {
 
             jsonBuilder.startObject(TAGS_FIELD)
                     .field(NODENAME_FIELD, nodename)
-                    .field(TYPE_FIELD, NODE_TYPE)
-                    .field(DEVICE_NAME_FIELD, stats.getDeviceName())
-                    .endObject();
+                    .field(TYPE_FIELD, Objects.nonNull(runId) ? POD_TYPE : NODE_TYPE)
+                    .field(DEVICE_NAME_FIELD, stats.getDeviceName());
+            if (Objects.nonNull(runId)) {
+                jsonBuilder.field(POD_NAME_FIELD, toPodName(runId));
+            }
+            jsonBuilder.endObject();
 
             return jsonBuilder.endObject();
         } catch (IOException e) {
@@ -148,9 +165,9 @@ public final class GpuMonitorIndexHelper {
         }
     }
 
-    private static void fillMetricsValue(final XContentBuilder builder, final String filed, final Integer value)
+    private static void fillMetricsValue(final XContentBuilder builder, final String field, final Integer value)
             throws IOException {
-        builder.startObject(filed)
+        builder.startObject(field)
                 .field(VALUE_FIELD, value)
                 .endObject();
     }
@@ -162,5 +179,9 @@ public final class GpuMonitorIndexHelper {
         fillMetricsValue(builder, utilizationGpuFiled, summary.getGpuUtilization());
         fillMetricsValue(builder, utilizationMemoryField, summary.getMemoryUtilization());
         fillMetricsValue(builder, usedMemoryField, summary.getMemoryUsage());
+    }
+
+    private static String toPodName(final Long runId) {
+        return String.format("%s%d", POD_NAME_PREFIX, runId);
     }
 }

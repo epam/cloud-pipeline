@@ -67,13 +67,15 @@ public interface UsageMonitoringManager {
      * @param to Maximal date for collecting stats.
      * @param granularity the list of granularity levels to load GPU usages
      * @param squashCharts if specified charts shall be squashed into one
+     * @param runId The run ID to filter particular pod (optional)
      * @return GPU usage statistics.
      */
     GpuMonitoringStats getGpuStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
                                           @Nullable LocalDateTime to,
                                           List<GpuMetricsGranularity> granularity,
-                                          boolean squashCharts);
+                                          boolean squashCharts,
+                                          Long runId);
 
     /**
      * Retrieves monitoring stats for node as input stream.

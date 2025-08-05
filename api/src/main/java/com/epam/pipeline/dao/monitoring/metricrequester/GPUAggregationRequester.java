@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,7 +61,7 @@ public class GPUAggregationRequester extends AbstractGPUMetricsRequester {
     @Override
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                            final Duration interval, final Long runId) {
-        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to, runId)
+        final SearchSourceBuilder aggregation = statsQuery(nodeName, Objects.nonNull(runId) ? POD : NODE, from, to, runId)
                 .size(1)
                 .aggregation(buildHistogram(interval));
         return request(from, to, aggregation);
