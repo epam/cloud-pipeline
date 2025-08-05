@@ -294,10 +294,10 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnStatsForNodeForAdmin() {
         final List<MonitoringStats> statsList = Collections.singletonList(monitoringStats);
         doReturn(statsList).when(mockUsageMonitoringManager).getStatsForNode(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, null);
 
         final List<MonitoringStats> returnedStatsList =
-                clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
+                clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, null);
 
         assertThat(returnedStatsList).hasSize(1).contains(monitoringStats);
     }
@@ -308,13 +308,13 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         final List<MonitoringStats> statsList = Collections.singletonList(monitoringStats);
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(statsList).when(mockUsageMonitoringManager).getStatsForNode(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, null);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
         mockUser();
 
         final List<MonitoringStats> returnedStatsList =
-                clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
+                clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, null);
 
         assertThat(returnedStatsList).hasSize(1).contains(monitoringStats);
     }
@@ -325,22 +325,25 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldDenyAccessToStatsWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
         doReturn(statsList).when(mockUsageMonitoringManager)
-                .getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX);
+                .getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, null);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class,
-            () -> clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX));
+            () -> clusterApiService.getStatsForNode(nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX,
+                    null));
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnUsageStatisticsFileForAdmin() {
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV,
+                null);
 
         final InputStream returnedInputStream = clusterApiService.getUsageStatisticsFile(
-            nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
+            nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV,
+                null);
 
         assertThat(returnedInputStream).isEqualTo(inputStream);
     }
@@ -350,13 +353,15 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnUsageStatisticsFileWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV,
+                null);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
         mockUser();
 
         final InputStream returnedInputStream = clusterApiService.getUsageStatisticsFile(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV,
+                null);
 
         assertThat(returnedInputStream).isEqualTo(inputStream);
     }
@@ -367,12 +372,14 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldDenyAccessToUsageStatisticsFileWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
         doReturn(inputStream).when(mockUsageMonitoringManager).getStatsForNodeAsInputStream(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV);
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV,
+                null);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.getUsageStatisticsFile(
-                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV));
+                nodeInstance.getName(), LocalDateTime.MIN, LocalDateTime.MAX, Duration.ZERO, MonitoringReportType.CSV,
+                null));
     }
 
     @Test

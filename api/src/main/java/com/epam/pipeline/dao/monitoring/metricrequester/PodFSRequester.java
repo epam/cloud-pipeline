@@ -70,9 +70,9 @@ public class PodFSRequester extends FSRequester {
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
+                                              final Duration interval, final Long runId) {
         return request(from, to,
-                statsQuery(nodeName, POD_CONTAINER, from, to)
+                statsQuery(nodeName, POD_CONTAINER, from, to, runId)
                         .sort(ELKUsageMetric.POD_FS.getTimestamp())
                         .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
