@@ -26,7 +26,7 @@ def get_pod(api, run_id):
 class Pod:
     def __init__(self, name, ip):
         self.name = name
-        self.ip = name
+        self.ip = ip
 
 class Task:
 
