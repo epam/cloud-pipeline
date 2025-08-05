@@ -57,6 +57,7 @@ public class CloudPipelineAPIClient {
                         .buildClient();
         this.executor = cloudPipelineApiExecutor;
         this.jsonMapper = new JsonMapper();
+        this.jsonMapper.init();
     }
 
     public OnlineUsers saveOnlineUsers() {
