@@ -36,12 +36,12 @@ public class NodePoolApiService {
     private final NodePoolManager nodeManager;
     private final NodePoolUsageService nodePoolUsageService;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_OR_CLUSTER_READER)
     public List<? extends NodePoolInfo> loadAll(final boolean loadStatus) {
         return nodeManager.loadAll(loadStatus);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_OR_CLUSTER_READER)
     public NodePool load(final Long poolId) {
         return nodeManager.load(poolId);
     }
