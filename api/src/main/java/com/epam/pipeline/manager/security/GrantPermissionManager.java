@@ -126,6 +126,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.entity.user.DefaultRoles.ROLE_CLUSTER_READER;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -625,6 +626,10 @@ public class GrantPermissionManager {
     }
 
     public boolean nodePermission(NodeInstance node, String permissionName) {
+        // read-only access for all KUBE nodes for ROLE_CLUSTER_READER role
+        if (isClusterReader(permissionName, node.getMachineType())) {
+            return true;
+        }
         // not labeled nodes are available only for admins
         if (node.getPipelineRun() == null) {
             return false;
@@ -655,6 +660,10 @@ public class GrantPermissionManager {
 
     public boolean nodePermission(String nodeName, String permissionName) {
         NodeInstance nodeInstance = nodesManager.getNode(nodeName);
+        // read-only access for all KUBE nodes for ROLE_CLUSTER_READER role
+        if (isClusterReader(permissionName, nodeInstance.getMachineType())) {
+            return true;
+        }
         // not labeled nodes are available only for admins
         if (nodeInstance.getPipelineRun() == null) {
             return false;
@@ -666,6 +675,10 @@ public class GrantPermissionManager {
         if (!MachineType.KUBE.equals(machineType)) {
             // cloud nodes are available only for admins
             return false;
+        }
+        // read-only access for all KUBE nodes for ROLE_CLUSTER_READER role
+        if (isClusterReader(permissionName)) {
+            return true;
         }
         return nodePermission(nodeName, permissionName);
     }
@@ -1294,6 +1307,26 @@ public class GrantPermissionManager {
         }
         return quotaService.findActiveActionForUser(pipelineUser,
                     QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
+    }
+
+    private boolean isClusterReader(final String permissionName) {
+        if (!AclPermission.READ_NAME.equals(permissionName)) {
+            return false;
+        }
+        final PipelineUser currentUser = authManager.getCurrentUser();
+        if (Objects.isNull(currentUser)) {
+            return false;
+        }
+        return ListUtils.emptyIfNull(currentUser.getRoles()).stream()
+                .anyMatch(role -> ROLE_CLUSTER_READER.name().equals(role.getName()));
+    }
+
+    private boolean isClusterReader(final String permissionName, final MachineType machineType) {
+        if (!MachineType.KUBE.equals(machineType)) {
+            // cloud nodes are available only for admins
+            return false;
+        }
+        return isClusterReader(permissionName);
     }
 
     @Data
