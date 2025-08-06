@@ -84,7 +84,7 @@ class FrozenMount(AbstractMount):
         return self.resolve_mount_cmd(config_folder, mount_bin, mountpoint, options, additional_arguments, mode)
 
     def resolve_mount_cmd(self, config_folder, mount_bin, mountpoint, options, additional_arguments, mode):
-        mount_cmd = '%s --mountpoint %s %s --mode %d' % (mount_bin, mountpoint, ' '.join(additional_arguments), mode)
+        mount_cmd = '%s --mountpoint "%s" %s --mode %d' % (mount_bin, mountpoint, ' '.join(additional_arguments), mode)
         mount_script = os.path.join(config_folder, 'pipe-fuse-script' + str(uuid.uuid4()))
         if options:
             mount_cmd += ' -o ' + options
