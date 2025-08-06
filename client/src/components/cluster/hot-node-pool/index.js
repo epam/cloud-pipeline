@@ -23,6 +23,7 @@ import {
   message,
   Modal
 } from 'antd';
+import {computed} from 'mobx';
 import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
@@ -33,6 +34,8 @@ import HotNodePoolScheduleUpdate from '../../../models/cluster/HotNodePoolSchedu
 import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolScheduleDelete';
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
+import roleModel from '../../../utils/roleModel';
+import {isAdmin} from '../utilities/access-permissinos';
 
 async function updateSchedule (payload, scheduleId) {
   const scheduleRequest = new HotNodePoolScheduleUpdate();
@@ -52,6 +55,7 @@ async function removeSchedule (scheduleId) {
   }
 }
 
+@roleModel.authenticationInfo
 @inject(() => {
   return {
     pools,
@@ -80,6 +84,12 @@ class HotCluster extends React.Component {
         .catch(onFinish);
     });
   };
+
+  @computed
+  get isReadOnly () {
+    const {authenticatedUserInfo} = this.props;
+    return !authenticatedUserInfo.loaded || !isAdmin(authenticatedUserInfo.value);
+  }
 
   openEditPoolModal = (options) => (e) => {
     if (e) {
@@ -245,6 +255,7 @@ class HotCluster extends React.Component {
       editablePool,
       pending
     } = this.state;
+    const readOnly = this.isReadOnly;
     return (
       <div
         className="cp-panel cp-panel-transparent"
@@ -256,14 +267,16 @@ class HotCluster extends React.Component {
           <div
             className={styles.actions}
           >
-            <Button
-              disabled={pending}
-              type="primary"
-              onClick={this.openEditPoolModal({isNew: true})}
-            >
-              <Icon type="plus" />
-              Create
-            </Button>
+            {!readOnly && (
+              <Button
+                disabled={pending}
+                type="primary"
+                onClick={this.openEditPoolModal({isNew: true})}
+              >
+                <Icon type="plus" />
+                Create
+              </Button>
+            )}
             <Button
               disabled={pending}
               onClick={this.refresh}
@@ -277,6 +290,7 @@ class HotCluster extends React.Component {
             pools.map(pool => (
               <PoolCard
                 disabled={pending}
+                readOnly={readOnly}
                 key={pool.id}
                 pool={pool}
                 onEdit={this.openEditPoolModal({pool})}

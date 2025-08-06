@@ -110,6 +110,7 @@ const CP_USE_NODES_COUNT_INFORMATION = 'CP_USE_NODES_COUNT_INFORMATION';
 function PoolCard ({
   awsRegions,
   disabled,
+  readOnly = false,
   pool,
   onEdit,
   onRemove,
@@ -218,13 +219,15 @@ function PoolCard ({
               }
             </div>
             <div className={styles.actions}>
-              <Button
-                disabled={disabled}
-                size="small"
-                onClick={onEdit}
-              >
-                <Icon type="edit" />
-              </Button>
+              {!readOnly && (
+                <Button
+                  disabled={disabled}
+                  size="small"
+                  onClick={onEdit}
+                >
+                  <Icon type="edit" />
+                </Button>
+              )}
               <Button
                 disabled={disabled}
                 size="small"
@@ -235,14 +238,16 @@ function PoolCard ({
               >
                 <Icon type="area-chart" />
               </Button>
-              <Button
-                disabled={disabled}
-                size="small"
-                type="danger"
-                onClick={onRemove}
-              >
-                <Icon type="delete" />
-              </Button>
+              {!readOnly && (
+                <Button
+                  disabled={disabled}
+                  size="small"
+                  type="danger"
+                  onClick={onRemove}
+                >
+                  <Icon type="delete" />
+                </Button>
+              )}
             </div>
           </div>
           <PoolShortDescription pool={pool} />
