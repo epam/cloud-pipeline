@@ -26,6 +26,8 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -62,6 +64,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class ClusterApiServiceTest extends AbstractAclTest {
+
+    private static final String CLUSTER_READER_ROLE = "CLUSTER_READER";
 
     private final FilterPodsRequest filterPodsRequest = NodeCreatorUtils.getDefaultFilterPodsRequest();
     private final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(ID, SIMPLE_USER);
@@ -184,6 +188,22 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnNodeInstanceForAdmin() {
         doReturn(nodeInstance).when(mockNodesManager)
                 .getKubeOrCloudNode(nodeInstance.getName(), MachineType.KUBE, null);
+
+        assertThat(clusterApiService.getNode(nodeInstance.getName(), MachineType.KUBE, null))
+                .isEqualTo(nodeInstance);
+    }
+
+    @Test
+    @WithMockUser(roles = CLUSTER_READER_ROLE)
+    public void shouldReturnNodeInstanceForClusterReader() {
+        doReturn(nodeInstance).when(mockNodesManager)
+                .getKubeOrCloudNode(nodeInstance.getName(), MachineType.KUBE, null);
+        final NodeInstance nodeInstance = NodeCreatorUtils.getNodeInstance(ID, TEST_STRING);
+        initAclEntity(nodeInstance, AclPermission.READ);
+        doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
+        final PipelineUser currentUser = new PipelineUser();
+        currentUser.setRoles(Collections.singletonList(DefaultRoles.ROLE_CLUSTER_READER.getRole()));
+        doReturn(currentUser).when(mockAuthManager).getCurrentUser();
 
         assertThat(clusterApiService.getNode(nodeInstance.getName(), MachineType.KUBE, null))
                 .isEqualTo(nodeInstance);
