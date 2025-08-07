@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_CLUSTER_READER;
 import static com.epam.pipeline.security.acl.AclExpressions.OR;
 import static com.epam.pipeline.security.acl.AclExpressions.USER_ADMIN_ONLY;
 
@@ -43,7 +44,7 @@ public class ReportApiService {
         return usersUsageReportService.loadUsersUsage(filter);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_CLUSTER_READER)
     public List<NodePoolUsageReport> loadNodePoolReport(final ReportFilter filter) {
         return nodePoolReportService.getReport(filter);
     }
