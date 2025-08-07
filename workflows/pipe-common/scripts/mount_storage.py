@@ -428,6 +428,7 @@ class StorageMounter:
             return
         params = self.build_mount_params(mount_point)
         mount_command = self.build_mount_command(params)
+        Logger.info('Mount command: {mount_command}'.format(mount_command=mount_command), task_name=task_name)
         self.execute_mount(mount_command, params, task_name)
 
     def build_mount_point(self, mount_root):
@@ -658,7 +659,7 @@ class S3Mounter(StorageMounter):
             custom_mount_env = ''
             if custom_mount_env_enabled == 'true':
                 custom_mount_env = os.getenv('CP_CAP_CUSTOM_MOUNT_ENV', '')
-            return (custom_mount_env + ' pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+            return (custom_mount_env + ' pipe storage mount "{mount}" -b "{path}" -t --mode 775 -w {mount_timeout} '
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
                     + merged_options + ' '
@@ -761,7 +762,7 @@ class GCPMounter(StorageMounter):
             logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
             if logging_level:
                 params['logging_level'] = logging_level
-            return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+            return ('pipe storage mount "{mount}" -b "{path}" -t --mode 775 -w {mount_timeout} '
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
                     + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
