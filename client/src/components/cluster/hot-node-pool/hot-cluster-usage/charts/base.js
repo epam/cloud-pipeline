@@ -46,7 +46,7 @@ class BaseChart extends React.Component {
         plugins,
         units
       } = props || this.props;
-      const {plugins: optPlugins = {}, ...rest} = options;
+      const {plugins: optPlugins = {}, tooltips = {}, ...rest} = options;
       const format = periodType === Period.day ? 'D MMMM, YYYY' : 'MMMM YYYY';
       const {start} = getPeriod(periodType, period);
       const xAxisLabel = start.format(format);
@@ -108,19 +108,25 @@ class BaseChart extends React.Component {
               return null;
             },
             label: function (tooltipItem, data) {
-              const {datasetIndex} = tooltipItem;
+              const {datasetIndex, value: tooltipItemValue} = tooltipItem;
               const {label} = data.datasets[datasetIndex];
-              let value = Number(tooltipItem.value);
-              if (!isNaN(value)) {
+              let value = Number(tooltipItemValue);
+              if (!Number.isNaN(value)) {
                 const formatter = new Intl.NumberFormat('en-US', {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 2
                 });
                 value = formatter.format(value);
+              } else {
+                value = undefined;
               }
-              return `${label}: ${value}${units}`;
+              if (value) {
+                return `${label}: ${value}${units}`;
+              }
+              return `${label}: -`;
             }
-          }
+          },
+          ...tooltips
         },
         maintainAspectRatio: false,
         ...rest

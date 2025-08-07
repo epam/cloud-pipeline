@@ -33,7 +33,6 @@ function PoolsHardwareChart ({
   textColor,
   backgroundColor,
   lineColor,
-  limitColor,
   period,
   periodType,
   showPoolSelector = false
@@ -42,9 +41,7 @@ function PoolsHardwareChart ({
     rawData,
     mappings,
     colors,
-    lineColor,
-    limitColor,
-    backgroundColor
+    lineColor
   );
   const {
     max
@@ -84,6 +81,10 @@ function PoolsHardwareChart ({
       labels: {
         fontColor: textColor
       }
+    },
+    tooltips: {
+      mode: 'index',
+      intersect: false
     }
   };
   return (

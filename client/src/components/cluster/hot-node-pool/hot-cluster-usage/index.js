@@ -82,6 +82,92 @@ class HotClusterUsage extends React.Component {
   }
 
   @computed
+  get pendingBarColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-background-color'];
+    }
+    return getColor(1);
+  }
+
+  @computed
+  get totalBarColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@color-pink'];
+    }
+    return getColor(2);
+  }
+
+  @computed
+  get runsColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@primary-color'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
+  get cpuColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@color-green'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
+  get ramColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@color-blue-dimmed'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
+  get gpuColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@color-violet'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
   get limitColor () {
     const {themes} = this.props;
     const defaultLimitColor = '#ff4d4f';
@@ -300,11 +386,79 @@ class HotClusterUsage extends React.Component {
                       : 'Jobs status'
                   }
                   units=""
-                  colors={this.colors}
+                  colors={this.runsColors}
                   textColor={this.textColor}
                   backgroundColor={this.backgroundColor}
                   lineColor={this.lineColor}
-                  limitColor={this.limitColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.gpu,
+                    HARDWARE_MAPPING.gpuPending,
+                    HARDWARE_MAPPING.gpuLimit
+                  ]}
+                  title={`${poolName} - GPU status`}
+                  units=""
+                  colors={this.gpuColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.cpu,
+                    HARDWARE_MAPPING.cpuPending,
+                    HARDWARE_MAPPING.cpuLimit
+                  ]}
+                  title={`${poolName} - CPU status`}
+                  units=""
+                  colors={this.cpuColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.ram,
+                    HARDWARE_MAPPING.ramPending,
+                    HARDWARE_MAPPING.ramLimit
+                  ]}
+                  title={`${poolName} - memory status`}
+                  units="GiB"
+                  colors={this.ramColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
                   period={period}
                   periodType={periodType}
                   style={{width: 'calc(100% - 6px)'}}

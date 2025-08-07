@@ -16,35 +16,55 @@
 
 import {getColor} from './colors';
 
+function bytesToGiB (bytes) {
+  return bytes && !Number.isNaN(Number(bytes)) ? Number(bytes) / (2 ** 30) : 0;
+}
+
 export const HARDWARE_MAPPING = {
   gpu: {
     title: 'GPU',
-    key: 'gpu'
+    key: 'activeGPUCount'
   },
   gpuPending: {
     title: 'GPU pending',
-    key: 'gpuPending',
+    key: 'pendingGPUCount',
     type: 'pending'
+  },
+  gpuLimit: {
+    title: 'Total GPU',
+    key: 'totalGPUCount',
+    type: 'total'
   },
   cpu: {
     title: 'CPU',
-    key: 'cpu'
+    key: 'activeCPUCount'
   },
   cpuPending: {
     title: 'CPU pending',
-    key: 'cpuPending',
+    key: 'pendingCPUCount',
     type: 'pending'
+  },
+  cpuLimit: {
+    title: 'Total CPU',
+    key: 'totalCPUCount',
+    type: 'total'
   },
   ram: {
     title: 'RAM',
-    key: 'ram',
-    valueFormatter: (value) => value
+    key: 'activeMemoryCount',
+    valueFormatter: bytesToGiB
   },
   ramPending: {
     title: 'RAM pending',
-    key: 'ramPending',
+    key: 'pendingMemoryCount',
     type: 'pending',
-    valueFormatter: (value) => value
+    valueFormatter: bytesToGiB
+  },
+  ramLimit: {
+    title: 'Total RAM',
+    key: 'totalMemoryCount',
+    type: 'total',
+    valueFormatter: bytesToGiB
   },
   runs: {
     title: 'Jobs',
@@ -61,9 +81,7 @@ export function extractHardwareData (
   data,
   mappings = [],
   colors,
-  lineColor,
-  limitColor,
-  backgroundColor
+  lineColor
 ) {
   if (!data) {
     return {
@@ -73,37 +91,34 @@ export function extractHardwareData (
     };
   }
   const records = data.originalRecords.filter(record => !!record.measureTime);
-  const extractData = (records, label, key, valueFormatter) => {
+  const revertedRecords = records.slice().reverse();
+  const extractData = (label, key, type, valueFormatter) => {
     const record = records.find(record => record.measureTime === label);
-    const value = record?.[key] || 0;
+    let value = record?.[key] || 0;
+    if (type === 'total' && value <= 0) {
+      const lastNonNullRecord = revertedRecords.find(record => record[key] > 0);
+      value = lastNonNullRecord ? lastNonNullRecord[key] : undefined;
+    }
+    if (value === undefined || value <= 0) {
+      return undefined;
+    }
     return valueFormatter ? valueFormatter(value) : value;
   };
   const labels = records.map(record => record.measureTime);
-  const datasets = mappings.map(({key, title, type, valueFormatter}, index) => ({
+  const datasets = mappings.map(({key, title, type = 'active', valueFormatter}, index) => ({
     label: title,
-    data: labels.map(label => extractData(records, label, key, valueFormatter)),
-    backgroundColor: type === 'pending'
-      ? backgroundColor
-      : getColor(index, colors),
+    data: labels.map(label => extractData(label, key, type, valueFormatter)),
+    backgroundColor: colors[type],
     borderColor: type === 'pending'
       ? lineColor
-      : getColor(index, colors),
+      : colors[type],
     fill: false,
-    borderWidth: 1
+    borderWidth: type === 'total' ? 3 : 1,
+    type: type === 'total' ? 'line' : 'bar',
+    pointRadius: 0,
+    order: type === 'total' ? 1 : 2
   }));
-  const capacity = undefined;
   let max = 1;
-  if (capacity) {
-    max = Math.max(max, capacity);
-    datasets.push({
-      type: 'line',
-      label: 'Capacity',
-      borderColor: limitColor,
-      fill: false,
-      data: labels.map(l => capacity),
-      pointRadius: 0
-    });
-  }
   for (let i = 0; i < labels.length; i++) {
     const v = datasets.reduce((acc, d) => acc + (d.data || [])[i] || 0, 0);
     if (v > max) {

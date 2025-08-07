@@ -33,7 +33,8 @@ function getNumber (o) {
 
 const resourceSharingKeys = [
   'activeRunsCount',
-  'pendingRunsCount'
+  'pendingRunsCount',
+  'requestsStats'
 ];
 
 function isResourceSharingRecord (record) {
@@ -98,6 +99,28 @@ function processPoolUsage (poolId, data, pools = [], options = {}) {
   const processRecordForTick = (tick) => {
     const record = records
       .find(o => displayDate(o.periodStart, format) === tick.tick.format(format));
+    const extractRequestsStats = (field, properties) => {
+      if (record && record.requestsStats) {
+        const {
+          active: activeProp = `${field}Active`,
+          pending: pendingProp = `${field}Pending`,
+          total: totalProp = `${field}Total`,
+          converter = (o) => o
+        } = properties || {};
+        const stats = record.requestsStats[field] || {};
+        const {
+          active = 0,
+          pending = 0,
+          total = 0
+        } = stats || {};
+        return {
+          [activeProp]: converter(active),
+          [pendingProp]: converter(pending),
+          [totalProp]: converter(total)
+        };
+      }
+      return {};
+    };
     return {
       ...record,
       date: tick.tick,
@@ -108,7 +131,23 @@ function processPoolUsage (poolId, data, pools = [], options = {}) {
       poolUsage: record ? getNumber(record.occupiedNodesCount) : undefined,
       poolLimit: record ? getNumber(record.nodesCount) : undefined,
       activeRunsCount: record ? getNumber(record.activeRunsCount) : undefined,
-      pendingRunsCount: record ? getNumber(record.pendingRunsCount) : undefined
+      pendingRunsCount: record ? getNumber(record.pendingRunsCount) : undefined,
+      ...extractRequestsStats(
+        'cpu',
+        {active: 'activeCPUCount', pending: 'pendingCPUCount', total: 'totalCPUCount'}
+      ),
+      ...extractRequestsStats(
+        'memory',
+        {
+          active: 'activeMemoryCount',
+          pending: 'pendingMemoryCount',
+          total: 'totalMemoryCount'
+        }
+      ),
+      ...extractRequestsStats(
+        'nvidia.com/gpu',
+        {active: 'activeGPUCount', pending: 'pendingGPUCount', total: 'totalGPUCount'}
+      )
     };
   };
   const processedRecords = ticks.map(processRecordForTick);
