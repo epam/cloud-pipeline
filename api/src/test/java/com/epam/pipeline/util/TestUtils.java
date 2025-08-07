@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,6 +60,9 @@ public final class TestUtils {
     public static final String TEMPLATE_REPLACE_MARK = "@@";
     public static final String TEST_PLATFORM = "linux";
     private static final long PROJECT_ID = 1L;
+    private static final int EXTENDED_DEFAULT_ROLES_NUMBER = 6;
+    public static final int EXPECTED_DEFAULT_ROLES_NUMBER =
+            DefaultRoles.values().length + EXTENDED_DEFAULT_ROLES_NUMBER;
 
     private TestUtils() {
         // no op
