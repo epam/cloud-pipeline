@@ -64,7 +64,7 @@ class KubeClient:
             pipeline_container = pipeline_containers[0]
             container_id = pipeline_container.container_id
             if container_id:
-                container_id = str(container_id).lstrip('docker://')
+                container_id = str(container_id).replace('docker://', '')
             run_id = pod.metadata.labels.get(self.RUN_ID_LABEL)
             containers.update({run_id: container_id})
         return containers
