@@ -122,7 +122,7 @@ class GPUInfoTab extends React.Component {
   @computed
   get chartsData () {
     const {chartsData} = this.props;
-    return chartsData;
+    return chartsData || {};
   }
 
   @computed
@@ -194,6 +194,14 @@ class GPUInfoTab extends React.Component {
     });
   };
 
+  navigateToRun = () => {
+    const {chartsData, router} = this.props;
+    if (!chartsData?.runId || !router) {
+      return;
+    }
+    router.push(`/run/${chartsData.runId}`);
+  }
+
   onRangeChanged = (range = {}) => {
     const {chartsFrom = 0, chartsTo = 0} = this.state;
     const {
@@ -261,6 +269,7 @@ class GPUInfoTab extends React.Component {
 
   renderChartControls = () => {
     const {hideDatasets, measure} = this.state;
+    const {chartsData} = this.props;
     const onMeasureChange = ({key}) => this.setState({measure: key});
     // const onGPUChange = ({key}) => this.setState({selectedGPU: key});
     const toggleDataset = (key) => {
@@ -401,7 +410,17 @@ class GPUInfoTab extends React.Component {
     );
     return (
       <div style={{display: 'flex', flexDirection: 'column'}}>
-        <div className={styles.chartControls}>
+        {chartsData?.runId ? (
+          <a
+            style={{marginRight: 'auto', marginLeft: 50}}
+            onClick={this.navigateToRun}
+          >
+            Showing statistics for run #{chartsData.runId}
+          </a>
+        ) : null}
+        <div className={classNames(styles.chartControls, {
+          [styles.withRunId]: !!chartsData?.runId
+        })}>
           <b style={{marginRight: 10}}>{this.GPUDeviceName}</b>
           <div className={styles.legend}>
             {Object.entries(DATASET_TYPES).map(([key, value]) => {
@@ -544,7 +563,8 @@ GPUInfoTab.propTypes = {
   nodeName: PropTypes.string,
   chartsData: PropTypes.object,
   node: PropTypes.object,
-  gpuStatisticsAvailable: PropTypes.bool
+  gpuStatisticsAvailable: PropTypes.bool,
+  router: PropTypes.object
 };
 
 export default GPUInfoTab;

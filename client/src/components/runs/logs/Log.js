@@ -25,6 +25,7 @@ import {
   Card,
   Col,
   Collapse,
+  Dropdown,
   Icon,
   Input,
   Menu,
@@ -86,7 +87,9 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS, CP_CAP_REQUESTS_CPU, CP_CAP_REQUESTS_GPU, CP_CAP_REQUESTS_RAM
+} from '../../pipelines/launch/form/utilities/parameters';
 import RunName from '../run-name';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
@@ -425,6 +428,18 @@ class Logs extends localization.LocalizedReactComponent {
       ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
       endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
     };
+  }
+
+  get isCapacityBlock () {
+    const {run} = this.state;
+    if (!run) {
+      return false;
+    }
+    return (run.pipelineRunParameters || []).some(({name}) => ([
+      CP_CAP_REQUESTS_CPU,
+      CP_CAP_REQUESTS_GPU,
+      CP_CAP_REQUESTS_RAM
+    ].includes(name)));
   }
 
   exportLog = async () => {
@@ -949,6 +964,51 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  renderMonitoringLink = (title) => {
+    const {run} = this.state;
+    const {router, runId} = this.props;
+    const {startDate, endDate, instance, platform} = run || {};
+    const isWindowsRun = /^windows$/i.test(platform);
+    const parts = [
+      startDate && `from=${encodeURIComponent(startDate)}`,
+      endDate && `to=${encodeURIComponent(endDate)}`
+    ].filter(Boolean);
+    const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+    const nodeUrl = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
+    if (this.isCapacityBlock) {
+      // eslint-disable-next-line max-len
+      const runUrl = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor?runId=${runId}`}`;
+      const onNavigate = ({key}) => {
+        if (key === 'run') {
+          return router.push(runUrl);
+        }
+        router.push(nodeUrl);
+      };
+      const menu = (
+        <Menu onClick={onNavigate}>
+          <Menu.Item key="run">
+            <span><b>Run</b> statistics</span>
+          </Menu.Item>
+          <Menu.Item key="node">
+            <span><b>Node</b> statistics</span>
+          </Menu.Item>
+        </Menu>
+      );
+      return (
+        <Dropdown overlay={menu}>
+          <a>
+            {title} <Icon type="down" />
+          </a>
+        </Dropdown>
+      );
+    }
+    return (
+      <Link to={nodeUrl}>
+        {title}
+      </Link>
+    );
+  };
+
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance && run) {
@@ -995,23 +1055,19 @@ class Logs extends localization.LocalizedReactComponent {
           details.push({key: 'Cores', value: `${run.executionPreferences.coresNumber}`});
         }
       }
+      const {startDate, endDate} = run;
+      const parts = [
+        startDate && `from=${encodeURIComponent(startDate)}`,
+        endDate && `to=${encodeURIComponent(endDate)}`
+      ].filter(Boolean);
+      const query = parts.length > 0 ? `?${parts.join('&')}` : '';
       if (instance.nodeIP) {
-        const {startDate, endDate} = run;
-        const parts = [
-          startDate && `from=${encodeURIComponent(startDate)}`,
-          endDate && `to=${encodeURIComponent(endDate)}`
-        ].filter(Boolean);
-        const query = parts.length > 0 ? `?${parts.join('&')}` : '';
         const isWindowsRun = /^windows$/i.test(run.platform);
         if (instance.nodeName) {
-          const url = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           details.push({
             key: 'IP',
-            value: (
-              <Link to={url}>
-                {instance.nodeName} ({instance.nodeIP})
-              </Link>
-            )});
+            value: this.renderMonitoringLink(`${instance.nodeName} (${instance.nodeIP})`)
+          });
         } else {
           const parts = instance.nodeIP.split('.');
           const url = `/cluster/ip-${parts.join('-')}/${isWindowsRun ? 'info' : `monitor${query}`}`;
@@ -2436,17 +2492,8 @@ class Logs extends localization.LocalizedReactComponent {
           {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
-      if (instance && instance.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
-        const parts = [
-          startDate && `from=${encodeURIComponent(startDate)}`,
-          endDate && `to=${encodeURIComponent(endDate)}`
-        ].filter(Boolean);
-        const query = parts.length > 0 ? `?${parts.join('&')}` : '';
-        ShowMonitorButton = (
-          <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
-            MONITOR
-          </Link>
-        );
+      if (!!instance?.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
+        ShowMonitorButton = this.renderMonitoringLink('MONITOR');
       }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,23 +24,27 @@ import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
 import {checkTerminateNodeErrors} from './constants';
+import PipelineRunInfo from '../../models/pipelines/PipelineRunInfo';
 
 @inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
-  const {from, to, type} = location?.query;
+  const {type, runId, from, to} = location?.query;
   return {
     pools,
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName, type),
-    chartsData: new ChartsData(params.nodeName, from, to, stores),
-    machineType: type
+    machineType: type,
+    stores,
+    runId,
+    from,
+    to
   };
 })
 @observer
@@ -49,20 +53,36 @@ class ClusterNode extends Component {
     labelsToShow: undefined
   };
 
+  @observable _chartsData;
+
   resizeListener;
   labelRefs = [];
 
   componentDidMount () {
     this.resizeListener = window.addEventListener('resize', this.onResize);
     this.onResize();
+    this.initializeChartsData();
   }
 
-  componentDidUpdate () {
+  componentDidUpdate (prevProps) {
     this.onResize();
+    if (
+      this.props.from !== prevProps.from ||
+      this.props.to !== prevProps.to ||
+      this.props.runId !== prevProps.runId ||
+      this.props.name !== prevProps.name
+    ) {
+      this.initializeChartsData();
+    }
   }
 
   componentWillUnmount () {
     window.removeEventListener('resize', this.onResize);
+  }
+
+  @computed
+  get chartsData () {
+    return this._chartsData;
   }
 
   @computed
@@ -101,11 +121,28 @@ class ClusterNode extends Component {
     return true;
   }
 
+  initializeChartsData = async () => {
+    const {location, name, stores} = this.props;
+    const {from: queryFrom, to: queryTo, runId} = location.query;
+    let from = queryFrom;
+    let to = queryTo;
+    if (runId) {
+      const request = new PipelineRunInfo(runId);
+      await request.fetch();
+      const run = request.value;
+      if (run) {
+        from = run.startDate;
+        to = run.endDate;
+      }
+    }
+    this._chartsData = new ChartsData(name, from, to, stores, runId);
+  }
+
   refreshNodeInstance = () => {
     if (!this.props.node.pending) {
       this.props.node.fetch();
     }
-    if (!this.props.chartsData.pending) {
+    if (!this.chartsData?.pending) {
       this.props.chartsData.fetch();
     }
     if (!this.props.pools.pending) {
@@ -264,7 +301,7 @@ class ClusterNode extends Component {
           child,
           {
             node: this.props.node,
-            chartsData: this.props.chartsData,
+            chartsData: this.chartsData,
             nodeName: this.props.name,
             isCloudNode: this.isCloudNode
           }
@@ -359,7 +396,7 @@ class ClusterNode extends Component {
               <Button
                 id="terminate-cluster-node-button"
                 type="danger"
-                disabled={this.props.node.pending || this.props.chartsData.pending}
+                disabled={this.props.node.pending || this.chartsData?.pending}
                 style={{marginRight: 5}}
                 onClick={this.nodeTerminationConfirm}
               >
@@ -370,7 +407,7 @@ class ClusterNode extends Component {
           <Button
             id="refresh-cluster-node-button"
             onClick={this.refreshNodeInstance}
-            disabled={this.props.node.pending || this.props.chartsData.pending}>
+            disabled={this.props.node.pending || this.chartsData?.pending}>
             Refresh
           </Button>
         </div>

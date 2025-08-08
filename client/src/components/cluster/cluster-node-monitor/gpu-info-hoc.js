@@ -50,7 +50,7 @@ class GpuInfoHoc extends React.Component {
 
   render () {
     const {gpuStatisticsAvailable, gpuStatisticsPending} = this.state;
-    const {nodeName, chartsData, node} = this.props;
+    const {nodeName, chartsData, node, router} = this.props;
     if (gpuStatisticsPending) {
       return <LoadingView />;
     }
@@ -60,6 +60,7 @@ class GpuInfoHoc extends React.Component {
         gpuStatisticsAvailable={gpuStatisticsAvailable}
         chartsData={chartsData}
         nodeName={nodeName}
+        router={router}
       />
     );
   }
@@ -69,7 +70,8 @@ GpuInfoHoc.propTypes = {
   nodeName: PropTypes.string,
   instanceType: PropTypes.string,
   chartsData: PropTypes.object,
-  node: PropTypes.object
+  node: PropTypes.object,
+  router: PropTypes.object
 };
 
 export default GpuInfoHoc;
