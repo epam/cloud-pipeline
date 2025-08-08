@@ -713,8 +713,8 @@ public class PodMonitor extends AbstractSchedulingManager {
             if (Objects.nonNull(runInstance) && StringUtils.isEmpty(runInstance.getNodeName())) {
                 final String nodeName = pod.getSpec().getNodeName();
                 runInstance.setNodeName(nodeName);
-                runInstance.setNodeIP(Optional.of(runInstance.getNodeIP()).orElse(status.getHostIP()));
-                runInstance.setNodeId(Optional.of(runInstance.getNodeId()).orElse(nodeName));
+                runInstance.setNodeIP(Optional.ofNullable(runInstance.getNodeIP()).orElse(status.getHostIP()));
+                runInstance.setNodeId(Optional.ofNullable(runInstance.getNodeId()).orElse(nodeName));
                 pipelineRunManager.updateRunInstance(runId, runInstance);
             }
         }
