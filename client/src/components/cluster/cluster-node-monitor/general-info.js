@@ -257,7 +257,7 @@ class GeneralInfoTab extends React.Component {
   initializeRange = () => {
     const {rangeInitialized, start, end} = this.state;
     const {chartsData} = this.props;
-    if (!rangeInitialized && chartsData.initialized) {
+    if (!rangeInitialized && chartsData?.initialized) {
       this.setState({
         rangeInitialized: true,
         start: start || chartsData.from || chartsData.instanceFrom,
@@ -543,12 +543,12 @@ class GeneralInfoTab extends React.Component {
     const {
       chartsData
     } = this.props;
-    if (chartsData.error) {
+    if (chartsData?.error) {
       return (
         <Alert type={'error'} message={chartsData.error} />
       );
     }
-    if (!chartsData.initialized) {
+    if (!chartsData || !chartsData.initialized) {
       return (
         <LoadingView />
       );

@@ -122,7 +122,7 @@ class GPUInfoTab extends React.Component {
   @computed
   get chartsData () {
     const {chartsData} = this.props;
-    return chartsData;
+    return chartsData || {};
   }
 
   @computed

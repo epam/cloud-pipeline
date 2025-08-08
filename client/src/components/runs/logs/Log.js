@@ -86,7 +86,9 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS, CP_CAP_REQUESTS_CPU, CP_CAP_REQUESTS_GPU, CP_CAP_REQUESTS_RAM
+} from '../../pipelines/launch/form/utilities/parameters';
 import RunName from '../run-name';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
@@ -1799,6 +1801,11 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
+    const isCapacityBlock = (pipelineRunParameters || []).some(({name}) => ([
+      CP_CAP_REQUESTS_CPU,
+      CP_CAP_REQUESTS_GPU,
+      CP_CAP_REQUESTS_RAM
+    ].includes(name)));
     const {nodeType: instanceType} = instance || {};
     const isReservationParameterInstance = Boolean(findReservationParameterConfig(instanceType));
 
@@ -2436,11 +2443,13 @@ class Logs extends localization.LocalizedReactComponent {
           {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
-      if (instance && instance.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
-        const parts = [
-          startDate && `from=${encodeURIComponent(startDate)}`,
-          endDate && `to=${encodeURIComponent(endDate)}`
-        ].filter(Boolean);
+      if (!!instance?.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
+        const parts = isCapacityBlock
+          ? [`runId=${this.props.runId}`]
+          : [
+            startDate && `from=${encodeURIComponent(startDate)}`,
+            endDate && `to=${encodeURIComponent(endDate)}`
+          ].filter(Boolean);
         const query = parts.length > 0 ? `?${parts.join('&')}` : '';
         ShowMonitorButton = (
           <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
