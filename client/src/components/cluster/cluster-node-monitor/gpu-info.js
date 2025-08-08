@@ -169,6 +169,7 @@ class GPUInfoTab extends React.Component {
       const {nodeName} = this.props;
       const {from, to} = this.state;
       const {min, max} = this.chartsBounds;
+      const {runId} = this.chartsData;
       const offsetRange = (to - from) / 5;
       const newFrom = Math.max(min, from - offsetRange);
       const newTo = Math.min(max, to + offsetRange);
@@ -177,7 +178,10 @@ class GPUInfoTab extends React.Component {
       const request = new ClusterNodeGPUUsage(
         nodeName,
         fromString,
-        toString
+        toString,
+        {
+          runId
+        }
       );
       await request.fetch();
       if (request.error) {
@@ -543,6 +547,7 @@ class GPUInfoTab extends React.Component {
 
   render () {
     const {gpuStatisticsAvailable} = this.props;
+    console.log(this.chartsData);
     if (!gpuStatisticsAvailable) {
       return (
         <Alert type="warning" message="GPU statistics is not available for this node" />
