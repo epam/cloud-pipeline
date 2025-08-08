@@ -90,24 +90,25 @@ export function extractHardwareData (
       labels: []
     };
   }
-  const records = data.originalRecords.filter(record => !!record.measureTime);
-  const revertedRecords = records.slice().reverse();
-  const extractData = (label, key, type, valueFormatter) => {
-    const record = records.find(record => record.measureTime === label);
-    let value = record?.[key] || 0;
-    if (type === 'total' && value <= 0) {
-      const lastNonNullRecord = revertedRecords.find(record => record[key] > 0);
-      value = lastNonNullRecord ? lastNonNullRecord[key] : undefined;
+  const records = data.records.filter(record => !!record.measureTime);
+  const extractData = (record, key, type, valueFormatter) => {
+    if (!record.measureTime || (!record.displayTick && type !== 'total')) {
+      return undefined;
     }
+    const value = record?.[key] || 0;
     if (value === undefined || value <= 0) {
       return undefined;
     }
     return valueFormatter ? valueFormatter(value) : value;
   };
-  const labels = records.map(record => record.measureTime);
+  const labels = records.map(o => ({
+    label: o.measureTime,
+    display: o.displayTick,
+    tooltip: o.tooltip
+  }));
   const datasets = mappings.map(({key, title, type = 'active', valueFormatter}, index) => ({
     label: title,
-    data: labels.map(label => extractData(label, key, type, valueFormatter)),
+    data: records.map(record => extractData(record, key, type, valueFormatter)),
     backgroundColor: colors[type],
     borderColor: type === 'pending'
       ? lineColor
@@ -116,7 +117,8 @@ export function extractHardwareData (
     borderWidth: type === 'total' ? 3 : 1,
     type: type === 'total' ? 'line' : 'bar',
     pointRadius: 0,
-    order: type === 'total' ? 1 : 2
+    order: type === 'total' ? 1 : 2,
+    barPercentage: 1.5
   }));
   let max = 1;
   for (let i = 0; i < labels.length; i++) {
@@ -127,8 +129,7 @@ export function extractHardwareData (
   }
   return {
     datasets,
-    entries: labels,
-    labels: labels.map(label => label),
+    labels,
     max
   };
 }

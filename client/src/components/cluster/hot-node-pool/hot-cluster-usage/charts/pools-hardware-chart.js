@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import Chart from './base';
 import {extractHardwareData} from './utils/hardware-chart-utils';
 import PoolSelector from '../controls/pool-selector';
+import {getPeriod, Period} from '../../../../special/periods';
 
 function PoolsHardwareChart ({
   mappings,
@@ -43,6 +44,9 @@ function PoolsHardwareChart ({
     colors,
     lineColor
   );
+  const format = periodType === Period.day ? 'D MMMM, YYYY' : 'MMMM YYYY';
+  const {start} = getPeriod(periodType, period);
+  const xAxisLabel = start.format(format);
   const {
     max
   } = data || {};
@@ -58,9 +62,22 @@ function PoolsHardwareChart ({
         id: 'x-axis',
         stacked: true,
         gridLines: {
-          display: false
+          display: false,
+          zeroLineColor: lineColor
         },
         ticks: {
+          fontColor: textColor,
+          callback: function (value) {
+            const {display, label} = value;
+            if (display) {
+              return label;
+            }
+            return null;
+          }
+        },
+        scaleLabel: {
+          display: true,
+          labelString: xAxisLabel,
           fontColor: textColor
         }
       }],
