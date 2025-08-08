@@ -35,6 +35,7 @@ class ClusterNodeMonitor extends React.Component {
           node={node}
           nodeName={nodeName}
           preferences={this.props.preferences}
+          router={this.props.router}
         />
       },
       {
@@ -45,6 +46,7 @@ class ClusterNodeMonitor extends React.Component {
           chartsData={chartsData}
           node={node}
           instanceType={instanceType}
+          router={this.props.router}
         />
       }
     ];
