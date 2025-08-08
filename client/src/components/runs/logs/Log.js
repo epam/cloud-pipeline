@@ -429,6 +429,18 @@ class Logs extends localization.LocalizedReactComponent {
     };
   }
 
+  get isCapacityBlock () {
+    const {run} = this.state;
+    if (!run) {
+      return false;
+    }
+    return (run.pipelineRunParameters || []).some(({name}) => ([
+      CP_CAP_REQUESTS_CPU,
+      CP_CAP_REQUESTS_GPU,
+      CP_CAP_REQUESTS_RAM
+    ].includes(name)));
+  }
+
   exportLog = async () => {
     const {runId} = this.props;
     try {
@@ -999,10 +1011,12 @@ class Logs extends localization.LocalizedReactComponent {
       }
       if (instance.nodeIP) {
         const {startDate, endDate} = run;
-        const parts = [
-          startDate && `from=${encodeURIComponent(startDate)}`,
-          endDate && `to=${encodeURIComponent(endDate)}`
-        ].filter(Boolean);
+        const parts = this.isCapacityBlock
+          ? [`runId=${this.props.runId}`]
+          : [
+            startDate && `from=${encodeURIComponent(startDate)}`,
+            endDate && `to=${encodeURIComponent(endDate)}`
+          ].filter(Boolean);
         const query = parts.length > 0 ? `?${parts.join('&')}` : '';
         const isWindowsRun = /^windows$/i.test(run.platform);
         if (instance.nodeName) {
@@ -1801,11 +1815,6 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
-    const isCapacityBlock = (pipelineRunParameters || []).some(({name}) => ([
-      CP_CAP_REQUESTS_CPU,
-      CP_CAP_REQUESTS_GPU,
-      CP_CAP_REQUESTS_RAM
-    ].includes(name)));
     const {nodeType: instanceType} = instance || {};
     const isReservationParameterInstance = Boolean(findReservationParameterConfig(instanceType));
 
@@ -2444,7 +2453,7 @@ class Logs extends localization.LocalizedReactComponent {
         </AdaptedLink>;
 
       if (!!instance?.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
-        const parts = isCapacityBlock
+        const parts = this.isCapacityBlock
           ? [`runId=${this.props.runId}`]
           : [
             startDate && `from=${encodeURIComponent(startDate)}`,
