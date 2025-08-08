@@ -90,13 +90,12 @@ class DockerClient:
         try:
             process = subprocess.Popen(['docker', 'inspect', container_hash],
                                        stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            stdout = process.stdout
-            stderr = process.stderr
-            exit_code = process.wait()
+            stdout, stderr = process.communicate()
+            exit_code = process.returncode
             if exit_code != 0:
                 raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
 
-            container_info = json.loads(stdout.read())
+            container_info = json.loads(stdout.read)
             if not container_info:
                 return None
             return container_info[0]
@@ -263,7 +262,7 @@ class GPUStatProcessor:
                 device_run_id = run_id
                 logging.info(f'All nvidia devices occupied by run {run_id}')
                 break
-            for gpu_index in nvidia_devices.strip(','):
+            for gpu_index in nvidia_devices.split(','):
                 device_by_run.update({int(gpu_index.strip()): run_id})
             logging.info(f'Found nvidia devices configuration for run {run_id}')
 
