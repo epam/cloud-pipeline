@@ -503,7 +503,8 @@ class GeneralInfoTab extends React.Component {
           start ? moment.unix(start).utc().format(format) : undefined,
           end ? moment.unix(end).utc().format(format) : undefined,
           tickValue,
-          modeValue
+          modeValue,
+          chartsData.runId
         );
         let res;
         await pipelineFile.fetch();

@@ -35,13 +35,16 @@ import PipelineRunInfo from '../../models/pipelines/PipelineRunInfo';
 
 @inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
-  const {type} = location?.query;
+  const {type, runId, from, to} = location?.query;
   return {
     pools,
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName, type),
     machineType: type,
-    stores
+    stores,
+    runId,
+    from,
+    to
   };
 })
 @observer
@@ -64,9 +67,9 @@ class ClusterNode extends Component {
   componentDidUpdate (prevProps) {
     this.onResize();
     if (
-      this.props.location.from !== prevProps.location.from ||
-      this.props.location.to !== prevProps.location.to ||
-      this.props.location.runId !== prevProps.location.runId ||
+      this.props.from !== prevProps.from ||
+      this.props.to !== prevProps.to ||
+      this.props.runId !== prevProps.runId ||
       this.props.name !== prevProps.name
     ) {
       this.initializeChartsData();
