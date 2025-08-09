@@ -86,8 +86,7 @@ function PoolsHardwareChart ({
         ticks: {
           beginAtZero: true,
           fontColor: textColor,
-          stepSize: 1,
-          max: Math.ceil(max * 1.1) // +10%
+          stepSize: max < 5 ? 1 : undefined
         },
         gridLines: {
           color: lineColor

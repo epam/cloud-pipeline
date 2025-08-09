@@ -118,13 +118,18 @@ export function extractHardwareData (
     type: type === 'total' ? 'line' : 'bar',
     pointRadius: 0,
     order: type === 'total' ? 1 : 2,
-    barPercentage: 1.5
+    barPercentage: 1.5,
+    _group: type === 'total' ? 1 : 0
   }));
   let max = 1;
   for (let i = 0; i < labels.length; i++) {
-    const v = datasets.reduce((acc, d) => acc + (d.data || [])[i] || 0, 0);
-    if (v > max) {
-      max = v;
+    for (const gr of [0, 1]) {
+      const subSet = datasets.filter((ds) => ds._group === gr);
+      const v = subSet
+        .reduce((acc, d) => acc + (d.data || [])[i] || 0, 0);
+      if (v > max) {
+        max = v;
+      }
     }
   }
   return {
