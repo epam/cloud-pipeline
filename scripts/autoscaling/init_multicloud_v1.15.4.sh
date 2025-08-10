@@ -87,22 +87,28 @@ function setup_swap_device {
     fi
 }
 
+echo "> [$(date)] Init start"
+
 GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
 if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
   GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
 fi
 export GLOBAL_DISTRIBUTION_URL
 
+echo "> [$(date)] Download nvme"
 _WO="--timeout=10 --waitretry=1 --tries=10"
 wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
 gzip -d /bin/nvme.gz && \
 chmod +x /bin/nvme
 
+echo "> [$(date)] custom_script_pre"
 @custom_script_pre@
 
+echo "> [$(date)] setup_swap_device"
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
+echo "> [$(date)] Setup volumes"
 FS_TYPE="@FS_TYPE@"
 
 _ds=()
@@ -133,6 +139,7 @@ else
   echo "No unmounted drives found. Root volume is used for the /ebs"
 fi
 
+echo "> [$(date)] Setup filesystem"
 MOUNT_POINT="/ebs"
 mkdir -p $MOUNT_POINT
 if [ "$DRIVE_NAME" ]; then
@@ -151,6 +158,7 @@ mkdir -p $MOUNT_POINT/runs
 mkdir -p $MOUNT_POINT/reference
 rm -rf $MOUNT_POINT/lost+found
 
+echo "> [$(date)] Setup sshd"
 ssh_node_port="@NODE_SSH_PORT@"
 
 if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
@@ -158,8 +166,8 @@ if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
   systemctl restart sshd
 fi
 
+echo "> [$(date)] Download sys images"
 systemctl stop docker
-
 _DOCKER_SYS_IMGS="/ebs/docker-system-images"
 rm -rf $_DOCKER_SYS_IMGS
 _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
@@ -177,7 +185,7 @@ if [ $? -ne 0 ]; then
   _DOCKER_SYS_IMGS="/opt/docker-system-images"
 fi
 
-
+echo "> [$(date)] Setup docker"
 if [ ! -x /bin/wondershaper ]; then
   wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/wondershaper/wondershaper" -O /bin/wondershaper
   chmod +x /bin/wondershaper
@@ -244,6 +252,7 @@ modprobe nfsd
 
 chmod +x /etc/rc.d/rc.local
 
+echo "> [$(date)] Get instance info"
 cloud=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
 gcloud_header=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Metadata-Flavor | cut -f2 -d:)
 
@@ -293,6 +302,7 @@ elif [[ $gcloud_header == *"Google"* ]]; then
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 fi
 
+echo "> [$(date)] Setup network"
 mtu="@mtu@"
 if [ "$mtu" ] && [[ "$mtu" != "@"*"@" ]]; then
   [ "$_CI_IP" ] && _iname=$(ifconfig | grep -B1 "$_CI_IP" | grep -o "^\w*")
@@ -333,6 +343,7 @@ EOL
 
 fi
 
+echo "> [$(date)] Setup kubelet"
 sed -i "s/--default-ulimit nofile=1024:4096/--default-ulimit nofile=65535:65535/g" /etc/sysconfig/docker
 
 _KUBE_NODE_INSTANCE_LABELS="--node-labels=cloud_provider=$_CLOUD_PROVIDER,cloud_region=$_CLOUD_REGION,cloud_ins_id=$_CLOUD_INSTANCE_ID,cloud_ins_type=$_CLOUD_INSTANCE_TYPE"
@@ -378,22 +389,28 @@ _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
+echo "> [$(date)] Start docker"
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
 
+echo "> [$(date)] Load images"
 for _KUBE_SYSTEM_POD_FILE in $_DOCKER_SYS_IMGS/*.tar; do
   docker load -i $_KUBE_SYSTEM_POD_FILE
 done
 rm -rf $_DOCKER_SYS_IMGS
 
+echo "> [$(date)] Join cluster"
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 
+echo "> [$(date)] update_nameserver"
 update_nameserver "$nameserver_post_val" "infinity"
 
+echo "> [$(date)] custom_script_post"
 @custom_script_post@
 
+echo "> [$(date)] Setup fs autoscale"
 if [[ $FS_TYPE == "btrfs" ]]; then
   _API_URL="@API_URL@"
   _API_TOKEN="@API_TOKEN@"
@@ -443,12 +460,15 @@ nvidia-persistenced --persistence-mode
 nvidia-smi
 EOF
 fi
+
+echo "> [$(date)] Setup resume script"
 cat >> /etc/rc.local << EOF
 systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 EOF
 
+echo "> [$(date)] Pre-pull dockers"
 _PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
 _API_USER="@API_USER@"
 if [[ ! -z "${_PRE_PULL_DOCKERS}" ]] && [[ "${_PRE_PULL_DOCKERS}" != "@"*"@" ]] ; then
@@ -468,5 +488,6 @@ if [[ ! -z "${_PRE_PULL_DOCKERS}" ]] && [[ "${_PRE_PULL_DOCKERS}" != "@"*"@" ]] 
   done
 fi
 
+echo "> [$(date)] Init finish"
 touch "$launch_token"
 nc -l -k 8888 &
