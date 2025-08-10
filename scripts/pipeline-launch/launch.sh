@@ -311,7 +311,7 @@ function check_package_installed {
       fi
 
       if check_installed "dpkg"; then
-            dpkg -q "$_PACKAGE_TO_CHECK" &> /dev/null
+            dpkg -l "$_PACKAGE_TO_CHECK" &> /dev/null
             return $?
       elif check_installed "rpm"; then
             rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
@@ -2178,7 +2178,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
+    ( [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] ); then
 
         # Make sure sysctl is available
         _SYSCTL_INSTALL_COMMAND=
