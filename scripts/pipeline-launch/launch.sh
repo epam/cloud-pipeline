@@ -17,6 +17,10 @@
 ######################################################
 # COMMON FUNCTIONS
 ######################################################
+function log {
+      echo "=> [$(date)] $1"
+}
+
 function split_parameter_value {
       local _delimiters_list=(',' ' ' ';')
       unset SPLITTED_PARAM_DELIMITER
@@ -997,6 +1001,7 @@ BRANCH=$4
 
 ######################################################
 
+log "Start launch.sh"
 
 if [ -z ${RUN_ON_PARENT_NODE+x} ];
 then
@@ -1020,12 +1025,12 @@ export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
 export CP_CAP_RUN_WORK_FINISHED_TAG="${CP_CAP_RUN_WORK_FINISHED_TAG:-WORK_FINISHED}"
 
 ######################################################
-# Configure Hyperthreading
+log "Configure Hyperthreading"
 ######################################################
 configureHyperThreading
 
 ######################################################
-# Setup DNS options
+log "Setup DNS options"
 ######################################################
 # Check for ndots options
 if [ "$CP_DNS_NDOTS" ]; then
@@ -1035,11 +1040,9 @@ if [ "$CP_DNS_NDOTS" ]; then
 fi
 
 ######################################################
-# Install runtime dependencies
-######################################################
-
-echo "Install runtime dependencies"
+log "Install runtime dependencies"
 echo "-"
+######################################################
 
 if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
@@ -1137,7 +1140,7 @@ echo "Local python interpreter found: $CP_PYTHON2_PATH"
 check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
 
 ######################################################
-# Configure the dependencies if needed
+log "Configure the dependencies if needed"
 ######################################################
 # Disable wget's robots.txt default parsing, as it breaks
 # the recursive download for certain sites
@@ -1156,7 +1159,7 @@ echo
 
 
 ######################################################
-echo "Init default variables if they are not set explicitly"
+log "Init default variables if they are not set explicitly"
 echo "-"
 ######################################################
 
@@ -1366,7 +1369,7 @@ echo
 
 
 ######################################################
-echo Configure owner account
+log "Configure owner account"
 echo "-"
 ######################################################
 if [ "$OWNER" ]
@@ -1405,7 +1408,7 @@ echo
 
 
 ######################################################
-echo Configure sudo
+log "Configure sudo"
 echo "-"
 ######################################################
 
@@ -1423,7 +1426,7 @@ fi
 ######################################################
 
 ######################################################
-echo Setting up SSH server
+log "Setting up SSH server"
 echo "-"
 ######################################################
 
@@ -1494,7 +1497,7 @@ echo
 
 
 ######################################################
-echo "Installing pipeline packages and code"
+log "Installing pipeline packages and code"
 echo "-"
 ######################################################
 CP_PIPE_COMMON_ENABLED=${CP_PIPE_COMMON_ENABLED:-"true"}
@@ -1543,7 +1546,7 @@ if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
       if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
             install_pip_package PipelineCLI
       else
-            echo "Installing 'pipe' CLI"
+            log "Installing 'pipe' CLI"
             echo "-"
             CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
             download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
@@ -1573,7 +1576,7 @@ fi
 if [ ! -z "$CP_SENSITIVE_RUN" ]; then
       echo "Run is sensitive, FSBrowser will not be installed"
 elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
-      echo "Setup FSBrowser"
+      log "Setup FSBrowser"
       echo "-"
 
       echo "Installing fsbrowser"
@@ -1609,7 +1612,7 @@ fi
 
 # Install gpustat
 if [ "$CP_GPUSTAT_ENABLED" != "false" ]; then
-      echo "Setup gpustat"
+      log "Setup gpustat"
       echo "-"
 
       echo "Installing gpustat"
@@ -1678,7 +1681,7 @@ if [ "$CP_GPUSTAT_ENABLED" != "false" ]; then
 fi
 
 ######################################################
-echo "Setting up Gitlab credentials"
+log "Setting up Gitlab credentials"
 echo "-"
 ######################################################
 set_git_credentials
@@ -1727,7 +1730,7 @@ echo
 
 
 ######################################################
-echo "Setting up general motd config"
+log "Setting up general motd config"
 echo "-"
 ######################################################
 motd_setup init
@@ -1747,7 +1750,7 @@ echo
 
 
 ######################################################
-echo "Getting data storage rules"
+log "Getting data storage rules"
 echo "-"
 ######################################################
 
@@ -1770,7 +1773,7 @@ echo
 
 
 ######################################################
-echo "Checking if cluster configuration is needed"
+log "Checking if cluster configuration is needed"
 echo "-"
 ######################################################
 
@@ -1839,7 +1842,7 @@ echo
 # Setup cluster users sharing if required
 ######################################################
 
-echo "Setup cluster users sharing"
+log "Setup cluster users sharing"
 echo "-"
 
 if check_cp_cap CP_CAP_SHARE_USERS; then
@@ -1858,7 +1861,7 @@ echo
 # Setup users synchronization if required
 ######################################################
 
-echo "Setup users synchronization"
+log "Setup users synchronization"
 echo "-"
 
 if check_cp_cap CP_CAP_SYNC_USERS; then
@@ -1879,7 +1882,7 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
             echo "Skipping data localization for resumed run"
       else
             ######################################################
-            echo "Checking if remote data needs localizing"
+            log "Checking if remote data needs localizing"
             echo "-"
             ######################################################
             LOCALIZATION_TASK_NAME="InputData"
@@ -1896,7 +1899,7 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
             [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
 
             ######################################################
-            echo "Checking if any data is defined by the config files and shall be localized"
+            log "Checking if any data is defined by the config files and shall be localized"
             echo "-"
             ######################################################
             localize_inputs_from_files "${LOCALIZATION_TASK_NAME}"
@@ -1917,7 +1920,7 @@ echo
 
 
 ######################################################
-echo "Setting up Gitlab credentials"
+log "Setting up Gitlab credentials"
 echo "-"
 ######################################################
 set_git_credentials
@@ -1961,7 +1964,7 @@ fi
 
 
 ######################################################
-echo "Store allowed environment variables to /etc/profile for further reuse when SSHing"
+log "Store allowed environment variables to /etc/profile for further reuse when SSHing"
 echo "-"
 ######################################################
 
@@ -2056,7 +2059,7 @@ echo
 
 
 ######################################################
-echo "Checking if remote data storages shall be mounted"
+log "Checking if remote data storages shall be mounted"
 echo "------"
 ######################################################
 MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
@@ -2080,7 +2083,7 @@ echo
 
 
 ######################################################
-echo "Create restriction wrappers"
+log "Create restriction wrappers"
 echo "-"
 ######################################################
 
@@ -2102,7 +2105,7 @@ echo
 
 
 ######################################################
-echo Symlink common locations for OWNER and root
+log "Symlink common locations for OWNER and root"
 echo "-"
 ######################################################
 
@@ -2125,7 +2128,7 @@ echo
 
 
 ######################################################
-echo Setup personal SSH keys
+log "Setup personal SSH keys"
 echo "-"
 ######################################################
 
@@ -2146,7 +2149,7 @@ echo
 # Setup native DinD
 ######################################################
 
-echo "Setup DinD (native)"
+log "Setup DinD (native)"
 echo "-"
 
 # DinD container mode is set for all cluster nodes via cp_cap_publish
@@ -2169,7 +2172,7 @@ fi
 # Setup systemd if required
 ######################################################
 
-echo "Setup Systemd"
+log "Setup Systemd"
 echo "-"
 
 # Force SystemD capability if the Kubernetes is requested
@@ -2224,7 +2227,7 @@ fi
 # Setup "modules" support
 ######################################################
 
-echo "Setup Environment Modules support"
+log "Setup Environment Modules support"
 echo "-"
 
 if [ "$CP_CAP_MODULES" == "true" ]; then
@@ -2240,7 +2243,7 @@ fi
 # Setup NoMachine
 ######################################################
 
-echo "Setup NoMachine environment"
+log "Setup NoMachine environment"
 echo "-"
 
 if [ "$CP_CAP_DESKTOP_NM" == "true" ]; then
@@ -2255,7 +2258,7 @@ fi
 # Setup Nice DCV
 ######################################################
 
-echo "Setup NICE DCV environment"
+log "Setup NICE DCV environment"
 echo "-"
 
 if [ "$CP_CAP_DCV" == "true" ]; then
@@ -2270,7 +2273,7 @@ fi
 # Setup "EFA" support
 ######################################################
 
-echo "Check if AWS EFA support is needed"
+log "Check if AWS EFA support is needed"
 echo "-"
 if [ "$CP_CAP_EFA_ENABLED" == "true" ]; then
     echo "EFA support is requested, proceeding with installation..."
@@ -2292,7 +2295,7 @@ fi
 # Setup "Singularity" support
 ######################################################
 
-echo "Setup Singularity support"
+log "Setup Singularity support"
 echo "-"
 
 if [ "$CP_CAP_SINGULARITY" == "true" ]; then
@@ -2308,7 +2311,7 @@ fi
 # Install additional packages
 ######################################################
 
-echo "Install additional packages"
+log "Install additional packages"
 echo "-"
 
 if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
@@ -2342,7 +2345,7 @@ fi
 # Enable NFS observer
 ######################################################
 
-echo "Setup NFS events observer"
+log "Setup NFS events observer"
 echo "-"
 
 if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
@@ -2362,7 +2365,7 @@ fi
 # Enable API_TOKEN refresher
 ######################################################
 
-echo "Setup API_TOKEN refresher"
+log "Setup API_TOKEN refresher"
 echo "-"
 
 if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
@@ -2378,7 +2381,7 @@ fi
 # Enable mount restrictor
 ######################################################
 
-echo "Setup mount restrictor"
+log "Setup mount restrictor"
 echo "-"
 
 if [ "$CP_MOUNT_RESTRICTOR_DISABLED" != "true" ]; then
@@ -2392,7 +2395,7 @@ fi
 # Custom shells
 ######################################################
 
-echo "Setup custom shells"
+log "Setup custom shells"
 echo "-"
 
 if [ "$CP_CAP_SHELL_LIST" ]; then
@@ -2403,7 +2406,7 @@ fi
 ######################################################
 
 ######################################################
-echo Executing task
+log "Executing task"
 echo "-"
 ######################################################
 
@@ -2480,7 +2483,7 @@ echo
 
 
 ######################################################
-echo Finalizing execution
+log "Finalizing execution"
 echo "-"
 ######################################################
 
@@ -2541,4 +2544,7 @@ else
     echo "Exiting with $CP_EXEC_RESULT..."
     exit "$CP_EXEC_RESULT"
 fi
+
 ######################################################
+
+log "End launch.sh"
