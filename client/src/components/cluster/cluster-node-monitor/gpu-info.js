@@ -547,7 +547,6 @@ class GPUInfoTab extends React.Component {
 
   render () {
     const {gpuStatisticsAvailable} = this.props;
-    console.log(this.chartsData);
     if (!gpuStatisticsAvailable) {
       return (
         <Alert type="warning" message="GPU statistics is not available for this node" />
