@@ -149,11 +149,7 @@ public class RunRegionShiftHandler {
             return false;
         }
 
-        final boolean shouldRescheduleWorker = parentRun.getParameterValue(CP_CAP_RESCHEDULE_RUN_WORKER_PARAM)
-                .map(BooleanUtils::toBoolean)
-                .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED));
-
-        if (parentRun.isWorkerRun() && !shouldRescheduleWorker) {
+        if (parentRun.isWorkerRun() && !shouldRescheduleWorker(parentRun)) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RESTART_WORKER_FORBIDDEN, currentRun.getId()), currentRun);
             return false;
@@ -240,5 +236,11 @@ public class RunRegionShiftHandler {
                 .logText(logMessage)
                 .build();
         runLogManager.saveLog(runLog);
+    }
+
+    private boolean shouldRescheduleWorker(final PipelineRun run) {
+        return run.getParameterValue(CP_CAP_RESCHEDULE_RUN_WORKER_PARAM)
+                .map(BooleanUtils::toBoolean)
+                .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED));
     }
 }
