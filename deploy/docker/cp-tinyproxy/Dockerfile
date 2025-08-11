@@ -25,6 +25,7 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 # 1. TinyProxy (HTTP proxy)
 RUN yum install wget \
                 gcc \
+                bzip2 \
                 make -y
 
 RUN mkdir -p /opt/tinyproxy && \
