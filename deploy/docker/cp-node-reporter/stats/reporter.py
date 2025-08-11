@@ -95,7 +95,7 @@ class DockerClient:
             if exit_code != 0:
                 raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
 
-            container_info = json.loads(stdout.read)
+            container_info = json.loads(stdout)
             if not container_info:
                 return None
             return container_info[0]
