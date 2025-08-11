@@ -121,7 +121,7 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
-                                                 final LocalDateTime to, final Duration interval) {
+                                                 final LocalDateTime to, final Duration interval, final Long runId) {
         throw new UnsupportedOperationException("It's not possible to specify custom interval for CAdvisor, " +
                 "during stat request!");
     }

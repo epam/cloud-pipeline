@@ -30,9 +30,9 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 public class ElasticsearchConfig {
 
-    @Value("${monitoring.elasticsearch.url:localhost}")
+    @Value("${monitoring.elasticsearch.url:#{null}}")
     private String elasticsearchUrl;
-    @Value("${monitoring.elasticsearch.port:30094}")
+    @Value("${monitoring.elasticsearch.port:9200}")
     private int elasticsearchPort;
 
     @Bean

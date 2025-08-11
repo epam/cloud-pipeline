@@ -105,7 +105,7 @@ public class FSRequester extends AbstractMetricRequester {
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final Long runId) {
+                                              final Duration interval, final String podName) {
         return request(from, to,
                 statsQuery(nodeName, NODE, from, to, null)
                         .size(0)
