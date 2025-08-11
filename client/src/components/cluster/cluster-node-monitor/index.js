@@ -31,7 +31,7 @@ class ClusterNodeMonitor extends React.Component {
         key: 'general',
         title: 'General statistics',
         render: () => <GeneralInfoTab
-          chartsData={chartsData}
+          chartsData={{...chartsData}}
           node={node}
           nodeName={nodeName}
           preferences={this.props.preferences}
@@ -43,7 +43,7 @@ class ClusterNodeMonitor extends React.Component {
         title: 'GPU statistics',
         render: () => <GPUInfoHoc
           nodeName={nodeName}
-          chartsData={chartsData}
+          chartsData={{...chartsData}}
           node={node}
           instanceType={instanceType}
           router={this.props.router}

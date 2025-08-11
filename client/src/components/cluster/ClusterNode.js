@@ -142,8 +142,8 @@ class ClusterNode extends Component {
     if (!this.props.node.pending) {
       this.props.node.fetch();
     }
-    if (!this.chartsData?.pending) {
-      this.props.chartsData.fetch();
+    if (this.chartsData && !this.chartsData.pending) {
+      this.chartsData.fetch();
     }
     if (!this.props.pools.pending) {
       this.props.pools.fetch();
