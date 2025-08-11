@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 public class RunRegionShiftHandler {
 
     static final String CP_CAP_RESCHEDULE_RUN_PARAM = "CP_CAP_RESCHEDULE_RUN";
+    static final String CP_CAP_RESCHEDULE_RUN_WORKER_PARAM = "CP_CAP_RESCHEDULE_WORKER_RUN";
 
     private static final String RESTART_TASK = "RestartPipelineRun";
 
@@ -148,7 +149,11 @@ public class RunRegionShiftHandler {
             return false;
         }
 
-        if (parentRun.isWorkerRun()) {
+        final boolean shouldRescheduleWorker = parentRun.getParameterValue(CP_CAP_RESCHEDULE_RUN_WORKER_PARAM)
+                .map(BooleanUtils::toBoolean)
+                .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED));
+
+        if (parentRun.isWorkerRun() && !shouldRescheduleWorker) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RESTART_WORKER_FORBIDDEN, currentRun.getId()), currentRun);
             return false;

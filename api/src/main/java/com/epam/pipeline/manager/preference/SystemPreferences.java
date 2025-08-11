@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -767,6 +767,9 @@ public class SystemPreferences {
 
     public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
+
+    public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED = new BooleanPreference(
+            "launch.run.reschedule.worker.enabled", false, LAUNCH_GROUP, pass);
 
     public static final ObjectPreference<TwoBoundaryLimit> RUN_TOOL_SIZE_LIMITS = new ObjectPreference<>(
             "launch.tool.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
