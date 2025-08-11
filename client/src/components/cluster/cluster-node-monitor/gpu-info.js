@@ -106,7 +106,7 @@ class GPUInfoTab extends React.Component {
       prevProps.nodeName !== nodeName ||
       prevProps.chartsData !== this.props.chartsData
     ) {
-      this.initRanges();
+      this.initRanges(false);
     }
   }
 
@@ -138,12 +138,16 @@ class GPUInfoTab extends React.Component {
     return metrics?.global?.gpuDeviceName;
   }
 
-  initRanges = () => {
+  initRanges = (resetToDefaultRange = true) => {
     const to = this.chartsBounds.max;
-    const from = Math.max(
+    let from = Math.max(
       moment.unix(to).local().subtract(1, 'days').unix(),
       this.chartsBounds.min
     );
+    if (!resetToDefaultRange) {
+      const currentDiff = this.state.chartsTo - this.state.chartsFrom;
+      from = to - currentDiff;
+    }
     this.setState({
       from,
       to
@@ -321,20 +325,50 @@ class GPUInfoTab extends React.Component {
       </svg>
     );
     const onStartChange = (date) => {
-      const from = date
-        ? Math.max(
-          this.chartsBounds.min,
-          moment(date.startOf('day')).unix())
-        : this.chartsBounds.min;
-      this.setState({from}, () => this.fetchMetrics(true));
+      let {to} = this.state;
+      const {chartsData} = this.props;
+      if (!chartsData.initialized || !date) {
+        return;
+      }
+      to = to ? moment.unix(to) : null;
+      const newStart = moment([
+        date.get('year'),
+        date.get('month'),
+        date.get('date'),
+        date.get('hour'),
+        date.get('minute')
+      ]);
+      if (to && newStart >= to) {
+        to = moment(newStart);
+        to.add(1, 'day').add(-1, 'second');
+      }
+      this.setState({
+        from: chartsData.correctDateToFixRange(newStart.unix()),
+        to: to ? chartsData.correctDateToFixRange(to.unix()) : null
+      }, () => this.fetchMetrics(true));
     };
     const onEndChange = (date) => {
-      const to = date
-        ? Math.min(
-          this.chartsBounds.max,
-          moment(date.endOf('day')).unix())
-        : this.chartsBounds.max;
-      this.setState({to}, () => this.fetchMetrics(true));
+      let {from} = this.state;
+      const {chartsData} = this.props;
+      if (!chartsData.initialized || !date) {
+        return;
+      }
+      from = from ? moment.unix(from) : null;
+      const newEnd = moment([
+        date.get('year'),
+        date.get('month'),
+        date.get('date'),
+        date.get('hour'),
+        date.get('minute')
+      ]);
+      if (from && from >= newEnd) {
+        from = moment(newEnd);
+        from.add(-1, 'day').add(1, 'second');
+      }
+      this.setState({
+        from: from ? chartsData.correctDateToFixRange(from.unix()) : null,
+        to: chartsData.correctDateToFixRange(newEnd.unix())
+      }, () => this.fetchMetrics(true));
     };
     const setRange = ({key}) => {
       const to = this.chartsBounds.max;
@@ -369,7 +403,7 @@ class GPUInfoTab extends React.Component {
         this.chartsData?.instanceFrom &&
         (
           date.unix() < this.chartsBounds.min ||
-          date.unix() > this.chartsBounds.max
+          date.valueOf() > Date.now()
         );
     };
     const renderRangeControls = () => (
