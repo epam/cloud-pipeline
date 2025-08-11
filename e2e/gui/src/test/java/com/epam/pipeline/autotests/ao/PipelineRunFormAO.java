@@ -36,6 +36,7 @@ import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -46,7 +47,7 @@ import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
@@ -222,7 +223,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public ConfigureClusterPopupAO enableClusterLaunch() {
+    public ConfigureClusterPopupAO<PipelineRunFormAO> enableClusterLaunch() {
         click(LAUNCH_CLUSTER);
         return new ConfigureClusterPopupAO(this);
     }
@@ -340,6 +341,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
+        return this;
+    }
+
+    public PipelineRunFormAO launchWithError(String errorMessage) {
+        launch();
+        messageShouldAppear(errorMessage);
         return this;
     }
 
@@ -612,11 +619,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         }
     }
 
-    public static class ConfigureClusterPopupAO  extends PopupAO<ConfigureClusterPopupAO, PipelineRunFormAO> {
+    public static class ConfigureClusterPopupAO<PARENT_AO>  extends PopupAO<ConfigureClusterPopupAO<PARENT_AO>, PARENT_AO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:")).parent()
-                        .find(byClassName("ant-select-selection--single"))),
+                entry(WORKERS_PRICE_TYPE, context().find(byText("Workers price type:"))
+                        .parent().find(byClassName("ant-select-selection--single"))),
                 entry(WORKING_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[1]"))),
                 entry(DEFAULT_CHILD_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]"))),
                 entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]"))),
@@ -631,7 +638,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 entry(VOLUME, context().$(byText("Volume")).parent().parent().$(byXpath(".//input")))
         );
 
-        public ConfigureClusterPopupAO(PipelineRunFormAO parentAO) {
+        public ConfigureClusterPopupAO(PARENT_AO parentAO) {
             super(parentAO);
         }
 
@@ -640,7 +647,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return elements;
         }
 
-        public ConfigureClusterPopupAO clusterSettingsForm(String type){
+        public ConfigureClusterPopupAO<PARENT_AO> clusterSettingsForm(String type){
             if (type.equals("Single node") || type.equals("Cluster") || type.equals("Auto-scaled cluster")) {
                 context()
                         .find(byXpath(
@@ -652,20 +659,23 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
 
-        public ConfigureClusterPopupAO setWorkingNodesCount(final String nodesCount) {
+        public ConfigureClusterPopupAO<PARENT_AO> setWorkingNodesCount(final String nodesCount) {
             return setValue(WORKING_NODES, nodesCount);
         }
 
-        public ConfigureClusterPopupAO setDefaultChildNodes(final String nodesCount) {
-            $(byText("Setup default child nodes count")).click();
+        public ConfigureClusterPopupAO<PARENT_AO> setDefaultChildNodes(final String nodesCount) {
+            final SelenideElement setupDefault = $(byText("Setup default child nodes count"));
+            if(setupDefault.exists()) {
+                setupDefault.click();
+            }
             return setValue(DEFAULT_CHILD_NODES, nodesCount);
         }
 
-        public ConfigureClusterPopupAO resetClusterChildNodes () {
+        public ConfigureClusterPopupAO<PARENT_AO> resetClusterChildNodes () {
             return click(RESET);
         }
 
-        public ConfigureClusterPopupAO setWorkersPriceType(final String priceType) {
+        public ConfigureClusterPopupAO<PARENT_AO> setWorkersPriceType(final String priceType) {
             click(WORKERS_PRICE_TYPE);
             context().find(visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
                     .shouldBe(visible)
@@ -673,7 +683,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
 
-        public ConfigureClusterPopupAO setFileSystemParameter(Primitive parameter, final String type) {
+        public ConfigureClusterPopupAO<PARENT_AO> setFileSystemParameter(Primitive parameter, final String type) {
             click(parameter);
             context().find(visible(byClassName("ant-select-dropdown"))).find(byText(type))
                     .shouldBe(visible)
@@ -681,16 +691,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
 
-        public ConfigureClusterPopupAO setFileSystemVolume(final String volume) {
+        public ConfigureClusterPopupAO<PARENT_AO> setFileSystemVolume(final String volume) {
             return setValue(VOLUME, volume);
         }
 
-        public ConfigureClusterPopupAO enableHybridClusterSelect () {
+        public ConfigureClusterPopupAO<PARENT_AO> enableHybridClusterSelect () {
             $(byXpath(".//span[.='Enable Hybrid cluster']/preceding-sibling::span")).click();
             return this;
         }
 
-        public ConfigureClusterPopupAO clusterEnableCheckboxSelect(String checkBox){
+        public ConfigureClusterPopupAO<PARENT_AO> clusterEnableCheckboxSelect(String checkBox){
             if (checkBox.equals("Enable GridEngine")
                     || checkBox.equals("Enable Apache Spark")
                     || checkBox.equals("Enable Slurm")
@@ -702,6 +712,21 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             } else {
                 fail("Wrong checkbox name was selected");
             }
+            return this;
+        }
+
+        public ConfigureClusterPopupAO<PARENT_AO> checkWarningMessageExist(final String message) {
+            sleep(5, SECONDS);
+            assertEquals(message,
+                    $(byClassName("ant-modal-content")).find(byClassName("ant-alert-message")).text(),
+                    format("Message '%s' isn't visible", message));
+            return this;
+        }
+
+        public ConfigureClusterPopupAO<PARENT_AO> checkWarningMessageNotExist() {
+            sleep(5, SECONDS);
+            assertFalse($(byClassName("ant-modal-content")).find(byClassName("ant-alert-message")).exists(),
+                    "Warning message shouldn't be visible");
             return this;
         }
     }

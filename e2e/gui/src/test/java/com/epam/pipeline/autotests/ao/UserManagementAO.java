@@ -32,6 +32,7 @@ import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROLE;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_USER;
 import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
@@ -470,6 +471,16 @@ public class UserManagementAO extends SettingsPageAO {
 
                 public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
                     UserManagementAO.this.addAllowedLaunchOptions(option, mask);
+                    sleep(1, SECONDS);
+                    return this;
+                }
+
+                public EditUserPopup addAllowedInstanceMaxCount(final String value) {
+                    if (StringUtils.isBlank(value)) {
+                        clearByKey(byClassName("ant-input-number-input"));
+                        return this;
+                    }
+                    setValue(byClassName("ant-input-number-input"), value);
                     return this;
                 }
 
@@ -614,6 +625,13 @@ public class UserManagementAO extends SettingsPageAO {
             return new CreateGroupPopup(this);
         }
 
+        public GroupsTabAO createGroupIfNoPresent(final String group) {
+            searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
+            performIf(!context().$$(byText(group)).filterBy(visible).first().exists(), t ->
+                    pressCreateGroup().enterGroupName(group).create());
+            return this;
+        }
+
         public GroupsTabAO deleteGroupIfPresent(String group) {
             sleep(2, SECONDS);
             searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
@@ -719,7 +737,9 @@ public class UserManagementAO extends SettingsPageAO {
                     entry(PRICE_TYPE, context().find(byXpath(
                             format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                     entry(PERMISSIONS, $(byText("PERMISSIONS"))),
-                    entry(PROFILE, context().$x(".//div[@role='tab']", 0))
+                    entry(PROFILE, context().$x(".//div[@role='tab']", 0)),
+//                    entry(SEARCH, $(By.id("find-user-autocomplete-container"))),
+                    entry(ADD, context().find(By.id("add-user-button")))
             );
 
             public EditGroupPopup(final GroupsTabAO parentAO) {
@@ -759,6 +779,16 @@ public class UserManagementAO extends SettingsPageAO {
 
             public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
                 UserManagementAO.this.addAllowedLaunchOptions(option, mask);
+                return this;
+            }
+
+            public EditGroupPopup addAllowedInstanceMaxCount(final String value) {
+                final By optionField = byClassName("ant-input-number-input");
+                if (StringUtils.isBlank(value)) {
+                    clearByKey(optionField);
+                    return this;
+                }
+                setValue(optionField, value);
                 return this;
             }
 
