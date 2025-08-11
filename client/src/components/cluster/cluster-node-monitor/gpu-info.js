@@ -98,11 +98,7 @@ class GPUInfoTab extends React.Component {
 
   disposeReaction = reaction(
     () => this.chartsData.refreshToken,
-    () => {
-      if (typeof this.initRanges === 'function') {
-        this.initRanges(false);
-      }
-    }
+    () => this.initRanges(false)
   );
 
   componentDidMount () {
