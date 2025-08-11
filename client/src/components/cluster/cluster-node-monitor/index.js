@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import GeneralInfoTab from './general-info';
 import GPUInfoHoc from './gpu-info-hoc';
@@ -23,15 +24,20 @@ import SubSettings from '../../settings/sub-settings';
 @inject('preferences')
 @observer
 class ClusterNodeMonitor extends React.Component {
+  @computed
+  get chartsData () {
+    return this.props.chartsData;
+  }
+
   render () {
-    const {node, chartsData, nodeName} = this.props;
+    const {node, nodeName} = this.props;
     const instanceType = node.value?.labels?.cloud_ins_type;
     const tabs = [
       {
         key: 'general',
         title: 'General statistics',
         render: () => <GeneralInfoTab
-          chartsData={{...chartsData}}
+          chartsData={this.chartsData}
           node={node}
           nodeName={nodeName}
           preferences={this.props.preferences}
@@ -43,7 +49,7 @@ class ClusterNodeMonitor extends React.Component {
         title: 'GPU statistics',
         render: () => <GPUInfoHoc
           nodeName={nodeName}
-          chartsData={{...chartsData}}
+          chartsData={this.chartsData}
           node={node}
           instanceType={instanceType}
           router={this.props.router}
