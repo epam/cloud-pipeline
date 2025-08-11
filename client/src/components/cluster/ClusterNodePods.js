@@ -154,46 +154,59 @@ export default class ClusterNodePods extends Component {
       }
     ];
     const dataSource = [];
-    const keys = [];
+    const keys = new Set();
+
+    const mapKey = key => {
+      if (key.includes('.')) {
+        return `["${key}"]`;
+      }
+      return key;
+    };
+    const unMapKey = (key) => {
+      if (key.startsWith('["') && key.endsWith('"]')) {
+        return key.slice(2, -2);
+      }
+      return key;
+    };
 
     for (let i = 0; i < node.pods.length; i++) {
       for (let j = 0; j < node.pods[i].containers.length; j++) {
         const container = node.pods[i].containers[j];
         if (container.requests) {
           for (let key in container.requests) {
-            if (container.requests.hasOwnProperty(key) && keys.indexOf(key) === -1) {
-              keys.push(key);
+            if (container.requests.hasOwnProperty(key)) {
+              keys.add(mapKey(key));
             }
           }
         }
         if (container.limits) {
           for (let key in container.limits) {
-            if (container.limits.hasOwnProperty(key) && keys.indexOf(key) === -1) {
-              keys.push(key);
+            if (container.limits.hasOwnProperty(key)) {
+              keys.add(mapKey(key));
             }
           }
         }
       }
     }
 
-    if (keys.length > 0) {
+    if (keys.size > 0) {
       const requestsColumn = {
         title: 'Requests',
-        children: keys.map(k => {
+        children: [...keys].map(k => {
           return {
             dataIndex: `requests.${k}`,
             key: `requests.${k}`,
-            title: k.toUpperCase()
+            title: unMapKey(k).toUpperCase()
           };
         })
       };
       const limitsColumn = {
         title: 'Limits',
-        children: keys.map(k => {
+        children: [...keys].map(k => {
           return {
             dataIndex: `limits.${k}`,
             key: `limits.${k}`,
-            title: k.toUpperCase()
+            title: unMapKey(k).toUpperCase()
           };
         })
       };
