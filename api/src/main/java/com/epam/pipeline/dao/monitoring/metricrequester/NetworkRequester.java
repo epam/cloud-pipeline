@@ -78,9 +78,9 @@ public class NetworkRequester extends AbstractMetricRequester {
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final Long runId) {
+                                              final Duration interval, final String podName) {
         return request(from, to,
-                statsQuery(nodeName, NODE, from, to, runId)
+                statsQuery(nodeName, NODE, from, to, podName)
                         .size(0)
                         .aggregation(dateHistogram(NETWORK_HISTOGRAM, interval)
                                 .subAggregation(average(RX_RATE, RX_RATE))

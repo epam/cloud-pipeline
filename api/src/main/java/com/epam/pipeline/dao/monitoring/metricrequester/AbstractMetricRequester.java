@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -60,8 +61,6 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private static final String INDEX_NAME_PATTERN = "heapster-%s";
-
-    private static final String POD_NAME_PATTERN = "pipeline-%s";
 
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.STRICT_EXPAND_OPEN_CLOSED;
 
@@ -130,7 +129,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected abstract ELKUsageMetric metric();
 
     protected abstract SearchRequest buildStatsRequest(String nodeName, LocalDateTime from, LocalDateTime to,
-                                                       Duration interval, Long runId);
+                                                       Duration interval, String podName);
 
     protected abstract List<MonitoringStats> parseStatsResponse(SearchResponse response);
 
@@ -241,14 +240,14 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     @Override
     public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final Long runId) {
-        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval, runId);
+                                              final Duration interval, final String podName) {
+        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval, podName);
         return parseStatsResponse(executeRequest(request));
     }
 
     protected SearchSourceBuilder statsQuery(final String nodeName, final String type,
                                              final LocalDateTime from, final LocalDateTime to,
-                                             final Long runId) {
+                                             final String podName) {
         final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
                 .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
@@ -256,8 +255,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                         .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                         .to(to.toInstant(ZoneOffset.UTC).toEpochMilli()));
-        if (Objects.nonNull(runId)) {
-            final String podName = String.format(POD_NAME_PATTERN, runId);
+        if (StringUtils.isNotBlank(podName)) {
             queryBuilder.filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podName));
         }
         return new SearchSourceBuilder()

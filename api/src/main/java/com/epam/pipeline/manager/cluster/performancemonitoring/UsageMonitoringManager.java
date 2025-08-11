@@ -75,7 +75,7 @@ public interface UsageMonitoringManager {
                                           @Nullable LocalDateTime to,
                                           List<GpuMetricsGranularity> granularity,
                                           boolean squashCharts,
-                                          Long runId);
+                                          @Nullable Long runId);
 
     /**
      * Retrieves monitoring stats for node as input stream.
