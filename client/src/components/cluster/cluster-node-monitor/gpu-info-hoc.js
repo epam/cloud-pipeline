@@ -58,7 +58,7 @@ class GpuInfoHoc extends React.Component {
       <GpuInfo
         node={node}
         gpuStatisticsAvailable={gpuStatisticsAvailable}
-        chartsData={{...chartsData}}
+        chartsData={chartsData}
         nodeName={nodeName}
         router={router}
       />

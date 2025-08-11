@@ -104,6 +104,7 @@ class ChartData {
   @observable to;
   @observable rangeEndIsFixed = false;
 
+  @observable _refreshToken = 0;
   @observable ranges = {};
   listeners = [];
 
@@ -112,6 +113,11 @@ class ChartData {
   @computed
   get pending () {
     return this._pending;
+  }
+
+  @computed
+  get refreshToken () {
+    return this._refreshToken;
   }
 
   set pending (value) {
@@ -154,6 +160,7 @@ class ChartData {
         this.instanceTo,
         this.runId
       ).then(({error, networkError, from, to, value}) => {
+        this._refreshToken += 1;
         if (from !== this.from || to !== this.to) {
           return;
         }

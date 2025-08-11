@@ -27,7 +27,7 @@ import {
   Alert
 } from 'antd';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, reaction} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import ClusterNodeGPUUsage from '../../../models/cluster/ClusterNodeGPUUsage';
@@ -96,6 +96,15 @@ class GPUInfoTab extends React.Component {
   rangeChangeTimer;
   fetchTimer;
 
+  disposeReaction = reaction(
+    () => this.chartsData.refreshToken,
+    () => {
+      if (typeof this.initRanges === 'function') {
+        this.initRanges(false);
+      }
+    }
+  );
+
   componentDidMount () {
     this.initRanges();
   }
@@ -107,6 +116,12 @@ class GPUInfoTab extends React.Component {
       prevProps.chartsData !== this.props.chartsData
     ) {
       this.initRanges(false);
+    }
+  }
+
+  componentWillUnmount () {
+    if (this.disposeReaction && typeof this.disposeReaction === 'function') {
+      this.disposeReaction();
     }
   }
 
@@ -122,7 +137,7 @@ class GPUInfoTab extends React.Component {
   @computed
   get chartsData () {
     const {chartsData} = this.props;
-    return chartsData || {};
+    return chartsData;
   }
 
   @computed
