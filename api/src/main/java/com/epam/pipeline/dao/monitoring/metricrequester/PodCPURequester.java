@@ -50,9 +50,9 @@ public class PodCPURequester extends CPURequester {
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from,
                                               final LocalDateTime to, final Duration interval,
-                                              final Long runId) {
+                                              final String podName) {
         return request(from, to,
-                statsQuery(nodeName, POD, from, to, runId)
+                statsQuery(nodeName, POD, from, to, podName)
                         .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
                                 .subAggregation(average(CPU_CAPACITY, LIMIT))

@@ -45,9 +45,9 @@ public class PodMemoryRequester extends MemoryRequester {
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from,
                                               final LocalDateTime to, final Duration interval,
-                                              final Long runId) {
+                                              final String podName) {
         return request(from, to,
-                statsQuery(nodeName, POD, from, to, runId)
+                statsQuery(nodeName, POD, from, to, podName)
                         .size(0)
                         .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
                                 .subAggregation(average(MEMORY_UTILIZATION, WORKING_SET))
