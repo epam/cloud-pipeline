@@ -48,12 +48,16 @@ RUN yum install -y epel-release
 RUN yum install -y nginx nginx-mod-stream
 
 # 3. SMTP proxy setup
+ENV PATH=$PATH:/opt/local/mamba/bin \
+    MAMBA_ROOT_PREFIX=/opt/local/mamba
+
 RUN yum install -y nginx-mod-mail gettext && \
-    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh --no-check-certificate && \
-    bash /tmp/miniconda.sh -b -p /opt/miniconda && \
-    source /opt/miniconda/etc/profile.d/conda.sh && \
-    conda create -y -n auth-srv python=3.7 && \
-    conda activate auth-srv && \
+    mkdir -p /opt/local/mamba && \
+    cd /opt/local/mamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -y -n auth-srv python=3.7 && \
+    micromamba activate auth-srv && \
     pip install dnspython requests
 ADD smtp-auth-srv.py /opt/smtp/smtp-auth-srv.py
 
