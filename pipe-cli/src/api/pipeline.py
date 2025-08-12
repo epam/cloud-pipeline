@@ -113,7 +113,7 @@ class Pipeline(API):
                         status_notifications=False,
                         status_notifications_status=None, status_notifications_recipient=None,
                         status_notifications_subject=None, status_notifications_body=None,
-                        run_as_user=None):
+                        run_as_user=None, pod_assign_policy=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -147,6 +147,8 @@ class Pipeline(API):
             payload['prettyUrl'] = friendly_url
         if run_as_user:
             payload['runAs'] = run_as_user
+        if pod_assign_policy is not None:
+            payload['podAssignPolicy'] = pod_assign_policy
         if status_notifications:
             if status_notifications_body:
                 with open(status_notifications_body, 'r') as f:
@@ -172,7 +174,7 @@ class Pipeline(API):
                        status_notifications=False,
                        status_notifications_status=None, status_notifications_recipient=None,
                        status_notifications_subject=None, status_notifications_body=None,
-                       run_as_user=None):
+                       run_as_user=None, pod_assign_policy=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -199,6 +201,8 @@ class Pipeline(API):
             payload['prettyUrl'] = friendly_url
         if run_as_user:
             payload['runAs'] = run_as_user
+        if pod_assign_policy is not None:
+            payload['podAssignPolicy'] = pod_assign_policy
         if status_notifications:
             if status_notifications_body:
                 with open(status_notifications_body, 'r') as f:
