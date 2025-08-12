@@ -54,7 +54,6 @@ import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {CP_CAP_RUN_CAPABILITIES} from '../../pipelines/launch/form/utilities/parameters';
-import Divider from '../../special/Divider';
 import styles from './UserManagement.css';
 
 @roleModel.authenticationInfo
@@ -793,14 +792,18 @@ class EditRoleDialog extends React.Component {
         <div
           style={{display: 'flex', flexDirection: 'column', height: '100%'}}
           key={CONTENT_PANEL_KEY}>
-          <Row type="flex" style={{flexWrap: 'nowrap', whiteSpace: 'nowrap'}} align="middle">
+          <Row type="flex" style={{marginBottom: 8}} align="middle">
             <Checkbox
               checked={this.state.userDefault}
               onChange={this.onChangeUserDefault}
             >
               <b>Default {roleType}</b>
             </Checkbox>
-            <Divider vertical style={{height: '80%', marginLeft: 2, marginRight: 10}} />
+            <p className="cp-text-not-important" style={{fontSize: 'smaller'}}>
+              This {roleType} will be assigned to all new users upon the registration
+            </p>
+          </Row>
+          <Row type="flex" style={{marginBottom: 10}} align="middle">
             <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
             <Select
               allowClear
@@ -830,14 +833,6 @@ class EditRoleDialog extends React.Component {
                 })
               }
             </Select>
-          </Row>
-          <Row
-            type="flex"
-            style={{marginBottom: 10, fontSize: 'smaller'}}
-            align="middle"
-            className="cp-text-not-important"
-          >
-            This {roleType} will be assigned to all new users upon the registration
           </Row>
           <Row type="flex" style={{marginBottom: 10}} align="middle">
             <div style={{flex: 1}} id="find-user-autocomplete-container">
