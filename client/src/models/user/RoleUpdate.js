@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class RoleUpdate extends RemotePost {
-
   constructor (roleId) {
     super();
     this.constructor.fetchOptions = {
@@ -30,5 +29,4 @@ export default class RoleUpdate extends RemotePost {
     };
     this.url = `/role/${roleId}`;
   }
-
 }
