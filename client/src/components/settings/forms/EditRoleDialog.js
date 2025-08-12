@@ -793,7 +793,7 @@ class EditRoleDialog extends React.Component {
         <div
           style={{display: 'flex', flexDirection: 'column', height: '100%'}}
           key={CONTENT_PANEL_KEY}>
-          <Row type="flex" align="middle">
+          <Row type="flex" style={{flexWrap: 'nowrap', whiteSpace: 'nowrap'}} align="middle">
             <Checkbox
               checked={this.state.userDefault}
               onChange={this.onChangeUserDefault}
@@ -807,7 +807,7 @@ class EditRoleDialog extends React.Component {
               showSearch
               disabled={this.state.operationInProgress || readOnly}
               value={this.defaultStorageId}
-              style={{flex: 1}}
+              style={{flex: 1, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
               onChange={this.onChangeDefaultStorageId}
               size="small"
               filterOption={(input, option) =>
