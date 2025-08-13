@@ -48,6 +48,7 @@ public class KubernetesPoolService {
     }
 
     public List<NodePoolInfo> attachUsage(final List<NodePool> pools) {
+        //TODO: This is extremely inefficient for large clusters, fix
         try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
             final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
             final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
