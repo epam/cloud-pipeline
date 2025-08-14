@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.entity.cluster.ContainerInstance;
 import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.NodeResourceInfo;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,13 +31,13 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
 
-public class NodeAllowedResourcesParserTest {
+public class NodeAvailableResourcesParserTest {
     private static final String NODE_NAME = "testNode";
     private static final String CPU = "cpu";
     private static final String MEMORY = "memory";
     private static final String GPU = "nvidia.com/gpu";
     private static final String TWO_CPUS = "2";
-    private static final String TWO_CPUS_IN_MILLICORES = "2";
+    private static final String TWO_CPUS_IN_MILLICORES = "2000m";
     private static final String ONE_GB = "1024Mi";
     private static final String FOUR_GB = "4096Mi";
     private static final String ONE_GPU = "1";
@@ -76,7 +76,7 @@ public class NodeAllowedResourcesParserTest {
         pod2.setContainers(Collections.singletonList(container2));
         final List<PodInstance> pods = Arrays.asList(pod1, pod2, new PodInstance());
 
-        final NodeResourceInfo actual = NodeAllowedResourcesParser.parse(node, pods);
+        final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods);
         Assert.assertThat(actual.getNodeName(), is(NODE_NAME));
         Assert.assertThat(actual.getUsed().getCpu(), is(4L));
         Assert.assertThat(actual.getUsed().getGpu(), is(1L));
@@ -97,7 +97,7 @@ public class NodeAllowedResourcesParserTest {
         node.setName(NODE_NAME);
         node.setAllocatable(allocatable);
 
-        final NodeResourceInfo actual = NodeAllowedResourcesParser.parse(node, null);
+        final NodeResources actual = NodeAvailableResourcesParser.parse(node, null);
         Assert.assertThat(actual.getNodeName(), is(NODE_NAME));
         Assert.assertThat(actual.getUsed().getCpu(), is(0L));
         Assert.assertThat(actual.getUsed().getGpu(), is(0L));

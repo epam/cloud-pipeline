@@ -25,31 +25,31 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class NodeResourceInfo {
+public class NodeResources {
     private String nodeName;
     /**
      * Provides content from k8s node's allocatable field that provides the amount of resources on a Node
      * that is available to be consumed by normal Pods.
      */
-    private Resource total;
+    private Quantities total;
     /**
-     * Contains available resources accumulated from all active pods (for corresponding node) that satisfies
-     * input labels filter where quantities loaded from Requests section from pod container specification
+     * Contains available resources accumulated from all active pods (for corresponding node)
+     * where quantities loaded from Requests section from pod container specification
      * (cpu/memory/nvidia.com/gpu).
      */
-    private Resource used;
+    private Quantities used;
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Resource {
+    public static class Quantities {
         private Long cpu;
         private Long gpu;
         private Long memory;
 
-        public static Resource empty() {
-            return Resource.builder()
+        public static Quantities empty() {
+            return Quantities.builder()
                     .cpu(0L)
                     .gpu(0L)
                     .memory(0L)

@@ -27,7 +27,7 @@ import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
-import com.epam.pipeline.entity.cluster.NodeResourceInfo;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -170,14 +170,19 @@ public class NodesManager {
         }
     }
 
-    public List<NodeResourceInfo> loadNodeAvailableResources(final Map<String, String> labels) {
+    public List<NodeResources> loadNodeAvailableResources(final Map<String, String> labels) {
         final List<NodeInstance> nodes = findKubeNodesByLabels(labels);
         if (CollectionUtils.isEmpty(nodes)) {
+            log.debug("No nodes matching labels {} found", labels);
             return Collections.emptyList();
         }
-        final Map<String, List<PodInstance>> podsByNodes = findActivePodsByLabelsAndNodes(labels, nodes);
+        log.debug("Found {} nodes matching labels {}", nodes.size(), labels);
+        final List<PodInstance> pods = findActivePodsByLabelsAndNodes(labels, nodes);
+        log.debug("Found {} active pods matching labels {}", pods.size(), labels);
+        final Map<String, List<PodInstance>> podsByNodes = pods.stream()
+                .collect(Collectors.groupingBy(PodInstance::getNodeName));
         return ListUtils.emptyIfNull(nodes).stream()
-                .map(node -> NodeAllowedResourcesParser.parse(node, podsByNodes.get(node.getName())))
+                .map(node -> NodeAvailableResourcesParser.parse(node, podsByNodes.get(node.getName())))
                 .collect(Collectors.toList());
     }
 
@@ -635,8 +640,8 @@ public class NodesManager {
         return filterKubeNodes(filterNodesVO);
     }
 
-    private Map<String, List<PodInstance>> findActivePodsByLabelsAndNodes(final Map<String, String> labels,
-                                                                          final List<NodeInstance> nodes) {
+    private List<PodInstance> findActivePodsByLabelsAndNodes(final Map<String, String> labels,
+                                                             final List<NodeInstance> nodes) {
         final Set<String> nodeNames = ListUtils.emptyIfNull(nodes).stream()
                 .map(NodeInstance::getName)
                 .collect(Collectors.toSet());
@@ -644,6 +649,6 @@ public class NodesManager {
                 .map(PodInstance::new)
                 .filter(pod -> isPodOnNodeIn(pod, nodeNames))
                 .filter(this::isActivePod)
-                .collect(Collectors.groupingBy(PodInstance::getNodeName));
+                .collect(Collectors.toList());
     }
 }

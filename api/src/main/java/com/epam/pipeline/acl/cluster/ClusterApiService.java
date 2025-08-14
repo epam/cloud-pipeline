@@ -30,7 +30,7 @@ import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.NodeResourceInfo;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
@@ -192,7 +192,7 @@ public class ClusterApiService {
         return instanceOfferManager.loadInstanceType(instanceType);
     }
 
-    public List<NodeResourceInfo> loadNodeAvailableResource(final Map<String, String> labels) {
+    public List<NodeResources> loadNodeAvailableResource(final Map<String, String> labels) {
         return nodesManager.loadNodeAvailableResources(labels);
     }
 }

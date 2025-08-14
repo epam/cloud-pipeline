@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.entity.cluster.ContainerInstance;
 import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.NodeResourceInfo;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.utils.KubernetesMemoryParser;
 import lombok.extern.slf4j.Slf4j;
@@ -34,40 +34,37 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
-public final class NodeAllowedResourcesParser {
+public final class NodeAvailableResourcesParser {
     private static final String CPU_RESOURCE = "cpu";
     private static final String GPU_RESOURCE = "nvidia.com/gpu";
     private static final String MEMORY_RESOURCE = "memory";
     private static final String MILLICORES_MARKER = "m";
 
-    private NodeAllowedResourcesParser() {
+    private NodeAvailableResourcesParser() {
     }
 
-    public static NodeResourceInfo parse(final NodeInstance node, final List<PodInstance> pods) {
-        final NodeResourceInfo resources = NodeResourceInfo.builder()
+    public static NodeResources parse(final NodeInstance node, final List<PodInstance> pods) {
+        final NodeResources resources = NodeResources.builder()
                 .nodeName(node.getName())
-                .total(toResource(node.getAllocatable(), false))
+                .total(toQuantities(node.getAllocatable(), false))
                 .build();
-        if (CollectionUtils.isEmpty(pods)) {
-            // empty node
-            resources.setUsed(NodeResourceInfo.Resource.empty());
-            return resources;
-        }
-        resources.setUsed(collectAllocatedResources(pods));
+        resources.setUsed(CollectionUtils.isEmpty(pods)
+                ? NodeResources.Quantities.empty()  // empty node
+                : collectAllocatedResources(pods));
         return resources;
     }
 
-    private static NodeResourceInfo.Resource collectAllocatedResources(final List<PodInstance> pods) {
+    private static NodeResources.Quantities collectAllocatedResources(final List<PodInstance> pods) {
         return ListUtils.emptyIfNull(pods).stream()
                 .flatMap(pod -> ListUtils.emptyIfNull(pod.getContainers()).stream())
                 .map(ContainerInstance::getRequests)
                 .filter(MapUtils::isNotEmpty)
-                .map(quantities -> toResource(quantities, true))
-                .reduce(NodeResourceInfo.Resource.builder().build(), (r1, r2) ->
-                        NodeResourceInfo.Resource.builder()
-                                .cpu(nullSafeSum(r1.getCpu(), r2.getCpu()))
-                                .gpu(nullSafeSum(r1.getGpu(), r2.getGpu()))
-                                .memory(nullSafeSum(r1.getMemory(), r2.getMemory()))
+                .map(quantities -> toQuantities(quantities, true))
+                .reduce(NodeResources.Quantities.builder().build(), (q1, q2) ->
+                        NodeResources.Quantities.builder()
+                                .cpu(nullSafeSum(q1.getCpu(), q2.getCpu()))
+                                .gpu(nullSafeSum(q1.getGpu(), q2.getGpu()))
+                                .memory(nullSafeSum(q1.getMemory(), q2.getMemory()))
                                 .build());
     }
 
@@ -118,11 +115,11 @@ public final class NodeAllowedResourcesParser {
         return null;
     }
 
-    private static NodeResourceInfo.Resource toResource(final Map<String, String> resource, final boolean roundUp) {
-        return NodeResourceInfo.Resource.builder()
-                .cpu(parseCpu(resource.get(CPU_RESOURCE), roundUp))
-                .memory(parseMemory(resource.get(MEMORY_RESOURCE)))
-                .gpu(pargeGpu(resource.get(GPU_RESOURCE)))
+    private static NodeResources.Quantities toQuantities(final Map<String, String> quantities, final boolean roundUp) {
+        return NodeResources.Quantities.builder()
+                .cpu(parseCpu(quantities.get(CPU_RESOURCE), roundUp))
+                .memory(parseMemory(quantities.get(MEMORY_RESOURCE)))
+                .gpu(pargeGpu(quantities.get(GPU_RESOURCE)))
                 .build();
     }
 

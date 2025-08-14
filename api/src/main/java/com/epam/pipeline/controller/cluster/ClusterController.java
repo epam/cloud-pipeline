@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.NodeResourceInfo;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
@@ -412,7 +412,7 @@ public class ClusterController extends AbstractRestController {
             notes = "Returns available resources info for node filtered by labels.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<NodeResourceInfo>> loadNodeResources(final @RequestBody Map<String, String> labels) {
+    public Result<List<NodeResources>> loadNodeResources(final @RequestBody Map<String, String> labels) {
         return Result.success(clusterApiService.loadNodeAvailableResource(labels));
     }
 }
