@@ -25,25 +25,37 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 //TODO: Make parametrized test
-public class KubernetesMemoryParserTest {
+public class KubernetesRequestParserTest {
 
-    private static final Map<String, Long> VALID_VALUES = new HashMap<>();
+    private static final Map<String, Long> VALID_MEMORY_VALUES = new HashMap<>();
+    private static final Map<String, Long> VALID_CPU_VALUES = new HashMap<>();
     //CHECKSTYLE:OFF
     static {
-        VALID_VALUES.put("123", 123L);
-        VALID_VALUES.put("10K", 10000L);
-        VALID_VALUES.put("1Mi", 1024L * 1024L);
+        VALID_MEMORY_VALUES.put("123", 123L);
+        VALID_MEMORY_VALUES.put("10K", 10000L);
+        VALID_MEMORY_VALUES.put("1Mi", 1024L * 1024L);
+    }
+    static {
+        VALID_CPU_VALUES.put("3", 3L);
+        VALID_CPU_VALUES.put("3800m", 3L);
+        VALID_CPU_VALUES.put("2100m", 2L);
+        VALID_CPU_VALUES.put("4000m", 4L);
     }
     //CHECKSTYLE:NO
 
     @Test
-    public void shouldParseValidValues() {
-        VALID_VALUES.forEach((value, expected) ->
-                assertEquals(expected, KubernetesMemoryParser.parseMemoryToBytes(value)));
+    public void shouldParseValidMemoryValues() {
+        VALID_MEMORY_VALUES.forEach((value, expected) ->
+                assertEquals(expected, KubernetesRequestParser.parseRequest(value)));
+    }
+    @Test
+    public void shouldParseValidCPUValues() {
+        VALID_CPU_VALUES.forEach((value, expected) ->
+                assertEquals(expected, KubernetesRequestParser.parseRequest(value)));
     }
 
     @Test
     public void shouldReturnNullForInvalidPattern() {
-        assertNull(KubernetesMemoryParser.parseMemoryToBytes("123KB"));
+        assertNull(KubernetesRequestParser.parseRequest("123KB"));
     }
 }
