@@ -20,12 +20,14 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
+import com.epam.pipeline.entity.cluster.ContainerInstance;
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
+import com.epam.pipeline.entity.cluster.NodeResourceInfo;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -72,6 +74,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -165,6 +168,17 @@ public class NodesManager {
             default:
                 throw new UnsupportedOperationException(String.format("Unsupported type '%s'", machineType));
         }
+    }
+
+    public List<NodeResourceInfo> loadNodeAvailableResources(final Map<String, String> labels) {
+        final List<NodeInstance> nodes = findKubeNodesByLabels(labels);
+        if (CollectionUtils.isEmpty(nodes)) {
+            return Collections.emptyList();
+        }
+        final Map<String, List<PodInstance>> podsByNodes = findActivePodsByLabelsAndNodes(labels, nodes);
+        return ListUtils.emptyIfNull(nodes).stream()
+                .map(node -> NodeAllowedResourcesParser.parse(node, podsByNodes.get(node.getName())))
+                .collect(Collectors.toList());
     }
 
     public NodeInstance getNode(String name) {
@@ -604,5 +618,32 @@ public class NodesManager {
             this.attachRunsInfo(result);
         }
         return result;
+    }
+
+    private boolean isActivePod(final PodInstance pod) {
+        return ListUtils.emptyIfNull(pod.getContainers()).stream()
+                .allMatch(ContainerInstance::isRunning);
+    }
+
+    private boolean isPodOnNodeIn(final PodInstance pod, final Set<String> nodes) {
+        return StringUtils.isNotBlank(pod.getNodeName()) && nodes.contains(pod.getNodeName());
+    }
+
+    private List<NodeInstance> findKubeNodesByLabels(final Map<String, String> labels) {
+        final FilterNodesVO filterNodesVO = new FilterNodesVO();
+        filterNodesVO.setLabels(labels);
+        return filterKubeNodes(filterNodesVO);
+    }
+
+    private Map<String, List<PodInstance>> findActivePodsByLabelsAndNodes(final Map<String, String> labels,
+                                                                          final List<NodeInstance> nodes) {
+        final Set<String> nodeNames = ListUtils.emptyIfNull(nodes).stream()
+                .map(NodeInstance::getName)
+                .collect(Collectors.toSet());
+        return ListUtils.emptyIfNull(kubernetesManager.getPodsByLabels(labels)).stream()
+                .map(PodInstance::new)
+                .filter(pod -> isPodOnNodeIn(pod, nodeNames))
+                .filter(this::isActivePod)
+                .collect(Collectors.groupingBy(PodInstance::getNodeName));
     }
 }
