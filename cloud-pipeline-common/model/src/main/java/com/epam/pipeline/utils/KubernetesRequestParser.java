@@ -26,9 +26,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public final class KubernetesMemoryParser {
+public final class KubernetesRequestParser {
     private static final Pattern MEMORY_PATTERN = Pattern.compile("^(\\d+)([EPTGMKi]{1,2})?$");
+    private static final Pattern CPU_PATTERN = Pattern.compile("^(\\d+)m$");
     private static final Map<String, Double> UNIT_TO_BYTES = new HashMap<>();
+    private static final int MILLICPUS_IN_CPU = 1000;
+
     //CHECKSTYLE:OFF
     static {
         UNIT_TO_BYTES.put("Ki", Math.pow(2, 10));
@@ -47,11 +50,31 @@ public final class KubernetesMemoryParser {
     }
     //CHECKSTYLE:ON
 
-    private KubernetesMemoryParser() {
+    private KubernetesRequestParser() {
         //no op
     }
 
-    public static Long parseMemoryToBytes(final String value) {
+    public static Long parseRequest(final String value) {
+        if (CPU_PATTERN.matcher(value).matches()) {
+            return parseMilliCpu(value);
+        }
+        if (MEMORY_PATTERN.matcher(value).matches()) {
+            return parseMemoryToBytes(value);
+        }
+        log.error("Unknown k8s request value {}", value);
+        return null;
+    }
+
+    private static Long parseMilliCpu(final String value) {
+        final Matcher matcher = CPU_PATTERN.matcher(value);
+        if (!matcher.matches()) {
+            return null;
+        }
+        final double milliCPUs = Double.parseDouble(matcher.group(1));
+        return (long) (milliCPUs / MILLICPUS_IN_CPU);
+    }
+
+    private static Long parseMemoryToBytes(final String value) {
         final Matcher matcher = MEMORY_PATTERN.matcher(value);
         if (!matcher.matches()) {
             return null;
@@ -65,6 +88,7 @@ public final class KubernetesMemoryParser {
 
         if (!UNIT_TO_BYTES.containsKey(unit)) {
             log.error("Unknown k8s memory unit {}", unit);
+            return null;
         }
         return digits * UNIT_TO_BYTES.get(unit).longValue();
     }
