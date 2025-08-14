@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
-import com.epam.pipeline.utils.KubernetesMemoryParser;
+import com.epam.pipeline.utils.KubernetesRequestParser;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.cluster.pool.Requests;
@@ -139,7 +139,7 @@ public class NodePoolMonitoringService implements MonitoringService {
             final Requests requests = new Requests();
             requests.setTotal(nodes.stream()
                     .mapToLong(node ->
-                            parseRequest(node.getCapacity().getOrDefault(requestName, StringUtils.EMPTY)))
+                            parseRequest(node.getAllocatable().getOrDefault(requestName, StringUtils.EMPTY)))
                     .sum());
             requests.setPending(pendingPods.stream()
                     .mapToLong(pod -> pod.getContainers().stream()
@@ -171,11 +171,11 @@ public class NodePoolMonitoringService implements MonitoringService {
         if (NumberUtils.isDigits(value)) {
             return Long.parseLong(value);
         }
-        final Long memoryValue = KubernetesMemoryParser.parseMemoryToBytes(value);
-        if (Objects.isNull(memoryValue)) {
+        final Long requestValue = KubernetesRequestParser.parseRequest(value);
+        if (Objects.isNull(requestValue)) {
             log.error("Failed to parse k8s request value {}", value);
             return 0L;
         }
-        return memoryValue;
+        return requestValue;
     }
 }
