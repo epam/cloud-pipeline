@@ -93,11 +93,12 @@ EOF
 fi
 
 # Update config file with general params
-cat > $config_path <<-EOF
-version: 0.1
-log:
-  fields:
-    service: registry
+auth_config=""
+CP_DOCKER_AUTH_TYPE="${CP_DOCKER_AUTH_TYPE:-token}"
+echo "[INFO] Authentication type: $CP_DOCKER_AUTH_TYPE"
+
+if [ "$CP_DOCKER_AUTH_TYPE" == "token" ]; then
+IFS= read -r -d '' auth_config <<-EOF
 auth:
   token:
     realm: https://{REALM_ADDRESS}/pipeline/restapi/dockerRegistry/oauth
@@ -123,6 +124,20 @@ notifications:
         - application/vnd.docker.image.rootfs.diff.tar.gzip
         - application/vnd.docker.image.rootfs.foreign.diff.tar.gzip
         - application/vnd.docker.plugin.v1+json
+EOF
+elif [ "$CP_DOCKER_AUTH_TYPE" == "none" ]; then
+  auth_config=""
+else
+  echo "[ERROR] Unknow auth type $CP_DOCKER_AUTH_TYPE, exiting"
+  exit 1
+fi
+
+cat > $config_path <<-EOF
+version: 0.1
+log:
+  fields:
+    service: registry
+${auth_config}
 health:
   storagedriver:
     enabled: true
