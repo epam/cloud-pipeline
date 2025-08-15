@@ -29,7 +29,7 @@ import java.util.List;
 import static com.epam.pipeline.manager.resource.StaticResourcesService.buildHtml;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class StaticResourceServiceTest extends AbstractSpringTest {
+public class StaticQuantitiesServiceTest extends AbstractSpringTest {
 
     private static final String TEMPLATES_PATH = "classpath:/views/folder.vm";
 
