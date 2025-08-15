@@ -258,6 +258,7 @@ class PipelineAPI:
     STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
+    AUDIT_LOG = '/log'
 
     # Pipeline API default header
 
@@ -340,6 +341,39 @@ class PipelineAPI:
 
     def load_current_user_efficiently(self):
         return self._request('GET', 'whoami')
+
+    def log_audit_event(self, message, user, 
+                        severity='INFO', type='audit', hostname='',
+                        service_name='common-run-scripts', extra_args=None):
+        if os.environ.get('CP_AUDIT_LOGS_DISABLED', 'false').lower() == 'true':
+            return
+        try:
+            if not hostname and os.environ.get('HOSTNAME'):
+                hostname = os.environ.get('HOSTNAME')
+            
+            prefix = ''
+            if os.environ.get('RUN_ID'):
+                run_id = os.environ.get('RUN_ID')
+                prefix = prefix + '[run_id #{}] '.format(run_id)
+
+            now = datetime.datetime.utcnow()
+            message_timestamp = now.strftime('%Y-%m-%d %H:%M:%S.') + '%03d' % (now.microsecond / 1000)
+            event_data = {
+                'eventId': int(time.time() * 1e9),
+                'hostname': hostname,
+                'message': prefix + message,
+                'messageTimestamp': message_timestamp,
+                'serviceName': service_name,
+                'severity': severity,
+                'type': type,
+                'user': user
+            }
+            if extra_args and isinstance(extra_args, dict):
+                event_data.update(extra_args)
+
+            self._request('POST', '/log', data=[event_data])
+        except Exception as e:
+            print('log_audit_event failed: ' + str(e))
 
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)

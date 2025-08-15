@@ -320,6 +320,11 @@ class MountStorageTask:
             for mnt in initialized_mounters:
                 try:
                     mnt.mount(mount_root, self.task_name)
+                    self.api.log_audit_event('MOUNT ' + mnt.storage.path if mnt.storage.path else 'unknown',
+                                             os.environ.get('OWNER', ''), 
+                                             severity='INFO',
+                                             type='audit',
+                                             extra_args={'storageId': mnt.storage.id})
                 except RuntimeError:
                     Logger.warn('Data storage {} mounting has failed: {}'
                                 .format(mnt.storage.name, traceback.format_exc()),
