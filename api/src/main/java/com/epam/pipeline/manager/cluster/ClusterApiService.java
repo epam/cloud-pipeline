@@ -175,4 +175,8 @@ public class ClusterApiService {
     public InstanceType loadInstanceType(final String instanceType) {
         return instanceOfferManager.loadInstanceType(instanceType);
     }
+
+    public List<NodeResources> loadNodeAvailableResource(final Map<String, String> labels) {
+        return nodesManager.loadNodeAvailableResources(labels);
+    }
 }
