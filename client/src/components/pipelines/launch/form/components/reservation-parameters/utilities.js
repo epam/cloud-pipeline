@@ -10,6 +10,7 @@ import {
 import preferences from '../../../../../../models/preferences/PreferencesLoad';
 import escapeRegExp from '../../../../../../utils/escape-reg-exp';
 import InstanceTypes from '../../../../../../models/utils/InstanceTypes';
+import {ClusterNodeResources} from '../../../../../../models/cluster/NodeResources';
 
 const instanceTypesRequest = new InstanceTypes();
 
@@ -66,6 +67,29 @@ export function findReservationParameterConfig (instanceType, prefs = preference
 export async function getReservationParametersConfig (instanceType) {
   await preferences.fetchIfNeededOrWait();
   return findReservationParameterConfig(instanceType, preferences);
+}
+
+export async function getInstanceResources (config) {
+  const {
+    kube_assign_policy: _kubeAssignPolicy = {},
+    kubeAssignPolicy = _kubeAssignPolicy
+  } = config || {};
+  const {
+    selector
+  } = kubeAssignPolicy || {};
+  const {
+    label,
+    value
+  } = selector || {};
+  if (!label || !value) {
+    return [];
+  }
+  const req = new ClusterNodeResources();
+  await req.send({[label]: value});
+  if (req.error) {
+    throw new Error(req.error);
+  }
+  return req.value || [];
 }
 
 export async function getInstanceType (instanceType) {
@@ -324,13 +348,14 @@ function transformK8sRAMRequestStringToBytes (request, defaultUnit = DEFAULT_RAM
 /**
  * Transforms bytes to K8S RAM request value (string)
  * @param {number} bytes
- * @param {{decimal?: boolean, appendBytesLetter?: boolean, unit?: string}} [options]
+ * @param {{decimal?: boolean, appendBytesLetter?: boolean, appendSuffix?: boolean; unit?: string}} [options]
  * @returns {string}
  */
 export function transformBytesToK8sRAMRequest (bytes, options) {
   const {
     decimal = false,
     appendBytesLetter = false,
+    appendSuffix = true,
     unit
   } = options || {};
   if (!bytes || typeof bytes !== 'number' || bytes < 0) {
@@ -343,7 +368,13 @@ export function transformBytesToK8sRAMRequest (bytes, options) {
   const binaryUnit = unitCorrected ? binaryUnits[unitCorrected] : undefined;
 
   if (decimalUnit || binaryUnit) {
-    return transformBytesToK8sRAMUnitRequest(bytes, {unit, factor: decimalUnit || binaryUnit});
+    return transformBytesToK8sRAMUnitRequest(
+      bytes,
+      {
+        unit: appendSuffix ? unit : '',
+        factor: decimalUnit || binaryUnit
+      }
+    );
   }
 
   const units = decimal ? decimalUnitsSorted : binaryUnitsSorted;
@@ -353,7 +384,7 @@ export function transformBytesToK8sRAMRequest (bytes, options) {
       return transformBytesToK8sRAMUnitRequest(
         bytes,
         {
-          unit: `${suffix}${appendBytesLetter ? 'B' : ''}`,
+          unit: appendSuffix ? `${suffix}${appendBytesLetter ? 'B' : ''}` : '',
           factor
         }
       );
@@ -363,7 +394,7 @@ export function transformBytesToK8sRAMRequest (bytes, options) {
   return transformBytesToK8sRAMUnitRequest(
     bytes,
     {
-      unit: appendBytesLetter ? 'B' : ''
+      unit: appendSuffix && appendBytesLetter ? 'B' : ''
     }
   );
 }
@@ -474,4 +505,132 @@ export function parseRAMRequest (request = 0, defaultUnit = DEFAULT_RAM_REQUESTS
     return transformK8sRAMRequestStringToBytes(request);
   }
   return 0;
+}
+
+export function getNodeAvailability (nodeResources) {
+  const {
+    total = {},
+    used = {}
+  } = nodeResources;
+  const {
+    cpu: totalCPU = 0,
+    gpu: totalGPU = 0,
+    memory: totalRAM = 0
+  } = total || {};
+  const {
+    cpu: usedCPU = 0,
+    gpu: usedGPU = 0,
+    memory: usedRAM = 0
+  } = used || {};
+  const availableCPU = Math.max(0, totalCPU - usedCPU);
+  const availableGPU = Math.max(0, totalGPU - usedGPU);
+  const availableRAM = Math.max(0, totalRAM - usedRAM);
+  return {
+    ...(nodeResources || {}),
+    available: {
+      cpu: availableCPU,
+      gpu: availableGPU,
+      memory: availableRAM
+    }
+  };
+}
+
+export function getInstanceResourcesAvailability (resources, requests, config) {
+  const nodesAvailability = (resources || []).map(getNodeAvailability);
+  const {
+    cpu_requests_enabled: cpuRequestsEnabled = false,
+    gpu_requests_enabled: gpuRequestsEnabled = false,
+    ram_requests_enabled: ramRequestsEnabled = false
+  } = config || {};
+  const {
+    cpu: cpuRequest = 0,
+    gpu: gpuRequest = 0,
+    ram: ramRequest = 0
+  } = requests || {};
+  const getNodeScore = (node) => {
+    const {
+      available = {},
+      total = {}
+    } = node || {};
+    const {
+      cpu: cpuAvailable = 0,
+      gpu: gpuAvailable = 0,
+      memory: ramAvailable = 0
+    } = available || {};
+    const {
+      cpu: cpuTotal = 0,
+      gpu: gpuTotal = 0,
+      memory: ramTotal = 0
+    } = total || {};
+    const cpuFits = !cpuRequestsEnabled || cpuAvailable >= cpuRequest;
+    const gpuFits = !gpuRequestsEnabled || gpuAvailable >= gpuRequest;
+    const ramFits = !ramRequestsEnabled || ramAvailable >= ramRequest;
+    const fits = cpuFits && gpuFits && ramFits;
+    const maxRequest = {
+      cpu: cpuRequestsEnabled ? Math.max(1, (cpuFits ? cpuRequest : cpuAvailable)) : 0,
+      gpu: gpuRequestsEnabled ? Math.max(1, (gpuFits ? gpuRequest : gpuAvailable)) : 0,
+      ram: ramRequestsEnabled ? Math.max(1, (ramFits ? ramRequest : ramAvailable)) : 0
+    };
+    /**
+     * @param {{total: number; request: number; available: number; fits: boolean}} opts
+     * @returns {number} - score: 0 best fit; 1 - worse fit
+     */
+    const buildScore = (opts) => {
+      const {
+        request,
+        available,
+        total,
+        fits
+      } = opts;
+      return (fits ? 0 : 1) + (total > 0 ? Math.abs(available - request) / total : 1);
+    };
+    const cpuScore = buildScore({
+      request: cpuRequest,
+      available: cpuAvailable,
+      total: cpuTotal,
+      fits: cpuFits
+    });
+    const gpuScore = buildScore({
+      request: gpuRequest,
+      available: gpuAvailable,
+      total: gpuTotal,
+      fits: gpuFits
+    });
+    const ramScore = buildScore({
+      request: ramRequest,
+      available: ramAvailable,
+      total: ramTotal,
+      fits: ramFits
+    });
+    const score = cpuScore + gpuScore + ramScore;
+    return {
+      ...node,
+      score,
+      fits,
+      fitsDetails: {
+        cpu: cpuFits,
+        gpu: gpuFits,
+        ram: ramFits
+      },
+      best: maxRequest,
+      request: requests,
+      enabled: {
+        cpu: cpuRequestsEnabled,
+        gpu: gpuRequestsEnabled,
+        ram: ramRequestsEnabled
+      },
+      scores: {
+        cpu: cpuScore,
+        gpu: gpuScore,
+        ram: ramScore
+      }
+    };
+  };
+  const details = nodesAvailability.map(getNodeScore).sort((a, b) => a.score - b.score);
+  const fits = details.filter((o) => o.fits);
+  const bestFit = fits.length > 0 ? fits[0] : undefined;
+  return {
+    nodes: details,
+    best: bestFit
+  };
 }
