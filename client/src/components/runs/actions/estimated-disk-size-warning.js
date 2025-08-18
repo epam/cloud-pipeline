@@ -33,6 +33,10 @@ const TB = 1024 * GB;
 
 const MAXIMUM = 16 * TB;
 
+function filterNonEmpty (element) {
+  return typeof element === 'string' && element.length > 0;
+}
+
 function filterUnique (element, index, array) {
   return array.indexOf(element) === index;
 }
@@ -47,6 +51,7 @@ function getPaths (parameters) {
     .map(v => v.value)
     .reduce((paths, value) => ([...paths, ...(value || '').split(',')]), [])
     .map(v => v.trim())
+    .filter(filterNonEmpty)
     .filter(filterUnique);
 }
 
