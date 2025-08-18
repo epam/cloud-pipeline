@@ -92,6 +92,17 @@ class GpuUsageMonitoringServiceTest {
     }
 
     @Test
+    void shouldProcessNullUsages() {
+        final List<GpuUsages> usages = Collections.singletonList(GpuUsages.builder()
+                .usages(Collections.singletonList(null))
+                .build());
+        when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
+        when(nodeReporterService.collectGpuUsages(any())).thenReturn(usages);
+        monitor.monitor();
+        verify(monitoringElasticsearchService).saveGpuUsages(Collections.emptyList());
+    }
+
+    @Test
     void shouldProcessGpuUsages() {
         final NodeReporterGpuUsages usage1 = NodeReporterGpuUsages.builder()
                 .name(TEST)
