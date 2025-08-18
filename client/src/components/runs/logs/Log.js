@@ -109,7 +109,10 @@ import {checkRunActionAvailable, runActions} from '../actions/actions-availabili
 import {
   findReservationParameterConfig
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
-import {normalizeRunParameters} from './misc/post-process-run';
+import {
+  normalizeRunParameters,
+  sortRunParameters
+} from './misc/post-process-run';
 // eslint-disable-next-line max-len
 import ParameterValueRepresentation from '../../pipelines/launch/form/parameters/parameter/representation';
 
@@ -2209,8 +2212,10 @@ class Logs extends localization.LocalizedReactComponent {
           </table>
         </div>;
 
-      let filteredRunParameters = normalizeRunParameters(pipelineRunParameters || [])
-        .filter(p => p.name && p.value);
+      const filteredRunParameters = sortRunParameters(
+        normalizeRunParameters(pipelineRunParameters || [])
+          .filter(p => p.name && p.value)
+      );
       const getParameterType = p => {
         switch ((p.type || '').toLowerCase()) {
           case 'common':

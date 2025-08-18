@@ -20,3 +20,19 @@ export function normalizeRunParameter (runParameter) {
 export function normalizeRunParameters (runParameters) {
   return (runParameters || []).map(normalizeRunParameter);
 }
+
+function compareRunParameters (parameter1, parameter2) {
+  const {name: p1Name} = parameter1 || {};
+  const {name: p2Name} = parameter2 || {};
+  if (p1Name.startsWith('CP_') && !p2Name.startsWith('CP_')) {
+    return 1;
+  }
+  if (!p1Name.startsWith('CP_') && p2Name.startsWith('CP_')) {
+    return -1;
+  }
+  return p1Name.localeCompare(p2Name);
+}
+
+export function sortRunParameters (runParameters) {
+  return (runParameters || []).slice().sort(compareRunParameters);
+}

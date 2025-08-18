@@ -9,6 +9,7 @@ import {CP_CAP_LIMIT_MOUNTS} from '../../../../pipelines/launch/form/utilities/p
 import DataStorageList from '../../../controls/data-storage-list';
 import instanceParameters from './instance-parameters';
 import styles from './run-parameters.css';
+import {sortRunParameters} from '../../../logs/misc/post-process-run';
 
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 
@@ -205,7 +206,9 @@ class RunParametersSection extends React.Component {
     const {
       pipelineRunParameters = []
     } = run;
-    let filteredRunParameters = (pipelineRunParameters || []).filter(p => p.name && p.value);
+    const filteredRunParameters = sortRunParameters(
+      (pipelineRunParameters || []).filter(p => p.name && p.value)
+    );
     const getParameterType = p => {
       switch ((p.type || '').toLowerCase()) {
         case 'common':
