@@ -79,6 +79,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .cd("..")
                 .createFolder(inFolder)
                 .cd(inFolder)
+                .sleep(3, SECONDS)
                 .createAndEditFile(inFile, fileText)
                 .createAndEditFile(nonCopiedFile, fileText);
 
