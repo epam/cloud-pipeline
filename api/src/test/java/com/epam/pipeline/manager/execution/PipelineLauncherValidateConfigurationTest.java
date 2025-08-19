@@ -13,6 +13,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Collections;
+
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineLauncherValidateConfigurationTest {
@@ -56,6 +58,24 @@ public class PipelineLauncherValidateConfigurationTest {
 
     @Test(expected = IllegalStateException.class)
     public void checkRunLaunchWithAdvancedRunAssignPolicyIsForbiddenForSimpleUser() {
+        Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setPodAssignPolicy(
+                RunContainerSpec.builder()
+                        .selector(
+                                RunContainerSpec.PodAssignSelector.builder()
+                                        .label(SOME_LABEL)
+                                        .value(VALUE).build())
+                        .tolerances(Collections.singletonList(RunContainerSpec.PodAssignTolerance.builder()
+                                        .label(SOME_LABEL)
+                                        .value(VALUE).build()))
+                        .build()
+        );
+        pipelineLauncher.validateLaunchConfiguration(configuration);
+    }
+
+    @Test
+    public void checkRunLaunchWithAdvancedRunAssignPolicyWithoutToleranceAllowedForSimpleUser() {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setPodAssignPolicy(
