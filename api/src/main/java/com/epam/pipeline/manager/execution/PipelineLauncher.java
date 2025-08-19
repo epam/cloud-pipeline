@@ -64,7 +64,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -251,9 +250,7 @@ public class PipelineLauncher {
         if (!isAdvancedRunAssignPolicy) {
             return;
         }
-        final boolean hasTolerance = ListUtils.emptyIfNull(configuration.getPodAssignPolicy().getTolerances()).stream()
-                .anyMatch(Objects::nonNull);
-        if (!hasTolerance) {
+        if (CollectionUtils.isEmpty(configuration.getPodAssignPolicy().getTolerances())) {
             return;
         }
         final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
