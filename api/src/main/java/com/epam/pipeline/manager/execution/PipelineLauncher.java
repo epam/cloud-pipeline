@@ -64,6 +64,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -247,15 +248,21 @@ public class PipelineLauncher {
         final boolean isAdvancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
                 .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
-        if (isAdvancedRunAssignPolicy) {
-            final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
-                    .map(Role::getName).collect(Collectors.toList());
-            if (userRoles.contains(DefaultRoles.ROLE_ADVANCED_RUN_POLICY_MANAGER.getName())) {
-                return;
-            }
-            throw new IllegalStateException(
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
+        if (!isAdvancedRunAssignPolicy) {
+            return;
         }
+        final boolean hasTolerance = ListUtils.emptyIfNull(configuration.getPodAssignPolicy().getTolerances()).stream()
+                .anyMatch(Objects::nonNull);
+        if (!hasTolerance) {
+            return;
+        }
+        final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
+                .map(Role::getName).collect(Collectors.toList());
+        if (userRoles.contains(DefaultRoles.ROLE_ADVANCED_RUN_POLICY_MANAGER.getName())) {
+            return;
+        }
+        throw new IllegalStateException(
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
     }
 
     private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,
