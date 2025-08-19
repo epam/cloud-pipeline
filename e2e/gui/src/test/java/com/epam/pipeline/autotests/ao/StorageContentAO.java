@@ -522,7 +522,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO markCheckboxByName(String name) {
         SelenideElement checkBox = context().shouldBe(visible)
                 .find(byText(format("%s", name)))
-                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
+                .parent()
+                .parent()
+                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"))
+                .find(className("ant-checkbox"));
         checkBox.shouldBe(visible).click();
         return this;
     }
