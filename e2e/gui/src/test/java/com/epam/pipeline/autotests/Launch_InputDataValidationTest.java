@@ -51,7 +51,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
     private final String commonFile2 = "common2.txt";
     private final String commonFile3 = "common3.txt";
     private final String commonFile4 = "common4.txt";
-    private final String inFile = "in.txt";
+    private final String inFile = "infile.txt";
     private final String nonCopiedFile = "nonCopied.txt";
     private final String fileText = "editable file text " + Utils.randomSuffix();
     private final String outputPath = String.format("%s://%s/%s", PREFIX, storage, outFolder);
