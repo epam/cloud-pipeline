@@ -376,23 +376,30 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                                  final Path mountFolder,
                                                  final Map<String, SearchHit> searchHitMap,
                                                  final NFSObserverEvent event) {
-        Assert.isTrue(mountFolder.toFile().exists(),
-                      String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...", mountFolder));
-        log.debug("Processing event: [{}, {}, {}]",
-                  event.getEventType().name(), event.getStorage(), event.getFilePath());
-        final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
-        final boolean fileExists = absoluteFilePath.toFile().exists();
-        log.debug("Checking file existence at {}: {}", absoluteFilePath, fileExists);
-        if (fileExists) {
-            log.debug("Creating storage file update request");
-            return convertToStorageFile(absoluteFilePath, mountFolder);
-        } else {
-            Optional.ofNullable(searchHitMap.get(event.getFilePath()))
-                .map(hit -> {
-                    log.debug("Creating storage file removal request");
-                    return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId());
-                })
-                .ifPresent(requestContainer::add);
+        try {
+            Assert.isTrue(mountFolder.toFile().exists(),
+                    String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...", mountFolder));
+            log.debug("Processing event: [{}, {}, {}]",
+                    event.getEventType().name(), event.getStorage(), event.getFilePath());
+            final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
+            final boolean fileExists = absoluteFilePath.toFile().exists();
+            log.debug("Checking file existence at {}: {}", absoluteFilePath, fileExists);
+            if (fileExists) {
+                log.debug("Creating storage file update request");
+                return convertToStorageFile(absoluteFilePath, mountFolder);
+            } else {
+                Optional.ofNullable(searchHitMap.get(event.getFilePath()))
+                        .map(hit -> {
+                            log.debug("Creating storage file removal request");
+                            return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId());
+                        })
+                        .ifPresent(requestContainer::add);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Failed to process event [{}, {}, {}]",
+                    event.getEventType().name(), event.getStorage(), event.getFilePath());
+            log.error(e.getMessage(), e);
             return null;
         }
     }
