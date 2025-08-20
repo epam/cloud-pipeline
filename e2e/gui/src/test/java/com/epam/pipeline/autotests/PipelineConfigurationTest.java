@@ -188,11 +188,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             })
             .sleep(5, SECONDS)
             .editConfiguration(defaultProfile, profile ->
-                profile.refresh().ensure(byValue(firstParameter), exist)
+                profile.refresh().ensure(byText(firstParameter), exist)
                        .ensure(byValue(firstParameterValue), visible)
             )
             .editConfiguration(anotherProfile, profile ->
-                profile.refresh().ensure(byValue(secondParameter), exist)
+                profile.refresh().ensure(byText(secondParameter), exist)
                        .ensure(byValue(secondParameterValue), visible)
             );
     }
