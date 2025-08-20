@@ -199,6 +199,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FILE);
         $$(byId("name")).findBy(visible).setValue(fileName);
         $(button("OK")).shouldBe(visible).click();
+        $$(byClassName("browser__name-cell")).findBy(text(fileName)).waitUntil(exist, DEFAULT_TIMEOUT);
         return this;
     }
 
