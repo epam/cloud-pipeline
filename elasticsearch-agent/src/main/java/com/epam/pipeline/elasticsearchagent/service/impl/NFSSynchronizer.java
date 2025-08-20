@@ -48,6 +48,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -178,8 +179,9 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         try (IndexRequestContainer walker = new IndexRequestContainer(requests ->
                 elasticsearchServiceClient.sendRequests(indexName, requests), bulkInsertSize);
              Stream<Path> paths = Files.walk(mountFolder)) {
+            final LinkOption[] options = { LinkOption.NOFOLLOW_LINKS };
             final Stream<DataStorageFile> files = paths
-                    .filter(path -> path.toFile().isFile())
+                    .filter(path -> path.toFile().isFile() && Files.isRegularFile(path, options))
                     .map(path -> convertToStorageFile(path, mountFolder));
             processFilesTagsInChunks(dataStorage, files)
                     .map(file -> createIndexRequest(file, indexName, dataStorage, regionCode, permissionsContainer,
