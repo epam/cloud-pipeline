@@ -41,6 +41,10 @@ function filterUnique (element, index, array) {
   return array.indexOf(element) === index;
 }
 
+function filterObjectStorages (element) {
+  return typeof element === 'string' && /^(s3|az|gs|cp):\/\//i.test(element);
+}
+
 function getPaths (parameters) {
   const types = [
     'input',
@@ -52,7 +56,8 @@ function getPaths (parameters) {
     .reduce((paths, value) => ([...paths, ...(value || '').split(',')]), [])
     .map(v => v.trim())
     .filter(filterNonEmpty)
-    .filter(filterUnique);
+    .filter(filterUnique)
+    .filter(filterObjectStorages);
 }
 
 @inject((stores, {parameters, skipCheck}) => {
