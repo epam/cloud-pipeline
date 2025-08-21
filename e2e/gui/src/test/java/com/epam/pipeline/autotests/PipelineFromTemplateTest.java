@@ -69,6 +69,7 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
                 .firstVersion()
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion()
