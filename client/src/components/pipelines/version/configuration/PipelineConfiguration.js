@@ -172,8 +172,10 @@ export default class PipelineConfiguration extends React.Component {
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
-      const [configuration] = this.props.configurations.value
-        .filter(c => c.default);
+      const configs = this.props.configurations.value || [];
+      const configuration = configs.find(c => c.default) ||
+        configs.find(c => /^default$/i.test(c.name)) ||
+        configs[0];
       if (configuration) {
         return configuration.name;
       }

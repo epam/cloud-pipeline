@@ -163,6 +163,7 @@ import {
   findReservationParameterConfig,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
+import Markdown from '../../../special/markdown';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -2609,6 +2610,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {isRawEditEnabled, pipeline} = this.state;
     const {detached} = this.props;
     const pipelineSelected = pipeline !== undefined && pipeline !== null;
+    let description;
+    if (!system) {
+      const {
+        configuration_description: configurationDescription
+      } = this.props.parameters || {};
+      description = configurationDescription;
+    }
     return [
       <Parameters
         key={`${system ? 'system' : 'default'}-parameters`}
@@ -2632,6 +2640,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }}
         detached={detached}
         pipeline={pipelineSelected}
+        description={description ? (<Markdown md={description} />) : undefined}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}

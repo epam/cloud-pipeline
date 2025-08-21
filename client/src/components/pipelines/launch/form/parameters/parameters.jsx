@@ -145,7 +145,8 @@ class Parameters extends Component {
       navigationRef,
       detached,
       pipeline,
-      parameterRowClassName
+      parameterRowClassName,
+      description
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
@@ -246,6 +247,13 @@ class Parameters extends Component {
             )
           }
           {
+            description && (
+              <div key={`parameters-description`} className={styles.parametersGroupContainer}>
+                {description}
+              </div>
+            )
+          }
+          {
             showRootEntityId && (
               <div key={`root-entity-type-section`} className={styles.parametersGroupContainer}>
                 <RootEntityTypeParameter
@@ -329,7 +337,8 @@ Parameters.propTypes = {
   navigationRef: PropTypes.func,
   detached: PropTypes.bool,
   pipeline: PropTypes.bool,
-  parameterRowClassName: PropTypes.string
+  parameterRowClassName: PropTypes.string,
+  description: PropTypes.node
 };
 
 export default Parameters;
