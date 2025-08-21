@@ -84,7 +84,7 @@ import java.util.stream.Stream;
 @Getter
 @Setter
 @RequiredArgsConstructor
-@ConditionalOnProperty(value = "logging.provider", havingValue = "elastic")
+@ConditionalOnProperty(value = "logging.provider", havingValue = "elastic", matchIfMissing = true)
 public class ElasticLogManager implements LogManager {
 
     private static final String ES_WILDCARD = "*";
