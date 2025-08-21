@@ -26,18 +26,23 @@ class InstanceSelectionError(RuntimeError):
 
 class InstanceDemand:
 
-    def __init__(self, instance, owner):
+    def __init__(self, instance, owner, demand=None):
         """
         Execution instance demand.
         """
         self.instance = instance
         self.owner = owner
+        self.demand = demand
+
+    @property
+    def _dict_(self):
+        return  {k: v for k, v in self.__dict__.items() if k != 'demand'}
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        return self._dict_ == other._dict_
 
     def __repr__(self):
-        return str(self.__dict__)
+        return str(self._dict_)
 
 
 class GridEngineInstanceSelector:
@@ -92,7 +97,7 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                            best_demand.mem, best_supply.mem,
                            best_demand.exc, best_supply.exc,
                            best_supply.owner))
-            yield InstanceDemand(best_instance, best_supply.owner)
+            yield InstanceDemand(best_instance, best_supply.owner, demand=best_demand)
 
     def _apply(self, demands, supply):
         remaining_supply = supply

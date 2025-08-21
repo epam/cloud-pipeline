@@ -86,7 +86,10 @@ class GridEngineScaleUpOrchestrator:
         run_id_queue = Queue()
         for instance_demand in instance_demands:
             thread = threading.Thread(target=self.scale_up_handler.scale_up,
-                                      args=(instance_demand.instance, instance_demand.owner, run_id_queue))
+                                      args=(instance_demand.instance,
+                                            instance_demand.owner,
+                                            run_id_queue,
+                                            instance_demand.demand))
             thread.setDaemon(True)
             thread.start()
             threads.append(thread)
@@ -119,7 +122,7 @@ class GridEngineScaleUpOrchestrator:
 
 class DoNothingScaleUpHandler:
 
-    def scale_up(self, instance, owner, run_id_queue):
+    def scale_up(self, instance, owner, run_id_queue, demand=None):
         pass
 
 
@@ -133,7 +136,8 @@ class GridEngineScaleUpHandler:
     def __init__(self, cmd_executor, api, grid_engine, launch_adapter, host_storage, parent_run_id, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
                  polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock(),
+                 transfer_requests_to_pipe=False):
         """
         Grid engine scale up handler.
 
@@ -177,8 +181,9 @@ class GridEngineScaleUpHandler:
         self.ge_polling_timeout = ge_polling_timeout
         self.instance_launch_params = instance_launch_params or {}
         self.clock = clock
+        self.transfer_requests_to_pipe = transfer_requests_to_pipe
 
-    def scale_up(self, instance, owner, run_id_queue):
+    def scale_up(self, instance, owner, run_id_queue, demand=None):
         """
         Scales up an additional worker.
 
@@ -191,7 +196,7 @@ class GridEngineScaleUpHandler:
         """
         try:
             Logger.info('Scaling up additional worker (%s)...' % instance.name)
-            run_id = self._launch_additional_worker(instance.name, owner)
+            run_id = self._launch_additional_worker(instance.name, owner, demand)
             run_id_queue.put(run_id)
             host = self._retrieve_pod_name(run_id)
             self.host_storage.add_host(host)
@@ -210,11 +215,12 @@ class GridEngineScaleUpHandler:
         #  On the other hand, some jobs may finish between our checks so the program may stuck until host is filled
         #  with some task.
 
-    def _launch_additional_worker(self, instance, owner):
+    def _launch_additional_worker(self, instance, owner, demand=None):
         Logger.info('Launching additional worker (%s)...' % instance)
         instance_dynamic_launch_params = {
             self.owner_param_name: owner
         }
+        self._update_capacity_block_params_if_required(instance_dynamic_launch_params, demand)
         # todo: Use api client here
         pipe_run_command = 'pipe run --yes --quiet ' \
                            '--instance-disk %s ' \
@@ -236,6 +242,26 @@ class GridEngineScaleUpHandler:
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker #%s (%s) has been launched.' % (run_id, instance))
         return run_id
+
+    def _update_capacity_block_params_if_required(self, params, demand=None):
+        if not self.transfer_requests_to_pipe:
+            return
+        if not demand:
+            return
+        try:
+            if demand.cpu and int(demand.cpu) > 0:
+                params.update({'CP_CAP_REQUESTS_CPU': demand.cpu})
+            if demand.gpu and int(demand.gpu) > 0:
+                params.update({'CP_CAP_REQUESTS_GPU': demand.gpu})
+            if demand.mem and int(demand.mem) > 0:
+                params.update({'CP_CAP_REQUESTS_RAM': self._gb_to_bytes(demand.mem)})
+        except Exception as e:
+            Logger.warn('Failed to pass requests to pipe: %s' % str(e))
+            Logger.warn(traceback.format_exc())
+
+
+    def _gb_to_bytes(self, value):
+        return value * (2 ** 30)
 
     def _parameters_str(self, instance_launch_params):
         return ' '.join("{} '{}'".format(key, value) for key, value in instance_launch_params.items())
