@@ -402,6 +402,7 @@ class EditRoleDialog extends React.Component {
       users: [],
       usersInitial: [],
       usersInitialized: false,
+      userDefault: undefined,
       instanceTypesChanged: false
     }, this.props.onClose);
   };
@@ -715,11 +716,13 @@ class EditRoleDialog extends React.Component {
     const {
       defaultStorageIdInitial,
       defaultProfileIdInitial,
+      userDefaultInitial,
       profilesInitial,
       usersInitial
     } = this.state;
     this.setState({
       defaultStorageId: defaultStorageIdInitial,
+      userDefault: userDefaultInitial,
       defaultProfileId: defaultProfileIdInitial,
       users: usersInitial.map(u => u),
       metadata: undefined,
