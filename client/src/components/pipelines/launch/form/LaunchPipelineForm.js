@@ -2613,7 +2613,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let description;
     if (!system) {
       const {
-        configuration_description: configurationDescription
+        config_description: configurationDescription
       } = this.props.parameters || {};
       description = configurationDescription;
     }
