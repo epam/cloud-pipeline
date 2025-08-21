@@ -25,7 +25,7 @@ export function readReservationParameters (parameters = {}) {
     if (typeof o === 'string' && !Number.isNaN(Number(o))) {
       return Number(o);
     }
-    return 1;
+    return 0;
   };
   return {
     cpu: asNumber(cpu),
@@ -36,14 +36,14 @@ export function readReservationParameters (parameters = {}) {
 
 export function reservationParametersDiffer (a, b) {
   const {
-    cpu: aCpu = 1,
-    gpu: aGpu = 1,
-    ram: aRam = 1
+    cpu: aCpu = 0,
+    gpu: aGpu = 0,
+    ram: aRam = 0
   } = a || {};
   const {
-    cpu: bCpu = 1,
-    gpu: bGpu = 1,
-    ram: bRam = 1
+    cpu: bCpu = 0,
+    gpu: bGpu = 0,
+    ram: bRam = 0
   } = b || {};
   return aCpu !== bCpu || aGpu !== bGpu || aRam !== bRam;
 }
