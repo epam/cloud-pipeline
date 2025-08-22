@@ -178,6 +178,9 @@ public class EC2Helper implements EC2GpuHelper {
     }
 
     private Optional<Pair<String, GpuDevice>> toInstanceGpu(final InstanceTypeInfo info) {
+        if (Objects.isNull(info.getGpuInfo()) || CollectionUtils.isEmpty(info.getGpuInfo().getGpus())) {
+            return Optional.empty();
+        }
         return info.getGpuInfo().getGpus().stream().findFirst()
                 .map(gpu -> Pair.of(info.getInstanceType(), GpuDevice.from(gpu.getName(), gpu.getManufacturer())));
     }
