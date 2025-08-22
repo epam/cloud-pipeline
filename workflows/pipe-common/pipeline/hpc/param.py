@@ -321,7 +321,7 @@ class GridEngineQueueParameters(GridEngineParametersGroup):
             name='CP_CAP_KUBE', type=PARAM_BOOL, default=False,
             help='Enables Kubernetes grid engine.')
         self.transfer_requests_to_pipe = GridEngineParameter(
-            name='CP_CAP_GE_TRANSLATE_REQUESTS_TO_PIPE', type=PARAM_BOOL, default=False,
+            name='CP_CAP_AUTOSCALE_MAP_REQUESTS_TO_PIPE', type=PARAM_BOOL, default=False,
             help='Transfers consumable resources to pipe command parameters.')
 
 
