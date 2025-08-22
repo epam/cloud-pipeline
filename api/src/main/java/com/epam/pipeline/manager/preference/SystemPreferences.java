@@ -541,6 +541,9 @@ public class SystemPreferences {
      */
     public static final BooleanPreference CLUSTER_RANDOM_SCHEDULING = new BooleanPreference("cluster.random.scheduling",
                                                                                            false, CLUSTER_GROUP, pass);
+    public static final BooleanPreference CLUSTER_DISABLE_REASSIGN = new BooleanPreference("cluster.disable.reassign",
+            false, CLUSTER_GROUP, pass);
+
 
     public static final IntPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_DELAY = new IntPreference(
             "cluster.instance.defunct.container.monitoring.delay", 300,
