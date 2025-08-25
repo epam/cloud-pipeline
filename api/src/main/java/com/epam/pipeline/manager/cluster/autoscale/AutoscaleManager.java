@@ -470,7 +470,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     handleLostRun(client, pod, runId);
                 }
             }
-            if (!CollectionUtils.isEmpty(checkedPods) && !randomScheduling) {
+            if (!CollectionUtils.isEmpty(checkedPods)) {
+                if (randomScheduling) {
+                    return checkedPods;
+                }
                 checkedPods.sort((p1, p2) -> {
                     Long parentId1 = parentIds.get(p1);
                     Long parentId2 = parentIds.get(p2);
