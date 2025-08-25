@@ -297,6 +297,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     dockerImageBrowserVisible: false,
     pipeline: null,
     version: null,
+    pipelineChanged: false,
     pipelineConfiguration: null,
     launchCluster: false,
     autoScaledCluster: false,
@@ -1198,6 +1199,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         dockerImageBrowserVisible: false,
         pipeline: null,
         version: null,
+        pipelineChanged: false,
         pipelineConfiguration: null,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
@@ -2217,9 +2219,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (pipeline) {
       const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
       if (existedPipeline) {
+        const hide = message.loading('Updating configuration...', 0);
         this.setState({
           pipeline: existedPipeline,
           version: pipeline.version,
+          pipelineChanged: true,
           pipelineConfiguration: pipeline.configuration,
           fireCloudMethodName: null,
           fireCloudMethodNamespace: null,
@@ -2238,11 +2242,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               pipeline: existedPipeline,
               version: pipeline.version,
               configuration: pipeline.configuration
-            }, () => {
-              this.prevParameters = this.props.form.getFieldsValue().parameters;
-              this.reset(true);
-              this.evaluateEstimatedPrice({});
+            }, (anError) => {
+              hide();
+              if (anError) {
+                message.error(anError, 5);
+              } else {
+                this.prevParameters = this.props.form.getFieldsValue().parameters;
+                this.reset(true);
+                this.evaluateEstimatedPrice({});
+              }
             });
+          } else {
+            hide();
           }
         });
       }
@@ -2289,12 +2300,36 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return undefined;
     }
     let inputValue;
-    if (this.state.pipeline) {
-      inputValue = this.state.pipeline.name;
-      if (this.state.version && !this.state.pipeline.unknown) {
-        let versionStr = `(${this.state.version})`;
-        if (this.state.pipelineConfiguration) {
-          versionStr = `(${this.state.version} - ${this.state.pipelineConfiguration})`;
+    const {
+      pipeline,
+      version,
+      pipelineConfiguration
+    } = this.state;
+    const isLatestVersion = !!pipeline && !!version && /^latest$/i.test(version);
+    const onRefreshClick = () => {
+      const {id} = pipeline || {};
+      if (id !== undefined && id !== null) {
+        const selectPipeline = () => this.selectPipeline(
+          {id, version, configuration: pipelineConfiguration}
+        );
+        Modal.confirm({
+          title: 'Are you sure you want to refresh configuration?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          content: 'Current parameters and values may be lost.',
+          onOk: selectPipeline,
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      }
+    };
+    if (pipeline) {
+      inputValue = pipeline.name;
+      if (version && !pipeline.unknown) {
+        let versionStr = `(${version})`;
+        if (pipelineConfiguration) {
+          versionStr = `(${version} - ${pipelineConfiguration})`;
         }
         inputValue = `${inputValue} ${versionStr}`;
       }
@@ -2330,7 +2365,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.openPipelineBrowser}>
               <Icon type="export" />
             </div>
-          } />
+          }
+          addonAfter={isLatestVersion ? (
+            <div className={styles.inputAddonButton} onClick={onRefreshClick}>
+              Refresh configuration
+            </div>
+          ) : undefined}
+        />
       </FormItem>
     );
   };
@@ -4522,7 +4563,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
     const onUploaded = (files) => {
       (async () => {
-        const hide = message.loading('Applying parameters', -1);
+        const hide = message.loading('Applying parameters', 0);
         try {
           const {
             detached = false

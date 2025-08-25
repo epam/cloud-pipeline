@@ -132,6 +132,7 @@ function pipelineCheck (props, state) {
     fireCloudOutputsLength: Object.keys(state.fireCloudOutputs).length
   };
   return (
+    state.pipelineChanged ||
     initial.pipeline !== current.pipeline ||
     initial.version !== current.version ||
     initial.pipelineConfiguration !== current.pipelineConfiguration ||
