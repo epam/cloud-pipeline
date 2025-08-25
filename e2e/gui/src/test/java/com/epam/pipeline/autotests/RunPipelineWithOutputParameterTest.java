@@ -69,6 +69,7 @@ public class RunPipelineWithOutputParameterTest extends AbstractAutoRemovingPipe
                 .ok()
                 .close()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();

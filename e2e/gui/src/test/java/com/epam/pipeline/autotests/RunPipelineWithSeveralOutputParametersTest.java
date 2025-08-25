@@ -73,6 +73,7 @@ public class RunPipelineWithSeveralOutputParametersTest extends AbstractAutoRemo
                 .ok()
                 .close()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();
