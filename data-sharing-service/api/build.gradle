@@ -14,83 +14,101 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        mavenCentral()
-        mavenCentral()
-    }
-}
-
 plugins {
-    id "io.spring.dependency-management" version "1.0.5.RELEASE"
-    id 'org.springframework.boot' version "1.5.2.RELEASE"
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' version '3.5.3'
     id 'java'
-    id "checkstyle"
-    id "pmd"
+    id 'checkstyle'
+    id 'pmd'
+    id("org.openrewrite.rewrite") version("latest.release")
 }
 
-
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 }
 
-jar {
-    archiveName "data-sharing-service.jar"
+bootJar {
+    archiveFileName = "data-sharing-service.jar"
+}
+
+rewrite {
+    activeRecipe("org.openrewrite.openapi.swagger.SwaggerToOpenAPI")
+    setExportDatatables(true)
 }
 
 dependencies {
     // Core library
-    compile project(":cloud-pipeline-common:model")
+    implementation project(":cloud-pipeline-common:model")
 
     // Spring Boot
-    compile("org.springframework.boot:spring-boot-starter")
-    compile("org.springframework.boot:spring-boot-starter-web")
+    implementation 'org.springframework.boot:spring-boot-starter:3.5.3'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.5.3'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2:3.5.3'
+    implementation 'org.springframework.boot:spring-boot-starter-security:3.5.3'
+    implementation 'org.apache.commons:commons-fileupload2-jakarta:2.0.0-M1'
+
+
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
     }
 
-    // Spring Security
-    compile('org.springframework.boot:spring-boot-starter-security')
-    compile group: 'org.springframework.security.extensions', name: 'spring-security-saml2-core', version: '1.0.2.RELEASE'
-    compile 'com.auth0:java-jwt:3.1.0'
+    //Security
+    implementation 'org.springframework.security:spring-security-saml2-service-provider:6.5.1'
+    implementation 'com.auth0:java-jwt:3.1.0'
+
+    implementation 'org.opensaml:opensaml-core:4.3.2'
+    implementation 'org.opensaml:opensaml-saml-api:4.3.2'
+    implementation 'org.opensaml:opensaml-saml-impl:4.3.2'
+    implementation 'net.shibboleth.utilities:java-support:8.4.2'
+
 
     // Logging
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
+    //implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
+    //implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
+    //implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
+    //implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
+    //implementation group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
 
     // Jackson
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.7'
-    compile group: "com.fasterxml.jackson.datatype", name: "jackson-datatype-jsr310", version: "2.8.7"
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.7'
+    implementation group: "com.fasterxml.jackson.datatype", name: "jackson-datatype-jsr310", version: "2.8.7"
 
 
     //Lombok
-    compileOnly "org.projectlombok:lombok:1.16.20"
-    testCompileOnly "org.projectlombok:lombok:1.16.20"
+    implementation "org.projectlombok:lombok:1.18.34"
+    annotationProcessor "org.projectlombok:lombok:1.18.34"
 
     // Swagger
-    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'
-    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.6.1'
+    //implementation 'io.swagger.core.v3:swagger-annotations-jakarta:2.2.35'
+    //implementation 'io.swagger.core.v3:swagger-core:2.2.35'
+    implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'
+    implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.6.1'
 
     // Apache Commons
-    compile group: 'commons-io', name: "commons-io", version: "2.4"
-    compile group: 'org.apache.commons', name: "commons-lang3", version: "3.0"
+    implementation group: 'commons-io', name: "commons-io", version: "2.4"
+    implementation group: 'org.apache.commons', name: "commons-lang3", version: "3.0"
+    implementation group: "org.apache.commons", name: "commons-collections4", version: '4.2'
 
     // Retrofit
-    compile group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
-    compile group: 'com.squareup.retrofit2', name: 'converter-jackson', version: '2.3.0'
-    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.1'
+    implementation group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
+    implementation group: 'com.squareup.retrofit2', name: 'converter-jackson', version: '2.3.0'
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.1'
 
     // Testing
-    testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.springframework.security', name: 'spring-security-test', version: '4.2.2.RELEASE'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'org.springframework.security', name: 'spring-security-test', version: '4.2.2.RELEASE'
+
+    rewrite("org.openrewrite.recipe:rewrite-openapi:0.24.0")
 }
 
 build.mustRunAfter ':data-sharing-service:client:buildUI'
-bootRepackage.mustRunAfter ':data-sharing-service:client:buildUI'
+bootJar.mustRunAfter ':data-sharing-service:client:buildUI'

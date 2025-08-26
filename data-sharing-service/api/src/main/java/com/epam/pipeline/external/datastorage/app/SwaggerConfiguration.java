@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.external.datastorage.app;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -45,7 +45,7 @@ public class SwaggerConfiguration {
             .paths(PathSelectors.any())
             .build()
             .apiInfo(apiInfo())
-            .pathProvider(new RelativePathProvider(servletContext) {
+            /*.pathProvider(new RelativePathProvider(servletContext) {
                 @Override
                 protected String applicationPath() {
                     return servletContext.getContextPath() + "/restapi";
@@ -53,7 +53,7 @@ public class SwaggerConfiguration {
                 @Override
                 protected String getDocumentationPath() {
                     return "/";
-                }})
+                }})*/
             .useDefaultResponseMessages(false);
 
 
