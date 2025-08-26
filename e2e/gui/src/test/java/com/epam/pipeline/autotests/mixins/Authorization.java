@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.mixins;
 
+import static com.codeborne.selenide.Selenide.refresh;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
@@ -87,6 +88,7 @@ public interface Authorization extends Navigation {
 
     default void logout() {
         if (impersonateMode()) {
+            refresh();
             if (checkImpersonation()) {
                 stopImpersonation();
             }
