@@ -21,6 +21,8 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.*;
 
 import java.util.List;
+
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -82,6 +84,8 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 getPipelineName());
         new StorageRulesTabAO(getPipelineName())
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .validateThereIsParameterOfType("result", pathToFile, ParameterType.OUTPUT,true)
                 .waitUntilLaunchButtonAppear()
                 .launchAndWaitUntilFinished(this);
