@@ -2731,9 +2731,15 @@ cat "$CP_EXEC_SCRIPT_PATH"
 echo "User script text:"
 cat "$CP_USER_SCRIPT_PATH"
 
-bash "$CP_EXEC_SCRIPT_PATH"
+if check_cp_cap "CP_EXEC_FORK"; then
+      bash "$CP_EXEC_SCRIPT_PATH" &
+      wait $!
+      CP_EXEC_RESULT=$?
+else
+      bash "$CP_EXEC_SCRIPT_PATH"
+      CP_EXEC_RESULT=$?
+fi
 
-CP_EXEC_RESULT=$?
 if [ "$CP_EXEC_TIMEOUT" ] && [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
 fi
