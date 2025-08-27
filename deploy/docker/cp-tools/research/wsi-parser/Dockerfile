@@ -114,6 +114,7 @@ RUN mkdir -p "$WSI_PARSER_HOME" && \
 ENV PATH="$WSI_PARSER_HOME/bftools:$WSI_PARSER_HOME/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION/bin:$WSI_PARSER_HOME/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION/bin:/usr/local/bin:$PATH"
 
 ADD create_deepzoom.sh "$WSI_PARSER_HOME/create_deepzoom.sh"
+ADD create_label.sh "$WSI_PARSER_HOME/create_label.sh"
 ADD create_pyramid_ome_tiff.sh "$WSI_PARSER_HOME/create_pyramid_ome_tiff.sh"
 ADD indica_tiff_to_ome_tiff.py "$WSI_PARSER_HOME/indica_tiff_to_ome_tiff.py"
 ADD process_files.py "$WSI_PARSER_HOME/process_files.py"
