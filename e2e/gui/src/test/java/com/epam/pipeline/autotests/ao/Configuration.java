@@ -116,11 +116,8 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public static By rootEntityType() {
-        return PipelineSelectors.Combiners.confine(
-                byClassName("ant-select-selection"),
-                byClassName("launch-pipeline-form__root-entity-type-container"),
-                "root entity type"
-        );
+        return By.xpath("//*[contains(@class, 'arameter-name-input__parameter-name') " +
+                "and contains(., 'Root entity type')]");
     }
 
     public static By addParameter() {
