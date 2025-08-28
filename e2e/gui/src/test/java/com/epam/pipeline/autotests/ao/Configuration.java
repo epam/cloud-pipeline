@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
+import static com.codeborne.selenide.Selenide.$$;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
@@ -34,7 +35,6 @@ import org.openqa.selenium.By;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -48,7 +48,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
-import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
@@ -254,8 +253,8 @@ public class Configuration implements AccessObject<Configuration> {
     public Configuration validateParameters(final String... parameters) {
         final ElementsCollection actualParameters = $(byId("launch-pipeline-parameters-panel"))
                 .$$(byClassName("arameter-name-input__parameter-name"));
-        IntStream.range(0, parameters.length)
-                .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i])));
+        IntStream.range(1, parameters.length)
+                .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i-1])));
         return this;
     }
 
@@ -268,6 +267,13 @@ public class Configuration implements AccessObject<Configuration> {
         return this;
     }
 
+    public Configuration selectRootEntityTypeValue(final String option) {
+        $$(byClassName("arameters__parameters-group-container")).get(0)
+                .$(byClassName("ant-select-selection")).click();
+        $$(byClassName("ant-select-dropdown-menu-item"))
+                .find(text(option)).shouldBe(visible).click();
+        return this;
+    }
 
     public Configuration setParameter(final String name, final String value) {
         final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);

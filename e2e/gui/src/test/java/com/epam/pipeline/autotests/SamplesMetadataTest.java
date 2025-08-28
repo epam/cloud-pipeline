@@ -92,7 +92,6 @@ public class SamplesMetadataTest
     private final String grch38bwa = "GRCh38_BWA";
     private final String exomePanel = "Exome_Panel";
     private final String projectOutput = "Project_Output";
-    private final String rootEntityType = "Root entity type";
     private final String referenceGenomePath = "REFERENCE_GENOME_PATH";
     private final String panel = "PANEL";
     private final String fastqR1 = "FASTQ_R1";
@@ -430,7 +429,6 @@ public class SamplesMetadataTest
                                 .ensure(comboboxOf(priceType()), text(priceType))
                                 .ensure(disk(), value(instanceDisk))
                                 .validateParameters(
-                                        rootEntityType,
                                         referenceGenomePath,
                                         panel,
                                         fastqR1,
@@ -496,9 +494,9 @@ public class SamplesMetadataTest
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(parametersTab)
-                                .selectValue(rootEntityType(), rootEntityTypeSample)
+                                .selectRootEntityTypeValue(rootEntityTypeSample)
                                 .ensure(rootEntityType(), text(rootEntityTypeSample))
-                                .selectValue(rootEntityType(), rootEntityTypeSampleSet)
+                                .selectRootEntityTypeValue(rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
                                 .click(save())
                                 .ensure(save(), disabled)
@@ -515,7 +513,8 @@ public class SamplesMetadataTest
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
-                        profile.selectValue(rootEntityType(), rootEntityTypeSample)
+                        profile
+                                .selectRootEntityTypeValue(rootEntityTypeSample)
                                 .addToParameter(fastqR1, "this.")
                                 .ensure(
                                         templatesList(),
@@ -614,7 +613,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTab(parametersTab)
-                                .selectValue(rootEntityType(), rootEntityTypeSampleSet)
+                                .selectRootEntityTypeValue(rootEntityTypeSampleSet)
                                 .setParameter(fastqR1, "this.")
                                 .ensure(
                                         templatesList(),
