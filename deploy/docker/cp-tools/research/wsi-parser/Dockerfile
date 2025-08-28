@@ -72,7 +72,7 @@ RUN mkdir -p $ANACONDA_HOME && \
 RUN source $ANACONDA_HOME/profile.sh && \
     micromamba create -y -n parser && \
     micromamba activate parser && \
-    micromamba install -y python==3.12.9
+    micromamba install -y python==3.12.9 && \
     yum install -y epel-release && \
     yum clean all && \
     yum install -y blosc \
@@ -85,7 +85,12 @@ RUN source $ANACONDA_HOME/profile.sh && \
     micromamba create -y -n indica_tiff_parser && \
     micromamba activate indica_tiff_parser && \
     micromamba install python==3.13.2 -y && \
-    pip3 install tifffile[all]==2025.2.18
+    # fixed versions for tifffile[all]==2025.2.18
+    pip3 install numpy==2.2.3 imagecodecs==2024.12.30 contourpy==1.3.1 cycler==0.12.1 defusedxml==0.7.1 \
+        asciitree==0.3.3 Deprecated==1.2.18 fasteners==0.19 fasteners==0.19 fonttools==4.56.0 fsspec==2025.2.0 \
+        kiwisolver==1.4.8 lxml==5.3.1 matplotlib==3.10.1 numcodecs==0.15.1 packaging==24.2 pillow==11.1.0 \
+        pyparsing==3.2.1 python-dateutil==2.9.0.post0 setuptools==75.8.0 six==1.17.0 tifffile==2025.2.18 \
+        wheel==0.45.1 wrapt==1.17.2 zarr==2.18.4
 
 # Install AWS CLI
 ARG AWS_CLI_DISTR_URL="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
