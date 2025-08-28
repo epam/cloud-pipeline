@@ -1,4 +1,4 @@
-# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,8 @@ RUN  yum install -y -q  gcc \
                         pkgconfig \
                         perl-XML-XPath \
                         wget \
-                        unzip
+                        unzip \
+                        bzip2
 
 ENV WSI_PARSER_HOME=/opt/local/wsi-parser
 
@@ -59,33 +60,32 @@ RUN mkdir -p $WSI_PARSER_HOME && \
     make && \
     make install
 
-ARG ANACONDA_VERSION="3-latest"
 ENV ANACONDA_HOME=/opt/local/anaconda
-ENV PATH="$PATH:$ANACONDA_HOME/bin"
-
-RUN mkdir -p "$ANACONDA_HOME" && \
+RUN mkdir -p $ANACONDA_HOME && \
     setfacl -d -m g::rwx "$ANACONDA_HOME" && \
-    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh --no-check-certificate && \
-    bash /tmp/Anaconda_Install.sh -f -b -p "$ANACONDA_HOME" && \
-    rm -f /tmp/Anaconda_Install.sh && \
-    conda init bash
-RUN source $ANACONDA_HOME/etc/profile.d/conda.sh && \
-    conda create -y -n parser && \
-    conda activate parser && \
+    cd $ANACONDA_HOME && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    echo "export PATH=$PATH:$ANACONDA_HOME/bin" > $ANACONDA_HOME/profile.sh && \
+    echo "export MAMBA_ROOT_PREFIX=$ANACONDA_HOME" >> $ANACONDA_HOME/profile.sh && \
+    echo 'eval "$(micromamba shell hook --shell bash)"' >> $ANACONDA_HOME/profile.sh
+
+RUN source $ANACONDA_HOME/profile.sh && \
+    micromamba create -y -n parser && \
+    micromamba activate parser && \
+    micromamba install -y python==3.12.9
     yum install -y epel-release && \
     yum clean all && \
     yum install -y blosc \
                    ImageMagick \
                    java-1.8.0-openjdk-devel && \
-    pip3 install generate-tiff-offsets==0.1.7 && \
-    conda deactivate
+    pip3 install generate-tiff-offsets==0.1.7 numpy==2.2.3 && \
+    ln -s $ANACONDA_HOME/envs/parser/bin/generate_tiff_offsets /usr/local/bin/generate_tiff_offsets
 
-RUN source $ANACONDA_HOME/etc/profile.d/conda.sh && \
-    conda create -y -n indica_tiff_parser && \
-    conda activate indica_tiff_parser && \
-    conda install python -y && \
-    pip3 install tifffile[all]==2025.2.18 && \
-    conda deactivate
+RUN source $ANACONDA_HOME/profile.sh && \
+    micromamba create -y -n indica_tiff_parser && \
+    micromamba activate indica_tiff_parser && \
+    micromamba install python==3.13.2 -y && \
+    pip3 install tifffile[all]==2025.2.18
 
 # Install AWS CLI
 ARG AWS_CLI_DISTR_URL="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
