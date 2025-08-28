@@ -115,6 +115,11 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public static By rootEntityType() {
+        return By.xpath("//*[contains(@class, 'aunch-form-parameter__launch-form-parameter') " +
+                "and contains(., 'Root entity type')]");
+    }
+
+    public static By rootEntityTypeValue() {
         return By.xpath("//*[contains(@class, 'arameter-name-input__parameter-name') " +
                 "and contains(., 'Root entity type')]");
     }
