@@ -214,11 +214,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                                       Map<String, RuntimeParameter> parametersMapping,
                                       Boolean randomScheduling) {
             List<CompletableFuture<Void>> tasks = new ArrayList<>();
-            List<Pod> pods = kubernetesManager.getPodList(client)
-                    .getItems()
-                    .stream()
-                    .filter(kubernetesManager::isPodUnscheduled)
-                    .collect(Collectors.toList());
+            List<Pod> pods = new ArrayList<>(kubernetesManager.getPodList(client)
+                    .getItems());
             List<Pod> orderedPipelines = getOrderedPipelines(pods, client, randomScheduling);
             Set<String> allPods = kubernetesManager.convertKubeItemsToRunIdSet(pods);
             Set<String> reassignedNodes = new HashSet<>();
