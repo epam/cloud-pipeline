@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $ANACONDA_HOME/etc/profile.d/conda.sh
-conda activate parser
 python $WSI_PARSER_HOME/process_files.py > $ANALYSIS_DIR/parser-$RUN_ID.log 2>&1
