@@ -121,7 +121,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
 
     public int index() {
         final String parameterId = context().getAttribute("class");
-        return Integer.parseInt(parameterId.replaceAll("\\D+", ""));
+        return Integer.parseInt(parameterId.substring(parameterId.indexOf("key-parameter")).replaceAll("\\D+", ""));
     }
 
     @Override
