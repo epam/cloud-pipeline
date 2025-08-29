@@ -18,9 +18,14 @@ package com.epam.pipeline.entity.cluster;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class AllowedInstanceAndPriceTypes {
 
     @JsonProperty("cluster.allowed.instance.types")

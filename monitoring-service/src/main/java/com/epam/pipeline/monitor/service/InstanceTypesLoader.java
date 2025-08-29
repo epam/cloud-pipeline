@@ -25,8 +25,8 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.InitializingBean;
 
-import javax.annotation.PostConstruct;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,12 +40,11 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class InstanceTypesLoader {
+public class InstanceTypesLoader implements InitializingBean {
     private final CloudPipelineAPIClient client;
     private final Set<String> gpuInstanceTypes = ConcurrentHashMap.newKeySet();
 
-    @PostConstruct
-    public void init() {
+    public void afterPropertiesSet() {
         try {
             refreshInstances();
         } catch (Exception e) {

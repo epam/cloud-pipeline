@@ -17,12 +17,16 @@ package com.epam.pipeline.entity.cluster.pool.filter;
 
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
 public class PoolFilter {
     private final PoolFilterOperator operator;
     private final List<PoolInstanceFilter> filters;

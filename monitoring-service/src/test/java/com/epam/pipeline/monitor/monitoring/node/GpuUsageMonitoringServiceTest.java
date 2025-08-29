@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class GpuUsageMonitoringServiceTest {
@@ -64,7 +64,7 @@ class GpuUsageMonitoringServiceTest {
     void shouldSkipProcessIfNotRequired() {
         when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(false);
         monitor.monitor();
-        verifyZeroInteractions(nodeReporterService, monitoringElasticsearchService);
+        verifyNoInteractions(nodeReporterService, monitoringElasticsearchService);
     }
 
     @Test
@@ -72,7 +72,7 @@ class GpuUsageMonitoringServiceTest {
         when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
         when(nodeReporterService.collectGpuUsages(any())).thenReturn(null);
         monitor.monitor();
-        verifyZeroInteractions(monitoringElasticsearchService);
+        verifyNoInteractions(monitoringElasticsearchService);
     }
 
     // case example: unexpected error during node reporter query

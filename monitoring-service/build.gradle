@@ -17,26 +17,29 @@
 
 plugins {
     id 'java'
-    id "jacoco"
-    id "org.sonarqube" version "2.6.1"
-    id "io.spring.dependency-management" version "1.0.6.RELEASE"
-    id "org.springframework.boot" version "2.0.2.RELEASE"
+    id 'jacoco'
+    id 'org.sonarqube' version '2.6.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' version '3.5.3'
 }
 
 group 'com.epam.pipeline'
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 bootJar {
-    archiveName "monitoring-service.jar"
+    archiveFileName = "monitoring-service.jar"
     manifest {
         attributes(
-                "Implementation-Version": "$version")
+                "Implementation-Version": version)
     }
 }
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 }
 
@@ -46,19 +49,22 @@ dependencies {
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
     }
 
     // Spring
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
 
     // Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-log4j2", version: springBootVersion
+    implementation group: "commons-io", name: "commons-io", version: apacheCommonsIOVersion
+    implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
+    implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
+
 
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
 
     // Retrofit
     implementation group: "com.squareup.retrofit2", name: "retrofit", version: retrofitVersion
@@ -80,19 +86,12 @@ dependencies {
     testImplementation group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion
 
     //Tests
+    testAnnotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
     testImplementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
-    testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
-    testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
-    testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
+    //testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
 }
 
 test {
     useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
+    reports.html.required = true
 }

@@ -18,11 +18,10 @@ package com.epam.pipeline.monitor.monitoring;
 
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import com.epam.pipeline.monitor.service.preference.PreferencesService;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
 
-import javax.annotation.PostConstruct;
-
-public class SchedulingService extends AbstractSchedulingService {
+public class SchedulingService extends AbstractSchedulingService implements InitializingBean {
     private final MonitoringService monitoringService;
     private final String monitorDelayPreferenceName;
     private final String taskName;
@@ -39,8 +38,7 @@ public class SchedulingService extends AbstractSchedulingService {
         this.taskName = taskName;
     }
 
-    @PostConstruct
-    public void init() {
+    public void afterPropertiesSet() {
         scheduleFixedDelay(monitoringService::monitor, monitorDelayPreferenceName, taskName);
     }
 }

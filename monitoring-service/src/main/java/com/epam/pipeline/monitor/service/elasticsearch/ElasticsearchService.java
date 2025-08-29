@@ -16,10 +16,11 @@
 
 package com.epam.pipeline.monitor.service.elasticsearch;
 
-import io.swagger.models.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPut;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -60,7 +61,7 @@ public class ElasticsearchService {
                 log.debug("Index with name {} already exists", indexName);
                 return;
             }
-            final Request request = new Request(HttpMethod.PUT.name(), indexName);
+            final Request request = new Request(HttpPut.METHOD_NAME, indexName);
             request.setJsonEntity(source);
 
             final Response response = elasticsearchClient.getLowLevelClient().performRequest(request);
@@ -108,7 +109,7 @@ public class ElasticsearchService {
 
     private boolean isIndexExists(final String indexName) {
         try {
-            final Request request = new Request(HttpMethod.HEAD.name(), indexName);
+            final Request request = new Request(HttpHead.METHOD_NAME, indexName);
             final Response response = elasticsearchClient.getLowLevelClient().performRequest(request);
             final int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == RestStatus.NOT_FOUND.getStatus()) {
