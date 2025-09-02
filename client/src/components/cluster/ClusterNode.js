@@ -177,6 +177,14 @@ class ClusterNode extends Component {
     if (activeTab === 'monitor' && this.windowsOS) {
       activeTab = 'info';
     }
+    const isRunId = Boolean(this.props.runId) && !this.windowsOS;
+    if (isRunId) {
+      return (
+        <div>
+          {'\u00A0'}
+        </div>
+      );
+    }
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
         <Menu
