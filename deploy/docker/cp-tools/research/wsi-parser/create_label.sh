@@ -80,7 +80,7 @@ function build_label_image() {
 log_info "Start processing label image for file: '$_FILE_PATH'"
 
 tmp_file_path="$_PARSER_LOCAL_TMP_DIR/label.jpg"
-build_label_image $_FILE_PATH $_SERIES_NUM $tmp_file_path
+build_label_image "$_FILE_PATH" $_SERIES_NUM "$tmp_file_path"
 
 label_final_cloud="$(get_cloud_path "$_LABEL_FILE_FINAL_LOCATION")"
 pipe storage rm -r -y "$label_final_cloud"
