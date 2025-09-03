@@ -36,7 +36,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-public class RestrictedAMIVerifierTest {
+public class IAMProfileVerifierTest {
     private static final String IAM_INSTANCE_PROFILE = "IamInstanceProfile";
     private static final String RESTRICTED_ROLE = "ROLE_SECRET";
     private static final String RESTRICTED_INSTANCE_TYPE = "m5.xlarge";
@@ -52,7 +52,7 @@ public class RestrictedAMIVerifierTest {
     private final CloudRegionManager regionManager = mock(CloudRegionManager.class);
     private final AuthManager authManager = mock(AuthManager.class);
 
-    private final RestrictedAMIVerifier restrictedAMIVerifier = new RestrictedAMIVerifier(
+    private final IAMProfileVerifier iamProfileVerifier = new IAMProfileVerifier(
             preferenceManager,
             regionManager,
             authManager);
@@ -68,7 +68,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isTrue();
     }
 
@@ -82,7 +82,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(ALLOWED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -95,7 +95,7 @@ public class RestrictedAMIVerifierTest {
         final PipelineUser pipelineUser = new PipelineUser();
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -109,7 +109,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setRoles(Collections.singletonList(new Role(ALLOWED_ROLE)));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -124,7 +124,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -139,7 +139,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -154,7 +154,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -169,7 +169,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -183,7 +183,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
     }
 
@@ -200,7 +200,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isTrue();
     }
 
@@ -216,7 +216,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isTrue();
     }
 
@@ -232,7 +232,7 @@ public class RestrictedAMIVerifierTest {
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
 
-        final boolean result = restrictedAMIVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isTrue();
     }
 

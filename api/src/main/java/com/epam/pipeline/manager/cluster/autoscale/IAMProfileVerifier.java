@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class RestrictedAMIVerifier {
+public class IAMProfileVerifier {
     private static final String IAM_INSTANCE_PROFILE = "IamInstanceProfile";
     private static final AntPathMatcher MATCHER = new AntPathMatcher();
 
@@ -56,16 +56,6 @@ public class RestrictedAMIVerifier {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public boolean isImageRestricted(final PipelineRun run) {
         try {
-            final String instanceType = run.getInstance().getNodeType();
-            if (StringUtils.isBlank(instanceType)) {
-                log.warn("Cannot determine instance type for run '{}'", run.getId());
-                return false;
-            }
-            final String targetImage = run.getDockerImage();
-            if (StringUtils.isBlank(targetImage)) {
-                log.warn("Cannot determine docker image for run '{}'", run.getId());
-                return false;
-            }
             final Long runRegionId = run.getInstance().getCloudRegionId();
             if (Objects.isNull(runRegionId)) {
                 log.warn("Cannot determine region for run '{}'", run.getId());
@@ -75,6 +65,16 @@ public class RestrictedAMIVerifier {
             final List<AMIConfiguration> amiConfigurations = fetchIamInstanceProfilesConfigs(runRegion);
             if (CollectionUtils.isEmpty(amiConfigurations)) {
                 log.debug("No IAM instance profiles found for region '{}'", runRegion);
+                return false;
+            }
+            final String instanceType = run.getInstance().getNodeType();
+            if (StringUtils.isBlank(instanceType)) {
+                log.warn("Cannot determine instance type for run '{}'", run.getId());
+                return false;
+            }
+            final String targetImage = run.getDockerImage();
+            if (StringUtils.isBlank(targetImage)) {
+                log.warn("Cannot determine docker image for run '{}'", run.getId());
                 return false;
             }
             log.debug("Found '{}' IAM instance profiles found for region '{}'", amiConfigurations.size(), runRegion);
