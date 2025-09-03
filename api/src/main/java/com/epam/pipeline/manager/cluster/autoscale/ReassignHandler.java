@@ -60,18 +60,20 @@ public class ReassignHandler {
     private final PipelineRunManager pipelineRunManager;
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
     private final MetadataManager metadataManager;
-
+    private final RestrictedAMIVerifier restrictedAMIVerifier;
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
                            final PipelineRunManager pipelineRunManager,
                            final List<PoolFilterHandler> filterHandlers,
-                           final MetadataManager metadataManager) {
+                           final MetadataManager metadataManager,
+                           final RestrictedAMIVerifier restrictedAMIVerifier) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
         this.metadataManager = metadataManager;
+        this.restrictedAMIVerifier = restrictedAMIVerifier;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -226,7 +228,10 @@ public class ReassignHandler {
                                 && isValueTrue(parameter.getValue()))
                         .findAny())
                 .isPresent();
-        return !(isWindowsRun || requiresNewNode || dedicatedNode);
+        final boolean isMatchRestrictedIam = pipelineRun
+                .filter(restrictedAMIVerifier::isImageRestricted)
+                .isPresent();
+        return !(isWindowsRun || requiresNewNode || dedicatedNode || isMatchRestrictedIam);
     }
 
     private boolean isValueTrue(final String value) {
