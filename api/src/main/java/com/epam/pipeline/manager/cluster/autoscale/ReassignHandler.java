@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,18 +54,20 @@ public class ReassignHandler {
     private final PipelineRunManager pipelineRunManager;
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
     private final MetadataManager metadataManager;
-
+    private final IAMProfileVerifier iamProfileVerifier;
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
                            final PipelineRunManager pipelineRunManager,
                            final List<PoolFilterHandler> filterHandlers,
-                           final MetadataManager metadataManager) {
+                           final MetadataManager metadataManager,
+                           final IAMProfileVerifier iamProfileVerifier) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
         this.metadataManager = metadataManager;
+        this.iamProfileVerifier = iamProfileVerifier;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -75,6 +77,11 @@ public class ReassignHandler {
                                    final long longId,
                                    final InstanceRequest requiredInstance,
                                    final List<String> freeNodes) {
+        final Optional<PipelineRun> pipelineRun = pipelineRunManager.findRun(longId);
+        if (!reassignAllowed(pipelineRun)) {
+            log.debug("Reassign is not allowed for run '{}'", runId);
+            return false;
+        }
         final Map<String, RunningInstance> freeInstances = ListUtils.emptyIfNull(freeNodes)
                 .stream()
                 .collect(HashMap::new,
@@ -186,6 +193,12 @@ public class ReassignHandler {
             return cloudFacade.reassignPoolNode(previousNodeId, runId, tags);
         }
         return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, tags);
+    }
+
+    private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
+        return pipelineRun
+                .filter(iamProfileVerifier::isImageRestricted)
+                .isPresent();
     }
 
     private Map<String, String> findInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
