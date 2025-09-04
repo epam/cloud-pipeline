@@ -121,7 +121,7 @@ for _path in ${_files_to_localize[@]}; do
         fi
         i=$((i+1))
         _has_something_to_localize=true
-    done <<< "$(grep -oP "$_localize_re_pattern" "$_real_path")"
+    done <<< "$(grep -oP "$_localize_re_pattern" "$_real_path" | sort | uniq)"
 done
 
 if [ "$_has_something_to_localize" != "true" ]; then
