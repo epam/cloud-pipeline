@@ -159,6 +159,12 @@ Log "Loading environment..."
 Log "Checking AWS CLI environment variables..."
 if (-not("$env:AWSCLI_DISTRIBUTION_PATH")) {
     Log "AWSCLI_DISTRIBUTION_PATH environment variable is not set, probably an outdated script version, updating Environment.ps1"
+    if (-not("$env:API_PUBLIC_KEY")) {
+        $env:API_PUBLIC_KEY = "$env:CP_API_JWT_KEY_PUBLIC"
+    }
+    if (-not("$env:DTS_NAME")) {
+        $env:DTS_NAME = "$env:DTS_LOCAL_NAME"
+    }
     WriteEnvironmentFile -Path "Environment.ps1"
     Log "Re-Loading environment..."
     . .\Environment.ps1
