@@ -38,6 +38,45 @@ function RemoveFileIfExists($Path) {
     }
 }
 
+function WriteEnvironmentFile($Path) {
+    RemoveFileIfExists -Path "$Path"
+    @"
+`$env:API = "$env:API"
+`$env:API_TOKEN = "$env:API_TOKEN"
+`$env:DISTRIBUTION_URL = "$env:DISTRIBUTION_URL"
+`$env:DTS_DIR = "$env:DTS_DIR"
+`$env:APP_HOME = "$env:DTS_DIR\app"
+`$env:JAVA_HOME = "$env:DTS_DIR\app\jre"
+`$env:PIPE_DIR = "$env:DTS_DIR\pipe"
+`$env:DTS_LOGS_DIR = "$env:DTS_DIR\logs"
+`$env:DTS_LOCKS_DIR = "$env:DTS_DIR\locks"
+`$env:DTS_LAUNCHER_LOG_PATH = "$env:DTS_DIR\logs\launcher.log"
+`$env:DTS_RESTART_DELAY_SECONDS = "10"
+`$env:DTS_FINISH_DELAY_SECONDS = "10"
+`$env:DTS_RESTART_INTERVAL = "PT1M"
+`$env:DTS_LAUNCHER_URL = "$env:DISTRIBUTION_URL/DeployDts.ps1"
+`$env:DTS_LAUNCHER_PATH = "$env:DTS_DIR\DeployDts.ps1"
+`$env:DTS_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/data-transfer-service-windows.zip"
+`$env:DTS_DISTRIBUTION_PATH = "$env:DTS_DIR\data-transfer-service-windows.zip"
+`$env:PIPE_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/pipe.zip"
+`$env:PIPE_DISTRIBUTION_PATH = "$env:DTS_DIR\pipe.zip"
+`$env:CP_API_URL = "$env:API"
+`$env:CP_API_JWT_TOKEN = "$env:API_TOKEN"
+`$env:CP_API_JWT_KEY_PUBLIC = "$env:API_PUBLIC_KEY"
+`$env:DTS_LOCAL_NAME = "$env:DTS_NAME"
+`$env:DTS_IMPERSONATION_ENABLED = "false"
+`$env:DTS_PIPE_EXECUTABLE = "$env:DTS_DIR\awscli\Amazon\AWSCLIV2\aws.exe"
+`$env:AWSCLI_DIR = "$env:DTS_DIR\awscli"
+`$env:AWSCLI_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/AWSCLIV2.msi"
+`$env:AWSCLI_DISTRIBUTION_PATH = "$env:DTS_DIR\awscli.msi"
+`$env:DTS_PIPE_CP_TEMPLATE = """'%s' s3 sync --quiet '%s' '%s'"""
+`$env:DTS_AWSCLI_DEFAULT_PROFILE = "DTS_ALL_BUCKETS"
+`$env:DTS_TRANSFER_UPLOAD_FORCE = "true"
+`$env:AWS_CONFIG_FILE = "$env:DTS_DIR\awscli\config.json"
+
+"@ | Out-File -FilePath "$Path" -Encoding ascii -Force -ErrorAction Stop
+}
+
 if ($Install) {
     Log "Installing data transfer service..."
 
@@ -51,41 +90,7 @@ if ($Install) {
     Set-Location -Path "$env:DTS_DIR"
 
     Log "Persisting environment..."
-    @"
-`$env:API = "$env:API"
-`$env:API_TOKEN = "$env:API_TOKEN"
-`$env:DISTRIBUTION_URL = "$env:DISTRIBUTION_URL"
-`$env:DTS_DIR = "$env:DTS_DIR"
-`$env:APP_HOME = "$env:DTS_DIR\app"
-`$env:JAVA_HOME = "$env:DTS_DIR\app\jre"
-`$env:PIPE_DIR = "$env:DTS_DIR\pipe"
-`$env:AWSCLI_DIR = "$env:DTS_DIR\awscli"
-`$env:DTS_LOGS_DIR = "$env:DTS_DIR\logs"
-`$env:DTS_LOCKS_DIR = "$env:DTS_DIR\locks"
-`$env:DTS_LAUNCHER_LOG_PATH = "$env:DTS_DIR\logs\launcher.log"
-`$env:DTS_RESTART_DELAY_SECONDS = "10"
-`$env:DTS_FINISH_DELAY_SECONDS = "10"
-`$env:DTS_RESTART_INTERVAL = "PT1M"
-`$env:DTS_LAUNCHER_URL = "$env:DISTRIBUTION_URL/DeployDts.ps1"
-`$env:DTS_LAUNCHER_PATH = "$env:DTS_DIR\DeployDts.ps1"
-`$env:DTS_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/data-transfer-service-windows.zip"
-`$env:DTS_DISTRIBUTION_PATH = "$env:DTS_DIR\data-transfer-service-windows.zip"
-`$env:PIPE_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/pipe.zip"
-`$env:AWSCLI_DISTRIBUTION_URL = "$env:DISTRIBUTION_URL/AWSCLIV2.msi"
-`$env:PIPE_DISTRIBUTION_PATH = "$env:DTS_DIR\pipe.zip"
-`$env:AWSCLI_DISTRIBUTION_PATH = "$env:DTS_DIR\awscli.msi"
-`$env:CP_API_URL = "$env:API"
-`$env:CP_API_JWT_TOKEN = "$env:API_TOKEN"
-`$env:CP_API_JWT_KEY_PUBLIC = "$env:API_PUBLIC_KEY"
-`$env:DTS_LOCAL_NAME = "$env:DTS_NAME"
-`$env:DTS_IMPERSONATION_ENABLED = "false"
-`$env:DTS_PIPE_EXECUTABLE = "$env:DTS_DIR\awscli\Amazon\AWSCLIV2\aws.exe"
-`$env:DTS_PIPE_CP_TEMPLATE = """'%s' s3 sync --quiet '%s' '%s'"""
-`$env:DTS_AWSCLI_DEFAULT_PROFILE = "DTS_ALL_BUCKETS"
-`$env:DTS_TRANSFER_UPLOAD_FORCE = "true"
-`$env:AWS_CONFIG_FILE = "$env:DTS_DIR\awscli\config.json"
-
-"@ | Out-File -FilePath Environment.ps1 -Encoding ascii -Force -ErrorAction Stop
+    WriteEnvironmentFile -Path "Environment.ps1"
 
     Log "Loading environment..."
     . .\Environment.ps1
@@ -150,6 +155,14 @@ if (-not(Test-Path .\Environment.ps1)) {
 
 Log "Loading environment..."
 . .\Environment.ps1
+
+Log "Checking AWS CLI environment variables..."
+if (-not("$env:AWSCLI_DISTRIBUTION_PATH")) {
+    Log "AWSCLI_DISTRIBUTION_PATH environment variable is not set, probably an outdated script version, updating Environment.ps1"
+    WriteEnvironmentFile -Path "Environment.ps1"
+    Log "Re-Loading environment..."
+    . .\Environment.ps1
+}
 
 Log "Changing working directory..."
 Set-Location -Path "$env:DTS_DIR"
