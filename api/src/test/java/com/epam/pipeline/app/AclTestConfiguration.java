@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
@@ -35,6 +36,8 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
+import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.filter.FilterManager;
@@ -281,6 +284,15 @@ public class AclTestConfiguration {
 
     @MockBean
     protected StorageRequestManager storageRequestManager;
+
+    @MockBean
+    protected InstanceOfferScheduler instanceOfferScheduler;
+
+    @MockBean
+    protected AWSOmicsStoreManager awsOmicsStoreManager;
+
+    @MockBean
+    protected StoragePathPermissionsService storagePathPermissionsService;
 
     @Bean
     public PermissionFactory permissionFactory() {

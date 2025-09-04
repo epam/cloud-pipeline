@@ -102,6 +102,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
         notificationSettingsDao.createNotificationSettings(settings);
 
         testOwner = new PipelineUser("testOwner");
+        testOwner.setOwner("testOwner");
         userDao.createUser(testOwner, Collections.emptyList());
 
         pipeline = new Pipeline();

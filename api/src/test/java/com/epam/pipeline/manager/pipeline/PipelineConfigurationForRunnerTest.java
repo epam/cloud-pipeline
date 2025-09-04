@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -27,6 +28,8 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import org.junit.Before;
@@ -46,6 +49,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private static final String TEST_IMAGE = "image";
     private static final String TEST_CPU = "500m";
@@ -64,6 +68,7 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
 
     private static final String INSTANCE_DISK_FIELD = "instanceDisk";
     private static final String WORKED_CMD_FIELD = "workerCmd";
+    public static final long PIPELINE_ID = 1L;
 
     @InjectMocks
     private PipelineConfigurationManager pipelineConfigurationManager;
@@ -81,15 +86,15 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     @MockBean
     private ToolVersionManager toolVersionManagerMock;
     @MockBean
-    @SuppressWarnings("PMD.UnusedPrivateField")
     private PipelineRunManager pipelineRunManager;
     @MockBean
     private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
-
     @Mock
-    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PreferenceManager preferenceManager;
+    @Mock
     private CloudRegionManager regionManager;
-
+    @Mock
+    private PipelineManager pipelineManager;
     private ConfigurationEntry configurationEntry;
 
     @Before
@@ -104,6 +109,11 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         configurationEntry.setConfiguration(pipelineConfiguration);
         configurationEntry.setDefaultConfiguration(true);
 
+        Pipeline pipeline = new Pipeline();
+        pipeline.setId(PIPELINE_ID);
+
+        when(pipelineManager.load(PIPELINE_ID)).thenReturn(pipeline);
+
         when(toolManagerMock.getTagFromImageName(anyString())).thenReturn("latest");
         when(gitManagerMock.getGitCredentials(anyLong())).thenReturn(null);
         when(pipelineVersionManagerMock.loadConfigurationEntry(anyLong(), anyString(), anyString()))
@@ -115,6 +125,8 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
                         .settings(Collections.singletonList(configurationEntry)).build()));
         when(launchCapabilitiesProcessor.process(any())).thenReturn(Collections.emptyMap());
+        when(preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_NETWORKS_CONFIG)).thenReturn(null);
     }
 
     @Test
