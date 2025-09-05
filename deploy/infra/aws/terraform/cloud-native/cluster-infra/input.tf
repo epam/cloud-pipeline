@@ -102,6 +102,12 @@ variable "eks_additional_role_mapping" {
   description = "List of additional roles mapping for aws_auth map."
 }
 
+variable "eks_extra_security_group_ids" {
+  type        = list(string)
+  default     = []
+  description = "List of additional SG's IDs to attach to Cloud-Pipeline's EKS. Could be useful to provide access to additional networks."
+}
+
 
 variable "eks_additional_user_mapping" {
   type = list(object({
@@ -276,6 +282,12 @@ variable "rds_force_ssl" {
   type        = number
   default     = 1
   description = "Forces clients to connect to the RDS with SSL."
+}
+
+variable "rds_extra_security_group_ids" {
+  type        = list(string)
+  default     = []
+  description = "List of additional SG's IDs to attach to Cloud-Pipeline's RDS. Could be useful to provide access to additional networks."
 }
 
 ###################################################################

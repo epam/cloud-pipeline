@@ -32,7 +32,7 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = true
 
-  cluster_additional_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
+  cluster_additional_security_group_ids = concat([module.internal_cluster_access_sg.security_group_id], eks_extra_security_group_ids)
 
   cluster_addons = merge(
     {

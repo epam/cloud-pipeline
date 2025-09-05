@@ -33,7 +33,7 @@ module "cp_rds" {
   allocated_storage = var.rds_storage_size
 
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
-  vpc_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
+  vpc_security_group_ids = concat([module.internal_cluster_access_sg.security_group_id], var.rds_extra_security_group_ids)
 
   db_name                     = var.rds_default_db_name
   username                    = var.rds_root_username
