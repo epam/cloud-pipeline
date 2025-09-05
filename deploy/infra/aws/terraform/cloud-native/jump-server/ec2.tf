@@ -48,6 +48,8 @@ locals {
   user_data = <<-EOT
     #!/bin/bash
 
+    ${var.prepend_user_data}
+
     echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
 
     sudo yum remove awscli -y
