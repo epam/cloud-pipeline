@@ -74,6 +74,12 @@ function build_label_image() {
       return 1
     fi
 
+    convert "$_tmp_path" -resize 10% "$_tmp_path"
+    if [ $? -ne 0 ]; then
+      log_warn "Errors during downsampling label image, exiting..."
+      return 1
+    fi
+
     return 0
 }
 
