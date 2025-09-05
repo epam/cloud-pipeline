@@ -108,6 +108,17 @@ variable "eks_extra_security_group_ids" {
   description = "List of additional SG's IDs to attach to Cloud-Pipeline's EKS. Could be useful to provide access to additional networks."
 }
 
+variable "eks_alb_controller_image_repo" {
+  type        = string
+  default     = "public.ecr.aws/eks/aws-load-balancer-controller"
+  description = "Allows overriding default aws-load-balancer-controller image repository. This may be needed if public.ecr.aws is not accessible."
+}
+
+variable "eks_alb_controller_image_tag" {
+  type        = string
+  default     = "v2.7.1"
+  description = "Allows overriding default aws-load-balancer-controller image tag. This may be needed if public.ecr.aws is not accessible in conjuction with eks_alb_controller_image_repo."
+}
 
 variable "eks_additional_user_mapping" {
   type = list(object({
