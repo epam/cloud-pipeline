@@ -38,22 +38,10 @@ else
     pipe_log_success "Successfully mounted Lustre FS to master node" "$FS_SETUP_TASK"
 fi
 
-[Unit]
-Description=Cloud Pipeline Filesystem Lustre Autoscaling Daemon
-Documentation=https://cloud-pipeline.com/
 
-[Service]
-Restart=always
-StartLimitInterval=0
-RestartSec=10
-Environment="API_ARGS=--api-url $API--api-token $API_TOKEN"
-Environment="RUN_ARGS=--run-id $RUN_ID"
-Environment="MOUNT_POINT_ARGS=--mount-point $MOUNT_DIR"
-ExecStart=lustreautoscale \$API_ARGS \$RUN_ARGS \$MOUNT_POINT_ARGS
+nohup lustre_autoscale --api-url "$API" \
+                       --api-token "$API_TOKEN" \
+                       --run-id "$RUN_ID" \
+                       --mount-point "$MOUNT_DIR" &> /var/log/lustreautoscale.log &
 
-[Install]
-WantedBy=multi-user.target
-EOL
-
-systemctl enable lustreautoscale
-systemctl start lustreautoscale
+pipe_log_info "Started Lustre autoscale service. Logs are available in /var/log/lustreautoscale.log" "$FS_SETUP_TASK"
