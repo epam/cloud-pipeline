@@ -18,6 +18,7 @@ include 'billing-report-agent'
 include 'monitoring-service'
 include 'fs-browser'
 include 'fs-browser:fs-browser-client'
+include 'cloud-pipeline-webdav-client'
 /*
 include 'cloud-pipeline-webdav-client'
 include 'data-sharing-service'
