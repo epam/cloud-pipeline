@@ -1465,8 +1465,21 @@ public class SystemPreferences {
             BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
     // Lustre FS
+    public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(
+            "lustre.fs.scale.enabled", false, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_SCALE_MONITORING_DELAY = new IntPreference(
+            "lustre.fs.scale.monitoring.delay", 10, LUSTRE_GROUP, isGreaterThan(0));
+    public static final DoublePreference LUSTRE_FS_SCALE_THRESHOLD_RATIO = new DoublePreference(
+            "lustre.fs.scale.threshold.ratio", 0.75, LUSTRE_GROUP,
+            isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final DoublePreference LUSTRE_FS_SCALE_DELTA_RATIO = new DoublePreference(
+            "lustre.fs.scale.delta.ratio", 0.5, LUSTRE_GROUP, isGreaterThan(0.0f));
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
             "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_MAX_FS_SIZE = new IntPreference(
+            "lustre.fs.max.size", 1125900, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_UPDATE_SIZE_PERIOD = new IntPreference(
+            "lustre.fs.update.size.period", 21600, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
