@@ -1,0 +1,346 @@
+#!/bin/bash
+
+# Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function call_api() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _API_METHOD="$3"
+  _HTTP_METHOD="$4"
+  _HTTP_BODY="$5"
+  if [[ "$_HTTP_BODY" ]]
+  then
+    curl -f -s -k -X "$_HTTP_METHOD" \
+      --header 'Accept: application/json' \
+      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Content-Type: application/json' \
+      --data "$_HTTP_BODY" \
+      "$_API$_API_METHOD"
+  else
+    curl -f -s -k -X "$_HTTP_METHOD" \
+      --header 'Accept: application/json' \
+      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Content-Type: application/json' \
+      "$_API$_API_METHOD"
+  fi
+}
+
+function pipe_api_log() {
+  _MESSAGE="$1"
+  _STATUS="$2"
+  if [[ "$RUN_ID" ]] && [[ "$LOG_TASK" ]]
+  then
+    if [[ "$_STATUS" == "$ERROR_LOG_LEVEL" ]]
+    then
+      STATUS="FAILURE"
+    else
+      STATUS="RUNNING"
+    fi
+    call_api "$_API" "$_API_TOKEN" "run/$RUN_ID/log" "POST" '{
+        "date": "'"$(get_current_date)"'",
+        "logText": "'"$_MESSAGE"'",
+        "runId": '"$RUN_ID"',
+        "status": "'"$STATUS"'",
+        "taskName": "'"$LOG_TASK"'"
+      }'
+  fi
+}
+
+function get_current_date() {
+  date '+%Y-%m-%d %H:%M:%S.%N' | cut -b1-23
+}
+
+function get_current_timestamp() {
+  date +%s
+}
+
+function pipe_log_debug() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$DEBUG_LOG_LEVEL"
+}
+
+function pipe_log_info() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$INFO_LOG_LEVEL"
+}
+
+function pipe_log_error() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$ERROR_LOG_LEVEL"
+}
+
+function pipe_log() {
+  _MESSAGE="$1"
+  _STATUS="$2"
+  echo "$(get_current_date): [$_STATUS] $_MESSAGE"
+  if [[ "$DEBUG" ]] || [[ "$_STATUS" != "$DEBUG_LOG_LEVEL" ]]
+  then
+    pipe_api_log "$_MESSAGE" "$_STATUS"
+  fi
+}
+
+function is_filesystem_scalable() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _RUN_ID="$3"
+  _NOT_SCALABLE_DEPLOYMENT_TYPE="$4"
+  DEPLOYMENT_TYPE=$(get_deployment_type "$API" "$API_TOKEN" "$RUN_ID")
+  [[ "$DEPLOYMENT_TYPE" != "$_NOT_SCALABLE_DEPLOYMENT_TYPE" ]]
+  return "$?"
+}
+
+function is_true() {
+  _BOOLEAN="$1"
+  LOWER_BOOLEAN=$(echo "$_BOOLEAN" | tr "[:upper:]" "[:lower:]")
+  [[ "$LOWER_BOOLEAN" == "true" ]]
+  return "$?"
+}
+
+function get_current_disk_usage() {
+  _MOUNT_POINT="$1"
+  df -BG "$_MOUNT_POINT" | grep -v Filesystem | awk '{print $5}' | cut -d"%" -f1 -
+}
+
+function update_lustre_fs_size() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _RUN_ID="$3"
+  _SIZE="$4"
+  RESPONSE=$(call_api "$_API" "$_API_TOKEN" "lustre/$_RUN_ID/?size=$_SIZE" "PUT")
+  RESPONSE_STATUS=$(echo "$RESPONSE" | jq -r ".status")
+  RESULT=0
+  if [[ "$RESPONSE_STATUS" == "ERROR" ]]
+  then
+    RESULT=1
+    RESPONSE_MESSAGE=$(echo "$RESPONSE" | jq -r ".message")
+    pipe_log_debug "$RESPONSE_MESSAGE"
+  fi
+  return "$RESULT"
+}
+
+function get_system_preferences() {
+  _API="$1"
+  _API_TOKEN="$2"
+  call_api "$_API" "$_API_TOKEN" "preferences" "GET" |
+    jq -r '.payload[] | .name + "=" + .value' |
+    grep -v "^null$"
+}
+
+function resolve_system_preference() {
+  _PREFERENCES="$1"
+  _PREFERENCE="$2"
+  _DEFAULT_VALUE="$3"
+
+  NAME_AND_VALUE=$(echo "$_PREFERENCES" | grep "$_PREFERENCE=")
+  VALUE="${NAME_AND_VALUE#$_PREFERENCE=}"
+  if [[ "$VALUE" ]]
+  then
+    echo "$VALUE"
+  else
+    echo "$_DEFAULT_VALUE"
+  fi
+}
+
+function get_fractional_part() {
+  _FLOAT="$1"
+  echo "$_FLOAT" | cut -d"." -f2
+}
+
+function get_deployment_type() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _RUN_ID="$3"
+  call_api "$_API" "$_API_TOKEN" "lustre/$_RUN_ID" "GET" |
+    jq -r ".payload.deploymentType" |
+    grep -v "^null$"
+}
+
+function get_capacity() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _RUN_ID="$3"
+  call_api "$_API" "$_API_TOKEN" "lustre/$_RUN_ID" "GET" |
+    jq -r ".payload.capacityGb" |
+    grep -v "^null$"
+}
+
+function check_new_capacity() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _RUN_ID="$3"
+  _SIZE="$4"
+  _TIMEOUT="$5"
+  _DISK_AVAILABILITY_CHECK_PERIOD="$6"
+  DISK_CAPACITY_CHECK_REPEAT=0
+  pipe_log_debug "Checking if new capacity is available..."
+  while [[ "$DISK_CAPACITY_CHECK_REPEAT" -lt "$_TIMEOUT" ]]
+  do
+    NEW_CAPACITY=$(get_capacity "$_API" "$_API_TOKEN" "$_RUN_ID")
+    pipe_log_debug "Disk capacity is ${NEW_CAPACITY}G."
+    if [[ $NEW_CAPACITY -eq $_SIZE ]]
+    then
+      break
+    fi
+    DISK_CAPACITY_CHECK_REPEAT=$((DISK_CAPACITY_CHECK_REPEAT + 1))
+    sleep $_DISK_AVAILABILITY_CHECK_PERIOD
+  done
+}
+
+ERROR_LOG_LEVEL="ERROR"
+INFO_LOG_LEVEL="INFO"
+DEBUG_LOG_LEVEL="DEBUG"
+
+while [[ "$#" -gt "0" ]]
+do
+  case "$1" in
+  -u | --api-url)
+    API="$2"
+    shift
+    shift
+    ;;
+  -t | --api-token)
+    API_TOKEN="$2"
+    shift
+    shift
+    ;;
+  -r | --run-id)
+    RUN_ID="$2"
+    shift
+    shift
+    ;;
+  -m | --mount-point)
+    MOUNT_POINT="$2"
+    shift
+    shift
+    ;;
+  -d | --monitoring-delay)
+    MONITORING_DELAY="$2"
+    shift
+    shift
+    ;;
+  -e | --debug)
+    DEBUG="true"
+    shift
+    ;;
+  *)
+    pipe_log_debug "Unexpected argument $1 will be skipped."
+    shift
+    ;;
+  esac
+done
+
+if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$RUN_ID" ]] || [[ -z "$MOUNT_POINT" ]]
+then
+  pipe_log_error "Some of the required arguments are missing."
+  exit 1
+fi
+
+
+LOG_TASK="${LOG_TASK:-FilesystemAutoscaling}"
+MONITORING_DELAY="${MONITORING_DELAY:-10}"
+NOT_SCALABLE_DEPLOYMENT_TYPE="${NOT_SCALABLE_DEPLOYMENT_TYPE:-SCRATCH_1}"
+
+# update capacity time for Lustre FS is about half an hour
+# checking 10 times every 5 minutes
+DISK_AVAILABILITY_TIMEOUT="${DISK_AVAILABILITY_TIMEOUT:-10}"
+DISK_AVAILABILITY_CHECK_PERIOD="${DISK_AVAILABILITY_CHECK_PERIOD:-300}"
+
+
+AUTOSCALE_PREFERENCE="${AUTOSCALE_PREFERENCE:-lustre.fs.scale.enabled}"
+AUTOSCALE_PREFERENCE_DEFAULT="${AUTOSCALE_PREFERENCE_DEFAULT:-false}"
+MONITORING_DELAY_PREFERENCE="${MONITORING_DELAY_PREFERENCE:-lustre.fs.scale.monitoring.delay}"
+MONITORING_DELAY_PREFERENCE_DEFAULT="${MONITORING_DELAY_PREFERENCE_DEFAULT:-10}"
+THRESHOLD_PREFERENCE="${THRESHOLD_PREFERENCE:-lustre.fs.scale.threshold.ratio}"
+THRESHOLD_PREFERENCE_DEFAULT="${THRESHOLD_PREFERENCE_DEFAULT:-0.75}"
+DELTA_PREFERENCE="${DELTA_PREFERENCE:-lustre.fs.scale.delta.ratio}"
+DELTA_PREFERENCE_DEFAULT="${DELTA_PREFERENCE_DEFAULT:-0.5}"
+MAX_FS_SIZE_PREFERENCE="${MAX_FS_SIZE_PREFERENCE:-lustre.fs.max.size}"
+MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-1125900}"
+UPDATE_SIZE_PERIOD_PREFERENCE="${UPDATE_SIZE_PERIOD_PREFERENCE:-lustre.fs.update.size.period}"
+UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT="${UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT:-21600}"
+
+if ! is_filesystem_scalable "$API" "$API_TOKEN" "$RUN_ID" "$NOT_SCALABLE_DEPLOYMENT_TYPE"
+then
+  pipe_log_debug "Filesystem autoscaling capability is not available for $NOT_SCALABLE_DEPLOYMENT_TYPE deployment type. Filesystem won't be autoscaled."
+  exit 1
+fi
+
+NEXT_UPDATE_SIZE_TIME=get_current_timestamp
+while true
+do
+  sleep "$MONITORING_DELAY"
+  PREFERENCES=$(get_system_preferences "$API" "$API_TOKEN")
+  MONITORING_DELAY=$(resolve_system_preference "$PREFERENCES" "$MONITORING_DELAY_PREFERENCE" "$MONITORING_DELAY_PREFERENCE_DEFAULT")
+  AUTOSCALING_ENABLED=$(resolve_system_preference "$PREFERENCES" "$AUTOSCALE_PREFERENCE" "$AUTOSCALE_PREFERENCE_DEFAULT")
+  THRESHOLD_RATIO=$(resolve_system_preference "$PREFERENCES" "$THRESHOLD_PREFERENCE" "$THRESHOLD_PREFERENCE_DEFAULT")
+  THRESHOLD=$(get_fractional_part "$THRESHOLD_RATIO")
+  DELTA=$(resolve_system_preference "$PREFERENCES" "$DELTA_PREFERENCE" "$DELTA_PREFERENCE_DEFAULT")
+  MAX_FS_SIZE=$(resolve_system_preference "$PREFERENCES" "$MAX_FS_SIZE_PREFERENCE" "$MAX_FS_SIZE_PREFERENCE_DEFAULT")
+  UPDATE_SIZE_PERIOD=$(resolve_system_preference "$PREFERENCES" "$UPDATE_SIZE_PERIOD_PREFERENCE" "$UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT")
+
+  if is_true "$AUTOSCALING_ENABLED"
+  then
+    pipe_log_debug "Filesystem autoscaling capability is enabled."
+    CURRENT_USAGE=$(get_current_disk_usage "$MOUNT_POINT")
+    if [[ "$CURRENT_USAGE" -ge "$THRESHOLD" ]]
+    then
+      CURRENT_SIZE=$(get_capacity "$API" "$API_TOKEN" "$RUN_ID")
+      if [[ "$CURRENT_SIZE" -ge "$MAX_FS_SIZE" ]]
+      then
+        pipe_log_debug "Filesystem $MOUNT_POINT cannot be autoscaled even further."
+        continue
+      fi
+      pipe_log_debug "Scaling filesystem $MOUNT_POINT..."
+      if [[ "$CURRENT_SIZE" -eq 1200 ]]
+      then
+        LUSTRE_SIZE_STEP=1200
+      else
+        LUSTRE_SIZE_STEP=2400
+      fi
+      REQUIRED_SIZE=$((CURRENT_SIZE + LUSTRE_SIZE_STEP))
+      if [[ "$REQUIRED_SIZE" -ge "$MAX_FS_SIZE" ]]
+      then
+        pipe_log_debug "Filesystem $MOUNT_POINT requested size has reached its max allowed size of ${MAX_FS_SIZE}G."
+        REQUIRED_SIZE="$MAX_FS_SIZE"
+      fi
+      if [[ "$NEXT_UPDATE_SIZE_TIME" -ge $(get_current_timestamp) ]]
+      then
+        NEXT_UPDATE_SIZE_TIME_FORMATTED=$(date -d "@$NEXT_UPDATE_SIZE_TIME")
+        pipe_log_debug "Filesystem autoscaling capability is not available till $NEXT_UPDATE_SIZE_TIME_FORMATTED."
+        continue
+      fi
+      if update_lustre_fs_size "$API" "$API_TOKEN" "$RUN_ID" "$REQUIRED_SIZE"
+      then
+        pipe_log_debug "Request to update disk size ${MOUNT_POINT} has been sent."
+      else
+        pipe_log_debug "Request to update disk size ${MOUNT_POINT} has not been sent."
+        continue
+      fi
+      if check_new_capacity "$API" "$API_TOKEN" "$RUN_ID" "$REQUIRED_SIZE" "$DISK_AVAILABILITY_TIMEOUT" "$DISK_AVAILABILITY_CHECK_PERIOD"
+      then
+        pipe_log_debug "Filesystem $MOUNT_POINT new capacity is ${REQUIRED_SIZE}G."
+        NEXT_UPDATE_SIZE_TIME=$(($(get_current_timestamp) + UPDATE_SIZE_PERIOD))
+      else
+        pipe_log_error "Filesystem $MOUNT_POINT capacity has not been increased yet. It might be in process."
+        continue
+      fi
+      pipe_log_info "Filesystem $MOUNT_POINT was autoscaled ${CURRENT_SIZE}G + ${LUSTRE_SIZE_STEP}G = ${REQUIRED_SIZE}G."
+    else
+      pipe_log_debug "Filesystem $MOUNT_POINT usage satisfies the configured threshold ${CURRENT_USAGE}% < ${THRESHOLD}%."
+    fi
+  else
+    pipe_log_debug "Filesystem autoscaling capability is disabled."
+  fi
+done
