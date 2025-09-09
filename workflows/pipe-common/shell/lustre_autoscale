@@ -68,27 +68,7 @@ function get_current_timestamp() {
 
 function pipe_log_debug() {
   _MESSAGE="$1"
-  pipe_log "$_MESSAGE" "$DEBUG_LOG_LEVEL"
-}
-
-function pipe_log_info() {
-  _MESSAGE="$1"
-  pipe_log "$_MESSAGE" "$INFO_LOG_LEVEL"
-}
-
-function pipe_log_error() {
-  _MESSAGE="$1"
-  pipe_log "$_MESSAGE" "$ERROR_LOG_LEVEL"
-}
-
-function pipe_log() {
-  _MESSAGE="$1"
-  _STATUS="$2"
-  echo "$(get_current_date): [$_STATUS] $_MESSAGE"
-  if [[ "$DEBUG" ]] || [[ "$_STATUS" != "$DEBUG_LOG_LEVEL" ]]
-  then
-    pipe_api_log "$_MESSAGE" "$_STATUS"
-  fi
+  echo "$(get_current_date): [DEBUG] $_MESSAGE"
 }
 
 function is_filesystem_scalable() {
@@ -153,6 +133,12 @@ function resolve_system_preference() {
   fi
 }
 
+function get_required_disk_size() {
+  _DISK="$1"
+  _DELTA="$2"
+  echo "$_DISK+$_DISK*$_DELTA" | bc | cut -d"." -f1
+}
+
 function get_fractional_part() {
   _FLOAT="$1"
   echo "$_FLOAT" | cut -d"." -f2
@@ -189,8 +175,7 @@ function check_new_capacity() {
   do
     NEW_CAPACITY=$(get_capacity "$_API" "$_API_TOKEN" "$_RUN_ID")
     pipe_log_debug "Disk capacity is ${NEW_CAPACITY}G."
-    if [[ $NEW_CAPACITY -eq $_SIZE ]]
-    then
+    if [[ $NEW_CAPACITY -eq $_SIZE ]]; then
       break
     fi
     DISK_CAPACITY_CHECK_REPEAT=$((DISK_CAPACITY_CHECK_REPEAT + 1))
@@ -243,13 +228,13 @@ done
 
 if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$RUN_ID" ]] || [[ -z "$MOUNT_POINT" ]]
 then
-  pipe_log_error "Some of the required arguments are missing."
+  pipe_log_fail "Some of the required arguments are missing."
   exit 1
 fi
 
 
-LOG_TASK="${LOG_TASK:-FilesystemAutoscaling}"
-MONITORING_DELAY="${MONITORING_DELAY:-10}"
+LOG_TASK="${LOG_TASK:-LustreAutoscaling}"
+MONITORING_DELAY="${MONITORING_DELAY:-60}"
 NOT_SCALABLE_DEPLOYMENT_TYPE="${NOT_SCALABLE_DEPLOYMENT_TYPE:-SCRATCH_1}"
 
 # update capacity time for Lustre FS is about half an hour
@@ -265,10 +250,12 @@ MONITORING_DELAY_PREFERENCE_DEFAULT="${MONITORING_DELAY_PREFERENCE_DEFAULT:-10}"
 THRESHOLD_PREFERENCE="${THRESHOLD_PREFERENCE:-lustre.fs.scale.threshold.ratio}"
 THRESHOLD_PREFERENCE_DEFAULT="${THRESHOLD_PREFERENCE_DEFAULT:-0.75}"
 DELTA_PREFERENCE="${DELTA_PREFERENCE:-lustre.fs.scale.delta.ratio}"
-DELTA_PREFERENCE_DEFAULT="${DELTA_PREFERENCE_DEFAULT:-0.5}"
+DELTA_PREFERENCE_DEFAULT="${DELTA_PREFERENCE_DEFAULT:-1}"
 MAX_FS_SIZE_PREFERENCE="${MAX_FS_SIZE_PREFERENCE:-lustre.fs.max.size}"
-MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-1125900}"
+MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-120000}"
 UPDATE_SIZE_PERIOD_PREFERENCE="${UPDATE_SIZE_PERIOD_PREFERENCE:-lustre.fs.update.size.period}"
+# We can't make changes earlier than 6 hours after last change:
+# https://docs.aws.amazon.com/fsx/latest/LustreGuide/managing-throughput-capacity.html
 UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT="${UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT:-21600}"
 
 if ! is_filesystem_scalable "$API" "$API_TOKEN" "$RUN_ID" "$NOT_SCALABLE_DEPLOYMENT_TYPE"
@@ -277,9 +264,8 @@ then
   exit 1
 fi
 
-NEXT_UPDATE_SIZE_TIME=get_current_timestamp
-while true
-do
+NEXT_UPDATE_SIZE_TIME=$(get_current_timestamp)
+while true; do
   sleep "$MONITORING_DELAY"
   PREFERENCES=$(get_system_preferences "$API" "$API_TOKEN")
   MONITORING_DELAY=$(resolve_system_preference "$PREFERENCES" "$MONITORING_DELAY_PREFERENCE" "$MONITORING_DELAY_PREFERENCE_DEFAULT")
@@ -290,8 +276,7 @@ do
   MAX_FS_SIZE=$(resolve_system_preference "$PREFERENCES" "$MAX_FS_SIZE_PREFERENCE" "$MAX_FS_SIZE_PREFERENCE_DEFAULT")
   UPDATE_SIZE_PERIOD=$(resolve_system_preference "$PREFERENCES" "$UPDATE_SIZE_PERIOD_PREFERENCE" "$UPDATE_SIZE_PERIOD_PREFERENCE_DEFAULT")
 
-  if is_true "$AUTOSCALING_ENABLED"
-  then
+  if is_true "$AUTOSCALING_ENABLED"; then
     pipe_log_debug "Filesystem autoscaling capability is enabled."
     CURRENT_USAGE=$(get_current_disk_usage "$MOUNT_POINT")
     if [[ "$CURRENT_USAGE" -ge "$THRESHOLD" ]]
@@ -303,13 +288,7 @@ do
         continue
       fi
       pipe_log_debug "Scaling filesystem $MOUNT_POINT..."
-      if [[ "$CURRENT_SIZE" -eq 1200 ]]
-      then
-        LUSTRE_SIZE_STEP=1200
-      else
-        LUSTRE_SIZE_STEP=2400
-      fi
-      REQUIRED_SIZE=$((CURRENT_SIZE + LUSTRE_SIZE_STEP))
+      REQUIRED_SIZE=$(get_required_disk_size "$CURRENT_SIZE" "$DELTA")
       if [[ "$REQUIRED_SIZE" -ge "$MAX_FS_SIZE" ]]
       then
         pipe_log_debug "Filesystem $MOUNT_POINT requested size has reached its max allowed size of ${MAX_FS_SIZE}G."
@@ -333,7 +312,7 @@ do
         pipe_log_debug "Filesystem $MOUNT_POINT new capacity is ${REQUIRED_SIZE}G."
         NEXT_UPDATE_SIZE_TIME=$(($(get_current_timestamp) + UPDATE_SIZE_PERIOD))
       else
-        pipe_log_error "Filesystem $MOUNT_POINT capacity has not been increased yet. It might be in process."
+        pipe_log_fail "Filesystem $MOUNT_POINT capacity has not been increased yet. It might be in process."
         continue
       fi
       pipe_log_info "Filesystem $MOUNT_POINT was autoscaled ${CURRENT_SIZE}G + ${LUSTRE_SIZE_STEP}G = ${REQUIRED_SIZE}G."
