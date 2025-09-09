@@ -192,6 +192,7 @@ public class PipelineRun extends AbstractSecuredEntity {
                 .findFirst();
     }
 
+
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
         params = parameters
                 .entrySet().stream()
@@ -207,6 +208,9 @@ public class PipelineRun extends AbstractSecuredEntity {
     }
 
     public void parseParameters() {
+        if (CollectionUtils.isNotEmpty(pipelineRunParameters)) {
+            return;
+        }
         pipelineRunParameters = new ArrayList<>();
         if (StringUtils.isNotBlank(params)) {
             String[] parts = params.split("\\|");

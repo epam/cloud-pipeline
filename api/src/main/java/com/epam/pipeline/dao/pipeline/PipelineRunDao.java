@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -1112,7 +1113,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         CLUSTER_PRICE,
         NODE_POOL_ID,
         NODE_START_DATE,
-        PROJECT_ID;
+        PROJECT_ID,
+        PARAMETER_JSON;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1126,7 +1128,9 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(NODE_START_DATE.name(), run.getInstanceStartDate());
             params.addValue(PROJECT_ID.name(), run.getProjectId());
             params.addValue(END_DATE.name(), run.getEndDate());
-            params.addValue(PARAMETERS.name(), run.getParams());
+            params.addValue(PARAMETERS.name(), null);
+            params.addValue(PARAMETER_JSON.name(),
+                    JsonMapper.convertDataToJsonStringForQuery(getParamsMap(run)));
             params.addValue(STATUS.name(), run.getStatus().getId());
             params.addValue(COMMIT_STATUS.name(), run.getCommitStatus().getId());
             params.addValue(LAST_CHANGE_COMMIT_TIME.name(), run.getLastChangeCommitTime());
@@ -1169,6 +1173,16 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
             addInstanceFields(run, params);
             return params;
+        }
+
+        private static Map<String, PipelineRunParameter> getParamsMap(
+                final PipelineRun run) {
+            run.parseParameters();
+            if (CollectionUtils.isEmpty(run.getPipelineRunParameters())) {
+                return Collections.emptyMap();
+            }
+            return run.getPipelineRunParameters().stream().collect(
+                    Collectors.toMap(PipelineRunParameter::getName, Function.identity(), (p1, p2) -> p1));
         }
 
         private static void addInstanceFields(PipelineRun run, MapSqlParameterSource params) {
@@ -1235,7 +1249,14 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setInstanceStartDate(new Date(instanceStartDate.getTime()));
             }
-            run.setParams(rs.getString(PARAMETERS.name()));
+
+            List<PipelineRunParameter> data = parseParams(rs.getString(PARAMETER_JSON.name()));
+            if (!rs.wasNull()) {
+                run.setPipelineRunParameters(data);
+            } else {
+                run.setParams(rs.getString(PARAMETERS.name()));
+                run.parseParameters();
+            }
             run.setStatus(TaskStatus.getById(rs.getLong(STATUS.name())));
             run.setCommitStatus(CommitStatus.getById(rs.getLong(COMMIT_STATUS.name())));
             run.setLastChangeCommitTime(new Date(rs.getTimestamp(LAST_CHANGE_COMMIT_TIME.name()).getTime()));
@@ -1290,7 +1311,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setParentRunId(parentRunId);
             }
-            run.parseParameters();
             Array entitiesIdsArray = rs.getArray(ENTITIES_IDS.name());
             if (entitiesIdsArray != null) {
                 List<Long> entitiesIds = Arrays.asList((Long[]) entitiesIdsArray.getArray());
@@ -1341,6 +1361,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 run.setTags(newTags);
             }
             return run;
+        }
+
+        static List<PipelineRunParameter> parseParams(final String data) {
+            final Map<String, PipelineRunParameter> params =
+                    JsonMapper.parseData(data, new TypeReference<Map<String, PipelineRunParameter>>() {});
+            return new ArrayList<>(MapUtils.emptyIfNull(params).values());
         }
 
         static RowMapper<PipelineRun> getRowMapper() {
