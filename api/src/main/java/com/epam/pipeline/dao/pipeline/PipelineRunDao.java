@@ -813,26 +813,52 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (StringUtils.isNotBlank(filter.getPartialParameters())) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" r.parameters like :").append(PipelineRunParameters.PARAMETERS.name());
+            //TODO cleanup when migration from parameters to parameter_json will be done
             params.addValue(PipelineRunParameters.PARAMETERS.name(),
                     String.format("%%%s%%", filter.getPartialParameters()));
+            final String partialParametersClause = String.format("r.parameters like :%s",
+                    PipelineRunParameters.PARAMETERS.name());
+            final String parameterJsonClause = buildParameterJsonClauseForPartialParameters(
+                    filter.getPartialParameters(), params);
+            whereBuilder
+                    .append(" (")
+                    .append(partialParametersClause).append(" OR ")
+                    .append(parameterJsonClause).append(") ");
             clausesCount++;
         }
 
         if (filter.getParentId() != null) {
             appendAnd(whereBuilder, clausesCount);
 
-            whereBuilder.append(String.format(" (r.parent_id = %d OR r.parameters = 'parent-id=%d' "
-                            + "OR r.parameters like "
-                            + "any(array['%%|parent-id=%d|%%','%%|parent-id=%d','parent-id=%d|%%', " +
-                            "'parent-id=%d=%%', '%%|parent-id=%d=%%']))",
+            final String parentIdFieldIsPresentClause = String.format("(r.parent_id = %d)", filter.getParentId());
+            //TODO cleanup when migration from parameters to parameter_json will be done
+            final String parametersFieldHasParentIdClause = String.format(
+                    "(r.parameters = 'parent-id=%d' " +
+                            "OR r.parameters like " +
+                            "any(array[" +
+                                    "'%%|parent-id=%d|%%','%%|parent-id=%d'," +
+                                    "'parent-id=%d|%%', 'parent-id=%d=%%', '%%|parent-id=%d=%%']" +
+                            ")" +
+                        ")",
                     filter.getParentId(),
                     filter.getParentId(),
                     filter.getParentId(),
                     filter.getParentId(),
                     filter.getParentId(),
-                    filter.getParentId(),
-                    filter.getParentId()));
+                    filter.getParentId()
+            );
+            final String parameterJsonFieldHasParentIdClause = String.format(
+                    "(r.parameter_json @> '{\"parent-id\" : {\"name\": \"parent-id\", \"value\": \"%d\"}}'::jsonb)",
+                    filter.getParentId()
+            );
+            whereBuilder
+                    .append(" (")
+                    .append(parentIdFieldIsPresentClause)
+                    .append(" OR ")
+                    .append(parametersFieldHasParentIdClause)
+                    .append(" OR ")
+                    .append(parameterJsonFieldHasParentIdClause)
+                    .append(")");
             clausesCount++;
         }
 
@@ -867,7 +893,14 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (filter.isMasterRun()) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" (r.node_count > 0 OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%')");
+            //TODO cleanup when migration from parameters to parameter_json will be done
+            whereBuilder.append(
+                    " (" +
+                        "r.node_count > 0 " +
+                        "OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%' " +
+                        "OR r.parameter_json @> '{\"CP_CAP_AUTOSCALE\": {\"name\": \"CP_CAP_AUTOSCALE\", \"value\": \"true\", \"type\": \"boolean\"}}'::jsonb" +
+                    ")"
+            );
             clausesCount++;
         }
 
@@ -881,6 +914,28 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         appendAclFilters(filter, params, whereBuilder, clausesCount);
 
         return whereBuilder.toString();
+    }
+
+    private String buildParameterJsonClauseForPartialParameters(String partialParams, MapSqlParameterSource params) {
+        final String[] partialParametersParts = partialParams.split("=", 3);
+        String parameterJsonClause = StringUtils.EMPTY;
+        if (partialParametersParts.length >= 1) {
+            params.addValue(PipelineRunParameters.PARAMETER_NAME.name(), partialParametersParts[0]);
+            parameterJsonClause = String.format("\"name\": \":%s\"", PipelineRunParameters.PARAMETER_NAME.name());
+        }
+
+        if (partialParametersParts.length >= 2) {
+            params.addValue(PipelineRunParameters.PARAMETER_VALUE.name(), partialParametersParts[1]);
+            parameterJsonClause = parameterJsonClause
+                    + String.format(", \"value\": \":%s\"", PipelineRunParameters.PARAMETER_VALUE.name());
+        }
+
+        if (partialParametersParts.length >= 3) {
+            params.addValue(PipelineRunParameters.PARAMETER_TYPE.name(), partialParametersParts[2]);
+            parameterJsonClause = parameterJsonClause
+                    + String.format(", \"type\": \":%s\"", PipelineRunParameters.PARAMETER_TYPE.name());
+        }
+        return String.format("r.parameter_json @> {\"%s\": {%s}}", PipelineRunParameters.PARAMETER_NAME.name(), parameterJsonClause);
     }
 
     private void appendAnd(StringBuilder whereBuilder, int clausesCount) {
@@ -1044,6 +1099,9 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         START_DATE,
         END_DATE,
         PARAMETERS,
+        PARAMETER_NAME,
+        PARAMETER_VALUE,
+        PARAMETER_TYPE,
         PARENT_ID,
         CHILD_RUNS_COUNT,
         ACTIVE_CHILD_RUNS_COUNT,
