@@ -19,7 +19,6 @@ package com.epam.pipeline.entity.security.acl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.security.acls.model.Sid;
 
 @Data
 @NoArgsConstructor

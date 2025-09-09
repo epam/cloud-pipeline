@@ -33,7 +33,7 @@ class GitRepositoryUrlTest {
 
     @Nested
     @DisplayName("Positive cases")
-    class Positive {
+    static class Positive {
 
         private static final String URL_WITH_USERNAME_AND_PASSWORD =
                 "https://username:pAssw0rd@git.company-name-42.com/graphic/awesome-game.git";
@@ -91,8 +91,7 @@ class GitRepositoryUrlTest {
 
     @Nested
     @DisplayName("Negative cases")
-    class Negative {
-
+    static class Negative {
         static Stream<Arguments> provideData() {
             return Stream.of(
                     Arguments.of("null", null),

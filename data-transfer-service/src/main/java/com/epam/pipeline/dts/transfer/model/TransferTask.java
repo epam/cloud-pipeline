@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Wither;
+import lombok.With;
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
@@ -39,7 +39,7 @@ import java.util.List;
 @Entity
 @Data
 @Builder
-@Wither
+@With
 @AllArgsConstructor
 @NoArgsConstructor
 public class TransferTask {

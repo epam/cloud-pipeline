@@ -17,34 +17,24 @@
 package com.epam.pipeline.dts.configuration;
 
 import com.epam.pipeline.dts.common.json.JsonMapper;
-import com.epam.pipeline.dts.listing.configuration.ListingRestConfiguration;
-import com.epam.pipeline.dts.submission.configuration.SubmissionRestConfiguration;
-import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
-import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.util.UrlPathHelper;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.paths.RelativePathProvider;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.servlet.ServletContext;
+import java.util.Collections;
 import java.util.List;
 
 @Configuration
-@EnableSwagger2
 public class RestConfiguration implements WebMvcConfigurer {
 
     @Override
@@ -68,49 +58,20 @@ public class RestConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public Docket api(ServletContext servletContext) {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.any())
-                .build()
-                .apiInfo(apiInfo())
-                .pathProvider(new RelativePathProvider(servletContext) {
-                    @Override
-                    protected String applicationPath() {
-                        return servletContext.getContextPath() + "/restapi";
-                    }
-                    @Override
-                    protected String getDocumentationPath() {
-                        return "/";
-                    }});
-    }
-
-    @Bean
-    public ServletRegistrationBean dispatcherRegistration(){
-        DispatcherServlet dispatcherServlet = new DispatcherServlet();
-        ServletRegistrationBean<DispatcherServlet> bean =
-                new ServletRegistrationBean<>(dispatcherServlet, "/restapi/*");
-        bean.setAsyncSupported(true);
-        bean.setName("dts");
-        bean.setLoadOnStartup(1);
-        AnnotationConfigWebApplicationContext applicationContext = new AnnotationConfigWebApplicationContext();
-        applicationContext.register(
-                ListingRestConfiguration.class,
-                TransferRestConfiguration.class,
-                SubmissionRestConfiguration.class);
-        dispatcherServlet.setApplicationContext(applicationContext);
-        return bean;
-    }
-
-    private ApiInfo apiInfo() {
-        return new ApiInfo(
-                "Template REST API",
-                "Some custom description of API.",
-                "API TOS",
-                "Terms of service",
-                new Contact("dev", "url", "email"),
-                "License of API",
-                "API license URL");
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Template REST API")
+                        .version("API TOS")
+                        .description("Some custom description of API.")
+                        .contact(new Contact()
+                                .name("dev")
+                                .email("email"))
+                        .license(new License()
+                                .name("License of API")
+                                .url("API license URL")))
+                .servers(Collections.singletonList(
+                        new Server().url("http://localhost:8080").description("Development server")
+                ));
     }
 }

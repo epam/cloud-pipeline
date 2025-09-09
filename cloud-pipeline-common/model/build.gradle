@@ -24,11 +24,11 @@ plugins {
 
 group 'com.epam.pipeline'
 
-ext { springBootVersion = '3.5.3' }
+ext { springBootVersion = '2.7.18' }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
     withSourcesJar() // Modern way to create sources jar
 }
 
