@@ -109,7 +109,7 @@ public enum FilterRunParameters {
     @FilterField(
             displayName = "parent.id",
             databaseTableAlias = "r",
-            databaseFieldName = "parameter_json",
+            databaseFieldName = "parameters_json",
             multiplePlaceholders = true,
             supportedOperands = {FilterOperandType.EQUALS, FilterOperandType.NOT_EQUALS},
             composer = PipelineRunParameterJsonComposer.class,
@@ -262,7 +262,7 @@ public enum FilterRunParameters {
             isRegex = true,
             displayName = "parameter\\.[^ \\/]+",
             databaseTableAlias = "r",
-            databaseFieldName = "parameter_json",
+            databaseFieldName = "parameters_json",
             supportedOperands = {FilterOperandType.EQUALS},
             converter = PipelineRunParameterJsonConverter.class,
             composer = PipelineRunParameterJsonComposer.class

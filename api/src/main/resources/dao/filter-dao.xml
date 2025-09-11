@@ -80,7 +80,7 @@
                         r.node_pool_id,
                         r.node_start_date,
                         r.project_id,
-                        r.parameter_json
+                        r.parameters_json
                     FROM
                         pipeline.pipeline_run r
                     WHERE @WHERE@

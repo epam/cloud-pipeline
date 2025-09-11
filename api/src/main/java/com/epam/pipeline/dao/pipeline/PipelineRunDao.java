@@ -813,7 +813,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (StringUtils.isNotBlank(filter.getPartialParameters())) {
             appendAnd(whereBuilder, clausesCount);
-            //TODO cleanup when migration from parameters to parameter_json will be done
+            //TODO cleanup when migration from parameters to parameters_json will be done
             params.addValue(PipelineRunParameters.PARAMETERS.name(),
                     String.format("%%%s%%", filter.getPartialParameters()));
             final String partialParametersClause = String.format("r.parameters like :%s",
@@ -831,7 +831,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             appendAnd(whereBuilder, clausesCount);
 
             final String parentIdFieldIsPresentClause = String.format("(r.parent_id = %d)", filter.getParentId());
-            //TODO cleanup when migration from parameters to parameter_json will be done
+            //TODO cleanup when migration from parameters to parameters_json will be done
             final String parametersFieldHasParentIdClause = String.format(
                     "(r.parameters = 'parent-id=%d' " +
                             "OR r.parameters like " +
@@ -848,7 +848,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     filter.getParentId()
             );
             final String parameterJsonFieldHasParentIdClause = String.format(
-                    "(r.parameter_json @> '{\"parent-id\" : {\"name\": \"parent-id\", \"value\": \"%d\"}}'::jsonb)",
+                    "(r.parameters_json @> '{\"parent-id\" : {\"name\": \"parent-id\", \"value\": \"%d\"}}'::jsonb)",
                     filter.getParentId()
             );
             whereBuilder
@@ -893,12 +893,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (filter.isMasterRun()) {
             appendAnd(whereBuilder, clausesCount);
-            //TODO cleanup when migration from parameters to parameter_json will be done
+            //TODO cleanup when migration from parameters to parameters_json will be done
             whereBuilder.append(
                     " (" +
                         "r.node_count > 0 " +
                         "OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%' " +
-                        "OR r.parameter_json @> '{\"CP_CAP_AUTOSCALE\": {\"name\": \"CP_CAP_AUTOSCALE\", \"value\": \"true\", \"type\": \"boolean\"}}'::jsonb" +
+                        "OR r.parameters_json @> '{\"CP_CAP_AUTOSCALE\": {\"name\": \"CP_CAP_AUTOSCALE\", \"value\": \"true\", \"type\": \"boolean\"}}'::jsonb" +
                     ")"
             );
             clausesCount++;
@@ -935,7 +935,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             parameterJsonClause = parameterJsonClause
                     + String.format(", \"type\": \":%s\"", PipelineRunParameters.PARAMETER_TYPE.name());
         }
-        return String.format("r.parameter_json @> {\"%s\": {%s}}", PipelineRunParameters.PARAMETER_NAME.name(), parameterJsonClause);
+        return String.format("r.parameters_json @> {\"%s\": {%s}}", PipelineRunParameters.PARAMETER_NAME.name(), parameterJsonClause);
     }
 
     private void appendAnd(StringBuilder whereBuilder, int clausesCount) {
@@ -1172,7 +1172,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         NODE_POOL_ID,
         NODE_START_DATE,
         PROJECT_ID,
-        PARAMETER_JSON;
+        PARAMETERS_JSON;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1187,7 +1187,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(PROJECT_ID.name(), run.getProjectId());
             params.addValue(END_DATE.name(), run.getEndDate());
             params.addValue(PARAMETERS.name(), null);
-            params.addValue(PARAMETER_JSON.name(),
+            params.addValue(PARAMETERS_JSON.name(),
                     JsonMapper.convertDataToJsonStringForQuery(getParamsMap(run)));
             params.addValue(STATUS.name(), run.getStatus().getId());
             params.addValue(COMMIT_STATUS.name(), run.getCommitStatus().getId());
@@ -1308,7 +1308,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 run.setInstanceStartDate(new Date(instanceStartDate.getTime()));
             }
 
-            List<PipelineRunParameter> data = parseParams(rs.getString(PARAMETER_JSON.name()));
+            List<PipelineRunParameter> data = parseParams(rs.getString(PARAMETERS_JSON.name()));
             if (!rs.wasNull()) {
                 run.setPipelineRunParameters(data);
             } else {
