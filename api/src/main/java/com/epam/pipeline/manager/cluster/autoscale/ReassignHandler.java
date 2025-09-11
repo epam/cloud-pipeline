@@ -196,7 +196,7 @@ public class ReassignHandler {
     }
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
-        return pipelineRun
+        return !pipelineRun
                 .filter(iamProfileVerifier::isImageRestricted)
                 .isPresent();
     }
