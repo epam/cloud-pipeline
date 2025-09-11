@@ -16,18 +16,30 @@
 
 package com.epam.pipeline.manager.filter;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class OrFilterExpression extends FilterExpression {
 
     OrFilterExpression() {
         super();
     }
 
+    OrFilterExpression(List<FilterExpression> expressions) {
+        this.setExpressions(expressions);
+    }
+
     @Override
     public String toSQLStatement() throws WrongFilterException {
-        if (this.getExpressions() != null && this.getExpressions().size() == 2) {
-            return String.format("(%s OR %s)",
-                    this.getExpressions().get(0).toSQLStatement(),
-                    this.getExpressions().get(1).toSQLStatement());
+        if (this.getExpressions() != null ) {
+            return String.format("(%s)",
+                    this.getExpressions().stream().map(filterExpression -> {
+                        try {
+                            return filterExpression.toSQLStatement();
+                        } catch (WrongFilterException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    }).collect(Collectors.joining(" OR ")));
         }
         throw new WrongFilterException();
     }

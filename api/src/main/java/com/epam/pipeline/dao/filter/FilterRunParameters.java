@@ -23,15 +23,9 @@ import com.epam.pipeline.manager.filter.FilterField;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.composers.ListComposer;
 import com.epam.pipeline.manager.filter.composers.PipelineRunParameterComposer;
+import com.epam.pipeline.manager.filter.composers.PipelineRunParameterJsonComposer;
 import com.epam.pipeline.manager.filter.composers.WildCardComposer;
-import com.epam.pipeline.manager.filter.converters.CommitStatusConverter;
-import com.epam.pipeline.manager.filter.converters.DateConverter;
-import com.epam.pipeline.manager.filter.converters.IntegerConverter;
-import com.epam.pipeline.manager.filter.converters.LongListConverter;
-import com.epam.pipeline.manager.filter.converters.PipelineRunParameterConverter;
-import com.epam.pipeline.manager.filter.converters.PipelineRunParentIdParameterConverter;
-import com.epam.pipeline.manager.filter.converters.RunStatusConverter;
-import com.epam.pipeline.manager.filter.converters.WildCardConverter;
+import com.epam.pipeline.manager.filter.converters.*;
 import org.springframework.jdbc.core.RowMapper;
 
 public enum FilterRunParameters {
@@ -110,6 +104,16 @@ public enum FilterRunParameters {
             supportedOperands = {FilterOperandType.EQUALS, FilterOperandType.NOT_EQUALS},
             converter = PipelineRunParentIdParameterConverter.class,
             composer = PipelineRunParameterComposer.class,
+            description = "Parent run identifier"
+    )
+    @FilterField(
+            displayName = "parent.id",
+            databaseTableAlias = "r",
+            databaseFieldName = "parameter_json",
+            multiplePlaceholders = true,
+            supportedOperands = {FilterOperandType.EQUALS, FilterOperandType.NOT_EQUALS},
+            composer = PipelineRunParameterJsonComposer.class,
+            converter = PipelineRunParentIdParameterJsonConverter.class,
             description = "Parent run identifier"
     )
     PARENT_ID,
@@ -253,6 +257,15 @@ public enum FilterRunParameters {
             supportedOperands = {FilterOperandType.EQUALS},
             converter = PipelineRunParameterConverter.class,
             composer = PipelineRunParameterComposer.class
+    )
+    @FilterField(
+            isRegex = true,
+            displayName = "parameter\\.[^ \\/]+",
+            databaseTableAlias = "r",
+            databaseFieldName = "parameter_json",
+            supportedOperands = {FilterOperandType.EQUALS},
+            converter = PipelineRunParameterJsonConverter.class,
+            composer = PipelineRunParameterJsonComposer.class
     )
     OTHER_PARAMETER;
 
