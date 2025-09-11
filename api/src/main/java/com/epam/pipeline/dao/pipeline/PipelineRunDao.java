@@ -920,22 +920,21 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         final String[] partialParametersParts = partialParams.split("=", 3);
         String parameterJsonClause = StringUtils.EMPTY;
         if (partialParametersParts.length >= 1) {
-            params.addValue(PipelineRunParameters.PARAMETER_NAME.name(), partialParametersParts[0]);
-            parameterJsonClause = String.format("\"name\": \":%s\"", PipelineRunParameters.PARAMETER_NAME.name());
+            parameterJsonClause = String.format("\"name\": \"%s\"", partialParametersParts[0]);
         }
 
         if (partialParametersParts.length >= 2) {
-            params.addValue(PipelineRunParameters.PARAMETER_VALUE.name(), partialParametersParts[1]);
             parameterJsonClause = parameterJsonClause
-                    + String.format(", \"value\": \":%s\"", PipelineRunParameters.PARAMETER_VALUE.name());
+                    + String.format(", \"value\": \":%s\"", partialParametersParts[1]);
         }
 
         if (partialParametersParts.length >= 3) {
-            params.addValue(PipelineRunParameters.PARAMETER_TYPE.name(), partialParametersParts[2]);
             parameterJsonClause = parameterJsonClause
-                    + String.format(", \"type\": \":%s\"", PipelineRunParameters.PARAMETER_TYPE.name());
+                    + String.format(", \"type\": \":%s\"", partialParametersParts[2]);
         }
-        return String.format("r.parameters_json @> {\"%s\": {%s}}", PipelineRunParameters.PARAMETER_NAME.name(), parameterJsonClause);
+        parameterJsonClause = String.format("{\"%s\": {%s}}", partialParametersParts[0], parameterJsonClause);
+        params.addValue(PipelineRunParameters.PARAMETER_JSON.name(), parameterJsonClause);
+        return String.format("r.parameters_json @> :%s::jsonb", PipelineRunParameters.PARAMETER_JSON.name());
     }
 
     private void appendAnd(StringBuilder whereBuilder, int clausesCount) {
@@ -1099,9 +1098,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         START_DATE,
         END_DATE,
         PARAMETERS,
-        PARAMETER_NAME,
-        PARAMETER_VALUE,
-        PARAMETER_TYPE,
+        PARAMETER_JSON,
         PARENT_ID,
         CHILD_RUNS_COUNT,
         ACTIVE_CHILD_RUNS_COUNT,
