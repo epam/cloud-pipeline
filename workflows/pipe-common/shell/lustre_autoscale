@@ -101,11 +101,10 @@ function update_lustre_fs_size() {
   RESPONSE=$(call_api "$_API" "$_API_TOKEN" "lustre/$_RUN_ID/?size=$_SIZE" "PUT")
   RESPONSE_STATUS=$(echo "$RESPONSE" | jq -r ".status")
   RESULT=0
-  if [[ "$RESPONSE_STATUS" == "ERROR" ]]
-  then
+  if [[ "$RESPONSE_STATUS" == "ERROR" ]]; then
     RESULT=1
     RESPONSE_MESSAGE=$(echo "$RESPONSE" | jq -r ".message")
-    pipe_log_debug "$RESPONSE_MESSAGE"
+    pipe_log_fail "$RESPONSE_MESSAGE" "$LOG_TASK"
   fi
   return "$RESULT"
 }
@@ -228,7 +227,7 @@ done
 
 if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$RUN_ID" ]] || [[ -z "$MOUNT_POINT" ]]
 then
-  pipe_log_fail "Some of the required arguments are missing."
+  pipe_log_fail "Some of the required arguments are missing." "$LOG_TASK"
   exit 1
 fi
 
@@ -252,7 +251,7 @@ THRESHOLD_PREFERENCE_DEFAULT="${THRESHOLD_PREFERENCE_DEFAULT:-0.75}"
 DELTA_PREFERENCE="${DELTA_PREFERENCE:-lustre.fs.scale.delta.ratio}"
 DELTA_PREFERENCE_DEFAULT="${DELTA_PREFERENCE_DEFAULT:-1}"
 MAX_FS_SIZE_PREFERENCE="${MAX_FS_SIZE_PREFERENCE:-lustre.fs.max.size}"
-MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-120000}"
+MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-1125900}"
 UPDATE_SIZE_PERIOD_PREFERENCE="${UPDATE_SIZE_PERIOD_PREFERENCE:-lustre.fs.update.size.period}"
 # We can't make changes earlier than 6 hours after last change:
 # https://docs.aws.amazon.com/fsx/latest/LustreGuide/managing-throughput-capacity.html
@@ -312,10 +311,10 @@ while true; do
         pipe_log_debug "Filesystem $MOUNT_POINT new capacity is ${REQUIRED_SIZE}G."
         NEXT_UPDATE_SIZE_TIME=$(($(get_current_timestamp) + UPDATE_SIZE_PERIOD))
       else
-        pipe_log_fail "Filesystem $MOUNT_POINT capacity has not been increased yet. It might be in process."
+        pipe_log_fail "Filesystem $MOUNT_POINT capacity has not been increased yet. It might be in process." "$LOG_TASK"
         continue
       fi
-      pipe_log_info "Filesystem $MOUNT_POINT was autoscaled ${CURRENT_SIZE}G + ${LUSTRE_SIZE_STEP}G = ${REQUIRED_SIZE}G."
+      pipe_log_info "Filesystem $MOUNT_POINT was autoscaled ${CURRENT_SIZE}G + ${LUSTRE_SIZE_STEP}G = ${REQUIRED_SIZE}G." "$LOG_TASK"
     else
       pipe_log_debug "Filesystem $MOUNT_POINT usage satisfies the configured threshold ${CURRENT_USAGE}% < ${THRESHOLD}%."
     fi
