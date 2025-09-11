@@ -31,7 +31,7 @@ public class AndFilterExpression extends FilterExpression {
 
     @Override
     public String toSQLStatement() throws WrongFilterException {
-        if (this.getExpressions() != null ) {
+        if (this.getExpressions() != null) {
             return String.format("(%s)",
                     this.getExpressions().stream().map(filterExpression -> {
                         try {

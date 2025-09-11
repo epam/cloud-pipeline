@@ -20,12 +20,6 @@ package com.epam.pipeline.manager.filter.composers;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.LogicalExpression;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import org.apache.commons.collections4.CollectionUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PipelineRunParameterJsonComposer extends AbstractFilterComposer {
 

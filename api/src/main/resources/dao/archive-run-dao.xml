@@ -82,7 +82,7 @@
                         :START_DATE,
                         :END_DATE,
                         :PARAMETERS,
-                        :PARAMETERS_JSON,
+                        :PARAMETERS_JSON::jsonb,
                         :STATUS,
                         :TERMINATING,
                         :POD_ID,

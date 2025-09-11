@@ -82,6 +82,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private Pattern wherePattern = Pattern.compile("@WHERE@");
     private Pattern whereTagsPattern = Pattern.compile("@WHERE_TAGS@");
     private static final String AND = " AND ";
+    private static final String OR = " OR ";
     private static final String WHERE = " WHERE ";
     private static final String POSTGRE_TYPE_BIGINT = "BIGINT";
     private static final int STRING_BUFFER_SIZE = 70;
@@ -822,7 +823,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     filter.getPartialParameters(), params);
             whereBuilder
                     .append(" (")
-                    .append(partialParametersClause).append(" OR ")
+                    .append(partialParametersClause).append(OR)
                     .append(parameterJsonClause).append(") ");
             clausesCount++;
         }
@@ -854,11 +855,11 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             whereBuilder
                     .append(" (")
                     .append(parentIdFieldIsPresentClause)
-                    .append(" OR ")
+                    .append(OR)
                     .append(parametersFieldHasParentIdClause)
-                    .append(" OR ")
+                    .append(OR)
                     .append(parameterJsonFieldHasParentIdClause)
-                    .append(")");
+                    .append(" )");
             clausesCount++;
         }
 
@@ -898,7 +899,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     " (" +
                         "r.node_count > 0 " +
                         "OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%' " +
-                        "OR r.parameters_json @> '{\"CP_CAP_AUTOSCALE\": {\"name\": \"CP_CAP_AUTOSCALE\", \"value\": \"true\", \"type\": \"boolean\"}}'::jsonb" +
+                        "OR r.parameters_json @> '{\"CP_CAP_AUTOSCALE\": " +
+                            "{\"name\": \"CP_CAP_AUTOSCALE\", \"value\": \"true\", \"type\": \"boolean\"}}'::jsonb" +
                     ")"
             );
             clausesCount++;
@@ -956,7 +958,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             whereBuilder.append(
                     String.format(" r.pipeline_id in (:%s) ", PipelineRunParameters.PROJECT_PIPELINES.name()));
             if (CollectionUtils.isNotEmpty(projectFilter.getConfigurationIds())) {
-                whereBuilder.append(" OR ");
+                whereBuilder.append(OR);
             }
         }
         if (CollectionUtils.isNotEmpty(projectFilter.getConfigurationIds())) {
@@ -1003,7 +1005,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 .map(entry -> String.format("(end_date < '%s' AND lower(owner) = '%s')",
                         Timestamp.from(entry.getValue().toInstant()),
                         entry.getKey().toLowerCase()))
-                .collect(Collectors.joining(" OR "));
+                .collect(Collectors.joining(OR));
     }
 
     private String makeRunSidsCondition(PipelineUser user, MapSqlParameterSource params) {

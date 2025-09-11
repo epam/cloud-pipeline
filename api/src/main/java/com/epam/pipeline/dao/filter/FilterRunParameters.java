@@ -25,7 +25,16 @@ import com.epam.pipeline.manager.filter.composers.ListComposer;
 import com.epam.pipeline.manager.filter.composers.PipelineRunParameterComposer;
 import com.epam.pipeline.manager.filter.composers.PipelineRunParameterJsonComposer;
 import com.epam.pipeline.manager.filter.composers.WildCardComposer;
-import com.epam.pipeline.manager.filter.converters.*;
+import com.epam.pipeline.manager.filter.converters.CommitStatusConverter;
+import com.epam.pipeline.manager.filter.converters.DateConverter;
+import com.epam.pipeline.manager.filter.converters.IntegerConverter;
+import com.epam.pipeline.manager.filter.converters.LongListConverter;
+import com.epam.pipeline.manager.filter.converters.PipelineRunParameterConverter;
+import com.epam.pipeline.manager.filter.converters.PipelineRunParameterJsonConverter;
+import com.epam.pipeline.manager.filter.converters.PipelineRunParentIdParameterConverter;
+import com.epam.pipeline.manager.filter.converters.PipelineRunParentIdParameterJsonConverter;
+import com.epam.pipeline.manager.filter.converters.RunStatusConverter;
+import com.epam.pipeline.manager.filter.converters.WildCardConverter;
 import org.springframework.jdbc.core.RowMapper;
 
 public enum FilterRunParameters {

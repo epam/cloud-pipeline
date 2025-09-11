@@ -247,22 +247,23 @@ public class LogicalExpression extends FilterExpression {
             FilterFields filterFields = field.getAnnotation(FilterFields.class);
             if (filterFields != null) {
                 final List<FilterExpression> matchedExpressions = Arrays.stream(filterFields.value())
-                        .filter(this::filterFieldMatches).map(filterField -> {
-                    try {
-                        return new LogicalExpression(
-                                getField(), getValue(), getOperandType()
-                        ).preProcessField(
-                                field,
-                                filterField,
-                                context,
-                                parameterSource,
-                                parametersPlaceholders,
-                                params
-                        );
-                    } catch (WrongFilterException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }).collect(Collectors.toList());
+                        .filter(this::filterFieldMatches)
+                        .map(filterField -> {
+                            try {
+                                return new LogicalExpression(
+                                        getField(), getValue(), getOperandType()
+                                ).preProcessField(
+                                        field,
+                                        filterField,
+                                        context,
+                                        parameterSource,
+                                        parametersPlaceholders,
+                                        params
+                                );
+                            } catch (WrongFilterException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        }).collect(Collectors.toList());
                 if (CollectionUtils.isNotEmpty(matchedExpressions)) {
                     if (matchedExpressions.size() > 1) {
                         return new OrFilterExpression(matchedExpressions);
