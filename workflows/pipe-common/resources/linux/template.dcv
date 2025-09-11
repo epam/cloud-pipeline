@@ -7,4 +7,4 @@ proxyhost={CP_PROXY}
 proxyport={CP_PROXY_PORT}
 host={CP_HOST}
 port={CP_HOST_PORT}
-sessionid=session
+sessionid={CP_SESSION_ID}-session

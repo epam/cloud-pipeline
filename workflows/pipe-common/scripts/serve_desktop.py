@@ -66,6 +66,7 @@ def get_desktop_file():
                                              CP_HOST=Config.local_ip,
                                              CP_HOST_PORT=Config.local_port,
                                              CP_USERNAME=user_name,
+                                             CP_SESSION_ID=user_name.replace('.', ''),
                                              CP_PASSWORD=Config.user_pass)
     elif template_type == NXS:
         template_data = template_data.format(CP_PROXY=proxy_host,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ if [ "$CP_DCV_INIT_SCRIPT" ]; then
     CP_DCV_INIT_SCRIPT="--init $CP_DCV_INIT_SCRIPT"
     pipe_log_info "Using '$CP_DCV_INIT_SCRIPT' initialization script for a DCV session" "$DCV_INSTALL_TASK"
 fi
-dcv create-session --owner $_user_name --user $_user_name $CP_DCV_INIT_SCRIPT "${_user_name}-session"
+dcv create-session --owner $_user_name --user $_user_name $CP_DCV_INIT_SCRIPT "${_user_name//./}-session"
 
 if [ $? -ne 0 ]; then
     pipe_log_fail "Cannot create DCV session for '$_user_name'" "$DCV_INSTALL_TASK"
