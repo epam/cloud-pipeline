@@ -115,6 +115,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
         if (instance.getCloudRegionId() == null) {
             instance.setCloudRegionId(cloudRegionManager.loadDefaultRegion().getId());
         }
+        instance.setFallbackInstanceTypes(instance.getFallbackInstanceTypes());
         return instance;
     }
 

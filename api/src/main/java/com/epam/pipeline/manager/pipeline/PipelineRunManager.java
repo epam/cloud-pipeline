@@ -424,7 +424,8 @@ public class PipelineRunManager {
         Assert.isTrue(!sensitive || tool.isAllowSensitive(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
-
+        // fallback instance types shall be propagated to current method and then to createPipelineRun to be
+        // persisted in DB for PipelineRun object (runInstance field)
         final PipelineRun run = createPipelineRun(pipelineVersion.orElse(null), configuration, pipeline,
                 tool, toolVersion.orElse(null),
                 region, parentRun.orElse(null), entityIds, configurationId, sensitive);

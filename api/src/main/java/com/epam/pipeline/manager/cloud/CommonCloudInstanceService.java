@@ -127,10 +127,11 @@ public class CommonCloudInstanceService {
 
     private void readInstanceId(final RunInstance instance, final String output) {
         final String[] node = output.split("\\s+");
-        if (node.length == 3) {
+        if (node.length == 4) {
             instance.setNodeId(node[0]);
             instance.setNodeIP(node[1]);
             instance.setNodeName(node[2]);
+            instance.setNodeType(node[3]);
         }
     }
 
