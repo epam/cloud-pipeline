@@ -14,6 +14,8 @@
   ],
   "enabledApiProposals": [
     "resolvers",
+    "tunnelFactory",
+    "terminalDataWriteEvent",
     "contribViewsRemote"
   ],
   "extensionPack": [
@@ -34,57 +36,178 @@
   ],
   "api": "none",
   "activationEvents": [
-    "onResolveRemoteAuthority:cp",
+    "onResolveRemoteAuthority:cp-remote",
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
+  "capabilities": {
+    "virtualWorkspaces": true,
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
   "contributes": {
+    "views": {
+      "remote": [
+        {
+          "id": "cloudPipelineHosts",
+          "name": "Remote Cloud Pipeline",
+          "group": "targets@1",
+          "remoteName": "remote-cp"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "remote-cp.helloWorld",
-        "title": "Hello World"
+        "title": "Hello World",
+        "category": "Remote-CP"
       },
       {
-        "command": "remote-cp.connectToRun",
-        "title": "%command.connectToRun%",
-        "category": "CP"
+        "command": "remote-cp.openEmptyWindow",
+        "title": "Connect to Run...",
+        "category": "Remote-CP"
+      },
+      {
+        "command": "remote-cp.openEmptyWindowInCurrentWindow",
+        "title": "Connect Current Window to Run...",
+        "category": "Remote-CP"
+      },
+      {
+        "command": "remote-cp.showLog",
+        "title": "Show Log",
+        "category": "Remote-CP"
+      },
+      {
+        "command": "remote-cp.explorer.emptyWindowInNewWindow",
+        "title": "Connect to Run in New Window",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "remote-cp.explorer.emptyWindowInCurrentWindow",
+        "title": "Connect to Run in Current Window"
+      },
+      {
+        "command": "remote-cp.explorer.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "remote-cp.explorer.add",
+        "title": "Add New",
+        "icon": "$(plus)"
       }
     ],
-    "statusBar/remoteIndicator": [
+    "resourceLabelFormatters": [
       {
-        "command": "remote-cp.connectToRun",
-        "when": "((isWindows && !isWeb) || cpFeatureInstalled) && !wsl.openInNewWindow",
-        "group": "remote_10_wsl_0_local@1"
+        "scheme": "vscode-remote",
+        "authority": "cp-remote+*",
+        "formatting": {
+          "label": "${path}",
+          "separator": "/",
+          "tildify": true,
+          "workspaceSuffix": "CP"
+        }
       }
-    ]
+    ],
+    "menus": {
+      "statusBar/remoteIndicator": [
+        {
+          "command": "remote-cp.openEmptyWindow",
+          "when": "remoteName =~ /^cp-remote$/ && remoteConnectionState == connected",
+          "group": "remote_20_cp_1general@1"
+        },
+        {
+          "command": "remote-cp.openEmptyWindowInCurrentWindow",
+          "when": "remoteName =~ /^cp-remote$/ && remoteConnectionState == connected",
+          "group": "remote_20_cp_1general@2"
+        },
+        {
+          "command": "remote-cp.showLog",
+          "when": "remoteName =~ /^cp-remote$/ && remoteConnectionState == connected",
+          "group": "remote_20_cp_1general@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "remote-cp.explorer.emptyWindowInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "remote-cp.explorer.emptyWindowInCurrentWindow",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "remote-cp.explorer.refresh",
+          "when": "view == cloudPipelineHosts",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "remote-cp.explorer.emptyWindowInNewWindow",
+          "when": "viewItem =~ /^remote-cp.explorer.host$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "remote-cp.explorer.emptyWindowInNewWindow",
+          "when": "viewItem =~ /^remote-cp.explorer.host$/",
+          "group": "navigation@2"
+        },
+        {
+          "command": "remote-cp.explorer.emptyWindowInCurrentWindow",
+          "when": "viewItem =~ /^remote-cp.explorer.host$/",
+          "group": "navigation@1"
+        }
+      ]
+    }
   },
   "scripts": {
-    "vscode:prepublish": "yarn run package",
-    "compile": "yarn run check-types && yarn run lint && node esbuild.js",
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && npm run validate-commands && node esbuild.js",
+    "validate-commands": "npx tsx ./validate/commands.ts",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "yarn run check-types && yarn run lint && node esbuild.js --production",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test --enable-proposed-api epam.remote-cp",
+    "test:unit": "jest"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
+    "@types/node": "^20.19.13",
     "@types/vscode": "^1.103.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
+    "@vscode/dts": "^0.4.1",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^2.22.0",
     "esbuild": "^0.25.8",
     "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jest": "^30.1.3",
+    "mocha": "^11.7.2",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.9.2"
+    "ts-jest": "^29.4.1",
+    "ts-mocha": "^11.1.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0"
   },
   "dependencies": {
     "@enonic/fnv-plus": "^1.3.0",
@@ -101,6 +224,5 @@
     "socks": "^2.7.3",
     "ssh-config": "^5.0.2",
     "table": "^6.8.2"
-  },
-  "packageManager": "yarn@4.9.4+sha512.7b1cb0b62abba6a537b3a2ce00811a843bea02bcf53138581a6ae5b1bf563f734872bd47de49ce32a9ca9dcaff995aa789577ffb16811da7c603dcf69e73750b"
+  }
 }

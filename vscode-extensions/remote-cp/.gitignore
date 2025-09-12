@@ -4,3 +4,4 @@
 /.yarn
 /dist
 /out
+/node_modules
