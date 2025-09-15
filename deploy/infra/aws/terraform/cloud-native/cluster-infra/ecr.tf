@@ -28,7 +28,7 @@ resource "aws_ecr_pull_through_cache_rule" "ecr_public" {
   upstream_repository_prefix = "ROOT"
 }
 
-resource "aws_ecr_pull_through_cache_rule" "ecr_public" {
+resource "aws_ecr_pull_through_cache_rule" "ecr_dockerhub" {
   ecr_repository_prefix = "dockerhub"
   upstream_registry_url = "registry-1.docker.io"
   upstream_repository_prefix = "ROOT"
