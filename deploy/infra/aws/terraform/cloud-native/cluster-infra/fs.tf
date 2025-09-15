@@ -71,7 +71,7 @@ module "cp_system_efs" {
   ]
 
   # Mount targets / security group
-  mount_targets = {for snet_id in data.aws_subnets.this.ids : snet_id => { subnet_id = snet_id }}
+  mount_targets = {for snet_id in data.aws_subnets.this.ids : snet_id => { subnet_id = snet_id, security_groups = var.efs_extra_security_group_ids }}
 
   security_group_description = "${local.resource_name_prefix} EFS security group"
   security_group_vpc_id      = var.vpc_id
@@ -96,6 +96,6 @@ resource "aws_fsx_lustre_file_system" "fsx" {
   deployment_type             = var.fsx_deployment_type
   per_unit_storage_throughput = var.fsx_per_unit_storage_throughput
   kms_key_id                  = module.kms.key_arn
-  security_group_ids          = [module.internal_cluster_access_sg.security_group_id]
+  security_group_ids          = concat([module.internal_cluster_access_sg.security_group_id], var.fsx_extra_security_group_ids)
   tags                        = local.tags
 }

@@ -183,6 +183,12 @@ variable "efs_provisioned_throughput_in_mibps" {
   description = "EFS throughput, measured in MiB/s"
 }
 
+variable "efs_extra_security_group_ids" {
+  type        = list(string)
+  default     = []
+  description = "List of additional SG's IDs to attach to Cloud-Pipeline's EFS. Could be useful to provide access to additional networks."
+}
+
 variable "fsx_storage_capacity" {
   type        = number
   default     = 1200
@@ -199,6 +205,12 @@ variable "fsx_per_unit_storage_throughput" {
   type        = number
   default     = 200
   description = "Describes the amount of read and write throughput for each 1 tebibyte of storage, in MB/s/TiB, required for the PERSISTENT_1 and PERSISTENT_2 deployment_type"
+}
+
+variable "fsx_extra_security_group_ids" {
+  type        = list(string)
+  default     = []
+  description = "List of additional SG's IDs to attach to Cloud-Pipeline's FSx for Lustre. Could be useful to provide access to additional networks."
 }
 
 variable "external_access_security_group_ids" {
