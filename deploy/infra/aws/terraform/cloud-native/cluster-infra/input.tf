@@ -223,7 +223,6 @@ variable "enable_aws_omics_integration" {
 
 variable "ecr_dockerhub_username" {
   type        = string
-  default     = "postgres"
   description = "Username for the Dockerhub pull through option"
 }
 
