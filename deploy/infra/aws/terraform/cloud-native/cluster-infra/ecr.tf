@@ -13,11 +13,13 @@
 # limitations under the License.
 
 resource "aws_secretsmanager_secret" "ecr_dockerhub_secret" {
+  count                   = var.ecr_dockerhub_token != null ? 1 : 0
   name                    = "ecr/${local.rds_resource_name_prefix}_dockerhub/${var.ecr_dockerhub_username}"
   recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "ecr_dockerhub_secret" {
+  count.        = var.ecr_dockerhub_token != null ? 1 : 0
   secret_id     = aws_secretsmanager_secret.ecr_dockerhub_secret[0].id
   secret_string = var.ecr_dockerhub_token
 }
@@ -29,6 +31,7 @@ resource "aws_ecr_pull_through_cache_rule" "ecr_public" {
 }
 
 resource "aws_ecr_pull_through_cache_rule" "ecr_dockerhub" {
+  count                 = var.ecr_dockerhub_token != null ? 1 : 0
   ecr_repository_prefix = "dockerhub"
   upstream_registry_url = "registry-1.docker.io"
   upstream_repository_prefix = "ROOT"
