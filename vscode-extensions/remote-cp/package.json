@@ -5,9 +5,8 @@
   "version": "0.0.1",
   "publisher": "epam",
   "icon": "resources/remote-cp.png",
-  "type": "module",
   "engines": {
-    "vscode": "^1.96.0"
+    "vscode": "^1.103.0"
   },
   "extensionKind": [
     "ui"
@@ -166,12 +165,12 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
-    "compile": "npm run check-types && npm run lint && npm run validate-commands && node esbuild.js",
+    "compile": "npm run check-types && npm run lint && npm run validate-commands && npx tsc -b",
     "validate-commands": "npx tsx ./validate/commands.ts",
     "watch": "npm-run-all -p watch:*",
-    "watch:esbuild": "node esbuild.js --watch",
+    "watch:esbuild": "npx tsc -b -w",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "package": "npm run check-types && npm run lint && npx tsc -b",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
@@ -184,6 +183,8 @@
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.13",
+    "@types/ssh2": "^0.5.52",
+    "@types/ssh2-streams": "^0.1.12",
     "@types/vscode": "^1.103.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
@@ -211,6 +212,8 @@
   },
   "dependencies": {
     "@enonic/fnv-plus": "^1.3.0",
+    "@jeanp413/ssh-config": "^4.3.1",
+    "ssh2": "git+https://github.com/jeanp413/ssh2#master",
     "@microsoft/dev-tunnels-contracts": "^1.0.7463",
     "@vscode/chat-extension-utils": "^0.0.0-alpha.4",
     "@vscode/extension-telemetry": "^0.9.0",
@@ -221,8 +224,10 @@
     "minimist": "^1.2.8",
     "posix-getopt": "^1.2.1",
     "shell-quote": "^1.8.1",
+    "simple-socks": "github:jeanp413/simple-socks#main",
     "socks": "^2.7.3",
     "ssh-config": "^5.0.2",
     "table": "^6.8.2"
-  }
+  },
+  "packageManager": "yarn@4.9.4+sha512.7b1cb0b62abba6a537b3a2ce00811a843bea02bcf53138581a6ae5b1bf563f734872bd47de49ce32a9ca9dcaff995aa789577ffb16811da7c603dcf69e73750b"
 }

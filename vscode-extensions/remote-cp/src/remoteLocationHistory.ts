@@ -31,7 +31,7 @@ export class RemoteLocationHistory {
     }
   }
 
-  async removeLocation(host: string, path: string) {
+  async removeLocation(_host: string, _path: string) {
     // let hostLocations = this.remoteLocationHistory[host] || [];
     // hostLocations = hostLocations.filter(l => l !== path);
     // this.remoteLocationHistory[host] = hostLocations;

@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
 import { getRemoteAuthority } from "./authResolver";
 // import { getRemoteAuthority } from './authResolver';
 // import { getSSHConfigPath } from './ssh/sshConfig';

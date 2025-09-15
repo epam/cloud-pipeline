@@ -1,4 +1,3 @@
-import { info } from "console";
 import * as vscode from "vscode";
 
 export interface ILogger {
