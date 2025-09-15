@@ -218,6 +218,21 @@ variable "enable_aws_omics_integration" {
 }
 
 ###################################################################
+#                  AWS ECR for Cloud-Pipeline deployment
+###################################################################
+
+variable "ecr_dockerhub_username" {
+  type        = string
+  default     = "postgres"
+  description = "Username for the Dockerhub pull through option"
+}
+
+variable "ecr_dockerhub_token" {
+  type        = string
+  description = "PAT for the Dockerhub pull through option. Shall be set via env var TF_VAR_ecr_dockerhub_token"
+}
+
+###################################################################
 #                  AWS RDS for Cloud-Pipeline deployment
 ###################################################################
 variable "deploy_rds" {
