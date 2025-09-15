@@ -19,7 +19,7 @@ resource "aws_secretsmanager_secret" "ecr_dockerhub_secret" {
 }
 
 resource "aws_secretsmanager_secret_version" "ecr_dockerhub_secret" {
-  count.        = var.ecr_dockerhub_token != null ? 1 : 0
+  count         = var.ecr_dockerhub_token != null ? 1 : 0
   secret_id     = aws_secretsmanager_secret.ecr_dockerhub_secret[0].id
   secret_string = var.ecr_dockerhub_token
 }
