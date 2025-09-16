@@ -230,6 +230,7 @@ variable "ecr_sys_dockerhub_username" {
 variable "ecr_sys_dockerhub_token" {
   type        = string
   default     = null
+  sensitive   = true
   description = "PAT for the Dockerhub pull through option"
 }
 
@@ -241,6 +242,7 @@ variable "ecr_sys_public_ecr_prefix" {
 
 variable "ecr_sys_dockerhub_prefix" {
   type        = string
+  default     = null
   description = "Custom URL for the dockerhub registry (registry-1.docker.io). If not defined - a pull through private ECR will be used"
 }
 
