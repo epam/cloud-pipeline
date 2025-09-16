@@ -244,10 +244,6 @@ variable "ecr_sys_dockerhub_prefix" {
   description = "Custom URL for the dockerhub registry (registry-1.docker.io). If not defined - a pull through private ECR will be used"
 }
 
-ecr_sys_public_ecr_prefix = var.ecr_sys_public_ecr_prefix != null ? var.ecr_sys_public_ecr_prefix : "${local.ecr_sys_url}/ecr-public"
-  ecr_sys_dockerhub_prefix = var.ecr_sys_dockerhub_prefix != null ? var.ecr_sys_dockerhub_prefix : "${local.ecr_sys_url}/dockerhub"
-
-
 ###################################################################
 #                  AWS RDS for Cloud-Pipeline deployment
 ###################################################################
