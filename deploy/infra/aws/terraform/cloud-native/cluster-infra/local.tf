@@ -136,8 +136,17 @@ locals {
   default_admin_name = var.cp_default_admin_name != null ? ["-env CP_DEFAULT_ADMIN_NAME=${var.cp_default_admin_name}"] : []
   
   ecr_sys_url               = "${aws_ecr_pull_through_cache_rule.ecr_public.registry_id}.dkr.ecr.${data.aws_region.current.id}.amazonaws.com"
-  ecr_sys_public_ecr_prefix = var.ecr_sys_public_ecr_prefix != null ? var.ecr_sys_public_ecr_prefix : "${local.ecr_sys_url}/ecr-public"
-  ecr_sys_dockerhub_prefix  = var.ecr_sys_dockerhub_prefix  != null ? var.ecr_sys_dockerhub_prefix  : "${local.ecr_sys_url}/dockerhub"
+  ecr_sys_public_ecr_prefix = ( var.ecr_sys_public_ecr_prefix != null
+                                  ? var.ecr_sys_public_ecr_prefix
+                                  : "${local.ecr_sys_url}/ecr-public"
+                              )
+  ecr_sys_dockerhub_prefix  = ( var.ecr_sys_dockerhub_prefix  != null 
+                                  ? var.ecr_sys_dockerhub_prefix
+                                  : ( var.ecr_dockerhub_token != null
+                                        ? "${local.ecr_sys_url}/dockerhub"
+                                        : "registry-1.docker.io"
+                                    )
+                              )
 
   deploy_script = join(" \\\n", concat([
     "./pipectl install",
