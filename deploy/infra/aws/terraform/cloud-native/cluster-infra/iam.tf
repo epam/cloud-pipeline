@@ -658,6 +658,11 @@ resource "aws_iam_role_policy_attachment" "eks_cp_system_node_AWSXrayWriteOnly" 
   policy_arn = data.aws_iam_policy.AWSXrayWriteOnlyAccess.arn
 }
 
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_cp_ecr_sys_pull_through" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = aws_iam_policy.cp_ecr_sys_pull_through.arn
+}
+
 
 resource "aws_iam_instance_profile" "eks_cp_worker_node" {
   name = "${local.resource_name_prefix}-EKSCPWorkerNodeExecutionRole_IP"
@@ -721,6 +726,10 @@ resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_AWSXrayWriteOnly" 
   policy_arn = data.aws_iam_policy.AWSXrayWriteOnlyAccess.arn
 }
 
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_cp_ecr_sys_pull_through" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
+  policy_arn = aws_iam_policy.cp_ecr_sys_pull_through.arn
+}
 
 /*
 ===============================================================================
@@ -989,3 +998,32 @@ module "aws_lbc_addon_sa_role" {
   tags = local.tags
 }
 
+/*
+===============================================================================
+  System ECR IAM
+===============================================================================
+*/
+
+resource "aws_iam_policy" "cp_ecr_sys_pull_through" {
+  name        = "${local.resource_name_prefix}-ECRSystemPullThoughPolicy"
+  description = "Permissions to use pull through capabilities in the system ECR"
+  path        = "/"
+
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "ecr:CreateRepository",
+          "ecr:ReplicateImage",
+          "ecr:BatchImportUpstreamImage"
+        ],
+        "Resource" : [
+          "*"
+        ]
+      }
+    ]
+  })
+  tags = local.tags
+}
