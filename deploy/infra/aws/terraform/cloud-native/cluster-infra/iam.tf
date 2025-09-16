@@ -726,7 +726,7 @@ resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_AWSXrayWriteOnly" 
   policy_arn = data.aws_iam_policy.AWSXrayWriteOnlyAccess.arn
 }
 
-resource "aws_iam_role_policy_attachment" "eks_cp_system_node_cp_ecr_sys_pull_through" {
+resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_cp_ecr_sys_pull_through" {
   role       = aws_iam_role.eks_cp_worker_node_execution.name
   policy_arn = aws_iam_policy.cp_ecr_sys_pull_through.arn
 }
