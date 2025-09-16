@@ -148,6 +148,11 @@ locals {
                                     )
                               )
 
+  ecr_sys_quay_prefix = ( var.ecr_sys_quay_prefix != null
+                            ? var.ecr_sys_quay_prefix
+                            : "${local.ecr_sys_url}/quay"
+                        )
+
   deploy_script = join(" \\\n", concat([
     "./pipectl install",
     "-dt aws-native",
@@ -157,7 +162,7 @@ locals {
     "-env CP_SYSTEM_FILESYSTEM_ID=\"${local.cp_filesystem_id}\"",
     "-env CP_SYSTEM_FILESYSTEM_MOUNTNAME=\"${local.cp_filesystem_mountname}\"",
     "-env CP_CSI_EXECUTION_ROLE=\"${local.cp_filesystem_exec_role}\"",
-    "-env CP_DOCKER_DIST_SRV=\"quay.io/\"",
+    "-env CP_DOCKER_DIST_SRV=\"${ecr_sys_quay_prefix}/\"",
     "-env CP_AWS_KMS_ARN=\"${module.kms.key_arn}\"",
     "-env CP_PREF_CLUSTER_SSH_KEY_NAME=\"${module.ssh_rsa_key_pair.key_pair_name}\"",
     "-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\"${module.internal_cluster_access_sg.security_group_id}\"",
@@ -172,7 +177,7 @@ locals {
     "-env CP_KUBE_EXTERNAL_HOST=\"${module.eks.cluster_endpoint}\"",
     "-env CP_KUBE_SERVICES_TYPE=\"ingress\"",
     "-env CP_ECR_SYS_PUBLIC_ECR_PREFIX=\"${local.ecr_sys_public_ecr_prefix}\"",
-    "-env CP_ECR_SYS_PUBLIC_DOCKERHUB_PREFIX=\"${local.ecr_sys_dockerhub_prefix}\"",
+    "-env CP_ECR_SYS_DOCKERHUB_PREFIX=\"${local.ecr_sys_dockerhub_prefix}\"",
     "--external-host-dns",
     "-env PSG_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env PSG_PASS=\"${local.pipeline_db_pass}\"",

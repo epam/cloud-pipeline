@@ -43,4 +43,10 @@ resource "aws_ecr_pull_through_cache_rule" "ecr_dockerhub" {
   depends_on = [aws_secretsmanager_secret.ecr_dockerhub_secret, aws_secretsmanager_secret_version.ecr_dockerhub_secret]
 }
 
+resource "aws_ecr_pull_through_cache_rule" "ecr_quay" {
+  ecr_repository_prefix      = "quay"
+  upstream_registry_url      = "quay.io"
+  upstream_repository_prefix = "ROOT"
+}
+
 

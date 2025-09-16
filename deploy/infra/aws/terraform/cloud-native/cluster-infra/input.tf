@@ -246,6 +246,12 @@ variable "ecr_sys_dockerhub_prefix" {
   description = "Custom URL for the dockerhub registry (registry-1.docker.io). If not defined - a pull through private ECR will be used"
 }
 
+variable "ecr_sys_quay_prefix" {
+  type        = string
+  default     = null
+  description = "Custom URL for the quay registry (quay.io). This is used for the Cloud Pipeline services pull. If not defined - a pull through private ECR will be used"
+}
+
 ###################################################################
 #                  AWS RDS for Cloud-Pipeline deployment
 ###################################################################
