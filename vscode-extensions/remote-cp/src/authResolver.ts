@@ -18,6 +18,7 @@ import { untildify, exists as fileExists } from "./common/files";
 import { gatherIdentityFiles, SSHKey } from "./ssh/identityFiles";
 import { installCodeServer, ServerInstallError } from "./serverSetup";
 import { findRandomPort } from "./common/ports";
+import { execPipeTunnel } from "./pipeTunnel";
 
 // export const REMOTE_SSH_AUTHORITY = 'ssh-remote';
 export const REMOTE_CP_AUTHORITY = "cp-remote";
@@ -45,7 +46,7 @@ export function registerAuthResolver(
   context: vscode.ExtensionContext,
   logger: Logger,
 ): void {
-  const resolver = new RemoteSSHResolver(context, logger);
+  const resolver = new RemoteCpResolver(context, logger);
   context.subscriptions.push(
     vscode.workspace.registerRemoteAuthorityResolver(
       REMOTE_CP_AUTHORITY,
@@ -55,7 +56,7 @@ export function registerAuthResolver(
   );
 }
 
-export class RemoteSSHResolver
+export class RemoteCpResolver
   implements vscode.RemoteAuthorityResolver, vscode.Disposable
 {
   private proxyConnections: SSHConnection[] = [];
@@ -69,7 +70,7 @@ export class RemoteSSHResolver
   private labelFormatterDisposable: vscode.Disposable | undefined;
 
   constructor(
-    readonly context: vscode.ExtensionContext,
+    readonly extContext: vscode.ExtensionContext,
     readonly logger: Logger,
   ) {}
 
@@ -123,6 +124,11 @@ export class RemoteSSHResolver
         cancellable: false,
       },
       async () => {
+        const runId = parseInt(sshDest.hostname.split("-")[1]);
+        this.extContext.subscriptions.push(
+          await execPipeTunnel(this.extContext, runId),
+        );
+
         try {
           const sshconfig = await SSHConfiguration.loadFromFS();
           const sshHostConfig = sshconfig.getHostConfiguration(
@@ -344,10 +350,10 @@ export class RemoteSSHResolver
           }
 
           // Update terminal env variables
-          this.context.environmentVariableCollection.persistent = false;
+          this.extContext.environmentVariableCollection.persistent = false;
           for (const [key, value] of Object.entries(envVariables)) {
             if (value) {
-              this.context.environmentVariableCollection.replace(key, value);
+              this.extContext.environmentVariableCollection.replace(key, value);
             }
           }
 
@@ -383,7 +389,7 @@ export class RemoteSSHResolver
                 separator: "/",
                 tildify: true,
                 workspaceSuffix:
-                  `SSH: ${sshDest.hostname}` +
+                  `CP: ${sshDest.hostname}` +
                   (sshDest.port && sshDest.port !== 22
                     ? `:${sshDest.port}`
                     : ""),

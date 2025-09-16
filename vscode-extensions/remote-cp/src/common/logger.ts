@@ -1,9 +1,11 @@
 import * as vscode from "vscode";
 
+export type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
+
 export interface ILogger {
   // log(message?: any, ...optionalParams: any[]): void;
-  warn(message?: any, ...optionalParams: any[]): void;
   error(message?: any, ...optionalParams: any[]): void;
+  warn(message?: any, ...optionalParams: any[]): void;
   info(message?: any, ...optionalParams: any[]): void;
   debug(message?: any, ...optionalParams: any[]): void;
   trace(message?: any, ...optionalParams: any[]): void;
@@ -33,6 +35,15 @@ export class Logger implements ILogger {
       "tunnelForwardingHasLog",
       true,
     );
+  }
+
+  public appendLine(line: string): void {
+    this._ensureOutputChannel();
+    this.outputChannel.appendLine(line);
+  }
+
+  public log(level: LogLevel, message?: any, ...optionalParams: any[]): void {
+    this[level](message, ...optionalParams);
   }
 
   public trace(message?: any, ...optionalParams: any[]): void {
