@@ -1,9 +1,10 @@
 import React, {Component} from 'react';
+import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import LaunchFormParameter from './parameter';
 import Divider from './divider';
 import styles from './parameters.css';
-import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../../special/LoadingView';
 import {
   hasResolvedValues,
@@ -51,6 +52,7 @@ function parameterIsVisible (parameter) {
 }
 
 @inject(
+  'authenticatedUserInfo',
   'preferences',
   'runDefaultParameters'
 )
@@ -75,6 +77,14 @@ class Parameters extends Component {
 
   componentWillUnmount () {
     clearTimeout(this.highlightSectionTimeout);
+  }
+
+  @computed
+  get userInfo () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return undefined;
+    }
+    return this.props.authenticatedUserInfo.value;
   }
 
   checkResolvedValues = () => {
@@ -160,7 +170,10 @@ class Parameters extends Component {
         !isReservationRequestParameter(parameter.name) &&
         !isGPUScalingParameter(parameter.name)
         : !parameter.system)
-      .map((parameter) => system ? mapSystemParameter(parameter) : parameter);
+      .map((parameter) => system ? mapSystemParameter(parameter, {
+        runDefaultParameters,
+        userInfo: this.userInfo
+      }) : parameter);
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,
