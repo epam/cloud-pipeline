@@ -221,13 +221,13 @@ variable "enable_aws_omics_integration" {
 #                  AWS ECR for Cloud-Pipeline deployment
 ###################################################################
 
-variable "ecr_dockerhub_username" {
+variable "ecr_sys_dockerhub_username" {
   type        = string
   default     = null
   description = "Username for the Dockerhub pull through option"
 }
 
-variable "ecr_dockerhub_token" {
+variable "ecr_sys_dockerhub_token" {
   type        = string
   default     = null
   description = "PAT for the Dockerhub pull through option"

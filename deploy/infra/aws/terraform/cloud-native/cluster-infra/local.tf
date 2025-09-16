@@ -142,7 +142,7 @@ locals {
                               )
   ecr_sys_dockerhub_prefix  = ( var.ecr_sys_dockerhub_prefix  != null 
                                   ? var.ecr_sys_dockerhub_prefix
-                                  : ( var.ecr_dockerhub_token != null
+                                  : ( var.ecr_sys_dockerhub_token != null
                                         ? "${local.ecr_sys_url}/dockerhub"
                                         : "registry-1.docker.io"
                                     )
