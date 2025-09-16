@@ -162,7 +162,7 @@ locals {
     "-env CP_SYSTEM_FILESYSTEM_ID=\"${local.cp_filesystem_id}\"",
     "-env CP_SYSTEM_FILESYSTEM_MOUNTNAME=\"${local.cp_filesystem_mountname}\"",
     "-env CP_CSI_EXECUTION_ROLE=\"${local.cp_filesystem_exec_role}\"",
-    "-env CP_DOCKER_DIST_SRV=\"${ecr_sys_quay_prefix}/\"",
+    "-env CP_DOCKER_DIST_SRV=\"${local.ecr_sys_quay_prefix}/\"",
     "-env CP_AWS_KMS_ARN=\"${module.kms.key_arn}\"",
     "-env CP_PREF_CLUSTER_SSH_KEY_NAME=\"${module.ssh_rsa_key_pair.key_pair_name}\"",
     "-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\"${module.internal_cluster_access_sg.security_group_id}\"",
