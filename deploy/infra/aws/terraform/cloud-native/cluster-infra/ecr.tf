@@ -14,14 +14,17 @@
 
 resource "aws_secretsmanager_secret" "ecr_dockerhub_secret" {
   count                   = var.ecr_sys_dockerhub_token != null ? 1 : 0
-  name                    = "ecr/${local.rds_resource_name_prefix}_dockerhub/${var.ecr_sys_dockerhub_username}"
+  name                    = "ecr-pullthroughcache/${local.resource_name_prefix}_dockerhub"
   recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "ecr_dockerhub_secret" {
   count         = var.ecr_sys_dockerhub_token != null ? 1 : 0
   secret_id     = aws_secretsmanager_secret.ecr_dockerhub_secret[0].id
-  secret_string = var.ecr_sys_dockerhub_token
+  secret_string = jsonencode({
+    "username": var.ecr_sys_dockerhub_username,
+    "accessToken": var.ecr_sys_dockerhub_token
+  })
 }
 
 resource "aws_ecr_pull_through_cache_rule" "ecr_public" {
@@ -35,7 +38,7 @@ resource "aws_ecr_pull_through_cache_rule" "ecr_dockerhub" {
   ecr_repository_prefix      = "dockerhub"
   upstream_registry_url      = "registry-1.docker.io"
   upstream_repository_prefix = "ROOT"
-  credential_arn             = aws_secretsmanager_secret.ecr_dockerhub_secret.arn
+  credential_arn             = aws_secretsmanager_secret.ecr_dockerhub_secret[0].arn
 
   depends_on = [aws_secretsmanager_secret.ecr_dockerhub_secret, aws_secretsmanager_secret_version.ecr_dockerhub_secret]
 }
