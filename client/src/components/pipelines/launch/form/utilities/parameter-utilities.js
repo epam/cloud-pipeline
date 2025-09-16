@@ -1451,16 +1451,43 @@ export function isSystemParameter (parameterName, options = {}) {
 }
 
 /**
- * Checks if parameter is system parameter
+ * Checks if parameter is restricted by role
  * @param {Parameter} parameter
- * @param {{runDefaultParameters}} [options]
+ * @param {{runDefaultParameters, userInfo}} [options]
+ * @returns {boolean}
+ */
+function isSystemParameterRestrictedByRole (parameter, options = {}) {
+  if (
+    parameter &&
+    isSystemParameter(parameter.name, options)
+  ) {
+    const {runDefaultParameters, userInfo} = options;
+    const {admin} = userInfo || {};
+    const [systemParam] = (runDefaultParameters?.value || [])
+      .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase());
+    const userRoleNames = (userInfo?.roles ?? []).map(role => role.name);
+    if (!admin && userInfo && systemParam?.roles?.length > 0) {
+      return !(
+        systemParam.roles.some(roleName => userRoleNames.includes(roleName))
+      );
+    }
+    return false;
+  }
+  return false;
+};
+
+/**
+ * Map system parameter
+ * @param {Parameter} parameter
+ * @param {{runDefaultParameters, userInfo}} [options]
  * @returns {Parameter}
  */
 export function mapSystemParameter (parameter, options = {}) {
   const {
-    runDefaultParameters: rdf = runDefaultParameters
+    runDefaultParameters: rdf = runDefaultParameters,
+    userInfo
   } = options || {};
-  if (rdf.loaded && parameter) {
+  if (rdf.loaded && userInfo && parameter) {
     try {
       const value = rdf.value || [];
       const systemParameter = value
@@ -1475,7 +1502,8 @@ export function mapSystemParameter (parameter, options = {}) {
             description: config.description || systemParameter.description,
             prettyName: config.prettyName || systemParameter.prettyName,
             value: systemParameter.value,
-            type: systemParameter.type
+            type: systemParameter.type,
+            readOnly: isSystemParameterRestrictedByRole(parameter, options)
           }
         };
       }

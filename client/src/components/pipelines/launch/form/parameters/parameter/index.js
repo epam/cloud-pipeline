@@ -32,9 +32,12 @@ function LaunchFormParameter (props) {
   const {name, config = {}, error, system} = parameter;
   const {
     description,
-    required = false
+    required = false,
+    readOnly = false
   } = config;
-  const removeAllowed = !disabled && typeof onRemoveParameter === 'function' &&
+  const removeAllowed = !readOnly &&
+    !disabled &&
+    typeof onRemoveParameter === 'function' &&
     (system || rawEdit || (!required && !(detached && pipeline)));
   const onRemoveParameterClicked = () => {
     if (typeof onRemoveParameter === 'function' && removeAllowed && !disabled) {
