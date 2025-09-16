@@ -3,17 +3,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
   - name: amazon/aws-efs-csi-driver
-    newName: ${CP_CSI_EFS_CSI_DRIVER_IMAGE_NAME}
-    newTag: ${CP_CSI_EFS_CSI_DRIVER_IMAGE_TAG}
+    newName: ${CP_ECR_SYS_DOCKERHUB_PREFIX}/amazon/aws-efs-csi-driver
+    newTag: v1.7.0
   - name: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
-    newName: ${CP_CSI_EFS_LIVENESS_PROBE_IMAGE_NAME}
-    newTag: ${CP_CSI_EFS_LIVENESS_PROBE_IMAGE_TAG}
+    newName: ${CP_ECR_SYS_PUBLIC_ECR_PREFIX}/eks-distro/kubernetes-csi/livenessprobe
+    newTag: v2.10.0-eks-1-27-3
   - name: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
-    newName: ${CP_CSI_EFS_NODE_DRIVER_REGISTRAR_IMAGE_NAME}
-    newTag: ${CP_CSI_EFS_NODE_DRIVER_REGISTRAR_IMAGE_TAG}
+    newName: ${CP_ECR_SYS_PUBLIC_ECR_PREFIX}/eks-distro/kubernetes-csi/node-driver-registrar
+    newTag: v2.8.0-eks-1-27-3
   - name: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
-    newName: ${CP_CSI_EFS_EXTERNAL_PROVISIONER_IMAGE_NAME}
-    newTag: ${CP_CSI_EFS_EXTERNAL_PROVISIONER_IMAGE_TAG}
+    newName: ${CP_ECR_SYS_PUBLIC_ECR_PREFIX}/eks-distro/kubernetes-csi/external-provisioner
+    newTag: v3.5.0-eks-1-27-3
 resources:
   - "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/base/?ref=release-1.7"
   - ./resources/efs-sc.yaml

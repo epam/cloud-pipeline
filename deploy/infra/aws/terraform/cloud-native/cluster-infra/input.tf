@@ -108,18 +108,6 @@ variable "eks_extra_security_group_ids" {
   description = "List of additional SG's IDs to attach to Cloud-Pipeline's EKS. Could be useful to provide access to additional networks."
 }
 
-variable "eks_alb_controller_image_repo" {
-  type        = string
-  default     = "public.ecr.aws/eks/aws-load-balancer-controller"
-  description = "Allows overriding default aws-load-balancer-controller image repository. This may be needed if public.ecr.aws is not accessible."
-}
-
-variable "eks_alb_controller_image_tag" {
-  type        = string
-  default     = "v2.7.1"
-  description = "Allows overriding default aws-load-balancer-controller image tag. This may be needed if public.ecr.aws is not accessible in conjuction with eks_alb_controller_image_repo."
-}
-
 variable "eks_additional_user_mapping" {
   type = list(object({
     iam_user_arn  = string
@@ -235,13 +223,30 @@ variable "enable_aws_omics_integration" {
 
 variable "ecr_dockerhub_username" {
   type        = string
+  default     = null
   description = "Username for the Dockerhub pull through option"
 }
 
 variable "ecr_dockerhub_token" {
   type        = string
-  description = "PAT for the Dockerhub pull through option. Shall be set via env var TF_VAR_ecr_dockerhub_token"
+  default     = null
+  description = "PAT for the Dockerhub pull through option"
 }
+
+variable "ecr_sys_public_ecr_prefix" {
+  type        = string
+  default     = null
+  description = "Custom URL for the public.ecr.aws registry. If not defined - a pull through private ECR will be used"
+}
+
+variable "ecr_sys_dockerhub_prefix" {
+  type        = string
+  description = "Custom URL for the dockerhub registry (registry-1.docker.io). If not defined - a pull through private ECR will be used"
+}
+
+ecr_sys_public_ecr_prefix = var.ecr_sys_public_ecr_prefix != null ? var.ecr_sys_public_ecr_prefix : "${local.ecr_sys_url}/ecr-public"
+  ecr_sys_dockerhub_prefix = var.ecr_sys_dockerhub_prefix != null ? var.ecr_sys_dockerhub_prefix : "${local.ecr_sys_url}/dockerhub"
+
 
 ###################################################################
 #                  AWS RDS for Cloud-Pipeline deployment

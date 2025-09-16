@@ -196,6 +196,16 @@ elif is_deployment_type_requested aws-native; then
   update_config_value "$CP_INSTALL_CONFIG_FILE" \
                       "CP_KUBE_NODE_TOKEN" \
                       "$CP_KUBE_NODE_TOKEN"
+
+  
+  export CP_ECR_SYS_DOCKERHUB_PREFIX="${CP_ECR_SYS_DOCKERHUB_PREFIX:-registry-1.docker.io}"
+  export CP_ECR_SYS_PUBLIC_ECR_PREFIX="${CP_ECR_SYS_PUBLIC_ECR_PREFIX:-public.ecr.aws}"
+  update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                      "CP_ECR_SYS_DOCKERHUB_PREFIX" \
+                      "$CP_ECR_SYS_DOCKERHUB_PREFIX"
+  update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                      "CP_ECR_SYS_PUBLIC_ECR_PREFIX" \
+                      "$CP_ECR_SYS_PUBLIC_ECR_PREFIX"
 fi
 
 if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then

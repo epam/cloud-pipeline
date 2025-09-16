@@ -134,6 +134,10 @@ locals {
   )
 
   default_admin_name = var.cp_default_admin_name != null ? ["-env CP_DEFAULT_ADMIN_NAME=${var.cp_default_admin_name}"] : []
+  
+  ecr_sys_url               = "${aws_ecr_pull_through_cache_rule.ecr_public.registry_id}.dkr.ecr.${data.aws_region.current.id}.amazonaws.com"
+  ecr_sys_public_ecr_prefix = var.ecr_sys_public_ecr_prefix != null ? var.ecr_sys_public_ecr_prefix : "${local.ecr_sys_url}/ecr-public"
+  ecr_sys_dockerhub_prefix  = var.ecr_sys_dockerhub_prefix  != null ? var.ecr_sys_dockerhub_prefix  : "${local.ecr_sys_url}/dockerhub"
 
   deploy_script = join(" \\\n", concat([
     "./pipectl install",
@@ -158,6 +162,8 @@ locals {
     "-env CP_KUBE_CLUSTER_NAME=\"${module.eks.cluster_name}\"",
     "-env CP_KUBE_EXTERNAL_HOST=\"${module.eks.cluster_endpoint}\"",
     "-env CP_KUBE_SERVICES_TYPE=\"ingress\"",
+    "-env CP_ECR_SYS_PUBLIC_ECR_PREFIX=\"${local.ecr_sys_public_ecr_prefix}\"",
+    "-env CP_ECR_SYS_PUBLIC_DOCKERHUB_PREFIX=\"${local.ecr_sys_dockerhub_prefix}\"",
     "--external-host-dns",
     "-env PSG_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env PSG_PASS=\"${local.pipeline_db_pass}\"",

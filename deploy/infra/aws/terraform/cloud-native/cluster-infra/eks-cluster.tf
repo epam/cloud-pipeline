@@ -184,12 +184,12 @@ resource "helm_release" "alb-controller" {
 
   set {
     name  = "image.repository"
-    value = var.eks_alb_controller_image_repo
+    value = "${local.ecr_sys_public_ecr_prefix}/eks/aws-load-balancer-controller"
   }
 
   set {
     name  = "image.tag"
-    value = var.eks_alb_controller_image_tag
+    value = "v2.7.1"
   }
 
   depends_on = [module.eks, module.internal_cluster_access_sg]
