@@ -748,7 +748,7 @@ module "fsx_csi_irsa" {
   attach_fsx_lustre_csi_policy = true
   role_policy_arns = {
     fsx_policy = data.aws_iam_policy.AmazonFSxFullAccess.arn
-    ksm_allow  = aws_iam_policy.kms_data_access.arn
+    kms_allow  = aws_iam_policy.kms_data_access.arn
   }
 
   oidc_providers = {
@@ -773,7 +773,7 @@ module "efs_csi_irsa" {
   attach_efs_csi_policy = true
   role_policy_arns = {
     efs_policy = data.aws_iam_policy.AmazonElasticFileSystemFullAccess.arn
-    ksm_allow  = aws_iam_policy.kms_data_access.arn
+    kms_allow  = aws_iam_policy.kms_data_access.arn
   }
 
   oidc_providers = {

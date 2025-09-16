@@ -35,6 +35,7 @@ resource "aws_ecr_pull_through_cache_rule" "ecr_dockerhub" {
   ecr_repository_prefix      = "dockerhub"
   upstream_registry_url      = "registry-1.docker.io"
   upstream_repository_prefix = "ROOT"
+  credential_arn             = aws_secretsmanager_secret.ecr_dockerhub_secret.arn
 
   depends_on = [aws_secretsmanager_secret.ecr_dockerhub_secret, aws_secretsmanager_secret_version.ecr_dockerhub_secret]
 }
