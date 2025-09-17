@@ -1,11 +1,7 @@
-# Please edit the object below. Lines beginning with a '#' will be ignored,
-# and an empty file will abort the edit. If an error occurs while saving this file will be
-# reopened with the relevant failures.
-#
 apiVersion: v1
 data:
   API_EXTERNAL: https://azure.cloud-pipeline.com:443/pipeline/restapi/
-  CP_CLOUD_REGION_ID: "eastus"
+  CP_CLOUD_REGION_ID:
   CP_API_JWT_ADMIN:
   CP_API_SRV_CERT_DIR: /opt/api/pki
   CP_API_SRV_EXTERNAL_HOST: azure.cloud-pipeline.com
@@ -193,7 +189,7 @@ data:
   IDP_HOST: cp-idp.default.svc.cluster.local
   IDP_PORT: "8080"
   PSG_DB: pipeline
-  PSG_HOST: cp-api-db.postgres.database.azure.com
+  PSG_HOST:
   PSG_MAX_CONNECTIONS: "100"
   PSG_PASS: pipeline
   PSG_PORT: "5432"
@@ -203,8 +199,5 @@ data:
   SYNC_GIT_PERIOD: "60"
 kind: ConfigMap
 metadata:
-  creationTimestamp: "2025-08-11T15:01:43Z"
   name: cp-config-global
   namespace: default
-  resourceVersion: "9335015"
-  uid: e6e86238-45ce-4701-811d-e5e815801962

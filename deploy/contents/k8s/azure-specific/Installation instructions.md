@@ -44,6 +44,8 @@ kubectl create secret generic cp-cluster-ssh-key --from-file=id_rsa=id_rsa_k8s -
 ```
 
 ### Create config map
+1. Set CP_CLOUD_REGION_ID and PSG_HOST values
+2. Create config map
 ```
 kubectl create configmap cp-config-global --from-env-file=cp-config-global.yaml
 ```
@@ -86,11 +88,11 @@ az network public-ip create --name <public-IP-name> --resource-group <cluster-re
 Set all external hosts in config map and in dns table
 Example
 ```
-48.217.11.8 edge.azure.cloud-pipeline.com
-48.217.11.8 idp.azure.cloud-pipeline.com
-48.217.11.8 docker.azure.cloud-pipeline.com
-48.217.11.8 git.azure.cloud-pipeline.com
-48.217.11.8 azure.cloud-pipeline.com
+<Public-IP> edge.azure.cloud-pipeline.com
+<Public-IP> idp.azure.cloud-pipeline.com
+<Public-IP> docker.azure.cloud-pipeline.com
+<Public-IP> git.azure.cloud-pipeline.com
+<Public-IP> azure.cloud-pipeline.com
 ```
 
 ### Setup kube coredns
@@ -140,7 +142,7 @@ saml-idp add-connection "https://azure.cloud-pipeline.com:443/pipeline/" -c "/op
 1. Deploy docker registry:
 ```
 kubeclt apply -f cp-docker-registry/cp-docker-registry-dpl.yaml
-kubeclt apply -f cp-docker-registry/**cp-idp-svc-ingress.yaml**
+kubeclt apply -f cp-docker-registry/cp-docker-registry-svc-ingress.yaml
 ```
 
 2. Make docker registry available from cluster virtual network on Azure dns resolver:
