@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-idp
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-idp: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-idp: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-idp: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-idp
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:idp-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/idp/pki
+              name: azurefile
+            - mountPath: /opt/idp/pdb
+              name: idp-pd
+            - mountPath: /opt/api/pki
+              name: azurefile
+            - mountPath: /opt/api/sso
+              name: azurefile
+            - mountPath: /opt/share-srv/pki
+              name: share-pki
+            - mountPath: /opt/gitlab/pki
+              name: git-pki
+            - mountPath: /opt/common/pki
+              name: common-pki
+          readinessProbe:
+            httpGet:
+              path: /metadata
+              port: 8080
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: azurefile
+          persistentVolumeClaim:
+            claimName: azurefile
+        - name: idp-pd
+          hostPath:
+            path: /opt/idp/pdb
+        - name: git-pki
+          hostPath:
+            path: /opt/gitlab/pki
+        - name: share-pki
+          hostPath:
+            path: /opt/share-srv/pki
+        - name: common-pki
+          hostPath:
+            path: /opt/common/pki

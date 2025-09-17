@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-edge: "true"
+    cloud-pipeline/role: "EDGE"
+    cloud-pipeline/region: "eastus"
+    cloud-pipeline/external-host: "edge.azure.cloud-pipeline.com"
+    cloud-pipeline/external-port: "443"
+    cloud-pipeline/external-scheme: "https"
+  name: cp-edge
+  namespace: default
+spec:
+  selector:
+    cloud-pipeline/cp-edge: "true"
+    cloud-pipeline/region: "eastus"
+  ports:
+    - protocol: TCP
+      port: 31081
+      targetPort: 8080
+      name: cp-edge-port-https
+    - protocol: TCP
+      port: 31091
+      targetPort: 443
+      name: cp-edge-port-web
+    - protocol: TCP
+      port: 31092
+      targetPort: 8282
+      name: cp-edge-port-connect
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress
+  namespace: default
+  annotations:
+    # for Wetty to not redirect to default 8181 port
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+    # Azure public IP address resource name
+    service.beta.kubernetes.io/azure-pip-name: "cloud_pipeline_public_IP"
+    service.beta.kubernetes.io/azure-load-balancer-health-probe-protocol: tcp
+    service.beta.kubernetes.io/azure-load-balancer-health-probe-port: "31081"
+spec:
+  type: LoadBalancer
+  selector:
+    cloud-pipeline/role: "EDGE"
+    cloud-pipeline/region: "eastus"
+    cloud-pipeline/cp-edge: "true"
+  ports:
+    - port: 443
+      targetPort: 8080
+      protocol: TCP
+      name: port-443

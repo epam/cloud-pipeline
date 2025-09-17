@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: install-registry-cert
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: install-registry-cert
+  template:
+    metadata:
+      labels:
+        app: install-registry-cert
+    spec:
+      hostPID: true
+      hostNetwork: true
+      containers:
+      - name: installer
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            cp /certs/docker-registry.crt /host/usr/local/share/ca-certificates/;
+            chroot /host update-ca-certificates;
+            chroot /host systemctl restart containerd;
+            sleep 3600
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+        - name: host-root
+          mountPath: /host
+      volumes:
+      - name: certs
+        configMap:
+          name: registry-cert
+      - name: host-root
+        hostPath:
+          path: /
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-cert
+  namespace: kube-system
+data:
+  docker-registry.crt: |
+    -----BEGIN CERTIFICATE-----
+    <Put certificate here>
+    -----END CERTIFICATE-----
