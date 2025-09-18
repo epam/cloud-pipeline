@@ -232,7 +232,7 @@ class RunDetails extends React.Component {
             'cp-panel-borderless'
           )}
         >
-          {currentTab.render(this.state)}
+          {currentTab.render(this.state, this.onRefreshRunInfo)}
         </div>
       );
     }
