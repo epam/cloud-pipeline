@@ -72,11 +72,13 @@ public class StoragePathPermissionsService {
     /**
      * Loads all permissions available for storage and current user.
      * @param storageId storage ID
+     * @param userId user ID
      * @return permissions
      */
-    public List<StoragePathPermissions> loadHierarchyForStorage(final Long storageId) {
+    public List<StoragePathPermissions> loadHierarchyForStorage(final Long storageId, final Long userId) {
+        final PipelineUser user = userId != null ? userManager.load(userId) : userManager.getCurrentUser();
         checkStorageExistsAndPathPermissionsAllowed(storageId);
-        return pathPermissionsDao.findByStorageAndSids(storageId, getSids());
+        return pathPermissionsDao.findByStorageAndSids(storageId, getSids(user));
     }
 
     /**
@@ -431,8 +433,7 @@ public class StoragePathPermissionsService {
         return paths;
     }
 
-    private List<SidImpl> getSids() {
-        final PipelineUser user = userManager.getCurrentUser();
+    private List<SidImpl> getSids(final PipelineUser user) {
         final List<SidImpl> sids = new ArrayList<>();
         sids.add(buildSid(user.getUserName(), true));
         sids.addAll(Stream.concat(
@@ -443,6 +444,11 @@ public class StoragePathPermissionsService {
                 .map(item -> buildSid(item, false))
                 .collect(Collectors.toList()));
         return sids;
+    }
+
+    private List<SidImpl> getSids() {
+        final PipelineUser user = userManager.getCurrentUser();
+        return getSids(user);
     }
 
     private SidImpl buildSid(final String sidName, final boolean isPrincipal) {
