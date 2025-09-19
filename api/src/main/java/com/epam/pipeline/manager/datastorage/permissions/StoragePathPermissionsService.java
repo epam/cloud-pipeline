@@ -76,7 +76,9 @@ public class StoragePathPermissionsService {
      * @return permissions
      */
     public List<StoragePathPermissions> loadHierarchyForStorage(final Long storageId, final Long userId) {
-        final PipelineUser user = userId != null ? userManager.load(userId) : userManager.getCurrentUser();
+        final PipelineUser user = Optional.ofNullable(userId)
+                .map(userManager::load)
+                .orElseGet(userManager::getCurrentUser);
         checkStorageExistsAndPathPermissionsAllowed(storageId);
         return pathPermissionsDao.findByStorageAndSids(storageId, getSids(user));
     }
