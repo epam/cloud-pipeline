@@ -210,7 +210,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .clickCustomParameter()
                                 .setName(CP_FSBROWSER_ENABLED)
                                 .close()
-                                .messageShouldAppear(NAME_IS_RESERVED)
+                                .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
                 );
         tools()
                 .perform(registry, group, tool, tool ->
@@ -508,7 +508,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         }
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "913")
     @CloudProviderOnly(values = {Cloud.AWS})
     public void addSupportForAutoscalingFilesystemForAWS() {

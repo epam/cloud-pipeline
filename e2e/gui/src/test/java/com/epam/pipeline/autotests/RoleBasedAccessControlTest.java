@@ -244,7 +244,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                     .blockUser(user.login.toUpperCase())
                     .ok();
             logout();
-            loginAs(user);
+            impersonateAs(user.login);
             validateWhileErrorPageMessage();
         } finally {
             loginAs(admin);

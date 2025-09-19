@@ -96,6 +96,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .runPipeline()
                 .setCommand(sleepingCommand)
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
         runsMenu()
                 .activeRuns()
@@ -117,6 +118,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
                 .setCommand(defaultCommand)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, Utils.nameWithoutGroup(tool));
         final String sshLink =
                 runsMenu()

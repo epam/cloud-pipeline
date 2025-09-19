@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.StorageHandling;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.io.File;
@@ -63,6 +64,8 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .clickAddOutputParameter()
                 .setName("output_parameter")
                 .openPathAdditionDialog()

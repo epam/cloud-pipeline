@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selenide.refresh;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
@@ -205,6 +206,7 @@ public class ToolsParametersTest
                 .updateCodeText(launchCapabilities,
                         readResourceFully(CUSTOM_CAPABILITIES_3_JSON), true)
                 .saveIfNeeded();
+        refresh();
         tools().perform(registry, group, tool, tool ->
                         tool
                                 .versions()

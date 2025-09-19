@@ -217,6 +217,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         try {
             loginAs(admin);
             setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
+            openEditUserTab(user.login)
+                    .addRoleOrGroupIfNonExist("ROLE_CONFIGURATION_MANAGER")
+                    .ok();
             logout();
             loginAs(user);
             library()
@@ -244,6 +247,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             logout();
             loginAs(admin);
             setMaskForUser(user.login, instanceTypesMask, "");
+            openEditUserTab(user.login)
+                    .deleteRoleOrGroupIfExist("ROLE_CONFIGURATION_MANAGER")
+                    .ok();
         }
     }
 

@@ -80,6 +80,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
         final Set<String> logMess =
                 runsMenu()
@@ -105,6 +106,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .clickOnDraftVersion(pipeline2)
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->

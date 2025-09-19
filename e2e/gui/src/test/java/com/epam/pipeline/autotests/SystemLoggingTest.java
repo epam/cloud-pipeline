@@ -123,7 +123,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .blockUser(userWithoutCompletedRuns.login)
                     .ok();
             logout();
-            loginAs(userWithoutCompletedRuns);
+            impersonateAs(userWithoutCompletedRuns.login);
             if (impersonateMode()) {
                 navigationMenu()
                         .settings()

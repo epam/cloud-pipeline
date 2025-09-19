@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.C;
@@ -156,6 +157,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                 entry(CREATE, context().find(button("CREATE"))),
                 entry(POOL_NAME, context().find(byText("Pool name:"))
                         .find(byXpath("following-sibling::div//input"))),
+                entry(ADD_SCHEDULE, context().find(byText("Add schedule")).parent()),
                 entry(STARTS_ON, context()
                         .find(byXpath(".//span[.='Starts on:']/following-sibling::div/div[@role='combobox']"))),
                 entry(STARTS_ON_TIME, context()

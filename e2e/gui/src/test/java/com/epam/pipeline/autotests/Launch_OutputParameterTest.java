@@ -65,6 +65,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
         new PipelineCodeTabAO(getPipelineName())
             .sleep(2, SECONDS)
             .runPipeline()
+            .doNotMountStoragesSelect(true)
             .clickAddOutputParameter()
             .setName("output")
             .setValue(pathToFile)

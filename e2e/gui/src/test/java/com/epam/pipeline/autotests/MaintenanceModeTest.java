@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -257,6 +258,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToHotNodePool()
                 .clickCreatePool()
                 .setValue(POOL_NAME, poolName)
+                .click(ADD_SCHEDULE)
                 .selectValue(STARTS_ON, currentDay)
                 .setScheduleTime(STARTS_ON_TIME, "00:01")
                 .selectValue(ENDS_ON, nextDay)

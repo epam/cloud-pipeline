@@ -54,6 +54,8 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
 
     @AfterMethod(alwaysRun = true)
     public void logoutUser() {
+        logoutIfNeeded();
+        loginAs(admin);
         open(C.ROOT_ADDRESS);
     }
 
@@ -77,6 +79,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                     userRunIP[0] = getRunIP(shell
                             .waitUntilTextAppears(userRunId1)
                             .execute(format(command[0], "$HOSTNAME"))
+                            .waitUntilTextAppearsSeveralTimes(userRunId1, 2)
                             .lastCommandResult(format(command[0], "$HOSTNAME")));
                     shell.close();
                 });
@@ -89,6 +92,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                         .assertNextStringIsVisible("Complete!",
                                 format("pipeline-%s", userRunId2))
                         .execute(format(command[2], userRunId1))
+                        .waitUntilTextAppearsSeveralTimes(userRunId2, 2)
                         .assertPageAfterCommandContainsStrings(format(command[2], userRunId1), SERVER_IP,
                                 format("Address: %s", userRunIP[0]))
                         .close()
@@ -131,6 +135,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Complete!",
                                     format("pipeline-%s", parentRunId))
                             .execute(format(command[2], childRunID))
+                            .waitUntilTextAppearsSeveralTimes(parentRunId, 3)
                             .assertPageAfterCommandContainsStrings(format(command[2], childRunID), SERVER_IP);
                     String childRunIP = getRunIP(shell.lastCommandResult("Name:"));
                     shell

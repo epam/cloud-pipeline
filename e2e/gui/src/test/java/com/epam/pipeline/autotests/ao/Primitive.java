@@ -330,5 +330,6 @@ public enum Primitive {
     THROUGHPUT,
     IOPS,
     VOLUME,
-    TOOL_VERSION
+    TOOL_VERSION,
+    ADD_SCHEDULE
 }
