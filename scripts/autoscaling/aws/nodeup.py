@@ -1379,9 +1379,9 @@ def wait_for_fulfilment(status):
            or status == 'pending-fulfillment' or status == 'fulfilled'
 
 
-def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id, input_tags):
+def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id, input_tags, spot_num_rep):
     pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
-    for interation in range(0, 5):
+    for interation in range(0, spot_num_rep):
         spot_req = get_spot_req_by_run_id(ec2, run_id)
         if spot_req:
             request_id = spot_req['SpotInstanceRequestId']
@@ -1484,6 +1484,7 @@ def main():
     parser.add_argument("--ins_img", type=str, default='ami-f68f3899')
     parser.add_argument("--ins_platform", type=str, default='linux')
     parser.add_argument("--num_rep", type=int, default=400) # 400 x 3s = 20m
+    parser.add_argument("--spot_num_rep", type=int, required=False, default=5) # 5 x 5s = 25s
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
     parser.add_argument("--bid_price", type=float, default=1.0)
@@ -1519,6 +1520,7 @@ def main():
     if ins_platform == 'null':
         ins_platform = 'linux'
     num_rep = args.num_rep
+    spot_num_rep = args.spot_num_rep
     time_rep = args.time_rep
     is_spot = args.is_spot
     bid_price = args.bid_price
@@ -1637,7 +1639,7 @@ def main():
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id,
-                                                       input_tags)
+                                                       input_tags, spot_num_rep)
 
         if not ins_id:
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
