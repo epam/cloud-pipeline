@@ -80,8 +80,9 @@ public class StoragePathPermissionsController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<StoragePathPermissions>> loadStoragePathPermissions(@PathVariable(value = ID) final Long id,
-                                                                           @RequestParam final Long userId) {
+    public Result<List<StoragePathPermissions>> loadStoragePathPermissions(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(required = false) final Long userId) {
         return Result.success(storagePathPermissionsApiService.loadStoragePathPermissions(id, userId));
     }
 
