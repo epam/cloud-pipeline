@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
 
-import { Logger } from "./common/logger";
+import { ILogger } from "./common/logger";
 import { getVSCodeServerConfig } from "./serverConfig";
 import SSHConnection from "./ssh/sshConnection";
 
@@ -47,7 +47,7 @@ export async function installCodeServer(
   envVariables: string[],
   platform: string | undefined,
   useSocketPath: boolean,
-  logger: Logger,
+  logger: ILogger,
 ): Promise<ServerInstallResult> {
   let shell = "powershell";
 

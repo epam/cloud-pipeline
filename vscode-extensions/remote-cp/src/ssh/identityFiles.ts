@@ -5,7 +5,7 @@ import * as crypto from "crypto";
 import type { ParsedKey } from "ssh2-streams";
 import * as ssh2 from "ssh2";
 import { untildify, exists as fileExists } from "../common/files";
-import { Logger } from "../common/logger";
+import { ILogger, Logger } from "../common/logger";
 
 const homeDir = os.homedir();
 const PATH_SSH_CLIENT_ID_DSA = path.join(homeDir, ".ssh", "/id_dsa");
@@ -43,7 +43,7 @@ export async function gatherIdentityFiles(
   identityFiles: string[],
   sshAgentSock: string | undefined,
   identitiesOnly: boolean,
-  logger: Logger,
+  logger: ILogger,
 ) {
   identityFiles = identityFiles
     .map(untildify)

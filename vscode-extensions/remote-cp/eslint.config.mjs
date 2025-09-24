@@ -1,13 +1,17 @@
+import { fileURLToPath } from "url";
+import path from "path";
+
 import globals from "globals";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
-import jsxA11y from "eslint-plugin-jsx-a11y";
+import prettierPlugin from "eslint-plugin-prettier";
 import importPlugin from "eslint-plugin-import";
 import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 
-import prettierPlugin from "eslint-plugin-prettier";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default [
   js.configs.recommended,            // "eslint:recommended"
@@ -20,14 +24,19 @@ export default [
   // prettier.configs.recommended,      // "plugin:prettier/recommended"
 
   {
-    files: ["**/*.ts", "**/*.mjs"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.mjs"],
     languageOptions: {
       parser: tseslint.parser,
-      ecmaVersion: "latest",
-      sourceType: "module",
-      globals: {
-        ...globals.browser,
-        ...globals.node,
+      parserOptions: {
+        project: "./tsconfig.json",  // <--- ключевой момент
+        tsconfigRootDir: __dirname, // если tsconfig.json не в корне, укажи путь
+        ecmaVersion: "latest",
+        sourceType: "module",
+        // extraFileExtensions: [".mjs", ".tsx"],
+        globals: {
+          ...globals.browser,
+          ...globals.node,
+        },
       },
     },
     plugins: {
@@ -39,6 +48,7 @@ export default [
     rules: {
       "@typescript-eslint/no-empty": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-floating-promises": "error",
       "prettier/prettier": "warn",
       "@typescript-eslint/no-unused-vars": [
         "warn",

@@ -15,11 +15,13 @@ import { CloudPipelineClient, RunInfo, RunLocation } from "./cp-client";
 import { Commands } from "./commands";
 
 export function registerHostTreeView(
+  cpClient: CloudPipelineClient,
   context: vscode.ExtensionContext,
   logger: Logger,
 ): void {
   const locationHistory = new RemoteLocationHistory(context);
   const hostTreeDataProvider = new HostTreeDataProvider(
+    cpClient,
     locationHistory,
     logger,
   );
@@ -53,20 +55,17 @@ export class HostTreeDataProvider
   extends Disposable
   implements vscode.TreeDataProvider<DataTreeItem>
 {
-  private readonly cpClient;
-
   private readonly _onDidChangeTreeData = this._register(
     new vscode.EventEmitter<DataTreeItem | DataTreeItem[] | void>(),
   );
   public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   constructor(
+    private readonly cpClient: CloudPipelineClient,
     private locationHistory: RemoteLocationHistory,
     private logger: ILogger,
   ) {
     super();
-
-    this.cpClient = new CloudPipelineClient(this.logger);
 
     const registerCommand = (
       command: string,

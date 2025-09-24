@@ -4,16 +4,23 @@ import * as vscode from "vscode";
 import { Logger } from "./common/logger";
 import { registerHostTreeView } from "./hostTreeView";
 import { registerAuthResolver } from "./authResolver";
+import { CloudPipelineClient } from "./cp-client";
+
+let cpClient: CloudPipelineClient;
+let logger: Logger;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  const logger = new Logger("Cloud Pipeline");
+  logger = new Logger("Cloud Pipeline");
   logger.info('Extension "remote-cp" is activated');
 
-  registerHostTreeView(context, logger);
+  cpClient = new CloudPipelineClient(logger);
+  context.subscriptions.push(cpClient, logger);
 
-  registerAuthResolver(context, logger);
+  registerHostTreeView(cpClient, context, logger);
+
+  registerAuthResolver(cpClient, context, logger);
 
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
@@ -37,4 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+  cpClient.dispose();
+  console.log("Extensiobn 'remote-cp' is deactivated");
+}

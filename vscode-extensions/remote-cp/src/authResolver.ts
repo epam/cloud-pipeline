@@ -12,13 +12,13 @@ import SSHConnection, { SSHTunnelConfig } from "./ssh/sshConnection";
 import SSHDestination from "./ssh/sshDestination";
 import SSHConfiguration from "./ssh/sshConfig";
 import { disposeAll } from "./common/disposable";
-import { Logger } from "./common/logger";
+import { ILogger } from "./common/logger";
 import { isWindows } from "./common/platform";
 import { untildify, exists as fileExists } from "./common/files";
 import { gatherIdentityFiles, SSHKey } from "./ssh/identityFiles";
 import { installCodeServer, ServerInstallError } from "./serverSetup";
 import { findRandomPort } from "./common/ports";
-import { execPipeTunnel } from "./pipeTunnel";
+import { CloudPipelineClient } from "./cp-client";
 
 // export const REMOTE_SSH_AUTHORITY = 'ssh-remote';
 export const REMOTE_CP_AUTHORITY = "cp-remote";
@@ -43,10 +43,11 @@ class TunnelInfo implements vscode.Disposable {
 }
 
 export function registerAuthResolver(
+  cpClient: CloudPipelineClient,
   context: vscode.ExtensionContext,
-  logger: Logger,
+  logger: ILogger,
 ): void {
-  const resolver = new RemoteCpResolver(context, logger);
+  const resolver = new RemoteCpResolver(cpClient, context, logger);
   context.subscriptions.push(
     vscode.workspace.registerRemoteAuthorityResolver(
       REMOTE_CP_AUTHORITY,
@@ -70,8 +71,9 @@ export class RemoteCpResolver
   private labelFormatterDisposable: vscode.Disposable | undefined;
 
   constructor(
-    readonly extContext: vscode.ExtensionContext,
-    readonly logger: Logger,
+    private readonly cpClient: CloudPipelineClient,
+    private readonly extContext: vscode.ExtensionContext,
+    private readonly logger: ILogger,
   ) {}
 
   resolve(
@@ -124,10 +126,8 @@ export class RemoteCpResolver
         cancellable: false,
       },
       async () => {
-        const runId = parseInt(sshDest.hostname.split("-")[1]);
-        this.extContext.subscriptions.push(
-          await execPipeTunnel(this.extContext, runId),
-        );
+        const cpRunId = parseInt(sshDest.hostname.split("-")[1]);
+        await this.cpClient.startTunnel(cpRunId, this.extContext);
 
         try {
           const sshconfig = await SSHConfiguration.loadFromFS();
@@ -409,7 +409,7 @@ export class RemoteCpResolver
 
           // Initial connection
           if (context.resolveAttempt === 1) {
-            this.logger.show();
+            // this.logger.show();
 
             const closeRemote = "Close Remote";
             const retry = "Retry";
@@ -516,8 +516,17 @@ export class RemoteCpResolver
       });
       disposables.push({
         dispose: () => {
-          this.sshConnection?.closeTunnel(tunnelConfig.name);
-          this.logger.trace(`Tunnel ${tunnelConfig.name} closed`);
+          this.sshConnection
+            ?.closeTunnel(tunnelConfig.name)
+            .then(() => {
+              this.logger.trace(`Tunnel ${tunnelConfig.name} closed`);
+            })
+            .catch((err) => {
+              this.logger.error(
+                `Error closing tunnel ${tunnelConfig.name}`,
+                err,
+              );
+            });
         },
       });
     }
@@ -692,9 +701,13 @@ export class RemoteCpResolver
     disposeAll(this.tunnels);
     // If there's proxy connections then just close the parent connection
     if (this.proxyConnections.length) {
-      this.proxyConnections[0].close();
+      this.proxyConnections[0].close().catch((err) => {
+        console.error(`Error closing proxy connection: ${err}`);
+      });
     } else {
-      this.sshConnection?.close();
+      this.sshConnection?.close().catch((err) => {
+        console.error(`Error closing ssh connection: ${err}`);
+      });
     }
     this.proxyCommandProcess?.kill();
     this.labelFormatterDisposable?.dispose();

@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { Disposable } from "./disposable";
 
 export type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
 
@@ -11,10 +12,19 @@ export interface ILogger {
   trace(message?: any, ...optionalParams: any[]): void;
 }
 
-export class Logger implements ILogger {
+export class Logger extends Disposable implements ILogger {
   private outputChannel!: vscode.LogOutputChannel;
 
-  constructor(private readonly label: string) {}
+  constructor(private readonly label: string) {
+    super();
+  }
+
+  override dispose() {
+    if (!this.isDisposed) {
+      this.outputChannel.dispose();
+    }
+    super.dispose();
+  }
 
   public show(): void {
     this._ensureOutputChannel();

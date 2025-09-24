@@ -1,5 +1,10 @@
 import { exec } from "child_process";
+import * as vscode from "vscode";
+
 import { ILogger } from "../common/logger";
+import { pipeParse } from "./pipeParse";
+import { PipeTunnel } from "../pipeTunnel";
+import { Disposable } from "../common/disposable";
 
 export enum PipeRunCols {
   runId = "RunID",
@@ -32,15 +37,64 @@ export class RunLocation {
   ) {}
 }
 
-export class CloudPipelineClient {
-  constructor(private logger: ILogger) {}
+export function pipeParseRunList(table: string): RunInfo[] {
+  return pipeParse<RunInfo>(table, (cells, _header: string[]) => {
+    const res = new RunInfo(
+      /* runId: */ parseInt(cells[0]),
+      /* parentRunId: */ cells[1] === "None" ? null : parseInt(cells[1]),
+      /* pipeline: */ cells[2],
+      /* version: */ cells[3] === "None" ? null : cells[3],
+      /* status: */ cells[4],
+      /* started: */ cells[5],
+      /* owner: */ cells[6],
+    );
+    return res;
+  });
+}
+
+export class TunnelInfo {
+  constructor(
+    public pid: number,
+    public parentPid: number | null,
+    public owner: string,
+    /* Host */ public runId: string,
+    public localPort: number,
+    public remotePort: number,
+  ) {}
+}
+
+export function pipeParseTunnelList(table: string): TunnelInfo[] {
+  return pipeParse<TunnelInfo>(table, (cells, _header: string[]) => {
+    const res = new TunnelInfo(
+      /* PID: */ parseInt(cells[0]),
+      /* PPID: */ cells[1] === "None" ? null : parseInt(cells[1]),
+      /* Owner: */ cells[2],
+      /* Host: */ cells[3],
+      /* LocalPorts: */ parseInt(cells[4]),
+      /* RemotePorts: */ parseInt(cells[5]),
+    );
+    return res;
+  });
+}
+
+export class CloudPipelineClient extends Disposable {
+  constructor(private logger: ILogger) {
+    super();
+  }
+
+  override dispose() {
+    if (!this.isDisposed) {
+      // FIX: Cleanup resources
+    }
+    super.dispose();
+  }
 
   /**
    * Gets run list with `pipe view-runs` command
    */
   async getRunList(): Promise<RunInfo[]> {
     const output = await this.execPipeCommand("pipe view-runs");
-    return this.parseRunListTable(output);
+    return pipeParseRunList(output);
   }
 
   private execPipeCommand(command: string): Promise<string> {
@@ -55,43 +109,24 @@ export class CloudPipelineClient {
     });
   }
 
-  private parseRunListTable(table: string): RunInfo[] {
-    const lines = table
-      .split("\n")
-      .filter(
-        (line) => line.trim().startsWith("|") /* remove separator lines */,
-      );
-    if (lines.length < 2) {
-      return [];
-    }
+  async getTunnelList(): Promise<TunnelInfo[]> {
+    const output = await this.execPipeCommand("pipe tunnel list");
+    return pipeParseTunnelList(output);
+  }
 
-    // First line is header
-    const headerLine = lines[0];
-    const headerColNameList = headerLine
-      .split("|")
-      .map((h) => h.trim())
-      .slice(1, -1);
+  async startTunnel(
+    cpRunId: number,
+    context: vscode.ExtensionContext,
+  ): Promise<PipeTunnel> {
+    const resPipeTunnel = new PipeTunnel(cpRunId, this.logger);
+    this._register(resPipeTunnel);
+    // context.subscriptions.push(resPipeTunnel);
+    await resPipeTunnel.activate();
 
-    const runLineList = lines.slice(1); // skip header
+    return resPipeTunnel;
+  }
 
-    return runLineList
-      .map((line) =>
-        line
-          .split("|")
-          .map((cell) => cell.trim())
-          .slice(1, -1),
-      )
-      .map((cells) => {
-        const resRunInfo = new RunInfo(
-          /* runId: */ parseInt(cells[0]),
-          /* parentRunId: */ cells[1] === "None" ? null : parseInt(cells[1]),
-          /* pipeline: */ cells[2],
-          /* version: */ cells[3] === "None" ? null : cells[3],
-          /* status: */ cells[4],
-          /* started: */ cells[5],
-          /* owner: */ cells[6],
-        );
-        return resRunInfo;
-      });
+  async stopTunnel(tunnel: PipeTunnel): Promise<void> {
+    await tunnel.deactivate();
   }
 }
