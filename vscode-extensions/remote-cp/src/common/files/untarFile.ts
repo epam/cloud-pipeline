@@ -1,32 +1,33 @@
 import * as fs from "fs";
-import * as unzipper from "unzipper";
+import * as tar from "tar";
+import * as zlib from "zlib";
 import * as vscode from "vscode";
 
-export async function unzipperFile(
-  zipFile: string,
+export async function untarFile(
+  tarFile: string,
   targetDir: string,
-  title?: string,
+  title: string,
 ): Promise<void> {
-  const zipStats = fs.statSync(zipFile);
-  const zipTotalSize = zipStats.size;
-  let zipReadBytes = 0;
+  const tarStats = fs.statSync(tarFile);
+  const tarTotalSize = tarStats.size;
 
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       cancellable: false,
-      title: title || "Unzipping file...",
+      title: title || "Untar file...",
     },
     (progress) => {
       let currentProgress: number = 0; // 0..100
+      let tarReadBytes = 0;
+
       return new Promise<void>((resolve, reject) => {
-        const readStream = fs.createReadStream(zipFile);
-        const extractStream = unzipper.Extract({ path: targetDir });
+        const readStream = fs.createReadStream(tarFile);
 
         readStream.on("data", (chunk) => {
-          zipReadBytes += chunk.length;
+          tarReadBytes += chunk.length;
           const diffProgress =
-            100 * (zipReadBytes / zipTotalSize) - currentProgress;
+            100 * (tarReadBytes / tarTotalSize) - currentProgress;
 
           if (diffProgress >= 1) {
             currentProgress += diffProgress;
@@ -37,11 +38,11 @@ export async function unzipperFile(
           }
         });
 
-        readStream.on("error", (err) => reject(err));
-        extractStream.on("error", (err) => reject(err));
-        extractStream.on("close", () => resolve());
-
-        readStream.pipe(extractStream);
+        readStream
+          .pipe(zlib.createGunzip())
+          .pipe(tar.extract({ cwd: targetDir }))
+          .on("finish", resolve)
+          .on("error", reject);
       });
     },
   );

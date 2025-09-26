@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import * as tar from "tar";
 import tmp from "tmp";
 import { rimraf } from "rimraf";
 
@@ -13,6 +12,7 @@ import { CpConfig } from "../config";
 import { downloadFile } from "../common/files/downloadFile";
 import { Disposable } from "../common/disposable";
 import { unzipperFile } from "../common/files/unzipperFile";
+import { untarFile } from "../common/files/untarFile";
 
 // export interface ICpConfig {
 //   platformUrl: string;
@@ -161,7 +161,13 @@ export class CpExtension extends Disposable {
           `${this.cpConfig.prefix} Unzipping pipe client`,
         );
       } else if (pipeUri.endsWith(".tar.gz")) {
-        await tar.x({ file: tmpFile.name, cwd: binPipeDir });
+        await untarFile(
+          tmpFile.name,
+          binDir,
+          `${this.cpConfig.prefix} Untarring pipe client`,
+        );
+      } else {
+        throw new Error(`Unsupported archive format "${tmpFile.name}".`);
       }
       cpClient = new CloudPipelineClient(pipeExec, this.cpConfig, this.logger);
     } finally {
