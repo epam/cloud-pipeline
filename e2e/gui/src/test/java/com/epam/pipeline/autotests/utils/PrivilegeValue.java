@@ -24,6 +24,18 @@ public enum PrivilegeValue {
         }
 
         @Override
+        public void shouldBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox) {
+            shouldBeCorrect(allowCheckbox, denyCheckbox);
+            allowCheckbox.shouldBeDisabled();
+        }
+
+        @Override
+        public void shouldNotBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox) {
+            shouldBeCorrect(allowCheckbox, denyCheckbox);
+            allowCheckbox.shouldNotBeDisabled();
+        }
+
+        @Override
         public void setTo(Checkbox allowCheckbox, Checkbox denyCheckbox) {
             allowCheckbox.switchOn();
         }
@@ -33,6 +45,18 @@ public enum PrivilegeValue {
         public void shouldBeCorrect(Checkbox allowCheckbox, Checkbox denyCheckbox) {
             allowCheckbox.shouldNotBeChecked();
             denyCheckbox.shouldBeChecked();
+        }
+
+        @Override
+        public void shouldBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox) {
+            shouldBeCorrect(allowCheckbox, denyCheckbox);
+            denyCheckbox.shouldBeDisabled();
+        }
+
+        @Override
+        public void shouldNotBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox) {
+            shouldBeCorrect(allowCheckbox, denyCheckbox);
+            denyCheckbox.shouldNotBeDisabled();
         }
 
         @Override
@@ -48,6 +72,20 @@ public enum PrivilegeValue {
         }
 
         @Override
+        public void shouldBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox) {
+            shouldBeCorrect(allowCheckbox, denyCheckbox);
+            allowCheckbox.shouldBeDisabled();
+            denyCheckbox.shouldBeDisabled();
+        }
+
+        @Override
+        public void shouldNotBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox) {
+            shouldBeCorrect(allowCheckbox, denyCheckbox);
+            allowCheckbox.shouldNotBeDisabled();
+            denyCheckbox.shouldNotBeDisabled();
+        }
+
+        @Override
         public void setTo(Checkbox allowCheckbox, Checkbox denyCheckbox) {
             allowCheckbox.switchOff();
             denyCheckbox.switchOff();
@@ -56,4 +94,6 @@ public enum PrivilegeValue {
 
     public abstract void shouldBeCorrect(Checkbox allowCheckbox, Checkbox denyCheckbox);
     public abstract void setTo(Checkbox allowCheckbox, Checkbox denyCheckbox);
+    public abstract void shouldBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox);
+    public abstract void shouldNotBeDisable(Checkbox allowCheckbox, Checkbox denyCheckbox);
 }

@@ -36,6 +36,24 @@ public enum Privilege {
         );
     }
 
+    public void shoudBeDisable(PrivilegeValue value) {
+        SelenideElement privilegeRow = getPrivilegeRow();
+
+        value.shouldBeDisable(
+                getAllowCheckbox(privilegeRow),
+                getDenyCheckbox(privilegeRow)
+        );
+    }
+
+    public void shoudNotBeDisable(PrivilegeValue value) {
+        SelenideElement privilegeRow = getPrivilegeRow();
+
+        value.shouldNotBeDisable(
+                getAllowCheckbox(privilegeRow),
+                getDenyCheckbox(privilegeRow)
+        );
+    }
+
     private SelenideElement getPrivilegeRow() {
         return privilegesRows().findBy(text(this.name()));
     }

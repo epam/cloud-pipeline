@@ -49,4 +49,12 @@ public class Checkbox {
     public void shouldNotBeChecked() {
         checkboxElement.should(exist).shouldNotBe(checked);
     }
+
+    public void shouldBeDisabled() {
+        checkboxElement.should(exist).shouldBe(disabled);
+    }
+
+    public void shouldNotBeDisabled() {
+        checkboxElement.should(exist).shouldBe(enabled);
+    }
 }

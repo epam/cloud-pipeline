@@ -141,6 +141,10 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         return getElementByNameInUpperCase(userOrGroup).is(visible);
     }
 
+//    public boolean isPermissionChecked(String userOrGroup, Privilege privilege, PrivilegeValue privilegeValue) {
+//        getElementByNameInUpperCase(userOrGroup)
+//    }
+
     @Override
     public void closeAll() {
         final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
@@ -197,6 +201,16 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         public UserPermissionsTableAO validatePrivilegeValue(Privilege privilege, PrivilegeValue value) {
             privilege.shoudBeSetTo(value);
+            return this;
+        }
+
+        public UserPermissionsTableAO validatePrivilegeIsDisabled(Privilege privilege, PrivilegeValue value) {
+            privilege.shoudBeDisable(value);
+            return this;
+        }
+
+        public UserPermissionsTableAO validatePrivilegeIsNotDisabled(Privilege privilege, PrivilegeValue value) {
+            privilege.shoudNotBeDisable(value);
             return this;
         }
 
