@@ -164,6 +164,7 @@ import {
   readReservationParameters
 } from './components/reservation-parameters/utilities';
 import Markdown from '../../../special/markdown';
+import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -172,6 +173,8 @@ const RUN_CLUSTER_KEY = 'run cluster';
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
+
+const VALIDATION_DEBOUNCE_TIMEOUT = 700;
 
 function getFormItemClassName (rootClass, key) {
   if (key) {
@@ -454,6 +457,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @observable rescheduleRun = undefined;
   @observable rescheduleRunInitialValue = undefined;
+
+  _customValidators = {}
+
+  get customValidators () {
+    return this._customValidators;
+  }
 
   @action
   formFieldsChanged = () => {
@@ -5357,6 +5366,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       prevPipeline !== pipeline
     ) {
       this.updateFromProps();
+      this.updateCustomValidators();
     }
     if (configurationId !== prevConfigurationId) {
       this.updateConfigurationsFromProps();
@@ -5686,7 +5696,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
+  updateCustomValidators = async () => {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    await sleep(700);
+    const stringToFunction = (str) => {
+      try {
+        // eslint-disable-next-line no-eval
+        return eval(`(${str})`);
+      } catch (e) {
+        console.error('Invalid validator string: ', e);
+      }
+    };
+    const validatorFn = stringToFunction(parameterUtilities.customValidateFnMock);
+    this._customValidators['input_table_for_preprocessing'] = validatorFn;
+    this.onValidateParameters();
+  };
+
+  _validateParametersTimeout;
+
   onValidateParameters = (commitState = undefined) => {
+    if (this._validateParametersTimeout) {
+      clearTimeout(this._validateParametersTimeout);
+    }
+    this._validateParametersTimeout = setTimeout(() => {
+      this._onValidateParameters(commitState);
+    }, VALIDATION_DEBOUNCE_TIMEOUT);
+  };
+
+  _onValidateParameters = async (commitState = undefined) => {
     commitState = commitState || ((st) => {
       if (typeof st === 'function') {
         this.setState(st(this.state));
@@ -5699,21 +5736,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     /**
      * @param {ParametersPayload} payload
      */
-    const validationFn = (payload) => {
+    const validationFn = async (payload) => {
       const {parameters} = payload;
-      const {changed, parameters: result} = parameterUtilities.validateParameters(
+      let {
+        changed,
+        parameters: preResult
+      } = parameterUtilities.validateParameters(
         parameters,
         isRawEditEnabled
       );
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+      const opts = {
+        customValidators: this.customValidators,
+        form: this.props.form,
+        instanceType,
+        parameters,
+        api: {
+          DataStorageItemSize
+        }
+      };
+      const {
+        parameters: result,
+        changed: customChanged
+      } = await parameterUtilities.customValidate(this.customValidators, preResult, opts);
       return {
-        changed,
+        changed: customChanged || changed,
         payload: {
           ...payload,
           parameters: result
         }
       };
     };
-    const payloadsValidation = payloads.map(validationFn);
+    const validations = payloads.map(validationFn);
+    const payloadsValidation = await Promise.all(validations);
     const changed = payloadsValidation
       .filter((pv) => pv.changed)
       .map((pv) => pv.payload);

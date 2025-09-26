@@ -1284,6 +1284,47 @@ function validateParametersIteration (parameters, rawEdit = false) {
 }
 
 /**
+ * Applies custom validation functions to parameters.
+ * @param {Object.<string, function>} customValidators
+ * @param {Parameter[]} parameters
+ * @param {Object} opts
+ * @returns {Promise<{parameters: Parameter[], changed: boolean}>}
+ */
+async function customValidate (customValidators, parameters, opts) {
+  const result = parameters.slice();
+  let changed = false;
+  const promises = parameters
+    .filter(({name}) => {
+      const validator = customValidators[name];
+      return typeof validator === 'function';
+    })
+    .map((parameter) => {
+      return new Promise(async (resolve) => {
+        const validator = customValidators[parameter.name];
+        const validationResult = await validator(parameter, opts);
+        console.log('validationResult', validationResult)
+        if (validationResult?.error) {
+          resolve({
+            ...parameter,
+            error: validationResult.error
+          });
+        }
+        resolve(parameter);
+      });
+    });
+  const validationResults = await Promise.all(promises);
+  validationResults.forEach(parameter => {
+    const idx = result.findIndex(r => r.name === parameter.name);
+    const shouldUpdate = parameter.error !== result[idx].error;
+    if (shouldUpdate) {
+      changed = true;
+      result.splice(idx, 1, parameter);
+    }
+  });
+  return {parameters: result, changed};
+}
+
+/**
  * @param {Parameter[]} parameters
  * @param {boolean} [rawEdit=false]
  * @returns {{changed: boolean, parameters: Parameter[]}}
@@ -1823,6 +1864,29 @@ export function parametersModified (parameters, initialParameters) {
   return modified;
 }
 
+const customValidateFnMock = `
+async function validate (parameter, options) {
+  const {DataStorageItemSize} = options.api;
+  const request = new DataStorageItemSize();
+  await request.send([parameter.value]);
+  const response = request.value
+    ? request.value[0] ?? {}
+    : {};
+  console.log('response', response)
+  console.log('options', options)
+  console.log('parameter', parameter)
+  console.log('request', request.value)
+  if (!parameter?.value) {
+    return {};
+  }
+  const size = response.size;
+  if (size > 100_000_000) {
+    return {
+      error: "File size is too large for current Node type (mock error)"
+    }
+  }
+}`;
+
 export {
   getParameterValue,
   getParameterNumberValue,
@@ -1831,6 +1895,7 @@ export {
   correctFormFieldValues,
   isVisible,
   validate,
+  customValidate,
   normalizeParameters,
   parseEnumeration,
   readParametersFromConfiguration,
@@ -1840,5 +1905,6 @@ export {
   addSystemParameter,
   addSystemParameters,
   hasResolvedValues,
-  toggleResolvedValues
+  toggleResolvedValues,
+  customValidateFnMock
 };
