@@ -1,0 +1,87 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "remote-cp: compile & watch",
+      "dependsOn": ["remote-cp: compile"],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "remote-cp: compile",
+      "type": "npm",
+      "script": "compile", // "webpack"
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "options": {
+        "env": {
+          "CP_PLATFORM_URL": "https://aws.cloud-pipeline.com"
+        }
+      }
+    },
+    {
+      "label": "remote-cp: watch",
+      "dependsOn": [
+        "remote-cp: npm: watch:tsc",
+        "remote-cp: npm: watch:esbuild"
+      ],
+      "dependsOrder": "parallel",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    // {
+    //   "label": "remote-cp: npm: watch:tsc",
+    //   "type": "npm",
+    //   "script": "watch:tsc",
+    //   "group": "build",
+    //   "problemMatcher": "$tsc-watch",
+    //   "isBackground": true,
+    //   "presentation": {
+    //     "group": "watch",
+    //     "reveal": "never"
+    //   }
+    // },
+    // {
+    //   "label": "remote-cp: npm: watch:esbuild",
+    //   "type": "npm",
+    //   "script": "watch:esbuild",
+    //   "group": "build",
+    //   "problemMatcher": "$esbuild-watch",
+    //   "isBackground": true,
+    //   "presentation": {
+    //     "group": "watch",
+    //     "reveal": "never"
+    //   }
+    // },
+    {
+      "type": "npm",
+      "script": "watch-tests",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "group": "watchers"
+      },
+      "group": "build"
+    },
+    {
+      "label": "tasks: watch-tests",
+      "dependsOn": ["npm: watch", "npm: watch-tests"],
+      "problemMatcher": []
+    },
+    {
+      "label": "tsc: build - tsconfig.test.json",
+      "type": "shell",
+      "command": "npx tsc -p tsconfig.test.json",
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}

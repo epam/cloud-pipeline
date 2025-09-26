@@ -1,0 +1,68 @@
+// A launch configuration that compiles the extension and then opens it inside a new window
+// Use IntelliSense to learn about possible attributes.
+// Hover to view descriptions of existing attributes.
+// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CP extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--enable-proposed-api", "epam.remote-cp"
+      ],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "preLaunchTask": "remote-cp: compile & watch"
+    },
+    {
+      "name": "CP remote extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--enable-proposed-api", "epam.remote-cp",
+        "--remote","cp-remote+pipeline-77742", "root/projs/test-1",
+      ],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "preLaunchTask": "remote-cp: compile & watch"
+    },
+    {
+      "name": "CP tests extension",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/test/runTest.js",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
+      "preLaunchTask": "tsc: build - tsconfig.test.json",
+      "console": "integratedTerminal"
+      // "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "npm: validate-commands",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "validate-commands"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug SAML Tool",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/saml.ts",
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": [
+        "-r",
+        "ts-node/register"
+      ],
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ]
+}
