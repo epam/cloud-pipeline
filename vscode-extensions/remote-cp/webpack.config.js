@@ -1,5 +1,3 @@
-//@ts-check
-
 'use strict';
 
 const path = require('path');
@@ -22,7 +20,10 @@ const config = {
 		"utf-8-validate": "utf-8-validate",
 	},
 	resolve: {
-		extensions: ['.ts', '.js']
+		extensions: ['.ts', '.js'],
+		fallback: {
+			"@aws-sdk/client-s3": false,
+		}
 	},
 	module: {
 		rules: [{
@@ -34,6 +35,10 @@ const config = {
 		}]
 	},
 	plugins: [
+		new webpack.DefinePlugin({
+			// build time environment variables injection
+			'BUILTIN_CP_PLATFORM_URL': JSON.stringify((process.env.CP_PLATFORM_URL || "").replace(/^"(.*)"$/, '$1')),
+		}),
 		new webpack.IgnorePlugin({
 			resourceRegExp: /crypto\/build\/Release\/sshcrypto\.node$/,
 		}),

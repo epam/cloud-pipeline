@@ -6,6 +6,7 @@ import { EventEmitter } from "events";
 import { Disposable } from "./common/disposable";
 import { findRandomPort } from "./common/ports";
 import { ILogger, Logger, LogLevel } from "./common/logger";
+import { ICpConfig } from "./config";
 
 // line: "2025-09-16 13:48:07,888:INFO: Searching for tunnel processes..."
 const pipeLineRe: RegExp =
@@ -37,6 +38,7 @@ export class PipeTunnel extends Disposable {
 
   constructor(
     private readonly cpRunId: number,
+    private readonly cpConfig: ICpConfig,
     private readonly logger: ILogger,
   ) {
     super();
@@ -171,7 +173,7 @@ export class PipeTunnel extends Disposable {
     return vscode.window.withProgress<void>(
       {
         location: vscode.ProgressLocation.Notification,
-        title: `Starting CP tunnel ${this.cpRunId}: \n`,
+        title: `Starting ${this.cpConfig.prefix} tunnel ${this.cpRunId}: \n`,
         cancellable: false,
       },
       async (progress, _token) => {

@@ -28,8 +28,8 @@ export default [
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: "./tsconfig.json",  // <--- ключевой момент
-        tsconfigRootDir: __dirname, // если tsconfig.json не в корне, укажи путь
+        project: "./tsconfig.json",
+        tsconfigRootDir: __dirname,
         ecmaVersion: "latest",
         sourceType: "module",
         // extraFileExtensions: [".mjs", ".tsx"],
@@ -54,6 +54,21 @@ export default [
         "warn",
         { argsIgnorePattern: "^_" },
       ],
+      "no-useless-escape": "warn",
+    },
+  },
+  {
+    files: ["webpack.config.js", "jest.config.js"],
+    env: {
+      node: true,
+      commonjs: true,
+    },
+    plugins: {
+      prettier: prettierPlugin,
+      import: importPlugin,
+    },
+    rules: {
+      "@typescript-eslint/no-var-requires": "off",
     },
   },
 ];

@@ -7,7 +7,15 @@ interface IClient {
 }
 
 describe("CloudPipelineClient.parseRunListTable", () => {
-  const client = new CloudPipelineClient(console) as any as IClient;
+  const cpConfig = {
+    platformUrl: "https://cora.company.com",
+    prefix: "CP:",
+  };
+  const client = new CloudPipelineClient(
+    null,
+    cpConfig,
+    console,
+  ) as any as IClient;
 
   it("parses valid table with multiple runs", () => {
     const table = `\

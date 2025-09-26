@@ -17,6 +17,7 @@ import {
   SocksConnectionInfo,
   createServer as createSocksServer,
 } from "simple-socks";
+import { ICpConfig } from "../config";
 
 export interface SSHConnectConfig extends ConnectConfig {
   /** Optional Unique ID attached to CP/SSH connection. */
@@ -78,7 +79,10 @@ export default class SSHConnection extends EventEmitter {
     null;
   private sshConnection: Client | null = null;
 
-  constructor(options: SSHConnectConfig) {
+  constructor(
+    private readonly cpConfig: ICpConfig,
+    options: SSHConnectConfig,
+  ) {
     super();
     this.config = Object.assign({}, defaultOptions, options);
     this.config.uniqueId =
@@ -259,7 +263,7 @@ export default class SSHConnection extends EventEmitter {
         !this.config.username
       ) {
         reject(
-          `Invalid CP/SSH connection configuration host/username can't be empty`,
+          `Invalid ${this.cpConfig.prefix}/SSH connection configuration host/username can't be empty`,
         );
         this.__$connectPromise = null;
         return;

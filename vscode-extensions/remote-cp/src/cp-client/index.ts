@@ -5,6 +5,7 @@ import { ILogger } from "../common/logger";
 import { pipeParse } from "./pipeParse";
 import { PipeTunnel } from "../pipeTunnel";
 import { Disposable } from "../common/disposable";
+import { ICpConfig } from "../config";
 
 export enum PipeRunCols {
   runId = "RunID",
@@ -77,9 +78,31 @@ export function pipeParseTunnelList(table: string): TunnelInfo[] {
   });
 }
 
+export class CpVersionInfo {
+  constructor(
+    public apiVersion: string,
+    public apiVersionHash: string,
+    public cliVersion: string,
+    public cliVersionHash: string,
+    public tokenOwner: string,
+    public tokenIssuedAt: string,
+    public tokenExpiresAt: string,
+  ) {}
+}
+
 export class CloudPipelineClient extends Disposable {
-  constructor(private logger: ILogger) {
+  private readonly pipeExec: string;
+  constructor(
+    pipeExec: string | null,
+    public readonly cpConfig: ICpConfig,
+    private logger: ILogger,
+  ) {
     super();
+    this.pipeExec = pipeExec
+      ? pipeExec.includes(" ")
+        ? `"${pipeExec}"`
+        : pipeExec
+      : "pipe";
   }
 
   override dispose() {
@@ -89,11 +112,35 @@ export class CloudPipelineClient extends Disposable {
     super.dispose();
   }
 
+  async getVersion(): Promise<CpVersionInfo> {
+    const output = await this.execPipeCommand(`${this.pipeExec} --version`);
+    const apiM = output.match(
+      /^Cloud Pipeline API, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
+    );
+    const cliM = output.match(
+      /^Cloud Pipeline CLI, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
+    );
+    const tokenM = output.match(
+      /^Access token info:\s*\nIssued to: (\w+)\s*\nIssued at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\nExpires at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/m,
+    );
+    if (!apiM || !cliM || !tokenM) {
+      throw new Error(`Failed to parse 'pipe --version' output: ${output}`);
+    }
+
+    // prettier-ignore
+    const res = new CpVersionInfo(
+      apiM[1], apiM[2],
+      cliM[1], cliM[2],
+      tokenM[1], tokenM[2], tokenM[3],
+    );
+    return res;
+  }
+
   /**
    * Gets run list with `pipe view-runs` command
    */
   async getRunList(): Promise<RunInfo[]> {
-    const output = await this.execPipeCommand("pipe view-runs");
+    const output = await this.execPipeCommand(`${this.pipeExec} view-runs`);
     return pipeParseRunList(output);
   }
 
@@ -110,7 +157,7 @@ export class CloudPipelineClient extends Disposable {
   }
 
   async getTunnelList(): Promise<TunnelInfo[]> {
-    const output = await this.execPipeCommand("pipe tunnel list");
+    const output = await this.execPipeCommand(`${this.pipeExec} tunnel list`);
     return pipeParseTunnelList(output);
   }
 
@@ -118,7 +165,7 @@ export class CloudPipelineClient extends Disposable {
     cpRunId: number,
     context: vscode.ExtensionContext,
   ): Promise<PipeTunnel> {
-    const resPipeTunnel = new PipeTunnel(cpRunId, this.logger);
+    const resPipeTunnel = new PipeTunnel(cpRunId, this.cpConfig, this.logger);
     this._register(resPipeTunnel);
     // context.subscriptions.push(resPipeTunnel);
     await resPipeTunnel.activate();

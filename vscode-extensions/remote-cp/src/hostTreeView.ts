@@ -10,14 +10,15 @@ import {
   openSSHConfigFile,
 } from "./commands-handlers";
 import SSHDestination from "./ssh/sshDestination";
-import { ILogger, Logger } from "./common/logger";
+import { ILogger } from "./common/logger";
 import { CloudPipelineClient, RunInfo, RunLocation } from "./cp-client";
 import { Commands } from "./commands";
+import { CpConfig } from "./config";
 
 export function registerHostTreeView(
   cpClient: CloudPipelineClient,
   context: vscode.ExtensionContext,
-  logger: Logger,
+  logger: ILogger,
 ): void {
   const locationHistory = new RemoteLocationHistory(context);
   const hostTreeDataProvider = new HostTreeDataProvider(

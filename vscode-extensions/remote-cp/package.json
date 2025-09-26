@@ -45,6 +45,22 @@
     }
   },
   "contributes": {
+    "configuration": {
+      "title": "Remote - Cloud Pipeline",
+      "properties": {
+        "remote-cp.platformUrl": {
+          "type": "string",
+          "description": "The Cloud Pipeline platform URL (e.g. https://aws.cloud-pipeline.com/)",
+          "scope": "application"
+        },
+        "remote-cp.prefix": {
+          "type": "string",
+          "default": "CP:",
+          "description": "The workspace (and messages) prefix.",
+          "scope": "application"
+        }
+      }
+    },
     "views": {
       "remote": [
         {
@@ -163,13 +179,15 @@
     }
   },
   "scripts": {
-    "compile": "npm run check-types && npm run lint && npm run validate-commands && npx tsc -b",
+    "clean": "rimraf ./dist",
+    "check": "npm run check-types && npm run lint && npm run validate-commands",
+    "compile": "npm run check && npx webpack --mode development",
     "validate-commands": "npx tsx ./validate/commands.ts",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "npx tsc -b -w",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "npm run compile && npx vsce package --allow-missing-repository",
-    "vscode:prepublish": "npx webpack --mode development",
+    "package": "npx vsce package --allow-missing-repository",
+    "vscode:prepublish": "npm run clean && npm run check && npx webpack --mode development",
     "webpack": "npx webpack --mode development",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
@@ -180,12 +198,14 @@
     "test:unit": "jest"
   },
   "devDependencies": {
+    "@types/got": "^9.6.12",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.13",
     "@types/ps-tree": "^1.1.6",
     "@types/ssh2": "^0.5.52",
     "@types/ssh2-streams": "^0.1.12",
+    "@types/tmp": "^0.2.6",
     "@types/vscode": "^1.103.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
@@ -204,6 +224,7 @@
     "jest": "^30.1.3",
     "mocha": "^11.7.2",
     "npm-run-all": "^4.1.5",
+    "rimraf": "^6.0.1",
     "ts-jest": "^29.4.1",
     "ts-loader": "^9.5.4",
     "ts-mocha": "^11.1.0",
@@ -218,10 +239,12 @@
     "@enonic/fnv-plus": "^1.3.0",
     "@jeanp413/ssh-config": "^4.3.1",
     "@microsoft/dev-tunnels-contracts": "^1.0.7463",
+    "@types/unzipper": "^0.10.11",
     "@vscode/chat-extension-utils": "^0.0.0-alpha.4",
     "@vscode/extension-telemetry": "^0.9.0",
     "@vscode/prompt-tsx": "^0.3.0-alpha.13",
     "glob": "^10.3.10",
+    "got": "^11.8.6",
     "https-proxy-agent": "^7.0.2",
     "lockfile": "^1.0.4",
     "minimist": "^1.2.8",
@@ -232,7 +255,10 @@
     "socks": "^2.7.3",
     "ssh-config": "^5.0.2",
     "ssh2": "git+https://github.com/jeanp413/ssh2#master",
-    "table": "^6.8.2"
+    "table": "^6.8.2",
+    "tar": "^7.5.1",
+    "tmp": "^0.2.5",
+    "unzipper": "^0.12.3"
   },
   "packageManager": "yarn@4.9.4+sha512.7b1cb0b62abba6a537b3a2ce00811a843bea02bcf53138581a6ae5b1bf563f734872bd47de49ce32a9ca9dcaff995aa789577ffb16811da7c603dcf69e73750b"
 }

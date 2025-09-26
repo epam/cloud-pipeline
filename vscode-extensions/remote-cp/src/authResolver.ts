@@ -19,6 +19,7 @@ import { gatherIdentityFiles, SSHKey } from "./ssh/identityFiles";
 import { installCodeServer, ServerInstallError } from "./serverSetup";
 import { findRandomPort } from "./common/ports";
 import { CloudPipelineClient } from "./cp-client";
+import { ICpConfig } from "./config";
 
 // export const REMOTE_SSH_AUTHORITY = 'ssh-remote';
 export const REMOTE_CP_AUTHORITY = "cp-remote";
@@ -76,13 +77,19 @@ export class RemoteCpResolver
     private readonly logger: ILogger,
   ) {}
 
+  private get cpConfig(): ICpConfig {
+    return this.cpClient.cpConfig;
+  }
+
   resolve(
     authority: string,
     context: vscode.RemoteAuthorityResolverContext,
   ): Thenable<vscode.ResolverResult> {
     const [type, dest] = authority.split("+");
     if (type !== REMOTE_CP_AUTHORITY) {
-      throw new Error(`Invalid authority type for CP resolver: ${type}`);
+      throw new Error(
+        `Invalid authority type for ${this.cpConfig.prefix} resolver: ${type}`,
+      );
     }
 
     this.logger.info(
@@ -121,7 +128,7 @@ export class RemoteCpResolver
 
     return vscode.window.withProgress(
       {
-        title: `Setting up CP Host ${sshDest.hostname}`,
+        title: `Setting up ${this.cpConfig.prefix} Host ${sshDest.hostname}`,
         location: vscode.ProgressLocation.Notification,
         cancellable: false,
       },
@@ -233,7 +240,7 @@ export class RemoteCpResolver
                 proxyIdentityKeys,
                 preferredAuthentications,
               );
-              const proxyConnection = new SSHConnection({
+              const proxyConnection = new SSHConnection(this.cpConfig, {
                 host: !proxyStream ? proxyHostName : undefined,
                 port: !proxyStream ? proxyPort : undefined,
                 sock: proxyStream,
@@ -312,7 +319,7 @@ export class RemoteCpResolver
             preferredAuthentications,
           );
 
-          this.sshConnection = new SSHConnection({
+          this.sshConnection = new SSHConnection(this.cpConfig, {
             host: !proxyStream ? sshHostName : undefined,
             port: !proxyStream ? sshPort : undefined,
             sock: proxyStream,
@@ -389,7 +396,7 @@ export class RemoteCpResolver
                 separator: "/",
                 tildify: true,
                 workspaceSuffix:
-                  `CP: ${sshDest.hostname}` +
+                  `${this.cpConfig.prefix} ${sshDest.hostname}` +
                   (sshDest.port && sshDest.port !== 22
                     ? `:${sshDest.port}`
                     : ""),
