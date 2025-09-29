@@ -160,7 +160,6 @@ public class PipelineConfigurationManager {
         configuration.setMainFile(defaultConfig.getMainFile());
         configuration.setMainClass(defaultConfig.getMainClass());
         configuration.setEnvironmentParams(defaultConfig.getEnvironmentParams());
-        configuration.setPrettyUrl(runVO.getPrettyUrl());
         configuration.setCloudRegionId(defaultConfig.getCloudRegionId());
         Map<String, PipeConfValueVO> runParameters = new LinkedHashMap<>();
 
@@ -215,6 +214,12 @@ public class PipelineConfigurationManager {
             configuration.setKubeLabels(runVO.getKubeLabels());
         } else {
             configuration.setKubeLabels(defaultConfig.getKubeLabels());
+        }
+
+        if (StringUtils.hasText(runVO.getPrettyUrl())) {
+            configuration.setPrettyUrl(runVO.getPrettyUrl());
+        } else {
+            configuration.setPrettyUrl(defaultConfig.getPrettyUrl());
         }
 
         // TODO: merging parentNodeId together with runAssignPolicy,
