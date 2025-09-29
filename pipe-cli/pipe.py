@@ -106,6 +106,7 @@ def enable_debug_logging(ctx, param, value):
     try:
         from http.client import HTTPConnection  # py3
     except ImportError:
+        # noinspection PyUnresolvedReferences
         from httplib import HTTPConnection      # py2
     HTTPConnection.debuglevel = 5
     log_level = logging.DEBUG
@@ -1810,6 +1811,8 @@ def start_tunnel_options(decorating_func):
                   help='Socket connection timeout in seconds.')
     @click.option('-s', '--ssh', required=False, is_flag=True, default=False,
                   help='Configures passwordless ssh to specified run instance.')
+    @click.option('--no-putty', 'ssh_putty', required=False, default=True, is_flag=True, flag_value=False,
+                  help='Disables putty installation and configuration for passwordless ssh.')
     @click.option('-sp', '--ssh-path', required=False, type=str,
                   help='Path to .ssh directory for passwordless ssh configuration on Linux.')
     @click.option('-sh', '--ssh-host', required=False, type=str,
@@ -1871,7 +1874,7 @@ def parse_tunnel_args(args):
 @start_tunnel_options
 @common_options
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
-                 ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
+                 ssh, ssh_putty, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                  retries, region):
@@ -1954,7 +1957,7 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
+                  ssh, ssh_putty, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                   retries, region, parse_tunnel_args)
