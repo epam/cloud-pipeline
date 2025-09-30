@@ -1280,7 +1280,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let payload = {
       instance_size: instanceType,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
-      friendly_url: values[ADVANCED].friendly_url,
+      friendly_url: prettyUrlGenerator.build(values[ADVANCED].friendly_url),
       timeout: +(values[ADVANCED].timeout || 0),
       stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
         ? undefined
