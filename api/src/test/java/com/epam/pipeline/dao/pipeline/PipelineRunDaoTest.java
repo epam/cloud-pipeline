@@ -217,6 +217,26 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void testFilterPipelineRunsByParams() throws WrongFilterException {
+        PipelineRun run1 =  TestUtils.createPipelineRun(testPipeline.getId(), "param1=value1", TaskStatus.RUNNING, USER,
+                null, null, true, null, null, "pod-id", cloudRegion.getId());
+        PipelineRun run2 =  TestUtils.createPipelineRun(testPipeline.getId(), "param1=value2", TaskStatus.RUNNING, USER,
+                null, null, true, null, null, "pod-id2", cloudRegion.getId());
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+        FilterExpression logicalExpression = new FilterExpression();
+        logicalExpression.setFilterExpressionType(FilterExpressionType.LOGICAL);
+        logicalExpression.setField("parameter.param1");
+        logicalExpression.setOperand(FilterOperandType.EQUALS.getOperand());
+        logicalExpression.setValue("value1");
+        List<PipelineRun> pipelineRuns = filterDao.filterPipelineRuns(
+                FilterExpression.prepare(logicalExpression), 1, 2, 0);
+        assertEquals(1, pipelineRuns.size());
+        assertEquals(PROJECT_ID, pipelineRuns.get(0).getProjectId().longValue());
+        assertEquals(pipelineRuns.get(0).getPodId(), run1.getPodId());
+    }
+
+    @Test
     public void testLoadPipelineRunsActiveInPeriod() {
         final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(12);
         final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(12);
