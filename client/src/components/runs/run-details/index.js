@@ -251,7 +251,10 @@ class RunDetails extends React.Component {
     const {
       className,
       style,
-      runId
+      runId,
+      currentMode,
+      modes,
+      onChangeMode
     } = this.props;
     const {
       run,
@@ -283,6 +286,9 @@ class RunDetails extends React.Component {
           loaded={loaded}
           runTasksLoaded={runTasksLoaded}
           onRefreshRunInfo={this.onRefreshRunInfo}
+          currentMode={currentMode}
+          modes={modes}
+          onChangeMode={onChangeMode}
         />
         <RunTabs
           className={classNames(
