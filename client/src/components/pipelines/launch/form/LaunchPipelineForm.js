@@ -1305,7 +1305,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!this.props.detached) {
       delete payload.endpointName;
       delete payload.stopAfter;
-      delete payload.friendly_url;
     }
     if (this.state.isDts && this.props.detached) {
       payload.instance_size = undefined;
@@ -1452,6 +1451,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.props.isDetachedConfiguration) {
       payload.rootEntityId = this.state.rootEntityId;
+      delete payload.friendly_url;
     }
     return payload;
   };
