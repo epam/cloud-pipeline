@@ -1289,6 +1289,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let payload = {
       instance_size: instanceType,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
+      friendly_url: values[ADVANCED].friendly_url,
       timeout: +(values[ADVANCED].timeout || 0),
       stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
         ? undefined
@@ -1313,6 +1314,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!this.props.detached) {
       delete payload.endpointName;
       delete payload.stopAfter;
+      delete payload.friendly_url;
     }
     if (this.state.isDts && this.props.detached) {
       payload.instance_size = undefined;
@@ -1491,7 +1493,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
       prettyUrl: this.prettyUrlEnabled
-        ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
+        ? prettyUrlGenerator.build(values[ADVANCED].friendly_url)
         : undefined,
       notifications: (values[ADVANCED].notifications || []).slice()
     };
@@ -2777,27 +2779,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get prettyUrlSSHMode () {
+    const {dockerRegistries} = this.props;
     if (!this.prettyUrlEnabled) {
       return false;
     }
-    const dockerImage = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
+    const image = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
       this.getDefaultValue('docker_image');
-    if (dockerImage && this.props.dockerRegistries.loaded) {
-      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
-      const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
-        .filter(r => r.path.toLowerCase() === registry);
-      if (imageRegistry) {
-        const [imageGroup] = (imageRegistry.groups || [])
-          .filter(g => g.name.toLowerCase() === group);
-        if (imageGroup) {
-          const [image] = toolAndVersion.split(':');
-          const [im] = (imageGroup.tools || [])
-            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return !(im && im.endpoints && (im.endpoints || []).length > 0);
-        }
-      }
-    }
-    return true;
+    return prettyUrlGenerator.isPrettyUrlSSHMode(image, dockerRegistries);
   }
 
   checkFriendlyURL = (rule, value, callback) => {
@@ -2813,7 +2801,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
-          className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
+          className={getFormItemClassName(styles.formItemRow, 'friendly_url')}
           {...this.leftFormItemLayout}
           label="Friendly URL"
           hasFeedback>
@@ -2822,14 +2810,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               className={styles.formItemRow}
               hasFeedback
             >
-              {this.getSectionFieldDecorator(ADVANCED)('prettyUrl',
+              {this.getSectionFieldDecorator(ADVANCED)('friendly_url',
                 {
                   rules: [
                     {
                       validator: this.checkFriendlyURL
                     }
                   ],
-                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('prettyUrl'))
+                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))
                 }
               )(
                 <Input

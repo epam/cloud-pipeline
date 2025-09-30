@@ -86,4 +86,23 @@ function build (value, stringified = true) {
   return stringifyResult(stringified, {domain, path: path.join('/')});
 }
 
-export {build, parse, validate};
+function isPrettyUrlSSHMode (dockerImage, dockerRegistries) {
+  if (dockerImage && dockerRegistries?.loaded) {
+    const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
+    const [imageRegistry] = (dockerRegistries.value.registries || [])
+      .filter(r => r.path.toLowerCase() === registry);
+    if (imageRegistry) {
+      const [imageGroup] = (imageRegistry.groups || [])
+        .filter(g => g.name.toLowerCase() === group);
+      if (imageGroup) {
+        const [image] = toolAndVersion.split(':');
+        const [im] = (imageGroup.tools || [])
+          .filter(i => i.image.toLowerCase() === `${group}/${image}`);
+        return !(im && im.endpoints && (im.endpoints || []).length > 0);
+      }
+    }
+  }
+  return true;
+}
+
+export {build, parse, validate, isPrettyUrlSSHMode};
