@@ -918,7 +918,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         return whereBuilder.toString();
     }
 
-    private String buildParameterJsonClauseForPartialParameters(String partialParams, MapSqlParameterSource params) {
+    private String buildParameterJsonClauseForPartialParameters(final String partialParams,
+                                                                final MapSqlParameterSource params) {
         final String[] partialParametersParts = partialParams.split("=", 3);
         String parameterJsonClause = StringUtils.EMPTY;
         if (partialParametersParts.length >= 1) {
@@ -1232,8 +1233,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             return params;
         }
 
-        private static Map<String, PipelineRunParameter> getParamsMap(
-                final PipelineRun run) {
+        private static Map<String, PipelineRunParameter> getParamsMap(final PipelineRun run) {
             run.parseParameters();
             if (CollectionUtils.isEmpty(run.getPipelineRunParameters())) {
                 return Collections.emptyMap();

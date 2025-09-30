@@ -29,8 +29,8 @@ public class PipelineRunParameterJsonComposer extends AbstractFilterComposer {
             throw new WrongFilterException("Supported operands for '%s' field are: '='");
         }
         if (expression.isMultiplePlaceholders()) {
-            // TODO
-            throw new IllegalStateException();
+            throw new IllegalStateException(
+                    "PipelineRunParameterJson expression couldn't contain several placeholders.");
         }
 
         return String.format("(%s @> :%s::jsonb)",

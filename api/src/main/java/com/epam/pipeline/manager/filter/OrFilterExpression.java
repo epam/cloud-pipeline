@@ -21,11 +21,13 @@ import java.util.stream.Collectors;
 
 public class OrFilterExpression extends FilterExpression {
 
+    public static final String OR = " OR ";
+
     OrFilterExpression() {
         super();
     }
 
-    OrFilterExpression(List<FilterExpression> expressions) {
+    OrFilterExpression(final List<FilterExpression> expressions) {
         this.setExpressions(expressions);
     }
 
@@ -33,13 +35,13 @@ public class OrFilterExpression extends FilterExpression {
     public String toSQLStatement() throws WrongFilterException {
         if (this.getExpressions() != null) {
             return String.format("(%s)",
-                    this.getExpressions().stream().map(filterExpression -> {
+                    this.getExpressions().stream().map(child -> {
                         try {
-                            return filterExpression.toSQLStatement();
+                            return child.toSQLStatement();
                         } catch (WrongFilterException e) {
                             throw new IllegalStateException(e);
                         }
-                    }).collect(Collectors.joining(" OR ")));
+                    }).collect(Collectors.joining(OR)));
         }
         throw new WrongFilterException();
     }

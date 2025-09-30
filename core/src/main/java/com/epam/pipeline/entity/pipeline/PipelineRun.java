@@ -192,7 +192,6 @@ public class PipelineRun extends AbstractSecuredEntity {
                 .findFirst();
     }
 
-
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
         params = parameters
                 .entrySet().stream()
