@@ -38,6 +38,7 @@ import {
   isCustomCapability
 } from './run-capabilities';
 import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
+import * as prettyUrlGenerator from './pretty-url';
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -54,11 +55,19 @@ function formItemInitialized (form, formName) {
   return values.hasOwnProperty(formName) || test(values, 0);
 }
 
-function modified (form, parameters, formName, parametersName, defaultValue) {
+function modified (
+  form,
+  parameters,
+  formName,
+  parametersName,
+  defaultValue,
+  formValueAccessor = (v) => v
+) {
   if (!formItemInitialized(form, formName)) {
     return false;
   }
-  return `${form.getFieldValue(formName) || defaultValue}` !==
+  const formValue = formValueAccessor(form.getFieldValue(formName));
+  return `${formValue || defaultValue}` !==
     `${parameters[parametersName] || defaultValue}`;
 }
 
@@ -326,8 +335,15 @@ export default function (props, state, options) {
     spotOnDemandCheck(form, options) ||
     // auto-pause check
     autoPauseCheck(form, state) ||
-    // pretty url check
-    modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
+    // friendly url check
+    modified(
+      form,
+      parameters,
+      `${ADVANCED}.friendly_url`,
+      'friendly_url',
+      undefined,
+      (v) => prettyUrlGenerator.build(v)
+    ) ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
     // limit mounts check

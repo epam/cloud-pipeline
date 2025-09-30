@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,6 +105,8 @@ import {getSelectOptions} from '../../special/instance-type-info';
 import {
   correctLimitMountsParameterValue
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
+import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
+import roleModel from '../../../utils/roleModel';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -121,10 +123,12 @@ const regionNotConfiguredValue = 'not_configured';
   'awsRegions',
   'allowedInstanceTypes',
   'dataStorageAvailable',
+  'dockerRegistries',
   'spotToolInstanceTypes',
   'onDemandToolInstanceTypes',
   'runDefaultParameters'
 )
+@roleModel.authenticationInfo
 @observer
 export default class EditToolForm extends React.Component {
   static propTypes = {
@@ -144,8 +148,9 @@ export default class EditToolForm extends React.Component {
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
     executionEnvironmentDisabled: PropTypes.bool,
-    allowCommitVersion: PropTypes.bool,
-    dockerOSVersion: PropTypes.string
+    dockerOSVersion: PropTypes.string,
+    dockerImage: PropTypes.string,
+    allowCommitVersion: PropTypes.bool
   };
 
   static defaultProps = {
@@ -200,6 +205,28 @@ export default class EditToolForm extends React.Component {
   @observable defaultSystemProperties;
 
   endpointControl;
+
+  @computed
+  get isAdmin () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      admin
+    } = this.props.authenticatedUserInfo.value;
+    return admin;
+  }
+
+  @computed
+  get isAdvancedUser () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+  }
 
   @computed
   get awsRegions () {
@@ -257,7 +284,10 @@ export default class EditToolForm extends React.Component {
         let parameters = {};
         if (this.toolFormParameters && this.toolFormSystemParameters) {
           const params = [];
-          params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
+          params.push(
+            ...this.toolFormParameters.getValues(),
+            ...this.toolFormSystemParameters.getValues()
+          );
           const toggleParameter = (parameter, value) => {
             const p = params.find((o) => o.name === parameter);
             if (p) {
@@ -270,7 +300,7 @@ export default class EditToolForm extends React.Component {
                 type: 'boolean',
               });
             }
-          }
+          };
           if (values.limitMounts) {
             params.push({
               name: CP_CAP_LIMIT_MOUNTS,
@@ -367,6 +397,7 @@ export default class EditToolForm extends React.Component {
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
+          friendly_url: prettyUrlGenerator.build(values.friendly_url),
           is_spot: `${values.is_spot}` === 'true',
           kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels),
           notifications: this.state.notifications
@@ -400,6 +431,7 @@ export default class EditToolForm extends React.Component {
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       case 'allowCommit': return this.getAllowCommitInitialValue();
+      case 'friendly_url': return this.getPrettyUrlInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -411,8 +443,14 @@ export default class EditToolForm extends React.Component {
     );
   };
 
+  getPrettyUrlInitialValue = () => {
+    return (this.props.configuration && this.props.configuration.friendly_url) ||
+      (this.props.tool && this.props.tool.friendly_url);
+  };
+
   getInstanceTypeValue = () => {
-    const name = this.props.form.getFieldValue('instanceType') || this.getInstanceTypeInitialValue();
+    const name = this.props.form.getFieldValue('instanceType') ||
+      this.getInstanceTypeInitialValue();
     const [instanceType] = this.allowedInstanceTypes.filter(i => i.name === name);
     return instanceType;
   };
@@ -484,7 +522,9 @@ export default class EditToolForm extends React.Component {
     this.defaultLimitMounts = null;
     this.defaultProperties = [];
     this.defaultSystemProperties = [];
-    this.defaultCommand = (props.tool && props.tool.defaultCommand ? props.tool.defaultCommand : null);
+    this.defaultCommand = props.tool && props.tool.defaultCommand
+      ? props.tool.defaultCommand
+      : null;
     if (props.configuration) {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
@@ -496,14 +536,17 @@ export default class EditToolForm extends React.Component {
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
             : 0;
         state.nodesCount = props.configuration.node_count;
-        state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
+        state.autoScaledCluster = props.configuration &&
+          autoScaledClusterEnabled(props.configuration.parameters);
         state.hybridAutoScaledClusterEnabled = props.configuration &&
           hybridAutoScaledClusterEnabled(props.configuration.parameters);
         const regions = this.props.awsRegions.loaded
           ? this.props.awsRegions.value
           : [];
-        const instanceTypeName = (props.configuration ? props.configuration.instance_size : undefined) ||
-          (props.tool ? props.tool.instanceType : undefined);
+        const instanceTypeName = (props.configuration
+          ? props.configuration.instance_size
+          : undefined
+        ) || (props.tool ? props.tool.instanceType : undefined);
         const instanceType = this.allowedInstanceTypes.find(i => i.name === instanceTypeName);
         const [provider] = regions
           .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
@@ -523,7 +566,8 @@ export default class EditToolForm extends React.Component {
           provider,
           parameters: props.configuration.parameters
         });
-        state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
+        state.gridEngineEnabled = props.configuration &&
+          gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
         state.kubeEnabled = props.configuration && kubeEnabled(props.configuration.parameters);
@@ -566,8 +610,11 @@ export default class EditToolForm extends React.Component {
               }
               continue;
             }
-            if (this.props.runDefaultParameters.loaded &&
-              (this.props.runDefaultParameters.value || []).filter(p => p.name === key).length === 1) {
+            if (
+              this.props.runDefaultParameters.loaded &&
+              (this.props.runDefaultParameters.value || [])
+                .filter(p => p.name === key).length === 1
+            ) {
               this.defaultSystemProperties.push({
                 name: key,
                 type: props.configuration.parameters[key].type,
@@ -631,7 +678,10 @@ export default class EditToolForm extends React.Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    if (nextProps.tool !== this.props.tool || nextProps.configuration !== this.props.configuration) {
+    if (
+      nextProps.tool !== this.props.tool ||
+      nextProps.configuration !== this.props.configuration
+    ) {
       this.reset(nextProps);
     }
   }
@@ -710,12 +760,17 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get allowedInstanceTypes () {
-    if (!this.props.allowedInstanceTypes.loaded || !this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes]) {
+    if (
+      !this.props.allowedInstanceTypes.loaded ||
+      !this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes]
+    ) {
       return [];
     }
     const instanceTypes = [];
-    for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes] || []).length; i++) {
-      const instanceType = this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes][i];
+    const allowedInstanceTypes = this.props.allowedInstanceTypes
+      .value[names.allowedToolInstanceTypes] || [];
+    for (let i = 0; i < allowedInstanceTypes.length; i++) {
+      const instanceType = allowedInstanceTypes[i];
       if (instanceTypes.filter(t => t.name === instanceType.name).length === 0) {
         instanceTypes.push(instanceType);
       }
@@ -738,10 +793,15 @@ export default class EditToolForm extends React.Component {
       availableMasterNodeTypes = this.props.preferences.allowedMasterPriceTypes;
     }
     let priceTypes = availableMasterNodeTypes.slice();
-    if (this.props.allowedInstanceTypes.loaded && this.props.allowedInstanceTypes.value[names.allowedPriceTypes]) {
+    if (
+      this.props.allowedInstanceTypes.loaded &&
+      this.props.allowedInstanceTypes.value[names.allowedPriceTypes]
+    ) {
       priceTypes = [];
-      for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || []).length; i++) {
-        const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
+      const allowedInstanceTypes = this.props.allowedInstanceTypes
+        .value[names.allowedPriceTypes] || [];
+      for (let i = 0; i < allowedInstanceTypes.length; i++) {
+        const isSpot = allowedInstanceTypes[i].toLowerCase() === 'spot';
         if (availableMasterNodeTypes.indexOf(isSpot) >= 0) {
           priceTypes.push(isSpot);
         }
@@ -800,13 +860,17 @@ export default class EditToolForm extends React.Component {
       }
       return true;
     };
-    const configurationFormFieldChanged = (field, formFieldName) => {
+    const configurationFormFieldChanged = (
+      field,
+      formFieldName,
+      formValueAccessor = (v) => v
+    ) => {
       formFieldName = formFieldName || field;
       const formField = this.props.form.getFieldValue(formFieldName);
       const toolField = this.getInitialValue(field);
       const formFieldValue = formField ? `${formField}` : null;
       const toolFieldValue = toolField ? `${toolField}` : null;
-      return formFieldValue !== toolFieldValue;
+      return formValueAccessor(formFieldValue) !== toolFieldValue;
     };
     const commandChanged = () => {
       let toolCommand;
@@ -831,8 +895,10 @@ export default class EditToolForm extends React.Component {
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
     };
-    const toolEndpointArray = this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : null;
-    const toolEndpointArrayFormValue = (this.props.form.getFieldValue('endpoints') || []).map(e => e);
+    const toolEndpointArray = this.props.tool
+      ? (this.props.tool.endpoints || []).map(e => e)
+      : null;
+    const endpointArrayFormValue = (this.props.form.getFieldValue('endpoints') || []).map(e => e);
     const toolLabelsArray = this.props.tool ? (this.props.tool.labels || []).map(l => l) : null;
     const nodesCount = this.props.configuration ? this.props.configuration.node_count : 0;
     const maxNodesCount = this.props.configuration && this.props.configuration.parameters &&
@@ -882,10 +948,15 @@ export default class EditToolForm extends React.Component {
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
+      configurationFormFieldChanged(
+        'friendly_url',
+        'friendly_url',
+        (v) => v ? prettyUrlGenerator.build(v) : v
+      ) ||
       configurationFormFieldChanged('allowSensitive') ||
       configurationFormFieldChanged('allowCommit') ||
       commandChanged() ||
-      !compareArrays(toolEndpointArray, toolEndpointArrayFormValue) ||
+      !compareArrays(toolEndpointArray, endpointArrayFormValue) ||
       !compareArrays(toolLabelsArray, this.state.labels) ||
       (this.toolFormParameters && this.toolFormParameters.modified) ||
       (this.toolFormSystemParameters && this.toolFormSystemParameters.modified) ||
@@ -901,7 +972,11 @@ export default class EditToolForm extends React.Component {
       rescheduleRunValue !== this.state.rescheduleRun ||
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
-      (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
+      (
+        this.state.launchCluster &&
+        this.state.autoScaledCluster &&
+        maxNodesCount !== this.state.maxNodesCount
+      ) ||
       limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
       kubeLabelsHasChanges(
         this.state.initialKubeLabels,
@@ -1051,7 +1126,10 @@ export default class EditToolForm extends React.Component {
           <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
+                <div key={index} className={classNames(
+                  styles.summaryItem,
+                  'cp-exec-env-summary-item'
+                )}>
                   {l}
                 </div>
               ))
@@ -1180,6 +1258,51 @@ export default class EditToolForm extends React.Component {
     rescheduleRun: value
   });
 
+  renderPrettyUrlFormItem = () => {
+    const prettyUrlAvailable = this.isAdmin || this.isAdvancedUser;
+    if (prettyUrlAvailable) {
+      const validate = (rule, value, callback) => {
+        const {dockerImage, dockerRegistries} = this.props;
+        const error = prettyUrlGenerator.validate(
+          value,
+          prettyUrlGenerator.isPrettyUrlSSHMode(dockerImage, dockerRegistries)
+        );
+        if (error) {
+          callback(error);
+        }
+        callback();
+      };
+      const {getFieldDecorator} = this.props.form;
+      return (
+        <Form.Item
+          {...this.formItemLayout}
+          label="Friendly URL"
+          style={{marginBottom: 10}}
+        >
+          {getFieldDecorator('friendly_url',
+            {
+              rules: [
+                {
+                  validator: validate
+                }
+              ],
+              initialValue: prettyUrlGenerator.parse(this.getPrettyUrlInitialValue())
+            }
+          )(
+            <Input
+              disabled={(this.props.readOnly || (
+                this.props.allowedInstanceTypes &&
+                (
+                  this.props.allowedInstanceTypes.changed ||
+                  this.props.allowedInstanceTypes.pending
+                )))} />
+          )}
+        </Form.Item>
+      );
+    }
+    return undefined;
+  };
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
@@ -1193,17 +1316,19 @@ export default class EditToolForm extends React.Component {
           {this.renderSeparator('Execution defaults')}
           <Row>
             <Col sm={24} lg={12}>
-              <Form.Item {...this.formItemLayout} label="Instance type" style={{marginBottom: 10}} required>
-                {getFieldDecorator('instanceType',
-                  {
-                    rules: [
-                      {
-                        required: true,
-                        message: 'Instance type is required'
-                      }
-                    ],
-                    initialValue: this.getInstanceTypeInitialValue()
-                  })(
+              <Form.Item
+                {...this.formItemLayout}
+                label="Instance type"
+                style={{marginBottom: 10}}
+                required
+              >
+                {getFieldDecorator('instanceType', {
+                  rules: [{
+                    required: true,
+                    message: 'Instance type is required'
+                  }],
+                  initialValue: this.getInstanceTypeInitialValue()
+                })(
                   <Select
                     disabled={this.state.pending || this.props.readOnly || (
                       this.props.allowedInstanceTypes &&
@@ -1236,35 +1361,40 @@ export default class EditToolForm extends React.Component {
                     </Select>
                 )}
               </Form.Item>
-              <Form.Item {...this.formItemLayout} label="Disk (Gb)" style={{marginTop: 10, marginBottom: 10}} required>
-                {getFieldDecorator('disk',
-                  {
-                    rules: [
-                      {
-                        pattern: /^\d+(\.\d+)?$/,
-                        message: 'Please enter a valid positive number'
-                      },
-                      {
-                        validator: (rule, value, callback) => {
-                          if (!isNaN(value)) {
-                            if (+value > 15360) {
-                              callback('Maximum value is 15360');
-                              return;
-                            } else if (+value < 15) {
-                              callback('Minimum value is 15');
-                              return;
-                            }
+              {this.renderPrettyUrlFormItem()}
+              <Form.Item
+                {...this.formItemLayout}
+                label="Disk (Gb)"
+                style={{marginTop: 10, marginBottom: 10}}
+                required
+              >
+                {getFieldDecorator('disk', {
+                  rules: [
+                    {
+                      pattern: /^\d+(\.\d+)?$/,
+                      message: 'Please enter a valid positive number'
+                    },
+                    {
+                      validator: (rule, value, callback) => {
+                        if (!isNaN(value)) {
+                          if (+value > 15360) {
+                            callback(new Error('Maximum value is 15360'));
+                            return;
+                          } else if (+value < 15) {
+                            callback(new Error('Minimum value is 15'));
+                            return;
                           }
-                          callback();
                         }
-                      },
-                      {
-                        required: true,
-                        message: 'Disk size is required (minimum value is 15)'
+                        callback();
                       }
-                    ],
-                    initialValue: this.getDiskInitialValue()
-                  })(
+                    },
+                    {
+                      required: true,
+                      message: 'Disk size is required (minimum value is 15)'
+                    }
+                  ],
+                  initialValue: this.getDiskInitialValue()
+                })(
                   <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
@@ -1607,13 +1737,13 @@ export default class EditToolForm extends React.Component {
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
               <Form.Item>
-                {getFieldDecorator('endpoints',
-                  {
-                    initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
-                  })(
+                {getFieldDecorator('endpoints', {
+                  initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
+                })(
                   <ToolEndpointsFormItem
                     disabled={this.state.pending || this.props.readOnly}
-                    ref={this.initializeEndpointsControl} />
+                    ref={this.initializeEndpointsControl}
+                  />
                 )}
               </Form.Item>
             </Col>

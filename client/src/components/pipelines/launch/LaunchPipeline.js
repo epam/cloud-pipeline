@@ -241,6 +241,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         docker_image: this.props.toolVersion
           ? `${image}:${this.props.toolVersion}`
           : image,
+        friendly_url: versionSettingValue('friendly_url') || this.toolRequest.value.friendly_url,
         instance_disk: +versionSettingValue('instance_disk') || this.toolRequest.value.disk,
         instance_size: versionSettingValue('instance_size') || this.toolRequest.value.instanceType,
         is_spot: versionSettingValue('is_spot'),

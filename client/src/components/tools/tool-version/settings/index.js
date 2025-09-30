@@ -28,13 +28,16 @@ import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import EditToolForm from '../../forms/EditToolForm';
 import LoadToolAttributes from '../../../../models/tools/LoadToolInfo';
+import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject('preferences')
+@HiddenObjects.injectToolsFilters
+@inject('preferences', 'dockerRegistries')
 @inject((stores, {params}) => {
   return {
     toolId: params.id,
     version: params.version,
     tool: new LoadTool(params.id),
+    docker: stores.dockerRegistries,
     settings: new LoadToolVersionSettings(params.id, params.version),
     preferences: stores.preferences,
     versions: new LoadToolAttributes(params.id)
@@ -48,6 +51,28 @@ export default class ToolSetttings extends React.Component {
   };
 
   @observable versionSettingsForm;
+
+  @computed
+  get registries () {
+    if (this.props.docker.loaded) {
+      return this.props.hiddenToolsTreeFilter(this.props.docker.value)
+        .registries;
+    }
+    return [];
+  }
+
+  @computed
+  get dockerImage () {
+    const {tool, version} = this.props;
+    if (!tool?.loaded) {
+      return;
+    }
+    const {image} = tool.value;
+    const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
+    return registry
+      ? `${registry.path}/${image}${version ? `:${version}` : ''}`
+      : `${image}${version ? `:${version}` : ''}`;
+  }
 
   @computed
   get toolVersionOS () {
@@ -172,6 +197,7 @@ export default class ToolSetttings extends React.Component {
         configuration={this.settings}
         onSubmit={this.operationWrapper(this.updateTool)}
         dockerOSVersion={this.toolVersionOS}
+        dockerImage={this.dockerImage}
       />
     );
   }
