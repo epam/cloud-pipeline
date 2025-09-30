@@ -88,3 +88,9 @@ publishing {
         }
     }
 }
+
+
+test {
+    useJUnitPlatform()
+    reports.html.required = true
+}

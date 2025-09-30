@@ -28,6 +28,10 @@ jar {
     }
 }
 
+tasks.named('bootJar') {
+    enabled = false // Disable bootJar task
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -47,4 +51,9 @@ dependencyManagement {
     imports {
         mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
     }
+}
+
+test {
+    useJUnitPlatform()
+    reports.html.required = true
 }
