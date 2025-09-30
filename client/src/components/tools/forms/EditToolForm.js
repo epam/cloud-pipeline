@@ -1292,27 +1292,6 @@ export default class EditToolForm extends React.Component {
     reservationParameters: value
   });
 
-  @computed
-  get prettyUrlSSHMode () {
-    const {dockerImage, dockerRegistries} = this.props;
-    if (dockerImage && dockerRegistries.loaded) {
-      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
-      const [imageRegistry] = (dockerRegistries.value.registries || [])
-        .filter(r => r.path.toLowerCase() === registry);
-      if (imageRegistry) {
-        const [imageGroup] = (imageRegistry.groups || [])
-          .filter(g => g.name.toLowerCase() === group);
-        if (imageGroup) {
-          const [image] = toolAndVersion.split(':');
-          const [im] = (imageGroup.tools || [])
-            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return !(im && im.endpoints && (im.endpoints || []).length > 0);
-        }
-      }
-    }
-    return true;
-  }
-
   renderPrettyUrlFormItem = () => {
     const prettyUrlAvailable = this.isAdmin || this.isAdvancedUser;
     if (prettyUrlAvailable) {
