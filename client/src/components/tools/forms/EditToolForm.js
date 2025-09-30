@@ -118,7 +118,8 @@ import {
   readReservationParameters,
   reservationParametersDiffer
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
-import {EXEC_ENVIRONMENT} from "../../pipelines/launch/form/utilities/launch-form-sections";
+import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
+import roleModel from '../../../utils/roleModel';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -135,10 +136,12 @@ const regionNotConfiguredValue = 'not_configured';
   'awsRegions',
   'allowedInstanceTypes',
   'dataStorageAvailable',
+  'dockerRegistries',
   'spotToolInstanceTypes',
   'onDemandToolInstanceTypes',
   'runDefaultParameters'
 )
+@roleModel.authenticationInfo
 @observer
 export default class EditToolForm extends React.Component {
   static propTypes = {
@@ -162,6 +165,7 @@ export default class EditToolForm extends React.Component {
     onInitialized: PropTypes.func,
     executionEnvironmentDisabled: PropTypes.bool,
     dockerOSVersion: PropTypes.string,
+    dockerImage: PropTypes.string,
     allowCommitVersion: PropTypes.bool
   };
 
@@ -222,12 +226,34 @@ export default class EditToolForm extends React.Component {
   endpointControl;
 
   @computed
-  get awsRegions () {
-    if (this.props.awsRegions.loaded) {
-      return (this.props.awsRegions.value || []).map(r => r);
+  get isAdmin () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
     }
-    return [];
+    const {
+      admin
+    } = this.props.authenticatedUserInfo.value;
+    return admin;
   }
+
+  @computed
+  get isAdvancedUser () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+  }
+
+  @computed
+    get awsRegions () {
+      if (this.props.awsRegions.loaded) {
+        return (this.props.awsRegions.value || []).map(r => r);
+      }
+      return [];
+    }
 
   get isWindowsPlatform () {
     return /^windows$/i.test(this.props.platform);
@@ -400,6 +426,7 @@ export default class EditToolForm extends React.Component {
           instance_disk: values.disk,
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
+          friendly_url: values.friendly_url,
           is_spot: `${values.is_spot}` === 'true',
           kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels),
           notifications: this.state.notifications
@@ -445,6 +472,7 @@ export default class EditToolForm extends React.Component {
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       case 'allowCommit': return this.getAllowCommitInitialValue();
+      case 'friendly_url': return this.getFriendlyUrlInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -454,6 +482,11 @@ export default class EditToolForm extends React.Component {
       (this.props.configuration && this.props.configuration.instance_size) ||
       (this.props.tool && this.props.tool.instanceType)
     );
+  };
+
+  getFriendlyUrlInitialValue = () => {
+    return (this.props.configuration && this.props.configuration.friendly_url) ||
+      (this.props.tool && this.props.tool.friendly_url);
   };
 
   getInstanceTypeValue = () => {
@@ -952,6 +985,7 @@ export default class EditToolForm extends React.Component {
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
+      configurationFormFieldChanged('friendly_url') ||
       configurationFormFieldChanged('allowSensitive') ||
       configurationFormFieldChanged('allowCommit') ||
       commandChanged() ||
@@ -1258,6 +1292,72 @@ export default class EditToolForm extends React.Component {
     reservationParameters: value
   });
 
+  @computed
+  get prettyUrlSSHMode () {
+    const {dockerImage, dockerRegistries} = this.props;
+    if (dockerImage && dockerRegistries.loaded) {
+      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
+      const [imageRegistry] = (dockerRegistries.value.registries || [])
+        .filter(r => r.path.toLowerCase() === registry);
+      if (imageRegistry) {
+        const [imageGroup] = (imageRegistry.groups || [])
+          .filter(g => g.name.toLowerCase() === group);
+        if (imageGroup) {
+          const [image] = toolAndVersion.split(':');
+          const [im] = (imageGroup.tools || [])
+            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
+          return !(im && im.endpoints && (im.endpoints || []).length > 0);
+        }
+      }
+    }
+    return true;
+  }
+
+  renderPrettyUrlFormItem = () => {
+    const friendlyUrlAvailable = this.isAdmin || this.isAdvancedUser;
+    if (friendlyUrlAvailable) {
+      const validate = (rule, value, callback) => {
+        const {dockerImage, dockerRegistries} = this.props;
+        const error = prettyUrlGenerator.validate(
+          value,
+          prettyUrlGenerator.isPrettyUrlSSHMode(dockerImage, dockerRegistries)
+        );
+        if (error) {
+          callback(error);
+        }
+        callback();
+      };
+      const {getFieldDecorator} = this.props.form;
+      return (
+        <Form.Item
+          {...this.formItemLayout}
+          label="Friendly URL"
+          style={{marginBottom: 10}}
+        >
+          {getFieldDecorator('friendly_url',
+            {
+              rules: [
+                {
+                  validator: validate
+                }
+              ],
+              initialValue: prettyUrlGenerator.parse(this.getFriendlyUrlInitialValue())
+            }
+          )(
+            <Input
+              disabled={(this.props.readOnly || (
+                this.props.allowedInstanceTypes &&
+                (
+                  this.props.allowedInstanceTypes.changed ||
+                  this.props.allowedInstanceTypes.pending
+                )))} />
+          )}
+        </Form.Item>
+      );
+    }
+    return undefined;
+  };
+
   renderExecutionEnvironment = () => {
     const {isInstanceTypeWithReservation} = this;
     const renderExecutionEnvironmentSection = () => {
@@ -1296,16 +1396,16 @@ export default class EditToolForm extends React.Component {
                       placeholder="Instance type"
                       optionFilterProp="children"
                       filterOption={
-                        (input, option) =>
-                          (option.props.searchValue || option.props.value)
-                            .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                      (input, option) =>
+                        (option.props.searchValue || option.props.value)
+                          .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
                       {
-                        getSelectOptions(
-                          this.allowedInstanceTypes, {
-                            showReservationTag: true,
-                            preferences: this.props.preferences
-                          })
-                      }
+                      getSelectOptions(
+                        this.allowedInstanceTypes, {
+                          showReservationTag: true,
+                          preferences: this.props.preferences
+                        })
+                    }
                     </Select>
                 )}
               </Form.Item>
@@ -1348,9 +1448,9 @@ export default class EditToolForm extends React.Component {
                     initialValue: this.getPriceTypeInitialValue()
                   })(
                     <Select
-                      disabled={this.state.pending || this.props.readOnly || isInstanceTypeWithReservation}
-                      onChange={this.handleIsSpotChange}
-                    >
+                    disabled={this.state.pending || this.props.readOnly || isInstanceTypeWithReservation}
+                    onChange={this.handleIsSpotChange}
+                  >
                     {
                       this.allowedPriceTypes
                         .map(t => <Select.Option key={`${t.isSpot}`}>{t.name}</Select.Option>)
@@ -1358,6 +1458,7 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              {this.renderPrettyUrlFormItem()}
               <Form.Item {...this.formItemLayout} label="Disk (Gb)" style={{marginTop: 10, marginBottom: 10}} required>
                 {getFieldDecorator('disk',
                   {

@@ -201,6 +201,19 @@ export default class Tool extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get dockerImage () {
+    const {tool, version} = this.props;
+    if (!tool?.loaded) {
+      return;
+    }
+    const {image} = tool.value;
+    const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
+    return registry
+      ? `${registry.path}/${image}${version ? `:${version}` : ''}`
+      : `${image}${version ? `:${version}` : ''}`;
+  }
+
+  @computed
   get dockerRegistry () {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       return this.registries
@@ -1298,6 +1311,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           executionEnvironmentDisabled={!this.defaultTag}
           onSubmit={this.updateTool}
           dockerOSVersion={this.toolVersionOS}
+          dockerImage={this.dockerImage}
         />
       </div>
     );
@@ -1528,7 +1542,6 @@ export default class Tool extends localization.LocalizedReactComponent {
         }
         return settingsValue;
       };
-      const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
       const prepareParameters = (parameters) => {
         const result = {};
         if (parameters) {
@@ -1579,9 +1592,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.props.tool.value.defaultCommand,
           this.props.preferences.getPreferenceValue('launch.cmd.template')
         ),
-        dockerImage: registry
-          ? `${registry.path}/${this.props.tool.value.image}${version ? `:${version}` : ''}`
-          : `${this.props.tool.value.image}${version ? `:${version}` : ''}`,
+        dockerImage: this.dockerImage,
         params: prepareParameters(versionSettingValue('parameters')),
         isSpot: isSpotValue,
         nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))

@@ -353,8 +353,8 @@ export default function (props, state, options) {
     spotOnDemandCheck(form, options) ||
     // auto-pause check
     autoPauseCheck(form, state) ||
-    // pretty url check
-    modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
+    // friendly url check
+    modified(form, parameters, `${ADVANCED}.friendly_url`, 'friendly_url') ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
     // stopAfter check
