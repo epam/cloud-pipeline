@@ -223,7 +223,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.userName;
   };
 
-  friendlyUrlAvailable = () => {
+  prettyUrlAvailable = () => {
     return this.isAdmin || this.isAdvancedUser;
   };
 
@@ -2779,7 +2779,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return prettyUrlGenerator.isPrettyUrlSSHMode(image, dockerRegistries);
   }
 
-  checkFriendlyURL = (rule, value, callback) => {
+  checkPrettyURL = (rule, value, callback) => {
     const error = prettyUrlGenerator.validate(value, this.prettyUrlSSHMode);
     if (error) {
       callback(error);
@@ -2788,7 +2788,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
+    if (this.prettyUrlEnabled && this.prettyUrlAvailable()) {
       const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
@@ -2805,7 +2805,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 {
                   rules: [
                     {
-                      validator: this.checkFriendlyURL
+                      validator: this.checkPrettyURL
                     }
                   ],
                   initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))

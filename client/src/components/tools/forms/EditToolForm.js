@@ -426,7 +426,7 @@ export default class EditToolForm extends React.Component {
           instance_disk: values.disk,
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
-          friendly_url: values.friendly_url,
+          friendly_url: prettyUrlGenerator.build(values.friendly_url),
           is_spot: `${values.is_spot}` === 'true',
           kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels),
           notifications: this.state.notifications
@@ -472,7 +472,7 @@ export default class EditToolForm extends React.Component {
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       case 'allowCommit': return this.getAllowCommitInitialValue();
-      case 'friendly_url': return this.getFriendlyUrlInitialValue();
+      case 'friendly_url': return this.getPrettyUrlInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -484,7 +484,7 @@ export default class EditToolForm extends React.Component {
     );
   };
 
-  getFriendlyUrlInitialValue = () => {
+  getPrettyUrlInitialValue = () => {
     return (this.props.configuration && this.props.configuration.friendly_url) ||
       (this.props.tool && this.props.tool.friendly_url);
   };
@@ -1314,8 +1314,8 @@ export default class EditToolForm extends React.Component {
   }
 
   renderPrettyUrlFormItem = () => {
-    const friendlyUrlAvailable = this.isAdmin || this.isAdvancedUser;
-    if (friendlyUrlAvailable) {
+    const prettyUrlAvailable = this.isAdmin || this.isAdvancedUser;
+    if (prettyUrlAvailable) {
       const validate = (rule, value, callback) => {
         const {dockerImage, dockerRegistries} = this.props;
         const error = prettyUrlGenerator.validate(
@@ -1341,7 +1341,7 @@ export default class EditToolForm extends React.Component {
                   validator: validate
                 }
               ],
-              initialValue: prettyUrlGenerator.parse(this.getFriendlyUrlInitialValue())
+              initialValue: prettyUrlGenerator.parse(this.getPrettyUrlInitialValue())
             }
           )(
             <Input
