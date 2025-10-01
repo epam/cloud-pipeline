@@ -986,7 +986,7 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setPodId(getRootPodIDFromPipeline(run));
         Optional.ofNullable(parentRun).map(PipelineRun::getId).ifPresent(run::setParentRunId);
-        run.convertParamsToString(configuration.getParameters());
+        run.setPipelineRunParameters(mapPipeConfValuesToRunParameters(configuration));
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
         run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
@@ -1014,6 +1014,19 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private List<PipelineRunParameter> mapPipeConfValuesToRunParameters(final PipelineConfiguration configuration) {
+        return MapUtils.emptyIfNull(configuration.getParameters()).entrySet()
+                .stream()
+                .filter(parameter -> Objects.nonNull(parameter.getValue()))
+                .map(parameter ->
+                        new PipelineRunParameter(
+                                parameter.getKey(),
+                                parameter.getValue().getValue(),
+                                parameter.getValue().getType()
+                        )
+                ).collect(Collectors.toList());
     }
 
     private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {

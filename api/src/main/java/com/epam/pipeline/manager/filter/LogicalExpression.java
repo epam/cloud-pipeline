@@ -23,6 +23,7 @@ import com.epam.pipeline.manager.filter.converters.DateConverter;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.lang.reflect.Constructor;
@@ -245,15 +246,29 @@ public class LogicalExpression extends FilterExpression {
         for (Field field : fields) {
             FilterFields filterFields = field.getAnnotation(FilterFields.class);
             if (filterFields != null) {
-                for (FilterField filterField : filterFields.value()) {
-                    if (this.filterFieldMatches(filterField)) {
-                        return this.preProcessField(
-                                field,
-                                filterField,
-                                context,
-                                parameterSource,
-                                parametersPlaceholders,
-                                params);
+                final List<FilterExpression> matchedExpressions = Arrays.stream(filterFields.value())
+                        .filter(this::filterFieldMatches)
+                        .map(filterField -> {
+                            try {
+                                return new LogicalExpression(
+                                        getField(), getValue(), getOperandType()
+                                ).preProcessField(
+                                        field,
+                                        filterField,
+                                        context,
+                                        parameterSource,
+                                        parametersPlaceholders,
+                                        params
+                                );
+                            } catch (WrongFilterException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        }).collect(Collectors.toList());
+                if (CollectionUtils.isNotEmpty(matchedExpressions)) {
+                    if (matchedExpressions.size() > 1) {
+                        return new OrFilterExpression(matchedExpressions);
+                    } else {
+                        return matchedExpressions.get(0);
                     }
                 }
             } else {
