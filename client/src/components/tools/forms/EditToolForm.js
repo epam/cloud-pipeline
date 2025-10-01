@@ -899,13 +899,17 @@ export default class EditToolForm extends React.Component {
       }
       return true;
     };
-    const configurationFormFieldChanged = (field, formFieldName) => {
+    const configurationFormFieldChanged = (
+      field,
+      formFieldName,
+      formValueAccessor = (v) => v
+    ) => {
       formFieldName = formFieldName || field;
       const formField = this.props.form.getFieldValue(formFieldName);
       const toolField = this.getInitialValue(field);
       const formFieldValue = formField ? `${formField}` : null;
       const toolFieldValue = toolField ? `${toolField}` : null;
-      return formFieldValue !== toolFieldValue;
+      return formValueAccessor(formFieldValue) !== toolFieldValue;
     };
     const commandChanged = () => {
       let toolCommand;
@@ -985,7 +989,11 @@ export default class EditToolForm extends React.Component {
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
-      configurationFormFieldChanged('friendly_url') ||
+      configurationFormFieldChanged(
+        'friendly_url',
+        'friendly_url',
+        (v) => prettyUrlGenerator.build(v)
+      ) ||
       configurationFormFieldChanged('allowSensitive') ||
       configurationFormFieldChanged('allowCommit') ||
       commandChanged() ||
