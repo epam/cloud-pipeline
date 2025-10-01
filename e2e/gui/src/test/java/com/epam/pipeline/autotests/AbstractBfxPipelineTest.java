@@ -36,6 +36,8 @@ import org.testng.annotations.BeforeMethod;
 import java.awt.*;
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
@@ -82,6 +84,11 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     public void addExtension(final String extensionPath) {
         final ChromeOptions options = new ChromeOptions();
         options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        Map<String, Object> local_state = new HashMap<>();
+        local_state.put("dns_over_https.mode", "off");
+        local_state.put("dns_over_https.templates", "");
+        options.setExperimentalOption("localState", local_state);
         options.addExtensions(new File(extensionPath));
         WebDriver webDriver = new ChromeDriver(options);
         WebDriverRunner.setWebDriver(webDriver);
