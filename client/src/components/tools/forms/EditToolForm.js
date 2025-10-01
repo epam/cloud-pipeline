@@ -248,12 +248,12 @@ export default class EditToolForm extends React.Component {
   }
 
   @computed
-    get awsRegions () {
-      if (this.props.awsRegions.loaded) {
-        return (this.props.awsRegions.value || []).map(r => r);
-      }
-      return [];
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
     }
+    return [];
+  }
 
   get isWindowsPlatform () {
     return /^windows$/i.test(this.props.platform);
@@ -307,7 +307,10 @@ export default class EditToolForm extends React.Component {
         let parameters = {};
         if (this.toolFormParameters && this.toolFormSystemParameters) {
           let params = [];
-          params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
+          params.push(
+            ...this.toolFormParameters.getValues(),
+            ...this.toolFormSystemParameters.getValues()
+          );
           const toggleParameter = (parameter, value) => {
             const p = params.find((o) => o.name === parameter);
             if (p) {
@@ -490,7 +493,8 @@ export default class EditToolForm extends React.Component {
   };
 
   getInstanceTypeValue = () => {
-    const name = this.props.form.getFieldValue('instanceType') || this.getInstanceTypeInitialValue();
+    const name = this.props.form.getFieldValue('instanceType') ||
+      this.getInstanceTypeInitialValue();
     const [instanceType] = this.allowedInstanceTypes.filter(i => i.name === name);
     return instanceType;
   };
@@ -568,7 +572,9 @@ export default class EditToolForm extends React.Component {
     this.defaultLimitMounts = null;
     this.defaultProperties = [];
     this.defaultSystemProperties = [];
-    this.defaultCommand = (props.tool && props.tool.defaultCommand ? props.tool.defaultCommand : null);
+    this.defaultCommand = props.tool && props.tool.defaultCommand
+      ? props.tool.defaultCommand
+      : null;
     if (props.configuration) {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
@@ -580,15 +586,20 @@ export default class EditToolForm extends React.Component {
           ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0;
         state.nodesCount = props.configuration.node_count;
-        state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
-        state.fsConfig = props.configuration ? getFsConfigFromParameters(props.configuration.parameters) : undefined;
+        state.autoScaledCluster = props.configuration &&
+          autoScaledClusterEnabled(props.configuration.parameters);
+        state.fsConfig = props.configuration
+          ? getFsConfigFromParameters(props.configuration.parameters)
+          : undefined;
         state.hybridAutoScaledClusterEnabled = props.configuration &&
           hybridAutoScaledClusterEnabled(props.configuration.parameters);
         const regions = this.props.awsRegions.loaded
           ? this.props.awsRegions.value
           : [];
-        const instanceTypeName = (props.configuration ? props.configuration.instance_size : undefined) ||
-          (props.tool ? props.tool.instanceType : undefined);
+        const instanceTypeName = (props.configuration
+          ? props.configuration.instance_size
+          : undefined
+        ) || (props.tool ? props.tool.instanceType : undefined);
         const instanceType = this.allowedInstanceTypes.find(i => i.name === instanceTypeName);
         const currentRegion = regions
           .find(a => (instanceType && a.id === instanceType.regionId) || !instanceType);
@@ -608,7 +619,8 @@ export default class EditToolForm extends React.Component {
           provider,
           parameters: props.configuration.parameters
         });
-        state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
+        state.gridEngineEnabled = props.configuration &&
+          gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
         state.kubeEnabled = props.configuration && kubeEnabled(props.configuration.parameters);
@@ -634,7 +646,9 @@ export default class EditToolForm extends React.Component {
           : [];
         state.initialNotifications = (state.notifications || []).map(mapObservableNotification);
         state.reservationParameters = readReservationParameters(props.configuration.parameters);
-        state.initialReservationParameters = readReservationParameters(props.configuration.parameters);
+        state.initialReservationParameters = readReservationParameters(
+          props.configuration.parameters
+        );
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -657,8 +671,11 @@ export default class EditToolForm extends React.Component {
               }
               continue;
             }
-            if (this.props.runDefaultParameters.loaded &&
-              (this.props.runDefaultParameters.value || []).filter(p => p.name === key).length === 1) {
+            if (
+              this.props.runDefaultParameters.loaded &&
+              (this.props.runDefaultParameters.value || [])
+                .filter(p => p.name === key).length === 1
+            ) {
               this.defaultSystemProperties.push({
                 name: key,
                 type: props.configuration.parameters[key].type,
@@ -722,7 +739,10 @@ export default class EditToolForm extends React.Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    if (nextProps.tool !== this.props.tool || nextProps.configuration !== this.props.configuration) {
+    if (
+      nextProps.tool !== this.props.tool ||
+      nextProps.configuration !== this.props.configuration
+    ) {
       this.reset(nextProps);
     }
   }
@@ -801,12 +821,17 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get allowedInstanceTypes () {
-    if (!this.props.allowedInstanceTypes.loaded || !this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes]) {
+    if (
+      !this.props.allowedInstanceTypes.loaded ||
+      !this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes]
+    ) {
       return [];
     }
     const instanceTypes = [];
-    for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes] || []).length; i++) {
-      const instanceType = this.props.allowedInstanceTypes.value[names.allowedToolInstanceTypes][i];
+    const allowedInstanceTypes = this.props.allowedInstanceTypes
+      .value[names.allowedToolInstanceTypes] || [];
+    for (let i = 0; i < allowedInstanceTypes.length; i++) {
+      const instanceType = allowedInstanceTypes[i];
       if (instanceTypes.filter(t => t.name === instanceType.name).length === 0) {
         instanceTypes.push(instanceType);
       }
@@ -829,10 +854,15 @@ export default class EditToolForm extends React.Component {
       availableMasterNodeTypes = this.props.preferences.allowedMasterPriceTypes;
     }
     let priceTypes = availableMasterNodeTypes.slice();
-    if (this.props.allowedInstanceTypes.loaded && this.props.allowedInstanceTypes.value[names.allowedPriceTypes]) {
+    if (
+      this.props.allowedInstanceTypes.loaded &&
+      this.props.allowedInstanceTypes.value[names.allowedPriceTypes]
+    ) {
       priceTypes = [];
-      for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || []).length; i++) {
-        const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
+      const allowedInstanceTypes = this.props.allowedInstanceTypes
+        .value[names.allowedPriceTypes] || [];
+      for (let i = 0; i < allowedInstanceTypes.length; i++) {
+        const isSpot = allowedInstanceTypes[i].toLowerCase() === 'spot';
         if (availableMasterNodeTypes.indexOf(isSpot) >= 0) {
           priceTypes.push(isSpot);
         }
@@ -934,8 +964,10 @@ export default class EditToolForm extends React.Component {
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
     };
-    const toolEndpointArray = this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : null;
-    const toolEndpointArrayFormValue = (this.props.form.getFieldValue('endpoints') || []).map(e => e);
+    const toolEndpointArray = this.props.tool
+      ? (this.props.tool.endpoints || []).map(e => e)
+      : null;
+    const endpointArrayFormValue = (this.props.form.getFieldValue('endpoints') || []).map(e => e);
     const toolLabelsArray = this.props.tool ? (this.props.tool.labels || []).map(l => l) : null;
     const nodesCount = this.props.configuration ? this.props.configuration.node_count : 0;
     const maxNodesCount = this.props.configuration && this.props.configuration.parameters &&
@@ -944,7 +976,9 @@ export default class EditToolForm extends React.Component {
       : 0;
     const autoScaledCluster = this.props.configuration &&
       autoScaledClusterEnabled(this.props.configuration.parameters);
-    const fsConfig = this.props.configuration ? getFsConfigFromParameters(this.props.configuration.parameters) : null;
+    const fsConfig = this.props.configuration
+      ? getFsConfigFromParameters(this.props.configuration.parameters)
+      : null;
     const hybridAutoScaledCluster = this.props.configuration &&
       hybridAutoScaledClusterEnabled(this.props.configuration.parameters);
     const gpuScalingConfiguration = this.props.configuration
@@ -983,7 +1017,14 @@ export default class EditToolForm extends React.Component {
       );
     };
 
-    console.log(this.state.initialReservationParameters, this.state.reservationParameters, reservationParametersDiffer(this.state.initialReservationParameters, this.state.reservationParameters));
+    console.log(
+      this.state.initialReservationParameters,
+      this.state.reservationParameters,
+      reservationParametersDiffer(
+        this.state.initialReservationParameters,
+        this.state.reservationParameters
+      )
+    );
 
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
@@ -997,7 +1038,7 @@ export default class EditToolForm extends React.Component {
       configurationFormFieldChanged('allowSensitive') ||
       configurationFormFieldChanged('allowCommit') ||
       commandChanged() ||
-      !compareArrays(toolEndpointArray, toolEndpointArrayFormValue) ||
+      !compareArrays(toolEndpointArray, endpointArrayFormValue) ||
       !compareArrays(toolLabelsArray, this.state.labels) ||
       (this.toolFormParameters && this.toolFormParameters.modified) ||
       (this.toolFormSystemParameters && this.toolFormSystemParameters.modified) ||
@@ -1014,13 +1055,20 @@ export default class EditToolForm extends React.Component {
       rescheduleRunValue !== this.state.rescheduleRun ||
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
-      (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
+      (
+        this.state.launchCluster &&
+        this.state.autoScaledCluster &&
+        maxNodesCount !== this.state.maxNodesCount
+      ) ||
       limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
       kubeLabelsHasChanges(
         this.state.initialKubeLabels,
         this.state.kubeLabels
       ) ||
-      reservationParametersDiffer(this.state.initialReservationParameters, this.state.reservationParameters) ||
+      reservationParametersDiffer(
+        this.state.initialReservationParameters,
+        this.state.reservationParameters
+      ) ||
       !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications);
   };
 
@@ -1167,7 +1215,10 @@ export default class EditToolForm extends React.Component {
           <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
+                <div key={index} className={classNames(
+                  styles.summaryItem,
+                  'cp-exec-env-summary-item'
+                )}>
                   {l}
                 </div>
               ))
@@ -1359,41 +1410,43 @@ export default class EditToolForm extends React.Component {
           {this.renderSeparator('Execution defaults')}
           <Row>
             <Col sm={24} lg={12}>
-              <Form.Item {...this.formItemLayout} label="Instance type" style={{marginBottom: 10}} required>
-                {getFieldDecorator('instanceType',
-                  {
-                    rules: [
-                      {
-                        required: true,
-                        message: 'Instance type is required'
-                      }
-                    ],
-                    initialValue: this.getInstanceTypeInitialValue()
-                  })(
+              <Form.Item
+                {...this.formItemLayout}
+                label="Instance type"
+                style={{marginBottom: 10}}
+                required
+              >
+                {getFieldDecorator('instanceType', {
+                  rules: [{
+                    required: true,
+                    message: 'Instance type is required'
+                  }],
+                  initialValue: this.getInstanceTypeInitialValue()
+                })(
                   <Select
-                      disabled={this.state.pending || this.props.readOnly || (
-                      this.props.allowedInstanceTypes &&
-                      (
-                        this.props.allowedInstanceTypes.changed ||
-                        this.props.allowedInstanceTypes.pending
-                      )
+                    disabled={
+                      this.state.pending ||
+                      this.props.readOnly || (
+                        this.props.allowedInstanceTypes && (
+                          this.props.allowedInstanceTypes.changed ||
+                          this.props.allowedInstanceTypes.pending
+                        )
+                      )}
+                    showSearch
+                    allowClear={false}
+                    placeholder="Instance type"
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      (option.props.searchValue || option.props.value)
+                        .toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                  >
+                    {getSelectOptions(
+                      this.allowedInstanceTypes, {
+                        showReservationTag: true,
+                        preferences: this.props.preferences
+                      }
                     )}
-                      showSearch
-                      allowClear={false}
-                      placeholder="Instance type"
-                      optionFilterProp="children"
-                      filterOption={
-                      (input, option) =>
-                        (option.props.searchValue || option.props.value)
-                          .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-                      {
-                      getSelectOptions(
-                        this.allowedInstanceTypes, {
-                          showReservationTag: true,
-                          preferences: this.props.preferences
-                        })
-                    }
-                    </Select>
+                  </Select>
                 )}
               </Form.Item>
               <Row>
@@ -1420,22 +1473,28 @@ export default class EditToolForm extends React.Component {
                 label="Instance image"
                 style={{marginBottom: 10}}
               >
-                {getFieldDecorator('instanceImage',
-                  {
-                    initialValue: this.getInstanceImageInitialValue()
-                  })(
-                    <Input
+                {getFieldDecorator('instanceImage', {
+                  initialValue: this.getInstanceImageInitialValue()
+                })(
+                  <Input
                     disabled={this.state.pending || this.props.readOnly}
                   />
                 )}
               </Form.Item>
-              <Form.Item {...this.formItemLayout} label="Price type" style={{marginTop: 10, marginBottom: 10}}>
-                {getFieldDecorator('is_spot',
-                  {
-                    initialValue: this.getPriceTypeInitialValue()
-                  })(
-                    <Select
-                    disabled={this.state.pending || this.props.readOnly || isInstanceTypeWithReservation}
+              <Form.Item
+                {...this.formItemLayout}
+                label="Price type"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                {getFieldDecorator('is_spot', {
+                  initialValue: this.getPriceTypeInitialValue()
+                })(
+                  <Select
+                    disabled={
+                      this.state.pending ||
+                      this.props.readOnly ||
+                      isInstanceTypeWithReservation
+                    }
                     onChange={this.handleIsSpotChange}
                   >
                     {
@@ -1446,35 +1505,39 @@ export default class EditToolForm extends React.Component {
                 )}
               </Form.Item>
               {this.renderPrettyUrlFormItem()}
-              <Form.Item {...this.formItemLayout} label="Disk (Gb)" style={{marginTop: 10, marginBottom: 10}} required>
-                {getFieldDecorator('disk',
-                  {
-                    rules: [
-                      {
-                        pattern: /^\d+(\.\d+)?$/,
-                        message: 'Please enter a valid positive number'
-                      },
-                      {
-                        validator: (rule, value, callback) => {
-                          if (!isNaN(value)) {
-                            if (+value > 15360) {
-                              callback('Maximum value is 15360');
-                              return;
-                            } else if (+value < 15) {
-                              callback('Minimum value is 15');
-                              return;
-                            }
+              <Form.Item
+                {...this.formItemLayout}
+                label="Disk (Gb)"
+                style={{marginTop: 10, marginBottom: 10}}
+                required
+              >
+                {getFieldDecorator('disk', {
+                  rules: [
+                    {
+                      pattern: /^\d+(\.\d+)?$/,
+                      message: 'Please enter a valid positive number'
+                    },
+                    {
+                      validator: (rule, value, callback) => {
+                        if (!isNaN(value)) {
+                          if (+value > 15360) {
+                            callback(new Error('Maximum value is 15360'));
+                            return;
+                          } else if (+value < 15) {
+                            callback(new Error('Minimum value is 15'));
+                            return;
                           }
-                          callback();
                         }
-                      },
-                      {
-                        required: true,
-                        message: 'Disk size is required (minimum value is 15)'
+                        callback();
                       }
-                    ],
-                    initialValue: this.getDiskInitialValue()
-                  })(
+                    },
+                    {
+                      required: true,
+                      message: 'Disk size is required (minimum value is 15)'
+                    }
+                  ],
+                  initialValue: this.getDiskInitialValue()
+                })(
                   <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
@@ -1541,14 +1604,13 @@ export default class EditToolForm extends React.Component {
                         <Form.Item
                           style={{marginBottom: 0, flex: 1}}
                         >
-                          {getFieldDecorator('limitMounts',
-                            {
-                              initialValue: this.defaultLimitMounts
-                            })(
+                          {getFieldDecorator('limitMounts', {
+                            initialValue: this.defaultLimitMounts
+                          })(
                             <LimitMountsInput
-                                allowSensitive={allowSensitive}
-                                disabled={this.state.pending || this.props.readOnly}
-                                cloudRegion={this.getCloudRegion()}
+                              allowSensitive={allowSensitive}
+                              disabled={this.state.pending || this.props.readOnly}
+                              cloudRegion={this.getCloudRegion()}
                             />
                           )}
                         </Form.Item>
@@ -1578,18 +1640,17 @@ export default class EditToolForm extends React.Component {
                     label="Allow sensitive storages"
                     style={{marginTop: 10, marginBottom: 10}}
                   >
-                    {getFieldDecorator('allowSensitive',
-                      {
-                        initialValue: this.getAllowSensitiveInitialValue(),
-                        valuePropName: 'checked'
-                      })(
+                    {getFieldDecorator('allowSensitive', {
+                      initialValue: this.getAllowSensitiveInitialValue(),
+                      valuePropName: 'checked'
+                    })(
                       <Checkbox
-                          disabled={
+                        disabled={
                           this.state.pending ||
                           this.props.readOnly ||
                           this.props.mode === 'version'
                         }
-                          onChange={this.correctSensitiveMounts}
+                        onChange={this.correctSensitiveMounts}
                       />
                     )}
                   </Form.Item>
@@ -1624,8 +1685,10 @@ export default class EditToolForm extends React.Component {
                         <a
                           onClick={this.openConfigureClusterDialog}
                           className={classNames('cp-text', 'underline')}
-                          style={{textDecoration: 'underline'}}>
-                          <Icon type="setting" /> {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
+                          style={{textDecoration: 'underline'}}
+                        >
+                          <Icon type="setting" />{' '}
+                          {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>
                       </Row>
                     </Col>
@@ -1863,13 +1926,13 @@ export default class EditToolForm extends React.Component {
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
               <Form.Item>
-                {getFieldDecorator('endpoints',
-                  {
-                    initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
-                  })(
+                {getFieldDecorator('endpoints', {
+                  initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
+                })(
                   <ToolEndpointsFormItem
-                      disabled={this.state.pending || this.props.readOnly}
-                      ref={this.initializeEndpointsControl} />
+                    disabled={this.state.pending || this.props.readOnly}
+                    ref={this.initializeEndpointsControl}
+                  />
                 )}
               </Form.Item>
             </Col>
