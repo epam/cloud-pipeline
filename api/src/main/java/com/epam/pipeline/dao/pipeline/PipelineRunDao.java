@@ -928,12 +928,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (partialParametersParts.length >= 2) {
             parameterJsonClause = parameterJsonClause
-                    + String.format(", \"value\": \":%s\"", partialParametersParts[1]);
+                    + String.format(", \"value\": \"%s\"", partialParametersParts[1]);
         }
 
         if (partialParametersParts.length >= 3) {
             parameterJsonClause = parameterJsonClause
-                    + String.format(", \"type\": \":%s\"", partialParametersParts[2]);
+                    + String.format(", \"type\": \"%s\"", partialParametersParts[2]);
         }
         parameterJsonClause = String.format("{\"%s\": {%s}}", partialParametersParts[0], parameterJsonClause);
         params.addValue(PipelineRunParameters.PARAMETER_JSON.name(), parameterJsonClause);
