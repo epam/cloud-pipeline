@@ -201,16 +201,16 @@ export default class Tool extends localization.LocalizedReactComponent {
   }
 
   @computed
-  get dockerImage () {
-    const {tool, version} = this.props;
+  get dockerImageWithoutVersion () {
+    const {tool} = this.props;
     if (!tool?.loaded) {
       return;
     }
     const {image} = tool.value;
     const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
     return registry
-      ? `${registry.path}/${image}${version ? `:${version}` : ''}`
-      : `${image}${version ? `:${version}` : ''}`;
+      ? `${registry.path}/${image}`
+      : `${image}`;
   }
 
   @computed
@@ -1258,6 +1258,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     }
     const [, image] = this.props.tool.value.image.split('/');
     const warningForLatestVersion = this.getWarningForLatestVersion();
+    const dockerImage = `${this.dockerImageWithoutVersion}:${this.defaultTag}`;
     return (
       <div>
         { warningForLatestVersion &&
@@ -1311,7 +1312,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           executionEnvironmentDisabled={!this.defaultTag}
           onSubmit={this.updateTool}
           dockerOSVersion={this.toolVersionOS}
-          dockerImage={this.dockerImage}
+          dockerImage={dockerImage}
         />
       </div>
     );
@@ -1572,6 +1573,10 @@ export default class Tool extends localization.LocalizedReactComponent {
         regionId: cloudRegionIdValue,
         spot: isSpotValue
       });
+      let dockerImage = this.dockerImageWithoutVersion;
+      if (version) {
+        dockerImage = `${dockerImage}:${version}`;
+      }
       await allowedInstanceTypesRequest.fetch();
       const payload = modifyPayloadForAllowedInstanceTypes({
         instanceType:
@@ -1592,7 +1597,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.props.tool.value.defaultCommand,
           this.props.preferences.getPreferenceValue('launch.cmd.template')
         ),
-        dockerImage: this.dockerImage,
+        dockerImage,
         params: prepareParameters(versionSettingValue('parameters')),
         isSpot: isSpotValue,
         nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
