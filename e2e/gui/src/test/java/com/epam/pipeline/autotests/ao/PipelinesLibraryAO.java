@@ -307,9 +307,11 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         cd(folderName)
                 .resetMouse()
                 .click(byId("edit-folder-menu-button"))
-                .click(byText("Delete"))
-                .click(byText("Delete sub-items"))
-                .click(button("OK"));
+                .click(byText("Delete"));
+        if($(byText("Delete sub-items")).exists()) {
+            click(byText("Delete sub-items"));
+        }
+        click(button("OK"));
         return this;
     }
 
