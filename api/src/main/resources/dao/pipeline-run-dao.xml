@@ -1453,7 +1453,7 @@
                             p.node_pool_id,
                             p.node_start_date,
                             p.project_id,
-                            r.parameters_json
+                            p.parameters_json
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
