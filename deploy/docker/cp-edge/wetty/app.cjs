@@ -6,7 +6,7 @@ var pty = require('node-pty');
 var request = require("sync-request");
 var child_process = require('child_process');
 
-const checkMaintenanceMode = require('./maintenance');
+const checkMaintenanceMode = require('./maintenance.cjs');
 
 // Constants
 const ENV_TAG_RUNID_NAME = 'CP_ENV_TAG_RUNID';
@@ -268,10 +268,15 @@ process.on('uncaughtException', function(e) {
 });
 
 const app = express();
-app.get('/ssh/pipeline/*', function(req, res) {
-    res.sendfile(__dirname + '/public/ssh/index.html');
+app.get(/^\/ssh\/pipeline\/.*$/, function(req, res) {
+    res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    });
+    res.sendFile(__dirname + '/dist/index.html');
 });
-app.use('/', express.static(path.join(__dirname, 'public')));
+app.use('/ssh', express.static(path.join(__dirname, 'dist')));
 
 
 const httpserv = http.createServer(app).listen(opts.port, function() {
@@ -336,6 +341,12 @@ io.on('connection', function(socket) {
         || (current_user_login_name ? resolve_user_name(current_user_login_name, run_user_name_case) : undefined);
     const platformName = get_platform_name(auth_key);
     const theme = current_user_metadata['ui.ssh.theme'] || get_ssh_theme(auth_key) || 'default';
+    socket.on('term.ready', function() {
+            console_log(`SSH GUI terminal for run #${run_id} -> ready, (re)setting theme "${theme}"`);
+            socket.emit('term.theme', theme);
+        });
+        console_log(`SSH GUI terminal for run #${run_id} -> setting theme "${theme}"`);
+        socket.emit('term.theme', theme);
     let sshuser;
     let sshpass;
     switch (run_ssh_mode) {
@@ -401,7 +412,7 @@ io.on('connection', function(socket) {
         console_log("PID=" + term.pid + " ENDED")
     });
     socket.on('resize', function(data) {
-        term.resize(data.col, data.row);
+        term.resize(data.cols, data.rows);
     });
     socket.on('input', function(data) {
         term.write(data);
@@ -417,5 +428,4 @@ io.on('connection', function(socket) {
             console_log('Error: ' + ex);
         }
     });
-    socket.emit('term.theme', theme);
 })
