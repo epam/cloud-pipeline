@@ -258,6 +258,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
             .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+            .doNotMountStoragesSelect(true)
             .launch(this)
             .showLog(getLastRunId())
             .waitForCompletion();
