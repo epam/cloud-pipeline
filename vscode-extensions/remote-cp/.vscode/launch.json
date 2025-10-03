@@ -14,6 +14,7 @@
         "--enable-proposed-api", "epam.remote-cp"
       ],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "sourceMaps": true,
       "preLaunchTask": "remote-cp: compile & watch"
     },
     {
@@ -23,7 +24,8 @@
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--enable-proposed-api", "epam.remote-cp",
-        "--remote","cp-remote+pipeline-77742", "root/projs/test-1",
+        "--remote", "cp-remote+pipeline-77742",
+        "root/projs/test-1"
       ],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "preLaunchTask": "remote-cp: compile & watch"
@@ -55,14 +57,9 @@
       "request": "launch",
       "program": "${workspaceFolder}/tools/saml.ts",
       "cwd": "${workspaceFolder}",
-      "runtimeArgs": [
-        "-r",
-        "ts-node/register"
-      ],
+      "runtimeArgs": ["-r", "ts-node/register"],
       "console": "integratedTerminal",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

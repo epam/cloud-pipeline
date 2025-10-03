@@ -1,21 +1,39 @@
 /// <reference types="jest" />
 
-import { CloudPipelineClient, RunInfo } from "../../cp-client";
+import { ILogger } from "../../common/logger";
+import { ICpExtConfig } from "../../config";
+import { CpClientBase, RunInfo } from "../../cp-client";
+import { CpClient } from "../../cp-client/cp-client";
 
 interface IClient {
   parseRunListTable(tableStr: string): RunInfo[];
 }
 
+class CpClientTest extends CpClientBase {
+  static create(cpExtConfig: ICpExtConfig, logger: ILogger): CpClientTest {
+    return new CpClientTest(cpExtConfig, logger);
+  }
+
+  protected override ensurePipeExecInternal(): Promise<void> {
+    throw new Error("Not implemented");
+  }
+}
+
 describe("CloudPipelineClient.parseRunListTable", () => {
-  const cpConfig = {
+  const notImplementedStubFunc = () => {
+    throw new Error("Not implemented");
+  };
+  const cpConfig: ICpExtConfig = {
+    globalStoragePath: "",
     platformUrl: "https://cora.company.com",
     prefix: "CP:",
+    apiEndpoint: "/pipeline/restapi",
+    authEndpoint: "/pipeline/restapi/route",
+    setPlatformUrl: notImplementedStubFunc,
+    getClientConfig: notImplementedStubFunc,
+    setClientConfig: notImplementedStubFunc,
   };
-  const client = new CloudPipelineClient(
-    null,
-    cpConfig,
-    console,
-  ) as any as IClient;
+  const client = CpClientTest.create(cpConfig, console) as any as IClient;
 
   it("parses valid table with multiple runs", () => {
     const table = `\

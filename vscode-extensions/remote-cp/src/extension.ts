@@ -4,46 +4,27 @@ import * as vscode from "vscode";
 
 import { Logger } from "./common/logger";
 import { CpExtension } from "./cp-ext";
-import { CpConfig } from "./config";
+import { CpExtConfig } from "./config";
 
 let ext: CpExtension | null = null;
 let logger: Logger;
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+// This method is called once when the extension is activated
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   logger = new Logger("Cloud Pipeline");
-  logger.info('Extension "remote-cp" is activated');
+  logger.info('Extension "remote-cp" activating...');
   context.subscriptions.push(logger);
   try {
-    const config = new CpConfig();
-    await config.activate();
+    const cpExtConfig = new CpExtConfig(context, logger);
+    await cpExtConfig.activate();
 
-    ext = new CpExtension(config, context, logger);
+    ext = new CpExtension(cpExtConfig, context, logger);
     await ext.activate();
     context.subscriptions.push(ext);
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    logger.info('Congratulations, your extension "remote-cp" is now active!');
-
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
-    const disposable = vscode.commands.registerCommand(
-      "remote-cp.helloWorld",
-      () => {
-        // The code you place here will be executed every time your command is executed
-        // Display a message box to the user
-        vscode.window.showInformationMessage(
-          "Hello World from Cloud Pipeline Remote!",
-        );
-      },
-    );
-
-    context.subscriptions.push(disposable);
+    logger.info('Extension "remote-cp" activated!');
   } catch (err: unknown) {
     if (err instanceof Error) {
       logger.error(`Extension 'remote-cp' activation failed:\n${err.stack}`);

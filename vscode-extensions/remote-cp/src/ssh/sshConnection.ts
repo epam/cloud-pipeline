@@ -17,7 +17,7 @@ import {
   SocksConnectionInfo,
   createServer as createSocksServer,
 } from "simple-socks";
-import { ICpConfig } from "../config";
+import { ICpExtConfig } from "../config";
 
 export interface SSHConnectConfig extends ConnectConfig {
   /** Optional Unique ID attached to CP/SSH connection. */
@@ -80,7 +80,7 @@ export default class SSHConnection extends EventEmitter {
   private sshConnection: Client | null = null;
 
   constructor(
-    private readonly cpConfig: ICpConfig,
+    private readonly cpConfig: ICpExtConfig,
     options: SSHConnectConfig,
   ) {
     super();

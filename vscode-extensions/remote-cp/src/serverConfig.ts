@@ -16,13 +16,13 @@ async function getVSCodeProductJson() {
 }
 
 export interface IServerConfig {
-  version: string;
-  commit: string;
-  quality: string;
-  release?: string; // vscodium-like specific
-  serverApplicationName: string;
-  serverDataFolderName: string;
-  serverDownloadUrlTemplate?: string; // vscodium-like specific
+  readonly version: string;
+  readonly commit: string;
+  readonly quality: string;
+  readonly release?: string; // vscodium-like specific
+  readonly serverApplicationName: string;
+  readonly serverDataFolderName: string;
+  readonly serverDownloadUrlTemplate?: string; // vscodium-like specific
 }
 
 export async function getVSCodeServerConfig(): Promise<IServerConfig> {

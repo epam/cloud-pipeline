@@ -11,12 +11,12 @@ import {
 } from "./commands-handlers";
 import SSHDestination from "./ssh/sshDestination";
 import { ILogger } from "./common/logger";
-import { CloudPipelineClient, RunInfo, RunLocation } from "./cp-client";
+import { RunInfo, RunLocation } from "./cp-client";
 import { Commands } from "./commands";
-import { CpConfig } from "./config";
+import { CpClient } from "./cp-client/cp-client";
 
 export function registerHostTreeView(
-  cpClient: CloudPipelineClient,
+  cpClient: CpClient,
   context: vscode.ExtensionContext,
   logger: ILogger,
 ): void {
@@ -62,7 +62,7 @@ export class HostTreeDataProvider
   public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   constructor(
-    private readonly cpClient: CloudPipelineClient,
+    private readonly cpClient: CpClient,
     private locationHistory: RemoteLocationHistory,
     private logger: ILogger,
   ) {

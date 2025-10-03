@@ -20,11 +20,11 @@ const allCommands: Set<string> = (() => {
 })();
 
 interface PackageContributes {
-  commands?: { command: string }[];
-  menus?: Record<string, any>;
+  readonly commands?: { command: string }[];
+  readonly menus?: Record<string, any>;
 }
 interface PackageJson {
-  contributes?: PackageContributes;
+  readonly contributes?: PackageContributes;
 }
 
 const pkg: PackageJson = (() => {

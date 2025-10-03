@@ -31,11 +31,11 @@ const DEFAULT_IDENTITY_FILES: string[] = [
 ];
 
 export interface SSHKey {
-  filename: string;
-  parsedKey: ParsedKey;
-  fingerprint: string;
-  agentSupport?: boolean;
-  isPrivate?: boolean;
+  readonly filename: string;
+  readonly parsedKey: ParsedKey;
+  readonly fingerprint: string;
+  readonly agentSupport?: boolean;
+  readonly isPrivate?: boolean;
 }
 
 // From https://github.com/openssh/openssh-portable/blob/acb2059febaddd71ee06c2ebf63dcf211d9ab9f2/sshconnect2.c#L1689-L1690

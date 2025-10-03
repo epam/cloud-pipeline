@@ -55,12 +55,42 @@
         },
         "remote-cp.prefix": {
           "type": "string",
-          "default": "CP:",
+          "default": "CP",
           "description": "The workspace (and messages) prefix.",
+          "scope": "application"
+        },
+        "remote-cp.api.endpoint": {
+          "type": "string",
+          "default": "/pipeline/restapi",
+          "description": "The Cloud Pipeline api endpoint",
+          "scope": "application"
+        },
+        "remote-cp.auth.endpoint": {
+          "type": "string",
+          "default": "/pipeline/restapi/route",
+          "description": "The Cloud Pipeline platfrom auth endpoint",
+          "scope": "application"
+        },
+        "remote-cp.pipe.apiUri": {
+          "type": "string",
+          "default": null,
+          "description": "Client pipe apiUri",
+          "scope": "application"
+        },
+        "remote-cp.pipe.apiToken": {
+          "type": "string",
+          "default": null,
+          "description": "Client pipe apiToken",
           "scope": "application"
         }
       }
     },
+    "authentication": [
+      {
+        "id": "epam-cp",
+        "label": "Cloud Pipeline"
+      }
+    ],
     "views": {
       "remote": [
         {
@@ -201,12 +231,12 @@
     "@types/got": "^9.6.12",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^20.19.13",
+    "@types/node": "^20.19.19",
     "@types/ps-tree": "^1.1.6",
     "@types/ssh2": "^0.5.52",
     "@types/ssh2-streams": "^0.1.12",
     "@types/tmp": "^0.2.6",
-    "@types/vscode": "^1.103.0",
+    "@types/vscode": "^1.104.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/dts": "^0.4.1",

@@ -18,8 +18,8 @@ import { untildify, exists as fileExists } from "./common/files";
 import { gatherIdentityFiles, SSHKey } from "./ssh/identityFiles";
 import { installCodeServer, ServerInstallError } from "./serverSetup";
 import { findRandomPort } from "./common/ports";
-import { CloudPipelineClient } from "./cp-client";
-import { ICpConfig } from "./config";
+import { CpClient } from "./cp-client/cp-client";
+import { ICpExtConfig } from "./config";
 
 // export const REMOTE_SSH_AUTHORITY = 'ssh-remote';
 export const REMOTE_CP_AUTHORITY = "cp-remote";
@@ -44,7 +44,7 @@ class TunnelInfo implements vscode.Disposable {
 }
 
 export function registerAuthResolver(
-  cpClient: CloudPipelineClient,
+  cpClient: CpClient,
   context: vscode.ExtensionContext,
   logger: ILogger,
 ): void {
@@ -72,13 +72,13 @@ export class RemoteCpResolver
   private labelFormatterDisposable: vscode.Disposable | undefined;
 
   constructor(
-    private readonly cpClient: CloudPipelineClient,
+    private readonly cpClient: CpClient,
     private readonly extContext: vscode.ExtensionContext,
     private readonly logger: ILogger,
   ) {}
 
-  private get cpConfig(): ICpConfig {
-    return this.cpClient.cpConfig;
+  private get cpConfig(): ICpExtConfig {
+    return this.cpClient.cpExtConfig;
   }
 
   resolve(

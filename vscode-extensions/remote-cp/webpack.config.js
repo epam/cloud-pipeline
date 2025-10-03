@@ -23,6 +23,7 @@ const config = {
 		extensions: ['.ts', '.js'],
 		fallback: {
 			"@aws-sdk/client-s3": false,
+			"navigator": false,
 		}
 	},
 	module: {

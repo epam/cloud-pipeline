@@ -6,7 +6,7 @@ import { EventEmitter } from "events";
 import { Disposable } from "./common/disposable";
 import { findRandomPort } from "./common/ports";
 import { ILogger, Logger, LogLevel } from "./common/logger";
-import { ICpConfig } from "./config";
+import { ICpExtConfig } from "./config";
 
 // line: "2025-09-16 13:48:07,888:INFO: Searching for tunnel processes..."
 const pipeLineRe: RegExp =
@@ -38,12 +38,12 @@ export class PipeTunnel extends Disposable {
 
   constructor(
     private readonly cpRunId: number,
-    private readonly cpConfig: ICpConfig,
+    private readonly cpExtConfig: ICpExtConfig,
     private readonly logger: ILogger,
   ) {
     super();
 
-    this.output = new Logger(`Cloud Pipeline tunnel ${cpRunId}`);
+    this.output = new Logger(`${this.cpExtConfig.prefix} tunnel ${cpRunId}`);
     this._register(this.output);
   }
 
@@ -73,38 +73,17 @@ export class PipeTunnel extends Disposable {
       },
     );
   }
+
   private start(
-    localPort: number,
     progress: vscode.Progress<{
       message?: string;
       increment?: number;
     }>,
   ) {
+    if (!this.child) {
+      throw new Error("PipeTunnel: start() called with no child process");
+    }
     this.state = PipeTunnelState.starting;
-    // prettier-ignore
-    const process = cp.spawn("pipe", [
-      "tunnel", "start", "-f", "--ssh", "--keep-same",
-      "-rp", "22",
-      "-lp", localPort.toString(),
-      "--log-level", "INFO",
-      this.cpRunId.toString(),
-    ], { 
-      shell: true,
-      // detached: true,
-    });
-    // process.unref();
-    this.logger.info(`PipeTunnel: started process (pid: ${process.pid})`);
-
-    this.child = {
-      process,
-      localPort,
-      pipeTunnelStdout: readline.createInterface({
-        input: process.stdout,
-      }),
-      pipeTunnelStderr: readline.createInterface({
-        input: process.stderr,
-      }),
-    };
 
     this.child.pipeTunnelStdout.on("line", (line) => {
       this.output.appendLine(line);
@@ -128,21 +107,30 @@ export class PipeTunnel extends Disposable {
       if (!level && line.toLowerCase().startsWith("error:")) {
         this.eventEmitter.emit("processError", new Error(line.slice(7)));
       }
+      let currentProgress = 10;
+
+      function progressReport(reachedProgress: number, msg: string) {
+        progress.report({
+          increment: reachedProgress - currentProgress,
+          message: msg,
+        });
+        currentProgress = reachedProgress;
+      }
 
       if (message.startsWith("Searching for processes listening local ports")) {
-        progress.report({ increment: 5, message: `${message}` });
+        progressReport(15, message);
       } else if (message.startsWith("Configuring putty and openssh password")) {
-        progress.report({ increment: 10, message: `${message}` });
+        progressReport(25, `${message}`);
       } else if (message.startsWith("Initializing passwordless")) {
-        progress.report({ increment: 3, message: `${message}` });
+        progressReport(28, `${message}`);
       } else if (message.startsWith("Copying remote ppk key...")) {
-        progress.report({ increment: 18, message: `${message}` });
+        progressReport(46, `${message}`);
       } else if (message.startsWith("Appending host record to putty")) {
-        progress.report({ increment: 28, message: `${message}` });
+        progressReport(74, `${message}`);
       } else if (message.startsWith("Calculating putty host hash")) {
-        progress.report({ increment: 13, message: `${message}` });
+        progressReport(87, `${message}`);
       } else if (message.startsWith("Waiting for connections")) {
-        progress.report({ increment: 13, message: `${message}` });
+        progressReport(100, `${message}`);
         this.state = PipeTunnelState.listed;
         this.eventEmitter.emit("listed");
 
@@ -169,11 +157,16 @@ export class PipeTunnel extends Disposable {
     this.eventEmitter.on(event, listener);
   }
 
-  public async activate(): Promise<void> {
+  public async activate(
+    startProcess: (
+      localPort: number,
+      progress: vscode.Progress<{ message?: string; increment?: number }>,
+    ) => Promise<cp.ChildProcessWithoutNullStreams>,
+  ): Promise<void> {
     return vscode.window.withProgress<void>(
       {
         location: vscode.ProgressLocation.Notification,
-        title: `Starting ${this.cpConfig.prefix} tunnel ${this.cpRunId}: \n`,
+        title: `Starting ${this.cpExtConfig.prefix} tunnel ${this.cpRunId}: \n`,
         cancellable: false,
       },
       async (progress, _token) => {
@@ -186,26 +179,43 @@ export class PipeTunnel extends Disposable {
         });
 
         return new Promise<void>((resolve, reject) => {
-          try {
-            this.on("ready", () => {
-              resolve();
-            });
-            this.on("processError", (err) => {
+          this.on("ready", () => {
+            resolve();
+          });
+          this.on("processError", (err) => {
+            reject(err);
+          });
+          this.on("processClose", (code) => {
+            if (code === 0) {
+              reject(new Error("Tunnel process closed (exitcode: 0)"));
+            } else {
+              reject(new Error(`Tunnel process error (exitcode: ${code})`));
+            }
+          });
+
+          // Start process after all subscriptions are set
+          startProcess(localPort, progress)
+            .then((process) => {
+              this.logger.info(
+                `PipeTunnel: started process (pid: ${process.pid})`,
+              );
+
+              this.child = {
+                process,
+                localPort,
+                pipeTunnelStdout: readline.createInterface({
+                  input: process.stdout,
+                }),
+                pipeTunnelStderr: readline.createInterface({
+                  input: process.stderr,
+                }),
+              };
+
+              this.start(progress);
+            })
+            .catch((err) => {
               reject(err);
             });
-            this.on("processClose", (code) => {
-              if (code === 0) {
-                reject(new Error("Tunnel process closed (exitcode: 0)"));
-              } else {
-                reject(new Error(`Tunnel process error (exitcode: ${code})`));
-              }
-            });
-
-            this.start(localPort, progress);
-          } catch (err) {
-            this.dispose();
-            reject(err);
-          }
         });
       },
     );

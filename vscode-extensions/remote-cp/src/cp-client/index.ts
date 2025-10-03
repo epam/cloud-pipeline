@@ -1,11 +1,17 @@
-import { exec } from "child_process";
 import * as vscode from "vscode";
+import * as cp from "child_process";
 
 import { ILogger } from "../common/logger";
 import { pipeParse } from "./pipeParse";
 import { PipeTunnel } from "../pipeTunnel";
 import { Disposable } from "../common/disposable";
-import { ICpConfig } from "../config";
+import { ICpExtConfig as ICpExtConfig } from "../config";
+import { fileExists, readJsonFile } from "../common/files/file";
+import { ICpClientConfig } from "./cp-client-config";
+import { CpAuthInvalidError, CpTokenExpiredError } from "../cp-client/error";
+import { configureWithCliConfigurationCommand } from "./configure-with-cli-configuration-command";
+import { configureWithCpUrl } from "./configure-with-cp-web-auth";
+import { configureWithOAuth } from "./configure-with-oauth";
 
 export enum PipeRunCols {
   runId = "RunID",
@@ -90,19 +96,26 @@ export class CpVersionInfo {
   ) {}
 }
 
-export class CloudPipelineClient extends Disposable {
-  private readonly pipeExec: string;
-  constructor(
-    pipeExec: string | null,
-    public readonly cpConfig: ICpConfig,
-    private logger: ILogger,
+/**
+ * pipe-cli
+ *   Tries to use {install-dir}/config.json
+ *   and fallbacks to {home-dir}/config.json auto and silent
+ */
+export abstract class CpClientBase extends Disposable {
+  private static objCounter = -1;
+  private objId = CpClientBase.objCounter++;
+
+  protected toLog(): string {
+    return `${this.constructor.name}<${this.objId}>`;
+  }
+
+  protected pipeExec!: string;
+
+  protected constructor(
+    public readonly cpExtConfig: ICpExtConfig,
+    private readonly logger: ILogger,
   ) {
     super();
-    this.pipeExec = pipeExec
-      ? pipeExec.includes(" ")
-        ? `"${pipeExec}"`
-        : pipeExec
-      : "pipe";
   }
 
   override dispose() {
@@ -113,7 +126,7 @@ export class CloudPipelineClient extends Disposable {
   }
 
   async getVersion(): Promise<CpVersionInfo> {
-    const output = await this.execPipeCommand(`${this.pipeExec} --version`);
+    const output = await this.execPipeCommand("--version");
     const apiM = output.match(
       /^Cloud Pipeline API, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
     );
@@ -123,7 +136,9 @@ export class CloudPipelineClient extends Disposable {
     const tokenM = output.match(
       /^Access token info:\s*\nIssued to: (\w+)\s*\nIssued at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\nExpires at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/m,
     );
-    if (!apiM || !cliM || !tokenM) {
+    if (!apiM && cliM && tokenM) {
+      throw new CpTokenExpiredError(`Access token is expired: ${tokenM[3]}`);
+    } else if (!apiM || !cliM || !tokenM) {
       throw new Error(`Failed to parse 'pipe --version' output: ${output}`);
     }
 
@@ -140,20 +155,86 @@ export class CloudPipelineClient extends Disposable {
    * Gets run list with `pipe view-runs` command
    */
   async getRunList(): Promise<RunInfo[]> {
-    const output = await this.execPipeCommand(`${this.pipeExec} view-runs`);
-    return pipeParseRunList(output);
+    const logPfx = `${this.toLog()}.getRunList()`;
+    this.logger.info(`${logPfx}, start`);
+    try {
+      const output = await this.execPipeCommand(`view-runs`);
+      return await pipeParseRunList(output);
+    } finally {
+      this.logger.info(`${logPfx}, end`);
+    }
   }
 
-  private execPipeCommand(command: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      exec(command, { encoding: "utf8" }, (error, stdout, stderr) => {
-        if (error) {
-          reject(stderr || error.message);
+  private async configSpawn(
+    ...args: readonly string[]
+  ): Promise<cp.ChildProcessWithoutNullStreams> {
+    const config = await this.ensureConfig();
+    const env = this.configToEnv(config);
+
+    try {
+      return cp.spawn(this.pipeExec, args, { env });
+    } catch (err) {
+      const _m = err.message.match(CpTokenExpiredError.re);
+      throw err;
+    }
+  }
+
+  /**
+   * Executes {@link file} with {@link args} and returns output.
+   * @returns Output
+   */
+  private async configExecFile(...args: readonly string[]): Promise<string> {
+    const config = await this.ensureConfig();
+    const env = this.configToEnv(config);
+
+    return new Promise<string>((resolve, reject) => {
+      const dt1 = performance.now();
+      cp.execFile(this.pipeExec, args, { env }, (error, stdout, stderr) => {
+        const dt2 = performance.now();
+        this.logger.debug(
+          `Client pipe command exec for ${(dt2 - dt1) / 1000} s`,
+        );
+        if (error || stderr) {
+          const m =
+            error?.message.match(CpTokenExpiredError.re) ||
+            stderr.match(CpTokenExpiredError.re);
+          if (m) {
+            reject(new CpTokenExpiredError(m[0]));
+          } else {
+            reject(error || new Error(stderr));
+          }
         } else {
           resolve(stdout);
         }
       });
     });
+  }
+
+  /**
+   * Calls {@link ensureConfig}
+   */
+  private async execPipeCommand(...args: readonly string[]): Promise<string> {
+    while (true) {
+      try {
+        return await this.configExecFile(...args);
+      } catch (err) {
+        if (
+          err instanceof CpTokenExpiredError ||
+          err instanceof CpAuthInvalidError
+        ) {
+          await this.cpExtConfig.setClientConfig(null);
+          const errUserResp = await vscode.window.showErrorMessage(
+            err.message,
+            ...["Retry", "Abort"],
+          );
+          if (errUserResp === "Abort") {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
+    }
   }
 
   async getTunnelList(): Promise<TunnelInfo[]> {
@@ -165,10 +246,24 @@ export class CloudPipelineClient extends Disposable {
     cpRunId: number,
     context: vscode.ExtensionContext,
   ): Promise<PipeTunnel> {
-    const resPipeTunnel = new PipeTunnel(cpRunId, this.cpConfig, this.logger);
+    const resPipeTunnel = new PipeTunnel(
+      cpRunId,
+      this.cpExtConfig,
+      this.logger,
+    );
     this._register(resPipeTunnel);
     // context.subscriptions.push(resPipeTunnel);
-    await resPipeTunnel.activate();
+    await resPipeTunnel.activate(
+      (localPort: number): Promise<cp.ChildProcessWithoutNullStreams> => {
+        // prettier-ignore
+        return this.configSpawn(
+          "tunnel", "start", "-f", "--ssh", "--keep-same",
+          "-rp", "22",
+          "-lp", localPort.toString(),
+          "--log-level", "INFO",
+          cpRunId.toString());
+      },
+    );
 
     return resPipeTunnel;
   }
@@ -176,4 +271,99 @@ export class CloudPipelineClient extends Disposable {
   async stopTunnel(tunnel: PipeTunnel): Promise<void> {
     await tunnel.deactivate();
   }
+
+  private ensurePipeExecActive: boolean = false;
+
+  protected abstract ensurePipeExecInternal(): Promise<void>;
+
+  private async ensurePipeExec(): Promise<void> {
+    if (!this.ensurePipeExecActive) {
+      this.ensurePipeExecActive = true;
+      try {
+        return await this.ensurePipeExecInternal();
+      } finally {
+        this.ensurePipeExecActive = false;
+      }
+    } else {
+      return Promise.resolve();
+    }
+  }
+
+  // -- Config --
+  private async ensureConfig(): Promise<ICpClientConfig> {
+    await this.ensurePipeExec();
+    if (!this.pipeExec) throw new Error("Pipe client exec is not configured");
+
+    let resConfig: ICpClientConfig | null;
+    resConfig = await this.cpExtConfig.getClientConfig();
+    if (resConfig) return resConfig;
+
+    resConfig = await getInstallDirConfigJson(this.pipeExec);
+    if (resConfig) return resConfig;
+
+    const configureActions = {
+      cliConfigurationCommands: "CLI configuration command",
+      cpUrl: `${this.cpExtConfig.prefix} web auth`,
+      cpAuth: "${this.cpExtConfig.prefix} OAuth",
+    };
+
+    const configUserResp = await vscode.window.showWarningMessage(
+      `${this.cpExtConfig.prefix} pipe client is not configured.`,
+      ...[
+        configureActions.cliConfigurationCommands,
+        configureActions.cpUrl,
+        "Skip",
+      ],
+    );
+
+    switch (configUserResp) {
+      case configureActions.cliConfigurationCommands: {
+        resConfig = await configureWithCliConfigurationCommand(
+          this.cpExtConfig,
+          this.logger,
+        );
+        break;
+      }
+      case configureActions.cpUrl: {
+        resConfig = await configureWithCpUrl(this.cpExtConfig, this.logger);
+        break;
+      }
+
+      case configureActions.cpAuth: {
+        resConfig = await configureWithOAuth(this.cpExtConfig, this.logger);
+        break;
+      }
+    }
+
+    if (resConfig) {
+      await this.cpExtConfig.setClientConfig(resConfig);
+    } else {
+      const errMsg = `${this.cpExtConfig.prefix} pipe client is not configured.`;
+      this.logger.error(errMsg);
+      throw new Error(errMsg);
+    }
+    return resConfig;
+  }
+
+  // -- routines --
+
+  private configToEnv(config: ICpClientConfig): any {
+    const resEnv = {
+      API: config.apiUri,
+      API_TOKEN: config.apiToken,
+    };
+    return resEnv;
+  }
+}
+
+async function getInstallDirConfigJson(
+  pipeExec: string,
+): Promise<ICpClientConfig | null> {
+  const pipeExecUri = vscode.Uri.file(pipeExec);
+  const binPipeDir = vscode.Uri.joinPath(pipeExecUri, "..");
+  const configJsonFile = vscode.Uri.joinPath(binPipeDir, "config.json");
+  const exists: boolean = await fileExists(configJsonFile);
+  if (!exists) return null;
+  const resConfig = await readJsonFile<ICpClientConfig>(configJsonFile);
+  return resConfig;
 }

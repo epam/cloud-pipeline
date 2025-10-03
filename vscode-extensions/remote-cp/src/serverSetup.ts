@@ -5,29 +5,29 @@ import { getVSCodeServerConfig } from "./serverConfig";
 import SSHConnection from "./ssh/sshConnection";
 
 export interface ServerInstallOptions {
-  id: string;
-  quality: string;
-  commit: string;
-  version: string;
-  release?: string; // vscodium specific
-  extensionIds: string[];
-  envVariables: string[];
-  useSocketPath: boolean;
-  serverApplicationName: string;
-  serverDataFolderName: string;
-  serverDownloadUrlTemplate: string;
+  readonly id: string;
+  readonly quality: string;
+  readonly commit: string;
+  readonly version: string;
+  readonly release?: string; // vscodium specific
+  readonly extensionIds: string[];
+  readonly envVariables: string[];
+  readonly useSocketPath: boolean;
+  readonly serverApplicationName: string;
+  readonly serverDataFolderName: string;
+  readonly serverDownloadUrlTemplate: string;
 }
 
 export interface ServerInstallResult {
-  exitCode: number;
-  listeningOn: number | string;
-  connectionToken: string;
-  logFile: string;
-  osReleaseId: string;
-  arch: string;
-  platform: string;
-  tmpDir: string;
-  [key: string]: any;
+  readonly exitCode: number;
+  readonly listeningOn: number | string;
+  readonly connectionToken: string;
+  readonly logFile: string;
+  readonly osReleaseId: string;
+  readonly arch: string;
+  readonly platform: string;
+  readonly tmpDir: string;
+  readonly [key: string]: any;
 }
 
 export class ServerInstallError extends Error {
