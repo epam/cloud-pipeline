@@ -1033,7 +1033,7 @@ export default class EditToolForm extends React.Component {
       configurationFormFieldChanged(
         'friendly_url',
         'friendly_url',
-        (v) => prettyUrlGenerator.build(v)
+        (v) => v ? prettyUrlGenerator.build(v) : v
       ) ||
       configurationFormFieldChanged('allowSensitive') ||
       configurationFormFieldChanged('allowCommit') ||
