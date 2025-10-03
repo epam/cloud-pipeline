@@ -412,7 +412,9 @@
                     FROM
                         pipeline.datastorage
                     WHERE
-                        lower(datastorage_name) = lower(:DATASTORAGE_NAME) or lower(path) = lower(:PATH)
+                        lower(datastorage_name) = lower(:DATASTORAGE_NAME)
+                        or lower(path) = lower(:PATH)
+                        or lower(path) = lower(:PATH_WITH_SLASH)
                 ]]>
             </value>
         </property>
