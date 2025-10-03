@@ -99,6 +99,9 @@ class DataUsageHelper(object):
         result = []
         storage_to_fetch = [storage] if storage else list(DataStorage.list())
         for _storage in storage_to_fetch:
+            if _storage.source_storage_id:
+                click.echo("Storage '%s' is mirror of another storage, will not load du information." % _storage.name, err=True)
+                continue
             if du_command.perform_on_cloud and _storage.type != "nfs":
                 summary = self.get_cloud_storage_summary(_storage, du_command.relative_path, du_command.depth)
             else:
