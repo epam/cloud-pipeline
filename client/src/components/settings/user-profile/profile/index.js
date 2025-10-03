@@ -26,6 +26,7 @@ import {METADATA_KEY as LIMIT_MOUNTS_USER_PREFERENCE}
 from '../../../special/metadata/special/limit-mounts';
 import displayDate from '../../../../utils/displayDate';
 import styles from './profile.css';
+import SshThemeSelect from '../../../special/metadata/special/ssh-theme-select';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 
 function renderRoleName (role) {
@@ -190,7 +191,7 @@ class ProfileSettings extends React.Component {
           entityClass="PIPELINE_USER"
           removeAllAvailable={userInfo.admin}
           restrictedKeys={userInfo.admin ? [] : metadataKeys}
-          extraKeys={[LIMIT_MOUNTS_USER_PREFERENCE]}
+          extraKeys={[LIMIT_MOUNTS_USER_PREFERENCE, SshThemeSelect.metadataKey]}
         />
       </div>
     );

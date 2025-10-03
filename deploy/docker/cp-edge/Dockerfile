@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
 
-ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v6.11.3-linux-x64/bin/
+ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v20.17.0-linux-x64/bin/
 
 # This shall be set during deployment
 ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
@@ -102,14 +102,15 @@ ADD dav-auth /etc/nginx/dav/webdav/auth-sso
 ## Install node.js
 RUN mkdir -p /etc/ssh-proxy/  && \
     cd /etc/ssh-proxy/ && \
-    wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nodejs/node-v6.11.3-linux-x64.tar.xz && \
-    tar xfJ node-v6.11.3-linux-x64.tar.xz && \
-    rm -f node-v6.11.3-linux-x64.tar.xz
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nodejs/node-v20.17.0-linux-x64.tar.xz && \
+    tar xfJ node-v20.17.0-linux-x64.tar.xz && \
+    rm -f node-v20.17.0-linux-x64.tar.xz
 
 ## Install wetty
 ADD wetty /etc/ssh-proxy/wetty
 RUN cd /etc/ssh-proxy/wetty && \
     npm install && \
+    npm run build && \
     cd /
 
 ## Disable tls checks for wetty -> API
