@@ -6,7 +6,7 @@ var pty = require('node-pty');
 var request = require("sync-request");
 var child_process = require('child_process');
 
-const checkMaintenanceMode = require('./maintenance');
+const checkMaintenanceMode = require('./maintenance.cjs');
 
 // Constants
 const ENV_TAG_RUNID_NAME = 'CP_ENV_TAG_RUNID';
@@ -279,10 +279,10 @@ process.on('uncaughtException', function(e) {
 });
 
 const app = express();
-app.get('/ssh/pipeline/*', function(req, res) {
-    res.sendfile(__dirname + '/public/ssh/index.html');
+app.get(/^\/ssh\/pipeline\/.*$/, function(req, res) {
+    res.sendFile(__dirname + '/dist/index.html');
 });
-app.use('/', express.static(path.join(__dirname, 'public')));
+app.use('/ssh', express.static(path.join(__dirname, 'dist')));
 
 
 const httpserv = http.createServer(app).listen(opts.port, function() {
@@ -293,8 +293,8 @@ const {addListener} = checkMaintenanceMode();
 
 const io = server(httpserv,{path: '/ssh/socket.io'});
 io.on('connection', function(socket) {
-    const auth_key = socket.handshake.headers['token'];
-    const auth_user = socket.handshake.headers['token_sub'].toUpperCase();
+    const auth_key = socket.handshake.headers['token'] || '';
+    const auth_user = (socket.handshake.headers['token_sub'] || '').toUpperCase();
     const referer = socket.request.headers.referer;
     console_log('Connection accepted for ' + referer);
 
@@ -418,7 +418,7 @@ io.on('connection', function(socket) {
         console_log("PID=" + term.pid + " ENDED")
     });
     socket.on('resize', function(data) {
-        term.resize(data.col, data.row);
+        term.resize(data.cols, data.rows);
     });
     socket.on('input', function(data) {
         term.write(data);

@@ -135,6 +135,7 @@ RUN mkdir -p /etc/ssh-proxy/  && \
 ADD wetty /etc/ssh-proxy/wetty
 RUN cd /etc/ssh-proxy/wetty && \
     npm install && \
+    npm run build && \
     cd /
 
 ## Install maintenance page
