@@ -1,0 +1,216 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #007acc;
+  outline-offset: 2px;
+}
+
+/* Button Variants */
+.btn--primary {
+  background-color: #007acc;
+  border-color: #007acc;
+  color: #ffffff;
+}
+
+.btn--primary:hover:not(.btn--disabled) {
+  background-color: #005a9e;
+  border-color: #005a9e;
+}
+
+.btn--primary:active:not(.btn--disabled) {
+  background-color: #004785;
+  border-color: #004785;
+}
+
+.btn--secondary {
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: #ffffff;
+}
+
+.btn--secondary:hover:not(.btn--disabled) {
+  background-color: #4b5563;
+  border-color: #4b5563;
+}
+
+.btn--secondary:active:not(.btn--disabled) {
+  background-color: #374151;
+  border-color: #374151;
+}
+
+.btn--danger {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.btn--danger:hover:not(.btn--disabled) {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn--danger:active:not(.btn--disabled) {
+  background-color: #991b1b;
+  border-color: #991b1b;
+}
+
+.btn--ghost {
+  background-color: transparent;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.btn--ghost:hover:not(.btn--disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn--ghost:active:not(.btn--disabled) {
+  background-color: #e5e7eb;
+  border-color: #6b7280;
+}
+
+/* Button Sizes */
+.btn--small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.btn--medium {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.btn--large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+/* Button States */
+.btn--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn--loading {
+  cursor: wait;
+}
+
+.btn--full-width {
+  width: 100%;
+}
+
+/* Loading Spinner */
+.btn__spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+}
+
+.btn__spinnerIcon {
+  width: 100%;
+  height: 100%;
+  animation: btn-spin 1s linear infinite;
+}
+
+.btn__spinnerCircle {
+  stroke-dasharray: 31.416;
+  stroke-dashoffset: 31.416;
+  animation: btn-dash 1.5s ease-in-out infinite;
+}
+
+.btn__content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn__content--loading {
+  opacity: 0.7;
+}
+
+/* Animations */
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes btn-dash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -35px;
+  }
+  100% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -124px;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .btn--ghost {
+    color: #d1d5db;
+    border-color: #4b5563;
+  }
+
+  .btn--ghost:hover:not(.btn--disabled) {
+    background-color: #374151;
+    border-color: #6b7280;
+  }
+
+  .btn--ghost:active:not(.btn--disabled) {
+    background-color: #4b5563;
+    border-color: #9ca3af;
+  }
+}
+
+/* Terminal theme specific colors (matching your app's color scheme) */
+.btn--terminal {
+  background-color: #1a1a1a;
+  border-color: #333333;
+  color: #ffffff;
+}
+
+.btn--terminal:hover:not(.btn--disabled) {
+  background-color: #2a2a2a;
+  border-color: #404040;
+}
+
+.btn--terminal:active:not(.btn--disabled) {
+  background-color: #0a0a0a;
+  border-color: #1a1a1a;
+}

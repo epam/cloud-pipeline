@@ -1,0 +1,114 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  background: #1a1a1a;
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  font-family: monospace;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+.modalSmall {
+  width: 90%;
+  max-width: 400px;
+}
+
+.modalMedium {
+  width: 90%;
+  max-width: 600px;
+}
+
+.modalLarge {
+  width: 90%;
+  max-width: 800px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #333;
+  background: #222;
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.modalCloseButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius);
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.modalCloseButton:hover {
+  color: #fff;
+  background-color: #333;
+}
+
+.modalCloseButton:focus {
+  outline: 2px solid #007acc;
+  outline-offset: 2px;
+}
+
+.modalBody {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .modalContent { margin: 10px; }
+  .modalSmall,
+  .modalMedium,
+  .modalLarge {
+    width: calc(100% - 20px);
+    max-width: none;
+  }
+  .modalHeader { padding: 12px 16px; }
+  .modalBody { padding: 16px; }
+}

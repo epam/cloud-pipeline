@@ -1,0 +1,22 @@
+:root {
+  --border-radius: 3px;
+}
+
+:root,
+#root,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+#settings {
+  position: absolute;
+  z-index: 1;
+  top: 5px;
+  right: 20px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
