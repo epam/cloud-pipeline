@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import Input from "../../shared/input";
-import { ConfigKeys, type ThemeConfig } from "../types";
 import { rgbStringToHex } from "../../utils/colors";
+import { type ThemeConfig, ConfigKeys } from "../../utils/types";
 
 type ANSIColorsProps = {
   themeConfig: ThemeConfig;

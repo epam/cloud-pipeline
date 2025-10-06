@@ -4,27 +4,39 @@ import {
   type HtermTerminal,
   type SocketLike,
   type HtermPrefs,
-  DEFAULT_THEMES,
-} from './types';
-import { hterm } from '../../lib/hterm_all.js';
-import socketIO from 'socket.io-client'
+  ConfigKeys,
+} from "./types";
+import { hterm } from "../../lib/hterm_all.js";
+import socketIO from "socket.io-client";
+import { DEFAULT_THEMES } from "./themes.js";
 
-const getThemeConfig = (terminal: Terminal) => {
-  const getPreferenceInfo = (terminal: Terminal, key: string) => {
-    if (!terminal?.prefs) {
-      return {termDefault: undefined, themeDefault: undefined}
-    }
-    const termDefault = terminal!.prefs!.getDefault(key);
-    const themeDefault = DEFAULT_THEMES[terminal?.currentTheme][key];
-    const value = terminal!.prefs!.get(key);
-    return {value, termDefault, themeDefault}
-  };
-  const keys = [...new Set(Object.values(DEFAULT_THEMES).flatMap(theme => Object.keys(theme)))];
+export function getPreferenceInfo(terminal: Terminal, key: string) {
+  if (!terminal?.prefs) {
+    return { termDefault: undefined, themeDefault: undefined };
+  }
+  const termDefault = terminal!.prefs!.getDefault(key);
+  const themeDefault = DEFAULT_THEMES[terminal?.currentTheme][key];
+  const value = terminal!.prefs!.get(key);
+  return { value, termDefault, themeDefault };
+}
+
+const getThemeConfig = (terminal: Terminal, resetToDefaults = false) => {
+  const keys = [
+    ...new Set([
+      ...Object.values(DEFAULT_THEMES).flatMap((theme) => Object.keys(theme)),
+      ...Object.values(ConfigKeys),
+    ]),
+  ];
   const config = keys.reduce<{ [key: string]: unknown }>((config, key) => {
-    const {value, termDefault, themeDefault} = getPreferenceInfo(terminal!, key);
-    config[key] = value === termDefault
-      ? themeDefault ?? termDefault
-      : value;
+    const { value, termDefault, themeDefault } = getPreferenceInfo(
+      terminal!,
+      key
+    );
+    if (resetToDefaults) {
+      config[key] = themeDefault ?? termDefault;
+    } else {
+      config[key] = value === termDefault ? themeDefault ?? termDefault : value;
+    }
     return config;
   }, {});
   return config;
@@ -42,7 +54,7 @@ export class Terminal {
 
   constructor() {
     this.origin = location.origin;
-    if (WEB_SSH_ORIGIN !== '') {
+    if (WEB_SSH_ORIGIN !== "") {
       this.origin = WEB_SSH_ORIGIN;
     }
   }
@@ -61,7 +73,7 @@ export class Terminal {
   async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.socket = socketIO(this.origin, { path: '/ssh/socket.io' });
+        this.socket = socketIO(this.origin, { path: "/ssh/socket.io" });
         this.socket.on(SocketEvent.CONNECT, () => {
           this.isConnected = true;
           this.initializeHterm().then(resolve).catch(reject);
@@ -101,7 +113,7 @@ export class Terminal {
           reject(new Error("Hterm not initialized"));
           return;
         }
-        this.term.prefs_.set('audible-bell-sound', '');
+        this.term.prefs_.set("audible-bell-sound", "");
         this.term.decorate(terminalElement);
         this.term.onTerminalReady = () => {
           const io = this.term!.io.push();
@@ -114,7 +126,7 @@ export class Terminal {
           if (this.term!.screenSize) {
             this.resize(
               this.term!.screenSize!.width,
-              this.term!.screenSize!.height,
+              this.term!.screenSize!.height
             );
           }
           if (this.buffer) {
@@ -131,7 +143,7 @@ export class Terminal {
   }
 
   setTheme(themeName: string): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.currentTheme = themeName;
       if (this.term && this.prefs) {
         this.term.setProfile(themeName, async () => {
@@ -143,15 +155,6 @@ export class Terminal {
         resolve();
       }
     });
-  }
-
-  toggleTheme(): void {
-    const newTheme =
-      this.currentTheme === ThemeName.DEFAULT
-        ? ThemeName.LIGHT
-        : ThemeName.DEFAULT;
-    this.setTheme(newTheme);
-    this.focusTerminal();
   }
 
   send = (text: string): void => {
@@ -170,7 +173,7 @@ export class Terminal {
 
   resize = (cols: number, rows: number): void => {
     if (this.socket && this.isConnected) {
-      this.socket.emit(SocketEvent.RESIZE, {cols, rows});
+      this.socket.emit(SocketEvent.RESIZE, { cols, rows });
     }
   };
 
@@ -178,6 +181,14 @@ export class Terminal {
     const terminalDiv = document.getElementById("terminal");
     if (terminalDiv) {
       terminalDiv.focus();
+    }
+  };
+
+  resetTheme = async (theme: string) => {
+    const newTheme = DEFAULT_THEMES[theme];
+    if (newTheme) {
+      const config = getThemeConfig(this, true);
+      await this.prefs!.importFromJson(config);
     }
   };
 

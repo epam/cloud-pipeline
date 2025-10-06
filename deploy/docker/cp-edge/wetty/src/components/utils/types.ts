@@ -81,38 +81,31 @@ export type TerminalTheme = Record<string, unknown> & {
   'ctrl-c-copy'?: boolean;
   'ctrl-v-paste'?: boolean;
   'use-default-window-copy'?: boolean;
+  'font-size'?: string;
 };
 
 export type WettyOptions = {
   io: HtermIO;
 };
 
-export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
-  [ThemeName.LIGHT]: {
-    'background-color': '#fafafa',
-    'foreground-color': '#333333',
-    'cursor-color': 'rgba(50, 50, 50, 0.5)',
-    'color-palette-overrides': { 51: 'rgb(0, 140, 140)' },
-    'ctrl-c-copy': true,
-    'ctrl-v-paste': true,
-    'use-default-window-copy': true,
-  },
-  [ThemeName.LIGHT2]: {
-    'background-color': '#fafafa',
-    'foreground-color': '#333333',
-    'cursor-color': 'rgba(50, 50, 50, 0.5)',
-    'color-palette-overrides': { 9: 'rgb(0, 0, 140)' },
-    'ctrl-c-copy': true,
-    'ctrl-v-paste': true,
-    'use-default-window-copy': true,
-  },
-  [ThemeName.DEFAULT]: {
-    'background-color': 'rgb(16, 16, 16)',
-    'foreground-color': 'rgb(240, 240, 240)',
-    'cursor-color': 'rgba(255, 0, 0, 0.5)',
-    'color-palette-overrides': null,
-    'ctrl-c-copy': true,
-    'ctrl-v-paste': true,
-    'use-default-window-copy': true,
-  },
+export const ConfigKeys = {
+  backgroundColor: 'background-color',
+  foregroundColor: 'foreground-color',
+  cursorColor: 'cursor-color',
+  fontSize: 'font-size',
+  fontFamily: 'font-family',
+  enableBold: 'enable-bold',
+  colorPaletteOverrides: 'color-palette-overrides'
+} as const;
+
+export type ConfigKeys = typeof ConfigKeys[keyof typeof ConfigKeys];
+
+export type ThemeConfig = {
+  [ConfigKeys.backgroundColor]?: string;
+  [ConfigKeys.foregroundColor]?: string;
+  [ConfigKeys.cursorColor]?: string;
+  [ConfigKeys.fontSize]?: string;
+  [ConfigKeys.fontFamily]?: string;
+  [ConfigKeys.enableBold]?: boolean;
+  [ConfigKeys.colorPaletteOverrides]?: Record<number, string>
 };

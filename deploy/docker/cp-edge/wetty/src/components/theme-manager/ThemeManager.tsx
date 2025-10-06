@@ -1,27 +1,29 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import Button from '../shared/button/Button';
-import Input from '../shared/input';
-import Select from '../shared/select';
-import styles from './ThemeManager.module.css';
-import { DEFAULT_THEMES } from '../utils/types';
-import ANSIColors from './components/ANSIColors';
-import { ConfigKeys, type ThemeConfig, type ThemeManagerProps } from './types';
-import ThemeColorPicker from './components/ThemeColorPicker';
-import ThemeFontPicker from './components/ThemeFontPicker';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Button from "../shared/button/Button";
+import Input from "../shared/input";
+import Select from "../shared/select";
+import styles from "./ThemeManager.module.css";
+import { ConfigKeys, type ThemeConfig } from "../utils/types";
+import ANSIColors from "./components/ANSIColors";
+import { type ThemeManagerProps } from "./types";
+import ThemeColorPicker from "./components/ThemeColorPicker";
+import ThemeFontPicker from "./components/ThemeFontPicker";
+import { checkConfigChanged, DEFAULT_THEMES } from "../utils/themes";
 
 const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(
-    Object.fromEntries(Object.values(ConfigKeys).map(key => ([key, undefined])))
+    Object.fromEntries(Object.values(ConfigKeys).map((key) => [key, undefined]))
   );
   const [theme, setTheme] = useState<string | undefined>(undefined);
   const updateThemeConfig = useCallback(() => {
-    const config = Object.fromEntries(Object.values(ConfigKeys).map((key) => {
-      const value = terminal!.prefs!.get(key);
-      return [key, value];
-    }));
+    const config = Object.fromEntries(
+      Object.values(ConfigKeys).map((key) => {
+        const value = terminal!.prefs!.get(key);
+        return [key, value];
+      })
+    );
     setThemeConfig(config);
   }, [terminal]);
-
   useEffect(() => {
     if (terminal?.prefs) {
       updateThemeConfig();
@@ -30,23 +32,28 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
       }
     }
   }, [terminal?.currentTheme, terminal?.prefs, theme, updateThemeConfig]);
-
-  const onInputChange = (field: keyof ThemeConfig, value: string | Record<string, string>) => {
+  const onInputChange = (
+    field: keyof ThemeConfig,
+    value: string | Record<string, string>
+  ) => {
     terminal!.prefs!.set(field, value);
     setThemeConfig((prev: ThemeConfig) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
-
   const onChangeTheme = async (value: string | number) => {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       await terminal!.setTheme(value);
       setTheme(value);
       updateThemeConfig();
     }
   };
-
+  const hasChanges = useMemo(() => checkConfigChanged(themeConfig, terminal), [themeConfig, terminal]);
+  const onReset = async () => {
+    await terminal!.resetTheme(terminal!.currentTheme);
+    updateThemeConfig();
+  };
   if (!terminal?.prefs) {
     return null;
   }
@@ -59,45 +66,47 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
           className={styles.themeManager__field}
           wrapperClassName={styles.themeManager__field}
           style={{
-            label: {width: labelWidth},
-            input: {flex: '1 0'}
+            label: { width: labelWidth },
+            input: { flex: "1 0" },
           }}
           value={theme}
           onChange={onChangeTheme}
           placeholder="Select theme"
-          options={Object.keys(DEFAULT_THEMES).map(key => ({
+          options={Object.keys(DEFAULT_THEMES).map((key) => ({
             value: key,
-            label: key
+            label: key,
           }))}
           fullWidth
         />
         <ThemeColorPicker
           label="Background Color"
           value={themeConfig[ConfigKeys.backgroundColor]}
-          onChange={v => onInputChange(ConfigKeys.backgroundColor, v)}
+          onChange={(v) => onInputChange(ConfigKeys.backgroundColor, v)}
           labelWidth={labelWidth}
         />
         <ThemeColorPicker
           label="Text Color"
           value={themeConfig[ConfigKeys.foregroundColor]}
-          onChange={v => onInputChange(ConfigKeys.foregroundColor, v)}
+          onChange={(v) => onInputChange(ConfigKeys.foregroundColor, v)}
           labelWidth={labelWidth}
         />
         <ThemeColorPicker
           label="Cursor Color"
           value={themeConfig[ConfigKeys.cursorColor]}
-          onChange={v => onInputChange(ConfigKeys.cursorColor, v)}
+          onChange={(v) => onInputChange(ConfigKeys.cursorColor, v)}
           labelWidth={labelWidth}
         />
         <Input
           label="Font size"
           type="number"
           style={{
-            label: {width: labelWidth}
+            label: { width: labelWidth },
           }}
           className={styles.themeManager__field}
           value={themeConfig[ConfigKeys.fontSize]}
-          onChange={(v) => typeof v === 'string' && onInputChange(ConfigKeys.fontSize, v)}
+          onChange={(v) =>
+            typeof v === "string" && onInputChange(ConfigKeys.fontSize, v)
+          }
         />
         <ThemeFontPicker
           labelWidth={labelWidth}
@@ -107,13 +116,19 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
         />
         <ANSIColors
           themeConfig={themeConfig}
-          onChange={
-            (v: Record<string, string>) => typeof v === 'object' && onInputChange(ConfigKeys.colorPaletteOverrides, v)
+          onChange={(v: Record<string, string>) =>
+            typeof v === "object" &&
+            onInputChange(ConfigKeys.colorPaletteOverrides, v)
           }
         />
       </div>
       <div className={styles.themeManager__actions}>
-        <Button variant="secondary" onClick={onCancel}>
+        {hasChanges && (
+          <Button variant="secondary" onClick={onReset}>
+            Reset
+          </Button>
+        )}
+        <Button variant="primary" onClick={onCancel}>
           Close
         </Button>
       </div>
