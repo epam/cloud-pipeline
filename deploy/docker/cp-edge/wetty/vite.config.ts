@@ -6,7 +6,7 @@ export default ({ mode }: UserConfig) => {
   const devMode = mode === 'development' || mode === 'dev';
   const origin = devMode ? 'http://localhost:3030' : ''
   return defineConfig({
-    base: "",
+    base: "/ssh",
     plugins: [react()],
     build: {
       rollupOptions: {
@@ -36,7 +36,7 @@ export default ({ mode }: UserConfig) => {
           },
         },
       },
-      commonjsOptions: { transformMixedEsModules: true } // for ketcher to work
+      commonjsOptions: { transformMixedEsModules: true }
     },
     define: {
       global: 'window',

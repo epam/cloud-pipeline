@@ -36,13 +36,13 @@ function App() {
     <>
       <div id="settings">
         <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 19 L19 1 L19 19 L1 19" fill="white" stroke="#666666"></path>
-            <path d="M1 19 L19 1 L1 1 L1 19" fill="black" stroke="#666666"></path>
+          <path d="M1 19 L19 1 L19 19 L1 19" fill="white" stroke="#666666"></path>
+          <path d="M1 19 L19 1 L1 1 L1 19" fill="black" stroke="#666666"></path>
         </svg>
       </div>
       <div id="terminal" style={{position: 'relative', width: '100%', height: '100%'}} />
       <SettingsButton onClick={openModal} />
-      
+
       <Modal
         isOpen={isModalOpen}
         onClose={closeModal}

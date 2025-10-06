@@ -1,37 +1,36 @@
 #!/usr/bin/env node
-import express, { type Express } from 'express';
-import { Server as HTTPServer, createServer } from 'http';
-import { Server as SocketIOServer, type Socket } from 'socket.io';
-import { type IPty, spawn } from 'node-pty';
-import { EventEmitter } from 'events';
+const express = require('express');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const { spawn } = require('node-pty');
 
-function startDevServer(port: number = 3030): void {
-    const app: Express = express();
-    const server: HTTPServer = createServer(app);
-    const io = new SocketIOServer(server, { path: '/ssh/socket.io' });
+function startDevServer(port = 3030) {
+    const app = express();
+    const server = createServer(app);
+    const io = new Server(server, { path: '/ssh/socket.io' });
 
-    io.on('connection', (socket: Socket) => {
+    io.on('connection', (socket) => {
         console.log('connected', socket.id);
         const shell = 'bash';
 
         // IPty + EventEmitter to access .on()
-        const ptyProcess: IPty & EventEmitter = spawn(shell, [], {
+        const ptyProcess = spawn(shell, [], {
             name: 'xterm-256color',
             cols: 80,
             rows: 30,
             cwd: process.env.HOME,
-            env: process.env as NodeJS.ProcessEnv,
-        }) as IPty & EventEmitter;
+            env: process.env,
+        });
 
-        ptyProcess.on('data', (data: string) => {
+        ptyProcess.on('data', (data) => {
             socket.emit('output', data);
         });
 
-        socket.on('input', (data: string) => {
+        socket.on('input', (data) => {
             ptyProcess.write(data);
         });
 
-        socket.on('resize', ({ cols, rows }: { cols: number; rows: number }) => {
+        socket.on('resize', ({ cols, rows }) => {
             try {
                 ptyProcess.resize(cols, rows);
             } catch (err) {

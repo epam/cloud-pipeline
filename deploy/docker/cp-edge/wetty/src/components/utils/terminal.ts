@@ -40,7 +40,7 @@ export class Terminal {
   async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.socket = socketIO(this.origin, { transports: ["websocket"], path: '/ssh/socket.io' });
+        this.socket = socketIO(this.origin, { path: '/ssh/socket.io' });
         this.socket.on(SocketEvent.CONNECT, () => {
           this.isConnected = true;
           this.initializeHterm().then(resolve).catch(reject);
