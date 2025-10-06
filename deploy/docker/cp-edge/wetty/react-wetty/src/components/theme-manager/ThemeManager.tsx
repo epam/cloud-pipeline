@@ -12,16 +12,19 @@ export type ThemeManagerProps = {
 };
 
 export type ThemeConfig = {
-  'background-color': string;
-  'foreground-color': string;
-  'font-size': string;
+  'background-color'?: string;
+  'foreground-color'?: string;
+  'font-size'?: string;
+  'font-family'?: string;
+  'enable-bold'?: boolean;
 };
 
 const ThemeManager: React.FC<ThemeManagerProps> = ({ onApply, onCancel, terminal }) => {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
     'background-color': '#1a1a1a',
     'foreground-color': '#ffffff',
-    'font-size': '14'
+    'font-size': '14',
+    'font-family': 'monospace',
   });
 
   const onInputChange = (field: keyof ThemeConfig, value: string) => {
@@ -39,18 +42,18 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onApply, onCancel, terminal
   return (
     <div className={styles.themeManager}>
       <div className={styles.themeManager__form}>
-        <Input 
-          label="Background Color" 
+        <Input
+          label="Background Color"
           type="color"
           className={styles.themeManager__field}
-          value={themeConfig['background-color']} 
+          value={themeConfig['background-color']}
           onChange={(v) => typeof v === 'string' && onInputChange('background-color', v)}
         />
-        <Input 
-          label="Text Color" 
-          type="color" 
+        <Input
+          label="Text Color"
+          type="color"
           className={styles.themeManager__field}
-          value={themeConfig['foreground-color']} 
+          value={themeConfig['foreground-color']}
           onChange={(v) => typeof v === 'string' && onInputChange('foreground-color', v)}
         />
         <Select

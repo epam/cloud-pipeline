@@ -29,6 +29,9 @@ export type HtermIO = {
 
 export type HtermPrefs = {
   importFromJson: (prefs: Record<string, unknown>) => void;
+  set: (key: string, value: unknown) => void;
+  reset: (key: string) => void;
+  get: (key: string) => unknown;
 };
 
 export type HtermStorage = Record<string, unknown>;

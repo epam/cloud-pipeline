@@ -4,8 +4,9 @@ import {
   type HtermTerminal,
   type SocketLike,
   type TerminalTheme,
-} from "./types";
-import { hterm } from "../../lib/hterm_all.js";
+} from './types';
+import { hterm } from '../../lib/hterm_all.js';
+import socketIO from 'socket.io-client'
 
 export class Terminal {
   private static instance: Terminal | null = null;
@@ -13,20 +14,23 @@ export class Terminal {
   private term: HtermTerminal | null = null;
   private buffer: string = "";
   private currentTheme: string = ThemeName.DEFAULT;
-  private origin: string;
+  private readonly origin: string;
   private isConnected: boolean = false;
 
-  constructor(origin: string = "http://localhost:3030") {
-    this.origin = origin;
+  constructor() {
+    this.origin = location.origin;
+    if (WEB_SSH_ORIGIN !== '') {
+      this.origin = WEB_SSH_ORIGIN;
+    }
   }
 
   static getInstance(): Terminal | null {
     return Terminal.instance;
   }
 
-  static createInstance(origin?: string): Terminal {
+  static createInstance(): Terminal {
     if (!Terminal.instance) {
-      Terminal.instance = new Terminal(origin);
+      Terminal.instance = new Terminal();
     }
     return Terminal.instance;
   }
@@ -34,10 +38,7 @@ export class Terminal {
   async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        if (!window?.io) {
-          reject(new Error("socket.io not loaded"));
-        }
-        this.socket = window.io(this.origin, { transports: ["websocket"] });
+        this.socket = socketIO(this.origin, { transports: ["websocket"], path: '/ssh/socket.io' });
         this.socket.on(SocketEvent.CONNECT, () => {
           this.isConnected = true;
           this.initializeHterm().then(resolve).catch(reject);
@@ -177,8 +178,8 @@ export class Terminal {
   }
 }
 
-export async function initializeTerminal(origin?: string): Promise<Terminal> {
-  const terminal = Terminal.createInstance(origin);
+export async function initializeTerminal(): Promise<Terminal> {
+  const terminal = Terminal.createInstance();
   await terminal.initialize();
   return terminal;
 }
