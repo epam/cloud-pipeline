@@ -18,12 +18,11 @@
 .themeManager__form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
 .themeManager__field {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
 }
 
 .themeManager__label {

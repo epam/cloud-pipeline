@@ -1,6 +1,6 @@
 .input {
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 4px;
   font-family: inherit;
 }

@@ -13,7 +13,7 @@ export interface HtermTerminal {
       onTerminalResize: ((cols: number, rows: number) => void) | null;
     };
   };
-  setProfile: (name: string) => void;
+  setProfile: (name: string, cb?: () => void) => void;
   prefs_: {
     importFromJson: (prefs: Record<string, unknown>) => void;
     set: (key: string, value: unknown) => void;

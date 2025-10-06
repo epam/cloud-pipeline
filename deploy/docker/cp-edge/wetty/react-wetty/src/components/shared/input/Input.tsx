@@ -44,7 +44,8 @@ const Input = forwardRef<
     disabled,
     required,
     type = "text",
-    onChange
+    onChange,
+    value
   } = props as InputProps & { className?: string };
 
   const autoId = useId();
@@ -97,6 +98,7 @@ const Input = forwardRef<
         type={type}
         {...controlCommonProps}
         onChange={handleChange}
+        value={value}
         ref={ref as React.Ref<HTMLInputElement>}
       />
       {!!error && (

@@ -44,7 +44,7 @@ export type HtermTerminal = {
   installKeyboard: () => void;
   screenSize: { width: number; height: number } | null;
   io: HtermIO;
-  setProfile: (name: string) => void;
+  setProfile: (name: string, cb?: () => void) => void;
   prefs_: HtermPrefs;
   wipeContents: () => void;
 };

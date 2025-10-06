@@ -4,6 +4,7 @@ import {
   type HtermTerminal,
   type SocketLike,
   type TerminalTheme,
+  type HtermPrefs,
 } from './types';
 import { hterm } from '../../lib/hterm_all.js';
 import socketIO from 'socket.io-client'
@@ -11,9 +12,10 @@ import socketIO from 'socket.io-client'
 export class Terminal {
   private static instance: Terminal | null = null;
   private socket: SocketLike | null = null;
-  private term: HtermTerminal | null = null;
+  public term: HtermTerminal | null = null;
+  public prefs: HtermPrefs | null = null;
   private buffer: string = "";
-  private currentTheme: string = ThemeName.DEFAULT;
+  public currentTheme: string = ThemeName.DEFAULT;
   private readonly origin: string;
   private isConnected: boolean = false;
 
@@ -68,6 +70,7 @@ export class Terminal {
       try {
         this.term = new hterm.Terminal();
         window.term = this.term!;
+        this.prefs = this.term.prefs_;
         const terminalElement = document.getElementById("terminal");
         if (!terminalElement) {
           reject(new Error("Terminal element not found"));
@@ -105,11 +108,15 @@ export class Terminal {
     });
   }
 
-  setTheme(themeName: string): void {
-    this.currentTheme = themeName;
-    if (this.term) {
-      this.term.setProfile(themeName);
-    }
+  setTheme(themeName: string): Promise<void> {
+    return new Promise(resolve => {
+      this.currentTheme = themeName;
+      if (this.term) {
+        this.term.setProfile(themeName, resolve);
+      } else {
+        resolve();
+      }
+    });
   }
 
   toggleTheme(): void {
