@@ -48,7 +48,7 @@ export class Terminal {
   public term: HtermTerminal | null = null;
   public prefs: HtermPrefs | null = null;
   private buffer: string = "";
-  public currentTheme: string = ThemeName.DEFAULT;
+  public currentTheme: string = localStorage.getItem('theme') || ThemeName.DEFAULT;
   private readonly origin: string;
   private isConnected: boolean = false;
 
@@ -149,6 +149,7 @@ export class Terminal {
         this.term.setProfile(themeName, async () => {
           const config = getThemeConfig(this);
           await this.prefs!.importFromJson(config);
+          localStorage.setItem('theme', themeName);
           resolve();
         });
       } else {

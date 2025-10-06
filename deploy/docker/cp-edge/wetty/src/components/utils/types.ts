@@ -1,6 +1,5 @@
 export const ThemeName = {
   LIGHT: 'light',
-  LIGHT2: 'light2',
   DEFAULT: 'default',
 } as const;
 
