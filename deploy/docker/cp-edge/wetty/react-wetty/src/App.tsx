@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import Modal from './components/shared/modal/Modal'
 import ThemeManager from './components/theme-manager'
-import type { ThemeConfig } from './components/theme-manager'
 import { initializeTerminal } from './components/utils'
 import type { Terminal } from './components/utils/terminal'
 import { SettingsIcon } from './components/shared/icons'
@@ -25,10 +24,6 @@ function App() {
   const [terminal, setTerminal] = useState<Terminal | undefined>(undefined);
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
-  const onThemeChanged = (themeConfig: ThemeConfig) => {
-    console.log('Theme changed:', themeConfig);
-    closeModal();
-  };
   useEffect(() => {
     async function init() {
       const terminal = await initializeTerminal();
@@ -55,7 +50,6 @@ function App() {
         size="medium"
       >
         <ThemeManager
-          onApply={onThemeChanged}
           onCancel={closeModal}
           terminal={terminal}
         />
