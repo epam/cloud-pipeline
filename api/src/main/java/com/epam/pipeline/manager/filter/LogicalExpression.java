@@ -250,8 +250,10 @@ public class LogicalExpression extends FilterExpression {
                         .filter(this::filterFieldMatches)
                         .map(filterField -> {
                             try {
-                                return new LogicalExpression(
-                                        getField(), getValue(), getOperandType()
+                                return (
+                                        filterField.aclField() != AclExpressionType.NONE
+                                        ? new AclExpression(filterField.aclField(), getValue())
+                                        : new LogicalExpression(getField(), getValue(), getOperandType())
                                 ).preProcessField(
                                         field,
                                         filterField,
