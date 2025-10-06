@@ -80,6 +80,7 @@ export class Terminal {
           reject(new Error("Hterm not initialized"));
           return;
         }
+        this.term.prefs_.set('audible-bell-sound', '');
         this.term.decorate(terminalElement);
         this.term.onTerminalReady = () => {
           const io = this.term!.io.push();
@@ -132,6 +133,7 @@ export class Terminal {
     if (this.term) {
       this.term.setProfile(name);
       this.term.prefs_.importFromJson(theme);
+      this.term.prefs_.set('audible-bell-sound', '');
     }
   }
 
@@ -140,6 +142,7 @@ export class Terminal {
       return;
     }
     this.term.prefs_.importFromJson(themeConfig);
+    this.term.prefs_.set('audible-bell-sound', '');
     this.focusTerminal();
   }
 
