@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--color-bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,15 +14,15 @@
 }
 
 .modalContent {
-  background: #1a1a1a;
+  background: var(--color-bg-secondary);
   border-radius: var(--border-radius);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  border: 1px solid #333;
+  box-shadow: 0 10px 25px var(--color-bg-overlay);
+  border: 1px solid var(--color-border);
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  color: #fff;
+  color: var(--color-text-primary);
   font-family: monospace;
   animation: modalSlideIn 0.2s ease-out;
 }
@@ -47,8 +47,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #333;
-  background: #222;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
   flex-shrink: 0;
 }
 
@@ -56,14 +56,14 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text-primary);
 }
 
 .modalCloseButton {
   background: none;
   border: none;
   font-size: 24px;
-  color: #999;
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 0;
   width: 30px;
@@ -76,12 +76,12 @@
 }
 
 .modalCloseButton:hover {
-  color: #fff;
-  background-color: #333;
+  color: var(--color-text-primary);
+  background-color: var(--color-border);
 }
 
 .modalCloseButton:focus {
-  outline: 2px solid #007acc;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 

@@ -1,0 +1,73 @@
+/**
+ * Converts a hex color string to RGB values
+ * @param hex - Hex color string (with or without #, 3 or 6 digits)
+ * @returns Object with r, g, b values (0-255) or null if invalid
+ */
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const cleanHex = hex.replace('#', '');
+  if (!/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(cleanHex)) {
+    return null;
+  }
+  let r: number, g: number, b: number;
+  if (cleanHex.length === 3) {
+    // Convert 3-digit hex to 6-digit
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else {
+    r = parseInt(cleanHex.substring(0, 2), 16);
+    g = parseInt(cleanHex.substring(2, 4), 16);
+    b = parseInt(cleanHex.substring(4, 6), 16);
+  }
+  return { r, g, b };
+}
+
+/**
+ * Converts RGB values to a hex color string
+ * @param r - Red value (0-255)
+ * @param g - Green value (0-255)
+ * @param b - Blue value (0-255)
+ * @returns Hex color string with # prefix
+ */
+function rgbToHex(r: number, g: number, b: number): string {
+  // Clamp values to 0-255 range
+  const clampedR = Math.max(0, Math.min(255, Math.round(r)));
+  const clampedG = Math.max(0, Math.min(255, Math.round(g)));
+  const clampedB = Math.max(0, Math.min(255, Math.round(b)));
+  // Convert to hex and pad with zeros if needed
+  const hexR = clampedR.toString(16).padStart(2, '0');
+  const hexG = clampedG.toString(16).padStart(2, '0');
+  const hexB = clampedB.toString(16).padStart(2, '0');
+  return `#${hexR}${hexG}${hexB}`;
+}
+
+/**
+ * Converts a CSS rgb() string to hex color string
+ * @param rgbString - CSS rgb() string
+ * @param returnValueOnError
+ * @returns Hex color string with # prefix or null if invalid
+ */
+export function rgbStringToHex(rgbString: string, returnValueOnError = true): string | null {
+  const match = rgbString.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+  if (!match) {
+    return returnValueOnError ? rgbString : null;
+  }
+  const r = parseInt(match[1], 10);
+  const g = parseInt(match[2], 10);
+  const b = parseInt(match[3], 10);
+  return rgbToHex(r, g, b);
+}
+
+/**
+ * Converts hex color to CSS rgb() string
+ * @param hex - Hex color string (with or without #)
+ * @param returnValueOnError
+ * @returns CSS rgb() string or null if invalid hex
+ */
+export function hexToRgbString(hex: string, returnValueOnError = true): string | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb) {
+    return returnValueOnError ? hex : null;
+  }
+  return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+}

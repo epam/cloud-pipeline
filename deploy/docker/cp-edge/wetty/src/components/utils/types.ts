@@ -1,5 +1,6 @@
 export const ThemeName = {
   LIGHT: 'light',
+  LIGHT2: 'light2',
   DEFAULT: 'default',
 } as const;
 
@@ -28,6 +29,7 @@ export type HtermIO = {
 };
 
 export type HtermPrefs = {
+  getDefault(key: string): unknown;
   importFromJson: (prefs: Record<string, unknown>) => void;
   set: (key: string, value: unknown) => void;
   reset: (key: string) => void;
@@ -91,6 +93,15 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     'foreground-color': '#333333',
     'cursor-color': 'rgba(50, 50, 50, 0.5)',
     'color-palette-overrides': { 51: 'rgb(0, 140, 140)' },
+    'ctrl-c-copy': true,
+    'ctrl-v-paste': true,
+    'use-default-window-copy': true,
+  },
+  [ThemeName.LIGHT2]: {
+    'background-color': '#fafafa',
+    'foreground-color': '#333333',
+    'cursor-color': 'rgba(50, 50, 50, 0.5)',
+    'color-palette-overrides': { 9: 'rgb(0, 0, 140)' },
     'ctrl-c-copy': true,
     'ctrl-v-paste': true,
     'use-default-window-copy': true,

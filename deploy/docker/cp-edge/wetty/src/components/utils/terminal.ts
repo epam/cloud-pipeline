@@ -3,11 +3,32 @@ import {
   SocketEvent,
   type HtermTerminal,
   type SocketLike,
-  type TerminalTheme,
   type HtermPrefs,
+  DEFAULT_THEMES,
 } from './types';
 import { hterm } from '../../lib/hterm_all.js';
 import socketIO from 'socket.io-client'
+
+const getThemeConfig = (terminal: Terminal) => {
+  const getPreferenceInfo = (terminal: Terminal, key: string) => {
+    if (!terminal?.prefs) {
+      return {termDefault: undefined, themeDefault: undefined}
+    }
+    const termDefault = terminal!.prefs!.getDefault(key);
+    const themeDefault = DEFAULT_THEMES[terminal?.currentTheme][key];
+    const value = terminal!.prefs!.get(key);
+    return {value, termDefault, themeDefault}
+  };
+  const keys = [...new Set(Object.values(DEFAULT_THEMES).flatMap(theme => Object.keys(theme)))];
+  const config = keys.reduce<{ [key: string]: unknown }>((config, key) => {
+    const {value, termDefault, themeDefault} = getPreferenceInfo(terminal!, key);
+    config[key] = value === termDefault
+      ? themeDefault ?? termDefault
+      : value;
+    return config;
+  }, {});
+  return config;
+};
 
 export class Terminal {
   private static instance: Terminal | null = null;
@@ -112,8 +133,12 @@ export class Terminal {
   setTheme(themeName: string): Promise<void> {
     return new Promise(resolve => {
       this.currentTheme = themeName;
-      if (this.term) {
-        this.term.setProfile(themeName, resolve);
+      if (this.term && this.prefs) {
+        this.term.setProfile(themeName, async () => {
+          const config = getThemeConfig(this);
+          await this.prefs!.importFromJson(config);
+          resolve();
+        });
       } else {
         resolve();
       }
@@ -126,23 +151,6 @@ export class Terminal {
         ? ThemeName.LIGHT
         : ThemeName.DEFAULT;
     this.setTheme(newTheme);
-    this.focusTerminal();
-  }
-
-  addCustomTheme(name: string, theme: TerminalTheme): void {
-    if (this.term) {
-      this.term.setProfile(name);
-      this.term.prefs_.importFromJson(theme);
-      this.term.prefs_.set('audible-bell-sound', '');
-    }
-  }
-
-  applyConfig(themeConfig: TerminalTheme): void {
-    if (!this.term) {
-      return;
-    }
-    this.term.prefs_.importFromJson(themeConfig);
-    this.term.prefs_.set('audible-bell-sound', '');
     this.focusTerminal();
   }
 

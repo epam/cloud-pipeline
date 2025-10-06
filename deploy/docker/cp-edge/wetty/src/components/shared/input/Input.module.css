@@ -3,12 +3,12 @@
   flex-direction: row;
   gap: 4px;
   font-family: inherit;
+  font-size: small;
 }
 
 .inputLabel {
-  font-size: 0.75rem;
   font-weight: 500;
-  color: #ddd;
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -21,21 +21,20 @@
 
 .inputControl {
   appearance: none;
-  border: 1px solid #333;
-  background: #222;
-  color: #fff;
+  border: 1px solid var(--color-border-dark);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   border-radius: var(--border-radius);
   padding: 4px 8px;
-  font-size: 0.875rem;
   line-height: 1.2;
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.wtm-input__control:focus {
-  border-color: #555;
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.05);
+.inputControl:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
 }
 
 /* Color input size normalization */
@@ -49,8 +48,7 @@
 }
 
 .inputHint {
-  font-size: 0.65rem;
-  color: #888;
+  color: var(--color-text-secondary);
 }
 
 .inputIconEnd {
@@ -62,12 +60,11 @@
 }
 
 .inputError {
-  font-size: 0.65rem;
-  color: #ff6666;
+  color: var(--color-error);
 }
 
 .input--error .inputControl {
-  border-color: #ff6666;
+  border-color: var(--color-error);
 }
 
 .input--disabled .inputControl {
@@ -87,17 +84,14 @@
 }
 
 .input--sm .inputControl {
-  font-size: 0.7rem;
   padding: 2px 6px;
 }
 
 .input--md .inputControl {
-  font-size: 0.8rem;
   padding: 4px 8px;
 }
 
 .input--lg .inputControl {
-  font-size: 0.95rem;
   padding: 6px 12px;
 }
 

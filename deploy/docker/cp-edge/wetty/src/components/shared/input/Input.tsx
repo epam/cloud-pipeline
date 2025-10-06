@@ -1,12 +1,12 @@
 import React, { forwardRef, useId } from "react";
-import type {
-  InputHTMLAttributes,
-  ChangeEvent,
-} from "react";
+import type { InputHTMLAttributes, ChangeEvent } from "react";
 import cn from 'classnames';
 import styles from "./Input.module.css";
 
-type NativeInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size">;
+type NativeInputProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "size" | "onChange" | "style"
+>;
 
 export type InputSize = "sm" | "md" | "lg";
 export type InputType =
@@ -26,6 +26,11 @@ export interface BaseInputProps {
   rows?: number;
   endIcon?: React.ReactNode;
   onChange?: (value: string | boolean) => void;
+  style?:{
+    label?: React.CSSProperties;
+    input?: React.CSSProperties;
+    wrapper?: React.CSSProperties;
+  }
 }
 
 export type InputProps = BaseInputProps & { type?: InputType } & NativeInputProps;
@@ -45,7 +50,9 @@ const Input = forwardRef<
     required,
     type = "text",
     onChange,
-    value
+    value,
+    style = {},
+    ...rest
   } = props as InputProps & { className?: string };
 
   const autoId = useId();
@@ -86,10 +93,22 @@ const Input = forwardRef<
     }
   };
 
+  const isCheckbox = type === "checkbox";
+  const inputProps = isCheckbox
+    ? { checked: Boolean(value) }
+    : {
+        value:
+          value === undefined || value === null
+            ? type === "color"
+              ? "#000000"
+              : ""
+            : (value as string | number),
+      };
+
   return (
-    <div className={rootClass}>
+    <div className={rootClass} style={style.wrapper}>
       {label && (
-        <label className={styles.inputLabel} htmlFor={id}>
+        <label style={style.label} className={styles.inputLabel} htmlFor={id}>
           {label}
           {required && <span>*</span>}
         </label>
@@ -98,7 +117,9 @@ const Input = forwardRef<
         type={type}
         {...controlCommonProps}
         onChange={handleChange}
-        value={value}
+        {...inputProps}
+        {...rest}
+        style={style.input}
         ref={ref as React.Ref<HTMLInputElement>}
       />
       {!!error && (

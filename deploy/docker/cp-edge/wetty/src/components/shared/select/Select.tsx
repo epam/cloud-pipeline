@@ -11,7 +11,7 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'onChange'> {
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'onChange' | 'style'> {
   label?: React.ReactNode;
   size?: SelectSize;
   variant?: SelectVariant;
@@ -19,6 +19,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   options: SelectOption[];
   placeholder?: string;
   onChange?: (value: string | number) => void;
+  wrapperClassName: string;
+  style: { label?: React.CSSProperties; input?: React.CSSProperties }
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(({
@@ -31,10 +33,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   disabled = false,
   required = false,
   className,
+  wrapperClassName,
   id: providedId,
   name,
   value,
   onChange,
+  style = {},
   ...props
 }, ref) => {
   const autoId = useId();
@@ -45,14 +49,14 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
     }
   };
   return (
-    <div className={styles.selectWrapper}>
+    <div className={cn(styles.selectWrapper, wrapperClassName)}>
       {label && (
-        <label className={styles.selectLabel} htmlFor={id}>
+        <label className={styles.selectLabel} htmlFor={id} style={style.label}>
           {label}
           {required && <span className={styles.selectRequired}>*</span>}
         </label>
       )}
-      <div className={styles.selectContainer}>
+      <div className={styles.selectContainer} style={style.input}>
         <select
           ref={ref}
           id={id}

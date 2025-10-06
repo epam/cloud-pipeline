@@ -18,6 +18,7 @@
 .themeManager__form {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .themeManager__field {

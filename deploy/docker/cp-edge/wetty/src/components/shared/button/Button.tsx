@@ -2,7 +2,7 @@ import React from 'react';
 import cn from 'classnames';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'ghost-bordered';
 export type ButtonSize = 'small' | 'medium' | 'large';
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {

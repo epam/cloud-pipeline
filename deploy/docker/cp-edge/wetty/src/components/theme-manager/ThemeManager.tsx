@@ -3,31 +3,11 @@ import Button from '../shared/button/Button';
 import Input from '../shared/input';
 import Select from '../shared/select';
 import styles from './ThemeManager.module.css';
-import type { Terminal } from '../utils/terminal';
 import { DEFAULT_THEMES } from '../utils/types';
-
-export type ThemeManagerProps = {
-  onCancel: () => void;
-  terminal?: Terminal;
-};
-
-const ConfigKeys = {
-  backgroundColor: 'background-color',
-  foregroundColor: 'foreground-color',
-  fontSize: 'font-size',
-  fontFamily: 'font-family',
-  enableBold: 'enable-bold',
-} as const;
-
-type ConfigKeys = typeof ConfigKeys[keyof typeof ConfigKeys];
-
-export type ThemeConfig = {
-  [ConfigKeys.backgroundColor]?: string;
-  [ConfigKeys.foregroundColor]?: string;
-  [ConfigKeys.fontSize]?: string;
-  [ConfigKeys.fontFamily]?: string;
-  [ConfigKeys.enableBold]?: boolean;
-};
+import ANSIColors from './components/ANSIColors';
+import { ConfigKeys, type ThemeConfig, type ThemeManagerProps } from './types';
+import ThemeColorPicker from './components/ThemeColorPicker';
+import ThemeFontPicker from './components/ThemeFontPicker';
 
 const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(
@@ -51,9 +31,9 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
     }
   }, [terminal?.currentTheme, terminal?.prefs, theme, updateThemeConfig]);
 
-  const onInputChange = (field: keyof ThemeConfig, value: string) => {
+  const onInputChange = (field: keyof ThemeConfig, value: string | Record<string, string>) => {
     terminal!.prefs!.set(field, value);
-    setThemeConfig(prev => ({
+    setThemeConfig((prev: ThemeConfig) => ({
       ...prev,
       [field]: value
     }));
@@ -70,13 +50,18 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   if (!terminal?.prefs) {
     return null;
   }
-
+  const labelWidth = 120;
   return (
     <div className={styles.themeManager}>
       <div className={styles.themeManager__form}>
         <Select
           label="Theme"
           className={styles.themeManager__field}
+          wrapperClassName={styles.themeManager__field}
+          style={{
+            label: {width: labelWidth},
+            input: {flex: '1 0'}
+          }}
           value={theme}
           onChange={onChangeTheme}
           placeholder="Select theme"
@@ -84,37 +69,47 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
             value: key,
             label: key
           }))}
-          size="md"
           fullWidth
         />
-        <Input
+        <ThemeColorPicker
           label="Background Color"
-          type="color"
-          className={styles.themeManager__field}
           value={themeConfig[ConfigKeys.backgroundColor]}
-          onChange={(v) => typeof v === 'string' && onInputChange(ConfigKeys.backgroundColor, v)}
+          onChange={v => onInputChange(ConfigKeys.backgroundColor, v)}
+          labelWidth={labelWidth}
+        />
+        <ThemeColorPicker
+          label="Text Color"
+          value={themeConfig[ConfigKeys.foregroundColor]}
+          onChange={v => onInputChange(ConfigKeys.foregroundColor, v)}
+          labelWidth={labelWidth}
+        />
+        <ThemeColorPicker
+          label="Cursor Color"
+          value={themeConfig[ConfigKeys.cursorColor]}
+          onChange={v => onInputChange(ConfigKeys.cursorColor, v)}
+          labelWidth={labelWidth}
         />
         <Input
-          label="Text Color"
-          type="color"
-          className={styles.themeManager__field}
-          value={themeConfig[ConfigKeys.foregroundColor]}
-          onChange={(v) => typeof v === 'string' && onInputChange(ConfigKeys.foregroundColor, v)}
-        />
-        <Select
-          label="Font Size"
+          label="Font size"
+          type="number"
+          style={{
+            label: {width: labelWidth}
+          }}
           className={styles.themeManager__field}
           value={themeConfig[ConfigKeys.fontSize]}
           onChange={(v) => typeof v === 'string' && onInputChange(ConfigKeys.fontSize, v)}
-          placeholder="Select size"
-          options={[
-            { label: '12px', value: '12' },
-            { label: '14px', value: '14' },
-            { label: '16px', value: '16' },
-            { label: '18px', value: '18' }
-          ]}
-          size="md"
-          fullWidth
+        />
+        <ThemeFontPicker
+          labelWidth={labelWidth}
+          value={themeConfig[ConfigKeys.fontFamily]}
+          onChange={(v) => onInputChange(ConfigKeys.fontFamily, v)}
+          className={styles.themeManager__field}
+        />
+        <ANSIColors
+          themeConfig={themeConfig}
+          onChange={
+            (v: Record<string, string>) => typeof v === 'object' && onInputChange(ConfigKeys.colorPaletteOverrides, v)
+          }
         />
       </div>
       <div className={styles.themeManager__actions}>
