@@ -1,6 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import Input from "../../shared/input";
-import { rgbStringToHex } from "../../utils/colors";
+import { getAlphaFromRgba, rgbStringToHex } from "../../utils/colors";
 
 type ThemeColorPickerProps = {
   labelWidth: number | string;
@@ -23,13 +23,14 @@ export default function ThemeColorPicker({
     },
     [onChange]
   );
+  const alpha = useMemo(() => (value ? getAlphaFromRgba(value) : null), [value]);
   return (
     <Input
       label={label}
       type="color"
       style={{
         label: { width: labelWidth },
-        input: { padding: 0 },
+        input: { padding: 0, opacity: alpha !== null && alpha < 1 ? alpha : 1 },
         wrapper: { display: "flex", flexDirection: "row" },
       }}
       value={value ? (rgbStringToHex(value) as string) : ""}

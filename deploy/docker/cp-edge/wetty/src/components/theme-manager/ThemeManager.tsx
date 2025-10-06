@@ -9,6 +9,7 @@ import { type ThemeManagerProps } from "./types";
 import ThemeColorPicker from "./components/ThemeColorPicker";
 import ThemeFontPicker from "./components/ThemeFontPicker";
 import { checkConfigChanged, DEFAULT_THEMES } from "../utils/themes";
+import ThemeCard from "./components/ThemesCards";
 
 const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(
@@ -60,6 +61,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   const labelWidth = 120;
   return (
     <div className={styles.themeManager}>
+      <ThemeCard themeConfig={themeConfig} />
       <div className={styles.themeManager__form}>
         <Select
           label="Theme"
