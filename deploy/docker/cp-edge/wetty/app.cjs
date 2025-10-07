@@ -418,7 +418,7 @@ io.on('connection', function(socket) {
         console_log("PID=" + term.pid + " ENDED")
     });
     socket.on('resize', function(data) {
-        term.resize(data.col, data.row);
+        term.resize(data.cols, data.rows);
     });
     socket.on('input', function(data) {
         term.write(data);

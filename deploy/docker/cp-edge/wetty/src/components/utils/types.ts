@@ -48,6 +48,7 @@ export type HtermTerminal = {
   setProfile: (name: string, cb?: () => void) => void;
   prefs_: HtermPrefs;
   wipeContents: () => void;
+  document_: Document;
 };
 
 export type SocketOptions = {
@@ -85,6 +86,11 @@ export type TerminalTheme = Record<string, unknown> & {
 
 export type WettyOptions = {
   io: HtermIO;
+};
+
+export type ThemeResource = {
+  rel: 'stylesheet' | 'preconnect';
+  href: string | URL;
 };
 
 export const ConfigKeys = {

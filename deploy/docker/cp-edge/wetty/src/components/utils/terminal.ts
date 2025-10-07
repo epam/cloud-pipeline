@@ -9,6 +9,7 @@ import {
 import { hterm } from "../../lib/hterm_all.js";
 import socketIO from "socket.io-client";
 import { DEFAULT_THEMES } from "./themes.js";
+import {enableResources} from "./terminal-resources.ts";
 
 export function getPreferenceInfo(terminal: Terminal, key: string) {
   if (!terminal?.prefs) {
@@ -115,6 +116,8 @@ export class Terminal {
         }
         this.term.prefs_.set("audible-bell-sound", "");
         this.term.decorate(terminalElement);
+        enableResources(this.term);
+
         this.term.onTerminalReady = () => {
           const io = this.term!.io.push();
           io.onVTKeystroke = this.send;

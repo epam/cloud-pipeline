@@ -22,6 +22,7 @@ export interface HtermTerminal {
     reset: (key: string) => void;
   };
   wipeContents: () => void;
+  document_: Document;
 }
 
 export const hterm: {
