@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ConfigKeys, type TerminalTheme } from "../../utils/types";
-import { getAlphaFromRgba } from "../../utils/colors";
+import { getAlphaFromRgba, TERMINAL_ANSI_DEFAULTS } from "../../utils/colors";
 
 type ThemeCardProps = {
   themeConfig: TerminalTheme;
@@ -12,7 +12,10 @@ export default function ThemeCard(props: ThemeCardProps) {
   const { themeConfig } = props;
   const cursorColor = themeConfig[ConfigKeys.cursorColor];
   const alpha = useMemo(() => (cursorColor ? getAlphaFromRgba(cursorColor) : null), [cursorColor]);
-  const colorPaletteOverrides = themeConfig[ConfigKeys.colorPaletteOverrides] || {};
+  const colorPaletteOverrides = useMemo(() => themeConfig[ConfigKeys.colorPaletteOverrides] || {}, [themeConfig]);
+  const getANSIColor = useCallback((code: number) => {
+    return colorPaletteOverrides[code] || TERMINAL_ANSI_DEFAULTS[code];
+  }, [colorPaletteOverrides]);
   return (
     <div
       style={{
@@ -60,7 +63,7 @@ export default function ThemeCard(props: ThemeCardProps) {
           <span
             key={`ansi_${code}`}
             style={{
-              color: colorPaletteOverrides[code],
+              color: getANSIColor(code),
             }}
           >
             ansi{code.toString().padStart(2, "0")}
@@ -80,7 +83,7 @@ export default function ThemeCard(props: ThemeCardProps) {
           <span
             key={`ansi_${code}`}
             style={{
-              color: colorPaletteOverrides[code + 8],
+              color: getANSIColor(code + 8),
             }}
           >
             ansi{(code + 8).toString().padStart(2, "0")}

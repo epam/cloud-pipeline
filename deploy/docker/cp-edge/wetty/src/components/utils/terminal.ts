@@ -155,7 +155,6 @@ export class Terminal {
           this.currentTheme = themeName;
           const config = getThemeConfig(this);
           await this.prefs!.importFromJson(config);
-          this.prefs!.set("audible-bell-sound", "");
           localStorage.setItem('theme', themeName);
           resolve();
         });
