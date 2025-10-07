@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import Modal from './components/shared/modal/Modal'
 import ThemeManager from './components/theme-manager'
@@ -27,8 +27,11 @@ function SettingsButton ({ onClick }: { onClick: () => void }) {
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [terminal, setTerminal] = useState<Terminal | undefined>(undefined);
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const openModal = useCallback(() => setIsModalOpen(true), []);
+  const onModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    terminal?.focusTerminal();
+  }, [terminal]);
   useEffect(() => {
     async function init() {
       const terminal = await initializeTerminal();
@@ -46,12 +49,12 @@ function App() {
       <SettingsButton onClick={openModal} />
       <Modal
         isOpen={isModalOpen}
-        onClose={closeModal}
+        onClose={onModalClose}
         title="Theme Settings"
         size="medium"
       >
         <ThemeManager
-          onCancel={closeModal}
+          onCancel={onModalClose}
           terminal={terminal}
         />
       </Modal>
