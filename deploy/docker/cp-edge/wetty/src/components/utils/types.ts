@@ -93,6 +93,10 @@ export type ThemeResource = {
   href: string | URL;
 };
 
+export type FontResource = ThemeResource & {
+  fontFamily: string;
+};
+
 export const ConfigKeys = {
   backgroundColor: 'background-color',
   foregroundColor: 'foreground-color',

@@ -1,6 +1,7 @@
-import type {HtermTerminal, ThemeResource} from './types.ts';
+import type {ThemeResource} from "./types.ts";
+import {fonts} from "./fonts.ts";
 
-const fonts: ThemeResource[] = [
+const resources: ThemeResource[] = [
   {
     rel: 'preconnect',
     href: 'https://fonts.googleapis.com',
@@ -9,15 +10,11 @@ const fonts: ThemeResource[] = [
     rel: 'preconnect',
     href: 'https://fonts.gstatic.com',
   },
-  {
-    rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap'
-  },
+  ...fonts
 ];
 
-export function enableResources(term: HtermTerminal) {
-  const doc = term.document_;
-  for (const resource of fonts) {
+export function enableResources(doc: Document) {
+  for (const resource of resources) {
     const fontLink = document.createElement("link");
     fontLink.rel = resource.rel;
     if (typeof resource.href === 'string') {
@@ -29,3 +26,5 @@ export function enableResources(term: HtermTerminal) {
     doc.head.appendChild(fontLink);
   }
 }
+
+enableResources(document);

@@ -15,7 +15,6 @@ export default function ThemeCard(props: ThemeCardProps) {
     <div
       style={{
         width: '100%',
-        height: 100,
         color: themeConfig[ConfigKeys.foregroundColor],
         display: "flex",
         flexDirection: "column",

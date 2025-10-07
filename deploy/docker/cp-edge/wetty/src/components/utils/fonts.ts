@@ -1,3 +1,4 @@
+import type {FontResource} from "./types.ts";
 
 const mainFb = 'Courier New';
 const genericFb = 'monospace';
@@ -42,18 +43,71 @@ export function isFontAvailable(family: string): boolean {
   return false;
 }
 
+function buildFontResource(fontFamily: string, href: string): FontResource {
+  return {
+    fontFamily,
+    rel: 'stylesheet',
+    href: href,
+  };
+}
+
+const jetBrainsMonoFont = buildFontResource(
+  "JetBrains Mono",
+  "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+);
+
+const firaCodeFont = buildFontResource(
+  "Fira Code",
+  "https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap"
+);
+
+const ibmPlexMonoFont = buildFontResource(
+  "IBM Plex Mono",
+  "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"
+);
+
+const ubuntuMonoFont = buildFontResource(
+  "Ubuntu Mono",
+  "https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap\" rel=\"stylesheet"
+);
+
+const inconsolataFont = buildFontResource(
+  "Inconsolata",
+  "https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&display=swap"
+);
+
+const cascadiaMonoFont = buildFontResource(
+  "Cascadia Mono",
+  "https://fonts.googleapis.com/css2?family=Cascadia+Mono:ital,wght@0,200..700;1,200..700&display=swap"
+);
+
+const sourceCodeProFont = buildFontResource(
+  "Source Code Pro",
+  "https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap"
+);
+
+const martianMonoFont = buildFontResource(
+  "Martian Mono",
+  "https://fonts.googleapis.com/css2?family=Martian+Mono:wght@100..800&display=swap"
+)
+
+export const fonts = [
+  jetBrainsMonoFont,
+  sourceCodeProFont,
+  ibmPlexMonoFont,
+  inconsolataFont,
+  ubuntuMonoFont,
+  firaCodeFont,
+  cascadiaMonoFont,
+  martianMonoFont,
+];
+
 export const FONT_CHOICES: { label: string; family: string }[] = [
-  { label: 'Fira Code', family: "'Fira Code'" },
-  { label: 'JetBrains Mono', family: "'JetBrains Mono'" },
-  { label: 'Source Code Pro', family: "'Source Code Pro'" },
-  { label: 'IBM Plex Mono', family: "'IBM Plex Mono'" },
-  { label: 'Inconsolata', family: "Inconsolata" },
-  { label: 'Ubuntu Mono', family: "'Ubuntu Mono'" },
+  ...fonts.map((f) => ({ label: f.fontFamily, family: `'${f.fontFamily}'` })),
   { label: 'Menlo', family: "Menlo" },
   { label: 'DejaVu Sans Mono', family: "'DejaVu Sans Mono'"},
   { label: 'Monaco', family: "Monaco" },
   { label: 'Consolas', family: "Consolas" },
-  { label: 'Liberation Mono', family: "'Liberation Mono'" },
   { label: 'Courier New', family: "'Courier New'" },
   { label: 'SF Mono', family: "'SFMono-Regular'" },
   { label: 'System Monospace', family: 'ui-monospace' },

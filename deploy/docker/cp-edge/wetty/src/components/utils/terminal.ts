@@ -116,7 +116,7 @@ export class Terminal {
         }
         this.term.prefs_.set("audible-bell-sound", "");
         this.term.decorate(terminalElement);
-        enableResources(this.term);
+        enableResources(this.term.document_);
 
         this.term.onTerminalReady = () => {
           const io = this.term!.io.push();
