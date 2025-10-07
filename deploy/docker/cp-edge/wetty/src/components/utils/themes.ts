@@ -16,6 +16,14 @@ export function checkConfigChanged(
     if (key === ConfigKeys.colorPaletteOverrides) {
       return !checkColorPalettes(currentValue, themeDefault);
     }
+    if (
+      key === ConfigKeys.enableBold &&
+      themeDefault === undefined &&
+      currentValue === true
+    ) {
+      // term default is null and bold is still enabled as if true
+      return false;
+    }
     return currentValue !== themeDefault && currentValue !== termDefault;
   });
   return changed;
