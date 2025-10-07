@@ -31,7 +31,14 @@ export default function ANSIColors(props: ANSIColorsProps) {
               <Input
                 label={key}
                 type="color"
-                style={{ label: { width: "18px" }, input: { padding: 0 } }}
+                style={{
+                  label: {
+                    width: 18,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  },
+                  input: { padding: 0 },
+                }}
                 value={color ? (rgbStringToHex(colors[key]) as string) : ""}
                 onChange={(value) => onInputChange(key, value as string)}
               />

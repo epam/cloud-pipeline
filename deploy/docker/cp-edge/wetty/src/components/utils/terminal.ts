@@ -15,7 +15,7 @@ export function getPreferenceInfo(terminal: Terminal, key: string) {
     return { termDefault: undefined, themeDefault: undefined };
   }
   const termDefault = terminal!.prefs!.getDefault(key);
-  const themeDefault = DEFAULT_THEMES[terminal?.currentTheme][key];
+  const themeDefault = DEFAULT_THEMES[terminal?.currentTheme]?.[key];
   const value = terminal!.prefs!.get(key);
   return { value, termDefault, themeDefault };
 }
@@ -147,6 +147,10 @@ export class Terminal {
       this.currentTheme = themeName;
       if (this.term && this.prefs) {
         this.term.setProfile(themeName, async () => {
+          if (!DEFAULT_THEMES[themeName]) {
+            console.error(`${themeName} theme not found`);
+            resolve();
+          }
           const config = getThemeConfig(this);
           await this.prefs!.importFromJson(config);
           localStorage.setItem('theme', themeName);

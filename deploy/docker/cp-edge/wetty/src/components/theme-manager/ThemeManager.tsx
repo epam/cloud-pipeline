@@ -35,7 +35,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   }, [terminal?.currentTheme, terminal?.prefs, theme, updateThemeConfig]);
   const onInputChange = (
     field: keyof ThemeConfig,
-    value: string | Record<string, string>
+    value: string | Record<string, string> | boolean
   ) => {
     terminal!.prefs!.set(field, value);
     setThemeConfig((prev: ThemeConfig) => ({
@@ -50,15 +50,27 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
       updateThemeConfig();
     }
   };
-  const hasChanges = useMemo(() => checkConfigChanged(themeConfig, terminal), [themeConfig, terminal]);
+  const hasChanges = useMemo(
+    () => checkConfigChanged(themeConfig, terminal),
+    [themeConfig, terminal]
+  );
   const onReset = async () => {
     await terminal!.resetTheme(terminal!.currentTheme);
     updateThemeConfig();
   };
+  const labelWidth = 120;
+  const labelStyle = useMemo(
+    () => ({
+      width: labelWidth,
+      display: "flex",
+      justifyContent: "flex-end",
+      paddingRight: 8,
+    }),
+    [labelWidth]
+  );
   if (!terminal?.prefs) {
     return null;
   }
-  const labelWidth = 120;
   return (
     <div className={styles.themeManager}>
       <ThemeCard themeConfig={themeConfig} />
@@ -68,7 +80,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
           className={styles.themeManager__field}
           wrapperClassName={styles.themeManager__field}
           style={{
-            label: { width: labelWidth },
+            label: labelStyle,
             input: { flex: "1 0" },
           }}
           value={theme}
@@ -76,7 +88,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
           placeholder="Select theme"
           options={Object.keys(DEFAULT_THEMES).map((key) => ({
             value: key,
-            label: key,
+            label: key.charAt(0).toUpperCase() + key.replaceAll('-', ' ').slice(1),
           }))}
           fullWidth
         />
@@ -98,11 +110,23 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
           onChange={(v) => onInputChange(ConfigKeys.cursorColor, v)}
           labelWidth={labelWidth}
         />
+        <Input type="checkbox" label="Bold text"
+          style={{
+            label: labelStyle,
+            input: { marginLeft: 0 },
+          }}
+          className={styles.themeManager__field}
+          checked={themeConfig[ConfigKeys.enableBold] === true}
+          onChange={(v) =>
+            typeof v === "boolean" && onInputChange(ConfigKeys.enableBold, v ? true : false)
+          }
+        />
         <Input
           label="Font size"
           type="number"
           style={{
-            label: { width: labelWidth },
+            label: labelStyle,
+            input: { flex: "1 0" },
           }}
           className={styles.themeManager__field}
           value={themeConfig[ConfigKeys.fontSize]}

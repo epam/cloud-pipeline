@@ -10,6 +10,7 @@ export default function ThemeCard(props: ThemeCardProps) {
   const { themeConfig } = props;
   const cursorColor = themeConfig[ConfigKeys.cursorColor];
   const alpha = useMemo(() => (cursorColor ? getAlphaFromRgba(cursorColor) : null), [cursorColor]);
+  const colorPaletteOverrides = themeConfig[ConfigKeys.colorPaletteOverrides] || {};
   return (
     <div
       style={{
@@ -39,7 +40,7 @@ export default function ThemeCard(props: ThemeCardProps) {
           padding: 5,
         }}
       >
-        <span style={{ color: themeConfig[ConfigKeys.foregroundColor] }}>ls</span>
+        <span style={{ color: colorPaletteOverrides[10]}}>{'>'}ls</span>
         <div style={{ display: "flex", gap: 8 }}>
           <span>dir</span>
           <span>executable</span>
@@ -52,12 +53,16 @@ export default function ThemeCard(props: ThemeCardProps) {
           display: "flex",
           alignItems: "center",
           padding: '0 5px',
+          gap: 8,
         }}
       >
+        <span style={{
+          color: colorPaletteOverrides[14],
+        }}>~/Documents</span>
         <span>mkdir</span>
         <div
           style={{
-            width: "6px",
+            width: "8px",
             height: 15,
             backgroundColor: themeConfig[ConfigKeys.cursorColor],
             margin: 5,

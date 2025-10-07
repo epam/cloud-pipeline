@@ -44,7 +44,7 @@ export default function ThemeFontPicker({
 			className={className}
 			wrapperClassName={className || ''}
 			style={{
-				label: { width: labelWidth },
+				label: { display: 'flex', width: labelWidth, justifyContent: "flex-end", paddingRight: 8 },
 				input: { flex: '1 0' },
 			}}
 			value={trimmedValue || ''}

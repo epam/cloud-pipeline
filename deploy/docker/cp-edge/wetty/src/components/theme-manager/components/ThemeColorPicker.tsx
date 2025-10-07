@@ -7,7 +7,7 @@ type ThemeColorPickerProps = {
   label: string;
   value: string | undefined;
   onChange: (value: string) => void;
-}
+};
 
 export default function ThemeColorPicker({
   label,
@@ -23,13 +23,21 @@ export default function ThemeColorPicker({
     },
     [onChange]
   );
-  const alpha = useMemo(() => (value ? getAlphaFromRgba(value) : null), [value]);
+  const alpha = useMemo(
+    () => (value ? getAlphaFromRgba(value) : null),
+    [value]
+  );
   return (
     <Input
       label={label}
       type="color"
       style={{
-        label: { width: labelWidth },
+        label: {
+          display: "flex",
+          width: labelWidth,
+          justifyContent: "flex-end",
+          paddingRight: 8,
+        },
         input: { padding: 0, opacity: alpha !== null && alpha < 1 ? alpha : 1 },
         wrapper: { display: "flex", flexDirection: "row" },
       }}

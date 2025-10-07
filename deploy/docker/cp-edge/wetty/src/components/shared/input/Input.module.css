@@ -37,6 +37,10 @@
   box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
 }
 
+.inputControl:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
 /* Color input size normalization */
 .inputControl[type="color"] {
   padding: 0;
@@ -73,9 +77,32 @@
 }
 
 .inputControl[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   padding: 0;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+}
+
+.inputControl[type="checkbox"]:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.inputControl[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: transform 120ms ease-in-out;
+  transform-origin: bottom left;
+  box-shadow: inset 1em 1em var(--color-bg-primary);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+}
+
+.inputControl[type="checkbox"]:checked::before {
+  transform: scale(1);
 }
 
 .input textarea.inputControl {
