@@ -52,6 +52,7 @@ export class Terminal {
   public currentTheme: string = localStorage.getItem('theme') || ThemeName.DEFAULT;
   private readonly origin: string;
   private isConnected: boolean = false;
+  private initialized: boolean = false;
 
   constructor() {
     this.origin = location.origin;
@@ -77,7 +78,6 @@ export class Terminal {
         this.socket = socketIO(this.origin, { path: "/ssh/socket.io" });
         this.socket.on(SocketEvent.CONNECT, () => {
           this.isConnected = true;
-          this.initializeHterm().then(resolve).catch(reject);
         });
         this.socket.on(SocketEvent.OUTPUT, (data?: unknown) => {
           if (typeof data === "string") {
@@ -90,9 +90,13 @@ export class Terminal {
         });
         this.socket.on(SocketEvent.THEME, (sshTheme: unknown) => {
           if (typeof sshTheme === "string") {
-            this.setTheme(sshTheme);
+            this.setThemeDelayed(sshTheme);
           }
         });
+        this.initializeHterm().then(() => {
+          this.initialized = true;
+          resolve();
+        }).catch(reject);
       } catch (error) {
         reject(error);
       }
@@ -142,6 +146,18 @@ export class Terminal {
       }
     });
   }
+
+  setThemeDelayed = (themeName: string, attempts = 0) => {
+    if (this.initialized) {
+      return this.setTheme(themeName);
+    }
+    if (attempts >= 3) {
+      return;
+    }
+    return setTimeout(() => {
+      this.setThemeDelayed(themeName, attempts + 1);
+    }, 300);
+  };
 
   setTheme(themeName: string): Promise<void> {
     return new Promise((resolve) => {
