@@ -6,6 +6,8 @@ type ThemeCardProps = {
   themeConfig: TerminalTheme;
 };
 
+const ansiCodes = new Array(8).fill(1).map((_, i) => i);
+
 export default function ThemeCard(props: ThemeCardProps) {
   const { themeConfig } = props;
   const cursorColor = themeConfig[ConfigKeys.cursorColor];
@@ -18,7 +20,6 @@ export default function ThemeCard(props: ThemeCardProps) {
         color: themeConfig[ConfigKeys.foregroundColor],
         display: "flex",
         flexDirection: "column",
-        gap: 1,
         fontSize: "smaller",
         border: "1px solid var(--color-border-dark)",
         borderRadius: "var(--border-radius)",
@@ -45,6 +46,46 @@ export default function ThemeCard(props: ThemeCardProps) {
           <span>executable</span>
           <span style={{ color: themeConfig[ConfigKeys.foregroundColor] }}>file</span>
         </div>
+      </div>
+      <div
+        style={{
+          backgroundColor: themeConfig[ConfigKeys.backgroundColor],
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8
+        }}
+      >
+        {ansiCodes.map((code) => (
+          <span
+            key={`ansi_${code}`}
+            style={{
+              color: colorPaletteOverrides[code],
+            }}
+          >
+            ansi{code.toString().padStart(2, "0")}
+          </span>
+        ))}
+      </div>
+      <div
+        style={{
+          backgroundColor: themeConfig[ConfigKeys.backgroundColor],
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8
+        }}
+      >
+        {ansiCodes.map((code) => (
+          <span
+            key={`ansi_${code}`}
+            style={{
+              color: colorPaletteOverrides[code + 8],
+            }}
+          >
+            ansi{(code + 8).toString().padStart(2, "0")}
+          </span>
+        ))}
       </div>
       <div
         style={{

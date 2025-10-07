@@ -82,6 +82,7 @@ export type TerminalTheme = Record<string, unknown> & {
   'ctrl-v-paste'?: boolean;
   'use-default-window-copy'?: boolean;
   'font-size'?: string;
+  'audible-bell-sound'?: string;
 };
 
 export type WettyOptions = {
