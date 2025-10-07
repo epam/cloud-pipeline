@@ -129,6 +129,8 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
             label: labelStyle,
             input: { flex: "1 0" },
           }}
+          min={6}
+          max={32}
           className={styles.themeManager__field}
           value={themeConfig[ConfigKeys.fontSize]}
           onChange={(v) =>

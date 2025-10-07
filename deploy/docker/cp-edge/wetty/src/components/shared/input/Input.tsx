@@ -1,6 +1,6 @@
 import React, { forwardRef, useId } from "react";
 import type { InputHTMLAttributes, ChangeEvent } from "react";
-import cn from 'classnames';
+import cn from "classnames";
 import styles from "./Input.module.css";
 
 type NativeInputProps = Omit<
@@ -9,14 +9,9 @@ type NativeInputProps = Omit<
 >;
 
 export type InputSize = "sm" | "md" | "lg";
-export type InputType =
-  | "text"
-  | "search"
-  | "number"
-  | "color"
-  | "checkbox";
+export type InputType = "text" | "search" | "number" | "color" | "checkbox";
 
-export interface BaseInputProps {
+export type BaseInputProps = {
   label?: React.ReactNode;
   name?: string;
   id?: string;
@@ -26,14 +21,18 @@ export interface BaseInputProps {
   rows?: number;
   endIcon?: React.ReactNode;
   onChange?: (value: string | boolean) => void;
-  style?:{
+  min?: number;
+  max?: number;
+  style?: {
     label?: React.CSSProperties;
     input?: React.CSSProperties;
     wrapper?: React.CSSProperties;
-  }
-}
+  };
+};
 
-export type InputProps = BaseInputProps & { type?: InputType } & NativeInputProps;
+export type InputProps = BaseInputProps & {
+  type?: InputType;
+} & NativeInputProps;
 
 const Input = forwardRef<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
@@ -51,6 +50,8 @@ const Input = forwardRef<
     type = "text",
     onChange,
     value,
+    min,
+    max,
     style = {},
     ...rest
   } = props as InputProps & { className?: string };
@@ -64,8 +65,8 @@ const Input = forwardRef<
     styles.input,
     styles[`input--${size}`],
     {
-      [styles['input--error']]: error,
-      [styles['input--disabled']]: disabled,
+      [styles["input--error"]]: error,
+      [styles["input--disabled"]]: disabled,
     },
     className
   );
@@ -90,6 +91,28 @@ const Input = forwardRef<
     }
     if (onChange) {
       onChange(value);
+    }
+  };
+
+  const handleMinMax = () => {
+    let num = Number(value);
+    if (
+      type !== "number" ||
+      value === "" ||
+      value === undefined ||
+      Number.isNaN(num) ||
+      (min === undefined && max === undefined)
+    ) {
+      return;
+    }
+    if (min !== undefined && num < min) {
+      num = min;
+    }
+    if (max !== undefined && num > max) {
+      num = max;
+    }
+    if (String(num) !== String(value) && onChange) {
+      onChange(String(num));
     }
   };
 
@@ -118,16 +141,15 @@ const Input = forwardRef<
         {...controlCommonProps}
         onChange={handleChange}
         {...inputProps}
+        min={type === "number" ? min : undefined}
+        max={type === "number" ? max : undefined}
+        onBlur={handleMinMax}
         {...rest}
         style={style.input}
         ref={ref as React.Ref<HTMLInputElement>}
       />
       {!!error && (
-        <div
-          id={`${id}-error`}
-          role="alert"
-          className={styles.inputError}
-        >
+        <div id={`${id}-error`} role="alert" className={styles.inputError}>
           {error}
         </div>
       )}
