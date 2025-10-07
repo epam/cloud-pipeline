@@ -1,4 +1,4 @@
-import React, { forwardRef, useId } from "react";
+import React, { forwardRef, useCallback, useId } from "react";
 import type { InputHTMLAttributes, ChangeEvent } from "react";
 import cn from "classnames";
 import styles from "./Input.module.css";
@@ -28,6 +28,9 @@ export type BaseInputProps = {
     input?: React.CSSProperties;
     wrapper?: React.CSSProperties;
   };
+  onKeyDown?: (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
 };
 
 export type InputProps = BaseInputProps & {
@@ -52,6 +55,7 @@ const Input = forwardRef<
     value,
     min,
     max,
+    onKeyDown,
     style = {},
     ...rest
   } = props as InputProps & { className?: string };
@@ -79,7 +83,7 @@ const Input = forwardRef<
     className: styles.inputControl,
   } as const;
 
-  const handleChange = (
+  const handleChange = useCallback((
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const target = e.target;
@@ -92,9 +96,9 @@ const Input = forwardRef<
     if (onChange) {
       onChange(value);
     }
-  };
+  }, [onChange, type]);
 
-  const handleMinMax = () => {
+  const handleMinMax = useCallback(() => {
     let num = Number(value);
     if (
       type !== "number" ||
@@ -114,7 +118,18 @@ const Input = forwardRef<
     if (String(num) !== String(value) && onChange) {
       onChange(String(num));
     }
-  };
+  }, [max, min, onChange, type, value]);
+
+  const handleKeyDown = useCallback(() => (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    if (e.key === "Enter") {
+      handleMinMax();
+    }
+    if (typeof onKeyDown === "function") {
+      onKeyDown(e);
+    }
+  }, [handleMinMax, onKeyDown]);
 
   const isCheckbox = type === "checkbox";
   const inputProps = isCheckbox
@@ -144,6 +159,7 @@ const Input = forwardRef<
         min={type === "number" ? min : undefined}
         max={type === "number" ? max : undefined}
         onBlur={handleMinMax}
+        onKeyDown={handleKeyDown}
         {...rest}
         style={style.input}
         ref={ref as React.Ref<HTMLInputElement>}
