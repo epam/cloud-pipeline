@@ -1,8 +1,13 @@
 
 const mainFb = 'Courier New';
 const genericFb = 'monospace';
+const mainTerminalDefault = "'DejaVu Sans Mono'";
+const terminalDefault = `${mainTerminalDefault}, "Noto Sans Mono", "Everson Mono", FreeMono, Menlo, Terminal, monospace`;
 
 export function addFallbacks (family: string) {
+  if (terminalDefault.startsWith(family)) {
+    return terminalDefault;
+  }
   const families = family.split(',').map(f => f.trim().replace(/^['"]|['"]$/g, ''));
   if (!families.includes(mainFb)) {
     families.push(mainFb);

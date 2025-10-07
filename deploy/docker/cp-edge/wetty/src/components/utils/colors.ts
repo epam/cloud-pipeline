@@ -96,3 +96,22 @@ export function getAlphaFromRgba(input: string): number | null {
   }
   return null;
 }
+
+export const TERMINAL_ANSI_DEFAULTS = {
+  0: '#000000',
+  1: '#CC0000',
+  2: '#4E9A06',
+  3: '#C4A000',
+  4: '#3465A4',
+  5: '#75507B',
+  6: '#06989A',
+  7: '#D3D7CF',
+  8: '#555753',
+  9: '#EF2929',
+  10: '#00BA13',
+  11: '#FCE94F',
+  12: '#729FCF',
+  13: '#F200CB',
+  14: '#00B5BD',
+  15: '#EEEEEC',
+} as Record<number, string>;

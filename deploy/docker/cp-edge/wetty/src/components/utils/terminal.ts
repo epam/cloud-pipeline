@@ -147,13 +147,14 @@ export class Terminal {
 
   setTheme(themeName: string): Promise<void> {
     return new Promise((resolve) => {
-      this.currentTheme = themeName;
       if (this.term && this.prefs) {
         this.term.setProfile(themeName, async () => {
+          themeName = themeName.toLowerCase();
           if (!DEFAULT_THEMES[themeName]) {
             console.error(`${themeName} theme not found`);
-            resolve();
+            themeName = ThemeName.DEFAULT;
           }
+          this.currentTheme = themeName;
           const config = getThemeConfig(this);
           await this.prefs!.importFromJson(config);
           localStorage.setItem('theme', themeName);
@@ -193,6 +194,7 @@ export class Terminal {
   };
 
   resetTheme = async (theme: string) => {
+    theme = theme.toLowerCase();
     const newTheme = DEFAULT_THEMES[theme];
     if (newTheme) {
       const config = getThemeConfig(this, true);

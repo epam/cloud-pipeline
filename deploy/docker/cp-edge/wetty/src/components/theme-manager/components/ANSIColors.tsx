@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import Input from "../../shared/input";
-import { rgbStringToHex } from "../../utils/colors";
+import { rgbStringToHex, TERMINAL_ANSI_DEFAULTS } from "../../utils/colors";
 import { type ThemeConfig, ConfigKeys } from "../../utils/types";
 
 type ANSIColorsProps = {
@@ -39,7 +39,10 @@ export default function ANSIColors(props: ANSIColorsProps) {
                   },
                   input: { padding: 0 },
                 }}
-                value={color ? (rgbStringToHex(colors[key]) as string) : ""}
+                value={color
+                  ? (rgbStringToHex(colors[key]) as string)
+                  : TERMINAL_ANSI_DEFAULTS[idx]
+                }
                 onChange={(value) => onInputChange(key, value as string)}
               />
             </div>
