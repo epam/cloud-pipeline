@@ -33,7 +33,6 @@ const COMMON_CONFIG = {
   "ctrl-c-copy": true,
   "ctrl-v-paste": true,
   "use-default-window-copy": true,
-  "audible-bell-sound": false
 };
 
 export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
