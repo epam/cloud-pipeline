@@ -116,7 +116,8 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
             input: { marginLeft: 0 },
           }}
           className={styles.themeManager__field}
-          checked={themeConfig[ConfigKeys.enableBold] === true}
+          checked={themeConfig[ConfigKeys.enableBold] === true ||
+            themeConfig[ConfigKeys.enableBold] === null}
           onChange={(v) =>
             typeof v === "boolean" && onInputChange(ConfigKeys.enableBold, v ? true : false)
           }
