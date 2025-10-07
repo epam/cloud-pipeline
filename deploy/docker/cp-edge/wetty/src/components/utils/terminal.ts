@@ -114,10 +114,8 @@ export class Terminal {
           reject(new Error("Hterm not initialized"));
           return;
         }
-        this.term.prefs_.set("audible-bell-sound", "");
         this.term.decorate(terminalElement);
         enableResources(this.term.document_);
-
         this.term.onTerminalReady = () => {
           const io = this.term!.io.push();
           io.onVTKeystroke = this.send;
@@ -157,6 +155,7 @@ export class Terminal {
           this.currentTheme = themeName;
           const config = getThemeConfig(this);
           await this.prefs!.importFromJson(config);
+          this.prefs!.set("audible-bell-sound", "");
           localStorage.setItem('theme', themeName);
           resolve();
         });
