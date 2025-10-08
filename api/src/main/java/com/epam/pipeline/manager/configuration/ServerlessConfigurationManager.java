@@ -248,27 +248,26 @@ public class ServerlessConfigurationManager {
                 .LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME);
         final List<String> headersToCleanup = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_SERVERLESS_ENDPOINT_HTTP_HEADERS_TO_CLEANUP);
-
-            try {
-                final HttpEntity<String> requestEntity = buildHttpEntity(request, headersToCleanup);
-                final RestTemplate restTemplate = buildRestTemplate();
-                for (int i = 0; i < maxRetryCount; i++) {
-                    try {
-                        final ResponseEntity<String> resp = restTemplate.exchange(
-                                appPath, HttpMethod.valueOf(request.getMethod()), requestEntity, String.class);
-                        return resp.getBody();
-                    } catch (HttpServerErrorException e) {
-                        if (HttpStatus.BAD_GATEWAY.equals(e.getStatusCode())) {
-                            log.debug("Waiting for service. Try: {}", i + 1);
-                            waitTimeout(waitTime);
-                            continue;
-                        }
-                        throw new IllegalArgumentException(e);
+        try {
+            final HttpEntity<String> requestEntity = buildHttpEntity(request, headersToCleanup);
+            final RestTemplate restTemplate = buildRestTemplate();
+            for (int i = 0; i < maxRetryCount; i++) {
+                try {
+                    final ResponseEntity<String> resp = restTemplate.exchange(
+                            appPath, HttpMethod.valueOf(request.getMethod()), requestEntity, String.class);
+                    return resp.getBody();
+                } catch (HttpServerErrorException e) {
+                    if (HttpStatus.BAD_GATEWAY.equals(e.getStatusCode())) {
+                        log.debug("Waiting for service. Try: {}", i + 1);
+                        waitTimeout(waitTime);
+                        continue;
                     }
+                    throw new IllegalArgumentException(e);
                 }
-            } catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-                throw new IllegalArgumentException(e);
             }
+        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            throw new IllegalArgumentException(e);
+        }
         throw new IllegalArgumentException(String.format("Failed to retrieve successful response from endpoint %s",
                 appPath));
     }
