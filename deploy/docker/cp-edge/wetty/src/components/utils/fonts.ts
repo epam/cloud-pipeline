@@ -24,7 +24,7 @@ export function removeFallbacks (family: string) {
   const filtered = families
     .filter(f => f !== mainFb && f !== genericFb)
     .map(f => (f.includes(' ') ? `'${f}'` : f));
-  return filtered[0];
+  return filtered[0] ?? families[0];
 }
 
 export function isFontAvailable(family: string): boolean {
@@ -111,6 +111,6 @@ export const FONT_CHOICES: { label: string; family: string }[] = [
   { label: 'Courier New', family: "'Courier New'" },
   { label: 'SF Mono', family: "'SFMono-Regular'" },
   { label: 'System Monospace', family: 'ui-monospace' },
-  { label: 'Monospace (generic)', family: 'monospace' },
+  { label: 'Monospace', family: 'monospace' },
 ].filter(({family}) => isFontAvailable(family));
 

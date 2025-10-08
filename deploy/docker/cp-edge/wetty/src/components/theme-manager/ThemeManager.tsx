@@ -9,7 +9,7 @@ import { type ThemeManagerProps } from "./types";
 import ThemeColorPicker from "./components/ThemeColorPicker";
 import ThemeFontPicker from "./components/ThemeFontPicker";
 import { checkConfigChanged, DEFAULT_THEMES } from "../utils/themes";
-import ThemeCard from "./components/ThemesCards";
+import ThemeCard from "./components/theme-card/ThemeCard";
 
 const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(
@@ -73,7 +73,6 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   }
   return (
     <div className={styles.themeManager}>
-      <ThemeCard themeConfig={themeConfig} />
       <div className={styles.themeManager__form}>
         <Select
           label="Theme"
@@ -149,7 +148,9 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
             typeof v === "object" &&
             onInputChange(ConfigKeys.colorPaletteOverrides, v)
           }
+          style={{ marginBottom: 4 }}
         />
+        <ThemeCard themeConfig={themeConfig} />
       </div>
       <div className={styles.themeManager__actions}>
         {hasChanges && (

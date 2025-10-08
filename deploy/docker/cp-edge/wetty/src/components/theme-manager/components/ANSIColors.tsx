@@ -2,14 +2,15 @@ import { useMemo } from "react";
 import Input from "../../shared/input";
 import { rgbStringToHex, TERMINAL_ANSI_DEFAULTS } from "../../utils/colors";
 import { type ThemeConfig, ConfigKeys } from "../../utils/types";
+import type { CommonProps } from "../../../types/types";
 
-type ANSIColorsProps = {
+type ANSIColorsProps = CommonProps & {
   themeConfig: ThemeConfig;
   onChange: (colors: Record<string, string>) => void;
 };
 
 export default function ANSIColors(props: ANSIColorsProps) {
-  const { themeConfig, onChange } = props;
+  const { themeConfig, onChange, style = {} } = props;
   const colors = useMemo<Record<string, string>>(
     () => themeConfig[ConfigKeys.colorPaletteOverrides] ?? {},
     [themeConfig]
@@ -20,7 +21,7 @@ export default function ANSIColors(props: ANSIColorsProps) {
     onChange(newColors);
   };
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", ...style}}>
       <span style={{ color: "var(--color-text-secondary)" }}>ANSI Colors:</span>
       <div style={{ display: "flex", flexWrap: "wrap" }}>
         {Array.from({ length: 16 }).map((_, idx) => {

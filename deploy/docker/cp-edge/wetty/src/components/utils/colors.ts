@@ -115,3 +115,8 @@ export const TERMINAL_ANSI_DEFAULTS = {
   14: '#00B5BD',
   15: '#EEEEEC',
 } as Record<number, string>;
+
+export const TERMINAL_ANSI_EXTENDED = {
+  27: "#005FFF", // ls -la: workdir -> [/common/workdir]
+  51: "#00FFFF" // ls -la: [workdir] -> /common/workdir
+} as Record<number, string>;
