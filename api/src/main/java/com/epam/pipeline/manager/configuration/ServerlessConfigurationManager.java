@@ -88,6 +88,7 @@ public class ServerlessConfigurationManager {
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final String BEARER_COOKIE_NAME = "bearer";
     private static final String PATH_DELIMITER = "/";
+    private static final long JWT_EXPIRATION_SEC = 600L;
 
     private final RunConfigurationManager runConfigurationManager;
     private final ConfigurationRunner configurationRunner;
@@ -308,8 +309,8 @@ public class ServerlessConfigurationManager {
 
     private String calculateCookieHeader(final HttpServletRequest request, final Cookie[] cookies) {
         if (!hasBearerCookie(cookies)) {
-            final String token = ((UserContext) authManager.getAuthentication().getPrincipal()).getJwtRawToken()
-                    .getToken();
+            final String token = authManager.issueToken(
+                    (UserContext) authManager.getAuthentication().getPrincipal(), JWT_EXPIRATION_SEC).getToken();
             return Objects.isNull(cookies)
                     ? String.format("%s=%s", BEARER_COOKIE_NAME, token)
                     : String.format("%s; %s=%s", request.getHeader(HttpHeaders.COOKIE), BEARER_COOKIE_NAME, token);
