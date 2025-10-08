@@ -34,6 +34,7 @@ export type HtermPrefs = {
   set: (key: string, value: unknown) => void;
   reset: (key: string) => void;
   get: (key: string) => unknown;
+  resetAll: () => void;
 };
 
 export type HtermStorage = Record<string, unknown>;

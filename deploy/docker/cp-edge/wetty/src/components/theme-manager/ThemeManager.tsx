@@ -37,7 +37,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
     field: keyof ThemeConfig,
     value: string | Record<string, string> | boolean
   ) => {
-    terminal!.prefs!.set(field, value);
+    terminal?.setPreference(field, value);
     setThemeConfig((prev: ThemeConfig) => ({
       ...prev,
       [field]: value,
@@ -54,9 +54,14 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
     () => checkConfigChanged(themeConfig, terminal),
     [themeConfig, terminal]
   );
-  const onReset = async () => {
+  const onRevertChanges = async () => {
     await terminal!.resetTheme(terminal!.currentTheme);
     updateThemeConfig();
+  };
+  const onReset = async () => {
+    await terminal!.resetToDefaults();
+    setTheme(terminal!.currentTheme);
+    setTimeout(() => updateThemeConfig(), 0);
   };
   const labelWidth = 120;
   const labelStyle = useMemo(
@@ -153,9 +158,18 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
         <ThemeCard themeConfig={themeConfig} />
       </div>
       <div className={styles.themeManager__actions}>
+        {terminal!.preferencesTouched ? (
+          <Button
+            variant="secondary"
+            onClick={onReset}
+            style={{ marginRight: 'auto' }}
+          >
+            Reset to defaults
+          </Button>
+        ): null}
         {hasChanges && (
-          <Button variant="secondary" onClick={onReset}>
-            Reset
+          <Button variant="secondary" onClick={onRevertChanges}>
+            Revert changes
           </Button>
         )}
         <Button variant="primary" onClick={onCancel}>

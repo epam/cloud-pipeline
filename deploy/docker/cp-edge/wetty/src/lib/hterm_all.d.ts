@@ -20,6 +20,7 @@ export interface HtermTerminal {
     get: (key: string) => unknown;
     getDefault(key: string): unknown;
     reset: (key: string) => void;
+    resetAll: () => void;
   };
   wipeContents: () => void;
   document_: Document;
