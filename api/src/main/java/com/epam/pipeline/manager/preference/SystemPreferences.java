@@ -818,7 +818,7 @@ public class SystemPreferences {
             "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<List<String>> LAUNCH_SERVERLESS_ENDPOINT_HTTP_HEADERS_TO_CLEANUP =
             new ObjectPreference<>("launch.serverless.endpoint.http.headers.to.cleanup",
-            Arrays.asList("Host", "SESSION"), new TypeReference<List<String>>() {}, LAUNCH_GROUP,
+            Arrays.asList("host", "SESSION"), new TypeReference<List<String>>() {}, LAUNCH_GROUP,
                     isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
