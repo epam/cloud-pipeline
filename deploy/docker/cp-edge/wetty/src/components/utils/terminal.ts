@@ -49,7 +49,7 @@ export class Terminal {
   public term: HtermTerminal | null = null;
   public prefs: HtermPrefs | null = null;
   private buffer: string = "";
-  public currentTheme: string = localStorage.getItem('theme') || ThemeName.DEFAULT;
+  public currentTheme: string = this.userPreferredTheme || ThemeName.DEFAULT;
   private readonly origin: string;
   private isConnected: boolean = false;
   private initialized: boolean = false;
@@ -70,6 +70,10 @@ export class Terminal {
       Terminal.instance = new Terminal();
     }
     return Terminal.instance;
+  }
+
+  get userPreferredTheme () {
+    return localStorage.getItem('user-preferred-theme');
   }
 
   async initialize(): Promise<void> {
@@ -105,7 +109,7 @@ export class Terminal {
     };
     socket.on(SocketEvent.THEME, (sshTheme: unknown) => {
       console.log('Socket.io -> "term.theme" event, payload:', sshTheme);
-      if (typeof sshTheme === "string") {
+      if (typeof sshTheme === "string" && !this.userPreferredTheme) {
         setTheme(sshTheme);
       }
     });
@@ -155,19 +159,20 @@ export class Terminal {
     console.log('term -> initialized');
   }
 
-  async setTheme(themeName: string): Promise<void> {
+  async setTheme(themeName: string, isUserPreferred = false): Promise<void> {
     if (this.term && this.prefs) {
       this.term.setProfile(themeName, async () => {
         themeName = themeName.toLowerCase();
         if (!DEFAULT_THEMES[themeName]) {
           console.error(`${themeName} theme not found`);
           themeName = ThemeName.DEFAULT;
+        } 
+        if (isUserPreferred && DEFAULT_THEMES[themeName]) {
+          localStorage.setItem('user-preferred-theme', themeName);
         }
         this.currentTheme = themeName;
         const config = getThemeConfig(this);
         await this.prefs!.importFromJson(config);
-        this.prefs!.set("audible-bell-sound", "");
-        localStorage.setItem('theme', themeName);
       });
     }
   }

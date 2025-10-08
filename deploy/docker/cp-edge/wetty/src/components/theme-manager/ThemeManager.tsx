@@ -45,7 +45,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   };
   const onChangeTheme = async (value: string | number) => {
     if (typeof value === "string") {
-      await terminal!.setTheme(value);
+      await terminal!.setTheme(value, true);
       setTheme(value);
       updateThemeConfig();
     }
