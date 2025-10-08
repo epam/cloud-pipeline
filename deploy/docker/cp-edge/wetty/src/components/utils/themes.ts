@@ -30,10 +30,11 @@ export function checkConfigChanged(
 }
 
 const COMMON_CONFIG = {
-  "ctrl-c-copy": true,
-  "ctrl-v-paste": true,
+  "ctrl-c-copy": true, // `ctrl+c copies if true, send ^C to host otherwise
+  "ctrl-v-paste": true,// `ctrl+v paste if true, send ^V to host otherwise
   "use-default-window-copy": true,
   "audible-bell-sound": '',
+  'enable-clipboard-notice': false
 };
 
 export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
