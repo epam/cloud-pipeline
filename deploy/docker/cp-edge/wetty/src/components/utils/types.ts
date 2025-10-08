@@ -12,6 +12,7 @@ export const SocketEvent = {
   DISCONNECT: 'disconnect',
   RESIZE: 'resize',
   THEME: 'term.theme',
+  READY: 'term.ready',
 } as const;
 
 export type SocketEventType = typeof SocketEvent[keyof typeof SocketEvent];
@@ -29,7 +30,7 @@ export type HtermIO = {
 
 export type HtermPrefs = {
   getDefault(key: string): unknown;
-  importFromJson: (prefs: Record<string, unknown>) => void;
+  importFromJson: (prefs: Record<string, unknown>) => Promise<void>;
   set: (key: string, value: unknown) => void;
   reset: (key: string) => void;
   get: (key: string) => unknown;

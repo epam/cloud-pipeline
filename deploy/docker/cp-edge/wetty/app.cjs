@@ -280,6 +280,11 @@ process.on('uncaughtException', function(e) {
 
 const app = express();
 app.get(/^\/ssh\/pipeline\/.*$/, function(req, res) {
+    res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    });
     res.sendFile(__dirname + '/dist/index.html');
 });
 app.use('/ssh', express.static(path.join(__dirname, 'dist')));
@@ -353,6 +358,12 @@ io.on('connection', function(socket) {
         || (current_user_login_name ? resolve_user_name(current_user_login_name, run_user_name_case) : undefined);
     const platformName = get_platform_name(SYSTEM_AUTH_TOKEN);
     const theme = current_user_metadata['ui.ssh.theme'] || get_ssh_theme(SYSTEM_AUTH_TOKEN) || 'default';
+    socket.on('term.ready', function() {
+        console_log(`SSH GUI terminal for run #${run_id} -> ready, (re)setting theme "${theme}"`);
+        socket.emit('term.theme', theme);
+    });
+    console_log(`SSH GUI terminal for run #${run_id} -> setting theme "${theme}"`);
+    socket.emit('term.theme', theme);
     let sshuser;
     let sshpass;
     switch (run_ssh_mode) {
@@ -434,5 +445,4 @@ io.on('connection', function(socket) {
             console_log('Error: ' + ex);
         }
     });
-    socket.emit('term.theme', theme);
 })

@@ -15,7 +15,7 @@ export interface HtermTerminal {
   };
   setProfile: (name: string, cb?: () => void) => void;
   prefs_: {
-    importFromJson: (prefs: Record<string, unknown>) => void;
+    importFromJson: (prefs: Record<string, unknown>) => Promise<void>;
     set: (key: string, value: unknown) => void;
     get: (key: string) => unknown;
     getDefault(key: string): unknown;

@@ -73,112 +73,107 @@ export class Terminal {
   }
 
   async initialize(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        this.socket = socketIO(this.origin, { path: "/ssh/socket.io" });
-        this.socket.on(SocketEvent.CONNECT, () => {
-          this.isConnected = true;
-        });
-        this.socket.on(SocketEvent.OUTPUT, (data?: unknown) => {
-          if (typeof data === "string") {
-            this.receive(data);
-          }
-        });
-        this.socket.on(SocketEvent.DISCONNECT, () => {
-          this.isConnected = false;
-          console.log("Socket.io connection closed");
-        });
-        this.socket.on(SocketEvent.THEME, (sshTheme: unknown) => {
-          if (typeof sshTheme === "string") {
-            this.setThemeDelayed(sshTheme);
-          }
-        });
-        this.initializeHterm().then(() => {
-          this.initialized = true;
-          resolve();
-        }).catch(reject);
-      } catch (error) {
-        reject(error);
+    console.log('Socket.io -> initialization');
+    const socket = this.socket = socketIO(this.origin, { path: "/ssh/socket.io" });
+    socket.on(SocketEvent.CONNECT, () => {
+      console.log('Socket.io -> "connect" event');
+      this.isConnected = true;
+    });
+    socket.on(SocketEvent.OUTPUT, (data?: unknown) => {
+      if (typeof data === "string") {
+        this.receive(data);
       }
     });
+    socket.on(SocketEvent.DISCONNECT, () => {
+      console.log('Socket.io -> "disconnect" event');
+      this.isConnected = false;
+      console.log("Socket.io connection closed");
+    });
+    let themeRequest: string | undefined;
+    const setTheme = async (theme?: string) => {
+      const t = theme ?? themeRequest;
+      if (t) {
+        if (this.initialized) {
+          console.log(`term -> set theme to "${t}"`);
+          await this.setTheme(t);
+        } else {
+          console.log(`term -> set theme request to "${t}" (waiting for initialization)`);
+          themeRequest = t;
+        }
+      }
+    };
+    socket.on(SocketEvent.THEME, (sshTheme: unknown) => {
+      console.log('Socket.io -> "term.theme" event, payload:', sshTheme);
+      if (typeof sshTheme === "string") {
+        setTheme(sshTheme);
+      }
+    });
+    await this.initializeHterm();
+    await setTheme();
+    console.log('Socket.io -> emitting ready event');
+    socket.emit(SocketEvent.READY, 'ready');
   }
 
   private async initializeHterm(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        this.term = new hterm.Terminal();
-        window.term = this.term!;
-        this.prefs = this.term.prefs_;
-        const terminalElement = document.getElementById("terminal");
-        if (!terminalElement) {
-          reject(new Error("Terminal element not found"));
-          return;
+    const term = this.term = new hterm.Terminal();
+    if (!term) {
+      console.error('term -> hterm not initialized');
+      throw new Error("Hterm not initialized");
+    }
+    window.term = term;
+    this.prefs = term.prefs_;
+    const terminalElement = document.getElementById("terminal");
+    if (!terminalElement) {
+      console.error('term -> terminal element not found');
+      throw new Error("Terminal element not found");
+    }
+    await new Promise<void>((resolve) => {
+      term.onTerminalReady = () => {
+        console.log('term -> received on ready event');
+        const io = term.io.push();
+        io.onVTKeystroke = this.send;
+        io.sendString = this.send;
+        io.onTerminalResize = this.resize;
+        term.installKeyboard();
+        term.setCursorPosition(0, 0);
+        term.setCursorVisible(true);
+        enableResources(term.document_);
+        if (term.screenSize) {
+          this.resize(
+            term.screenSize!.width,
+            term.screenSize!.height
+          );
         }
-        if (!this.term) {
-          reject(new Error("Hterm not initialized"));
-          return;
+        if (this.buffer) {
+          term.io.writeUTF16(this.buffer);
+          this.buffer = "";
         }
-        this.term.decorate(terminalElement);
-        enableResources(this.term.document_);
-        this.term.onTerminalReady = () => {
-          const io = this.term!.io.push();
-          io.onVTKeystroke = this.send;
-          io.sendString = this.send;
-          io.onTerminalResize = this.resize;
-          this.term!.installKeyboard();
-          this.term!.setCursorPosition(0, 0);
-          this.term!.setCursorVisible(true);
-          if (this.term!.screenSize) {
-            this.resize(
-              this.term!.screenSize!.width,
-              this.term!.screenSize!.height
-            );
-          }
-          if (this.buffer) {
-            this.term!.io.writeUTF16(this.buffer);
-            this.buffer = "";
-          }
-          this.setTheme(this.currentTheme);
-          resolve();
-        };
-      } catch (err) {
-        reject(err);
-      }
+        resolve();
+      };
+      console.log('term -> decorating terminal');
+      term.decorate(terminalElement);
     });
+    console.log('term -> ready');
+    await this.setTheme(this.currentTheme);
+    this.initialized = true;
+    console.log('term -> initialized');
   }
 
-  setThemeDelayed = (themeName: string, attempts = 0) => {
-    if (this.initialized) {
-      return this.setTheme(themeName);
+  async setTheme(themeName: string): Promise<void> {
+    if (this.term && this.prefs) {
+      this.term.setProfile(themeName, async () => {
+        themeName = themeName.toLowerCase();
+        if (!DEFAULT_THEMES[themeName]) {
+          console.error(`${themeName} theme not found`);
+          themeName = ThemeName.DEFAULT;
+        }
+        this.currentTheme = themeName;
+        const config = getThemeConfig(this);
+        await this.prefs!.importFromJson(config);
+        this.prefs!.set("audible-bell-sound", "");
+        localStorage.setItem('theme', themeName);
+      });
     }
-    if (attempts >= 3) {
-      return;
-    }
-    return setTimeout(() => {
-      this.setThemeDelayed(themeName, attempts + 1);
-    }, 300);
-  };
-
-  setTheme(themeName: string): Promise<void> {
-    return new Promise((resolve) => {
-      if (this.term && this.prefs) {
-        this.term.setProfile(themeName, async () => {
-          themeName = themeName.toLowerCase();
-          if (!DEFAULT_THEMES[themeName]) {
-            console.error(`${themeName} theme not found`);
-            themeName = ThemeName.DEFAULT;
-          }
-          this.currentTheme = themeName;
-          const config = getThemeConfig(this);
-          await this.prefs!.importFromJson(config);
-          this.prefs!.set("audible-bell-sound", "");
-          localStorage.setItem('theme', themeName);
-          resolve();
-        });
-      } else {
-        resolve();
-      }
-    });
   }
 
   send = (text: string): void => {
