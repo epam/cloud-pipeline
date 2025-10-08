@@ -19,8 +19,15 @@ import PropTypes from 'prop-types';
 import {Select} from 'antd';
 
 const sshThemesList = {
-  default: 'Default (dark)',
-  light: 'Light'
+  'default': 'Default (dark)',
+  'light': 'Light',
+  'dracula': 'Dracula',
+  'solarized-dark': 'Solarized dark',
+  'solarized-light': 'Solarized light',
+  'gruvbox-dark': 'Gruvbox dark',
+  'nord': 'Nord',
+  'one-dark': 'One dark',
+  'monokai': 'Monokai'
 };
 
 function SshThemeSelect ({
@@ -34,7 +41,10 @@ function SshThemeSelect ({
   const handleChange = newValue => {
     onChange && onChange(newValue);
   };
-  const correctedValue = /^light$/i.test(value) ? 'light' : 'default';
+  let correctedValue = (value || '').toLowerCase();
+  if (!sshThemesList[value]) {
+    correctedValue = 'default';
+  }
   return (
     <div
       style={
