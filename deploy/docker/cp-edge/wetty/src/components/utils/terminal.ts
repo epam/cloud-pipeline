@@ -78,6 +78,7 @@ export class Terminal {
     socket.on(SocketEvent.CONNECT, () => {
       console.log('Socket.io -> "connect" event');
       this.isConnected = true;
+      this.resizeTerminal();
     });
     socket.on(SocketEvent.OUTPUT, (data?: unknown) => {
       if (typeof data === "string") {
@@ -128,6 +129,8 @@ export class Terminal {
       throw new Error("Terminal element not found");
     }
     await new Promise<void>((resolve) => {
+      console.log('term -> decorating terminal');
+      term.decorate(terminalElement);
       term.onTerminalReady = () => {
         console.log('term -> received on ready event');
         const io = term.io.push();
@@ -138,20 +141,13 @@ export class Terminal {
         term.setCursorPosition(0, 0);
         term.setCursorVisible(true);
         enableResources(term.document_);
-        if (term.screenSize) {
-          this.resize(
-            term.screenSize!.width,
-            term.screenSize!.height
-          );
-        }
+        this.resizeTerminal();
         if (this.buffer) {
           term.io.writeUTF16(this.buffer);
           this.buffer = "";
         }
         resolve();
       };
-      console.log('term -> decorating terminal');
-      term.decorate(terminalElement);
     });
     console.log('term -> ready');
     await this.setTheme(this.currentTheme);
@@ -192,7 +188,17 @@ export class Terminal {
 
   resize = (cols: number, rows: number): void => {
     if (this.socket && this.isConnected) {
+      console.log(`term -> resize (${cols} x ${rows})`);
+      console.log(`Socket.io -> emitting resize event (${cols} x ${rows})`);
       this.socket.emit(SocketEvent.RESIZE, { cols, rows });
+    } else {
+      console.log(`term -> skipping resize (${cols} x ${rows}), not connected`);
+    }
+  };
+
+  resizeTerminal = () => {
+    if (this.term && this.term.screenSize) {
+      this.resize(this.term.screenSize.width, this.term.screenSize.height);
     }
   };
 
