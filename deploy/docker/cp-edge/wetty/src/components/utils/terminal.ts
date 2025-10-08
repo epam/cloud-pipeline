@@ -109,7 +109,12 @@ export class Terminal {
     };
     socket.on(SocketEvent.THEME, (sshTheme: unknown) => {
       console.log('Socket.io -> "term.theme" event, payload:', sshTheme);
-      if (typeof sshTheme === "string" && !this.userPreferredTheme) {
+      if (typeof sshTheme !== "string") {
+        return;
+      }
+      if (this.userPreferredTheme) {
+        console.log(`term -> skipping changing theme to "${sshTheme}" (user selected "${this.userPreferredTheme}" theme)`);
+      } else {
         setTheme(sshTheme);
       }
     });
@@ -166,7 +171,7 @@ export class Terminal {
         if (!DEFAULT_THEMES[themeName]) {
           console.error(`${themeName} theme not found`);
           themeName = ThemeName.DEFAULT;
-        } 
+        }
         if (isUserPreferred && DEFAULT_THEMES[themeName]) {
           localStorage.setItem('user-preferred-theme', themeName);
         }
