@@ -13824,15 +13824,19 @@ hterm.Terminal.prototype.setProfile = function(
   });
 
   this.prefs_.readStorage().then(() => {
-    this.prefs_.notifyAll();
+    setTimeout(() => {
+      this.prefs_.notifyAll();
+    }, 100)
 
     if (callback) {
-      this.ready_ = true;
       // TODO(vapier): Call this immediately.  We have to put it into the queue
       // so we run after other Terminal events that are event based instead of
       // Promise based.  Most notably, creating a new Terminal -> decorate ->
       // scrollport -> scheduleRedraw -> setTimeout -> redraw_.
-      setTimeout(() => callback());
+      setTimeout(() => {
+        this.ready_ = true;
+        callback()
+      }, 200);
     }
   });
 };

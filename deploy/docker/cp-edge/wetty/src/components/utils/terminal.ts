@@ -187,7 +187,6 @@ export class Terminal {
         io.sendString = this.send;
         io.onTerminalResize = this.resize;
         term.installKeyboard();
-        term.setCursorPosition(0, 0);
         term.setCursorVisible(true);
         enableResources(term.document_);
         this.resizeTerminal();
