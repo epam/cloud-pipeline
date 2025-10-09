@@ -13293,7 +13293,7 @@ hterm.Terminal = function({profileId, storage} = {}) {
   this.reportFocus = false;
 
   // TODO(crbug.com/1063219) Remove this once the bug is fixed.
-  this.alwaysUseLegacyPasting = false;
+  this.alwaysUseLegacyPasting = true;
 
   this.setProfile(profileId || hterm.Terminal.DEFAULT_PROFILE_ID, () => {
     hterm.initPromise.then(() => this.onTerminalReady());

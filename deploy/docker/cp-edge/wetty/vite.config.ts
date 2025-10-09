@@ -3,10 +3,21 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default ({ mode }: UserConfig) => {
-  const devMode = mode === 'development' || mode === 'dev';
-  const origin = devMode ? 'http://localhost:3030' : ''
   return defineConfig({
     base: "/ssh",
+    server: {
+      proxy: {
+        // Match everything *except* /ssh/
+        // Vite doesn't directly support negative matches, so we list what we forward.
+        // Example: forward /api, /auth, etc.
+        "^/ssh/socket.io/.*": {
+          target: "http://localhost:3030/ssh/socket.io/",
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+        },
+      },
+    },
     plugins: [react()],
     build: {
       rollupOptions: {
@@ -41,7 +52,7 @@ export default ({ mode }: UserConfig) => {
     define: {
       global: 'window',
       WEB_SSH_TERMINAL_MODE: JSON.stringify(mode),
-      WEB_SSH_ORIGIN: JSON.stringify(origin),
+      WEB_SSH_ORIGIN: JSON.stringify(''),
     },
   });
 };
