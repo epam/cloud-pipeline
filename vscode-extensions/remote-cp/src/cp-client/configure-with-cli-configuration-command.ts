@@ -17,9 +17,9 @@ export async function configureWithCliConfigurationCommand(
 
   open(cliConfigUri.toString(true))
     .then((cccBrowserProcess) => {
-      logger.info(`  browser opened`);
+      logger.debug(`  browser opened`);
       cccBrowserProcess.on("close", () => {
-        logger.info(`  browser closed`);
+        logger.debug(`  browser closed`);
       });
     })
     .catch((err) => {
@@ -34,7 +34,7 @@ export async function configureWithCliConfigurationCommand(
       "In the opened platform web page, click 'Generate access key' " +
       "and copy the whole 'CLI configuration command'.",
   });
-  logger.info(`  received command: ${cliConfigCmd}`);
+  logger.debug(`  received command: ${cliConfigCmd}`);
 
   const tokenM = cliConfigCmd?.match(/--auth-token ([^ ]+)/);
   const apiM = cliConfigCmd?.match(/--api ([^ ]+)/);
@@ -61,13 +61,13 @@ export async function configureWithCliConfigurationCommand(
       ...["Apply", "Cancel"],
     );
     if (newPlatformUrlUserResp === "Apply") {
-      await cpExtConfig.setPlatformUrl(cccPlatformUrl);
+      cpExtConfig.platformUrl = cccPlatformUrl;
       await vscode.window.showInformationMessage(
         `${cpExtConfig.prefix}: Platform URL updated to '${cccPlatformUrl}'`,
       );
     }
 
-    await cpExtConfig.setPlatformUrl(cccApiUrl);
+    cpExtConfig.platformUrl = cccApiUrl;
   }
   const resConfig: ICpClientConfig | null = {
     apiToken: cccApiToken,

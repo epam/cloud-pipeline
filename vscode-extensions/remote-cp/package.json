@@ -2,7 +2,7 @@
   "name": "remote-cp",
   "displayName": "Remote - Cloud Pipeline",
   "description": "VSCode Remote Development connector to EPAM Cloud Pipeline platform runs",
-  "version": "0.0.1",
+  "version": "0.0.8",
   "publisher": "epam",
   "icon": "resources/remote-cp.png",
   "engines": {
@@ -14,7 +14,7 @@
   "enabledApiProposals": [
     "contribViewsRemote",
     "resolvers",
-    "terminalDataWriteEvent"
+    "tunnels"
   ],
   "extensionPack": [
     "ms-vscode-remote.remote-ssh-edit",
@@ -35,7 +35,8 @@
   "api": "none",
   "activationEvents": [
     "onResolveRemoteAuthority:cp-remote",
-    "onStartupFinished"
+    "onStartupFinished",
+    "onUri"
   ],
   "main": "./dist/extension.js",
   "capabilities": {
@@ -50,6 +51,7 @@
       "properties": {
         "remote-cp.platformUrl": {
           "type": "string",
+          "default": null,
           "description": "The Cloud Pipeline platform URL (e.g. https://aws.cloud-pipeline.com/)",
           "scope": "application"
         },
@@ -59,28 +61,41 @@
           "description": "The workspace (and messages) prefix.",
           "scope": "application"
         },
-        "remote-cp.api.endpoint": {
+        "remote-cp.apiEndpoint": {
           "type": "string",
           "default": "/pipeline/restapi",
           "description": "The Cloud Pipeline api endpoint",
           "scope": "application"
         },
-        "remote-cp.auth.endpoint": {
+        "remote-cp.authEndpoint": {
           "type": "string",
           "default": "/pipeline/restapi/route",
           "description": "The Cloud Pipeline platfrom auth endpoint",
           "scope": "application"
         },
-        "remote-cp.pipe.apiUri": {
+        "remote-cp.pipeApiUri": {
           "type": "string",
           "default": null,
           "description": "Client pipe apiUri",
           "scope": "application"
         },
-        "remote-cp.pipe.apiToken": {
+        "remote-cp.pipeApiToken": {
           "type": "string",
           "default": null,
           "description": "Client pipe apiToken",
+          "scope": "application"
+        },
+        "remote-cp.logLevel": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug",
+            "trace"
+          ],
+          "default": "info",
+          "description": "Log level. Changes require restart.",
           "scope": "application"
         }
       }
@@ -236,7 +251,7 @@
     "@types/ssh2": "^0.5.52",
     "@types/ssh2-streams": "^0.1.12",
     "@types/tmp": "^0.2.6",
-    "@types/vscode": "^1.104.0",
+    "@types/vscode": "^1.103.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/dts": "^0.4.1",

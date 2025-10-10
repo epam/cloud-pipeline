@@ -1,0 +1,6 @@
+{
+  "folders": [
+    { "name": "remote-cp-helper", "path": "../remote-cp-helper" },
+    { "name": "remote-cp", "path": "." },
+  ],
+}

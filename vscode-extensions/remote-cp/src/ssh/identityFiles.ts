@@ -142,7 +142,7 @@ export async function gatherIdentityFiles(
   preferredIdentityKeys.push(...agentKeys);
   preferredIdentityKeys.push(...fileKeys);
 
-  logger.trace(
+  logger.debug(
     `Identity keys:`,
     preferredIdentityKeys.length
       ? preferredIdentityKeys

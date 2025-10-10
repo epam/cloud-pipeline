@@ -6,6 +6,21 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "CP both",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder:remote-cp}",
+        "--extensionDevelopmentPath=${workspaceFolder:remote-cp-helper}"
+      ],
+      "outFiles": [
+        "${workspaceFolder:remote-cp-helper}/dist/**/*.js",
+        "${workspaceFolder:remote-cp}/dist/**/*.js"
+      ],
+      "sourceMaps": true,
+      "preLaunchTask": "CP both: compile"
+    },
+    {
       "name": "CP extension",
       "type": "extensionHost",
       "request": "launch",
@@ -18,13 +33,13 @@
       "preLaunchTask": "remote-cp: compile & watch"
     },
     {
-      "name": "CP remote extension",
+      "name": "CP remote ext",
       "type": "extensionHost",
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--enable-proposed-api", "epam.remote-cp",
-        "--remote", "cp-remote+pipeline-77742",
+        "--remote", "cp-remote+pipeline-77805",
         "root/projs/test-1"
       ],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],

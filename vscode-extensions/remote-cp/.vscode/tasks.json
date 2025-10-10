@@ -4,8 +4,19 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "CP both: compile",
+      "dependsOn": [
+        "${workspaceFolder:remote-cp-helper}/.vscode/tasks.json:cph-compile",
+        "remote-cp: compile"
+      ],
+      "dependsOrder": "sequence"
+    },
+    {
       "label": "remote-cp: compile & watch",
-      "dependsOn": ["remote-cp: compile"],
+      "dependsOn": [
+        "remote-cp: compile"
+        // "remote-cp: watch",
+      ],
       "dependsOrder": "sequence"
     },
     {

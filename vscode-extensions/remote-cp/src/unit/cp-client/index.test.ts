@@ -29,9 +29,14 @@ describe("CloudPipelineClient.parseRunListTable", () => {
     prefix: "CP:",
     apiEndpoint: "/pipeline/restapi",
     authEndpoint: "/pipeline/restapi/route",
-    setPlatformUrl: notImplementedStubFunc,
+    pipeApiUri: null,
+    pipeApiToken: null,
+    logLevel: "trace",
+
     getClientConfig: notImplementedStubFunc,
     setClientConfig: notImplementedStubFunc,
+
+    save: notImplementedStubFunc,
   };
   const client = CpClientTest.create(cpConfig, console) as any as IClient;
 

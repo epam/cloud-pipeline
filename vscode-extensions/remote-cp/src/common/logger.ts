@@ -1,7 +1,15 @@
 import * as vscode from "vscode";
 import { Disposable } from "./disposable";
 
-export type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
+export enum LogLevel {
+  error = 0,
+  warn = 1,
+  info = 2,
+  debug = 3,
+  trace = 4,
+}
+
+export type LogLevelName = keyof typeof LogLevel;
 
 export interface ILogger {
   // log(message?: any, ...optionalParams: any[]): void;
@@ -12,11 +20,20 @@ export interface ILogger {
   trace(message?: any, ...optionalParams: any[]): void;
 }
 
-export class Logger extends Disposable implements ILogger {
+export interface IOutputLogger extends ILogger {
+  level: LogLevelName;
+}
+
+export class Logger extends Disposable implements IOutputLogger {
+  private levelValue: LogLevel;
   private outputChannel!: vscode.LogOutputChannel;
 
-  constructor(private readonly label: string) {
+  constructor(
+    private readonly label: string,
+    level: LogLevelName,
+  ) {
     super();
+    this.levelValue = LogLevel[level];
   }
 
   override dispose() {
@@ -24,6 +41,14 @@ export class Logger extends Disposable implements ILogger {
       this.outputChannel.dispose();
     }
     super.dispose();
+  }
+
+  public get level(): LogLevelName {
+    return LogLevel[this.levelValue] as LogLevelName;
+  }
+
+  public set level(value: LogLevelName) {
+    this.levelValue = LogLevel[value];
   }
 
   public show(): void {
@@ -52,32 +77,41 @@ export class Logger extends Disposable implements ILogger {
     this.outputChannel.appendLine(line);
   }
 
-  public log(level: LogLevel, message?: any, ...optionalParams: any[]): void {
+  public log(
+    level: LogLevelName,
+    message?: any,
+    ...optionalParams: any[]
+  ): void {
     this[level](message, ...optionalParams);
   }
 
   public trace(message?: any, ...optionalParams: any[]): void {
     this._ensureOutputChannel();
-    this.outputChannel.trace(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.trace)
+      this.outputChannel.trace(message, ...optionalParams);
   }
 
   public debug(message?: any, ...optionalParams: any[]): void {
     this._ensureOutputChannel();
-    this.outputChannel.debug(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.debug)
+      this.outputChannel.debug(message, ...optionalParams);
   }
 
   public info(message?: any, ...optionalParams: any[]): void {
     this._ensureOutputChannel();
-    this.outputChannel.info(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.info)
+      this.outputChannel.info(message, ...optionalParams);
   }
 
   public warn(message?: any, ...optionalParams: any[]): void {
     this._ensureOutputChannel();
-    this.outputChannel.warn(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.warn)
+      this.outputChannel.warn(message, ...optionalParams);
   }
 
   public error(message?: any, ...optionalParams: any[]): void {
     this._ensureOutputChannel();
-    this.outputChannel.error(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.error)
+      this.outputChannel.error(message, ...optionalParams);
   }
 }

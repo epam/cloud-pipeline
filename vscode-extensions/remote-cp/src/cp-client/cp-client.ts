@@ -24,7 +24,7 @@ export class CpClient extends CpClientBase {
     return res;
   }
 
-  override async ensurePipeExecInternal(): Promise<void> {
+  protected override async ensurePipeExecInternal(): Promise<void> {
     const fsp = fs.promises;
 
     // choose URL based on platform
@@ -34,6 +34,7 @@ export class CpClient extends CpClientBase {
     const binDir = getBinDir(this.cpExtConfig);
     const binPipeDir = path.join(binDir, "pipe");
     this.pipeExec = path.join(binPipeDir, pipeUris[platform].exec);
+    this.logger.info(`${this.toLog()} pipeExec:\n` + `  ${this.pipeExec}`);
     // check if binDir exists and is non-empty
     let needsDownload = true;
     try {
@@ -116,7 +117,7 @@ async function downloadAndExtract(
     downloadFileP = downloadFile(
       pipeUrl,
       tmpFile.name,
-      `${cpExtConfig.prefix}: Downloading pipe client`,
+      `${cpExtConfig.prefix}: Downloading pipe client '${pipeUrl}'`,
     );
   }
   await Promise.all([downloadFileP, cleanupBinPipeDirP]);

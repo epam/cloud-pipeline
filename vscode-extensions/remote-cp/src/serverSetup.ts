@@ -82,7 +82,7 @@ export async function installCodeServer(
     }
 
     if (platform) {
-      logger.trace(`Detected platform: ${platform}, ${shell}`);
+      logger.debug(`Detected platform: ${platform}, ${shell}`);
     }
   }
 
@@ -110,7 +110,7 @@ export async function installCodeServer(
   if (platform === "windows") {
     const installServerScript = generatePowerShellInstallScript(installOptions);
 
-    logger.trace("Server install command:", installServerScript);
+    logger.debug("Server install command:", installServerScript);
 
     const installDir = `$HOME\\${vscodeServerConfig.serverDataFolderName}\\install`;
     const installScript = `${installDir}\\${vscodeServerConfig.commit}.ps1`;
@@ -142,7 +142,7 @@ export async function installCodeServer(
 
       command = `powershell "md -Force ${installDir}" && powershell "echo '${script}'" > ${installScript.replace("$HOME", "%USERPROFILE%")} && powershell -ExecutionPolicy ByPass -File "${installScript.replace("$HOME", "%USERPROFILE%")}"`;
 
-      logger.trace("Command length (8191 max):", command.length);
+      logger.debug("Command length (8191 max):", command.length);
 
       if (command.length > 8191) {
         throw new ServerInstallError(`Command line too long`);
@@ -157,9 +157,9 @@ export async function installCodeServer(
   } else {
     const installServerScript = generateBashInstallScript(installOptions);
 
-    //logger.info("Before server install log");
-    logger.trace("Server install command:", installServerScript);
-    //logger.info("After server install log");
+    logger.trace("Before server install");
+    logger.debug("Server install command:", installServerScript);
+    logger.trace("After server install");
     // Fish shell does not support heredoc so let's workaround it using -c option,
     // also replace single quotes (') within the script with ('\'') as there's no quoting within single quotes, see https://unix.stackexchange.com/a/24676
     commandOutput = await conn.exec(
@@ -168,9 +168,9 @@ export async function installCodeServer(
   }
 
   if (commandOutput.stderr) {
-    logger.trace("Server install command stderr:", commandOutput.stderr);
+    logger.debug("Server install command stderr:", commandOutput.stderr);
   }
-  logger.trace("Server install command stdout:", commandOutput.stdout);
+  logger.debug("Server install command stdout:", commandOutput.stdout);
 
   const resultMap = parseServerInstallOutput(commandOutput.stdout, scriptId);
   if (!resultMap) {

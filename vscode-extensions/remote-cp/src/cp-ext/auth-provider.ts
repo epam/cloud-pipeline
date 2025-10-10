@@ -22,7 +22,7 @@ export class CpAuthProvider
     new vscode.EventEmitter<vscode.AuthenticationProviderAuthenticationSessionsChangeEvent>()
       .event;
 
-  constructor(
+  protected constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly logger: ILogger,
   ) {
@@ -34,7 +34,7 @@ export class CpAuthProvider
     context: vscode.ExtensionContext,
     logger: ILogger,
   ): Promise<CpAuthProvider> {
-    logger.info("CpAuthProvider.create()");
+    logger.debug("CpAuthProvider.create()");
     const res = new CpAuthProvider(context, logger);
     context.subscriptions.push(
       vscode.authentication.registerAuthenticationProvider(
@@ -101,10 +101,8 @@ export class CpAuthProvider
         code_challenge_method: "S256",
       });
 
-    // 🚀 Вот тут открываем страницу в браузере
     await open(authorizationUrl);
 
-    // Поднимаем локальный HTTP-сервер для приёма callback
     const authCode = await new Promise<string>((resolve, reject) => {
       const server = http.createServer(async (req, res) => {
         if (req.url?.startsWith("/callback")) {

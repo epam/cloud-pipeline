@@ -5,7 +5,7 @@ import { EventEmitter } from "events";
 
 import { Disposable } from "./common/disposable";
 import { findRandomPort } from "./common/ports";
-import { ILogger, Logger, LogLevel } from "./common/logger";
+import { ILogger, Logger, LogLevelName } from "./common/logger";
 import { ICpExtConfig } from "./config";
 
 // line: "2025-09-16 13:48:07,888:INFO: Searching for tunnel processes..."
@@ -43,7 +43,8 @@ export class PipeTunnel extends Disposable {
   ) {
     super();
 
-    this.output = new Logger(`${this.cpExtConfig.prefix} tunnel ${cpRunId}`);
+    const outputName = `${this.cpExtConfig.prefix} tunnel ${cpRunId}`;
+    this.output = new Logger(outputName, "trace");
     this._register(this.output);
   }
 
@@ -89,10 +90,11 @@ export class PipeTunnel extends Disposable {
       this.output.appendLine(line);
     });
 
+    let currentProgress = 10;
     this.child.pipeTunnelStderr.on("line", (line) => {
       const match = line.match(pipeLineRe);
-      const level: LogLevel | undefined = match
-        ? (match[1].toLowerCase() as LogLevel)
+      const level: LogLevelName | undefined = match
+        ? (match[1].toLowerCase() as LogLevelName)
         : undefined;
       const message = match ? match[2] : line;
 
@@ -107,19 +109,18 @@ export class PipeTunnel extends Disposable {
       if (!level && line.toLowerCase().startsWith("error:")) {
         this.eventEmitter.emit("processError", new Error(line.slice(7)));
       }
-      let currentProgress = 10;
 
-      function progressReport(reachedProgress: number, msg: string) {
+      const progressReport = (reachedProgress: number, msg: string): void => {
         progress.report({
           increment: reachedProgress - currentProgress,
           message: msg,
         });
         currentProgress = reachedProgress;
-      }
+      };
 
       if (message.startsWith("Searching for processes listening local ports")) {
         progressReport(15, message);
-      } else if (message.startsWith("Configuring putty and openssh password")) {
+      } else if (message.startsWith("Configuring putty and openssh")) {
         progressReport(25, `${message}`);
       } else if (message.startsWith("Initializing passwordless")) {
         progressReport(28, `${message}`);
@@ -169,7 +170,7 @@ export class PipeTunnel extends Disposable {
         title: `Starting ${this.cpExtConfig.prefix} tunnel ${this.cpRunId}: \n`,
         cancellable: false,
       },
-      async (progress, _token) => {
+      async (progress, cancelToken) => {
         progress.report({ increment: 0 });
 
         const localPort = await findRandomPort();
@@ -179,6 +180,13 @@ export class PipeTunnel extends Disposable {
         });
 
         return new Promise<void>((resolve, reject) => {
+          this._register(
+            cancelToken.onCancellationRequested((event) => {
+              // FIX: Stop process
+              reject(new Error("Cancelled"));
+            }),
+          );
+
           this.on("ready", () => {
             resolve();
           });
@@ -197,7 +205,7 @@ export class PipeTunnel extends Disposable {
           startProcess(localPort, progress)
             .then((process) => {
               this.logger.info(
-                `PipeTunnel: started process (pid: ${process.pid})`,
+                `PipeTunnel: process started (pid: ${process.pid})`,
               );
 
               this.child = {

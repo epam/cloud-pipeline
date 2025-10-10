@@ -1,58 +1,64 @@
-'use strict';
+"use strict";
 
-const path = require('path');
-const webpack = require('webpack');
+const path = require("path");
+const webpack = require("webpack");
 
 /**@type {import('webpack').Configuration}*/
 const config = {
-	target: 'node',
-	entry: './src/extension.ts',
-	output: {
-		path: path.resolve(__dirname, 'dist'),
-		filename: 'extension.js',
-		libraryTarget: "commonjs2",
-		devtoolModuleFilenameTemplate: "../[resource-path]",
-	},
-	devtool: 'source-map',
-	externals: {
-		vscode: "commonjs vscode",
-		bufferutil: "bufferutil",
-		"utf-8-validate": "utf-8-validate",
-	},
-	resolve: {
-		extensions: ['.ts', '.js'],
-		fallback: {
-			"@aws-sdk/client-s3": false,
-			"navigator": false,
-		}
-	},
-	module: {
-		rules: [{
-			test: /\.ts$/,
-			exclude: /node_modules/,
-			use: [{
-				loader: 'ts-loader'
-			}]
-		}]
-	},
-	plugins: [
-		new webpack.DefinePlugin({
-			// build time environment variables injection
-			'BUILTIN_CP_PLATFORM_URL': JSON.stringify((process.env.CP_PLATFORM_URL || "").replace(/^"(.*)"$/, '$1')),
-		}),
-		new webpack.IgnorePlugin({
-			resourceRegExp: /crypto\/build\/Release\/sshcrypto\.node$/,
-		}),
-		new webpack.IgnorePlugin({
-			resourceRegExp: /cpu-features/,
-		})
-	]
-}
+  target: "node",
+  entry: "./src/extension.ts",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "extension.js",
+    libraryTarget: "commonjs2",
+    devtoolModuleFilenameTemplate: "../[resource-path]",
+  },
+  devtool: "source-map",
+  externals: {
+    vscode: "commonjs vscode",
+    bufferutil: "bufferutil",
+    "utf-8-validate": "utf-8-validate",
+  },
+  resolve: {
+    extensions: [".ts", ".js"],
+    fallback: {
+      "@aws-sdk/client-s3": false,
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: "ts-loader",
+          },
+        ],
+      },
+    ],
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      // build time environment variables injection
+      BUILTIN_CP_PLATFORM_URL: JSON.stringify(
+        (process.env.CP_PLATFORM_URL || "").replace(/^"(.*)"$/, "$1"),
+      ),
+      navigator: "undefined",
+    }),
+    new webpack.IgnorePlugin({
+      resourceRegExp: /crypto\/build\/Release\/sshcrypto\.node$/,
+    }),
+    new webpack.IgnorePlugin({
+      resourceRegExp: /cpu-features/,
+    }),
+  ],
+};
 
 module.exports = (_env, argv) => {
-	if (argv.mode === 'production') {
-		config.devtool = false;
-	}
+  if (argv.mode === "production") {
+    config.devtool = false;
+  }
 
-	return config;
+  return config;
 };

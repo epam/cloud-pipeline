@@ -25,6 +25,7 @@ export async function configureWithCpUrl(
           req.method === "POST" &&
           req.headers["content-type"] === "application/x-www-form-urlencoded"
         ) {
+          logger.debug(`${logPfx} get callback request expected`);
           const body = await readReqBody(req);
           const form = new URLSearchParams(body);
           const apiUri: string = vscode.Uri.parse(cpExtConfig.platformUrl)
@@ -33,7 +34,7 @@ export async function configureWithCpUrl(
           const apiToken: string | null = form.get("bearer");
           if (apiUri && apiToken) {
             resConfig = { apiUri, apiToken };
-            logger.info(`${logPfx} config obtained with token.`);
+            logger.debug(`${logPfx} config obtained with token.`);
           }
         }
 
@@ -84,8 +85,9 @@ export async function configureWithCpUrl(
       }).toString(),
     });
 
-    void open(authUrl.toString(true));
-    logger.info(`${logPfx} browser open at '${authUrl}'.`);
+    const authUrlStr = authUrl.toString(true);
+    void open(authUrlStr);
+    logger.info(`${logPfx} browser open at '${authUrlStr}'.`);
   });
 }
 

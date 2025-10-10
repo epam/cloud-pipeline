@@ -102,7 +102,7 @@ export class CpVersionInfo {
  *   and fallbacks to {home-dir}/config.json auto and silent
  */
 export abstract class CpClientBase extends Disposable {
-  private static objCounter = -1;
+  private static objCounter = 0;
   private objId = CpClientBase.objCounter++;
 
   protected toLog(): string {
@@ -113,7 +113,7 @@ export abstract class CpClientBase extends Disposable {
 
   protected constructor(
     public readonly cpExtConfig: ICpExtConfig,
-    private readonly logger: ILogger,
+    protected readonly logger: ILogger,
   ) {
     super();
   }
@@ -156,12 +156,15 @@ export abstract class CpClientBase extends Disposable {
    */
   async getRunList(): Promise<RunInfo[]> {
     const logPfx = `${this.toLog()}.getRunList()`;
-    this.logger.info(`${logPfx}, start`);
+    this.logger.trace(`${logPfx}, start`);
     try {
       const output = await this.execPipeCommand(`view-runs`);
-      return await pipeParseRunList(output);
+      const res = await pipeParseRunList(output);
+      this.logger.trace(`${logPfx}, end`);
+      return res;
     } finally {
-      this.logger.info(`${logPfx}, end`);
+      await this.cpExtConfig.save(logPfx);
+      this.logger.trace(`${logPfx}, finally`);
     }
   }
 
@@ -257,7 +260,9 @@ export abstract class CpClientBase extends Disposable {
       (localPort: number): Promise<cp.ChildProcessWithoutNullStreams> => {
         // prettier-ignore
         return this.configSpawn(
-          "tunnel", "start", "-f", "--ssh", "--keep-same",
+          "tunnel", "start", "-f", "--ssh",
+          "--ignore-existing",
+          // "--no-putty",
           "-rp", "22",
           "-lp", localPort.toString(),
           "--log-level", "INFO",
@@ -290,7 +295,9 @@ export abstract class CpClientBase extends Disposable {
   }
 
   // -- Config --
-  private async ensureConfig(): Promise<ICpClientConfig> {
+  public async ensureConfig(saveConfig = false): Promise<ICpClientConfig> {
+    const logPfx = `${this.toLog()}.ensureConfig()`;
+
     await this.ensurePipeExec();
     if (!this.pipeExec) throw new Error("Pipe client exec is not configured");
 
@@ -337,6 +344,7 @@ export abstract class CpClientBase extends Disposable {
 
     if (resConfig) {
       await this.cpExtConfig.setClientConfig(resConfig);
+      if (saveConfig) await this.cpExtConfig.save(logPfx);
     } else {
       const errMsg = `${this.cpExtConfig.prefix} pipe client is not configured.`;
       this.logger.error(errMsg);

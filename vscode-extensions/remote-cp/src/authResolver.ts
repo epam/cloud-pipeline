@@ -43,24 +43,16 @@ class TunnelInfo implements vscode.Disposable {
   }
 }
 
-export function registerAuthResolver(
-  cpClient: CpClient,
-  context: vscode.ExtensionContext,
-  logger: ILogger,
-): void {
-  const resolver = new RemoteCpResolver(cpClient, context, logger);
-  context.subscriptions.push(
-    vscode.workspace.registerRemoteAuthorityResolver(
-      REMOTE_CP_AUTHORITY,
-      resolver,
-    ),
-    resolver,
-  );
-}
-
 export class RemoteCpResolver
   implements vscode.RemoteAuthorityResolver, vscode.Disposable
 {
+  private static objCounter = 0;
+  private objId = RemoteCpResolver.objCounter++;
+
+  protected toLog(): string {
+    return `${this.constructor.name}<${this.objId}>`;
+  }
+
   private proxyConnections: SSHConnection[] = [];
   private sshConnection: SSHConnection | undefined;
   private sshAgentSock: string | undefined;
@@ -71,13 +63,28 @@ export class RemoteCpResolver
 
   private labelFormatterDisposable: vscode.Disposable | undefined;
 
-  constructor(
+  protected constructor(
     private readonly cpClient: CpClient,
     private readonly extContext: vscode.ExtensionContext,
     private readonly logger: ILogger,
   ) {}
 
-  private get cpConfig(): ICpExtConfig {
+  static createAndRegister(
+    cpClient: CpClient,
+    context: vscode.ExtensionContext,
+    logger: ILogger,
+  ): void {
+    const resolver = new RemoteCpResolver(cpClient, context, logger);
+    context.subscriptions.push(
+      vscode.workspace.registerRemoteAuthorityResolver(
+        REMOTE_CP_AUTHORITY,
+        resolver,
+      ),
+      resolver,
+    );
+  }
+
+  private get cpExtConfig(): ICpExtConfig {
     return this.cpClient.cpExtConfig;
   }
 
@@ -85,10 +92,33 @@ export class RemoteCpResolver
     authority: string,
     context: vscode.RemoteAuthorityResolverContext,
   ): Thenable<vscode.ResolverResult> {
+    const logPfx = `${this.toLog()}.resolve()`;
+    this.logger.trace(`${logPfx}, in`);
+    return (async () => {
+      this.logger.trace(`${logPfx}, start`);
+      try {
+        const res = await this.resolveInternal(authority, context);
+        this.logger.trace(`${logPfx}, end`);
+        return res;
+      } catch (err) {
+        this.logger.error(`Error at ${logPfx}:`);
+        this.logger.error(err);
+        throw err;
+      } finally {
+        this.logger.trace(`${logPfx}, finally`);
+      }
+    })();
+    this.logger.trace(`${logPfx}, out`);
+  }
+
+  resolveInternal(
+    authority: string,
+    context: vscode.RemoteAuthorityResolverContext,
+  ): Thenable<vscode.ResolverResult> {
     const [type, dest] = authority.split("+");
     if (type !== REMOTE_CP_AUTHORITY) {
       throw new Error(
-        `Invalid authority type for ${this.cpConfig.prefix} resolver: ${type}`,
+        `Invalid authority type for ${this.cpExtConfig.prefix} resolver: ${type}`,
       );
     }
 
@@ -128,7 +158,7 @@ export class RemoteCpResolver
 
     return vscode.window.withProgress(
       {
-        title: `Setting up ${this.cpConfig.prefix} Host ${sshDest.hostname}`,
+        title: `Setting up ${this.cpExtConfig.prefix} Host ${sshDest.hostname}`,
         location: vscode.ProgressLocation.Notification,
         cancellable: false,
       },
@@ -240,7 +270,7 @@ export class RemoteCpResolver
                 proxyIdentityKeys,
                 preferredAuthentications,
               );
-              const proxyConnection = new SSHConnection(this.cpConfig, {
+              const proxyConnection = new SSHConnection(this.cpExtConfig, {
                 host: !proxyStream ? proxyHostName : undefined,
                 port: !proxyStream ? proxyPort : undefined,
                 sock: proxyStream,
@@ -299,7 +329,7 @@ export class RemoteCpResolver
               };
             }
 
-            this.logger.trace(
+            this.logger.debug(
               `Spawning ProxyCommand: ${proxyCommand} ${proxyArgs.join(" ")}`,
             );
 
@@ -319,7 +349,7 @@ export class RemoteCpResolver
             preferredAuthentications,
           );
 
-          this.sshConnection = new SSHConnection(this.cpConfig, {
+          this.sshConnection = new SSHConnection(this.cpExtConfig, {
             host: !proxyStream ? sshHostName : undefined,
             port: !proxyStream ? sshPort : undefined,
             sock: proxyStream,
@@ -396,7 +426,7 @@ export class RemoteCpResolver
                 separator: "/",
                 tildify: true,
                 workspaceSuffix:
-                  `${this.cpConfig.prefix} ${sshDest.hostname}` +
+                  `${this.cpExtConfig.prefix} ${sshDest.hostname}` +
                   (sshDest.port && sshDest.port !== 22
                     ? `:${sshDest.port}`
                     : ""),
@@ -469,7 +499,7 @@ export class RemoteCpResolver
     if (this.socksTunnel && remotePort) {
       const forwardingServer = await new Promise<net.Server>(
         (resolve, reject) => {
-          this.logger.trace(
+          this.logger.debug(
             `Creating forwarding server ${localPort}(local) => ${this.socksTunnel!.localPort!}(socks) => ${remotePort}(remote)`,
           );
           const socksOptions: SocksClientOptions = {
@@ -507,11 +537,11 @@ export class RemoteCpResolver
       disposables.push({
         dispose: () =>
           forwardingServer.close(() => {
-            this.logger.trace(`SOCKS forwading server closed`);
+            this.logger.debug(`SOCKS forwading server closed`);
           }),
       });
     } else {
-      this.logger.trace(
+      this.logger.debug(
         `Opening tunnel ${localPort}(local) => ${remotePortOrSocketPath}(remote)`,
       );
       const tunnelConfig = await this.sshConnection!.addTunnel({
@@ -526,7 +556,7 @@ export class RemoteCpResolver
           this.sshConnection
             ?.closeTunnel(tunnelConfig.name)
             .then(() => {
-              this.logger.trace(`Tunnel ${tunnelConfig.name} closed`);
+              this.logger.debug(`Tunnel ${tunnelConfig.name} closed`);
             })
             .catch((err) => {
               this.logger.error(
@@ -571,7 +601,9 @@ export class RemoteCpResolver
         const identityKey = identityKeys.shift()!;
 
         this.logger.info(
-          `Trying publickey authentication: ${identityKey.filename} ${identityKey.parsedKey.type} SHA256:${identityKey.fingerprint}`,
+          `Trying publickey authentication:\n` +
+            `  file: ${identityKey.filename} \n` +
+            `  key: ${identityKey.parsedKey.type} SHA256:${identityKey.fingerprint}`,
         );
 
         if (identityKey.agentSupport) {
