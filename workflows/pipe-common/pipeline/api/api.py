@@ -524,7 +524,7 @@ class PipelineAPI:
         return result.json()['payload']['podId']
 
     def load_child_pipelines(self, parent_id):
-        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent_id={}'.format(parent_id)}
+        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent-id={}'.format(parent_id)}
         result = requests.post(str(self.api_url) + self.FILTER_RUNS,
                                data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:

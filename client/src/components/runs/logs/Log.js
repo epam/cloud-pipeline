@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,6 @@ import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKu
 import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
-import Roles from '../../../models/user/Roles';
-import PipelineRunUpdateSids, {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
   canCommitRun,
@@ -76,7 +74,6 @@ import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
 import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
@@ -115,6 +112,8 @@ import {
 } from './misc/post-process-run';
 // eslint-disable-next-line max-len
 import ParameterValueRepresentation from '../../pipelines/launch/form/parameters/parameter/representation';
+import ShareWith from '../ShareWith';
+import LogsModeButton from './logs-mode';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -136,7 +135,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
   'uiNavigation'
 )
 @VSActions.check
-@inject(({routing, pipelines, multiZoneManager}, {params}) => {
+@inject(({routing, pipelines, multiZoneManager}, props) => {
+  const {params, currentMode, modes, onChangeMode} = props;
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -156,9 +156,11 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
     task,
     pipelines,
-    roles: new Roles(),
     routing,
-    multiZone: multiZoneManager
+    multiZone: multiZoneManager,
+    currentMode,
+    modes,
+    onChangeMode
   };
 })
 @observer
@@ -181,7 +183,6 @@ class Logs extends localization.LocalizedReactComponent {
     resolvedValues: true,
     operationInProgress: false,
     openedPanels: [],
-    shareDialogOpened: false,
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
@@ -422,15 +423,6 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
-  }
-
-  get combineRolesIntoAllRoles () {
-    const {run} = this.state;
-    const {runSids = []} = run || {};
-    return {
-      ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
-      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
-    };
   }
 
   get isCapacityBlock () {
@@ -1624,32 +1616,6 @@ class Logs extends localization.LocalizedReactComponent {
     });
   };
 
-  openShareDialog = () => {
-    this.setState({
-      shareDialogOpened: true
-    });
-  };
-
-  closeShareDialog = () => {
-    this.setState({
-      shareDialogOpened: false
-    });
-  };
-
-  saveShareSids = async (sids) => {
-    const hide = message.loading('Updating sharing info...', -1);
-    const request = new PipelineRunUpdateSids(this.props.runId);
-    await request.send(sids);
-    if (request.error) {
-      hide();
-      message.error(request.error, 5);
-    } else {
-      await this.refreshRunInfo();
-      hide();
-      this.closeShareDialog();
-    }
-  };
-
   renderNestedRuns = () => {
     const {
       nestedRuns: originalNestedRuns = [],
@@ -1876,7 +1842,6 @@ class Logs extends localization.LocalizedReactComponent {
         kubeServiceInfo = this.props.runKubeServices.value;
       }
       let endpoints;
-      let share;
       let kubeServices;
       if (this.endpointAvailable) {
         const regionedUrls = parseRunServiceUrlConfiguration(serviceUrl);
@@ -1948,55 +1913,14 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
-      if (
-        this.initializeEnvironmentFinished &&
-        status === 'RUNNING' &&
-        roleModel.isOwner(run)
-      ) {
-        let shareList = 'Not shared (click to configure)';
-        const {
-          ssh: combineSshRoles,
-          endpoint: combineEndpointRoles
-        } = this.combineRolesIntoAllRoles;
-        const filteredRunSids = combineSshRoles || combineEndpointRoles
-          ? [ROLE_ALL, ...runSids]
-            .filter(({name, accessType}) => {
-              if (
-                (combineSshRoles && accessType === AccessTypes.ssh) ||
-                (combineEndpointRoles && accessType === AccessTypes.endpoint)
-              ) {
-                return !ROLE_ALL.includedRoles.includes(name);
-              }
-              return true;
-            })
-          : runSids;
-        if (filteredRunSids.length > 0) {
-          shareList = filteredRunSids
-            .map((s, index, array) => {
-              return (
-                <span
-                  key={s.name}
-                  style={{marginRight: 5}}>
-                  <UserName userName={s.name} />
-                  {
-                    index < array.length - 1 ? ',' : undefined
-                  }
-                </span>
-              );
-            });
-        }
-        share = (
-          <tr>
-            <th>Share with:</th>
-            <td><a onClick={this.openShareDialog}>{shareList}</a></td>
-          </tr>
-        );
-      }
+
       const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
       const {runId} = this.props;
-
+      const canShare = this.initializeEnvironmentFinished &&
+        status === 'RUNNING' &&
+        roleModel.isOwner(run);
       const resumeFailureReason = getResumeFailureReason(run);
       if (resumeFailureReason) {
         ResumeFailureReason = (
@@ -2061,9 +1985,18 @@ class Logs extends localization.LocalizedReactComponent {
             >
               #{runId}
             </RunName.AutoUpdate>
-            {failureReason} - </span>
+            {failureReason}
+          </span>
+          {
+            pipelineLink && <span>{' - '}</span>
+          }
           {pipelineLink}
-          <span>{pipelineLink && ' -'} Logs</span>
+          <LogsModeButton
+            current={this.props.currentMode}
+            modes={this.props.modes}
+            onChangeMode={this.props.onChangeMode}
+            style={{marginLeft: 5}}
+          />
         </h1>
       );
       const {
@@ -2189,7 +2122,12 @@ class Logs extends localization.LocalizedReactComponent {
               }
               {endpoints}
               {kubeServices}
-              {share}
+              {canShare ? (
+                <tr>
+                  <th>Share with:</th>
+                  <td><ShareWith run={run} onSave={this.refreshRunInfo} /></td>
+                </tr>
+              ) : null}
               <tr>
                 <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
@@ -2571,8 +2509,8 @@ class Logs extends localization.LocalizedReactComponent {
           flex: 1,
           overflowY: 'auto'
         }}>
-        <Row>
-          <Col span={18}>
+        <Row type="flex">
+          <div style={{flex: 1}}>
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
@@ -2596,8 +2534,8 @@ class Logs extends localization.LocalizedReactComponent {
             <Row>
               {Details}
             </Row>
-          </Col>
-          <Col span={6}>
+          </div>
+          <div>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {
                 this.buttonsWrapper(
@@ -2634,7 +2572,7 @@ class Logs extends localization.LocalizedReactComponent {
                 </Row>
               )
             }
-          </Col>
+          </div>
         </Row>
         <Row>
           <Col>
@@ -2649,16 +2587,6 @@ class Logs extends localization.LocalizedReactComponent {
         <Row className={styles.fullHeightContainer}>
           {this.renderContent(selectedTask)}
         </Row>
-        <ShareWithForm
-          endpointsAvailable={!!this.endpointAvailable}
-          visible={this.state.shareDialogOpened}
-          roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
-          sids={(runSids || []).map(s => s)}
-          pending={this.state.operationInProgress}
-          onSave={this.operationWrapper(this.saveShareSids)}
-          onClose={this.closeShareDialog}
-          runSharing
-        />
         <CommitRunDialog
           runId={this.props.runId}
           defaultDockerImage={dockerImage}

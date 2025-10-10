@@ -47,6 +47,7 @@ export function getToolLaunchPayload (options) {
     docker_image: toolVersion
       ? `${image}:${toolVersion}`
       : image,
+    friendly_url: versionSettingValue('friendly_url') || tool.friendly_url,
     instance_disk: +versionSettingValue('instance_disk') || tool.disk,
     instance_size: versionSettingValue('instance_size') || tool.instanceType,
     is_spot: versionSettingValue('is_spot'),

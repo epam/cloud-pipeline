@@ -40,7 +40,9 @@ class GpuInfoHoc extends React.Component {
           gpu,
           gpuDevice
         } = info || {};
-        const gpuStatisticsAvailable = Boolean(gpu || gpuDevice);
+        const gpuStatisticsAvailable = instanceType
+          ? Boolean(gpu || gpuDevice)
+          : true;
         commit({gpuStatisticsAvailable, gpuStatisticsPending: false});
       } catch {
         commit({gpuStatisticsAvailable: false, gpuStatisticsPending: false});
