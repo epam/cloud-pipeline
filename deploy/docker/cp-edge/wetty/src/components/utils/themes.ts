@@ -1,32 +1,32 @@
-import { getPreferenceInfo, Terminal } from "./terminal";
+import { XTerminal } from "./xterm/xterm-terminal";
 import {
   ConfigKeys,
   ThemeName,
+  type ANSIPalette,
   type TerminalTheme,
-  type ThemeConfig,
 } from "./types";
 
-export function checkConfigChanged(
-  config: ThemeConfig,
-  terminal: Terminal | undefined
-): boolean {
-  if (!terminal) return false;
-  const changed = Object.entries(config).some(([key, currentValue]) => {
-    const { termDefault, themeDefault } = getPreferenceInfo(terminal, key);
+export function checkThemeChanged(themeName: string | undefined, terminal: XTerminal | undefined): boolean {
+  if (!terminal || !themeName) return false;
+  const def = terminal.defaultTheme;
+  const theme = terminal.themes[themeName];
+  if (!def || !theme) return false;
+  const keys = new Set([...Object.keys(theme), ...Object.keys(def)]);
+  for (const key of keys) {
+    const themeValue = theme[key];
+    const defaultValue = def[key];
     if (key === ConfigKeys.colorPaletteOverrides) {
-      return !checkColorPalettes(currentValue, themeDefault);
+      if (!checkColorPalettes(themeValue, defaultValue)) {
+        console.log(1)
+        return true;
+      }
+      continue;
     }
-    if (
-      key === ConfigKeys.enableBold &&
-      themeDefault === undefined &&
-      currentValue === true
-    ) {
-      // term default is null and bold is still enabled as if true
-      return false;
+    if (themeValue !== defaultValue) {
+      return true;
     }
-    return currentValue !== themeDefault && currentValue !== termDefault;
-  });
-  return changed;
+  }
+  return false;
 }
 
 const COMMON_CONFIG = {
@@ -39,23 +39,22 @@ const COMMON_CONFIG = {
 
 export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
   [ThemeName.LIGHT]: {
-    [ConfigKeys.backgroundColor]: "#fafafa",
-    [ConfigKeys.foregroundColor]: "#333333",
-    [ConfigKeys.cursorColor]: "rgba(50, 50, 50, 0.5)",
-    [ConfigKeys.colorPaletteOverrides]: { 51: "rgb(0, 140, 140)" },
+    [ConfigKeys.background]: "#fafafa",
+    [ConfigKeys.foreground]: "#333333",
+    [ConfigKeys.cursor]: "#333333",
+    [ConfigKeys.colorPaletteOverrides]: { 51: "rgb(0, 140, 140)" } as ANSIPalette,
     ...COMMON_CONFIG,
   },
   [ThemeName.DEFAULT]: {
-    [ConfigKeys.backgroundColor]: "rgb(16, 16, 16)",
-    [ConfigKeys.foregroundColor]: "rgb(240, 240, 240)",
-    [ConfigKeys.cursorColor]: "rgba(255, 0, 0, 0.5)",
-    [ConfigKeys.colorPaletteOverrides]: null,
+    [ConfigKeys.background]: "rgb(16, 16, 16)",
+    [ConfigKeys.foreground]: "rgb(240, 240, 240)",
+    [ConfigKeys.cursor]: "#cc241d",
     ...COMMON_CONFIG,
   },
   dracula: {
-    [ConfigKeys.backgroundColor]: "#282a36",
-    [ConfigKeys.foregroundColor]: "#f8f8f2",
-    [ConfigKeys.cursorColor]: "#bd93f9",
+    [ConfigKeys.background]: "#282a36",
+    [ConfigKeys.foreground]: "#f8f8f2",
+    [ConfigKeys.cursor]: "#bd93f9",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#21222c",
       1: "#ff5555",
@@ -77,9 +76,9 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     ...COMMON_CONFIG,
   },
   "solarized-dark": {
-    [ConfigKeys.backgroundColor]: "#002b36",
-    [ConfigKeys.foregroundColor]: "#839496",
-    [ConfigKeys.cursorColor]: "#93a1a1",
+    [ConfigKeys.background]: "#002b36",
+    [ConfigKeys.foreground]: "#839496",
+    [ConfigKeys.cursor]: "#93a1a1",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#073642",
       1: "#dc322f",
@@ -101,9 +100,9 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     ...COMMON_CONFIG,
   },
   "solarized-light": {
-    [ConfigKeys.backgroundColor]: "#fdf6e3",
-    [ConfigKeys.foregroundColor]: "#657b83",
-    [ConfigKeys.cursorColor]: "#586e75",
+    [ConfigKeys.background]: "#fdf6e3",
+    [ConfigKeys.foreground]: "#657b83",
+    [ConfigKeys.cursor]: "#586e75",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#073642",
       1: "#dc322f",
@@ -125,9 +124,9 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     ...COMMON_CONFIG,
   },
   "gruvbox-dark": {
-    [ConfigKeys.backgroundColor]: "#282828",
-    [ConfigKeys.foregroundColor]: "#ebdbb2",
-    [ConfigKeys.cursorColor]: "#ebdbb2",
+    [ConfigKeys.background]: "#282828",
+    [ConfigKeys.foreground]: "#ebdbb2",
+    [ConfigKeys.cursor]: "#ebdbb2",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#282828",
       1: "#cc241d",
@@ -149,9 +148,9 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     ...COMMON_CONFIG,
   },
   nord: {
-    [ConfigKeys.backgroundColor]: "#2e3440",
-    [ConfigKeys.foregroundColor]: "#d8dee9",
-    [ConfigKeys.cursorColor]: "#88c0d0",
+    [ConfigKeys.background]: "#2e3440",
+    [ConfigKeys.foreground]: "#d8dee9",
+    [ConfigKeys.cursor]: "#88c0d0",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#3b4252",
       1: "#bf616a",
@@ -173,9 +172,9 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     ...COMMON_CONFIG,
   },
   "one-dark": {
-    [ConfigKeys.backgroundColor]: "#282c34",
-    [ConfigKeys.foregroundColor]: "#abb2bf",
-    [ConfigKeys.cursorColor]: "#528bff",
+    [ConfigKeys.background]: "#282c34",
+    [ConfigKeys.foreground]: "#abb2bf",
+    [ConfigKeys.cursor]: "#528bff",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#282c34",
       1: "#e06c75",
@@ -197,9 +196,9 @@ export const DEFAULT_THEMES: Record<string, TerminalTheme> = {
     ...COMMON_CONFIG,
   },
   monokai: {
-    [ConfigKeys.backgroundColor]: "#272822",
-    [ConfigKeys.foregroundColor]: "#f8f8f2",
-    [ConfigKeys.cursorColor]: "#f8f8f2",
+    [ConfigKeys.background]: "#272822",
+    [ConfigKeys.foreground]: "#f8f8f2",
+    [ConfigKeys.cursor]: "#f8f8f2",
     [ConfigKeys.colorPaletteOverrides]: {
       0: "#272822",
       1: "#f92672",

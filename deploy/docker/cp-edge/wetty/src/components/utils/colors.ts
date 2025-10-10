@@ -72,31 +72,6 @@ export function hexToRgbString(hex: string, returnValueOnError = true): string |
   return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 }
 
-/**
- * Extracts the alpha from an rgba()/rgb()
- */
-export function getAlphaFromRgba(input: string): number | null {
-  if (typeof input !== 'string') return null;
-  const str = input.trim();
-  const parseAlpha = (raw: string | undefined): number | null => {
-    if (raw == null) return 1;
-    const val = raw.trim();
-    if (val.endsWith('%')) {
-      const pct = parseFloat(val.slice(0, -1));
-      if (Number.isNaN(pct)) return null;
-      return Math.max(0, Math.min(1, pct / 100));
-    }
-    const num = parseFloat(val);
-    if (Number.isNaN(num)) return null;
-    return Math.max(0, Math.min(1, num));
-  };
-  const commaMatch = str.match(/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*([^)]+))?\s*\)$/i);
-  if (commaMatch) {
-    return parseAlpha(commaMatch[1]);
-  }
-  return null;
-}
-
 export const TERMINAL_ANSI_DEFAULTS = {
   0: '#000000',
   1: '#CC0000',

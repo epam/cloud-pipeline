@@ -1,67 +1,56 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Button from "../shared/button/Button";
 import Input from "../shared/input";
 import Select from "../shared/select";
 import styles from "./ThemeManager.module.css";
-import { ConfigKeys, type ThemeConfig } from "../utils/types";
+import { ConfigKeys, type ANSIPalette, type ParameterValue, type TerminalTheme } from "../utils/types";
 import ANSIColors from "./components/ANSIColors";
 import { type ThemeManagerProps } from "./types";
 import ThemeColorPicker from "./components/ThemeColorPicker";
 import ThemeFontPicker from "./components/ThemeFontPicker";
-import { checkConfigChanged, DEFAULT_THEMES } from "../utils/themes";
+import { checkThemeChanged, DEFAULT_THEMES } from "../utils/themes";
 import ThemeCard from "./components/theme-card/ThemeCard";
 
 const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
-  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(
-    Object.fromEntries(Object.values(ConfigKeys).map((key) => [key, undefined]))
-  );
+  const [parameters, setParameters] = useState<TerminalTheme | undefined>();
   const [theme, setTheme] = useState<string | undefined>(undefined);
-  const updateThemeConfig = useCallback(() => {
-    const config = Object.fromEntries(
-      Object.values(ConfigKeys).map((key) => {
-        const value = terminal!.prefs!.get(key);
-        return [key, value];
-      })
-    );
-    setThemeConfig(config);
-  }, [terminal]);
   useEffect(() => {
-    if (terminal?.prefs) {
-      updateThemeConfig();
-      if (theme !== terminal?.currentTheme) {
-        setTheme(terminal?.currentTheme);
+    if (terminal?.initialized) {
+      setParameters(terminal.getParameters());
+      if (theme !== terminal.currentThemeName) {
+        setTheme(terminal.currentThemeName);
       }
     }
-  }, [terminal?.currentTheme, terminal?.prefs, theme, updateThemeConfig]);
+  }, [terminal, theme]);
   const onInputChange = (
-    field: keyof ThemeConfig,
-    value: string | Record<string, string> | boolean
+    field: ConfigKeys,
+    value: ParameterValue | ANSIPalette
   ) => {
-    terminal?.setPreference(field, value);
-    setThemeConfig((prev: ThemeConfig) => ({
-      ...prev,
-      [field]: value,
+    terminal!.setParameter(field, value);
+    setParameters(prevValue => ({
+      ...prevValue,
+      [field]: value
     }));
   };
   const onChangeTheme = async (value: string | number) => {
     if (typeof value === "string") {
-      await terminal!.setTheme(value, true);
+      await terminal!.setTheme(
+        value,
+        true,
+        () => setParameters(terminal!.getParameters())
+      );
       setTheme(value);
-      updateThemeConfig();
     }
   };
-  const hasChanges = useMemo(
-    () => checkConfigChanged(themeConfig, terminal),
-    [themeConfig, terminal]
-  );
+  const hasChanges = checkThemeChanged(theme, terminal);
   const onRevertChanges = async () => {
-    await terminal!.resetTheme(terminal!.currentTheme);
-    updateThemeConfig();
+    terminal!.resetTheme(terminal!.currentThemeName);
+    setParameters(terminal!.theme);
   };
   const onReset = async () => {
-    await terminal!.resetToDefaults();
-    setTheme(terminal!.currentTheme);
-    setTimeout(() => updateThemeConfig(), 0);
+    terminal!.resetToDefaults();
+    setTheme(terminal!.currentThemeName);
+    setParameters(terminal!.theme);
   };
   const labelWidth = 120;
   const labelStyle = useMemo(
@@ -73,9 +62,10 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
     }),
     [labelWidth]
   );
-  if (!terminal?.prefs) {
+  if (!terminal || !parameters) {
     return null;
   }
+  console.log(parameters[ConfigKeys.fontFamily])
   return (
     <div className={styles.themeManager}>
       <div className={styles.themeManager__form}>
@@ -98,34 +88,35 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
         />
         <ThemeColorPicker
           label="Background Color"
-          value={themeConfig[ConfigKeys.backgroundColor]}
-          onChange={(v) => onInputChange(ConfigKeys.backgroundColor, v)}
+          value={parameters[ConfigKeys.background]}
+          onChange={(v) => onInputChange(ConfigKeys.background, v)}
           labelWidth={labelWidth}
         />
         <ThemeColorPicker
           label="Text Color"
-          value={themeConfig[ConfigKeys.foregroundColor]}
-          onChange={(v) => onInputChange(ConfigKeys.foregroundColor, v)}
+          value={parameters[ConfigKeys.foreground]}
+          onChange={(v) => onInputChange(ConfigKeys.foreground, v)}
           labelWidth={labelWidth}
         />
         <ThemeColorPicker
           label="Cursor Color"
-          value={themeConfig[ConfigKeys.cursorColor]}
-          onChange={(v) => onInputChange(ConfigKeys.cursorColor, v)}
+          value={parameters[ConfigKeys.cursor]}
+          onChange={(v) => onInputChange(ConfigKeys.cursor, v)}
           labelWidth={labelWidth}
         />
-        <Input type="checkbox" label="Bold text"
+        {/* //TODO: Do we need it ? */}
+        {/* <Input type="checkbox" label="Bold text"
           style={{
             label: labelStyle,
             input: { marginLeft: 0 },
           }}
           className={styles.themeManager__field}
-          checked={themeConfig[ConfigKeys.enableBold] === true ||
-            themeConfig[ConfigKeys.enableBold] === null}
+          checked={parameters[ConfigKeys.enableBold] === true ||
+            parameters[ConfigKeys.enableBold] === null}
           onChange={(v) =>
             typeof v === "boolean" && onInputChange(ConfigKeys.enableBold, v ? true : false)
           }
-        />
+        /> */}
         <Input
           label="Font size"
           type="number"
@@ -136,26 +127,21 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
           min={6}
           max={32}
           className={styles.themeManager__field}
-          value={themeConfig[ConfigKeys.fontSize]}
-          onChange={(v) =>
-            typeof v === "string" && onInputChange(ConfigKeys.fontSize, v)
-          }
+          value={parameters[ConfigKeys.fontSize]}
+          onChange={(v) => onInputChange(ConfigKeys.fontSize, v)}
         />
         <ThemeFontPicker
           labelWidth={labelWidth}
-          value={themeConfig[ConfigKeys.fontFamily]}
+          value={parameters[ConfigKeys.fontFamily] as string | undefined}
           onChange={(v) => onInputChange(ConfigKeys.fontFamily, v)}
           className={styles.themeManager__field}
         />
         <ANSIColors
-          themeConfig={themeConfig}
-          onChange={(v: Record<string, string>) =>
-            typeof v === "object" &&
-            onInputChange(ConfigKeys.colorPaletteOverrides, v)
-          }
+          parameters={parameters}
+          onChange={(v) => onInputChange(ConfigKeys.colorPaletteOverrides, v)}
           style={{ marginBottom: 4 }}
         />
-        <ThemeCard themeConfig={themeConfig} />
+        <ThemeCard parameters={parameters} />
       </div>
       <div className={styles.themeManager__actions}>
         {terminal!.preferencesTouched ? (

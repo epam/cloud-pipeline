@@ -2,8 +2,8 @@ import type {FontResource} from "./types.ts";
 
 const mainFb = 'Courier New';
 const genericFb = 'monospace';
-const mainTerminalDefault = "'DejaVu Sans Mono'";
-const terminalDefault = `${mainTerminalDefault}, "Noto Sans Mono", "Everson Mono", FreeMono, Menlo, Terminal, monospace`;
+const mainTerminalDefault = "courier-new";
+const terminalDefault = `${mainTerminalDefault}, courier, monospace`;
 
 export function addFallbacks (family: string) {
   if (terminalDefault.startsWith(family)) {
@@ -108,7 +108,7 @@ export const FONT_CHOICES: { label: string; family: string }[] = [
   { label: 'DejaVu Sans Mono', family: "'DejaVu Sans Mono'"},
   { label: 'Monaco', family: "Monaco" },
   { label: 'Consolas', family: "Consolas" },
-  { label: 'Courier New', family: "'Courier New'" },
+  { label: 'Courier New', family: "courier-new" },
   { label: 'SF Mono', family: "'SFMono-Regular'" },
   { label: 'System Monospace', family: 'ui-monospace' },
   { label: 'Monospace', family: 'monospace' },

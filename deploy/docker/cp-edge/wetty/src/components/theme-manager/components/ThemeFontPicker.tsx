@@ -1,12 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import Select from '../../shared/select';
 import { FONT_CHOICES, removeFallbacks, addFallbacks } from '../../utils/fonts';
+import type { ParameterValue } from '../../utils/types';
 
 type ThemeFontPickerProps = {
 	labelWidth: number | string;
 	label?: string;
 	value: string | undefined;
-	onChange: (value: string) => void;
+	onChange: (value: ParameterValue) => void;
 	className?: string;
 };
 

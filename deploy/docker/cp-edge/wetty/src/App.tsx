@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import Modal from './components/shared/modal/Modal'
 import ThemeManager from './components/theme-manager'
-import { initializeTerminal } from './components/utils'
-import type { Terminal } from './components/utils/terminal'
 import { SettingsIcon } from './components/shared/icons'
-
+import { initializeXTerm, XTerminal } from './components/utils/xterm/xterm-terminal'
+import '@xterm/xterm/css/xterm.css'
 
 function SettingsButton ({ onClick }: { onClick: () => void }) {
   return <div style={{
@@ -26,18 +25,22 @@ function SettingsButton ({ onClick }: { onClick: () => void }) {
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [terminal, setTerminal] = useState<Terminal | undefined>(undefined);
+  const [terminal, setTerminal] = useState<XTerminal | undefined>(undefined);
   const openModal = useCallback(() => setIsModalOpen(true), []);
   const onModalClose = useCallback(() => {
     setIsModalOpen(false);
-    terminal?.focusTerminal();
+    terminal?.focus();
   }, [terminal]);
   useEffect(() => {
+    let term: XTerminal | undefined;
     async function init() {
-      const terminal = await initializeTerminal();
-      setTerminal(terminal);
+      term = await initializeXTerm();
+      setTerminal(term);
     }
     init();
+    return () => {
+      term?.dispose();
+    }
   }, []);
 
   return (

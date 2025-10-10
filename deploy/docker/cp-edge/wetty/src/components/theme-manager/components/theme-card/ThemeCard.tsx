@@ -1,22 +1,17 @@
 import { useCallback, useMemo } from "react";
 import { ConfigKeys, type TerminalTheme } from "../../../utils/types";
-import { getAlphaFromRgba, TERMINAL_ANSI_DEFAULTS, TERMINAL_ANSI_EXTENDED } from "../../../utils/colors";
+import { TERMINAL_ANSI_DEFAULTS, TERMINAL_ANSI_EXTENDED } from "../../../utils/colors";
 import styles from "./ThemeCard.module.css";
 
 type ThemeCardProps = {
-  themeConfig: TerminalTheme;
+  parameters: TerminalTheme;
 };
 
 const ansiCodes = new Array(8).fill(1).map((_, i) => i);
 
 export default function ThemeCard(props: ThemeCardProps) {
-  const { themeConfig } = props;
-  const cursorColor = themeConfig[ConfigKeys.cursorColor];
-  const alpha = useMemo(
-    () => (cursorColor ? getAlphaFromRgba(cursorColor) : null),
-    [cursorColor]
-  );
-  const colorPaletteOverrides = useMemo(() => themeConfig[ConfigKeys.colorPaletteOverrides] || {}, [themeConfig]);
+  const { parameters } = props;
+  const colorPaletteOverrides = useMemo(() => parameters[ConfigKeys.colorPaletteOverrides] || {}, [parameters]);
   const getANSIColor = useCallback((code: number) => {
     return colorPaletteOverrides[code] || TERMINAL_ANSI_DEFAULTS[code];
   }, [colorPaletteOverrides]);
@@ -26,17 +21,17 @@ export default function ThemeCard(props: ThemeCardProps) {
       <div
         className={styles.card}
         style={{
-          color: themeConfig[ConfigKeys.foregroundColor],
-          fontFamily: (themeConfig[ConfigKeys.fontFamily] as string) || "inherit",
+          color: parameters[ConfigKeys.foreground],
+          fontFamily: (parameters[ConfigKeys.fontFamily] as string) || "inherit",
         }}
       >
         <div
           className={styles.terminal}
           style={{
-            backgroundColor: themeConfig[ConfigKeys.backgroundColor],
+            backgroundColor: parameters[ConfigKeys.background],
           }}
         >
-          <span style={{ color: themeConfig[ConfigKeys.foregroundColor] }}>
+          <span style={{ color: parameters[ConfigKeys.foreground] }}>
             {"[root@pipeline ~]# ls -la"}
           </span>
           <div className={styles.fileList}>
@@ -57,7 +52,7 @@ export default function ThemeCard(props: ThemeCardProps) {
         <div
           className={styles.ansiRow}
           style={{
-            backgroundColor: themeConfig[ConfigKeys.backgroundColor],
+            backgroundColor: parameters[ConfigKeys.background],
           }}
         >
           {ansiCodes.map((code) => (
@@ -74,7 +69,7 @@ export default function ThemeCard(props: ThemeCardProps) {
         <div
           className={styles.ansiRow}
           style={{
-            backgroundColor: themeConfig[ConfigKeys.backgroundColor],
+            backgroundColor: parameters[ConfigKeys.background],
           }}
         >
           {ansiCodes.map((code) => (
@@ -91,12 +86,12 @@ export default function ThemeCard(props: ThemeCardProps) {
         <div
           className={styles.promptRow}
           style={{
-            backgroundColor: themeConfig[ConfigKeys.backgroundColor],
+            backgroundColor: parameters[ConfigKeys.background],
           }}
         >
           <span
             style={{
-              color: themeConfig[ConfigKeys.foregroundColor],
+              color: parameters[ConfigKeys.foreground],
             }}
           >
             {"[root@pipeline ~]#"}
@@ -105,8 +100,8 @@ export default function ThemeCard(props: ThemeCardProps) {
           <div
             className={styles.cursor}
             style={{
-                backgroundColor: themeConfig[ConfigKeys.cursorColor],
-                opacity: alpha !== null ? alpha : 1,
+                backgroundColor: parameters[ConfigKeys.cursor],
+                // opacity: alpha !== null ? alpha : 1,
             }}
           />
         </div>

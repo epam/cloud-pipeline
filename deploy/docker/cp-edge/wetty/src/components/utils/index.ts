@@ -1,3 +1,3 @@
-import { initializeTerminal } from "./terminal";
+import { initializeXTerm } from "./xterm/xterm-terminal";
 
-export {initializeTerminal};
+export {initializeXTerm};

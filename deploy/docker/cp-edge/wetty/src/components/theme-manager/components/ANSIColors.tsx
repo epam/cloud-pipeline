@@ -1,23 +1,23 @@
 import { useMemo } from "react";
 import Input from "../../shared/input";
 import { rgbStringToHex, TERMINAL_ANSI_DEFAULTS } from "../../utils/colors";
-import { type ThemeConfig, ConfigKeys } from "../../utils/types";
+import { type ANSIPalette, type TerminalTheme, ConfigKeys } from "../../utils/types";
 import type { CommonProps } from "../../../types/types";
 
 type ANSIColorsProps = CommonProps & {
-  themeConfig: ThemeConfig;
+  parameters: TerminalTheme;
   onChange: (colors: Record<string, string>) => void;
 };
 
 export default function ANSIColors(props: ANSIColorsProps) {
-  const { themeConfig, onChange, style = {} } = props;
-  const colors = useMemo<Record<string, string>>(
-    () => themeConfig[ConfigKeys.colorPaletteOverrides] ?? {},
-    [themeConfig]
+  const { parameters, onChange, style = {} } = props;
+  const colors = useMemo<ANSIPalette>(
+    () => parameters[ConfigKeys.colorPaletteOverrides] ?? {},
+    [parameters]
   );
   const onInputChange = (key: string, value: string) => {
-    const newColors = { ...colors } as Record<string, string>;
-    newColors[String(key)] = value;
+    const newColors = { ...colors } as ANSIPalette;
+    newColors[Number(key)] = value;
     onChange(newColors);
   };
   return (
@@ -41,7 +41,7 @@ export default function ANSIColors(props: ANSIColorsProps) {
                   input: { padding: 0 },
                 }}
                 value={color
-                  ? (rgbStringToHex(colors[key]) as string)
+                  ? (rgbStringToHex(colors[idx]) as string)
                   : TERMINAL_ANSI_DEFAULTS[idx]
                 }
                 onChange={(value) => onInputChange(key, value as string)}
