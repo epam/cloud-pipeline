@@ -1292,6 +1292,18 @@ public class SystemPreferences {
             "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
     public static final IntPreference SYSTEM_RUN_FILTER_MAX_PAGE_SIZE = new IntPreference(
             "system.run.filter.max.page.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_LENGTH = new IntPreference(
+            "system.access.code.length", 23, SYSTEM_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> SYSTEM_ACCESS_ALLOWED_CODE_CHALLENGE_METHODS =
+            new ObjectPreference<>("system.access.allowed.code.challenge.methods",
+                    Collections.singletonList("S256"), new TypeReference<List<String>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final IntPreference SYSTEM_ACCESS_CODE_TTL_MINUTES = new IntPreference(
+            "system.access.code.ttl.minutes", 10, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_MONITOR_DELAY = new IntPreference(
+            "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
+            "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

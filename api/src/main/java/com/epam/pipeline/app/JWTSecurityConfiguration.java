@@ -154,7 +154,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/restapi/dockerRegistry/oauth",
                 "/restapi/proxy/**",
                 "/error",
-                "/error/**");
+                "/error/**",
+                "/restapi/access/token",
+                "/restapi/access/code");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 

@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.plugin.UIPluginAssignmentRepository;
 import com.epam.pipeline.dao.plugin.UIPluginRepository;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -39,6 +40,7 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
@@ -193,6 +195,11 @@ public class TestApplication {
     protected UIPluginRepository pluginRepository;
     @MockBean
     protected UIPluginAssignmentRepository assignmentRepository;
+
+    @MockBean
+    public AccessCodeRepository accessCodeRepository;
+    @MockBean
+    public AccessCodeCleaner accessCodeCleaner;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
