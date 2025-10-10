@@ -37,6 +37,7 @@ from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
+from src.utilities.tokenless_acess_manger import TokenlessAccessManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
@@ -312,8 +313,10 @@ def cli():
 
 
 @cli.command()
+@click.option('-tl', '--tokenless',
+              is_flag=True,
+              help='Redirects to browser for login')
 @click.option('-a', '--auth-token',
-              prompt='Authentication token',
               help='Token for API authentication',
               default=None)
 @click.option('-s', '--api',
@@ -346,16 +349,31 @@ def cli():
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec,
-              config_store):
+def configure(tokenless, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
+              proxy_ntlm_pass, codec, config_store):
     """Configures CLI parameters
     """
+    if auth_token and tokenless:
+        raise click.UsageError('Options --auth-token and --tokenless are mutually exclusive. Please specify only one.')
+
+    if not auth_token and not tokenless:
+        auth_token = click.prompt('Authentication token', default=None)
+
     if proxy_ntlm and not proxy_ntlm_user:
         proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
     if proxy_ntlm and not proxy_ntlm_domain:
         proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
     if proxy_ntlm and not proxy_ntlm_pass:
         proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
+
+    if not auth_token and tokenless:
+        proxies = Config.build_proxies(proxy,
+                                       proxy_ntlm,
+                                       proxy_ntlm_user,
+                                       proxy_ntlm_domain,
+                                       proxy_ntlm_pass,
+                                       api)
+        auth_token = TokenlessAccessManager(api, proxies).fetch_token()
 
     Config.store(auth_token,
                  api,
