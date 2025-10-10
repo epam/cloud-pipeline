@@ -16,7 +16,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
   const [theme, setTheme] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (terminal?.initialized) {
-      setParameters(terminal.getParameters());
+      setParameters(terminal.theme);
       if (theme !== terminal.currentThemeName) {
         setTheme(terminal.currentThemeName);
       }
@@ -37,7 +37,7 @@ const ThemeManager: React.FC<ThemeManagerProps> = ({ onCancel, terminal }) => {
       await terminal!.setTheme(
         value,
         true,
-        () => setParameters(terminal!.getParameters())
+        () => setParameters(terminal!.theme)
       );
       setTheme(value);
     }

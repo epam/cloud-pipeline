@@ -13,6 +13,7 @@ import {
 import socketIO from "socket.io-client";
 import { FitAddon } from "@xterm/addon-fit";
 import { getThemes, getXTermOptions, setXTermParameter, setXTermParameters } from "./terminal-helpers.ts";
+import { KeyboardManager } from "./keyboard-manager.ts";
 
 const LS_KEYS_TO_CLEAR = ["user-preferred-theme", "themes-touched"];
 
@@ -65,9 +66,11 @@ export class XTerminal {
   
   // Other
   private resizeObserver: ResizeObserver | null = null;
+  private keyboardManager: KeyboardManager;
   
 
   constructor() {
+    this.keyboardManager = new KeyboardManager();
     this.origin = location.origin;
     if (WEB_SSH_ORIGIN !== "") {
       this.origin = WEB_SSH_ORIGIN;
@@ -183,6 +186,10 @@ export class XTerminal {
         fitAddon.fit();
       });
       this.resizeObserver.observe(this.terminalElement!);
+      this.keyboardManager.initialize(this.terminalElement!, term, {
+        onSendText: (text: string) => this.send(text),
+        onFocus: () => this.focus()
+      });
       if (this.buffer) {
         this.receive(this.buffer);
         this.buffer = "";
@@ -245,13 +252,6 @@ export class XTerminal {
     });
   }
 
-  getParameters = (): TerminalTheme => {
-    return {
-      ...this.defaultTheme,
-      ...this.theme
-    }
-  };
-
   send = (text: string): void => {
     if (this.socket && this.isConnected) {
       this.socket.emit(SocketEvent.INPUT, text);
@@ -299,24 +299,17 @@ export class XTerminal {
     }
   };
 
-  // disconnect = (): void => {
-  //   if (this.socket) {
-  //     this.socket.disconnect();
-  //     this.socket = null;
-  //   }
-  //   this.isConnected = false;
-  // };
-
   dispose = (): void => {
     try {
+      if (this.socket) {
+        this.socket.disconnect();
+      }
+      this.keyboardManager.dispose();
       if (this.resizeObserver && this.terminalElement) {
         this.resizeObserver.unobserve(this.terminalElement);
       }
       this.resizeObserver?.disconnect();
       this.term?.dispose();
-      if (this.socket) {
-        this.socket.disconnect();
-      }
     } catch {
       // noop
     } finally {
