@@ -155,6 +155,13 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_SLURM_MAX_ARRAY_SIZE",
+        "type": "string",
+        "description": "Allow to control the MaxArraySize - a maximum job array size.",
+        "defaultValue": "1001",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_CAP_NFS",
         "type": "boolean",
         "description": "Enables shared filesystem (NFS) for a current run. If a cluster run is scheduled - worker nodes will mount NFS share",
