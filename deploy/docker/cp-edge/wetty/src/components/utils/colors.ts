@@ -42,13 +42,14 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /**
- * Converts a CSS rgb() string to hex color string
- * @param rgbString - CSS rgb() string
+ * Converts a CSS rgb()/rgba() string to hex.
+ * @param rgbString - CSS rgb() or rgba() string
  * @param returnValueOnError
  * @returns Hex color string with # prefix or null if invalid
  */
 export function rgbStringToHex(rgbString: string, returnValueOnError = true): string | null {
-  const match = rgbString.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+  // Matches rgb( R, G, B ) or rgba( R, G, B, A ) where A can be number or percentage
+  const match = rgbString.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(?:\d*\.?\d+|\d+%))?\s*\)$/i);
   if (!match) {
     return returnValueOnError ? rgbString : null;
   }
