@@ -1,0 +1,72 @@
+{
+  "name": "remote-cp-helper",
+  "displayName": "Remote - Cloud Pipeline Helper",
+  "description": "VSCode Remote Development connector to EPAM Cloud Pipeline platform runs",
+  "version": "0.0.2",
+  "publisher": "epam",
+  "icon": "resources/remote-cp-helper.png",
+  "engines": {
+    "vscode": "^1.103.0"
+  },
+  "extensionKind": [
+    "ui"
+  ],
+  "extensionPack": [
+    "ms-vscode-remote.remote-ssh-edit",
+    "ms-vscode.remote-explorer",
+    "epam.remote-cp"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "remote development",
+    "remote",
+    "ssh",
+    "Cloud Pipeline",
+    "EPAM",
+    "pipe",
+    "cp"
+  ],
+  "api": "none",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "virtualWorkspaces": true,
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "contributes": {},
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "compile": "npx webpack --mode development",
+    "package": "npx vsce package --allow-missing-repository",
+    "vscode:prepublish": "npx webpack --mode development",
+    "webpack": "npx webpack --mode development",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.103.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "@vscode/dts": "^0.4.1",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "rimraf": "^6.0.1",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {}
+}
