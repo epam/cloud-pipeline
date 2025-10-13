@@ -35,6 +35,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * This class provides methods to obtain access token for unauthorized users.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -47,6 +50,10 @@ public class UnsecuredAccessService {
 
     /**
      * Returns authorization code if code already generated for this user with received code_challenge.
+     * Returns empty object otherwise.
+     * If code already received access shall be denied (authorization code must be retrieved only once).
+     * If code generated but expired (created more than 10 minutes ago) access shall be denied.
+     *
      * @param codeChallenge code_challenge
      * @return code
      */
@@ -74,6 +81,7 @@ public class UnsecuredAccessService {
      * If no code found (e.g. expired by timeout) access must be denied.
      * If provided code_verifier does not match previously saved code_challenge access must be denied.
      * After receiving authorization code this code must be removed.
+     * If error has occurred for existing code this code must be removed.
      *
      * @param code authorization code
      * @param codeVerifier code_verifier to check

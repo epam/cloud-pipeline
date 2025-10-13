@@ -31,15 +31,15 @@ class TokenlessAccessManager:
         self.timeout = os.getenv('CP_ACCESS_LOGIN_POOLING_TIMEOUT', 5)
         self.attempts = os.getenv('CP_ACCESS_LOGIN_POOLING_ATTEMPTS', 120)
 
-    def fetch_token(self):
+    def fetch_token(self, no_launch_browser):
         code_verifier, code_challenge = pkce.generate_pkce_pair()
-        self._initiate_login(code_challenge)
+        self._initiate_login(code_challenge, no_launch_browser)
         code = self._find_access_code(code_challenge)
         return self._exchange_code_for_token(code, code_verifier)
 
-    def _initiate_login(self, code_challenge):
+    def _initiate_login(self, code_challenge, no_launch_browser):
         authorization_url = self._build_login_url(code_challenge)
-        if webbrowser.get():
+        if webbrowser.get() and not no_launch_browser:
             click.echo("Please log in by browser.")
             webbrowser.open(authorization_url)
         else:

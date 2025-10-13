@@ -37,6 +37,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * This class provides method to obtain access token for authorized users.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

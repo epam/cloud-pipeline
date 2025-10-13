@@ -349,8 +349,13 @@ def cli():
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
+@click.option('-nb', '--no-launch-browser',
+              help='Prevents the command from automatically opening a web browser. '
+                   'Works in combination with --tokenless option; will bw ignored without this option',
+              is_flag=True,
+              default=False)
 def configure(tokenless, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
-              proxy_ntlm_pass, codec, config_store):
+              proxy_ntlm_pass, codec, config_store, no_launch_browser):
     """Configures CLI parameters
     """
     if auth_token and tokenless:
@@ -373,7 +378,7 @@ def configure(tokenless, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntl
                                        proxy_ntlm_domain,
                                        proxy_ntlm_pass,
                                        api)
-        auth_token = TokenlessAccessManager(api, proxies).fetch_token()
+        auth_token = TokenlessAccessManager(api, proxies).fetch_token(no_launch_browser)
 
     Config.store(auth_token,
                  api,
