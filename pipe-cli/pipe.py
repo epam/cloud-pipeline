@@ -351,7 +351,7 @@ def cli():
               default='home-dir')
 @click.option('-nb', '--no-launch-browser',
               help='Prevents the command from automatically opening a web browser. '
-                   'Works in combination with --tokenless option; will bw ignored without this option',
+                   'Works in combination with --tokenless option; without this option will be ignored',
               is_flag=True,
               default=False)
 def configure(tokenless, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,

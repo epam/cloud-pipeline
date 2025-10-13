@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.access;
 
 import com.epam.pipeline.entity.access.AccessCodeEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -32,7 +33,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
@@ -66,7 +66,7 @@ public class AccessService {
                     .codeChallenge(codeChallenge)
                     .codeChallengeMethod(codeChallengeMethod.getValue())
                     .issued(false)
-                    .created(LocalDateTime.now())
+                    .created(DateUtils.nowUTC())
                     .build();
 
             repository.save(entity);

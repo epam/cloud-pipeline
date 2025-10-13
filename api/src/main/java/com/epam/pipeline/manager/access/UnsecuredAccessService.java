@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.access;
 import com.epam.pipeline.dto.auth.AccessCode;
 import com.epam.pipeline.entity.access.AccessCodeEntity;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -32,7 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -117,7 +117,7 @@ public class UnsecuredAccessService {
 
     private AccessCodeEntity checkCodeExpired(final AccessCodeEntity entity) {
         final Integer ttl = preferenceManager.getPreference(SystemPreferences.SYSTEM_ACCESS_CODE_TTL_MINUTES);
-        if (LocalDateTime.now().isAfter(entity.getCreated().plusMinutes(ttl))) {
+        if (DateUtils.nowUTC().isAfter(entity.getCreated().plusMinutes(ttl))) {
             log.error("Authorization code has expired.");
             throw new AccessDeniedException(ACCESS_DENIED_MSG);
         }

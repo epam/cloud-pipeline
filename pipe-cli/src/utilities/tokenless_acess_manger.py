@@ -39,7 +39,8 @@ class TokenlessAccessManager:
 
     def _initiate_login(self, code_challenge, no_launch_browser):
         authorization_url = self._build_login_url(code_challenge)
-        if webbrowser.get() and not no_launch_browser:
+
+        if self._browser_allowed(no_launch_browser):
             click.echo("Please log in by browser.")
             webbrowser.open(authorization_url)
         else:
@@ -68,3 +69,10 @@ class TokenlessAccessManager:
         if not token:
             raise AccessDenied()
         return token
+
+    @staticmethod
+    def _browser_allowed(no_launch_browser):
+        try:
+            return webbrowser.get() and not no_launch_browser
+        except webbrowser.Error:
+            return False
