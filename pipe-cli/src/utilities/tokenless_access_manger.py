@@ -40,7 +40,7 @@ class TokenlessAccessManager:
         except Exception as error:
             error_message = str(error)
             if 'Access is denied' in error_message:
-                click.echo('An error has occurred. Please try again.', err=True)
+                click.echo('Something went wrong. Please try again.', err=True)
                 sys.exit(1)
             else:
                 click.echo(error_message, err=True)
