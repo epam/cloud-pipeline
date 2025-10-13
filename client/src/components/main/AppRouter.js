@@ -74,7 +74,7 @@ import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import NotificationBrowser from './notification/NotificationBrowser';
 import CloudNodes from '../cluster/cloud-nodes';
-
+import AIChatPage from '../ai-chat';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -155,6 +155,7 @@ function AppRouterComponent ({history, uiNavigation}) {
             <Route path="storage(/:type)" component={BillingReports.StorageReport} />
           </Route>
         </Route>
+        <Route path="/chat" component={AIChatPage} />
         <Route path="/notifications" component={NotificationBrowser} />
         <Route path="/miew" component={MiewPage} />
         <Route path="/library" component={PipelinesLibrary}>

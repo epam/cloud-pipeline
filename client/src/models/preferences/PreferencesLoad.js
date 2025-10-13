@@ -715,6 +715,23 @@ class PreferencesLoad extends Remote {
     return !value || `${value}`.toLowerCase() !== 'false';
   }
 
+  @computed
+  get miscAIPreferences () {
+    const value = this.getPreferenceValue('misc.ai.preferences');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          return cfg;
+        }
+        throw new Error(`unsupported type "${typeof cfg}"`);
+      } catch (e) {
+        console.warn('Error parsing "ui.run.actions" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

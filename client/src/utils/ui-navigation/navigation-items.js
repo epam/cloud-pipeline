@@ -116,6 +116,15 @@ export default [
     isLink: true
   },
   {
+    key: Pages.chat,
+    title: 'Chat',
+    icon: 'message',
+    path: '/chat',
+    keys: ['chat', 'ai-chat'],
+    isDefault: false,
+    isLink: true
+  },
+  {
     key: 'divider',
     isDivider: true,
     static: true
