@@ -37,7 +37,7 @@ from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
-from src.utilities.tokenless_acess_manger import TokenlessAccessManager
+from src.utilities.tokenless_access_manger import TokenlessAccessManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations

@@ -32,10 +32,19 @@ class TokenlessAccessManager:
         self.attempts = os.getenv('CP_ACCESS_LOGIN_POOLING_ATTEMPTS', 120)
 
     def fetch_token(self, no_launch_browser):
-        code_verifier, code_challenge = pkce.generate_pkce_pair()
-        self._initiate_login(code_challenge, no_launch_browser)
-        code = self._find_access_code(code_challenge)
-        return self._exchange_code_for_token(code, code_verifier)
+        try:
+            code_verifier, code_challenge = pkce.generate_pkce_pair()
+            self._initiate_login(code_challenge, no_launch_browser)
+            code = self._find_access_code(code_challenge)
+            return self._exchange_code_for_token(code, code_verifier)
+        except Exception as error:
+            error_message = str(error)
+            if 'Access is denied' in error_message:
+                click.echo('An error has occurred. Please try again.', err=True)
+                sys.exit(1)
+            else:
+                click.echo(error_message, err=True)
+                sys.exit(1)
 
     def _initiate_login(self, code_challenge, no_launch_browser):
         authorization_url = self._build_login_url(code_challenge)
@@ -67,7 +76,7 @@ class TokenlessAccessManager:
         response = AccessAPI(self.api).get_token(code_verifier, code) or {}
         token = response.get('token')
         if not token:
-            raise AccessDenied()
+            raise AccessDenied('Access is denied')
         return token
 
     @staticmethod
