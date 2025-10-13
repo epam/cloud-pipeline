@@ -1146,6 +1146,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> MISC_GROUPS_UI_PREF = new ObjectPreference<>(
             "misc.groups.ui.preferences", null, new TypeReference<Map<String, Object>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+    public static final ObjectPreference<Map<String, Object>> MISC_AI_PREFERENCES = new ObjectPreference<>(
+            "misc.ai.preferences", null, new TypeReference<Map<String, Object>>() {}, MISC_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
