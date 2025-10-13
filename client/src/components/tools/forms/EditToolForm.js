@@ -1017,15 +1017,6 @@ export default class EditToolForm extends React.Component {
       );
     };
 
-    console.log(
-      this.state.initialReservationParameters,
-      this.state.reservationParameters,
-      reservationParametersDiffer(
-        this.state.initialReservationParameters,
-        this.state.reservationParameters
-      )
-    );
-
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
       configurationFormFieldChanged('instance_image', 'instanceImage') ||
