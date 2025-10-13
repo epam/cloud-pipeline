@@ -104,6 +104,11 @@ chmod +x /bin/nvme
 echo "> [$(date)] custom_script_pre"
 @custom_script_pre@
 
+echo "> [$(date)] Start docker install"
+wget "${GLOBAL_DISTRIBUTION_URL}/scripts/init_multicloud_install_docker.sh" -O /tmp/init_multicloud_install_docker.sh
+source /tmp/init_multicloud_install_docker.sh
+echo "> [$(date)] End docker install"
+
 echo "> [$(date)] setup_swap_device"
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
