@@ -57,6 +57,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     private static final String REST_API_PREFIX = "/restapi/**";
     private static final String ROUTE_URL = "/restapi/route";
     private static final String PROLONG_URL = "/restapi/**/prolong**";
+    private static final String ACCESS_AUTH = "/restapi/access/auth";
 
     @Value("${jwt.key.public}")
     private String publicKey;
@@ -150,7 +151,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/restapi/dockerRegistry/oauth",
                 "/restapi/proxy/**",
                 "/error",
-                "/error/**");
+                "/error/**",
+                "/restapi/access/token",
+                "/restapi/access/code");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 
@@ -169,7 +172,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     //List of urls under REST that should be redirected back after authorization
     private String[] redirectedUrls() {
-        return new String[] { ROUTE_URL, PROLONG_URL };
+        return new String[] { ROUTE_URL, PROLONG_URL, ACCESS_AUTH };
     }
 
     private RequestCache requestCache() {

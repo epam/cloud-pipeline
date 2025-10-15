@@ -41,7 +41,7 @@ task copyFsAutoscalerScripts(type: Copy) {
 }
 
 task generateComponentsVersions(type: Exec) {
-    commandLine "bash", 
+    commandLine "bash",
                 "$project.rootDir/scripts/pipeline-scripts/generate_components_versions.sh",
                 "$project.rootDir",
                 "$rootDir/api/src/main/resources/static/components_versions.json"
@@ -116,6 +116,7 @@ dependencies {
     compile group: "net.sf.ehcache", name: "ehcache", version: "2.10.4"
     compile group: "org.springframework", name: "spring-context", version: "4.3.7.RELEASE"
     compile group: "org.springframework", name: "spring-context-support", version: "4.3.7.RELEASE"
+    compile group: "com.nimbusds", name: "oauth2-oidc-sdk", version: "11.29.2"
 
     //Cache
     compile("org.springframework.boot:spring-boot-starter-cache")

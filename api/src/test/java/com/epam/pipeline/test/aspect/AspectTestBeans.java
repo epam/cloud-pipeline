@@ -64,6 +64,9 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
+import com.epam.pipeline.manager.access.AccessService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -474,4 +477,13 @@ public class AspectTestBeans {
 
     @MockBean
     protected StoragePathPermissionsDao storagePathPermissionsDao;
+
+    @MockBean
+    protected AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    protected AccessService accessService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
 }

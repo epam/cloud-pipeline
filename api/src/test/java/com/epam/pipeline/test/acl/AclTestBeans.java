@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -569,6 +570,9 @@ public class AclTestBeans {
 
     @MockBean
     protected StoragePathPermissionsService storagePathPermissionsService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

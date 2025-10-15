@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
@@ -35,6 +36,7 @@ import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
@@ -266,4 +268,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected StoragePathPermissionsApiService storagePathPermissionsApiService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
 }
