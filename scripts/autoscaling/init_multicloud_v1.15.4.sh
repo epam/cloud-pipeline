@@ -52,11 +52,10 @@ function setup_swap_device {
     if [[ "${swap_size}" == "@"*"@" ]]; then
         return
     fi
-    local unmounted_drives=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
+    local unmounted_drives=$(get_umounted_disks)
     local drive_num=0
     local swap_drive_name=""
-    for drive_name in $unmounted_drives
-    do
+    for drive_name in $unmounted_drives; do
         drive_num=$(( drive_num + 1 ))
         drive_size_str=$(lsblk -sdrpn -o SIZE "${drive_name}")
         if [[ "${drive_size_str: -1}" == "G" ]]; then
@@ -85,6 +84,16 @@ function setup_swap_device {
         swap_drive_uuid=$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$swap_drive_name"'" { print $2 }')
         echo "UUID=$swap_drive_uuid none swap sw 0 0" >> /etc/fstab
     fi
+}
+
+function get_umounted_disks {
+  _ad=($(lsblk --nodeps --noheadings --output NAME --paths))
+  _afd=()
+  for _d in "${_ad[@]}"; do
+      _m="$(lsblk --noheadings --output MOUNTPOINT "${_d}" | grep -vE "^$")"
+      [ "${_m}" == "" ] && _afd+=("${_d}")
+  done
+  echo "${_afd[@]}"
 }
 
 echo "> [$(date)] Init start"
@@ -120,7 +129,7 @@ _ds=()
 if [[ -x /bin/nvme ]]; then
   _ds=($(nvme list | grep 'Instance Storage' | awk '{ print $1 }'))
 fi
-UNMOUNTED_DRIVES=($(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }'))
+UNMOUNTED_DRIVES=($(get_umounted_disks))
 _dsc=( $({ printf "%s\n" "${UNMOUNTED_DRIVES[@]}" | sort -u; printf "%s\n" "${_ds[@]}" "${_ds[@]}"; } | sort | uniq -u) )
 if [[ ${#_dsc[@]} > 0 ]]; then
   UNMOUNTED_DRIVES=("${_dsc[@]}")
@@ -237,7 +246,6 @@ cat <<EOT > /etc/docker/daemon.json
 EOT
 fi
 
-echo "STORAGE_DRIVER=" >> /etc/sysconfig/docker-storage-setup
 mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
 

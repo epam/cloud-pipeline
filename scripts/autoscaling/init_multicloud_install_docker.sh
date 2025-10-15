@@ -12,6 +12,7 @@ echo "> [$(date)] Installing docker from $_docker_url"
 mkdir -p "$CP_DOCKER_HOME"
 wget -O docker.tgz "$_docker_url"
 tar --extract --file docker.tgz --strip-components 1 --directory "$CP_DOCKER_HOME"
+rm -f docker.tgz
 
 cat > /usr/lib/systemd/system/docker.service<<EOF
 [Unit]
