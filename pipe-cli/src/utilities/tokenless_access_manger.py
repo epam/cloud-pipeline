@@ -40,7 +40,7 @@ class TokenlessAccessManager:
         except Exception as error:
             error_message = str(error)
             if 'Access is denied' in error_message:
-                click.echo('Something went wrong. Please try again.', err=True)
+                click.echo('Failed to obtain token. Please try again.', err=True)
                 sys.exit(1)
             else:
                 click.echo(error_message, err=True)
@@ -50,7 +50,7 @@ class TokenlessAccessManager:
         authorization_url = self._build_login_url(code_challenge)
 
         if self._browser_allowed(no_launch_browser):
-            click.echo("Please log in by browser.")
+            click.echo("You should be redirected to authentication URL in your browser.")
             webbrowser.open(authorization_url)
         else:
             click.echo("Please log in by visiting the following URL:")
@@ -69,7 +69,7 @@ class TokenlessAccessManager:
             if code:
                 return code
             sleep(self.timeout)
-        click.echo('No token received. Please try again.', err=True)
+        click.echo('No code received. Please try again.', err=True)
         sys.exit(1)
 
     def _exchange_code_for_token(self, code, code_verifier):

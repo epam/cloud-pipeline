@@ -313,7 +313,7 @@ def cli():
 
 
 @cli.command()
-@click.option('-tl', '--tokenless',
+@click.option('-tl', '--login',
               is_flag=True,
               help='Redirects to browser for login')
 @click.option('-a', '--auth-token',
@@ -351,17 +351,18 @@ def cli():
               default='home-dir')
 @click.option('-nb', '--no-launch-browser',
               help='Prevents the command from automatically opening a web browser. '
-                   'Works in combination with --tokenless option; without this option will be ignored',
+                   'Works in combination with --login option. '
+                   'If --login is not specified this option will have no effect.',
               is_flag=True,
               default=False)
-def configure(tokenless, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
+def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
               proxy_ntlm_pass, codec, config_store, no_launch_browser):
     """Configures CLI parameters
     """
-    if auth_token and tokenless:
-        raise click.UsageError('Options --auth-token and --tokenless are mutually exclusive. Please specify only one.')
+    if auth_token and login:
+        raise click.UsageError('Options --auth-token and --login are mutually exclusive. Please specify only one.')
 
-    if not auth_token and not tokenless:
+    if not auth_token and not login:
         auth_token = click.prompt('Authentication token', default=None)
 
     if proxy_ntlm and not proxy_ntlm_user:
@@ -371,7 +372,7 @@ def configure(tokenless, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntl
     if proxy_ntlm and not proxy_ntlm_pass:
         proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
 
-    if not auth_token and tokenless:
+    if not auth_token and login:
         proxies = Config.build_proxies(proxy,
                                        proxy_ntlm,
                                        proxy_ntlm_user,

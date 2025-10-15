@@ -16,15 +16,19 @@
 
 package com.epam.pipeline.manager.access;
 
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.Objects;
 
 /**
- * This scheduler is used to delete obsolete authorization code.
+ * This scheduler is used to delete obsolete authorization codes.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,5 +40,29 @@ public class AccessCodeCleaner extends AbstractSchedulingManager {
     public void init() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_ACCESS_CODE_MONITOR_DELAY,
                 "AccessCodeCleaner");
+    }
+
+    @Service
+    @Slf4j
+    @RequiredArgsConstructor
+    private static class AccessCodeCleanerCore {
+        private final AccessService accessService;
+        private final PreferenceManager preferenceManager;
+
+        @SchedulerLock(name = "AccessCodeCleanerCore_monitor", lockAtMostForString = "PT10M")
+        public void monitor() {
+            if (monitoringDisabled()) {
+                log.debug("Access code cleaner scheduler is not enabled");
+                return;
+            }
+
+            accessService.deleteExpired();
+        }
+
+        private boolean monitoringDisabled() {
+            final Boolean monitoringEnabled = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_ACCESS_CODE_MONITOR_ENABLED);
+            return Objects.isNull(monitoringEnabled) || !monitoringEnabled;
+        }
     }
 }

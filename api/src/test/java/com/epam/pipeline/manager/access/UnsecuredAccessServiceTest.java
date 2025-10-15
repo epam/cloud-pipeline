@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.access;
 import com.epam.pipeline.dto.auth.AccessCode;
 import com.epam.pipeline.entity.access.AccessCodeEntity;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -94,7 +95,7 @@ public class UnsecuredAccessServiceTest {
     @Test
     public void shouldDenyIfCodeExpired() {
         final AccessCodeEntity expiredEntity = entity();
-        expiredEntity.setCreated(LocalDateTime.now().minusMinutes(EXPIRED_MINUTES));
+        expiredEntity.setCreated(DateUtils.nowUTC().minusMinutes(EXPIRED_MINUTES));
         when(repository.findByCodeChallenge(any())).thenReturn(Optional.of(expiredEntity));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_ACCESS_CODE_TTL_MINUTES)).thenReturn(TTL);
 
@@ -134,7 +135,7 @@ public class UnsecuredAccessServiceTest {
     @Test
     public void shouldNotExchangeCodeForTokenIfCodeExpired() {
         final AccessCodeEntity expiredEntity = entity();
-        expiredEntity.setCreated(LocalDateTime.now().minusMinutes(EXPIRED_MINUTES));
+        expiredEntity.setCreated(DateUtils.nowUTC().minusMinutes(EXPIRED_MINUTES));
         when(repository.findByCode(any())).thenReturn(Optional.of(expiredEntity));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_ACCESS_CODE_TTL_MINUTES)).thenReturn(TTL);
 
