@@ -313,7 +313,7 @@ def cli():
 
 
 @cli.command()
-@click.option('-tl', '--login',
+@click.option('-l', '--login',
               is_flag=True,
               help='Redirects to browser for login')
 @click.option('-a', '--auth-token',
