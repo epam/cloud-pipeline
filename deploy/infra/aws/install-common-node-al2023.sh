@@ -65,3 +65,8 @@ sysctl --system
 # Disable SELinux
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+# Configure GRUB for compatible cgroups fs
+# https://github.com/ddometita/mmumshad-kubernetes-the-hard-way/issues/8#issuecomment-1397606994
+echo 'GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=0"' >> /etc/default/grub
+grub2-mkconfig -o /boot/grub2/grub.cfg
