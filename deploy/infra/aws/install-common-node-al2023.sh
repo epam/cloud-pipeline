@@ -28,26 +28,27 @@ EOF
 fi
 
 # Install common
-yum install -y  nc \
-                curl \
+yum install -y  nc
 yum install -y iproute-tc
 
 # btrfs-progs package is not avaialble in 2023+
 # Replaced with:
 # - https://btrfs.readthedocs.io/en/latest/INSTALL.html#all-in-one-binary-busybox-style
 # - https://github.com/kdave/btrfs-progs
-cd /usr/local/bin && \
+cd /usr/bin && \
 wget "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
 chmod +x btrfs && \
 ln -s btrfs mkfs.btrfs
 
 # python2
-mkdir /opt/local && \
-cd /opt/local && \
+cd /opt && \
 wget "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz" && \
 tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
 rm -f Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
-ln -s /opt/local/conda/bin/python2 /usr/local/bin/python2
+ln -s /opt/conda/bin/python2 /usr/bin/python2 && \
+ln -s /opt/conda/bin/python2 /usr/bin/python && \
+ln -s /opt/conda/bin/pip /usr/bin/pip2 && \
+ln -s /opt/conda/bin/pip /usr/bin/pip
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
