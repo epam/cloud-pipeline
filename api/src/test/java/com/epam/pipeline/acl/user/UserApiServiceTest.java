@@ -401,7 +401,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetTokenForAdmin() {
-        doReturn(token).when(mockUserManager).issueToken(TEST_STRING, ID, true);
+        doReturn(token).when(mockUserManager).issueToken(TEST_STRING, ID);
 
         assertThat(userApiService.issueToken(TEST_STRING, ID)).isEqualTo(token);
     }

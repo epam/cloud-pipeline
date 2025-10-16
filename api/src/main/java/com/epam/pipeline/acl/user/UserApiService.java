@@ -234,7 +234,7 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_ONLY)
     public JwtRawToken issueToken(final String userName, final Long expiration) {
-        return userManager.issueToken(userName, expiration, true);
+        return userManager.issueToken(userName, expiration);
     }
 
     @PreAuthorize(ADMIN_ONLY)

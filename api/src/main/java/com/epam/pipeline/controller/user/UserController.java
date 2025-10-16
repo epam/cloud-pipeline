@@ -86,9 +86,13 @@ public class UserController extends AbstractRestController {
             })
     public Result<JwtRawToken> getSettings(@RequestParam(required = false) Long expiration,
                                            @RequestParam(required = false) String name) {
-        return Result.success(StringUtils.isNotBlank(name)
-                ? userApiService.issueToken(name, expiration)
-                : authManager.issueTokenForCurrentUser(expiration, true));
+        if(authManager.isAdmin()) {
+            return Result.success(StringUtils.isNotBlank(name)
+                    ? userApiService.issueToken(name, expiration)
+                    : authManager.issueTokenForCurrentUser(expiration));
+        } else {
+            return Result.success(authManager.issueTokenForCurrentUser(expiration, true));
+        }
     }
 
     @RequestMapping(value = "/whoami", method = RequestMethod.GET)
