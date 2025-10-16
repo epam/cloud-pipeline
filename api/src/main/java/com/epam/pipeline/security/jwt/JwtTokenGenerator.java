@@ -60,6 +60,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class JwtTokenGenerator {
+    public static final int SEC_IN_MIN = 60;
+    public static final int SEC_IN_HOUR = 3600;
+    public static final int SEC_IN_DAY = 24 * 3600;
+
     @Autowired
     private PreferenceManager preferenceManager;
 
@@ -136,7 +140,8 @@ public class JwtTokenGenerator {
         return tokenBuilder;
     }
 
-    private long calculateTokenDuration(final Long expirationSeconds, boolean validateExpirationDuration) {
+    private long calculateTokenDuration(final Long expirationSeconds,
+                                        final boolean validateExpirationDuration) {
         final long defaultExpirationSeconds = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION);
         final long expirationUserLimit = preferenceManager.getPreference(
@@ -152,15 +157,15 @@ public class JwtTokenGenerator {
         return expiration;
     }
 
-    private static String tokenLimitFormattedString(long maxExpirationSecs) {
-        if (maxExpirationSecs < 60) {
+    private static String tokenLimitFormattedString(final long maxExpirationSecs) {
+        if (maxExpirationSecs < SEC_IN_MIN) {
             return String.format("%d seconds", maxExpirationSecs);
-        } else if (maxExpirationSecs < 3600) {
-            return String.format("%d minutes", maxExpirationSecs / 60);
-        } else if (maxExpirationSecs < 24 * 3600) {
-            return String.format("%d hours", maxExpirationSecs / 3600);
+        } else if (maxExpirationSecs < SEC_IN_HOUR) {
+            return String.format("%d minutes", maxExpirationSecs / SEC_IN_MIN);
+        } else if (maxExpirationSecs < SEC_IN_DAY) {
+            return String.format("%d hours", maxExpirationSecs / SEC_IN_HOUR);
         }
-        return String.format("%d days", maxExpirationSecs / 24 / 3600);
+        return String.format("%d days", maxExpirationSecs / SEC_IN_DAY);
     }
 
     /*
