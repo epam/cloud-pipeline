@@ -274,8 +274,12 @@ public class UserManager implements SecuredEntityManager {
      * @return generated token
      */
     public JwtRawToken issueToken(final String userName, final Long expiration) {
+        return issueToken(userName, expiration, false);
+    }
+
+    public JwtRawToken issueToken(final String userName, final Long expiration, boolean validateExpirationDuration) {
         final UserContext userContext = loadUserContext(userName);
-        return authManager.issueToken(userContext, expiration);
+        return authManager.issueToken(userContext, expiration, validateExpirationDuration);
     }
 
     public PipelineUser loadUserByName(final String name) {
