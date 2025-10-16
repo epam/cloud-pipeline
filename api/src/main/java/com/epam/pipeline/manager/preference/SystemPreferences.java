@@ -756,7 +756,13 @@ public class SystemPreferences {
             "python .\\launch.py",
             LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
-        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
+        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+     );
+    public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = new IntPreference(
+            "launch.jwt.token.expiration.user.limit", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+    );
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
