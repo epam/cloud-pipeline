@@ -262,10 +262,8 @@
                 <li class="toctree-l2 current"><a class="reference internal current" href="#">14.1. Install and setup</a>
     <ul class="current">
     <li class="toctree-l3"><a class="reference internal" href="#how-to-install-and-setup-pipe-cli">How to install and setup pipe CLI</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#configure-command-options">configure command options</a>
         <ul>
-    <li class="toctree-l4"><a class="reference internal" href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a>
+    <li class="toctree-l4"><a class="reference internal" href="#configure-command-options">configure command options</a>
     </li>
         </ul>
     </li>
@@ -421,9 +419,12 @@
               
                 <h1 id="141-install-and-setup-cli">14.1. Install and setup CLI</h1>
 <ul>
-<li><a href="#how-to-install-and-setup-pipe-cli">How to install and setup <code>pipe</code> CLI</a></li>
+<li><a href="#how-to-install-and-setup-pipe-cli">How to install and setup <code>pipe</code> CLI</a><ul>
 <li><a href="#configure-command-options"><code>configure</code> command options</a><ul>
 <li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
+<li><a href="#pipe-configuration-to-login-without-explicitly-specified-tokens"><code>pipe</code> configuration to login without explicitly specified tokens</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</a><ul>
@@ -463,7 +464,7 @@
 <p><strong><em>Note</em></strong>: If any exceptions occur during installation, follow the instructions in the Terminal.<br />
 Notice that Python 2 / Python 3 has to be installed to run CLI. Python can be downloaded here <a href="https://www.python.org/downloads/">https://www.python.org/downloads/</a>.<br />
 <strong><em>Note</em></strong>: <strong>pip</strong> package manager is required for CLI installation if you selected <strong>Operation System</strong> → <strong>Other</strong> on step 2. Modern <strong>Python</strong> versions come bundled with <strong>pip</strong>. On top of that, with this type of installation you'll also need internet connection to install dependencies.</p>
-<h2 id="configure-command-options"><code>configure</code> command options</h2>
+<h3 id="configure-command-options"><code>configure</code> command options</h3>
 <table>
 <thead>
 <tr>
@@ -482,7 +483,7 @@ Notice that Python 2 / Python 3 has to be installed to run CLI. Python can be do
 </tr>
 <tr>
 <td><code>-s</code> / <code>--api</code></td>
-<td>URL of a Pipeline API endpoint</td>
+<td>URL of a Cloud Pipeline API endpoint</td>
 </tr>
 <tr>
 <td><code>-tz</code> / <code>--timezone</code> [local|utc]</td>
@@ -491,6 +492,18 @@ Notice that Python 2 / Python 3 has to be installed to run CLI. Python can be do
 <tr>
 <td><strong>Non-required options</strong></td>
 <td></td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>--login</code></td>
+<td>Enables login without explicitly specifying a token</td>
+</tr>
+<tr>
+<td><code>-nb</code> / <code>--no-launch-browser</code></td>
+<td>Prevents the automatically opening a web browser. Works only in combination with <code>--login</code> option</td>
+</tr>
+<tr>
+<td><code>-cs</code> / <code>--config-store</code></td>
+<td>Defines mode for storing <code>pipe</code> CLI configuration (<code>home-dir</code> / <code>install-dir</code>)</td>
 </tr>
 <tr>
 <td><code>-p</code> / <code>--proxy</code></td>
@@ -517,14 +530,51 @@ Notice that Python 2 / Python 3 has to be installed to run CLI. Python can be do
 <blockquote>
 <p><strong><em>Note</em></strong>: there is not necessary to set all options while input that command. If some options are not set directly - user shall be prompted for them in an interactive manner, if they will not be set in an interactive manner, default values will be used (where it is possible).</p>
 </blockquote>
-<h3 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h3>
+<h4 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h4>
 <p>CLI <code>pipe</code> can be configured for using NTLM Authentication Proxy, when running in Linux.</p>
 <p>For that, use the <code>ntlm</code> options described <a href="#configure-command-options">above</a> while execute <code>pipe configure</code> command.</p>
-<p>If <code>pipe configure</code> command is executing with specified <code>--proxy-ntlm</code> option, <code>pipe</code> will try to get the proxy value from the <code>--proxy</code> option or the environment variables (<code>--proxy</code> option has a higher priority).<br />
+<p>If <code>pipe configure</code> command is being executed with specified <code>--proxy-ntlm</code> option, <code>pipe</code> will try to get the proxy value from the <code>--proxy</code> option or the environment variables (<code>--proxy</code> option has a higher priority).<br />
 Example:</p>
 <pre><code class="language-bash">pipe configure --proxy-ntlm --proxy &quot;http://myproxy:3128&quot;
 </code></pre>
 <p><img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_6.png" /></p>
+<h4 id="pipe-configuration-to-login-without-explicitly-specified-tokens"><code>pipe</code> configuration to login without explicitly specified tokens</h4>
+<p>It is possible to configure CLI <code>pipe</code> avoiding explicitly specifying the token.</p>
+<p>For that, use the <code>--login</code> option described <a href="#configure-command-options">above</a> while execute <code>pipe configure</code> command.</p>
+<p>Once <code>pipe configure</code> command is being executed with specified <code>--login</code> option:</p>
+<ul>
+<li>user shall fill in all required parameters or specify them immediately in the <code>configure</code> command</li>
+<li><code>pipe</code> CLI will generate authorization link</li>
+<li>user will be able to login with browser using that authorization link</li>
+<li>after successful login via the browser, user token will be automatically saved in the <code>pipe</code> config file, as usual</li>
+</ul>
+<p>Example:</p>
+<ol>
+<li>
+<p>In the terminal, specify the configuration command to login without specifying the token:</p>
+<pre><code>pipe configure --login
+</code></pre>
+</li>
+<li>
+<p>You will be asked to fill in required parameters:</p>
+<ul>
+<li>URL of a Cloud Pipeline API endpoint (please note, API endpoint may be specified immediately with <code>configure</code> command via the <code>--api</code> option)</li>
+<li>timezone - <code>local</code> or <code>utc</code> - by default <code>local</code> (please note, timezone may be specified immediately with <code>configure</code> command via the <code>--timezone</code> option)</li>
+<li>proxy address, empty by default (please note, proxy may be specified immediately with <code>configure</code> command via the <code>--proxy</code> option)<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_13.png" /></li>
+</ul>
+</li>
+<li>The authorization link to login page will appear:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_14.png" /></li>
+<li>If browser is available, login page will be opened automatically, else manually follow with a provided link in your browser, e.g.:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_15.png" /></li>
+<li>Log in by your credentials. The corresponding message will appear:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_16.png" /></li>
+<li>Return to your terminal and check that <code>pipe configure</code> command is executed and config is stored:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_17.png" /></li>
+<li><code>pipe</code> CLI is ready to use. To check it, run the command <code>pipe --version</code>:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_18.png" /></li>
+</ol>
 <h2 id="allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</h2>
 <blockquote>
 <p><strong><em>Note</em></strong>: the functionality is able only for users with the <strong>ROLE_ADMIN</strong> role.</p>
