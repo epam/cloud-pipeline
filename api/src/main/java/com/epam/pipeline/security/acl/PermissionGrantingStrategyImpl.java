@@ -66,6 +66,15 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     }
 
     /**
+     * For tests
+     */
+    public PermissionGrantingStrategyImpl(AuditLogger auditLogger, PermissionsService permissionsService) {
+        Assert.notNull(auditLogger, "auditLogger cannot be null");
+        this.permissionsService = permissionsService;
+        this.auditLogger = auditLogger;
+    }
+
+    /**
      * Determines authorization. The order of the <code>permission</code> and
      * <code>sid</code> arguments is <em>extremely important</em>! The method will iterate
      * through each of the <code>permission</code>s in the order specified. For each
