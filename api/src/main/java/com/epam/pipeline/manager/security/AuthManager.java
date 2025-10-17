@@ -109,7 +109,7 @@ public class AuthManager {
     }
 
     public JwtRawToken issueTokenForCurrentUser(Long expiration) {
-        return issueTokenForCurrentUser(expiration, false);
+        return issueTokenForCurrentUser(expiration, !isAdmin());
     }
 
     public JwtRawToken issueTokenForCurrentUser(Long expiration, boolean validateExpirationDuration) {
