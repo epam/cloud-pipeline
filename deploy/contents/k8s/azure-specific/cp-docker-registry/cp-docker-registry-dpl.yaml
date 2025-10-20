@@ -40,7 +40,7 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
             - mountPath: /var/lib/registry
-              name: docker-images
+              name: azurefile
             - mountPath: /usr/local/share/ca-certificates/cp-api
               name: azurefile
             - name: cp-cloud-credentials
