@@ -140,13 +140,13 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGenerateTokenForCurrentUserAndCallMethodWithDurationValidation() {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID, true);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         null, null)));
 
-        verify(mockAuthManager).issueTokenForCurrentUser(ID, true);
+        verify(mockAuthManager).issueTokenForCurrentUser(ID);
         assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
     }
 

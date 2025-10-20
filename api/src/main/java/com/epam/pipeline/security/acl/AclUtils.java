@@ -52,8 +52,10 @@ public final class AclUtils {
                 .collect(Collectors.toList());
 
         return Stream.of(
-                Pair.of(SidType.PRINCIPAL, principals), Pair.of(SidType.GROUP, groups), Pair.of(SidType.ROLE, roles )
-        ).collect(Collectors.toMap(Pair::getKey,Pair::getValue));
+                Pair.of(SidType.PRINCIPAL, principals),
+                Pair.of(SidType.GROUP, groups),
+                Pair.of(SidType.ROLE, roles)
+        ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 
 }

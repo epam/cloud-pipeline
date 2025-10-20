@@ -985,8 +985,8 @@ public class GrantPermissionManager {
                 if (ace.getSid().equals(sid)) {
                     Permission permission = ace.getPermission();
                     //try to set granting mask
-                    allow = (permission.getMask() & p.getMask()) != 0;
-                    deny = (permission.getMask() & p.getDenyPermission().getMask()) != 0;
+                    allow = allow || (permission.getMask() & p.getMask()) != 0;
+                    deny = deny || (permission.getMask() & p.getDenyPermission().getMask()) != 0;
                 }
             }
         }
@@ -1027,9 +1027,8 @@ public class GrantPermissionManager {
         return entry;
     }
 
-    private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
-                                       boolean includeInherited, List<Sid> sids,
-                                       Optional<AppliedQuota> activeQuota) {
+    private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge, boolean includeInherited,
+                                       List<Sid> sids, Optional<AppliedQuota> activeQuota) {
         final Map<SidType, List<Sid>> sidsByType = AclUtils.groupSidsByType(sids);
         final Integer fullMask = merge ?
                 AbstractSecuredEntity.ALL_PERMISSIONS_MASK :

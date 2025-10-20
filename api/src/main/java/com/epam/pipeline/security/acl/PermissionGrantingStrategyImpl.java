@@ -181,7 +181,7 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     }
 
     @Getter
-    private static class GrantResult {
+    private static final class GrantResult {
 
         private final boolean found;
         private final boolean grant;
