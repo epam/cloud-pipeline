@@ -28,8 +28,8 @@ class TokenlessAccessManager:
     def __init__(self, api_url, proxies=None):
         self.api_url = api_url
         self.api = UnauthorizedAPI(api_url, proxies)
-        self.timeout = os.getenv('CP_ACCESS_LOGIN_POOLING_TIMEOUT', 5)
-        self.attempts = os.getenv('CP_ACCESS_LOGIN_POOLING_ATTEMPTS', 120)
+        self.timeout = int(os.getenv('CP_ACCESS_LOGIN_POOLING_TIMEOUT', 5))
+        self.attempts = int(os.getenv('CP_ACCESS_LOGIN_POOLING_ATTEMPTS', 120))
 
     def fetch_token(self, no_launch_browser):
         try:
