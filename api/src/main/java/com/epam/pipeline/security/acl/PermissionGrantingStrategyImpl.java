@@ -68,7 +68,7 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     /**
      * For tests
      */
-    public PermissionGrantingStrategyImpl(AuditLogger auditLogger, PermissionsService permissionsService) {
+    protected PermissionGrantingStrategyImpl(AuditLogger auditLogger, PermissionsService permissionsService) {
         Assert.notNull(auditLogger, "auditLogger cannot be null");
         this.permissionsService = permissionsService;
         this.auditLogger = auditLogger;
