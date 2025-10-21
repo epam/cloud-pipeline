@@ -2,7 +2,7 @@
   "name": "remote-cp",
   "displayName": "Remote - Cloud Pipeline",
   "description": "VSCode Remote Development connector to EPAM Cloud Pipeline platform runs",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publisher": "epam",
   "icon": "resources/remote-cp.png",
   "engines": {
@@ -76,13 +76,19 @@
         "remote-cp.pipeApiUri": {
           "type": "string",
           "default": null,
-          "description": "Client pipe apiUri",
+          "description": "Pipe client apiUri",
           "scope": "application"
         },
         "remote-cp.pipeApiToken": {
           "type": "string",
           "default": null,
-          "description": "Client pipe apiToken",
+          "description": "Pipe client apiToken",
+          "scope": "application"
+        },
+        "remote-cp.pipeSnoozeUpdate": {
+          "type": "string",
+          "default": null,
+          "description": "Pipe client snooze update.",
           "scope": "application"
         },
         "remote-cp.logLevel": {
@@ -96,6 +102,12 @@
           ],
           "default": "info",
           "description": "Log level. Changes require restart.",
+          "scope": "application"
+        },
+        "remote-cp.onStart": {
+          "type": "string",
+          "default": "[]",
+          "description": "Next step on the extension run, JSON",
           "scope": "application"
         }
       }
@@ -144,7 +156,13 @@
       },
       {
         "command": "remote-cp.explorer.emptyWindowInCurrentWindow",
-        "title": "Connect to Run in Current Window"
+        "title": "Connect to Run in Current Window",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "remote-cp.explorer.pipeUpdate",
+        "title": "Update (download) pipe client",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "remote-cp.explorer.refresh",
@@ -155,6 +173,11 @@
         "command": "remote-cp.explorer.add",
         "title": "Add New",
         "icon": "$(plus)"
+      },
+      {
+        "command": "remote-cp.config.reset",
+        "title": "CP: Reset Configuration",
+        "icon": "$(clear-all)"
       }
     ],
     "resourceLabelFormatters": [
@@ -199,9 +222,14 @@
       ],
       "view/title": [
         {
+          "command": "remote-cp.explorer.pipeUpdate",
+          "when": "view == cloudPipelineHosts",
+          "group": "navigation@1"
+        },
+        {
           "command": "remote-cp.explorer.refresh",
           "when": "view == cloudPipelineHosts",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -209,6 +237,11 @@
           "command": "remote-cp.explorer.emptyWindowInNewWindow",
           "when": "viewItem =~ /^remote-cp.explorer.host$/",
           "group": "inline@1"
+        },
+        {
+          "command": "remote-cp.explorer.emptyWindowInCurrentWindow",
+          "when": "viewItem =~ /^remote-cp.explorer.host$/",
+          "group": "inline@2"
         },
         {
           "command": "remote-cp.explorer.emptyWindowInNewWindow",
@@ -245,6 +278,7 @@
   "devDependencies": {
     "@types/got": "^9.6.12",
     "@types/jest": "^30.0.0",
+    "@types/luxon": "^3.7.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.19",
     "@types/ps-tree": "^1.1.6",
@@ -288,12 +322,15 @@
     "@vscode/chat-extension-utils": "^0.0.0-alpha.4",
     "@vscode/extension-telemetry": "^0.9.0",
     "@vscode/prompt-tsx": "^0.3.0-alpha.13",
+    "dotenv": "^17.2.3",
     "glob": "^10.3.10",
     "got": "^11.8.6",
     "https-proxy-agent": "^7.0.2",
     "lockfile": "^1.0.4",
+    "luxon": "^3.7.2",
     "minimist": "^1.2.8",
     "posix-getopt": "^1.2.1",
+    "ps-list": "^9.0.0",
     "ps-tree": "^1.2.0",
     "shell-quote": "^1.8.1",
     "simple-socks": "github:jeanp413/simple-socks#main",

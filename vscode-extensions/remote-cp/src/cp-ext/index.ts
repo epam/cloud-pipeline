@@ -5,10 +5,18 @@ import { ILogger } from "../common/logger";
 import { CpExtConfig } from "../config";
 import { Disposable } from "../common/disposable";
 import { CpClient } from "../cp-client/cp-client";
-import { RemoteCpResolver } from "../authResolver";
-import { REMOTE_CP_AUTHORITY } from "../authResolver.backuo";
+import { REMOTE_CP_AUTHORITY, RemoteCpResolver } from "../authResolver";
+import { OnStartOption, OnStartWhen } from "./on-start";
+import { PipeTunnelInfo } from "../cp-client";
 
 export class CpExtension extends Disposable {
+  private static objCounter = 0;
+  private objId = CpExtension.objCounter++;
+
+  protected toLog(): string {
+    return `${this.constructor.name}<${this.objId}>`;
+  }
+
   constructor(
     public cpExtConfig: CpExtConfig,
     public context: vscode.ExtensionContext,
@@ -18,12 +26,20 @@ export class CpExtension extends Disposable {
   }
 
   // private cpAuthProvider: vscode.AuthenticationProvider | null = null;
-  private cpClient: CpClient | null = null;
+  private _cpClient: CpClient | null = null;
+  public get cpClient(): CpClient {
+    return this._cpClient!;
+  }
+
+  private _cpResolver: RemoteCpResolver | null = null;
+  public get cpResolver(): RemoteCpResolver {
+    return this._cpResolver!;
+  }
 
   // prettier-ignore
   async activate(): Promise<void> {
     // this.cpAuthProvider = await this.registerAuthProvider();
-    this.cpClient = await this.registerCpClient();
+    this._cpClient = await this.registerCpClient();
     this._register(this.cpClient);
 
     registerUriHandler(this.context, this.logger);
@@ -33,8 +49,32 @@ export class CpExtension extends Disposable {
       await this.cpClient.ensureConfig(true);
     }
 
-    registerHostTreeView(this.cpClient, this.context, this.logger);
-    RemoteCpResolver.createAndRegister(this.cpClient, this.context, this.logger);
+    registerHostTreeView(this);
+    this._cpResolver = RemoteCpResolver.createAndRegister(this);
+
+    vscode.workspace.onDidChangeWorkspaceFolders(async (e) => {
+      this.logger.info(`Workspace folders changed.`);
+    });
+  }
+
+  private async scanOnStart<TArgs>(
+    when: OnStartWhen,
+    args?: TArgs,
+  ): Promise<any> {
+    const onStartList = [...this.cpExtConfig.onStart];
+    let offset = 0;
+    for (let i = 0; i < onStartList.length; i++) {
+      const onStartProps = onStartList[i];
+      if (onStartProps.when === when) {
+        try {
+          const onStartOption = new OnStartOption(onStartProps);
+          return await onStartOption.run(this, args);
+        } finally {
+          this.cpExtConfig.onStart.splice(i - offset, 1);
+          offset++;
+        }
+      }
+    }
   }
 
   // async registerAuthProvider(): Promise<CpAuthProvider> {
@@ -52,7 +92,44 @@ export class CpExtension extends Disposable {
       this.logger,
     );
   }
+
+  // -- Reuse pipe tunnel --
+
+  public async getReusePipeTunnel(): Promise<PipeTunnelInfo | null> {
+    const logPfx = `${this.toLog()}.getReusePipeTunnel()`;
+    let res: PipeTunnelInfo | null =
+      ((await this.scanOnStart(OnStartWhen.onWillResolve)) as PipeTunnelInfo) ||
+      null;
+    if (res) {
+      this.logger.debug(
+        `${logPfx}, onWillResolve callback, suggested pipe tunnel to reuse:\n` +
+          `  pid: localPort: ${res.localPort}, runId: ${res.runId}, pid: ${res.pid}`,
+      );
+      const tunnelList = await this.cpClient.getTunnelList();
+      res = tunnelList.find((ti) => ti.pid === res!.pid) ?? null;
+      if (res) {
+        this.logger.debug(
+          `${logPfx}, suggested pipe tunnel to reuse found, pid: ${res.pid}.`,
+        );
+      } else {
+        void vscode.window.showWarningMessage(
+          `${this.cpExtConfig.prefix}: suggested pipe tunnel to reuse not found (pid: ${res!.pid}).`,
+        );
+        this.logger.warn(
+          `${logPfx}, suggested pipe tunnel to reuse not found, pid: ${res!.pid}.`,
+        );
+      }
+    } else {
+      this.logger.debug(`${logPfx}, no suggested pipe tunnel to reuse.`);
+    }
+    return res;
+  }
+
+  public async setReusePipeTunnel(tunnelInfo: PipeTunnelInfo | null) {
+    await this.scanOnStart(OnStartWhen.onDidResolve, tunnelInfo);
+  }
 }
+
 function registerUriHandler(context: vscode.ExtensionContext, logger: ILogger) {
   logger.info(
     `Register URI handler scheme: '${vscode.env.uriScheme}://${"epam.remote-cp"}'...`,
@@ -72,10 +149,6 @@ function registerUriHandler(context: vscode.ExtensionContext, logger: ILogger) {
           authority: `cp-remote+${runHost}`,
           path: path,
         });
-        const openUri2 = vscode.Uri.parse(
-          "vscode-remote://cp-remote+pipeline-77805/root/projs/test-1",
-        );
-
         vscode.commands.executeCommand("vscode.openFolder", openUri, {
           forceNewWindow: false,
         });

@@ -2,8 +2,7 @@
 
 import { ILogger } from "../../common/logger";
 import { ICpExtConfig } from "../../config";
-import { CpClientBase, RunInfo } from "../../cp-client";
-import { CpClient } from "../../cp-client/cp-client";
+import { CpClientBase, CpVersionInfo, RunInfo } from "../../cp-client";
 
 interface IClient {
   parseRunListTable(tableStr: string): RunInfo[];
@@ -14,7 +13,7 @@ class CpClientTest extends CpClientBase {
     return new CpClientTest(cpExtConfig, logger);
   }
 
-  protected override ensurePipeExecInternal(): Promise<void> {
+  public override ensurePipeExec(): Promise<CpVersionInfo> {
     throw new Error("Not implemented");
   }
 }
@@ -31,7 +30,9 @@ describe("CloudPipelineClient.parseRunListTable", () => {
     authEndpoint: "/pipeline/restapi/route",
     pipeApiUri: null,
     pipeApiToken: null,
+    pipeSnoozeUpdate: null,
     logLevel: "trace",
+    onStart: [],
 
     getClientConfig: notImplementedStubFunc,
     setClientConfig: notImplementedStubFunc,

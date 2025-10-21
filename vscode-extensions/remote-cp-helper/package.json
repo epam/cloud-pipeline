@@ -2,7 +2,7 @@
   "name": "remote-cp-helper",
   "displayName": "Remote - Cloud Pipeline Helper",
   "description": "VSCode Remote Development connector to EPAM Cloud Pipeline platform runs",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "epam",
   "icon": "resources/remote-cp-helper.png",
   "engines": {

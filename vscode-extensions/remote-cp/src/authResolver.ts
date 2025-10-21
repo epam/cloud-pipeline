@@ -20,6 +20,8 @@ import { installCodeServer, ServerInstallError } from "./serverSetup";
 import { findRandomPort } from "./common/ports";
 import { CpClient } from "./cp-client/cp-client";
 import { ICpExtConfig } from "./config";
+import { CpExtension } from "./cp-ext";
+import { PipeTunnelInfo } from "./cp-client";
 
 // export const REMOTE_SSH_AUTHORITY = 'ssh-remote';
 export const REMOTE_CP_AUTHORITY = "cp-remote";
@@ -53,6 +55,18 @@ export class RemoteCpResolver
     return `${this.constructor.name}<${this.objId}>`;
   }
 
+  static createAndRegister(cpExt: CpExtension): RemoteCpResolver {
+    const resolver = new RemoteCpResolver(cpExt);
+    cpExt.context.subscriptions.push(
+      vscode.workspace.registerRemoteAuthorityResolver(
+        REMOTE_CP_AUTHORITY,
+        resolver,
+      ),
+      resolver,
+    );
+    return resolver;
+  }
+
   private proxyConnections: SSHConnection[] = [];
   private sshConnection: SSHConnection | undefined;
   private sshAgentSock: string | undefined;
@@ -63,26 +77,19 @@ export class RemoteCpResolver
 
   private labelFormatterDisposable: vscode.Disposable | undefined;
 
-  protected constructor(
-    private readonly cpClient: CpClient,
-    private readonly extContext: vscode.ExtensionContext,
-    private readonly logger: ILogger,
-  ) {}
-
-  static createAndRegister(
-    cpClient: CpClient,
-    context: vscode.ExtensionContext,
-    logger: ILogger,
-  ): void {
-    const resolver = new RemoteCpResolver(cpClient, context, logger);
-    context.subscriptions.push(
-      vscode.workspace.registerRemoteAuthorityResolver(
-        REMOTE_CP_AUTHORITY,
-        resolver,
-      ),
-      resolver,
-    );
+  protected get cpClient(): CpClient {
+    return this.cpExt.cpClient!;
   }
+
+  protected get extContext(): vscode.ExtensionContext {
+    return this.cpExt.context;
+  }
+
+  protected get logger(): ILogger {
+    return this.cpExt.logger;
+  }
+
+  protected constructor(private readonly cpExt: CpExtension) {}
 
   private get cpExtConfig(): ICpExtConfig {
     return this.cpClient.cpExtConfig;
@@ -94,12 +101,17 @@ export class RemoteCpResolver
   ): Thenable<vscode.ResolverResult> {
     const logPfx = `${this.toLog()}.resolve()`;
     this.logger.trace(`${logPfx}, in`);
-    return (async () => {
+    return (async (): Promise<vscode.ResolverResult> => {
       this.logger.trace(`${logPfx}, start`);
       try {
-        const res = await this.resolveInternal(authority, context);
-        this.logger.trace(`${logPfx}, end`);
-        return res;
+        const reusePipeTunnel = await this.cpExt.getReusePipeTunnel();
+        const [resResolveResult, resTunnelInfo] = await this.resolveInternal(
+          authority,
+          context,
+          reusePipeTunnel,
+        );
+        await this.cpExt.setReusePipeTunnel(resTunnelInfo);
+        return resResolveResult;
       } catch (err) {
         this.logger.error(`Error at ${logPfx}:`);
         this.logger.error(err);
@@ -111,60 +123,48 @@ export class RemoteCpResolver
     this.logger.trace(`${logPfx}, out`);
   }
 
+  // prettier-ignore
   resolveInternal(
     authority: string,
     context: vscode.RemoteAuthorityResolverContext,
-  ): Thenable<vscode.ResolverResult> {
+    reusePipeTunnel: PipeTunnelInfo | null,
+  ): Thenable<[vscode.ResolverResult, PipeTunnelInfo | null]> {
     const [type, dest] = authority.split("+");
     if (type !== REMOTE_CP_AUTHORITY) {
-      throw new Error(
-        `Invalid authority type for ${this.cpExtConfig.prefix} resolver: ${type}`,
-      );
+      throw new Error(`Invalid authority type for ${this.cpExtConfig.prefix} resolver: ${type}`);
     }
 
-    this.logger.info(
-      `Resolving CP remote authority '${authority}' (attemp #${context.resolveAttempt})`,
-    );
+    this.logger.info(`Resolving CP remote authority '${authority}' (attemp #${context.resolveAttempt})`);
 
     const sshDest = SSHDestination.parseEncoded(dest);
 
     // It looks like default values are not loaded yet when resolving a remote,
     // so let's hardcode the default values here
     const remoteSSHconfig = vscode.workspace.getConfiguration("remote.SSH");
-    const enableDynamicForwarding = remoteSSHconfig.get<boolean>(
-      "enableDynamicForwarding",
-      true,
-    )!;
-    const enableAgentForwarding = remoteSSHconfig.get<boolean>(
-      "enableAgentForwarding",
-      true,
-    )!;
-    const serverDownloadUrlTemplate = remoteSSHconfig.get<string>(
-      "serverDownloadUrlTemplate",
-    );
-    const defaultExtensions = remoteSSHconfig.get<string[]>(
-      "defaultExtensions",
-      [],
-    );
-    const remotePlatformMap = remoteSSHconfig.get<Record<string, string>>(
-      "remotePlatform",
-      {},
-    );
-    const remoteServerListenOnSocket = remoteSSHconfig.get<boolean>(
-      "remoteServerListenOnSocket",
-      false,
-    )!;
+    const enableDynamicForwarding = remoteSSHconfig.get<boolean>("enableDynamicForwarding",true)!;
+    const enableAgentForwarding = remoteSSHconfig.get<boolean>("enableAgentForwarding", true)!;
+    const serverDownloadUrlTemplate = remoteSSHconfig.get<string>("serverDownloadUrlTemplate");
+    const defaultExtensions = remoteSSHconfig.get<string[]>("defaultExtensions", []);
+    const remotePlatformMap = remoteSSHconfig.get<Record<string, string>>("remotePlatform", {});
+    const remoteServerListenOnSocket = remoteSSHconfig.get<boolean>("remoteServerListenOnSocket", false)!;
     const connectTimeout = remoteSSHconfig.get<number>("connectTimeout", 60)!;
 
-    return vscode.window.withProgress(
+    return vscode.window.withProgress<[vscode.ResolverResult, PipeTunnelInfo | null]>(
       {
         title: `Setting up ${this.cpExtConfig.prefix} Host ${sshDest.hostname}`,
         location: vscode.ProgressLocation.Notification,
         cancellable: false,
       },
       async () => {
+        let resTunnelInfo: PipeTunnelInfo | null = null;
         const cpRunId = parseInt(sshDest.hostname.split("-")[1]);
-        await this.cpClient.startTunnel(cpRunId, this.extContext);
+        const tunnel = await this.cpClient.startTunnel(
+          cpRunId,
+          reusePipeTunnel,
+        );
+        if (!tunnel.toStop) {
+          resTunnelInfo = tunnel.getInfo();
+        }
 
         try {
           const sshconfig = await SSHConfiguration.loadFromFS();
@@ -179,9 +179,12 @@ export class RemoteCpResolver
             sshDest.user ||
             os.userInfo().username ||
             ""; // https://github.com/openssh/openssh-portable/blob/5ec5504f1d328d5bfa64280cd617c3efec4f78f3/sshconnect.c#L1561-L1562
-          const sshPort = sshHostConfig["Port"]
-            ? parseInt(sshHostConfig["Port"], 10)
-            : sshDest.port || 22;
+          const sshPort =
+            tunnel && tunnel.localPort
+              ? tunnel.localPort
+              : sshHostConfig && sshHostConfig.Port
+                ? parseInt(sshHostConfig["Port"], 10)
+                : sshDest.port || 22;
 
           this.sshAgentSock =
             sshHostConfig["IdentityAgent"] ||
@@ -440,7 +443,7 @@ export class RemoteCpResolver
               installResult.connectionToken,
             );
           resolvedResult.extensionHostEnv = envVariables;
-          return resolvedResult;
+          return [resolvedResult, resTunnelInfo];
         } catch (e: unknown) {
           this.logger.error(`Error resolving authority`, e);
 

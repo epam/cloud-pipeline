@@ -3,10 +3,10 @@ import * as vscode from "vscode";
 import * as readline from "node:readline";
 import { EventEmitter } from "events";
 
-import { Disposable } from "./common/disposable";
-import { findRandomPort } from "./common/ports";
-import { ILogger, Logger, LogLevelName } from "./common/logger";
+import { ILogger, OutputLogger, LogLevelName } from "./common/logger";
 import { ICpExtConfig } from "./config";
+import { PipeTunnelBase } from "./cp-client/tunnel/pipe-tunnel-base";
+import { CpVersionInfo, PipeTunnelInfo } from "./cp-client";
 
 // line: "2025-09-16 13:48:07,888:INFO: Searching for tunnel processes..."
 const pipeLineRe: RegExp =
@@ -22,43 +22,70 @@ enum PipeTunnelState {
   error = 100,
 }
 
-export class PipeTunnel extends Disposable {
-  private readonly output: Logger;
+export class PipeTunnel extends PipeTunnelBase {
+  private readonly output: OutputLogger;
 
   private state: PipeTunnelState = PipeTunnelState.none;
 
   private child: {
     process: cp.ChildProcessWithoutNullStreams;
     localPort: number;
+    owner: string;
     pipeTunnelStdout: readline.Interface;
     pipeTunnelStderr: readline.Interface;
   } | null = null;
 
   private readonly eventEmitter: EventEmitter = new EventEmitter();
 
+  private _toStop: boolean;
+  override get toStop(): boolean {
+    return this._toStop;
+  }
+
   constructor(
-    private readonly cpRunId: number,
+    runId: number,
+    localPort: number,
+    toStop: boolean,
     private readonly cpExtConfig: ICpExtConfig,
     private readonly logger: ILogger,
   ) {
-    super();
-
-    const outputName = `${this.cpExtConfig.prefix} tunnel ${cpRunId}`;
-    this.output = new Logger(outputName, "trace");
+    super(runId, localPort);
+    this._toStop = toStop;
+    const outputName = `${this.cpExtConfig.prefix} tunnel ${runId}`;
+    this.output = new OutputLogger(outputName, "trace");
     this._register(this.output);
   }
 
   override dispose() {
+    this.logger.trace(
+      `${this.toLog()}.dispose(), start,\n` +
+        `  isDisposed: ${this.isDisposed}, child: ${this.child}, toStop: ${this.toStop}`,
+    );
     if (!this.isDisposed) {
-      if (this.child) {
-        console.log(`PipeTunnel: terminating process ${this.cpRunId} ...`);
-        void this.deactivate();
-        console.log(`PipeTunnel: terminated process ${this.cpRunId}`);
-      }
-      this.output.dispose();
-      this.eventEmitter.removeAllListeners();
+      void (async () => {
+        if (this.child) {
+          console.log(`PipeTunnel: terminating process ${this.runId} ...`);
+          await this.deactivate();
+          console.log(`PipeTunnel: terminated process ${this.runId}`);
+        }
+        this.output.dispose();
+        this.eventEmitter.removeAllListeners();
+      })();
     }
+    this.logger.trace(`${this.toLog()}.dispose(), super`);
     super.dispose();
+    this.logger.trace(`${this.toLog()}.dispose(), end`);
+  }
+
+  override getInfo(): PipeTunnelInfo {
+    return new PipeTunnelInfo(
+      this.child!.process.pid!,
+      null,
+      this.child!.owner,
+      this.runId,
+      this.localPort,
+      22,
+    );
   }
 
   private stop(): void {
@@ -66,7 +93,7 @@ export class PipeTunnel extends Disposable {
     const _process = cp.spawn("pipe", [
         "tunnel",
         "stop",
-        this.cpRunId.toString(),
+        this.runId.toString(),
         "-lp",
         this.child!.localPort.toString(),
       ], {
@@ -161,23 +188,21 @@ export class PipeTunnel extends Disposable {
   public async activate(
     startProcess: (
       localPort: number,
+      toStop: boolean,
       progress: vscode.Progress<{ message?: string; increment?: number }>,
-    ) => Promise<cp.ChildProcessWithoutNullStreams>,
+    ) => Promise<[cp.ChildProcessWithoutNullStreams, CpVersionInfo]>,
   ): Promise<void> {
+    const logPfx = `${this.toLog()}.activate()`;
+    this.logger.trace(`${logPfx}, in`);
     return vscode.window.withProgress<void>(
       {
         location: vscode.ProgressLocation.Notification,
-        title: `Starting ${this.cpExtConfig.prefix} tunnel ${this.cpRunId}: \n`,
+        title: `Starting ${this.cpExtConfig.prefix} tunnel ${this.runId}: \n`,
         cancellable: false,
       },
       async (progress, cancelToken) => {
+        this.logger.trace(`${logPfx}, start withProgress`);
         progress.report({ increment: 0 });
-
-        const localPort = await findRandomPort();
-        progress.report({
-          increment: 10,
-          message: `\nFound random local port ${localPort}...`,
-        });
 
         return new Promise<void>((resolve, reject) => {
           this._register(
@@ -201,16 +226,21 @@ export class PipeTunnel extends Disposable {
             }
           });
 
+          this.logger.trace(
+            `${logPfx}, process starting, ` +
+              `localPort: ${this.localPort}, toStop: ${this.toStop} ...`,
+          );
           // Start process after all subscriptions are set
-          startProcess(localPort, progress)
-            .then((process) => {
+          startProcess(this.localPort, this.toStop, progress)
+            .then(([process, version]) => {
               this.logger.info(
-                `PipeTunnel: process started (pid: ${process.pid})`,
+                `${logPfx}, process started (pid: ${process.pid})`,
               );
 
               this.child = {
                 process,
-                localPort,
+                localPort: this.localPort,
+                owner: version.tokenOwner,
                 pipeTunnelStdout: readline.createInterface({
                   input: process.stdout,
                 }),
@@ -225,25 +255,38 @@ export class PipeTunnel extends Disposable {
               reject(err);
             });
         });
+        this.logger.trace(`${logPfx}, end withProgress`);
       },
     );
+    this.logger.trace(`${logPfx}, out`);
   }
 
   public async deactivate(): Promise<void> {
-    await new Promise<void>((resolve, _reject) => {
-      if (this.state >= PipeTunnelState.listed) {
-        resolve();
-      } else {
+    const logPfx = `${this.toLog()}.deactivate()`;
+    this.logger.trace(`${logPfx}, start, toStop: ${this.toStop}`);
+    if (!this.toStop) {
+      this.logger.debug(`${logPfx}, toStop is false, process unref.`);
+      this.child!.process.unref();
+    } else {
+      this.logger.debug(`${logPfx}, toStop is true, process stopping...`);
+      await new Promise<void>((resolve, _reject) => {
         this.on("listed", () => {
+          this.logger.debug(`${logPfx}, process ready to stop`);
           resolve();
         });
-      }
-    });
-    return new Promise<void>((resolve, _reject) => {
-      this.on("processClose", (_code) => {
-        resolve();
+        if (this.state >= PipeTunnelState.listed) {
+          resolve();
+        }
       });
-      this.stop();
-    });
+      await new Promise<void>((resolve, _reject) => {
+        this.on("processClose", (_code) => {
+          this.logger.debug(`${logPfx}, process stopped.`);
+          resolve();
+        });
+        this.logger.debug(`${logPfx}, process stopping...`);
+        this.stop();
+      });
+    }
+    this.logger.trace(`${logPfx}, end`);
   }
 }

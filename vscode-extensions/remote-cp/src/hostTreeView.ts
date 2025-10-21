@@ -13,20 +13,17 @@ import SSHDestination from "./ssh/sshDestination";
 import { ILogger } from "./common/logger";
 import { RunInfo, RunLocation } from "./cp-client";
 import { Commands } from "./commands";
-import { CpClient } from "./cp-client/cp-client";
+import { OnStartAction, OnStartWhen } from "./cp-ext/on-start";
+import { CpExtension } from "./cp-ext";
 
-export function registerHostTreeView(
-  cpClient: CpClient,
-  context: vscode.ExtensionContext,
-  logger: ILogger,
-): void {
-  const locationHistory = new RemoteLocationHistory(context);
+export function registerHostTreeView(cpExt: CpExtension): void {
+  const locationHistory = new RemoteLocationHistory(cpExt.context);
   const hostTreeDataProvider = new HostTreeDataProvider(
-    cpClient,
+    cpExt,
     locationHistory,
-    logger,
+    cpExt.logger,
   );
-  context.subscriptions.push(
+  cpExt.context.subscriptions.push(
     vscode.window.createTreeView(
       "cloudPipelineHosts" /* registered with package.json/contributes/views/remote */,
       {
@@ -37,7 +34,17 @@ export function registerHostTreeView(
   );
 }
 
-type DataTreeItem = RunInfo | RunLocation;
+class OwnerInfo extends Object {
+  constructor(
+    public readonly owner: string,
+    public readonly runs: RunInfo[],
+    public readonly isTokenOwner: boolean,
+  ) {
+    super();
+  }
+}
+
+type DataTreeItem = OwnerInfo | RunInfo | RunLocation;
 
 export enum HostTreeEvent {
   add = "remote-cp.explorer.add",
@@ -56,13 +63,28 @@ export class HostTreeDataProvider
   extends Disposable
   implements vscode.TreeDataProvider<DataTreeItem>
 {
+  private static objCounter = 0;
+  private objId = HostTreeDataProvider.objCounter++;
+
+  protected toLog(): string {
+    return `${this.constructor.name}<${this.objId}>`;
+  }
+
   private readonly _onDidChangeTreeData = this._register(
     new vscode.EventEmitter<DataTreeItem | DataTreeItem[] | void>(),
   );
   public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+  protected get cpClient() {
+    return this.cpExt.cpClient!;
+  }
+
+  protected get cpExtConfig() {
+    return this.cpExt.cpExtConfig;
+  }
+
   constructor(
-    private readonly cpClient: CpClient,
+    private readonly cpExt: CpExtension,
     private locationHistory: RemoteLocationHistory,
     private logger: ILogger,
   ) {
@@ -77,6 +99,7 @@ export class HostTreeDataProvider
 
     registerCommand(HostTreeEvent.add, () => addNewHost());
     registerCommand(HostTreeEvent.configure, () => openSSHConfigFile());
+    registerCommand(Commands.explorer.pipeUpdate, () => this.pipeUpdate());
     registerCommand(Commands.explorer.refresh, () => this.refresh());
     registerCommand(Commands.explorer.emptyWindowInNewWindow, (e) =>
       this.openRemoteCpWindow(e, false),
@@ -101,14 +124,10 @@ export class HostTreeDataProvider
         }
       }),
     );
-    // this._register(vscode.workspace.onDidSaveTextDocument(e => {
-    //     if (e.uri.fsPath === getSSHConfigPath()) {
-    //         this.refresh();
-    //     }
-    // }));
   }
 
   getTreeItem(element: DataTreeItem): vscode.TreeItem {
+    const logPfx = `${this.toLog()}.getTreeItem()`;
     if (element instanceof RunLocation) {
       const label = path.posix
         .basename(element.path)
@@ -120,26 +139,83 @@ export class HostTreeDataProvider
       return treeItem;
     } else if (element instanceof RunInfo) {
       const runInfo = element as RunInfo;
-      const treeItem = new vscode.TreeItem(`pipeline-${runInfo.runId}`);
+      const runLabel = `${runInfo.pipeline} (${runInfo.runId})`;
+      const treeItem = new vscode.TreeItem(runLabel);
       treeItem.collapsibleState = element.locations?.length
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.None;
       treeItem.iconPath = new vscode.ThemeIcon("vm");
       treeItem.contextValue = HostTreeItemContext.host;
       return treeItem;
-    } else throw new Error(`Unknown element type ${element}`);
+    } else if (element instanceof OwnerInfo) {
+      const ownerInfo = element as OwnerInfo;
+      const treeItem = new vscode.TreeItem(ownerInfo.owner);
+      treeItem.collapsibleState = ownerInfo.isTokenOwner
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : vscode.TreeItemCollapsibleState.Collapsed;
+      treeItem.iconPath = new vscode.ThemeIcon("account");
+      treeItem.contextValue = ownerInfo.owner;
+      return treeItem;
+    } else
+      throw new Error(
+        `${logPfx}, unexpected tree item\n` +
+          // `  type '${element ? element.constructor.name : "nothing"}'\n` +
+          `  value ${JSON.stringify(element)}'.`,
+      );
   }
 
   async getChildren(element?: DataTreeItem): Promise<DataTreeItem[]> {
     if (!element) {
-      // const sshConfigFile = await SSHConfiguration.loadFromFS();
-      // const hosts = sshConfigFile.getAllConfiguredHosts();
-      // return hosts.map(hostname => new HostItem(hostname, this.locationHistory.getHistory(hostname)));
-      const runList: RunInfo[] = await this.cpClient.getRunList();
-      return runList;
+      return await this.getRoot();
+    } else if (element instanceof OwnerInfo) {
+      return element.runs;
     } else if (element instanceof RunInfo) {
       return element.locations ?? [];
     } else return [];
+  }
+
+  async getRoot(): Promise<DataTreeItem[]> {
+    const runList = await this.cpClient.getRunList();
+
+    const resItemList: DataTreeItem[] = [];
+    const byOwners: { [owner: string]: RunInfo[] } = {};
+
+    for (const runInfo of runList) {
+      let ownerRuns = byOwners[runInfo.owner];
+      if (!ownerRuns) {
+        ownerRuns = byOwners[runInfo.owner] = [];
+      }
+      ownerRuns.push(runInfo);
+    }
+
+    const tokenOwner = (await this.cpClient.getVersion()).tokenOwner;
+    const byOwnersSorted = Object.entries(byOwners).sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    );
+    for (const [owner, ownerRuns] of byOwnersSorted) {
+      const item = new OwnerInfo(owner, ownerRuns, owner === tokenOwner);
+      if (owner == tokenOwner) {
+        resItemList.unshift(item);
+      } else {
+        resItemList.push(item);
+      }
+    }
+    return resItemList;
+  }
+
+  private pipeUpdate() {
+    void this.cpClient
+      .ensurePipeExec(true)
+      .catch((err) => {
+        this.logger.error("Failed to update pipe client:\n" + err);
+        vscode.window.showErrorMessage(`Failed to update pipe client: ${err}`);
+      })
+      .then(() => {
+        vscode.window.showInformationMessage(
+          "Pipe client updated successfully.",
+        );
+        this.refresh();
+      });
   }
 
   private refresh() {
@@ -155,7 +231,13 @@ export class HostTreeDataProvider
   }
 
   private async openRemoteCpWindow(element: RunInfo, reuseWindow: boolean) {
+    const logPfx = `${this.toLog()}.openRemoteCpWindow()`;
     const sshDest = new SSHDestination(`pipeline-${element.runId}`);
+    this.cpExtConfig.onStart.push({
+      when: OnStartWhen.onDidResolve,
+      action: OnStartAction.openFolder,
+    });
+    await this.cpExtConfig.save(logPfx);
     openRemoteCpWindow(sshDest.toEncodedString(), reuseWindow);
   }
 

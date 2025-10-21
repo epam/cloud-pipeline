@@ -1,6 +1,15 @@
 {
   "folders": [
-    { "name": "remote-cp-helper", "path": "../remote-cp-helper" },
-    { "name": "remote-cp", "path": "." },
+    {
+      "name": "remote-cp-helper",
+      "path": "../remote-cp-helper"
+    },
+    {
+      "name": "remote-cp",
+      "path": "."
+    },
+    {
+      "path": "../../../open-remote-ssh"
+    }
   ],
 }

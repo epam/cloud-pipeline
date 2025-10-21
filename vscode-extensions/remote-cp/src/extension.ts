@@ -2,13 +2,14 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 
-import { Logger } from "./common/logger";
+import { FileLogger, OutputLogger } from "./common/logger";
 import { CpExtension } from "./cp-ext";
 import { CpExtConfig } from "./config";
+import { DateTime } from "luxon";
 
 let cpExtConfig: CpExtConfig;
-let logger: Logger;
-let ext: CpExtension | null = null;
+let logger: OutputLogger;
+let cpExt: CpExtension | null = null;
 
 // This method is called once when the extension is activated
 export async function activate(
@@ -25,18 +26,27 @@ export async function activate(
   }
 
   cpExtConfig = new CpExtConfig(context);
-  logger = new Logger("Cloud Pipeline", cpExtConfig.logLevel);
-  logger.info('Extension "remote-cp" activating...');
+
+  const now = DateTime.now();
+  const logFn = `C:\\Temp\\2025-10-17\\remote-cp.${now.toFormat("yyyyMMdd_HHmmss")}.log`;
+  logger = new OutputLogger(
+    "Cloud Pipeline",
+    cpExtConfig.logLevel,
+    new FileLogger(logFn, cpExtConfig.logLevel, { flags: "w" }),
+  );
+  const msgStart = "Extension 'remote-cp' activating...";
+  logger.info(msgStart);
+  console.log(msgStart);
   context.subscriptions.push(logger);
   try {
     await cpExtConfig.activate(logger);
 
-    ext = new CpExtension(cpExtConfig, context, logger);
-    await ext.activate();
-    context.subscriptions.push(ext);
+    cpExt = new CpExtension(cpExtConfig, context, logger);
+    await cpExt.activate();
 
-    logger.info('Extension "remote-cp" activated.');
-    console.log("Extension 'remote-cp' activated.");
+    const msgEnd = "Extension 'remote-cp' activated.";
+    logger.info(msgEnd);
+    console.log(msgEnd);
   } catch (err: unknown) {
     if (err instanceof Error) {
       logger.error(`Extension 'remote-cp' activation failed:\n${err.stack}`);
@@ -53,6 +63,19 @@ export async function activate(
 
 // This method is called when your extension is deactivated
 export async function deactivate(): Promise<void> {
-  await ext?.dispose();
-  console.log("Extensiobn 'remote-cp' is deactivated");
+  const msgStart = 'Extension "remote-cp" deactivating...';
+  logger.info(msgStart);
+  console.log(msgStart);
+
+  const msg2 = 'Extension "remote-cp" continue deactivating ...';
+  logger.info(msg2);
+  console.log(msg2);
+
+  await cpExt!.dispose();
+
+  const msgEnd = 'Extension "remote-cp" deactivated.';
+  logger.info(msgEnd);
+  console.log(msgEnd);
+
+  logger.dispose();
 }

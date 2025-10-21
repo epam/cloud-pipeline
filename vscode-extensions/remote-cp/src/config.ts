@@ -1,10 +1,13 @@
 import * as vscode from "vscode";
+import * as dotenv from "dotenv";
+import { DateTime } from "luxon";
+
 import { ICpClientConfig } from "./cp-client/cp-client-config";
-import { IOutputLogger, LogLevelName } from "./common/logger";
+import { ILogger, IOutputLogger, LogLevelName } from "./common/logger";
 import { mirrorKeys } from "./common/types";
 import { subscribeAllEvents } from "./tools/vscode-events";
-
-declare const BUILTIN_CP_PLATFORM_URL: string;
+import { Commands } from "./commands";
+import { OnStartProps } from "./cp-ext/on-start";
 
 export const CpExtConfigKeyValues = [
   "prefix",
@@ -15,8 +18,10 @@ export const CpExtConfigKeyValues = [
 
   "pipeApiUri",
   "pipeApiToken",
+  "pipeSnoozeUpdate",
 
   "logLevel",
+  "onStart",
 ];
 export type CpExtConfigKey = (typeof CpExtConfigKeyValues)[number];
 export const CpExtConfigKeys = mirrorKeys(CpExtConfigKeyValues);
@@ -31,8 +36,10 @@ export interface ICpExtConfigData {
 
   pipeApiUri: string | null;
   pipeApiToken: string | null;
+  pipeSnoozeUpdate: DateTime | null;
 
   logLevel: LogLevelName;
+  onStart: OnStartProps[];
 }
 
 export interface ICpExtConfig extends ICpExtConfigData {
@@ -81,8 +88,17 @@ export class CpExtConfig implements ICpExtConfig {
     try {
       for (const [key, value] of Object.entries(dataToSave)) {
         if (this.configData.get<string>(key) !== value) {
-          this.logger.info(`${logPfx}, key: '${key}' saving...`);
-          await this.configData.update(key, value, this.cfgTarget);
+          let valueToSave: any = value;
+          if (value instanceof DateTime) {
+            valueToSave = value.toISO();
+          } else if (value instanceof Array) {
+            valueToSave = JSON.stringify(value);
+          }
+          this.logger.info(
+            `${logPfx}, key: '${key}', saving...\n` +
+              `  value: '${valueToSave}'`,
+          );
+          await this.configData.update(key, valueToSave, this.cfgTarget);
           this.logger.info(`${logPfx}, key: '${key}' saved.`);
           // @ts-expect-error any
           delete this.data[key];
@@ -109,7 +125,7 @@ export class CpExtConfig implements ICpExtConfig {
           process.env.CP_PLATFORM_URL,
         ) ??
         this.defaults[CpExtConfigKeys.platformUrl] ??
-        BUILTIN_CP_PLATFORM_URL;
+        "";
 
     return res!.trim().replace(/\/+$/, "");
   }
@@ -123,7 +139,7 @@ export class CpExtConfig implements ICpExtConfig {
     if (!res)
       res = this.data.prefix = this.configData.get<string>(
         CpExtConfigKeys.prefix,
-        this.defaults[CpExtConfigKeys.prefix] ?? "CP:",
+        this.defaults[CpExtConfigKeys.prefix] ?? "CP",
       );
     return res;
   }
@@ -200,6 +216,29 @@ export class CpExtConfig implements ICpExtConfig {
     this.data.pipeApiToken = value;
   }
 
+  public get pipeSnoozeUpdate(): DateTime | null {
+    let res = this.data.pipeSnoozeUpdate;
+    if (!res) {
+      const str = this.configData.get<string | null>(
+        CpExtConfigKeys.pipeSnoozeUpdate,
+        null,
+      );
+      try {
+        res = this.data.pipeSnoozeUpdate = str
+          ? DateTime.fromISO(str) /* ISO-8601 */
+          : null;
+      } catch (err) {
+        this.logger.error(`Config 'pipeSnoozeUpdate' error: '${str}'.`, err);
+        res = null;
+      }
+    }
+    return res!;
+  }
+
+  public set pipeSnoozeUpdate(value: DateTime | null) {
+    this.data.pipeSnoozeUpdate = value;
+  }
+
   public get logLevel(): LogLevelName {
     let res = this.data.logLevel;
     if (!res)
@@ -216,6 +255,26 @@ export class CpExtConfig implements ICpExtConfig {
 
   public set logLevel(value: LogLevelName) {
     this.data.logLevel = value;
+  }
+
+  public get onStart(): OnStartProps[] {
+    let res = this.data.onStart;
+    if (!res) {
+      const onStartStr = this.configData.get<string | undefined>(
+        CpExtConfigKeys.onStart,
+        process.env.CP_ON_START,
+      );
+
+      res = this.data.onStart = onStartStr
+        ? JSON.parse(onStartStr).map((v: any) => v as OnStartProps)
+        : [];
+    }
+
+    return res!;
+  }
+
+  public set onStart(value: OnStartProps[]) {
+    this.data.onStart = value;
   }
 
   // --
@@ -257,6 +316,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public async activate(logger: IOutputLogger): Promise<void> {
     this.logger = logger;
+    await applyDotEnv(this.context, this.logger);
     this.logger.level = this.logLevel;
 
     const logPfx = `${this.toLog()}.activate()`;
@@ -270,9 +330,13 @@ export class CpExtConfig implements ICpExtConfig {
     );
 
     //
-    // subscribeAllEvents(this.context, this.logger);
+    subscribeAllEvents(this.context, this.logger);
 
     this.defaults = await readDefaultsFromPackageJson(this.context);
+
+    this.context.subscriptions.push(
+      vscode.commands.registerCommand(Commands.config.reset, this.reset, this),
+    );
 
     if (!this.platformUrl) {
       const inputPlatformUrl = await vscode.window.showInputBox({
@@ -291,6 +355,15 @@ export class CpExtConfig implements ICpExtConfig {
     }
 
     this.logger.trace(`${logPfx}, end`);
+  }
+
+  async reset(): Promise<void> {
+    const logPfx = `${this.toLog()}.reset()`;
+    for (const [k, v] of Object.entries(this.defaults)) {
+      // @ts-expect-error any
+      this.data[k] = v;
+    }
+    await this.save(logPfx);
   }
 
   // -- Events' handlers --
@@ -329,4 +402,13 @@ async function readDefaultsFromPackageJson(
     }
   }
   return resDefaults;
+}
+
+async function applyDotEnv(
+  context: vscode.ExtensionContext,
+  logger: ILogger,
+): Promise<void> {
+  const envFileUri = vscode.Uri.joinPath(context.extensionUri, ".env");
+  logger.info(`Apply dotenv:\n` + `  file: ${envFileUri.fsPath}`);
+  dotenv.config({ path: envFileUri.fsPath });
 }

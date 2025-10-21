@@ -9,9 +9,10 @@ import { downloadFile } from "../common/files/downloadFile";
 import { unzipperFile } from "../common/files/unzipperFile";
 import { untarFile } from "../common/files/untarFile";
 import { ICpExtConfig } from "../config";
-import { CpClientBase } from "./index";
+import { CpClientBase, CpVersionInfo } from "./index";
 import { ILogger } from "../common/logger";
 import { CpTokenExpiredError } from "./error";
+import { askUserForUpdatePipe } from "./ask-user-for-update-pipe";
 
 export class CpClient extends CpClientBase {
   static createAndRegister(
@@ -24,7 +25,9 @@ export class CpClient extends CpClientBase {
     return res;
   }
 
-  protected override async ensurePipeExecInternal(): Promise<void> {
+  public override async ensurePipeExec(
+    forceUpdate: boolean = false,
+  ): Promise<CpVersionInfo> {
     const fsp = fs.promises;
 
     // choose URL based on platform
@@ -42,27 +45,24 @@ export class CpClient extends CpClientBase {
       if (stat.isDirectory()) {
         const files = await fsp.readdir(binPipeDir);
         if (files.length > 0) {
-          needsDownload = false;
+          needsDownload = forceUpdate;
         }
       }
     } catch {
       // folder doesn't exist
     }
 
-    if (!needsDownload) {
+    let resVersion: CpVersionInfo | undefined;
+    if (!needsDownload && !forceUpdate) {
       try {
-        const v = await this.getVersion();
+        resVersion = await this.getVersion();
         needsDownload = false;
-        if (v.apiVersion != v.cliVersion) {
-          if (
-            (await vscode.window.showWarningMessage(
-              `${this.cpExtConfig.prefix}: client API ${v.apiVersion} vs CLI ${v.cliVersion} version mismatch.`,
-              "Update",
-              "Keep",
-            )) === "Update"
-          ) {
-            needsDownload = true;
-          }
+        if (resVersion.apiVersion != resVersion.cliVersion) {
+          needsDownload = await askUserForUpdatePipe(
+            this.cpExtConfig,
+            resVersion,
+            this.logger,
+          );
         }
       } catch (err) {
         if (err instanceof CpTokenExpiredError) {
@@ -72,13 +72,18 @@ export class CpClient extends CpClientBase {
             `${this.cpExtConfig.prefix}: Failed to initialize ${this.cpExtConfig.prefix} client: ${err}. Re-downloading...`,
           );
           needsDownload = true;
+          resVersion = this.resetVersion();
         }
       }
     }
 
     if (needsDownload) {
       await downloadAndExtract(pipeUri, binPipeDir, this.cpExtConfig);
+      resVersion = await this.getVersion();
     }
+
+    if (!resVersion) throw new Error("Unexpected undefined version");
+    return resVersion;
   }
 }
 
@@ -105,7 +110,7 @@ async function downloadAndExtract(
 
   const cleanupBinPipeDirP = rimraf(binPipeDir);
   let downloadFileP: Promise<void>;
-  if (process.env.CP_STUBS === "downloads") {
+  if (process.env.CP_STUBS?.includes("downloads")) {
     // Coppy file from ~/Downloads
     const userHome = process.env.HOME || process.env.USERPROFILE || "";
     const downloadFilePath = path.join(userHome, "Downloads", downloadFileName);

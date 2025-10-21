@@ -7,7 +7,6 @@
     "outDir": "dist",
 
     "sourceMap": true,
-    "inlineSources": true,
     "rootDir": "src",
     "exactOptionalPropertyTypes": false,
     "useUnknownInCatchVariables": false,

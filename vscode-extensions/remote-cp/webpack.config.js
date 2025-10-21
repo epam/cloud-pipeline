@@ -40,10 +40,6 @@ const config = {
   },
   plugins: [
     new webpack.DefinePlugin({
-      // build time environment variables injection
-      BUILTIN_CP_PLATFORM_URL: JSON.stringify(
-        (process.env.CP_PLATFORM_URL || "").replace(/^"(.*)"$/, "$1"),
-      ),
       navigator: "undefined",
     }),
     new webpack.IgnorePlugin({

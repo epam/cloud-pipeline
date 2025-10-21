@@ -12,6 +12,14 @@ import { CpAuthInvalidError, CpTokenExpiredError } from "../cp-client/error";
 import { configureWithCliConfigurationCommand } from "./configure-with-cli-configuration-command";
 import { configureWithCpUrl } from "./configure-with-cp-web-auth";
 import { configureWithOAuth } from "./configure-with-oauth";
+import { PipeTunnelBase } from "./tunnel/pipe-tunnel-base";
+import {
+  askUserForPipeTunnel,
+  ExecutePipeTunnelItem,
+  ReusePipeTunnelItem,
+} from "./tunnel/ask-user-for-pipe-tunnel";
+import { findRandomPort } from "../common/ports";
+import { ReusedPipeTunnel } from "./tunnel/reusing-pipe-tunnel";
 
 export enum PipeRunCols {
   runId = "RunID",
@@ -59,24 +67,24 @@ export function pipeParseRunList(table: string): RunInfo[] {
   });
 }
 
-export class TunnelInfo {
+export class PipeTunnelInfo {
   constructor(
     public pid: number,
     public parentPid: number | null,
     public owner: string,
-    /* Host */ public runId: string,
+    /* Host */ public runId: number,
     public localPort: number,
     public remotePort: number,
   ) {}
 }
 
-export function pipeParseTunnelList(table: string): TunnelInfo[] {
-  return pipeParse<TunnelInfo>(table, (cells, _header: string[]) => {
-    const res = new TunnelInfo(
+export function pipeParseTunnelList(table: string): PipeTunnelInfo[] {
+  return pipeParse<PipeTunnelInfo>(table, (cells, _header: string[]) => {
+    const res = new PipeTunnelInfo(
       /* PID: */ parseInt(cells[0]),
       /* PPID: */ cells[1] === "None" ? null : parseInt(cells[1]),
       /* Owner: */ cells[2],
-      /* Host: */ cells[3],
+      /* Host: */ parseInt(cells[3]),
       /* LocalPorts: */ parseInt(cells[4]),
       /* RemotePorts: */ parseInt(cells[5]),
     );
@@ -113,7 +121,7 @@ export abstract class CpClientBase extends Disposable {
 
   protected constructor(
     public readonly cpExtConfig: ICpExtConfig,
-    protected readonly logger: ILogger,
+    public readonly logger: ILogger,
   ) {
     super();
   }
@@ -125,7 +133,12 @@ export abstract class CpClientBase extends Disposable {
     super.dispose();
   }
 
+  // TODO: Reset {@link this.version} on change
+  private version: CpVersionInfo | null = null;
+
   async getVersion(): Promise<CpVersionInfo> {
+    if (this.version) return this.version;
+
     const output = await this.execPipeCommand("--version");
     const apiM = output.match(
       /^Cloud Pipeline API, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
@@ -148,7 +161,11 @@ export abstract class CpClientBase extends Disposable {
       cliM[1], cliM[2],
       tokenM[1], tokenM[2], tokenM[3],
     );
-    return res;
+    return (this.version = res);
+  }
+
+  protected resetVersion(): undefined {
+    this.version = null;
   }
 
   /**
@@ -168,14 +185,16 @@ export abstract class CpClientBase extends Disposable {
     }
   }
 
-  private async configSpawn(
-    ...args: readonly string[]
-  ): Promise<cp.ChildProcessWithoutNullStreams> {
-    const config = await this.ensureConfig();
+  public async configSpawn(
+    args: readonly string[],
+    options?: cp.SpawnOptionsWithoutStdio,
+  ): Promise<[cp.ChildProcessWithoutNullStreams, CpVersionInfo]> {
+    const [config, version] = await this.ensureConfig();
     const env = this.configToEnv(config);
 
     try {
-      return cp.spawn(this.pipeExec, args, { env });
+      const resProcess = cp.spawn(this.pipeExec, args, { ...env, ...options });
+      return [resProcess, version!];
     } catch (err) {
       const _m = err.message.match(CpTokenExpiredError.re);
       throw err;
@@ -187,7 +206,7 @@ export abstract class CpClientBase extends Disposable {
    * @returns Output
    */
   private async configExecFile(...args: readonly string[]): Promise<string> {
-    const config = await this.ensureConfig();
+    const [config, _version] = await this.ensureConfig();
     const env = this.configToEnv(config);
 
     return new Promise<string>((resolve, reject) => {
@@ -195,7 +214,7 @@ export abstract class CpClientBase extends Disposable {
       cp.execFile(this.pipeExec, args, { env }, (error, stdout, stderr) => {
         const dt2 = performance.now();
         this.logger.debug(
-          `Client pipe command exec for ${(dt2 - dt1) / 1000} s`,
+          `Pipe client command exec for ${(dt2 - dt1) / 1000} s`,
         );
         if (error || stderr) {
           const m =
@@ -240,37 +259,72 @@ export abstract class CpClientBase extends Disposable {
     }
   }
 
-  async getTunnelList(): Promise<TunnelInfo[]> {
-    const output = await this.execPipeCommand(`${this.pipeExec} tunnel list`);
+  async getTunnelList(): Promise<PipeTunnelInfo[]> {
+    const output = await this.execPipeCommand("tunnel", "list");
     return pipeParseTunnelList(output);
   }
 
   async startTunnel(
     cpRunId: number,
-    context: vscode.ExtensionContext,
-  ): Promise<PipeTunnel> {
-    const resPipeTunnel = new PipeTunnel(
-      cpRunId,
-      this.cpExtConfig,
-      this.logger,
-    );
-    this._register(resPipeTunnel);
-    // context.subscriptions.push(resPipeTunnel);
-    await resPipeTunnel.activate(
-      (localPort: number): Promise<cp.ChildProcessWithoutNullStreams> => {
-        // prettier-ignore
-        return this.configSpawn(
-          "tunnel", "start", "-f", "--ssh",
-          "--ignore-existing",
-          // "--no-putty",
-          "-rp", "22",
-          "-lp", localPort.toString(),
-          "--log-level", "INFO",
-          cpRunId.toString());
-      },
-    );
+    reuseTunnel: PipeTunnelInfo | null,
+  ): Promise<PipeTunnelBase> {
+    let resPipeTunnel: PipeTunnelBase | undefined;
 
-    return resPipeTunnel;
+    if (reuseTunnel) {
+      resPipeTunnel = new ReusedPipeTunnel(reuseTunnel);
+    }
+
+    if (!resPipeTunnel) {
+      const runTunnelList = (await this.getTunnelList()).filter(
+        (ti) => ti.runId === cpRunId,
+      );
+
+      // let resPipeTunnel: PipeTunnelBase | undefined;
+      const pipeTunnelUserResp = await askUserForPipeTunnel(
+        cpRunId,
+        runTunnelList,
+      );
+
+      if (pipeTunnelUserResp instanceof ReusePipeTunnelItem) {
+        resPipeTunnel = new ReusedPipeTunnel(pipeTunnelUserResp.tunnelInfo);
+      } else if (pipeTunnelUserResp instanceof ExecutePipeTunnelItem) {
+        resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
+          const localPort = await findRandomPort();
+          const res = new PipeTunnel(
+            cpRunId,
+            localPort,
+            pipeTunnelUserResp.toStop,
+            this.cpExtConfig,
+            this.logger,
+          );
+          // context.subscriptions.push(resPipeTunnel);
+          await res.activate(
+            async (
+              localPort: number,
+              toStop: boolean,
+            ): Promise<[cp.ChildProcessWithoutNullStreams, CpVersionInfo]> => {
+              const [resProcess, resVersion] = await this.configSpawn(
+                // prettier-ignore
+                [
+                  "tunnel", "start", "-f", "--ssh",
+                  "--ignore-existing",
+                  // "--no-putty",
+                  "-rp", "22",
+                  "-lp", localPort.toString(),
+                  "--log-level", "INFO",
+                  cpRunId.toString()
+                ],
+                { detached: !toStop },
+              );
+              return [resProcess, resVersion];
+            },
+          );
+          return res;
+        })();
+      }
+    }
+    this._register(resPipeTunnel!);
+    return resPipeTunnel!;
   }
 
   async stopTunnel(tunnel: PipeTunnel): Promise<void> {
@@ -279,34 +333,36 @@ export abstract class CpClientBase extends Disposable {
 
   private ensurePipeExecActive: boolean = false;
 
-  protected abstract ensurePipeExecInternal(): Promise<void>;
+  public abstract ensurePipeExec(forceUpdate?: boolean): Promise<CpVersionInfo>;
 
-  private async ensurePipeExec(): Promise<void> {
+  private async ensurePipeExecInternal(): Promise<CpVersionInfo | null> {
     if (!this.ensurePipeExecActive) {
       this.ensurePipeExecActive = true;
       try {
-        return await this.ensurePipeExecInternal();
+        return await this.ensurePipeExec();
       } finally {
         this.ensurePipeExecActive = false;
       }
     } else {
-      return Promise.resolve();
+      return null;
     }
   }
 
   // -- Config --
-  public async ensureConfig(saveConfig = false): Promise<ICpClientConfig> {
+  public async ensureConfig(
+    saveConfig = false,
+  ): Promise<[ICpClientConfig, CpVersionInfo | null]> {
     const logPfx = `${this.toLog()}.ensureConfig()`;
 
-    await this.ensurePipeExec();
+    const resVersion = await this.ensurePipeExecInternal();
     if (!this.pipeExec) throw new Error("Pipe client exec is not configured");
 
     let resConfig: ICpClientConfig | null;
     resConfig = await this.cpExtConfig.getClientConfig();
-    if (resConfig) return resConfig;
+    if (resConfig) return [resConfig, resVersion];
 
     resConfig = await getInstallDirConfigJson(this.pipeExec);
-    if (resConfig) return resConfig;
+    if (resConfig) return [resConfig, resVersion];
 
     const configureActions = {
       cliConfigurationCommands: "CLI configuration command",
@@ -329,15 +385,18 @@ export abstract class CpClientBase extends Disposable {
           this.cpExtConfig,
           this.logger,
         );
+        this.resetVersion();
         break;
       }
       case configureActions.cpUrl: {
         resConfig = await configureWithCpUrl(this.cpExtConfig, this.logger);
+        this.resetVersion();
         break;
       }
 
       case configureActions.cpAuth: {
         resConfig = await configureWithOAuth(this.cpExtConfig, this.logger);
+        this.resetVersion();
         break;
       }
     }
@@ -350,7 +409,7 @@ export abstract class CpClientBase extends Disposable {
       this.logger.error(errMsg);
       throw new Error(errMsg);
     }
-    return resConfig;
+    return [resConfig, resVersion];
   }
 
   // -- routines --
