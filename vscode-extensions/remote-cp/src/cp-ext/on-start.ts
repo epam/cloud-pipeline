@@ -25,15 +25,21 @@ export class OnStartOption {
   public async run(cpExt: CpExtension, args: any): Promise<any> {
     switch (this.props.action) {
       case OnStartAction.openFolder: {
-        vscode.commands.executeCommand("vscode.openFolder");
         if (args != null && !(args instanceof PipeTunnelInfo))
           throw new Error(
             `Unexpected args '${this.props.action}' onStart action`,
           );
-        cpExt.cpExtConfig.onStart.push({
-          when: OnStartWhen.onWillResolve,
-          action: OnStartAction.useTunnel,
-          data: args as PipeTunnelInfo,
+        const onStartV = await cpExt.cpExtConfig.getOnStart();
+        await cpExt.cpExtConfig.setOnStart([
+          ...onStartV,
+          {
+            when: OnStartWhen.onWillResolve,
+            action: OnStartAction.useTunnel,
+            data: args as PipeTunnelInfo,
+          },
+        ]);
+        vscode.commands.executeCommand("vscode.openFolder").then(() => {
+          // void vscode.commands.executeCommand(Commands.config.save);
         });
         break;
       }

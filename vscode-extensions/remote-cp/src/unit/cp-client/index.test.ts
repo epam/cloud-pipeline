@@ -32,10 +32,12 @@ describe("CloudPipelineClient.parseRunListTable", () => {
     pipeApiToken: null,
     pipeSnoozeUpdate: null,
     logLevel: "trace",
-    onStart: [],
 
     getClientConfig: notImplementedStubFunc,
     setClientConfig: notImplementedStubFunc,
+
+    getOnStart: notImplementedStubFunc,
+    setOnStart: notImplementedStubFunc,
 
     save: notImplementedStubFunc,
   };

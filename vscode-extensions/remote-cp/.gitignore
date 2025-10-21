@@ -4,5 +4,6 @@
 /dist
 /out
 /node_modules
+/onStart.json
 /*.vsix
 /*.tsbuildinfo

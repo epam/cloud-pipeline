@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import * as dotenv from "dotenv";
 import { DateTime } from "luxon";
 
@@ -8,6 +10,11 @@ import { mirrorKeys } from "./common/types";
 import { subscribeAllEvents } from "./tools/vscode-events";
 import { Commands } from "./commands";
 import { OnStartProps } from "./cp-ext/on-start";
+import {
+  fsFileExistsSync,
+  fsReadJsonFileSync,
+  fsWriteJsonFileSync,
+} from "./common/files/file";
 
 export const CpExtConfigKeyValues = [
   "prefix",
@@ -21,7 +28,6 @@ export const CpExtConfigKeyValues = [
   "pipeSnoozeUpdate",
 
   "logLevel",
-  "onStart",
 ];
 export type CpExtConfigKey = (typeof CpExtConfigKeyValues)[number];
 export const CpExtConfigKeys = mirrorKeys(CpExtConfigKeyValues);
@@ -39,7 +45,9 @@ export interface ICpExtConfigData {
   pipeSnoozeUpdate: DateTime | null;
 
   logLevel: LogLevelName;
-  onStart: OnStartProps[];
+
+  getOnStart(): ReadonlyArray<OnStartProps>;
+  setOnStart(value: ArrayLike<OnStartProps>): void;
 }
 
 export interface ICpExtConfig extends ICpExtConfigData {
@@ -64,8 +72,12 @@ export class CpExtConfig implements ICpExtConfig {
   private defaults: DefaultsDict = {};
   private logger!: IOutputLogger;
 
+  private readonly onStartFilePath: string;
+
   constructor(private readonly context: vscode.ExtensionContext) {
     this.updateConfigData();
+
+    this.onStartFilePath = path.join(this.globalStoragePath, "onStart.json");
   }
 
   protected updateConfigData(): void {
@@ -257,24 +269,22 @@ export class CpExtConfig implements ICpExtConfig {
     this.data.logLevel = value;
   }
 
-  public get onStart(): OnStartProps[] {
-    let res = this.data.onStart;
-    if (!res) {
-      const onStartStr = this.configData.get<string | undefined>(
-        CpExtConfigKeys.onStart,
-        process.env.CP_ON_START,
-      );
+  public getOnStart(): ReadonlyArray<OnStartProps> {
+    if (!fsFileExistsSync(this.onStartFilePath)) return [];
 
-      res = this.data.onStart = onStartStr
-        ? JSON.parse(onStartStr).map((v: any) => v as OnStartProps)
-        : [];
-    }
-
-    return res!;
+    const res = fsReadJsonFileSync<OnStartProps[]>(this.onStartFilePath);
+    return res;
   }
 
-  public set onStart(value: OnStartProps[]) {
-    this.data.onStart = value;
+  public setOnStart(value: ArrayLike<OnStartProps>): void {
+    try {
+      fs.mkdirSync(path.dirname(this.onStartFilePath), {
+        recursive: true,
+      });
+    } catch {
+      // ignore
+    }
+    fsWriteJsonFileSync(this.onStartFilePath, value);
   }
 
   // --
@@ -322,6 +332,9 @@ export class CpExtConfig implements ICpExtConfig {
     const logPfx = `${this.toLog()}.activate()`;
     this.logger.trace(`${logPfx}, start`);
 
+    this.logger.info(
+      `${logPfx}, config onStart\n` + `  file: ${this.onStartFilePath}`,
+    );
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(
         this.onDidChangeConfiguration,
@@ -330,7 +343,7 @@ export class CpExtConfig implements ICpExtConfig {
     );
 
     //
-    subscribeAllEvents(this.context, this.logger);
+    // subscribeAllEvents(this.context, this.logger);
 
     this.defaults = await readDefaultsFromPackageJson(this.context);
 

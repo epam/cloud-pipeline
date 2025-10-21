@@ -1,11 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
+import path from "path";
+import { DateTime } from "luxon";
 
 import { FileLogger, OutputLogger } from "./common/logger";
 import { CpExtension } from "./cp-ext";
 import { CpExtConfig } from "./config";
-import { DateTime } from "luxon";
 
 let cpExtConfig: CpExtConfig;
 let logger: OutputLogger;
@@ -28,15 +29,21 @@ export async function activate(
   cpExtConfig = new CpExtConfig(context);
 
   const now = DateTime.now();
-  const logFn = `C:\\Temp\\2025-10-17\\remote-cp.${now.toFormat("yyyyMMdd_HHmmss")}.log`;
-  logger = new OutputLogger(
-    "Cloud Pipeline",
-    cpExtConfig.logLevel,
-    new FileLogger(logFn, cpExtConfig.logLevel, { flags: "w" }),
+  const loggerFilePath = path.join(
+    cpExtConfig.globalStoragePath,
+    "logs",
+    `remote-cp.${now.toFormat("yyyyMMdd_HHmmss")}.log`,
   );
+  const fileLogger = new FileLogger(
+    loggerFilePath.toString(),
+    cpExtConfig.logLevel,
+    { flags: "w" },
+  );
+  logger = new OutputLogger("Cloud Pipeline", cpExtConfig.logLevel, fileLogger);
   const msgStart = "Extension 'remote-cp' activating...";
   logger.info(msgStart);
   console.log(msgStart);
+  logger.info("Logger\n" + `  file: ${loggerFilePath}`);
   context.subscriptions.push(logger);
   try {
     await cpExtConfig.activate(logger);

@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
-import { Disposable } from "./disposable";
 import * as fs from "fs";
 import * as path from "path";
+
+import { Disposable } from "./disposable";
 
 export enum LogLevel {
   error = 0,

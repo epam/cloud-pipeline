@@ -233,10 +233,14 @@ export class HostTreeDataProvider
   private async openRemoteCpWindow(element: RunInfo, reuseWindow: boolean) {
     const logPfx = `${this.toLog()}.openRemoteCpWindow()`;
     const sshDest = new SSHDestination(`pipeline-${element.runId}`);
-    this.cpExtConfig.onStart.push({
-      when: OnStartWhen.onDidResolve,
-      action: OnStartAction.openFolder,
-    });
+    const onStartV = await this.cpExtConfig.getOnStart();
+    await this.cpExtConfig.setOnStart([
+      ...onStartV,
+      {
+        when: OnStartWhen.onDidResolve,
+        action: OnStartAction.openFolder,
+      },
+    ]);
     await this.cpExtConfig.save(logPfx);
     openRemoteCpWindow(sshDest.toEncodedString(), reuseWindow);
   }

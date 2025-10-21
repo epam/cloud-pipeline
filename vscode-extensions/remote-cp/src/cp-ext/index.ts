@@ -61,7 +61,7 @@ export class CpExtension extends Disposable {
     when: OnStartWhen,
     args?: TArgs,
   ): Promise<any> {
-    const onStartList = [...this.cpExtConfig.onStart];
+    const onStartList = [...(await this.cpExtConfig.getOnStart())];
     let offset = 0;
     for (let i = 0; i < onStartList.length; i++) {
       const onStartProps = onStartList[i];
@@ -70,7 +70,9 @@ export class CpExtension extends Disposable {
           const onStartOption = new OnStartOption(onStartProps);
           return await onStartOption.run(this, args);
         } finally {
-          this.cpExtConfig.onStart.splice(i - offset, 1);
+          const onStartV = await this.cpExtConfig.getOnStart();
+          const resOnStart = onStartV.filter((_, idx) => idx != i - offset);
+          this.cpExtConfig.setOnStart(resOnStart);
           offset++;
         }
       }

@@ -2,7 +2,7 @@
   "name": "remote-cp",
   "displayName": "Remote - Cloud Pipeline",
   "description": "VSCode Remote Development connector to EPAM Cloud Pipeline platform runs",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "publisher": "epam",
   "icon": "resources/remote-cp.png",
   "engines": {
@@ -102,12 +102,6 @@
           ],
           "default": "info",
           "description": "Log level. Changes require restart.",
-          "scope": "application"
-        },
-        "remote-cp.onStart": {
-          "type": "string",
-          "default": "[]",
-          "description": "Next step on the extension run, JSON",
           "scope": "application"
         }
       }
