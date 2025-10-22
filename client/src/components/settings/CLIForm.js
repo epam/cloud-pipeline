@@ -79,16 +79,19 @@ function parseDriveMappingConfig (config) {
 }))
 @observer
 export default class CLIForm extends React.Component {
-
   state = {
     cli: {
-      validTill: moment().add(1, 'M'),
+      validTill: undefined,
       accessKey: null
     },
     driveMapping: {
       accessKey: null
     }
   };
+
+  componentDidMount () {
+    this.recalculateDefaultValidTillDate();
+  }
 
   @computed
   get driveMappintAuthUrl () {
@@ -115,6 +118,40 @@ export default class CLIForm extends React.Component {
     return false;
   }
 
+  @computed
+  get jwtTokenExpirationUserLimitSeconds () {
+    const {preferences} = this.props;
+    return preferences.launchJWTTokenExpirationUserLimit;
+  };
+
+  @computed
+  get jwtTokenDateTo () {
+    const {jwtTokenExpirationUserLimitSeconds: seconds} = this;
+    if (seconds > 0) {
+      const now = moment();
+      return now.add(seconds, 'seconds').endOf('day');
+    }
+    return undefined;
+  };
+
+  recalculateDefaultValidTillDate = () => {
+    (async () => {
+      try {
+        const {preferences} = this.props;
+        await preferences.fetchIfNeededOrWait();
+        const dt = this.jwtTokenDateTo || moment().add(1, 'M');
+        this.setState({
+          cli: {
+            validTill: dt,
+            accessKey: null
+          }
+        });
+      } catch {
+        // noop
+      }
+    })();
+  };
+
   renderPipeCLIContent = () => {
     const getSettingsValue = (key) => {
       if (this.props.preferences.loaded &&
@@ -133,27 +170,43 @@ export default class CLIForm extends React.Component {
       cli.accessKey = null;
       this.setState({cli});
     };
+    const {
+      validTill,
+      accessKey
+    } = this.state.cli || {};
     const generateAccessKey = async () => {
-      const validTill = moment(this.state.cli.validTill.format('YYYY-MM-DD'))
-        .add(1, 'days').subtract(1, 'seconds');
-      const now = moment(moment().format('YYYY-MM-DD'));
-      const request = new UserToken(validTill.diff(now, 'seconds'));
       const hide = message.loading('Generating...');
-      await request.fetch();
-      hide();
-      if (request.error) {
-        message.error(request.error);
-      } else {
-        const cli = this.state.cli;
-        cli.accessKey = request.value.token;
-        this.setState({cli});
+      try {
+        if (validTill) {
+          const expiration = validTill.endOf('day');
+          const now = moment();
+          let seconds = expiration.diff(now, 'seconds');
+          const {jwtTokenExpirationUserLimitSeconds} = this;
+          if (jwtTokenExpirationUserLimitSeconds > 0) {
+            seconds = Math.min(seconds, jwtTokenExpirationUserLimitSeconds);
+          }
+          const request = new UserToken(seconds);
+          await request.fetch();
+          if (request.error) {
+            throw new Error(request.error);
+          }
+          const newAccessKey = request.value.token;
+          this.setState({cli: {
+            accessKey: newAccessKey,
+            validTill
+          }});
+        }
+      } catch (error) {
+        message.error(error.message);
+      } finally {
+        hide();
       }
     };
     const generateCliConfigureCommand = () => {
       if (this.state.cli.accessKey) {
         const generateAPIAbsoluteUrl = () => {
           const el = document.createElement('div');
-          el.innerHTML= '<a href="'+(SERVER + API_PATH)+'"></a>';
+          el.innerHTML = '<a href="' + (SERVER + API_PATH) + '"></a>';
           return el.firstChild.href;
         };
         return `pipe configure --auth-token ${this.state.cli.accessKey} --api ${generateAPIAbsoluteUrl()}`;
@@ -258,6 +311,8 @@ export default class CLIForm extends React.Component {
       );
     }
 
+    const {jwtTokenDateTo} = this;
+
     return (
       <div>
         {
@@ -288,27 +343,30 @@ export default class CLIForm extends React.Component {
           <DatePicker
             className="valid-till-date-picker"
             allowClear={false}
+            disabled={!validTill}
+            disabledDate={jwtTokenDateTo ? (dt) => dt.isAfter(jwtTokenDateTo) : undefined}
             onChange={onValidTillChanged}
-            value={this.state.cli.validTill} />
+            value={validTill} />
           <Button
             id="generate-access-key-button"
+            disabled={!validTill}
             onClick={generateAccessKey}
             style={{marginLeft: 10}}
             type="primary">Generate access key</Button>
         </Row>
         {
-          this.state.cli.accessKey &&
+          accessKey &&
           <Row style={{marginTop: 10}}>
             <b>Access key: </b>
             <BashCode
               id="access-key"
               className={styles.mdPreview}
-              code={this.state.cli.accessKey}
+              code={accessKey}
             />
           </Row>
         }
         {
-          this.state.cli.accessKey &&
+          accessKey &&
           <Row style={{marginTop: 10}}>
             <b>CLI configure command: </b>
             {cliConfigureCommand}
