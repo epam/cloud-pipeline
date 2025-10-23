@@ -401,14 +401,10 @@ public final class MessageConstants {
             "error.repository.folder.cannot.be.removed";
     public static final String ERROR_INVALID_PIPELINE_FILE_NAME = "error.pipeline.file.name.invalid";
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
-    public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
-    public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
-    public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
-            "error.parse.bitbucket.cloud.repository.path";
-    public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
-    public static final String ERROR_PARSE_GITHUB_REPOSITORY_PATH = "error.parse.github.repository.path";
-    public static final String ERROR_GITHUB_TOKEN_NOT_FOUND = "error.github.token.not.found";
+    public static final String ERROR_REPOSITORY_PATH_PARSE = "error.repository.path.parse";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
+    public static final String ERROR_REPOSITORY_CREATION_NOT_SUPPORTED = "error.repository.creation.not.supported";
+    public static final String ERROR_REPOSITORY_TOKEN_NOT_FOUND = "error.repository.token.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =

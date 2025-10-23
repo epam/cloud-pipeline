@@ -47,9 +47,9 @@ public interface GitClientService {
 
     void createFile(GitProject project, String path, String content, String token, String branch);
 
-    byte[] getFileContents(GitProject project, String path, String revision, String token);
+    byte[] getFileContents(GitProject project, String path, String revision, String token, boolean isDraft);
 
-    byte[] getTruncatedFileContents(Pipeline pipeline, String path, String revision, int byteLimit);
+    byte[] getTruncatedFileContents(Pipeline pipeline, String path, String revision, int byteLimit, boolean isDraft);
 
     List<Revision> getTags(Pipeline pipeline);
 
@@ -63,7 +63,8 @@ public interface GitClientService {
 
     GitCommitEntry getCommit(Pipeline pipeline, String revisionName);
 
-    List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive);
+    List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive,
+                                                   boolean isDraft);
 
     GitCommitEntry updateFile(Pipeline pipeline, String path, String content, String message, boolean fileExists);
 
