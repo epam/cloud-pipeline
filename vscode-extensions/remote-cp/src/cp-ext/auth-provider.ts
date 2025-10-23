@@ -18,9 +18,10 @@ export class CpAuthProvider
   extends Disposable
   implements vscode.AuthenticationProvider
 {
-  public readonly onDidChangeSessions =
-    new vscode.EventEmitter<vscode.AuthenticationProviderAuthenticationSessionsChangeEvent>()
-      .event;
+  private readonly _onDidChangeSessions = this._register(
+    new vscode.EventEmitter<vscode.AuthenticationProviderAuthenticationSessionsChangeEvent>(),
+  );
+  public readonly onDidChangeSessions = this._onDidChangeSessions.event;
 
   protected constructor(
     private readonly context: vscode.ExtensionContext,

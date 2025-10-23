@@ -23,19 +23,10 @@ export interface ILogger {
   trace(message?: any, ...optionalParams: any[]): void;
 }
 
-export interface IOutputLogger extends ILogger {
-  level: LogLevelName;
-}
-
+export type IOutputLogger = ILogger;
 export class LoggerBase extends Disposable implements ILogger {
-  protected levelValue: LogLevel;
-
-  constructor(
-    level: LogLevelName,
-    private readonly base?: LoggerBase,
-  ) {
+  constructor(private readonly base?: LoggerBase) {
     super();
-    this.levelValue = LogLevel[level];
   }
 
   override dispose(): any {
@@ -76,7 +67,7 @@ export class OutputLogger extends LoggerBase implements IOutputLogger {
     level: LogLevelName,
     base?: LoggerBase,
   ) {
-    super(level, base);
+    super(base);
   }
 
   override dispose() {
@@ -84,14 +75,6 @@ export class OutputLogger extends LoggerBase implements IOutputLogger {
       this.outputChannel.dispose();
     }
     super.dispose();
-  }
-
-  public get level(): LogLevelName {
-    return LogLevel[this.levelValue] as LogLevelName;
-  }
-
-  public set level(value: LogLevelName) {
-    this.levelValue = LogLevel[value];
   }
 
   public show(): void {
@@ -131,43 +114,47 @@ export class OutputLogger extends LoggerBase implements IOutputLogger {
   override trace(message?: any, ...optionalParams: any[]): void {
     super.trace(message, ...optionalParams);
     this._ensureOutputChannel();
-    if (this.levelValue >= LogLevel.trace)
-      this.outputChannel.trace(message, ...optionalParams);
+    this.outputChannel.trace(message, ...optionalParams);
   }
 
   override debug(message?: any, ...optionalParams: any[]): void {
     super.debug(message, ...optionalParams);
     this._ensureOutputChannel();
-    if (this.levelValue >= LogLevel.debug)
-      this.outputChannel.debug(message, ...optionalParams);
+    this.outputChannel.debug(message, ...optionalParams);
   }
 
   override info(message?: any, ...optionalParams: any[]): void {
     super.info(message, ...optionalParams);
     this._ensureOutputChannel();
-    if (this.levelValue >= LogLevel.info)
-      this.outputChannel.info(message, ...optionalParams);
+    this.outputChannel.info(message, ...optionalParams);
   }
 
   override warn(message?: any, ...optionalParams: any[]): void {
     super.warn(message, ...optionalParams);
     this._ensureOutputChannel();
-    if (this.levelValue >= LogLevel.warn)
-      this.outputChannel.warn(message, ...optionalParams);
+    this.outputChannel.warn(message, ...optionalParams);
   }
 
   override error(message?: any, ...optionalParams: any[]): void {
     super.error(message, ...optionalParams);
     this._ensureOutputChannel();
-    if (this.levelValue >= LogLevel.error)
-      this.outputChannel.error(message, ...optionalParams);
+    this.outputChannel.error(message, ...optionalParams);
   }
 }
 
 type CpWriteStreamOptions = Parameters<typeof fs.createWriteStream>[1];
 
 export class FileLogger extends LoggerBase {
+  protected levelValue: LogLevel;
   private stream: fs.WriteStream;
+
+  public get level(): LogLevelName {
+    return LogLevel[this.levelValue] as LogLevelName;
+  }
+
+  public set level(value: LogLevelName) {
+    this.levelValue = LogLevel[value];
+  }
 
   constructor(
     private readonly filePath: string,
@@ -175,14 +162,11 @@ export class FileLogger extends LoggerBase {
     options: CpWriteStreamOptions = { flags: "a", flush: true },
     base?: LoggerBase,
   ) {
-    super(level, base);
+    super(base);
     const dir = path.dirname(filePath);
-    try {
-      fs.mkdirSync(dir, { recursive: true });
-    } catch {
-      // ignore
-    }
+    fs.mkdirSync(dir, { recursive: true });
     this.stream = fs.createWriteStream(filePath, options);
+    this.levelValue = LogLevel[level];
   }
 
   override dispose(): any {
@@ -208,26 +192,31 @@ export class FileLogger extends LoggerBase {
 
   override error(message?: any, ...optionalParams: any[]): void {
     super.error(message, ...optionalParams);
-    this.logToFile("ERROR", message, ...optionalParams);
+    if (this.levelValue >= LogLevel.error)
+      this.logToFile("ERROR", message, ...optionalParams);
   }
 
   override warn(message?: any, ...optionalParams: any[]): void {
     super.warn(message, ...optionalParams);
-    this.logToFile("WARN ", message, ...optionalParams);
+    if (this.levelValue >= LogLevel.warn)
+      this.logToFile("WARN ", message, ...optionalParams);
   }
 
   override info(message?: any, ...optionalParams: any[]): void {
     super.info(message, ...optionalParams);
-    this.logToFile("INFO ", message, ...optionalParams);
+    if (this.levelValue >= LogLevel.info)
+      this.logToFile("INFO ", message, ...optionalParams);
   }
 
   override debug(message?: any, ...optionalParams: any[]): void {
     super.debug(message, ...optionalParams);
-    this.logToFile("DEBUG", message, ...optionalParams);
+    if (this.levelValue >= LogLevel.debug)
+      this.logToFile("DEBUG", message, ...optionalParams);
   }
 
   override trace(message?: any, ...optionalParams: any[]): void {
     super.trace(message, ...optionalParams);
-    this.logToFile("TRACE", message, ...optionalParams);
+    if (this.levelValue >= LogLevel.trace)
+      this.logToFile("TRACE", message, ...optionalParams);
   }
 }

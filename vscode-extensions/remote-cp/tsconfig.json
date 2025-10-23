@@ -22,7 +22,7 @@
     "types": ["node", "vscode", "mocha"],
     "skipLibCheck": true
   },
-  "exclude": ["node_modules", "validate"],
+  "exclude": ["node_modules", "validate", "src/cp-run-view/webview"],
   "overrides": [
     {
       "files": ["*.cjs"],

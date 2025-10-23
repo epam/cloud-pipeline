@@ -2,7 +2,7 @@
   "name": "remote-cp",
   "displayName": "Remote - Cloud Pipeline",
   "description": "VSCode Remote Development connector to EPAM Cloud Pipeline platform runs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "epam",
   "icon": "resources/remote-cp.png",
   "engines": {
@@ -101,7 +101,7 @@
             "trace"
           ],
           "default": "info",
-          "description": "Log level. Changes require restart.",
+          "description": "Log level (file). Changes require restart.",
           "scope": "application"
         }
       }
@@ -115,10 +115,11 @@
     "views": {
       "remote": [
         {
-          "id": "cloudPipelineHosts",
+          "id": "cpRunView",
           "name": "Remote Cloud Pipeline",
           "group": "targets@1",
-          "remoteName": "remote-cp"
+          "remoteName": "remote-cp",
+          "type": "webview"
         }
       ]
     },
@@ -164,6 +165,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "remote-cp.explorer.filter",
+        "title": "Filter runs",
+        "icon": "$(filter)"
+      },
+      {
         "command": "remote-cp.explorer.add",
         "title": "Add New",
         "icon": "$(plus)"
@@ -172,6 +178,13 @@
         "command": "remote-cp.config.reset",
         "title": "CP: Reset Configuration",
         "icon": "$(clear-all)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "remote-cp.explorer.filter",
+        "key": "ctrl+f",
+        "when": "view == remoteExplorer"
       }
     ],
     "resourceLabelFormatters": [
@@ -216,13 +229,18 @@
       ],
       "view/title": [
         {
+          "command": "remote-cp.explorer.filter",
+          "when": "view == cpRunView",
+          "group": "navigation@0"
+        },
+        {
           "command": "remote-cp.explorer.pipeUpdate",
-          "when": "view == cloudPipelineHosts",
+          "when": "view == cpRunView",
           "group": "navigation@1"
         },
         {
           "command": "remote-cp.explorer.refresh",
-          "when": "view == cloudPipelineHosts",
+          "when": "view == cpRunView",
           "group": "navigation@2"
         }
       ],
@@ -286,6 +304,7 @@
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^2.22.0",
+    "copy-webpack-plugin": "^12.0.2",
     "esbuild": "^0.25.8",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
@@ -314,6 +333,7 @@
     "@microsoft/dev-tunnels-contracts": "^1.0.7463",
     "@types/unzipper": "^0.10.11",
     "@vscode/chat-extension-utils": "^0.0.0-alpha.4",
+    "@vscode/codicons": "^0.0.41",
     "@vscode/extension-telemetry": "^0.9.0",
     "@vscode/prompt-tsx": "^0.3.0-alpha.13",
     "dotenv": "^17.2.3",

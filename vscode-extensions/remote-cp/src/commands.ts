@@ -5,6 +5,7 @@ export const Commands = {
   showLog: "remote-cp.showLog",
 
   explorer: {
+    filter: "remote-cp.explorer.filter",
     emptyWindowInNewWindow: "remote-cp.explorer.emptyWindowInNewWindow",
     emptyWindowInCurrentWindow: "remote-cp.explorer.emptyWindowInCurrentWindow",
     pipeUpdate: "remote-cp.explorer.pipeUpdate",

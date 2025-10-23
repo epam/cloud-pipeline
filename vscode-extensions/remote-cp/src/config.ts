@@ -15,6 +15,7 @@ import {
   fsReadJsonFileSync,
   fsWriteJsonFileSync,
 } from "./common/files/file";
+import { IPackageJson, PackageJsonData } from "./common/files/packageJson";
 
 export const CpExtConfigKeyValues = [
   "prefix",
@@ -72,19 +73,18 @@ export class CpExtConfig implements ICpExtConfig {
   private defaults: DefaultsDict = {};
   private logger!: IOutputLogger;
 
+  public packageJson!: PackageJsonData;
+
   private readonly onStartFilePath: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
-    this.updateConfigData();
-
     this.onStartFilePath = path.join(this.globalStoragePath, "onStart.json");
+    this.updateConfigData();
   }
 
   protected updateConfigData(): void {
     const logPfx = `${this.toLog()}.updateConfigData()`;
     this.configData = vscode.workspace.getConfiguration("remote-cp");
-
-    if (this.logger) this.logger.level = this.logLevel;
 
     if (Object.keys(this.data).length > 0) {
       void this.save(logPfx);
@@ -131,7 +131,8 @@ export class CpExtConfig implements ICpExtConfig {
   public get platformUrl(): string {
     let res = this.data.platformUrl;
     if (!res)
-      res = this.data.platformUrl =
+      res =
+        /* this.data.platformUrl = */
         this.configData.get<string | undefined>(
           CpExtConfigKeys.platformUrl,
           process.env.CP_PLATFORM_URL,
@@ -149,7 +150,7 @@ export class CpExtConfig implements ICpExtConfig {
   public get prefix(): string {
     let res = this.data.prefix;
     if (!res)
-      res = this.data.prefix = this.configData.get<string>(
+      res = /* this.data.prefix = */ this.configData.get<string>(
         CpExtConfigKeys.prefix,
         this.defaults[CpExtConfigKeys.prefix] ?? "CP",
       );
@@ -163,7 +164,8 @@ export class CpExtConfig implements ICpExtConfig {
   public get apiEndpoint(): string {
     let res = this.data.apiEndpoint;
     if (!res)
-      res = this.data.apiEndpoint =
+      res =
+        /*this.data.apiEndpoint = */
         this.configData.get<string | undefined>(
           CpExtConfigKeys.apiEndpoint,
           process.env.CP_API_ENDPOINT,
@@ -180,7 +182,8 @@ export class CpExtConfig implements ICpExtConfig {
   public get authEndpoint(): string {
     let res = this.data.authEndpoint;
     if (!res)
-      res = this.data.authEndpoint =
+      res =
+        /* this.data.authEndpoint = */
         this.configData.get<string | undefined>(
           CpExtConfigKeys.authEndpoint,
           process.env.CP_AUTH_ENDPOINT,
@@ -197,7 +200,8 @@ export class CpExtConfig implements ICpExtConfig {
   public get pipeApiUri(): string | null {
     let res = this.data.pipeApiUri;
     if (!res)
-      res = this.data.pipeApiUri =
+      res =
+        /* this.data.pipeApiUri = */
         this.configData.get<string | null>(
           CpExtConfigKeys.pipeApiUri,
           process.env.CP_API ?? null,
@@ -214,7 +218,8 @@ export class CpExtConfig implements ICpExtConfig {
   public get pipeApiToken(): string | null {
     let res = this.data.pipeApiToken;
     if (!res)
-      res = this.data.pipeApiToken =
+      res =
+        /* this.data.pipeApiToken = */
         this.configData.get<string | null>(
           CpExtConfigKeys.pipeApiToken,
           process.env.CP_API_TOKEN ?? null,
@@ -236,7 +241,7 @@ export class CpExtConfig implements ICpExtConfig {
         null,
       );
       try {
-        res = this.data.pipeSnoozeUpdate = str
+        res = /* this.data.pipeSnoozeUpdate = */ str
           ? DateTime.fromISO(str) /* ISO-8601 */
           : null;
       } catch (err) {
@@ -254,7 +259,8 @@ export class CpExtConfig implements ICpExtConfig {
   public get logLevel(): LogLevelName {
     let res = this.data.logLevel;
     if (!res)
-      res = this.data.logLevel =
+      res =
+        /* this.data.logLevel = */
         this.configData.get<LogLevelName | undefined>(
           CpExtConfigKeys.logLevel,
           process.env.CP_LOG_LEVEL as LogLevelName,
@@ -327,7 +333,6 @@ export class CpExtConfig implements ICpExtConfig {
   public async activate(logger: IOutputLogger): Promise<void> {
     this.logger = logger;
     await applyDotEnv(this.context, this.logger);
-    this.logger.level = this.logLevel;
 
     const logPfx = `${this.toLog()}.activate()`;
     this.logger.trace(`${logPfx}, start`);
@@ -342,10 +347,15 @@ export class CpExtConfig implements ICpExtConfig {
       ),
     );
 
+    this.packageJson = await PackageJsonData.create(this.context, this.logger);
+
     //
     // subscribeAllEvents(this.context, this.logger);
 
-    this.defaults = await readDefaultsFromPackageJson(this.context);
+    this.defaults = await readDefaultsFromPackageJson(
+      this.context,
+      this.packageJson.obj,
+    );
 
     this.context.subscriptions.push(
       vscode.commands.registerCommand(Commands.config.reset, this.reset, this),
@@ -393,18 +403,12 @@ export class CpExtConfig implements ICpExtConfig {
 
 async function readDefaultsFromPackageJson(
   context: vscode.ExtensionContext,
+  packageJsonObj: IPackageJson,
 ): Promise<DefaultsDict> {
   const resDefaults: DefaultsDict = {};
-  const packageJsonUri = vscode.Uri.joinPath(
-    context.extensionUri,
-    "package.json",
-  );
-  const data = await vscode.workspace.fs.readFile(packageJsonUri);
-  const text = new TextDecoder("utf-8").decode(data);
-  const obj = JSON.parse(text);
   const keyRe = /remote-cp\.(.*)/;
   for (const [key, value] of Object.entries<any>(
-    obj.contributes.configuration.properties,
+    packageJsonObj.contributes.configuration.properties,
   )) {
     const keyM = keyRe.exec(key);
     if (keyM) {

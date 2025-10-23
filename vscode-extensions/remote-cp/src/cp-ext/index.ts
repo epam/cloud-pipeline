@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { registerHostTreeView } from "../hostTreeView";
+import { registerHostTreeView } from "../cp-run-view/register";
 import { ILogger } from "../common/logger";
 import { CpExtConfig } from "../config";
 import { Disposable } from "../common/disposable";

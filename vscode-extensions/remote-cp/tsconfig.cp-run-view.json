@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "types": [],
+    "rootDir": "src/cp-run-view/webview",
+    "outDir": "dist/webview"
+  },
+  "include": ["src/cp-run-view/webview/**/*.ts"],
+  "exclude": ["node_modules"]
+}

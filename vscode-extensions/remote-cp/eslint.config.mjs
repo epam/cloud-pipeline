@@ -25,6 +25,7 @@ export default [
 
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.mjs"],
+    ignores: ["src/cp-run-view/webview/**/*.ts"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -36,6 +37,40 @@ export default [
         globals: {
           ...globals.browser,
           ...globals.node,
+        },
+      },
+    },
+    plugins: {
+      prettier: prettierPlugin,
+      import: importPlugin,
+      react: reactPlugin,
+      reactHooks: reactHooks,
+    },
+    rules: {
+      "@typescript-eslint/no-empty": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-floating-promises": "error",
+      "prettier/prettier": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      "@typescript-eslint/ass": "off",
+      "no-useless-escape": "warn",
+      "no-debugger": "warn",
+    },
+  },
+  {
+    files: ["src/cp-run-view/webview/**/*.ts"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: "./tsconfig.cp-run-view.json",
+        tsconfigRootDir: __dirname,
+        ecmaVersion: "latest",
+        sourceType: "module",
+        globals: {
+          ...globals.browser,
         },
       },
     },
