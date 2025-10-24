@@ -66,9 +66,12 @@ public class AzureDevOpsService implements GitClientService {
     private static final String REF_BRANCH_PREFIX = "refs/heads/";
     private static final String TAG = "tag";
     private static final String BRANCH = "branch";
+    private static final String COMMIT = "commit";
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String ORGANIZATION_NAME = "organization name";
+    private static final String FULL = "Full";
+    private static final String ONE = "1";
 
     private final AzureDevOpsMapper mapper;
     private final MessageHelper messageHelper;
@@ -135,7 +138,7 @@ public class AzureDevOpsService implements GitClientService {
                                                           final String version, final boolean recursive,
                                                           final boolean isDraft) {
         final AzureDevOpsClient client = getClient(pipeline);
-        final String recursionLevel = recursive ? "Full" : "1";
+        final String recursionLevel = recursive ? FULL : ONE;
         final String versionType = getVersionType(version, isDraft);
         final String rootPath = StringUtils.isBlank(path)
                 ? ProviderUtils.DELIMITER
@@ -288,7 +291,7 @@ public class AzureDevOpsService implements GitClientService {
         if (StringUtils.isBlank(version)) {
             return BRANCH;
         }
-        return isDraft ? "commit" : TAG;
+        return isDraft ? COMMIT : TAG;
     }
 
     private GitTagEntry commitToTagEntry(final GitCommitEntry commit, final String tagName) {
