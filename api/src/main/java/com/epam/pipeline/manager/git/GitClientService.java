@@ -47,8 +47,18 @@ public interface GitClientService {
 
     void createFile(GitProject project, String path, String content, String token, String branch);
 
+    /**
+     * @param isDraft if true indicates that version is a commit ID otherwise version is a tag name.
+     *                Applicable for Azure DevOps provider only.
+     *
+     */
     byte[] getFileContents(GitProject project, String path, String revision, String token, boolean isDraft);
 
+    /**
+     * @param isDraft if true indicates that version is a commit ID otherwise version is a tag name.
+     *                Applicable for Azure DevOps provider only.
+     *
+     */
     byte[] getTruncatedFileContents(Pipeline pipeline, String path, String revision, int byteLimit, boolean isDraft);
 
     List<Revision> getTags(Pipeline pipeline);
@@ -63,6 +73,11 @@ public interface GitClientService {
 
     GitCommitEntry getCommit(Pipeline pipeline, String revisionName);
 
+    /**
+     * @param isDraft if true indicates that version is a commit ID otherwise version is a tag name.
+     *                Applicable for Azure DevOps provider only.
+     *
+     */
     List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive,
                                                    boolean isDraft);
 

@@ -34,10 +34,15 @@ public interface AzureDevOpsApi {
     String PROJECT = "project";
     String REPOSITORY = "repository";
     String OBJECT_ID = "objectId";
-    String VERSION = "searchCriteria.itemVersion.version";
-    String VERSION_TYPE = "searchCriteria.itemVersion.versionType";
+    String COMMIT_VERSION = "searchCriteria.itemVersion.version";
+    String COMMIT_VERSION_TYPE = "searchCriteria.itemVersion.versionType";
     String FILTER = "filter";
     String COMMIT = "commit";
+    String SCOPE_PATH = "scopePath";
+    String RECURSION_LEVEL = "recursionLevel";
+    String PATH = "path";
+    String VERSION = "versionDescriptor.version";
+    String VERSION_TYPE = "versionDescriptor.versionType";
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}?api-version=7.1")
     Call<AzureDevOpsRepository> getRepository(@Path(ORGANIZATION) String organization,
@@ -60,8 +65,8 @@ public interface AzureDevOpsApi {
     Call<AzureDevOpsObjectList<AzureDevOpsCommit>> getLastCommit(@Path(ORGANIZATION) String organization,
                                                                  @Path(PROJECT) String project,
                                                                  @Path(REPOSITORY) String repository,
-                                                                 @Query(VERSION) String version,
-                                                                 @Query(VERSION_TYPE) String versionType);
+                                                                 @Query(COMMIT_VERSION) String version,
+                                                                 @Query(COMMIT_VERSION_TYPE) String versionType);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/commits/{commit}?api-version=7.1")
     Call<AzureDevOpsCommit> getCommit(@Path(ORGANIZATION) String organization,
@@ -73,24 +78,24 @@ public interface AzureDevOpsApi {
     Call<AzureDevOpsObjectList<AzureDevOpsItem>> getItems(@Path(ORGANIZATION) String organization,
                                                           @Path(PROJECT) String project,
                                                           @Path(REPOSITORY) String repository,
-                                                          @Query("scopePath") String path,
-                                                          @Query("recursionLevel") String recursionLevel,
-                                                          @Query("versionDescriptor.version") String version,
-                                                          @Query("versionDescriptor.versionType") String versionType);
+                                                          @Query(SCOPE_PATH) String path,
+                                                          @Query(RECURSION_LEVEL) String recursionLevel,
+                                                          @Query(VERSION) String version,
+                                                          @Query(VERSION_TYPE) String versionType);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/items?api-version=7.1")
     Call<ResponseBody> getItem(@Path(ORGANIZATION) String organization,
                                @Path(PROJECT) String project,
                                @Path(REPOSITORY) String repository,
-                               @Query("path") String path,
-                               @Query("versionDescriptor.version") String version,
-                               @Query("versionDescriptor.versionType") String versionType);
+                               @Query(PATH) String path,
+                               @Query(VERSION) String version,
+                               @Query(VERSION_TYPE) String versionType);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/items?api-version=7.1&$format=json")
     Call<AzureDevOpsItem> getItemInfo(@Path(ORGANIZATION) String organization,
                                       @Path(PROJECT) String project,
                                       @Path(REPOSITORY) String repository,
-                                      @Query("path") String path,
-                                      @Query("versionDescriptor.version") String version,
-                                      @Query("versionDescriptor.versionType") String versionType);
+                                      @Query(PATH) String path,
+                                      @Query(VERSION) String version,
+                                      @Query(VERSION_TYPE) String versionType);
 }
