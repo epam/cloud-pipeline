@@ -170,6 +170,51 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
         CP_CAP_MODULES_CONFIG_DIR="${CP_CAP_MODULES_CONFIG_DIR:-$MODULES_FILES_DIR}"
         if [ ! -f "$CP_CAP_MODULES_CONFIG_DIR/SitePackage.lua" ]; then
             mkdir -p "$CP_CAP_MODULES_CONFIG_DIR"
+            cat > "$CP_CAP_MODULES_CONFIG_DIR/CheckPermissions.sh" << 'EOF'
+#!/bin/bash
+
+module_dir=$(dirname "$1")
+permissions_path="$module_dir/permissions.json"
+result="You are not allowed to launch this module. Please contact your administrator."
+
+delimiter="."
+current_user_info_base64=$(echo "$API_TOKEN" | cut -d "$delimiter" -f 2)
+current_user_info=$(echo "$current_user_info_base64" | base64 -d)
+current_user=$(echo "$current_user_info" | jq -r '.sub')
+
+if [[ -z "$current_user" ]]; then
+    result="User ID is undefined. $result"
+elif [[ -f "$permissions_path" ]]; then
+    permissions_mode=$(jq -r '.mode' "$permissions_path")
+    allowed_values=$(jq -r '.values | @sh' "$permissions_path")
+
+    if [[ "$permissions_mode" == 'user' ]]; then
+        if printf "%s\0" "$allowed_values" | grep -w -F -i -- "$current_user" > /dev/null; then
+            result="true"
+        fi
+
+    elif [[ "$permissions_mode" == 'location' ]]; then
+        user_entity=$(curl -s -k -X GET -H "Authorization: Bearer $API_TOKEN" --header "Accept: application/json" \
+                      "${API}metadata/find?entityName=${current_user}&entityClass=PIPELINE_USER" | jq '.payload.entity')
+        user_region=$(curl -s -k -X POST -H "Authorization: Bearer $API_TOKEN" --header "Content-Type: application/json" --header "Accept: application/json" \
+                      -d ["$user_entity"] "${API}metadata/load" | jq '.payload[0].data.user_region.value' | tr -d '" ')
+
+        if [[ -n "$user_region" && "$user_region" != null ]]; then
+            if printf "%s\0" "$allowed_values" | grep -w -F -i -- "$user_region" > /dev/null; then
+                result="true"
+            else
+                result="Region does not match permissions. $result"
+            fi
+        else
+            result="Region is undefined. $result"
+        fi
+    fi
+else
+    result="true"
+fi
+
+printf "$result"
+EOF
             cat > "$CP_CAP_MODULES_CONFIG_DIR/SitePackage.lua" << EOF
 local hook =  require("Hook")
 local uname = require("posix").uname
@@ -177,19 +222,28 @@ local uname = require("posix").uname
 local module_msg = {}
 
 local function load_hook(t)
-   if (mode() ~= "load") then return end
-   local msg = string.format("user=%s module=%s path=%s host=%s time=%f",
-                             os.getenv("USER"), t.modFullName, t.fn, uname("%n"),
-                             epoch())
-   module_msg[t.modFullName] = msg
+    if (mode() ~= "load") then return end
+
+    local cmdCheckPermissions = "bash " .. \"$CP_CAP_MODULES_CONFIG_DIR\" .. "/CheckPermissions.sh " .. t.fn
+    local handle = io.popen(cmdCheckPermissions)
+    local cmdResult = handle:read("*a")
+    handle:close()
+    if (cmdResult ~= "true") then
+        LmodError("[" .. t.modFullName .. "] " .. cmdResult)
+        return end
+
+    local msg = string.format("user=%s module=%s path=%s host=%s time=%f",
+                              os.getenv("USER"), t.modFullName, t.fn, uname("%n"),
+                              epoch())
+    module_msg[t.modFullName] = msg
 end
 
 hook.register("load", load_hook)
 
 local function report_loads()
-   for k,msg in pairs(module_msg) do
-      lmod_system_execute("pipe_log_info \"" .. msg .. "\" \"$CP_CAP_MODULES_USAGE_TASK\" &> /dev/null")
-   end
+    for k,msg in pairs(module_msg) do
+        lmod_system_execute("pipe_log_info \"" .. msg .. "\" \"$CP_CAP_MODULES_USAGE_TASK\" &> /dev/null")
+    end
 end
 
 ExitHookA.register(report_loads)
