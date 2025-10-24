@@ -19,6 +19,7 @@ import static com.codeborne.selenide.Condition.cssClass;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
@@ -83,7 +84,7 @@ public class NavigationMenuAO {
 
     public GlobalSearchAO search() {
         sleep(2, SECONDS);
-        actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
+        Utils.sendKeysWithControl("F");
         sleep(1, SECONDS);
         $(byClassName("earch__search-container")).waitUntil(visible, 5000);
         return new GlobalSearchAO();

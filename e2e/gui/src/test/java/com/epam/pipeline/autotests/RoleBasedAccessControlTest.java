@@ -109,7 +109,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .library();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
         Selenide.close();

@@ -123,9 +123,12 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline1)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId());
         assertEquals(clusterMenu()
+                .sortByDecrease(DATE)
                 .waitForTheNode(getLastRunId())
                 .getNodeName(getLastRunId()), nodeName);
     }

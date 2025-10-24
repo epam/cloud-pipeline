@@ -79,6 +79,7 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO execute(String command, CharSequence key) {
         sleep(300, MILLISECONDS);
+        context().click();
         Utils.sendKeysWithSlashes(command);
         sleep(300, MILLISECONDS);
         actions().sendKeys(key).perform();

@@ -75,7 +75,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     public ToolGroup searchToolByName(final String toolName) {
         StringSelection stringSelection = new StringSelection(toolName);
         Toolkit.getDefaultToolkit().getSystemClipboard()
-                .setContents(stringSelection, null);
+               .setContents(stringSelection, null);
         SelenideElement element = get(SEARCH);
         element.click();
         element.clear();
