@@ -119,7 +119,19 @@ export default class CLIForm extends React.Component {
   }
 
   @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  @computed
   get jwtTokenExpirationUserLimitSeconds () {
+    if (this.isAdmin) {
+      return 0;
+    }
     const {preferences} = this.props;
     return preferences.launchJWTTokenExpirationUserLimit;
   };
