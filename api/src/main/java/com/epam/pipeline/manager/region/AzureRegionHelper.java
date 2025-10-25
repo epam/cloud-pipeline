@@ -26,23 +26,17 @@ import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.epam.pipeline.utils.Base64Utils;
 import com.epam.pipeline.utils.NetworkUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.microsoft.aad.adal4j.AuthenticationException;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.resources.fluentcore.arm.Region;
-import com.microsoft.azure.storage.blob.PipelineOptions;
-import com.microsoft.azure.storage.blob.RequestRetryOptions;
-import com.microsoft.azure.storage.blob.RetryPolicyType;
-import com.microsoft.azure.storage.blob.ServiceURL;
-import com.microsoft.azure.storage.blob.SharedKeyCredentials;
-import com.microsoft.azure.storage.blob.StorageURL;
+import com.azure.core.management.Region;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.storage.blob.BlobServiceClient;
+import com.epam.pipeline.exception.AuthenticationException;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureStorageHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -56,10 +50,6 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
 
     private static final String GOVERNMENT_PREFIX = "GOV_";
     private final MessageHelper messageHelper;
-    private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net";
-    private static final Integer MAX_TRIES_COUNT = 1;
-    private static final Integer TRY_TIMEOUT = 2;
-
     private static final String STORAGE_ACCOUNT = "storage_account";
     private static final String STORAGE_KEY = "storage_key";
 
@@ -79,9 +69,9 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
 
     @Override
     public List<String> loadAvailableRegions() {
-        return Arrays.stream(Region.values())
-                .filter(region -> !region.name().startsWith(GOVERNMENT_PREFIX))
+        return Region.values().stream()
                 .map(Region::name)
+                .filter(name -> !name.startsWith(GOVERNMENT_PREFIX))
                 .collect(Collectors.toList());
     }
 
@@ -144,24 +134,16 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     private void validateStorageAccount(final String storageAccountName, final String storageAccountKey) {
         Assert.isTrue(StringUtils.isNotBlank(storageAccountName),
                 messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_ACC_REQUIRED));
-        Assert.isTrue(StringUtils.isNotBlank(storageAccountKey),
-                messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_KEY_REQUIRED));
         checkThatCredentialsIsActive(storageAccountName, storageAccountKey);
     }
 
     void checkThatCredentialsIsActive(final String storageAccountName, final String storageAccountKey) {
         try {
-            final SharedKeyCredentials credentials = new SharedKeyCredentials(storageAccountName, storageAccountKey);
-            final RequestRetryOptions requestRetryOptions = new RequestRetryOptions(RetryPolicyType.EXPONENTIAL,
-                    MAX_TRIES_COUNT, TRY_TIMEOUT, null, null, null);
-            final PipelineOptions pipelineOptions = new PipelineOptions().withRequestRetryOptions(requestRetryOptions);
-            final ServiceURL serviceURL = new ServiceURL(new URL(
-                    String.format(BLOB_URL_FORMAT, storageAccountName)),
-                    StorageURL.createPipeline(credentials, pipelineOptions));
-            serviceURL.getProperties().blockingGet();
+            final BlobServiceClient blobServiceClient = AzureStorageHelper.getBlobServiceClient(storageAccountName,
+                    storageAccountKey);
+            blobServiceClient.getProperties();
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_CREDENTIAL_INVALID), e);
+            throw new IllegalArgumentException("Invalid Azure Storage credentials", e);
         }
     }
 
@@ -186,7 +168,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         Assert.isTrue(StringUtils.isNotBlank(resourceGroup), messageHelper.getMessage(
                 MessageConstants.ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND, resourceGroup));
         try {
-            final Azure client = AzureHelper.buildClient(authFilePath);
+            final AzureResourceManager client = AzureHelper.buildClient(authFilePath);
             Assert.isTrue(client.resourceGroups().contain(resourceGroup), messageHelper.getMessage(
                     MessageConstants.ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND, resourceGroup));
         } catch (AuthenticationException e) {

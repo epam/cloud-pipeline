@@ -61,16 +61,6 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
     }
 
     @Test
-    public void createShouldThrowIfAccountKeyIsNotSpecified() {
-        assertThrows(IllegalArgumentException.class,
-            () -> {
-                final AzureRegionDTO regionDTO = createRegionDTO();
-                regionDTO.setStorageAccountKey(null);
-                cloudRegionManager.create(regionDTO);
-            });
-    }
-
-    @Test
     public void updateShouldSaveResourceGroupFromTheOldValue() {
         final AzureRegionDTO azureRegionDTO = updateRegionDTO();
         azureRegionDTO.setResourceGroup(ANOTHER_RESOURCE_GROUP);

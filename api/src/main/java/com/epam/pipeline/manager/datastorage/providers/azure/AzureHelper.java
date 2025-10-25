@@ -1,51 +1,98 @@
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
+import com.azure.core.management.exception.ManagementException;
+import com.azure.identity.CredentialUnavailableException;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
-import com.microsoft.azure.credentials.AzureCliCredentials;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.rest.LogLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import com.azure.core.credential.AccessToken;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.credential.TokenRequestContext;
+import com.azure.core.management.AzureEnvironment;
+import com.azure.core.management.profile.AzureProfile;
+import com.azure.identity.ClientSecretCredentialBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.epam.pipeline.exception.AuthenticationException;
+import com.epam.pipeline.manager.cloud.azure.AzureCredentials;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.util.Map;
 
 @Slf4j
 public final class AzureHelper {
+
+    private static final String MANAGEMENT_AZURE_COM_DEFAULT = "https://management.azure.com/.default";
+    private static final String CLIENT_ID = "clientId";
+    private static final String CLIENT_SECRET = "clientSecret";
+    private static final String TENANT_ID = "tenantId";
+    private static final String SUBSCRIPTION_ID = "subscriptionId";
 
     private AzureHelper() {
         //no op
     }
 
-    private static final String CP_CLOUD_CREDENTIALS_LOCATION = "/root/.cloud";
+    public static AzureResourceManager buildClient(final String authFilePath) {
+        final AzureCredentials azureCredentials = getAzureCredentials(authFilePath);
+        return buildClient(azureCredentials);
+    }
 
-    public static Azure buildClient(final String authFile) {
+    public static AzureResourceManager buildClient(final AzureCredentials credentials) throws AuthenticationException {
         try {
-            final Azure.Configurable builder = Azure.configure()
-                    .withLogLevel(LogLevel.BASIC);
-            return authenticate(authFile, builder)
+            final AzureResourceManager azure = AzureResourceManager
+                    .authenticate(credentials.getCredential(), credentials.getProfile())
                     .withDefaultSubscription();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new AzureException(e);
+            log.info("Authenticated to subscription: {}", azure.subscriptionId());
+            return azure;
+        } catch (ManagementException e) {
+            throw new AuthenticationException(String.format("Failed to authenticate to Azure: %s", e.getMessage()));
         }
     }
 
-    private static Azure.Authenticated authenticate(final String authFile,
-                                             Azure.Configurable builder) throws IOException {
-        if (StringUtils.isBlank(authFile)) {
-            return builder.authenticate(getAzureCliCredentials());
+    public static AzureCredentials getAzureCredentials(final String authFilePath) throws AzureException{
+        try {
+            TokenCredential credential;
+            String tenantId;
+            String subscriptionId;
+            AzureProfile profile;
+            if (!StringUtils.isBlank(authFilePath)) {
+                log.info("Authentication using Azure auth file");
+                final File authFile = new File(authFilePath);
+                final Map<String, String> config = new ObjectMapper().readValue(authFile, Map.class);
+                final String clientId = config.get(CLIENT_ID);
+                final String clientSecret = config.get(CLIENT_SECRET);
+                tenantId = config.get(TENANT_ID);
+                subscriptionId = config.get(SUBSCRIPTION_ID);
+                credential = new ClientSecretCredentialBuilder()
+                        .clientId(clientId)
+                        .clientSecret(clientSecret)
+                        .tenantId(tenantId)
+                        .build();
+                profile = new AzureProfile(tenantId, subscriptionId, AzureEnvironment.AZURE);
+            } else {
+                log.info("Authentication using DefaultAzureCredential");
+                credential = new DefaultAzureCredentialBuilder().build();
+                profile = new AzureProfile(AzureEnvironment.AZURE);
+            }
+            return AzureCredentials.builder()
+                    .credential(credential)
+                    .profile(profile)
+                    .build();
+        } catch (IllegalArgumentException | NullPointerException | IOException e) {
+            throw new AzureException(String.format("Failed to get Azure credentials: %s", e.getMessage()));
         }
-        return builder.authenticate(new File(authFile));
-    }
+}
 
-    public static AzureCliCredentials getAzureCliCredentials() throws IOException {
-        File customAzureProfile = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "azureProfile.json").toFile();
-        File customAccessToken = Paths.get(CP_CLOUD_CREDENTIALS_LOCATION, "accessTokens.json").toFile();
-        if (customAzureProfile.exists() && customAccessToken.exists()) {
-            return AzureCliCredentials.create(customAzureProfile, customAccessToken);
+    public static String getBearerToken(final TokenCredential credential) {
+        final String[] scopes = {MANAGEMENT_AZURE_COM_DEFAULT};
+        final TokenRequestContext context = new TokenRequestContext().addScopes(scopes);
+        try {
+            final AccessToken accessToken = credential.getTokenSync(context);
+            return accessToken.getToken();
+        } catch (CredentialUnavailableException e) {
+            throw new AzureException(String.format("Error getting access token: %s", e.getMessage()));
         }
-        return AzureCliCredentials.create();
     }
 }

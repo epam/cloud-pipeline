@@ -41,8 +41,9 @@ import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.microsoft.azure.storage.blob.BlobSASPermission;
-import com.microsoft.azure.storage.blob.ContainerSASPermission;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.sas.BlobContainerSasPermission;
+import com.azure.storage.blob.sas.BlobSasPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -133,22 +134,23 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final AzureBlobStorage dataStorage,
                                                           final String path,
-                                                          final String version, ContentDisposition contentDisposition) {
-        final BlobSASPermission permission = new BlobSASPermission()
-            .withRead(true)
-            .withAdd(false)
-            .withWrite(false);
-        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString());
+                                                          final String version,
+                                                          ContentDisposition contentDisposition) {
+        final BlobSasPermission permission = new BlobSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(false)
+                .setWritePermission(false);
+        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString(), true);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final AzureBlobStorage dataStorage,
                                                                        final String path) {
-        final BlobSASPermission permission = new BlobSASPermission()
-                .withRead(true)
-                .withAdd(true)
-                .withWrite(true);
-        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString());
+        final BlobSasPermission permission = new BlobSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(true)
+                .setWritePermission(true);
+        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString(), false);
     }
 
     @Override
@@ -176,23 +178,23 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
                 : blobPermissions(read, write);
     }
 
-    private BlobSASPermission blobPermissions(final boolean read, final boolean write) {
-        return new BlobSASPermission()
-                .withRead(read)
-                .withAdd(write)
-                .withCreate(write)
-                .withWrite(write)
-                .withDelete(write);
+    private BlobSasPermission blobPermissions(final boolean read, final boolean write) {
+        return new BlobSasPermission()
+                .setReadPermission(read)
+                .setAddPermission(write)
+                .setCreatePermission(write)
+                .setWritePermission(write)
+                .setDeletePermission(write);
     }
 
-    private ContainerSASPermission containerPermission(final boolean read, final boolean write) {
-        return new ContainerSASPermission()
-                .withList(read)
-                .withRead(read)
-                .withAdd(write)
-                .withCreate(write)
-                .withWrite(write)
-                .withDelete(write);
+    private BlobContainerSasPermission containerPermission(final boolean read, final boolean write) {
+        return new BlobContainerSasPermission()
+                .setListPermission(read)
+                .setReadPermission(read)
+                .setAddPermission(write)
+                .setCreatePermission(write)
+                .setWritePermission(write)
+                .setDeletePermission(write);
     }
 
     @Override
@@ -325,9 +327,13 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
         throw new UnsupportedOperationException();
     }
 
-    private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
+    public AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
+        final String storageAccountName = region.getStorageAccount();
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        return new AzureStorageHelper(region, credentials, azEvents, messageHelper);
+        final String storageAccountKey = credentials.getStorageAccountKey();
+        final BlobServiceClient blobServiceClient = AzureStorageHelper.getBlobServiceClient(storageAccountName,
+                storageAccountKey);
+        return new AzureStorageHelper(region, blobServiceClient, azEvents, messageHelper);
     }
 }
