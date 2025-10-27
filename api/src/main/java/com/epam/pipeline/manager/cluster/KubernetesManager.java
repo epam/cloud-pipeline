@@ -118,7 +118,7 @@ public class KubernetesManager {
     @Autowired
     private KubernetesDeploymentAPIClient deploymentAPIClient;
 
-    @Value("${kube.namespace}")
+    @Value("${kube.namespace:default}")
     private String kubeNamespace;
 
     @Value("${kube.master.pod.check.url}")

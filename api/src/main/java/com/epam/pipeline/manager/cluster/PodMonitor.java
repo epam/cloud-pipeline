@@ -142,7 +142,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                        final CloudFacade cloudFacade,
                        final PreferenceManager preferenceManager,
                        final List<RunCleaner> cleaners,
-                       final @Value("${kube.namespace}") String kubeNamespace) {
+                       final @Value("${kube.namespace:default}") String kubeNamespace) {
             this.runLogManager = runLogManager;
             this.pipelineRunManager = pipelineRunManager;
             this.runStatusManager = runStatusManager;
