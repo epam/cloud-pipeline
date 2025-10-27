@@ -7,8 +7,8 @@ on:
   push:
     branches:
       - develop
+      - 'stage/0.21/azure'
       # - 'release/**'
-      # - 'stage/**'
 
   workflow_dispatch:
 
