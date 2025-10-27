@@ -16,10 +16,8 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
-import static com.codeborne.selenide.Selenide.$$;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
-import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -41,9 +39,11 @@ import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
@@ -116,11 +116,6 @@ public class Configuration implements AccessObject<Configuration> {
 
     public static By rootEntityType() {
         return By.xpath("//*[contains(@class, 'aunch-form-parameter__launch-form-parameter') " +
-                "and contains(., 'Root entity type')]");
-    }
-
-    public static By rootEntityTypeValue() {
-        return By.xpath("//*[contains(@class, 'arameter-name-input__parameter-name') " +
                 "and contains(., 'Root entity type')]");
     }
 

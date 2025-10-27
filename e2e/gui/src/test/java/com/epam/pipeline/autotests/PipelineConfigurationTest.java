@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Selectors.withText;
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
 import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
@@ -25,7 +24,6 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
-import static java.lang.String.format;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -39,6 +37,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -57,6 +56,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.menu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {

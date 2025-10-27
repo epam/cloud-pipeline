@@ -16,9 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
-import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
-import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
@@ -33,10 +30,12 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
+import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
@@ -45,6 +44,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON_TIME;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.POOL_NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;

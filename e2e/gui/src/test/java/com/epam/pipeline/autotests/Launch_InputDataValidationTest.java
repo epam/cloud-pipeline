@@ -15,12 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -34,6 +31,9 @@ import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {

@@ -16,14 +16,11 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
-import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -36,12 +33,12 @@ import java.time.LocalDate;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.PAUSED;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMIT;
@@ -57,7 +54,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RESUME;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
+import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
 import static java.lang.Boolean.parseBoolean;

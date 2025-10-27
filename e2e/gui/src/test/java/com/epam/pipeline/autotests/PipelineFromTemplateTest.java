@@ -16,15 +16,16 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.Template;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 
 public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunningTest {
     @AfterMethod(alwaysRun = true)

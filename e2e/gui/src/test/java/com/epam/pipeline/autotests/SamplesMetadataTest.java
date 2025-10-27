@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.disabled;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -30,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
 import static com.codeborne.selenide.Condition.*;
@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.epam.pipeline.autotests.ao.Configuration.*;
 import static com.epam.pipeline.autotests.ao.Configuration.name;
 import static com.epam.pipeline.autotests.ao.Configuration.title;

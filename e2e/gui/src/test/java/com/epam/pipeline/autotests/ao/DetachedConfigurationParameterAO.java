@@ -16,16 +16,16 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import static com.codeborne.selenide.Condition.cssClass;
-import static com.codeborne.selenide.Condition.have;
-import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Selectors.byClassName;
 import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.lang.String.format;

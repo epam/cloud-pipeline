@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -45,6 +44,7 @@ import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationC
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.FOLDERS;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;

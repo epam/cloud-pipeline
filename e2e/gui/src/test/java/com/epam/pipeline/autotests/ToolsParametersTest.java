@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Selenide.refresh;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
@@ -36,6 +35,7 @@ import java.util.stream.Stream;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Selectors.byTitle;
+import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
