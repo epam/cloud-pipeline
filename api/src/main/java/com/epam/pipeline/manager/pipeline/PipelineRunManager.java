@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -72,6 +72,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.audit.CommonAuditClient;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
@@ -250,6 +251,9 @@ public class PipelineRunManager {
 
     @Autowired
     private CloudFacade cloudFacade;
+
+    @Autowired
+    private CommonAuditClient auditClient;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -487,18 +491,18 @@ public class PipelineRunManager {
         MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
     }
 
-    private RunAssignPolicy getDefaultPodAssignPolicy(final PipelineRun run) {
-        return RunAssignPolicy.builder()
+    private RunContainerSpec getDefaultPodAssignPolicy(final PipelineRun run) {
+        return RunContainerSpec.builder()
                 .selector(
-                        RunAssignPolicy.PodAssignSelector.builder()
+                        RunContainerSpec.PodAssignSelector.builder()
                                 .label(KubernetesConstants.RUN_ID_LABEL)
                                 .value(run.getId().toString()).build())
                 .tolerances(Arrays.asList(
-                        RunAssignPolicy.PodAssignTolerance.builder()
+                        RunContainerSpec.PodAssignTolerance.builder()
                                 .label(KubernetesConstants.KUBE_UNREACHABLE_NODE_LABEL)
                                 .value(StringUtils.EMPTY)
                                 .build(),
-                        RunAssignPolicy.PodAssignTolerance.builder()
+                        RunContainerSpec.PodAssignTolerance.builder()
                                 .label(KubernetesConstants.KUBE_NOT_READY_NODE_LABEL)
                                 .value(StringUtils.EMPTY)
                                 .build()))
@@ -982,7 +986,7 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setPodId(getRootPodIDFromPipeline(run));
         Optional.ofNullable(parentRun).map(PipelineRun::getId).ifPresent(run::setParentRunId);
-        run.convertParamsToString(configuration.getParameters());
+        run.setPipelineRunParameters(mapPipeConfValuesToRunParameters(configuration));
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
         run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
@@ -1010,6 +1014,19 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private List<PipelineRunParameter> mapPipeConfValuesToRunParameters(final PipelineConfiguration configuration) {
+        return MapUtils.emptyIfNull(configuration.getParameters()).entrySet()
+                .stream()
+                .filter(parameter -> Objects.nonNull(parameter.getValue()))
+                .map(parameter ->
+                        new PipelineRunParameter(
+                                parameter.getKey(),
+                                parameter.getValue().getValue(),
+                                parameter.getValue().getType()
+                        )
+                ).collect(Collectors.toList());
     }
 
     private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {
@@ -1080,6 +1097,9 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         pipelineRunDao.deleteRunSids(runId);
         pipelineRunDao.createRunSids(runId, runSids);
+        ListUtils.emptyIfNull(runSids).forEach(entry -> auditClient.log(String.format(
+                "Run #%s shared with %s %s with access type %s.", runId,
+                entry.getIsPrincipal() ? "user" : "group", entry.getName(), entry.getAccessType())));
         pipelineRun.setRunSids(runSids);
         return pipelineRun;
     }
@@ -1194,9 +1214,9 @@ public class PipelineRunManager {
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
         configuration.setPodAssignPolicy(
-            RunAssignPolicy.builder()
+            RunContainerSpec.builder()
                 .selector(
-                    RunAssignPolicy.PodAssignSelector.builder()
+                    RunContainerSpec.PodAssignSelector.builder()
                             .label(KubernetesConstants.RUN_ID_LABEL)
                             .value(restartedRun.getId().toString()).build())
                 .build()
@@ -1767,6 +1787,7 @@ public class PipelineRunManager {
         restartedRun.setRunSids(run.getRunSids());
         restartedRun.setPrettyUrl(run.getPrettyUrl());
         restartedRun.setNonPause(run.isNonPause());
+        Optional.ofNullable(run.getParentRunId()).ifPresent(restartedRun::setParentRunId);
         return restartedRun;
     }
 

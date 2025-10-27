@@ -15,3 +15,13 @@
 .reservation-parameter-input {
   flex: 1;
 }
+
+.node-resources-table {
+  width: 100%;
+}
+
+.node-resources-table th,
+.node-resources-table td {
+  padding: 2px 6px;
+  text-align: center;
+}

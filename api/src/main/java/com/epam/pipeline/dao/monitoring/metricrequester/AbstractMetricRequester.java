@@ -19,11 +19,13 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -50,12 +52,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,6 +95,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String TX_RATE = "tx_rate";
 
     protected static final String NODE = "node";
+    protected static final String POD = "pod";
     protected static final String RESOURCE_ID = "resource_id";
     protected static final String POD_CONTAINER = "pod_container";
 
@@ -131,7 +129,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected abstract ELKUsageMetric metric();
 
     protected abstract SearchRequest buildStatsRequest(String nodeName, LocalDateTime from, LocalDateTime to,
-                                                       Duration interval);
+                                                       Duration interval, String podName);
 
     protected abstract List<MonitoringStats> parseStatsResponse(SearchResponse response);
 
@@ -164,6 +162,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new PodFSRequester(client);
             case NETWORK:
                 return new NetworkRequester(client);
+            case POD_CPU:
+                return new PodCPURequester(client);
+            case POD_MEM:
+                return new PodMemoryRequester(client);
+            case POD_NETWORK:
+                return new PodNetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
@@ -236,21 +240,26 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     @Override
     public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
-        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval);
+                                              final Duration interval, final String podName) {
+        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval, podName);
         return parseStatsResponse(executeRequest(request));
     }
 
     protected SearchSourceBuilder statsQuery(final String nodeName, final String type,
-                                             final LocalDateTime from, final LocalDateTime to) {
+                                             final LocalDateTime from, final LocalDateTime to,
+                                             final String podName) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
+                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
+                .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli()));
+        if (StringUtils.isNotBlank(podName)) {
+            queryBuilder.filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podName));
+        }
         return new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())));
+                .query(queryBuilder);
     }
 
     protected DateHistogramAggregationBuilder dateHistogram(final String name, final Duration interval) {

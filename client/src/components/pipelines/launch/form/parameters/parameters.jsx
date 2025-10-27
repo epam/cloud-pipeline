@@ -1,9 +1,10 @@
 import React, {Component} from 'react';
+import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import LaunchFormParameter from './parameter';
 import Divider from './divider';
 import styles from './parameters.css';
-import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../../special/LoadingView';
 import {
   hasResolvedValues,
@@ -51,6 +52,7 @@ function parameterIsVisible (parameter) {
 }
 
 @inject(
+  'authenticatedUserInfo',
   'preferences',
   'runDefaultParameters'
 )
@@ -75,6 +77,14 @@ class Parameters extends Component {
 
   componentWillUnmount () {
     clearTimeout(this.highlightSectionTimeout);
+  }
+
+  @computed
+  get userInfo () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return undefined;
+    }
+    return this.props.authenticatedUserInfo.value;
   }
 
   checkResolvedValues = () => {
@@ -132,6 +142,7 @@ class Parameters extends Component {
       system,
       rawEdit = false,
       editConfiguration = false,
+      currentCloudRegionId,
       currentProjectId,
       currentProjectMetadata,
       currentMetadataEntity,
@@ -144,7 +155,8 @@ class Parameters extends Component {
       navigationRef,
       detached,
       pipeline,
-      parameterRowClassName
+      parameterRowClassName,
+      description
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
@@ -158,7 +170,10 @@ class Parameters extends Component {
         !isReservationRequestParameter(parameter.name) &&
         !isGPUScalingParameter(parameter.name)
         : !parameter.system)
-      .map((parameter) => system ? mapSystemParameter(parameter) : parameter);
+      .map((parameter) => system ? mapSystemParameter(parameter, {
+        runDefaultParameters,
+        userInfo: this.userInfo
+      }) : parameter);
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,
@@ -245,6 +260,13 @@ class Parameters extends Component {
             )
           }
           {
+            description && (
+              <div key={`parameters-description`} className={styles.parametersGroupContainer}>
+                {description}
+              </div>
+            )
+          }
+          {
             showRootEntityId && (
               <div key={`root-entity-type-section`} className={styles.parametersGroupContainer}>
                 <RootEntityTypeParameter
@@ -286,6 +308,7 @@ class Parameters extends Component {
                       onRemoveParameter={onParameterRemoved}
                       editConfiguration={editConfiguration}
                       rawEdit={rawEdit}
+                      currentCloudRegionId={currentCloudRegionId}
                       currentProjectId={currentProjectId}
                       currentProjectMetadata={currentProjectMetadata}
                       currentMetadataEntity={currentMetadataEntity}
@@ -314,6 +337,7 @@ Parameters.propTypes = {
   system: PropTypes.bool,
   rawEdit: PropTypes.bool,
   editConfiguration: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
@@ -326,7 +350,8 @@ Parameters.propTypes = {
   navigationRef: PropTypes.func,
   detached: PropTypes.bool,
   pipeline: PropTypes.bool,
-  parameterRowClassName: PropTypes.string
+  parameterRowClassName: PropTypes.string,
+  description: PropTypes.node
 };
 
 export default Parameters;

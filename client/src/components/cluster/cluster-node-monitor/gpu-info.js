@@ -27,7 +27,7 @@ import {
   Alert
 } from 'antd';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, reaction} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import ClusterNodeGPUUsage from '../../../models/cluster/ClusterNodeGPUUsage';
@@ -96,17 +96,28 @@ class GPUInfoTab extends React.Component {
   rangeChangeTimer;
   fetchTimer;
 
+  disposeReaction = reaction(
+    () => this.chartsData.refreshToken,
+    () => this.initRanges(false)
+  );
+
   componentDidMount () {
     this.initRanges();
   }
 
   componentDidUpdate (prevProps, prevState) {
     const {nodeName} = this.props;
-    if (prevProps.nodeName !== nodeName) {
-      this.initRanges();
+    if (
+      prevProps.nodeName !== nodeName ||
+      prevProps.chartsData !== this.props.chartsData
+    ) {
+      this.initRanges(false);
     }
-    if (prevProps.chartsData !== this.props.chartsData) {
-      this.initRanges();
+  }
+
+  componentWillUnmount () {
+    if (this.disposeReaction && typeof this.disposeReaction === 'function') {
+      this.disposeReaction();
     }
   }
 
@@ -138,12 +149,16 @@ class GPUInfoTab extends React.Component {
     return metrics?.global?.gpuDeviceName;
   }
 
-  initRanges = () => {
+  initRanges = (resetToDefaultRange = true) => {
     const to = this.chartsBounds.max;
-    const from = Math.max(
+    let from = Math.max(
       moment.unix(to).local().subtract(1, 'days').unix(),
       this.chartsBounds.min
     );
+    if (!resetToDefaultRange) {
+      const currentDiff = this.state.chartsTo - this.state.chartsFrom;
+      from = to - currentDiff;
+    }
     this.setState({
       from,
       to
@@ -169,6 +184,7 @@ class GPUInfoTab extends React.Component {
       const {nodeName} = this.props;
       const {from, to} = this.state;
       const {min, max} = this.chartsBounds;
+      const {runId} = this.chartsData;
       const offsetRange = (to - from) / 5;
       const newFrom = Math.max(min, from - offsetRange);
       const newTo = Math.min(max, to + offsetRange);
@@ -177,7 +193,10 @@ class GPUInfoTab extends React.Component {
       const request = new ClusterNodeGPUUsage(
         nodeName,
         fromString,
-        toString
+        toString,
+        {
+          runId
+        }
       );
       await request.fetch();
       if (request.error) {
@@ -193,6 +212,14 @@ class GPUInfoTab extends React.Component {
       });
     });
   };
+
+  navigateToRun = () => {
+    const {chartsData, router} = this.props;
+    if (!chartsData?.runId || !router) {
+      return;
+    }
+    router.push(`/run/${chartsData.runId}`);
+  }
 
   onRangeChanged = (range = {}) => {
     const {chartsFrom = 0, chartsTo = 0} = this.state;
@@ -261,6 +288,7 @@ class GPUInfoTab extends React.Component {
 
   renderChartControls = () => {
     const {hideDatasets, measure} = this.state;
+    const {chartsData} = this.props;
     const onMeasureChange = ({key}) => this.setState({measure: key});
     // const onGPUChange = ({key}) => this.setState({selectedGPU: key});
     const toggleDataset = (key) => {
@@ -308,20 +336,50 @@ class GPUInfoTab extends React.Component {
       </svg>
     );
     const onStartChange = (date) => {
-      const from = date
-        ? Math.max(
-          this.chartsBounds.min,
-          moment(date.startOf('day')).unix())
-        : this.chartsBounds.min;
-      this.setState({from}, () => this.fetchMetrics(true));
+      let {to} = this.state;
+      const {chartsData} = this.props;
+      if (!chartsData.initialized || !date) {
+        return;
+      }
+      to = to ? moment.unix(to) : null;
+      const newStart = moment([
+        date.get('year'),
+        date.get('month'),
+        date.get('date'),
+        date.get('hour'),
+        date.get('minute')
+      ]);
+      if (to && newStart >= to) {
+        to = moment(newStart);
+        to.add(1, 'day').add(-1, 'second');
+      }
+      this.setState({
+        from: chartsData.correctDateToFixRange(newStart.unix()),
+        to: to ? chartsData.correctDateToFixRange(to.unix()) : null
+      }, () => this.fetchMetrics(true));
     };
     const onEndChange = (date) => {
-      const to = date
-        ? Math.min(
-          this.chartsBounds.max,
-          moment(date.endOf('day')).unix())
-        : this.chartsBounds.max;
-      this.setState({to}, () => this.fetchMetrics(true));
+      let {from} = this.state;
+      const {chartsData} = this.props;
+      if (!chartsData.initialized || !date) {
+        return;
+      }
+      from = from ? moment.unix(from) : null;
+      const newEnd = moment([
+        date.get('year'),
+        date.get('month'),
+        date.get('date'),
+        date.get('hour'),
+        date.get('minute')
+      ]);
+      if (from && from >= newEnd) {
+        from = moment(newEnd);
+        from.add(-1, 'day').add(1, 'second');
+      }
+      this.setState({
+        from: from ? chartsData.correctDateToFixRange(from.unix()) : null,
+        to: chartsData.correctDateToFixRange(newEnd.unix())
+      }, () => this.fetchMetrics(true));
     };
     const setRange = ({key}) => {
       const to = this.chartsBounds.max;
@@ -356,7 +414,7 @@ class GPUInfoTab extends React.Component {
         this.chartsData?.instanceFrom &&
         (
           date.unix() < this.chartsBounds.min ||
-          date.unix() > this.chartsBounds.max
+          date.valueOf() > Date.now()
         );
     };
     const renderRangeControls = () => (
@@ -401,7 +459,17 @@ class GPUInfoTab extends React.Component {
     );
     return (
       <div style={{display: 'flex', flexDirection: 'column'}}>
-        <div className={styles.chartControls}>
+        {chartsData?.runId ? (
+          <a
+            style={{marginRight: 'auto', marginLeft: 50}}
+            onClick={this.navigateToRun}
+          >
+            Showing statistics for run #{chartsData.runId}
+          </a>
+        ) : null}
+        <div className={classNames(styles.chartControls, {
+          [styles.withRunId]: !!chartsData?.runId
+        })}>
           <b style={{marginRight: 10}}>{this.GPUDeviceName}</b>
           <div className={styles.legend}>
             {Object.entries(DATASET_TYPES).map(([key, value]) => {
@@ -544,7 +612,8 @@ GPUInfoTab.propTypes = {
   nodeName: PropTypes.string,
   chartsData: PropTypes.object,
   node: PropTypes.object,
-  gpuStatisticsAvailable: PropTypes.bool
+  gpuStatisticsAvailable: PropTypes.bool,
+  router: PropTypes.object
 };
 
 export default GPUInfoTab;

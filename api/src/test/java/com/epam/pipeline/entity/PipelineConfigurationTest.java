@@ -55,7 +55,8 @@ public class PipelineConfigurationTest {
                     "\"instance_size\" : {" +
                         "\"type\" : \"string\"," +
                         "\"validation\": [{\"throw\":\"a == a\", \"message\": \"error\"}]," +
-                        "\"annotation\": { \"key\": \"value\", \"tag\": \"value\" }" +
+                        "\"annotation\": { \"key\": \"value\", \"tag\": \"value\" }," +
+                        "\"scheme\": { \"properties\": \"value\", \"field\": \"value\" }" +
                     "}," +
                     "\"instance_disk\" : \"200\"" +
                 "}" +
@@ -108,6 +109,7 @@ public class PipelineConfigurationTest {
         assertEquals(2, instanceSize.getAnnotation().size());
         assertTrue(instanceSize.getAnnotation().containsKey("key"));
         assertTrue(instanceSize.getAnnotation().containsKey("tag"));
+        assertNotNull(instanceSize.getScheme());
 
         final PipeConfValueVO instanceDisk = pipelineConfiguration.getParameters().get("instance_disk");
         assertEquals(STRING_TYPE, instanceDisk.getType());

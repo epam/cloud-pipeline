@@ -335,7 +335,7 @@ public class LogManager {
             List<String> formattedUsers = logFilter.getUsers().stream()
                     .flatMap(user -> Stream.of(user.toLowerCase(), user.toUpperCase()))
                     .collect(Collectors.toList());
-            boolQuery.filter(QueryBuilders.termsQuery(USER, formattedUsers));
+            boolQuery.filter(QueryBuilders.termsQuery(USER + KEYWORD, formattedUsers));
         }
         if (CollectionUtils.isNotEmpty(logFilter.getHostnames())) {
             boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME + KEYWORD, logFilter.getHostnames()));
@@ -349,7 +349,9 @@ public class LogManager {
         if (StringUtils.isNotEmpty(logFilter.getMessage())) {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
-
+        if (Objects.nonNull(logFilter.getStorageId())) {
+            boolQuery.filter(QueryBuilders.matchQuery(STORAGE_ID + KEYWORD, logFilter.getStorageId()));
+        }
         ElasticsearchUtils.addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
                 logFilter.getMessageTimestampTo(), MESSAGE_TIMESTAMP);
         return boolQuery;

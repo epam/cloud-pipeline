@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import {
   Card,
   Col,
   Collapse,
+  Dropdown,
   Icon,
   Input,
   Menu,
@@ -43,8 +44,6 @@ import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKu
 import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
-import Roles from '../../../models/user/Roles';
-import PipelineRunUpdateSids, {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
   canCommitRun,
@@ -75,7 +74,6 @@ import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
 import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
@@ -86,7 +84,9 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS, CP_CAP_REQUESTS_CPU, CP_CAP_REQUESTS_GPU, CP_CAP_REQUESTS_RAM
+} from '../../pipelines/launch/form/utilities/parameters';
 import RunName from '../run-name';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
@@ -103,6 +103,17 @@ import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import {
+  findReservationParameterConfig
+} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import {
+  normalizeRunParameters,
+  sortRunParameters
+} from './misc/post-process-run';
+// eslint-disable-next-line max-len
+import ParameterValueRepresentation from '../../pipelines/launch/form/parameters/parameter/representation';
+import ShareWith from '../ShareWith';
+import LogsModeButton from './logs-mode';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -124,7 +135,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
   'uiNavigation'
 )
 @VSActions.check
-@inject(({routing, pipelines, multiZoneManager}, {params}) => {
+@inject(({routing, pipelines, multiZoneManager}, props) => {
+  const {params, currentMode, modes, onChangeMode} = props;
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -144,9 +156,11 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     runKubeServices: new PipelineRunKubeServicesLoad(params.runId),
     task,
     pipelines,
-    roles: new Roles(),
     routing,
-    multiZone: multiZoneManager
+    multiZone: multiZoneManager,
+    currentMode,
+    modes,
+    onChangeMode
   };
 })
 @observer
@@ -169,7 +183,6 @@ class Logs extends localization.LocalizedReactComponent {
     resolvedValues: true,
     operationInProgress: false,
     openedPanels: [],
-    shareDialogOpened: false,
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
@@ -412,13 +425,16 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
-  get combineRolesIntoAllRoles () {
+  get isCapacityBlock () {
     const {run} = this.state;
-    const {runSids = []} = run || {};
-    return {
-      ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
-      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
-    };
+    if (!run) {
+      return false;
+    }
+    return (run.pipelineRunParameters || []).some(({name}) => ([
+      CP_CAP_REQUESTS_CPU,
+      CP_CAP_REQUESTS_GPU,
+      CP_CAP_REQUESTS_RAM
+    ].includes(name)));
   }
 
   exportLog = async () => {
@@ -549,9 +565,9 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const valueSelector = () => {
       if (this.state.resolvedValues) {
-        return runParameter.resolvedValue || runParameter.value || '';
+        return String(runParameter.resolvedValue || runParameter.value || '');
       }
-      return runParameter.value || '';
+      return String(runParameter.value || '');
     };
     if (/^(input|output|common|path)$/i.test(runParameter.type)) {
       const valueParts = valueSelector().split(/[,|]/);
@@ -644,7 +660,17 @@ class Logs extends localization.LocalizedReactComponent {
         </tr>
       );
     }
-    let values = (valueSelector() || '').split(',').map(v => v.trim());
+    const v = valueSelector();
+    if (/^object$/i.test(runParameter.type)) {
+      return (
+        <tr
+          key={runParameter.name}>
+          <td className={styles.taskParameterName}>{runParameter.name}:</td>
+          <td><ParameterValueRepresentation value={v} showBase64Tag /></td>
+        </tr>
+      );
+    }
+    let values = v.split(',').map(v => v.trim());
     if (values.length === 1) {
       return (
         <tr
@@ -933,6 +959,51 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  renderMonitoringLink = (title) => {
+    const {run} = this.state;
+    const {router, runId} = this.props;
+    const {startDate, endDate, instance, platform} = run || {};
+    const isWindowsRun = /^windows$/i.test(platform);
+    const parts = [
+      startDate && `from=${encodeURIComponent(startDate)}`,
+      endDate && `to=${encodeURIComponent(endDate)}`
+    ].filter(Boolean);
+    const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+    const nodeUrl = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
+    if (this.isCapacityBlock) {
+      // eslint-disable-next-line max-len
+      const runUrl = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor?runId=${runId}`}`;
+      const onNavigate = ({key}) => {
+        if (key === 'run') {
+          return router.push(runUrl);
+        }
+        router.push(nodeUrl);
+      };
+      const menu = (
+        <Menu onClick={onNavigate}>
+          <Menu.Item key="run">
+            <span><b>Run</b> statistics</span>
+          </Menu.Item>
+          <Menu.Item key="node">
+            <span><b>Node</b> statistics</span>
+          </Menu.Item>
+        </Menu>
+      );
+      return (
+        <Dropdown overlay={menu}>
+          <a>
+            {title} <Icon type="down" />
+          </a>
+        </Dropdown>
+      );
+    }
+    return (
+      <Link to={nodeUrl}>
+        {title}
+      </Link>
+    );
+  };
+
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance && run) {
@@ -979,23 +1050,19 @@ class Logs extends localization.LocalizedReactComponent {
           details.push({key: 'Cores', value: `${run.executionPreferences.coresNumber}`});
         }
       }
+      const {startDate, endDate} = run;
+      const parts = [
+        startDate && `from=${encodeURIComponent(startDate)}`,
+        endDate && `to=${encodeURIComponent(endDate)}`
+      ].filter(Boolean);
+      const query = parts.length > 0 ? `?${parts.join('&')}` : '';
       if (instance.nodeIP) {
-        const {startDate, endDate} = run;
-        const parts = [
-          startDate && `from=${encodeURIComponent(startDate)}`,
-          endDate && `to=${encodeURIComponent(endDate)}`
-        ].filter(Boolean);
-        const query = parts.length > 0 ? `?${parts.join('&')}` : '';
         const isWindowsRun = /^windows$/i.test(run.platform);
         if (instance.nodeName) {
-          const url = `/cluster/${instance.nodeName}/${isWindowsRun ? 'info' : `monitor${query}`}`;
           details.push({
             key: 'IP',
-            value: (
-              <Link to={url}>
-                {instance.nodeName} ({instance.nodeIP})
-              </Link>
-            )});
+            value: this.renderMonitoringLink(`${instance.nodeName} (${instance.nodeIP})`)
+          });
         } else {
           const parts = instance.nodeIP.split('.');
           const url = `/cluster/ip-${parts.join('-')}/${isWindowsRun ? 'info' : `monitor${query}`}`;
@@ -1549,32 +1616,6 @@ class Logs extends localization.LocalizedReactComponent {
     });
   };
 
-  openShareDialog = () => {
-    this.setState({
-      shareDialogOpened: true
-    });
-  };
-
-  closeShareDialog = () => {
-    this.setState({
-      shareDialogOpened: false
-    });
-  };
-
-  saveShareSids = async (sids) => {
-    const hide = message.loading('Updating sharing info...', -1);
-    const request = new PipelineRunUpdateSids(this.props.runId);
-    await request.send(sids);
-    if (request.error) {
-      hide();
-      message.error(request.error, 5);
-    } else {
-      await this.refreshRunInfo();
-      hide();
-      this.closeShareDialog();
-    }
-  };
-
   renderNestedRuns = () => {
     const {
       nestedRuns: originalNestedRuns = [],
@@ -1783,6 +1824,8 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
+    const {nodeType: instanceType} = instance || {};
+    const isReservationParameterInstance = Boolean(findReservationParameterConfig(instanceType));
 
     if (pending || !run) {
       Title = <h1>Run </h1>;
@@ -1799,7 +1842,6 @@ class Logs extends localization.LocalizedReactComponent {
         kubeServiceInfo = this.props.runKubeServices.value;
       }
       let endpoints;
-      let share;
       let kubeServices;
       if (this.endpointAvailable) {
         const regionedUrls = parseRunServiceUrlConfiguration(serviceUrl);
@@ -1871,55 +1913,14 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
-      if (
-        this.initializeEnvironmentFinished &&
-        status === 'RUNNING' &&
-        roleModel.isOwner(run)
-      ) {
-        let shareList = 'Not shared (click to configure)';
-        const {
-          ssh: combineSshRoles,
-          endpoint: combineEndpointRoles
-        } = this.combineRolesIntoAllRoles;
-        const filteredRunSids = combineSshRoles || combineEndpointRoles
-          ? [ROLE_ALL, ...runSids]
-            .filter(({name, accessType}) => {
-              if (
-                (combineSshRoles && accessType === AccessTypes.ssh) ||
-                (combineEndpointRoles && accessType === AccessTypes.endpoint)
-              ) {
-                return !ROLE_ALL.includedRoles.includes(name);
-              }
-              return true;
-            })
-          : runSids;
-        if (filteredRunSids.length > 0) {
-          shareList = filteredRunSids
-            .map((s, index, array) => {
-              return (
-                <span
-                  key={s.name}
-                  style={{marginRight: 5}}>
-                  <UserName userName={s.name} />
-                  {
-                    index < array.length - 1 ? ',' : undefined
-                  }
-                </span>
-              );
-            });
-        }
-        share = (
-          <tr>
-            <th>Share with:</th>
-            <td><a onClick={this.openShareDialog}>{shareList}</a></td>
-          </tr>
-        );
-      }
+
       const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
       const {runId} = this.props;
-
+      const canShare = this.initializeEnvironmentFinished &&
+        status === 'RUNNING' &&
+        roleModel.isOwner(run);
       const resumeFailureReason = getResumeFailureReason(run);
       if (resumeFailureReason) {
         ResumeFailureReason = (
@@ -1984,9 +1985,18 @@ class Logs extends localization.LocalizedReactComponent {
             >
               #{runId}
             </RunName.AutoUpdate>
-            {failureReason} - </span>
+            {failureReason}
+          </span>
+          {
+            pipelineLink && <span>{' - '}</span>
+          }
           {pipelineLink}
-          <span>{pipelineLink && ' -'} Logs</span>
+          <LogsModeButton
+            current={this.props.currentMode}
+            modes={this.props.modes}
+            onChangeMode={this.props.onChangeMode}
+            style={{marginLeft: 5}}
+          />
         </h1>
       );
       const {
@@ -2061,7 +2071,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       let price;
-      if (pricePerHour) {
+      if (pricePerHour && !isReservationParameterInstance) {
         const adjustPrice = (value) => {
           if (value === 0) {
             return 0;
@@ -2112,7 +2122,12 @@ class Logs extends localization.LocalizedReactComponent {
               }
               {endpoints}
               {kubeServices}
-              {share}
+              {canShare ? (
+                <tr>
+                  <th>Share with:</th>
+                  <td><ShareWith run={run} onSave={this.refreshRunInfo} /></td>
+                </tr>
+              ) : null}
               <tr>
                 <th>Owner: </th><td><UserName userName={owner} /></td>
               </tr>
@@ -2135,7 +2150,10 @@ class Logs extends localization.LocalizedReactComponent {
           </table>
         </div>;
 
-      let filteredRunParameters = (pipelineRunParameters || []).filter(p => p.name && p.value);
+      const filteredRunParameters = sortRunParameters(
+        normalizeRunParameters(pipelineRunParameters || [])
+          .filter(p => p.name && p.value)
+      );
       const getParameterType = p => {
         switch ((p.type || '').toLowerCase()) {
           case 'common':
@@ -2417,17 +2435,8 @@ class Logs extends localization.LocalizedReactComponent {
           {this.props.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
-      if (instance && instance.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
-        const parts = [
-          startDate && `from=${encodeURIComponent(startDate)}`,
-          endDate && `to=${encodeURIComponent(endDate)}`
-        ].filter(Boolean);
-        const query = parts.length > 0 ? `?${parts.join('&')}` : '';
-        ShowMonitorButton = (
-          <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
-            MONITOR
-          </Link>
-        );
+      if (!!instance?.nodeName && checkRunActionAvailable(run, runActions.monitor)) {
+        ShowMonitorButton = this.renderMonitoringLink('MONITOR');
       }
     }
 
@@ -2500,8 +2509,8 @@ class Logs extends localization.LocalizedReactComponent {
           flex: 1,
           overflowY: 'auto'
         }}>
-        <Row>
-          <Col span={18}>
+        <Row type="flex">
+          <div style={{flex: 1}}>
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
@@ -2525,8 +2534,8 @@ class Logs extends localization.LocalizedReactComponent {
             <Row>
               {Details}
             </Row>
-          </Col>
-          <Col span={6}>
+          </div>
+          <div>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {
                 this.buttonsWrapper(
@@ -2563,7 +2572,7 @@ class Logs extends localization.LocalizedReactComponent {
                 </Row>
               )
             }
-          </Col>
+          </div>
         </Row>
         <Row>
           <Col>
@@ -2578,16 +2587,6 @@ class Logs extends localization.LocalizedReactComponent {
         <Row className={styles.fullHeightContainer}>
           {this.renderContent(selectedTask)}
         </Row>
-        <ShareWithForm
-          endpointsAvailable={!!this.endpointAvailable}
-          visible={this.state.shareDialogOpened}
-          roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
-          sids={(runSids || []).map(s => s)}
-          pending={this.state.operationInProgress}
-          onSave={this.operationWrapper(this.saveShareSids)}
-          onClose={this.closeShareDialog}
-          runSharing
-        />
         <CommitRunDialog
           runId={this.props.runId}
           defaultDockerImage={dockerImage}

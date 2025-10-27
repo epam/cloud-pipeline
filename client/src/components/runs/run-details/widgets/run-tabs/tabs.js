@@ -17,7 +17,7 @@ export const parametersTab = {
   tab: 'config',
   title: 'Configuration',
   icon: <Icon type="setting" style={iconStyle} />,
-  render: ({run}) => (<RunParametersSection run={run} />)
+  render: ({run}, refreshRun) => (<RunParametersSection run={run} refreshRun={refreshRun} />)
 };
 
 export const nextflowTasksTab = {

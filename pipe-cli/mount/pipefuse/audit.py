@@ -23,6 +23,7 @@ class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystem
         super(AuditFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._container = container
+        self._container.put(DataAccessEvent('', DataAccessType.MOUNT))
         self._fhs = set()
 
     def upload(self, buf, path):

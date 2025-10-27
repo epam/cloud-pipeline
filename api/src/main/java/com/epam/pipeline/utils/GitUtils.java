@@ -67,6 +67,10 @@ public final class GitUtils {
         return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
     }
 
+    public static boolean isDraftVersion(final String version) {
+        return !StringUtils.isBlank(version) && version.startsWith(DRAFT_PREFIX);
+    }
+
     public static String buildModifyFileCommitMessage(final String commitMessage, final String filePath,
                                                       final boolean fileExists) {
         if (StringUtils.isNotBlank(commitMessage)) {

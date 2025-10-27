@@ -274,7 +274,7 @@ fi
 if [ "$CP_TP_SMTP_DEST" ]; then
     nginx_add_proxy_entry "$CP_TP_SMTP_DEST" "smtp"
     # Start nginx smtp auth server: http://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html
-    nohup /opt/miniconda/envs/auth-srv/bin/python /opt/smtp/smtp-auth-srv.py &> "$CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE" &
+    nohup $MAMBA_ROOT_PREFIX/envs/auth-srv/bin/python /opt/smtp/smtp-auth-srv.py &> "$CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE" &
     # Run Filebeat
     envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
     nohup filebeat &

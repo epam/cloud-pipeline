@@ -77,6 +77,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
     private String[] swaggerAccessRoles;
 
+    @Value("${api.security.disable.logging:false}")
+    private boolean disableLogging;
+
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
 
@@ -135,7 +138,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected JwtFilterAuthenticationFilter getJwtAuthenticationFilter() {
-        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService);
+        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService, disableLogging);
     }
 
     protected RequestMatcher getFullRequestMatcher() {
@@ -151,7 +154,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/restapi/dockerRegistry/oauth",
                 "/restapi/proxy/**",
                 "/error",
-                "/error/**");
+                "/error/**",
+                "/restapi/access/token",
+                "/restapi/access/code");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 

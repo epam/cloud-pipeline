@@ -30,7 +30,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,12 +47,16 @@ class GpuUsageMonitoringServiceTest {
     private static final String NODE_2 = "node2";
     private static final String GPU_ID_1 = "0";
     private static final String GPU_ID_2 = "1";
+    private static final String GPU_ID_3 = "2";
+    private static final String GPU_ID_4 = "3";
     private static final int GPU_UTILIZATION = 80;
     private static final int MEMORY_USED = 2000;
     private static final int TOTAL_MEMORY = 20000;
     private static final int MEMORY_UTILIZATION_1 = 10;
     private static final int TEST_VALUE_1 = 100;
     private static final int TEST_VALUE_2 = 50;
+    private static final Long RUN_ID_1 = 1L;
+    private static final Long RUN_ID_2 = 2L;
 
     private final CloudPipelineAPIClient cloudPipelineClient = mock(CloudPipelineAPIClient.class);
     private final NodeReporterService nodeReporterService = mock(NodeReporterService.class);
@@ -79,6 +85,17 @@ class GpuUsageMonitoringServiceTest {
     @Test
     void shouldProcessEmptyUsages() {
         final List<GpuUsages> usages = Collections.singletonList(GpuUsages.builder().build());
+        when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
+        when(nodeReporterService.collectGpuUsages(any())).thenReturn(usages);
+        monitor.monitor();
+        verify(monitoringElasticsearchService).saveGpuUsages(Collections.emptyList());
+    }
+
+    @Test
+    void shouldProcessNullUsages() {
+        final List<GpuUsages> usages = Collections.singletonList(GpuUsages.builder()
+                .usages(Collections.singletonList(null))
+                .build());
         when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
         when(nodeReporterService.collectGpuUsages(any())).thenReturn(usages);
         monitor.monitor();
@@ -139,7 +156,108 @@ class GpuUsageMonitoringServiceTest {
                 .saveGpuUsages(Arrays.asList(expectedGpuUsages1(gpuUsage1), expectedGpuUsages2(gpuUsage2)));
     }
 
+    @Test
+    void shouldProcessGpuUsagesForPod() {
+        final NodeReporterGpuUsages node1usage1 = NodeReporterGpuUsages.builder()
+                .name(TEST)
+                .index(GPU_ID_1)
+                .utilizationGpu(GPU_UTILIZATION)
+                .memoryUsed(MEMORY_USED)
+                .memoryTotal(TOTAL_MEMORY)
+                .runId(RUN_ID_1)
+                .build();
+        final NodeReporterGpuUsages node1usage2 = NodeReporterGpuUsages.builder()
+                .name(TEST)
+                .index(GPU_ID_2)
+                .utilizationGpu(GPU_UTILIZATION)
+                .memoryUsed(MEMORY_USED)
+                .memoryTotal(TOTAL_MEMORY)
+                .runId(RUN_ID_1)
+                .build();
+        final NodeReporterGpuUsages node1usage3 = NodeReporterGpuUsages.builder()
+                .name(TEST)
+                .index(GPU_ID_3)
+                .utilizationGpu(GPU_UTILIZATION)
+                .memoryUsed(MEMORY_USED)
+                .memoryTotal(TOTAL_MEMORY)
+                .runId(RUN_ID_2)
+                .build();
+        final NodeReporterGpuUsages node1usage4 = NodeReporterGpuUsages.builder()
+                .name(TEST)
+                .index(GPU_ID_4)
+                .utilizationGpu(GPU_UTILIZATION)
+                .memoryUsed(MEMORY_USED)
+                .memoryTotal(TOTAL_MEMORY)
+                .build();
+
+        final NodeReporterGpuUsages node2usage1 = NodeReporterGpuUsages.builder()
+                .name(TEST)
+                .index(GPU_ID_1)
+                .utilizationGpu(GPU_UTILIZATION)
+                .memoryUsed(MEMORY_USED)
+                .memoryTotal(TOTAL_MEMORY)
+                .build();
+        final NodeReporterGpuUsages node2usage2 = NodeReporterGpuUsages.builder()
+                .name(TEST)
+                .index(GPU_ID_2)
+                .utilizationGpu(0)
+                .memoryUsed(0)
+                .memoryTotal(TOTAL_MEMORY)
+                .build();
+
+        final GpuUsages gpuUsage1 = GpuUsages.builder()
+                .timestamp(LocalDateTime.now())
+                .nodename(NODE_1)
+                .usages(Arrays.asList(node1usage1, node1usage2, node1usage3, node1usage4))
+                .build();
+
+        final GpuUsages gpuUsage2 = GpuUsages.builder()
+                .timestamp(LocalDateTime.now())
+                .nodename(NODE_2)
+                .usages(Arrays.asList(node2usage1, node2usage2))
+                .build();
+
+        final List<GpuUsages> usages = Arrays.asList(gpuUsage1, gpuUsage2);
+        when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
+        when(nodeReporterService.collectGpuUsages(any())).thenReturn(usages);
+
+        monitor.monitor();
+
+        verify(monitoringElasticsearchService)
+                .saveGpuUsages(Arrays.asList(expectedGpuUsagesWithRuns(gpuUsage1), expectedGpuUsages2(gpuUsage2)));
+    }
+
+    private static GpuUsages expectedGpuUsagesWithRuns(final GpuUsages gpuUsage1) {
+        final GpuUsages gpuUsages = expectedGpuUsages1(gpuUsage1);
+        gpuUsages.getUsages().get(0).setRunId(RUN_ID_1);
+        gpuUsages.getUsages().get(1).setRunId(RUN_ID_1);
+        gpuUsages.getUsages().get(2).setRunId(RUN_ID_2);
+
+        final Map<Long, GpuUsageStats> statsByRun = new HashMap<>();
+        final GpuUsageStats run1Stat = expectedGpuUsageStats1();
+        final GpuUsageStats run2Stat = expectedGpuUsageStats1();
+
+        statsByRun.put(RUN_ID_1, run1Stat);
+        statsByRun.put(RUN_ID_2, run2Stat);
+
+        gpuUsages.setStatsByRun(statsByRun);
+
+        return gpuUsages;
+    }
+
     private static GpuUsages expectedGpuUsages1(final GpuUsages gpuUsage1) {
+        return GpuUsages.builder()
+                .nodename(gpuUsage1.getNodename())
+                .timestamp(gpuUsage1.getTimestamp())
+                .usages(new ArrayList<>(gpuUsage1.getUsages().stream()
+                        .peek(value -> value.setMemoryUtilization(MEMORY_UTILIZATION_1))
+                        .collect(Collectors.toList())))
+                .stats(expectedGpuUsageStats1())
+                .statsByRun(Collections.emptyMap())
+                .build();
+    }
+
+    private static GpuUsageStats expectedGpuUsageStats1() {
         final GpuUsageSummary average = GpuUsageSummary.builder()
                 .gpuUtilization(GPU_UTILIZATION)
                 .memoryUsage(MEMORY_USED)
@@ -155,21 +273,12 @@ class GpuUsageMonitoringServiceTest {
                 .memoryUsage(MEMORY_USED)
                 .memoryUtilization(MEMORY_UTILIZATION_1)
                 .build();
-        final GpuUsageStats stats = GpuUsageStats.builder()
+        return GpuUsageStats.builder()
                 .average(average)
                 .min(min)
                 .max(max)
                 .activeGpusUtilization(TEST_VALUE_1)
                 .deviceName(TEST)
-                .build();
-
-        return GpuUsages.builder()
-                .nodename(gpuUsage1.getNodename())
-                .timestamp(gpuUsage1.getTimestamp())
-                .usages(new ArrayList<>(gpuUsage1.getUsages().stream()
-                        .peek(value -> value.setMemoryUtilization(MEMORY_UTILIZATION_1))
-                        .collect(Collectors.toList())))
-                .stats(stats)
                 .build();
     }
 
@@ -205,6 +314,7 @@ class GpuUsageMonitoringServiceTest {
                                 GPU_ID_1.equals(value.getIndex()) ? MEMORY_UTILIZATION_1 : 0))
                         .collect(Collectors.toList())))
                 .stats(stats)
+                .statsByRun(Collections.emptyMap())
                 .build();
     }
 }

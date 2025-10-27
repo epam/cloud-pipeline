@@ -331,5 +331,7 @@ public enum Primitive {
     IOPS,
     VOLUME,
     TOOL_VERSION,
+    PROFILE,
+    ADD_ROLE,
     ADD_SCHEDULE
 }

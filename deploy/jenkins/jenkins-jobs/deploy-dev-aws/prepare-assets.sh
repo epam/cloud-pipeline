@@ -45,7 +45,7 @@ if [ $? -ne 0 ]; then
 fi
 
 AWS_SSH_KEY_PATH_TMP="$DEPLOY_DIR/$CP_PREF_CLUSTER_SSH_KEY_NAME"
-aws s3 cp "$AWS_SSH_KEY_S3" "$AWS_SSH_KEY_PATH_TMP" &>/dev/null &&
+$AWSCLI_BIN s3 cp "$AWS_SSH_KEY_S3" "$AWS_SSH_KEY_PATH_TMP" &>/dev/null &&
     chmod 600 "$AWS_SSH_KEY_PATH_TMP"
 
 ###########################

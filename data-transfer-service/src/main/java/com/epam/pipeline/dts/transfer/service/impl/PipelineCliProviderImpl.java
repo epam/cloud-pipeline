@@ -34,6 +34,8 @@ public class PipelineCliProviderImpl implements PipelineCliProvider {
 
     private final CmdExecutorsProvider cmdExecutorsProvider;
     private final String pipelineCliExecutable;
+    private final String pipeCpTemplate;
+    private final String pipeMvTemplate;
     private final String pipeCpSuffix;
     private final String qsubTemplate;
     private final boolean isGridUploadEnabled;
@@ -46,7 +48,8 @@ public class PipelineCliProviderImpl implements PipelineCliProvider {
                 authenticated(api, apiToken,
                         impersonating(
                                 cmdExecutor()));
-        return new PipelineCLIImpl(pipelineCliExecutable, pipeCpSuffix, forceUpload, retryCount, cmdExecutor);
+        return new PipelineCLIImpl(pipelineCliExecutable, pipeCpTemplate, pipeMvTemplate,
+                                    pipeCpSuffix, forceUpload, retryCount, cmdExecutor);
     }
 
     private CmdExecutor authenticated(final String api,

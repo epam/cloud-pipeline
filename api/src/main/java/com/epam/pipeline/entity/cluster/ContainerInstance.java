@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class ContainerInstance {
+    private static final String RUNNING = "Running";
 
     private String name;
     private Map<String, String> requests;
@@ -93,5 +94,9 @@ public class ContainerInstance {
         }
         final ContainerInstanceStatus lastRestartStatus = new ContainerInstanceStatus(lastState);
         return "Unknown".equals(lastRestartStatus.getStatus()) ? null : lastRestartStatus;
+    }
+
+    public boolean isRunning() {
+        return Objects.nonNull(status) && RUNNING.equals(status.getStatus());
     }
 }

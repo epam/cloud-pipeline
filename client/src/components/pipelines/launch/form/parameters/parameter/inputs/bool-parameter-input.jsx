@@ -35,6 +35,7 @@ LaunchFormBoolParameterInput.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   value: PropTypes.any,
+  parameter: PropTypes.object,
   required: PropTypes.bool,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,

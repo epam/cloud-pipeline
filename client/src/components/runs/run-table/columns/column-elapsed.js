@@ -21,11 +21,19 @@ import evaluateRunPrice from '../../../../utils/evaluate-run-price';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
+import {
+  findReservationParameterConfig
+} from '../../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 const getColumnFilter = () => {};
 
 const renderEstimatedPrice = (item) => {
   if (!item.pricePerHour) {
+    return null;
+  }
+  const {nodeType} = item.instance || {};
+  const cfg = findReservationParameterConfig(nodeType);
+  if (cfg) {
     return null;
   }
   const info = evaluateRunPrice(item);

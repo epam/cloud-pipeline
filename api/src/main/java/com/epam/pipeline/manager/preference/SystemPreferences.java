@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
+import com.epam.pipeline.manager.cloud.gcp.GCPSpotType;
 import com.epam.pipeline.manager.cluster.container.ResourcesParameter;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -540,6 +541,9 @@ public class SystemPreferences {
      */
     public static final BooleanPreference CLUSTER_RANDOM_SCHEDULING = new BooleanPreference("cluster.random.scheduling",
                                                                                            false, CLUSTER_GROUP, pass);
+    public static final BooleanPreference CLUSTER_DISABLE_REASSIGN = new BooleanPreference("cluster.disable.reassign",
+            false, CLUSTER_GROUP, pass);
+
 
     public static final IntPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_DELAY = new IntPreference(
             "cluster.instance.defunct.container.monitoring.delay", 300,
@@ -752,7 +756,13 @@ public class SystemPreferences {
             "python .\\launch.py",
             LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
-        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
+        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+     );
+    public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = new IntPreference(
+            "launch.jwt.token.expiration.user.limit", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+    );
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
@@ -766,6 +776,9 @@ public class SystemPreferences {
 
     public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
+
+    public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED = new BooleanPreference(
+            "launch.run.reschedule.worker.enabled", false, LAUNCH_GROUP, pass);
 
     public static final ObjectPreference<TwoBoundaryLimit> RUN_TOOL_SIZE_LIMITS = new ObjectPreference<>(
             "launch.tool.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
@@ -809,6 +822,10 @@ public class SystemPreferences {
             "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT = new IntPreference(
             "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> LAUNCH_SERVERLESS_ENDPOINT_HTTP_HEADERS_TO_CLEANUP =
+            new ObjectPreference<>("launch.serverless.endpoint.http.headers.to.cleanup",
+            Arrays.asList("host", "SESSION"), new TypeReference<List<String>>() {}, LAUNCH_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
     public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
@@ -1285,6 +1302,18 @@ public class SystemPreferences {
             "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
     public static final IntPreference SYSTEM_RUN_FILTER_MAX_PAGE_SIZE = new IntPreference(
             "system.run.filter.max.page.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_LENGTH = new IntPreference(
+            "system.access.code.length", 23, SYSTEM_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> SYSTEM_ACCESS_ALLOWED_CODE_CHALLENGE_METHODS =
+            new ObjectPreference<>("system.access.allowed.code.challenge.methods",
+                    Collections.singletonList("S256"), new TypeReference<List<String>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final IntPreference SYSTEM_ACCESS_CODE_TTL_MINUTES = new IntPreference(
+            "system.access.code.ttl.minutes", 10, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_MONITOR_DELAY = new IntPreference(
+            "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
+            "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -1432,6 +1461,9 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
     public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
             "gcp.default.gpu.type", "a100", GCP_GROUP, isNotBlank);
+    public static final StringPreference GCP_SPOT_INSTANCE_TYPE = new StringPreference(
+            "gcp.spot.instance.type", GCPSpotType.PREEMPTIBLE.name(), GCP_GROUP,
+            isValidEnum(GCPSpotType.class));
 
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
@@ -1455,8 +1487,21 @@ public class SystemPreferences {
             BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
     // Lustre FS
+    public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(
+            "lustre.fs.scale.enabled", false, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_SCALE_MONITORING_DELAY = new IntPreference(
+            "lustre.fs.scale.monitoring.delay", 10, LUSTRE_GROUP, isGreaterThan(0));
+    public static final DoublePreference LUSTRE_FS_SCALE_THRESHOLD_RATIO = new DoublePreference(
+            "lustre.fs.scale.threshold.ratio", 0.75, LUSTRE_GROUP,
+            isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final DoublePreference LUSTRE_FS_SCALE_DELTA_RATIO = new DoublePreference(
+            "lustre.fs.scale.delta.ratio", 0.5, LUSTRE_GROUP, isGreaterThan(0.0f));
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
             "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_MAX_FS_SIZE = new IntPreference(
+            "lustre.fs.max.size", 1125900, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_UPDATE_SIZE_PERIOD = new IntPreference(
+            "lustre.fs.update.size.period", 21600, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
@@ -1557,6 +1602,10 @@ public class SystemPreferences {
             "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
     public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
             "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
+    public static final ObjectPreference<List<String>> MONITORING_POOL_REQUEST_NAMES = new ObjectPreference<>(
+        "monitoring.node.pool.request.names", Arrays.asList("cpu", "memory", "nvidia.com/gpu"),
+            new TypeReference<List<String>>() {}, MONITORING_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     // Cloud
     public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =

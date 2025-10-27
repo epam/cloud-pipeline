@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
@@ -29,6 +30,7 @@ import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
@@ -105,8 +107,9 @@ public class ClusterApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
-                                                 final LocalDateTime to) {
-        return usageMonitoringManager.getStatsForNode(name, from, to);
+                                                 final LocalDateTime to,
+                                                 final Long runId) {
+        return usageMonitoringManager.getStatsForNode(name, from, to, runId);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
@@ -114,14 +117,16 @@ public class ClusterApiService {
                                                  final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
-        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
+                                                 final boolean squashCharts,
+                                                 final Long runId) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final MonitoringReportType type) {
-        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
+                                              final Duration interval, final MonitoringReportType type,
+                                              final Long runId) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type, runId);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
@@ -156,6 +161,11 @@ public class ClusterApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
+    public List<PodInstance> getPodsByLabels(final Map<String, String> labels) {
+        return podsManager.getPodsByLabels(labels);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
     public PodDescription getPodDescription(final String podId, final boolean detailed) {
         return podsManager.describePod(podId, detailed);
     }
@@ -176,5 +186,13 @@ public class ClusterApiService {
                                                           final Integer intervals,
                                                           final NetworkEventFilter filter) {
         return usageMonitoringManager.getPlatformNetworkStats(histogramType, from, to, intervals, filter);
+    }
+
+    public InstanceType loadInstanceType(final String instanceType) {
+        return instanceOfferManager.loadInstanceType(instanceType);
+    }
+
+    public List<NodeResources> loadNodeAvailableResource(final Map<String, String> labels) {
+        return nodesManager.loadNodeAvailableResources(labels);
     }
 }

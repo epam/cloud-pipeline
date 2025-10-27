@@ -71,6 +71,9 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
+import com.epam.pipeline.manager.access.AccessService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -89,6 +92,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationSettingsMana
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
+import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
@@ -517,4 +521,16 @@ public class AspectTestBeans {
 
     @MockBean
     protected StoragePathPermissionsDao storagePathPermissionsDao;
+
+    @MockBean
+    protected AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    protected AccessService accessService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected AzureDevOpsMapper azureDevOpsMapper;
 }

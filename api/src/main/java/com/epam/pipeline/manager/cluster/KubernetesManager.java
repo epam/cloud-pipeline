@@ -1236,6 +1236,19 @@ public class KubernetesManager {
         }
     }
 
+    public List<Pod> getPodsByLabels(final Map<String, String> labels) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withLabels(labels)
+                    .list()
+                    .getItems();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<Event> getEvents(final KubernetesClient client, final String objectId) {
         return client.events()
                 .inNamespace(kubeNamespace)

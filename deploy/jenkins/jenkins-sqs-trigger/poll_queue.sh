@@ -19,7 +19,7 @@ while :
 do
     sleep $SQS_POLL_SEC
 
-    MESSAGES=$(aws sqs receive-message --queue-url "$SQS_QUEUE" \
+    MESSAGES=$($AWSCLI_BIN sqs receive-message --queue-url "$SQS_QUEUE" \
                                         --max-number-of-messages 1 \
                                         --visibility-timeout 30)
     if [ -z "$MESSAGES" ]; then
@@ -41,7 +41,7 @@ do
     curl --silent --fail -X POST "http://${JENKINS_USER}:${JENKINS_PASS}@${JENKINS_HOST}:${JENKINS_PORT}/job/${JENKINS_JOB_NAME}/buildWithParameters?token=${JENKINS_JOB_TOKEN}&API_DIST_URL=$DISTRIBUTION_URL"
     if [ $? -eq 0 ]; then
         echo "Jenkins job $JENKINS_JOB_NAME started with API_DIST_URL=$DISTRIBUTION_URL"
-        aws sqs delete-message  --queue-url "$SQS_QUEUE" \
+        $AWSCLI_BIN sqs delete-message  --queue-url "$SQS_QUEUE" \
                                 --receipt-handle "$RECEIPT_HANDLE"
     fi
     echo "Done message processing. Sleeping $SQS_POLL_SEC seconds"
