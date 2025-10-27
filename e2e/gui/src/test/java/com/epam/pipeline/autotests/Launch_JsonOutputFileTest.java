@@ -40,16 +40,16 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
     @BeforeClass
     public void createPipeline() {
         navigationMenu()
-                .library()
-                .createStorage(storage)
-                .createPipeline(Template.SHELL, getPipelineName());
+            .library()
+            .createStorage(storage)
+            .createPipeline(Template.SHELL, getPipelineName());
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDown() {
         navigationMenu()
-                .library()
-                .removeStorage(storage);
+            .library()
+            .removeStorage(storage);
     }
 
     @Test
@@ -60,37 +60,37 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
         final String pipelineScript = Utils.getFileNameFromPipelineName(getPipelineName(), "sh");
         final String parameterName = "result";
         navigationMenu()
-                .library()
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .codeTab()
-                .clickOnFile(pipelineScript)
-                .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
-                .saveAndCommitWithMessage("test: Replace script with custom one")
-                .sleep(3, SECONDS)
-                .clickOnFile(CONFIG_JSON)
-                .sleep(1, SECONDS)
-                .editFile(transferringJsonToObject(profiles -> {
-                    final ConfigurationProfile profile = selectProfileWithName("default", profiles);
-                    profile.configuration.parameters.put(parameterName, Parameter.required("output", pathToFile));
-                    return profiles;
-                }))
-                .saveAndCommitWithMessage("test: Add required output parameter named result")
-                .runPipeline()
-                .setTypeValue(DEFAULT_INSTANCE)
-                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
-                .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
-                .waitUntilLaunchButtonAppear()
-                .launchAndWaitUntilFinished(this);
+            .library()
+            .clickOnPipeline(getPipelineName())
+            .firstVersion()
+            .codeTab()
+            .clickOnFile(pipelineScript)
+            .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
+            .saveAndCommitWithMessage("test: Replace script with custom one")
+            .sleep(3, SECONDS)
+            .clickOnFile(CONFIG_JSON)
+            .sleep(1, SECONDS)
+            .editFile(transferringJsonToObject(profiles -> {
+                final ConfigurationProfile profile = selectProfileWithName("default", profiles);
+                profile.configuration.parameters.put(parameterName, Parameter.required("output", pathToFile));
+                return profiles;
+            }))
+            .saveAndCommitWithMessage("test: Add required output parameter named result")
+            .runPipeline()
+            .setTypeValue(DEFAULT_INSTANCE)
+            .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+            .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
+            .waitUntilLaunchButtonAppear()
+            .launchAndWaitUntilFinished(this);
     }
 
     @Test(dependsOnMethods = {"launchPipelineWithJSONParameter"})
     @TestCase("EPMCMBIBPC-360")
     public void validateOutputRun() {
         navigationMenu()
-                .library()
-                .selectStorage(storage)
-                .navigateUsingAddressBar(String.format("%s/%s", STORAGE_RULES_FOLDER, getPipelineName()))
-                .validateElementIsPresent(FILE_TO_STORE_NAME);
+            .library()
+            .selectStorage(storage)
+            .navigateUsingAddressBar(String.format("%s/%s", STORAGE_RULES_FOLDER, getPipelineName()))
+            .validateElementIsPresent(FILE_TO_STORE_NAME);
     }
 }
