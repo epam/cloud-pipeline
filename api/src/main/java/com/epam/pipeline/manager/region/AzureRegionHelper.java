@@ -61,8 +61,8 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     @Override
     public void validateRegion(final AzureRegion region, final AzureRegionCredentials credentials) {
         validateRegionCode(region.getRegionCode(), messageHelper);
-        validateStorageAccount(region.getStorageAccount(), credentials.getStorageAccountKey());
-        checkResourceGroupExistence(region.getResourceGroup(), region.getAuthFile());
+        validateStorageAccount(region, credentials);
+        checkResourceGroupExistence(region);
         validateStoragePolicy(region.getAzurePolicy());
 
     }
@@ -131,19 +131,17 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         }
     }
 
-    private void validateStorageAccount(final String storageAccountName, final String storageAccountKey) {
-        Assert.isTrue(StringUtils.isNotBlank(storageAccountName),
-                messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_ACC_REQUIRED));
-        checkThatCredentialsIsActive(storageAccountName, storageAccountKey);
+    private void validateStorageAccount(final AzureRegion region, final AzureRegionCredentials credentials) {
+        checkThatCredentialsIsActive(region, credentials);
     }
 
-    void checkThatCredentialsIsActive(final String storageAccountName, final String storageAccountKey) {
+    void checkThatCredentialsIsActive(final AzureRegion region, final AzureRegionCredentials credentials) {
         try {
-            final BlobServiceClient blobServiceClient = AzureStorageHelper.getBlobServiceClient(storageAccountName,
-                    storageAccountKey);
+            final BlobServiceClient blobServiceClient = AzureStorageHelper.getBlobServiceClient(region, credentials);
             blobServiceClient.getProperties();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid Azure Storage credentials", e);
+            throw new IllegalArgumentException(messageHelper
+                    .getMessage(MessageConstants.ERROR_AZURE_STORAGE_CREDENTIAL_INVALID), e);
         }
     }
 
@@ -164,16 +162,17 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
                 .getMessage(MessageConstants.ERROR_AZURE_IP_RANGE_IS_INVALID, policy.getIpMax(), policy.getIpMin()));
     }
 
-    void checkResourceGroupExistence(final String resourceGroup, final String authFilePath) {
+    void checkResourceGroupExistence(final AzureRegion region) {
+        final String resourceGroup = region.getResourceGroup();
         Assert.isTrue(StringUtils.isNotBlank(resourceGroup), messageHelper.getMessage(
                 MessageConstants.ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND, resourceGroup));
         try {
-            final AzureResourceManager client = AzureHelper.buildClient(authFilePath);
+            final AzureResourceManager client = AzureHelper.buildClient(region);
             Assert.isTrue(client.resourceGroups().contain(resourceGroup), messageHelper.getMessage(
                     MessageConstants.ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND, resourceGroup));
         } catch (AuthenticationException e) {
             throw new IllegalArgumentException(messageHelper.getMessage(
-                    MessageConstants.ERROR_AZURE_AUTH_FILE_IS_INVALID), e);
+                    MessageConstants.ERROR_AZURE_AUTHENTICATION_FAILED), e);
         }
     }
 }

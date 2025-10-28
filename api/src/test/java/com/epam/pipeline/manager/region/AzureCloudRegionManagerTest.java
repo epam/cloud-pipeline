@@ -171,7 +171,7 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
     List<CloudRegionHelper> helpers() {
         AzureRegionHelper spy = Mockito.spy(new AzureRegionHelper(messageHelper));
         Mockito.doNothing().when(spy).checkThatCredentialsIsActive(any(), any());
-        Mockito.doNothing().when(spy).checkResourceGroupExistence(any(), any());
+        Mockito.doNothing().when(spy).checkResourceGroupExistence(any());
         return Collections.singletonList(spy);
     }
 

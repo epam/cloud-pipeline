@@ -273,7 +273,11 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
     public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
     public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
-    public static final String ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS = "error.datastorage.folder.already.exists";
+    public static final String ERROR_DATASTORAGE_FOLDER_CREATE_FAILED = "error.datastorage.folder.create.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_DELETE_FAILED = "error.datastorage.blob.delete.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_DOWNLOAD_FAILED = "error.datastorage.blob.download.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_UPLOAD_FAILED = "error.datastorage.blob.upload.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_COPY_FAILED = "error.datastorage.blob.copy.failed";
     public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
     public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
@@ -677,7 +681,7 @@ public final class MessageConstants {
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
     public static final String ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND = "error.azure.resource.group.not.found";
-    public static final String ERROR_AZURE_AUTH_FILE_IS_INVALID = "error.azure.auth.file.invalid";
+    public static final String ERROR_AZURE_AUTHENTICATION_FAILED = "error.azure.auth.failed";
     public static final String ERROR_AZURE_IP_RANGE_IS_INVALID = "error.azure.policy.ip.range.invalid";
     public static final String ERROR_AZURE_IP_IS_INVALID = "error.azure.ip.policy.invalid";
 

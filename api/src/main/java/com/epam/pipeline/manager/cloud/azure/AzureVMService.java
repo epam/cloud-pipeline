@@ -27,7 +27,6 @@ import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.azure.core.http.rest.PagedIterable;
 import com.azure.core.http.rest.PagedResponse;
 import com.azure.resourcemanager.AzureResourceManager;
-import com.azure.resourcemanager.network.models.NetworkInterface;
 import com.azure.resourcemanager.resources.fluentcore.arm.models.GroupableResource;
 import com.azure.resourcemanager.resources.fluentcore.arm.models.Resource;
 import com.azure.resourcemanager.resources.models.GenericResource;
@@ -83,14 +82,14 @@ public class AzureVMService {
     private final KubernetesManager kubernetesManager;
 
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
-        getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
+        getVmByName(region, instanceId).start();
         return CloudInstanceOperationResult.success(
                 messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
         );
     }
 
     public void stopInstance(final AzureRegion region, final String instanceId) {
-        getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).powerOff();
+        getVmByName(region, instanceId).powerOff();
     }
 
     public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
@@ -106,12 +105,8 @@ public class AzureVMService {
         return getVMStatsByTag(region, tagValue);
     }
 
-    public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
-        return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
-    }
-
     public void terminateInstance(final AzureRegion region, final String instanceId) {
-        final AzureResourceManager azure = AzureHelper.buildClient(region.getAuthFile());
+        final AzureResourceManager azure = AzureHelper.buildClient(region);
         final String instanceName = getInstanceResourceName(region, instanceId);
         resourcesByTag(region, instanceName)
                 .sorted(this::resourcesTerminationOrder)
@@ -119,11 +114,7 @@ public class AzureVMService {
                 .forEach(resource -> azure.genericResources().deleteById(resource));
     }
 
-    public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
-        final String interfaceId = vm.primaryNetworkInterfaceId();
-        return AzureHelper.buildClient(authFile).networkInterfaces().getById(interfaceId);
-    }
-
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
         try {
             final Optional<String> scaleSetName = getScaleSetName(vmName);
@@ -159,7 +150,7 @@ public class AzureVMService {
     }
 
     public void createAndAttachVolume(final String runId, final Long size, final AzureRegion region) {
-        final AzureResourceManager azure = AzureHelper.buildClient(region.getAuthFile());
+        final AzureResourceManager azure = AzureHelper.buildClient(region);
         final PagedIterable<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, runId);
         createAndAttachAzureVolumeToVMContainer(
@@ -226,11 +217,6 @@ public class AzureVMService {
         return items[items.length - 1];
     }
 
-    private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final AzureRegion region,
-                                                                  final String scaleSetName) {
-        return findVmScaleSetByName(region.getAuthFile(), region.getResourceGroup(), scaleSetName);
-    }
-
     private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
                                                                         final String scaleSetName,
                                                                         final String nodeName) {
@@ -274,30 +260,27 @@ public class AzureVMService {
                 .findFirst();
     }
 
-    private VirtualMachine getVmByName(final String authFile,
-                                       final String resourceGroup,
+    private VirtualMachine getVmByName(final AzureRegion region,
                                        final String instanceId) {
-        return findVmByName(authFile, resourceGroup, instanceId)
+        return findVmByName(region, instanceId)
                 .orElseThrow(() -> new AzureException(messageHelper.getMessage(
                         MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, instanceId)));
     }
 
-    private Optional<VirtualMachine> findVmByName(final String authFile,
-                                                  final String resourceGroup,
+    private Optional<VirtualMachine> findVmByName(final AzureRegion region,
                                                   final String instanceId) {
-        return Optional.of(AzureHelper.buildClient(authFile).virtualMachines())
-                .map(client -> client.getByResourceGroup(resourceGroup, instanceId));
+        return Optional.of(AzureHelper.buildClient(region).virtualMachines())
+                .map(client -> client.getByResourceGroup(region.getResourceGroup(), instanceId));
     }
 
-    private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final String authFile,
-                                                                  final String resourceGroup,
+    private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final AzureRegion region,
                                                                   final String scaleSetName) {
-        return Optional.of(AzureHelper.buildClient(authFile).virtualMachineScaleSets())
-                .map(client -> client.getByResourceGroup(resourceGroup, scaleSetName));
+        return Optional.of(AzureHelper.buildClient(region).virtualMachineScaleSets())
+                .map(client -> client.getByResourceGroup(region.getResourceGroup(), scaleSetName));
     }
 
     public AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
-        final AzureResourceManager azure = AzureHelper.buildClient(region.getAuthFile());
+        final AzureResourceManager azure = AzureHelper.buildClient(region);
         final PagedIterable<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
 
@@ -339,6 +322,7 @@ public class AzureVMService {
         return virtualMachineContainer.isPresent() ? virtualMachineContainer : checkNextPage(resources);
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private Optional<GenericResource> checkNextPage(final PagedIterable<GenericResource> resources) {
         if (resources.iterableByPage().iterator().hasNext()) {
             try {
@@ -351,7 +335,7 @@ public class AzureVMService {
     }
 
     private Stream<GenericResource> resourcesByTag(final AzureRegion region, final String tagValue) {
-        final AzureResourceManager azure = AzureHelper.buildClient(region.getAuthFile());
+        final AzureResourceManager azure = AzureHelper.buildClient(region);
         final PagedIterable<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return resourcesInPagedResult(getCurrentPage(resources), resources);
@@ -365,6 +349,7 @@ public class AzureVMService {
         return Stream.concat(currentPage.getValue().stream(), resourcesFromNextPage(resources));
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private Stream<GenericResource> resourcesFromNextPage(final PagedIterable<GenericResource> resources) {
         if (resources.iterableByPage().iterator().hasNext()) {
             try {

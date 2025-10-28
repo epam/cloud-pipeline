@@ -16,13 +16,18 @@
 
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
-import com.azure.storage.blob.*;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.datastorage.access.DataAccessType;
+import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.exception.AuthenticationException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
 import lombok.SneakyThrows;
@@ -48,6 +53,7 @@ import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import org.springframework.util.Assert;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.text.DateFormat;
@@ -75,23 +81,22 @@ public class AzureStorageHelper {
 
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
     private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net";
-    private static final int NOT_FOUND_STATUS_CODE = 404;
     private static final int RANGE_NOT_SATISFIABLE_STATUS_CODE = 416;
     private static final Duration FALLBACK_EXPIRATION_DURATION = Duration.ofDays(1);
     static final int MAX_PAGE_SIZE = 5000;
     private static final Duration AZURE_STORAGE_TIMEOUT = Duration.ofSeconds(30);
     private final AzureRegion region;
-    private final BlobServiceClient blobServiceClient;
+    private final AzureRegionCredentials credentials;
     private final MessageHelper messageHelper;
     private final DateFormat dateFormat;
     private final StorageEventCollector events;
 
     public AzureStorageHelper(final AzureRegion region,
-                              final BlobServiceClient blobServiceClient,
+                              final AzureRegionCredentials credentials,
                               final StorageEventCollector events,
                               final MessageHelper messageHelper) {
         this.region = region;
-        this.blobServiceClient = blobServiceClient;
+        this.credentials = credentials;
         this.events = events;
         this.messageHelper = messageHelper;
         final TimeZone tz = TimeZone.getTimeZone("UTC");
@@ -100,27 +105,28 @@ public class AzureStorageHelper {
     }
 
     public String createBlobStorage(final AzureBlobStorage storage) {
-        final BlobContainerClient containerClient = getContainerClient(storage);
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
         try {
             containerClient.create();
         } catch (BlobStorageException error) {
-            final String message = error.getErrorCode().equals(BlobErrorCode.CONTAINER_ALREADY_EXISTS) ?
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST,
-                            storage.getPath(), storage.getPath()) :
-                    String.format("Failed to create container: %s", storage.getPath());
+            final String message = messageHelper.getMessage(
+                    error.getErrorCode().equals(BlobErrorCode.CONTAINER_ALREADY_EXISTS)
+                            ? MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST
+                            : MessageConstants.ERROR_DATASTORAGE_CREATE_FAILED, storage.getPath());
             throw new DataStorageException(message, error);
         }
         return storage.getPath();
     }
 
     public String deleteStorage(final AzureBlobStorage storage) {
-        final BlobContainerClient containerClient = getContainerClient(storage);
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
         try {
             containerClient.delete();
         } catch (BlobStorageException error) {
-            final String message = error.getErrorCode().equals(BlobErrorCode.CONTAINER_NOT_FOUND) ?
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, storage.getPath()) :
-                    String.format("Failed to delete container: %s", storage.getPath());
+            final String message = messageHelper.getMessage(
+                    error.getErrorCode().equals(BlobErrorCode.CONTAINER_NOT_FOUND)
+                            ? MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME
+                            : MessageConstants.ERROR_DATASTORAGE_DELETE_FAILED, storage.getPath());
             throw new DataStorageException(message, error);
         }
         return storage.getPath();
@@ -136,7 +142,7 @@ public class AzureStorageHelper {
                                        final String path,
                                        final Integer pageSize,
                                        final String continuationToken) {
-        final BlobContainerClient containerClient = getContainerClient(storage);
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
         final String prefix = Optional.ofNullable(path).map(ProviderUtils::withTrailingDelimiter).orElse("");
         int effectivePageSize = Optional.ofNullable(pageSize).orElse(MAX_PAGE_SIZE);
 
@@ -156,12 +162,8 @@ public class AzureStorageHelper {
         return new DataStorageListing(pageResponse.getContinuationToken(), null, items);
     }
 
-    private boolean isNotTokenFile(final BlobItem item) {
-        return !StringUtils.endsWithIgnoreCase(item.getName(), ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase());
-    }
-
     public Optional<DataStorageFile> findFile(final AzureBlobStorage storage, final String path) {
-        final BlobContainerClient containerClient = getContainerClient(storage);
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
         final String fullPath = ProviderUtils.withoutLeadingDelimiter(path);
         final PagedIterable<BlobItem> blobItems = getBlobItemsRecursively(containerClient, fullPath);
         return blobItems.stream()
@@ -188,10 +190,9 @@ public class AzureStorageHelper {
             if (!metadata.isEmpty()) {
                 blobClient.setMetadata(metadata);
             }
-        } catch (BlobStorageException e) {
-            throw new DataStorageException("Failed to upload blob to Azure Storage: " + path, e);
-        } catch (Exception e) {
-            throw new DataStorageException("Unexpected error while uploading blob: " + path, e);
+        } catch (BlobStorageException | IOException e) {
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_BLOB_UPLOAD_FAILED, path), e);
         }
         return getDataStorageFile(dataStorage, path);
     }
@@ -210,8 +211,9 @@ public class AzureStorageHelper {
         final BlockBlobClient blobClient = getBlobClient(dataStorage, fullPath);
         try (ByteArrayInputStream emptyStream = new ByteArrayInputStream(new byte[0])) {
             blobClient.upload(emptyStream, 0, false);
-        } catch (Exception e) {
-            throw new DataStorageException("Unexpected error creating folder: " + fullPath, e);
+        } catch (IOException e) {
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_FOLDER_CREATE_FAILED, fullPath), e);
         }
         return getDataStorageFolder(path);
     }
@@ -237,7 +239,7 @@ public class AzureStorageHelper {
     }
 
     public boolean checkStorage(final AzureBlobStorage storage) {
-        return getContainerClient(storage).exists();
+        return getBlobContainerClient(storage).exists();
     }
 
     public Map<String, String> updateObjectTags(final AzureBlobStorage dataStorage,
@@ -247,7 +249,7 @@ public class AzureStorageHelper {
         try {
             getBlobClient(dataStorage, path).setMetadata(tags);
         } catch (BlobStorageException e) {
-            throw new DataStorageException("Failed to get blob metadata: " + path, e);
+            throw new DataStorageException("Failed to update blob metadata: " + path, e);
         }
         return tags;
     }
@@ -266,7 +268,7 @@ public class AzureStorageHelper {
                                                 final String path,
                                                 final Set<String> tagsToDelete) {
         validateBlob(dataStorage, path, true);
-        final BlobContainerClient containerClient = getContainerClient(dataStorage);
+        final BlobContainerClient containerClient = getBlobContainerClient(dataStorage);
         final BlobClient blobClient = containerClient.getBlobClient(path);
         try {
             final BlobProperties properties = blobClient.getProperties();
@@ -292,30 +294,30 @@ public class AzureStorageHelper {
         validateBlob(dataStorage, path, true);
         final BlockBlobClient blobClient = getBlobClient(dataStorage, path);
         events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
-        try {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             final BlobProperties properties = blobClient.getProperties();
             final long fileSize = properties.getBlobSize();
             final long rangeEnd = Math.min(maxDownloadSize, fileSize);
             final BlobRange blobRange = new BlobRange(0, rangeEnd);
             final DownloadRetryOptions options = new DownloadRetryOptions().setMaxRetryRequests(5);
-            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                blobClient.downloadStreamWithResponse(outputStream, blobRange, options, null, false,
-                        null, null);
-                byte[] bytes = outputStream.toByteArray();
-                final DataStorageItemContent content = new DataStorageItemContent();
-                content.setContent(bytes);
-                content.setContentType(properties.getContentType());
-                content.setTruncated(fileSize > maxDownloadSize);
-                content.setMayBeBinary(FileContentUtils.isBinaryContent(bytes));
-                return content;
-            }
+            blobClient.downloadStreamWithResponse(outputStream, blobRange, options, null, false,
+                    null, null);
+            byte[] bytes = outputStream.toByteArray();
+            final DataStorageItemContent content = new DataStorageItemContent();
+            content.setContent(bytes);
+            content.setContentType(properties.getContentType());
+            content.setTruncated(fileSize > maxDownloadSize);
+            content.setMayBeBinary(FileContentUtils.isBinaryContent(bytes));
+            return content;
         } catch (BlobStorageException e) {
             if (e.getStatusCode() == RANGE_NOT_SATISFIABLE_STATUS_CODE) {
                 return new DataStorageItemContent();
             }
-            throw new DataStorageException("Failed to download blob: " + path, e);
-        } catch (Exception e) {
-            throw new DataStorageException("Unexpected error downloading blob: " + path, e);
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_BLOB_DOWNLOAD_FAILED, path), e);
+        } catch (IOException e) {
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_BLOB_DOWNLOAD_FAILED, path), e);
         }
     }
 
@@ -332,9 +334,8 @@ public class AzureStorageHelper {
             if (e.getStatusCode() == RANGE_NOT_SATISFIABLE_STATUS_CODE) {
                 return new DataStorageStreamingContent(new ByteArrayInputStream(new byte[0]), path);
             }
-            throw new DataStorageException("Failed to download blob: " + path, e);
-        } catch (Exception e) {
-            throw new DataStorageException("Unexpected error downloading blob stream: " + path, e);
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_BLOB_DOWNLOAD_FAILED, path), e);
         }
     }
 
@@ -358,7 +359,7 @@ public class AzureStorageHelper {
                                    final String path,
                                    final String permission,
                                    final OffsetDateTime expiryTime) {
-        final BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(dataStorage.getPath());
+        final BlobContainerClient blobContainerClient = getBlobContainerClient(dataStorage);
         return StringUtils.isBlank(path) || path.endsWith("/")
                 ? generateSASToken(blobContainerClient, permission, expiryTime)
                 : generateSASToken(blobContainerClient, path, permission, expiryTime);
@@ -373,10 +374,10 @@ public class AzureStorageHelper {
                 .setStartTime(OffsetDateTime.now());
         try {
             final UserDelegationKey userDelegationKey =
-                    blobServiceClient.getUserDelegationKey(OffsetDateTime.now(), expiryTime);
+                    getBlobServiceClient(region, credentials).getUserDelegationKey(OffsetDateTime.now(), expiryTime);
             return blobContainerClient
                     .generateUserDelegationSas(sasSignatureValues, userDelegationKey);
-        } catch (Exception ex) {
+        } catch (BlobStorageException e) {
             return blobContainerClient.generateSas(sasSignatureValues);
         }
     }
@@ -391,12 +392,84 @@ public class AzureStorageHelper {
                 .setStartTime(OffsetDateTime.now());
         try {
             final UserDelegationKey userDelegationKey =
-                    blobServiceClient.getUserDelegationKey(OffsetDateTime.now(), expiryTime);
+                    getBlobServiceClient(region, credentials).getUserDelegationKey(OffsetDateTime.now(), expiryTime);
             return blobContainerClient.getBlobClient(blobName)
                     .generateUserDelegationSas(sasSignatureValues, userDelegationKey);
-        } catch (Exception ex) {
+        } catch (BlobStorageException ex) {
             return blobContainerClient.getBlobClient(blobName).generateSas(sasSignatureValues);
         }
+    }
+    public void addIPRangeToSASValue(final BlobServiceSasSignatureValues values) {
+        final AzurePolicy policy = region.getAzurePolicy();
+        if (policy != null &&
+                (StringUtils.isNotBlank(policy.getIpMin()) || StringUtils.isNotBlank(policy.getIpMax()))) {
+            if (StringUtils.isNotBlank(policy.getIpMin()) && StringUtils.isNotBlank(policy.getIpMax())) {
+                values.setSasIpRange(new SasIpRange().setIpMin(policy.getIpMin()).setIpMax(policy.getIpMax()));
+                return;
+            }
+            final String ipValue = Optional.ofNullable(policy.getIpMin()).orElse(policy.getIpMax());
+            values.setSasIpRange(new SasIpRange().setIpMin(ipValue).setIpMax(ipValue));
+        }
+    }
+
+    public void deleteItem(final AzureBlobStorage dataStorage, final String path) {
+        if (path.endsWith(ProviderUtils.DELIMITER)) {
+            deleteFolder(dataStorage, path);
+        } else {
+            deleteFile(dataStorage, path);
+        }
+    }
+
+    public PathDescription getDataSize(final AzureBlobStorage dataStorage,
+                                       final String path,
+                                       final PathDescription pathDescription) {
+        final String requestPath = Optional.ofNullable(path).orElse("").trim();
+        final BlobContainerClient containerClient = getBlobContainerClient(dataStorage);
+        final List<BlobItem> items = containerClient
+                .listBlobs(new ListBlobsOptions().setPrefix(requestPath), AZURE_STORAGE_TIMEOUT)
+                .stream()
+                .collect(Collectors.toList());
+
+        ProviderUtils.getSizeByPath(items, requestPath, item -> item.getProperties().getContentLength(),
+                BlobItem::getName, pathDescription);
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
+    }
+
+    public static BlobServiceClient getBlobServiceClient(final AzureRegion region,
+                                                         final AzureRegionCredentials credentials) {
+        final String storageAccount = region.getStorageAccount();
+        final String endpoint = String.format(BLOB_URL_FORMAT, storageAccount);
+        final HttpLogOptions httpLogOptions = new HttpLogOptions().setLogLevel(HttpLogDetailLevel.BASIC);
+        if (StringUtils.isNotBlank(region.getManagedIdentity())) {
+            log.info("Authenticating with Managed Identity");
+            return new BlobServiceClientBuilder()
+                    .endpoint(endpoint)
+                    .credential(new DefaultAzureCredentialBuilder()
+                            .managedIdentityClientId(region.getManagedIdentity())
+                            .build())
+                    .httpLogOptions(httpLogOptions)
+                    .buildClient();
+        } else if (StringUtils.isNotBlank(credentials.getStorageAccountKey())) {
+            log.info("Authenticating with Storage Account Key");
+            return new BlobServiceClientBuilder()
+                    .endpoint(endpoint)
+                    .credential(new StorageSharedKeyCredential(storageAccount, credentials.getStorageAccountKey()))
+                    .httpLogOptions(httpLogOptions)
+                    .buildClient();
+
+        } else {
+            throw new AuthenticationException("Failed to authenticate to Azure.");
+        }
+    }
+
+    public BlobContainerClient getBlobContainerClient(final AzureBlobStorage storage) {
+        return getBlobServiceClient(region, credentials).getBlobContainerClient(storage.getPath());
+    }
+
+    private boolean isNotTokenFile(final BlobItem item) {
+        return !StringUtils.endsWithIgnoreCase(item.getName(), ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase());
     }
 
     @SneakyThrows
@@ -432,56 +505,12 @@ public class AzureStorageHelper {
         return dataStorageDownloadFileUrl;
     }
 
-    public void addIPRangeToSASValue(final BlobServiceSasSignatureValues values) {
-        final AzurePolicy policy = region.getAzurePolicy();
-        if (policy != null &&
-                (StringUtils.isNotBlank(policy.getIpMin()) || StringUtils.isNotBlank(policy.getIpMax()))) {
-            if (StringUtils.isNotBlank(policy.getIpMin()) && StringUtils.isNotBlank(policy.getIpMax())) {
-                values.setSasIpRange(new SasIpRange().setIpMin(policy.getIpMin()).setIpMax(policy.getIpMax()));
-                return;
-            }
-            final String ipValue = Optional.ofNullable(policy.getIpMin()).orElse(policy.getIpMax());
-            values.setSasIpRange(new SasIpRange().setIpMin(ipValue).setIpMax(ipValue));
-        }
-    }
-
-    public void deleteItem(final AzureBlobStorage dataStorage, final String path) {
-        if (path.endsWith(ProviderUtils.DELIMITER)) {
-            deleteFolder(dataStorage, path);
-        } else {
-            deleteFile(dataStorage, path);
-        }
-    }
-
-    public PathDescription getDataSize(final AzureBlobStorage dataStorage,
-                                       final String path,
-                                       final PathDescription pathDescription) {
-        final String requestPath = Optional.ofNullable(path).orElse("").trim();
-        final BlobContainerClient containerClient = getContainerClient(dataStorage);
-        final List<BlobItem> items = containerClient
-                .listBlobs(new ListBlobsOptions().setPrefix(requestPath), AZURE_STORAGE_TIMEOUT)
-                .stream()
-                .collect(Collectors.toList());
-
-        ProviderUtils.getSizeByPath(items, requestPath, item -> item.getProperties().getContentLength(),
-                BlobItem::getName, pathDescription);
-
-        pathDescription.setCompleted(true);
-        return pathDescription;
-    }
-
     private void deleteFolder(final AzureBlobStorage dataStorage, final String path) {
         validateDirectory(dataStorage, path, true);
-        final BlobContainerClient containerClient = getContainerClient(dataStorage);
+        final BlobContainerClient containerClient = getBlobContainerClient(dataStorage);
         final String folderPath = getFullPath(path);
         for (BlobItem item: getBlobItemsRecursively(containerClient, folderPath)) {
-            events.put(new DataAccessEvent(path, DataAccessType.DELETE, dataStorage));
-            try {
-                final BlobClient blobClient = containerClient.getBlobClient(item.getName());
-                blobClient.delete();
-            } catch (BlobStorageException e) {
-                throw new DataStorageException("Failed to delete blob: " + path, e);
-            }
+            deleteBlob(dataStorage, item.getName());
         }
     }
 
@@ -499,17 +528,18 @@ public class AzureStorageHelper {
         try {
             getBlobClient(dataStorage, path).delete();
         } catch (BlobStorageException e) {
-            throw new DataStorageException("Failed to delete blob: " + path, e);
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_BLOB_DELETE_FAILED, path), e);
         }
     }
 
     private BlockBlobClient getBlobClient(final AzureBlobStorage dataStorage, final String path) {
-        final BlobContainerClient containerClient = getContainerClient(dataStorage);
+        final BlobContainerClient containerClient = getBlobContainerClient(dataStorage);
         return containerClient.getBlobClient(path).getBlockBlobClient();
     }
 
     private Stream<AbstractDataStorageItem> listFilesRecursively(final AzureBlobStorage storage, final String path) {
-        final BlobContainerClient containerClient = getContainerClient(storage);
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
         final PagedIterable<BlobItem> blobs = getBlobItemsRecursively(containerClient, path);
         return StreamSupport.stream(blobs.spliterator(), false).map(this::toDataStorageItem);
     }
@@ -547,13 +577,13 @@ public class AzureStorageHelper {
     }
 
     private boolean directoryExists(final AzureBlobStorage dataStorage, final String path) {
-        final BlobContainerClient containerClient = getContainerClient(dataStorage);
+        final BlobContainerClient containerClient = getBlobContainerClient(dataStorage);
         final String pathWithTrailingDelimiter = getFullPath(path);
         return containerClient.listBlobsByHierarchy(pathWithTrailingDelimiter).iterator().hasNext();
     }
 
     private boolean blobExists(final AzureBlobStorage dataStorage, final String path) {
-        final BlobClient blobClient = getContainerClient(dataStorage).getBlobClient(path);
+        final BlobClient blobClient = getBlobContainerClient(dataStorage).getBlobClient(path);
         return blobClient.exists();
     }
 
@@ -596,7 +626,7 @@ public class AzureStorageHelper {
     }
 
     private void copyBlobs(final AzureBlobStorage storage, final String sourceFolder, final String destinationFolder) {
-        final BlobContainerClient containerClient = getContainerClient(storage);
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
         for (BlobItem blobItem : getBlobItemsRecursively(containerClient, sourceFolder)) {
             final String sourceBlobName = blobItem.getName();
             final String destBlobName = destinationFolder + sourceBlobName.substring(sourceFolder.length());
@@ -608,37 +638,13 @@ public class AzureStorageHelper {
         events.put(new DataAccessEvent(sourcePath, DataAccessType.READ, storage),
                 new DataAccessEvent(destinationPath, DataAccessType.WRITE, storage));
         try {
-            final BlobContainerClient containerClient = getContainerClient(storage);
+            final BlobContainerClient containerClient = getBlobContainerClient(storage);
             final BlobClient sourceBlob = containerClient.getBlobClient(sourcePath);
             final BlobClient destBlob = containerClient.getBlobClient(destinationPath);
             destBlob.beginCopy(sourceBlob.getBlobUrl(), Duration.ofSeconds(1));
-        } catch (Exception e) {
-            throw new DataStorageException("Failed to copy blob from " + sourcePath + " to " + destinationPath, e);
+        } catch (BlobStorageException e) {
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_BLOB_COPY_FAILED, sourcePath, destinationPath), e);
         }
-    }
-
-    public static BlobServiceClient getBlobServiceClient(final String storageAccountName,
-                                                         final String storageAccountKey) {
-        final String endpoint = String.format(BLOB_URL_FORMAT, storageAccountName);
-        final HttpLogOptions httpLogOptions = new HttpLogOptions().setLogLevel(HttpLogDetailLevel.BASIC);
-        if (StringUtils.isBlank(storageAccountKey)) {
-            log.info("Authenticating with DefaultAzureCredential");
-            return new BlobServiceClientBuilder()
-                    .endpoint(endpoint)
-                    .credential(new DefaultAzureCredentialBuilder().build())
-                    .httpLogOptions(httpLogOptions)
-                    .buildClient();
-        }
-        log.info("Authenticating with StorageSharedKeyCredential");
-        return new BlobServiceClientBuilder()
-                .endpoint(endpoint)
-                .credential(new StorageSharedKeyCredential(storageAccountName, storageAccountKey))
-                .httpLogOptions(httpLogOptions)
-                .buildClient();
-
-    }
-
-    public BlobContainerClient getContainerClient(final AzureBlobStorage storage) {
-        return blobServiceClient.getBlobContainerClient(storage.getPath());
     }
 }

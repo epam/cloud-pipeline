@@ -102,7 +102,7 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     public List<InstanceOffer> load(final AzureRegion region) throws IOException {
-        final AzureCredentials credential = AzureHelper.getAzureCredentials(region.getAuthFile());
+        final AzureCredentials credential = AzureHelper.getAzureCredentials(region);
         final AzureResourceManager client = AzureHelper.buildClient(credential);
 
         final Map<String, ResourceSkuInner> vmSkusByName = client.computeSkus()
@@ -131,11 +131,6 @@ public abstract class AbstractAzurePriceListLoader {
                                                              throws IOException;
 
     public abstract String getAPIVersion();
-
-    protected TokenCredential getAzureCredentials(final String authFilePath) throws IOException {
-        final AzureCredentials credentials = AzureHelper.getAzureCredentials(authFilePath);
-        return credentials.getCredential();
-    }
 
     protected boolean isLowPriorityAvailable(final ResourceSkuInner sku) {
         return ListUtils.emptyIfNull(sku.capabilities())

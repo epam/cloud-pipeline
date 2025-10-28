@@ -41,7 +41,6 @@ import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.sas.BlobContainerSasPermission;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import lombok.RequiredArgsConstructor;
@@ -329,11 +328,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     public AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
-        final String storageAccountName = region.getStorageAccount();
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        final String storageAccountKey = credentials.getStorageAccountKey();
-        final BlobServiceClient blobServiceClient = AzureStorageHelper.getBlobServiceClient(storageAccountName,
-                storageAccountKey);
-        return new AzureStorageHelper(region, blobServiceClient, azEvents, messageHelper);
+        return new AzureStorageHelper(region, credentials, azEvents, messageHelper);
     }
 }

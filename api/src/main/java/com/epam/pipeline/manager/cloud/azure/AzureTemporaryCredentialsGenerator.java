@@ -61,7 +61,7 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
     private TemporaryCredentials generate(final List<DataStorageAction> actions, final AzureBlobStorage dataStorage) {
         final AzureStorageHelper helper = storageProvider.getAzureStorageHelper(dataStorage);
         final AzureRegion region = cloudRegionManager.getAzureRegion(dataStorage);
-        final BlobContainerClient blobContainerClient = helper.getContainerClient(dataStorage);
+        final BlobContainerClient blobContainerClient = helper.getBlobContainerClient(dataStorage);
         final Integer duration =
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
         final OffsetDateTime expiryTime = OffsetDateTime.now().plusSeconds(duration);
