@@ -332,5 +332,6 @@ public enum Primitive {
     VOLUME,
     TOOL_VERSION,
     PROFILE,
-    ADD_ROLE
+    ADD_ROLE,
+    ADD_SCHEDULE
 }

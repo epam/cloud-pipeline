@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
-import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -34,21 +33,21 @@ import org.openqa.selenium.By;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
-import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
@@ -116,11 +115,8 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public static By rootEntityType() {
-        return PipelineSelectors.Combiners.confine(
-                byClassName("ant-select-selection"),
-                byClassName("launch-pipeline-form__root-entity-type-container"),
-                "root entity type"
-        );
+        return By.xpath("//*[contains(@class, 'aunch-form-parameter__launch-form-parameter') " +
+                "and contains(., 'Root entity type')]");
     }
 
     public static By addParameter() {
@@ -256,9 +252,9 @@ public class Configuration implements AccessObject<Configuration> {
 
     public Configuration validateParameters(final String... parameters) {
         final ElementsCollection actualParameters = $(byId("launch-pipeline-parameters-panel"))
-                .$$(byClassName("launch-pipeline-form__parameter-name-container"));
-        IntStream.range(0, parameters.length)
-                .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i])));
+                .$$(byClassName("arameter-name-input__parameter-name"));
+        IntStream.range(1, parameters.length)
+                .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i-1])));
         return this;
     }
 
@@ -267,14 +263,15 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration addStringParameter(final String name, final String value) {
-        profile.clickAddStringParameter()
-                .setName(name)
-                .also(parameter -> parameter.get(PARAMETER_NAME)
-                        .closest(".ant-row")
-                        .closest(".ant-row")
-                        .find(byClassName("ant-select-search__field"))
-                        .setValue(value)
-                );
+        profile.addStringParameter(name, value);
+        return this;
+    }
+
+    public Configuration selectRootEntityTypeValue(final String option) {
+        $$(byClassName("arameters__parameters-group-container")).get(0)
+                .$(byClassName("ant-select-selection")).click();
+        $$(byClassName("ant-select-dropdown-menu-item"))
+                .find(text(option)).shouldBe(visible).click();
         return this;
     }
 
