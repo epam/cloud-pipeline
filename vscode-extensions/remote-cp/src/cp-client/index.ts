@@ -193,7 +193,10 @@ export abstract class CpClientBase extends Disposable {
     const env = this.configToEnv(config);
 
     try {
-      const resProcess = cp.spawn(this.pipeExec, args, { ...env, ...options });
+      const resProcess = cp.spawn(this.pipeExec, args, {
+        env: env,
+        ...options,
+      });
       return [resProcess, version!];
     } catch (err) {
       const _m = err.message.match(CpTokenExpiredError.re);
@@ -268,6 +271,7 @@ export abstract class CpClientBase extends Disposable {
     cpRunId: number,
     reuseTunnel: PipeTunnelInfo | null,
   ): Promise<PipeTunnelBase> {
+    const logPfx = `${this.toLog()}.startTunnel()`;
     let resPipeTunnel: PipeTunnelBase | undefined;
 
     if (reuseTunnel) {
@@ -288,8 +292,12 @@ export abstract class CpClientBase extends Disposable {
       if (pipeTunnelUserResp instanceof ReusePipeTunnelItem) {
         resPipeTunnel = new ReusedPipeTunnel(pipeTunnelUserResp.tunnelInfo);
       } else if (pipeTunnelUserResp instanceof ExecutePipeTunnelItem) {
+        this.logger.trace(`${logPfx}, user resp to execute pipe tunnel`);
         resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
+          const logPfx2 = `${logPfx}.execPipeTunnel`;
+          this.logger.trace(`${logPfx2}, start`);
           const localPort = await findRandomPort();
+          this.logger.trace(`${logPfx2}, localPort: ${localPort}`);
           const res = new PipeTunnel(
             cpRunId,
             localPort,
@@ -297,12 +305,15 @@ export abstract class CpClientBase extends Disposable {
             this.cpExtConfig,
             this.logger,
           );
+          this.logger.trace(`${logPfx2}, created`);
           // context.subscriptions.push(resPipeTunnel);
           await res.activate(
             async (
               localPort: number,
               toStop: boolean,
             ): Promise<[cp.ChildProcessWithoutNullStreams, CpVersionInfo]> => {
+              const logPfx3 = `${logPfx2}.startProcess`;
+              this.logger.trace(`${logPfx3}, start`);
               const [resProcess, resVersion] = await this.configSpawn(
                 // prettier-ignore
                 [
@@ -316,9 +327,11 @@ export abstract class CpClientBase extends Disposable {
                 ],
                 { detached: !toStop },
               );
+              this.logger.trace(`${logPfx3}, end (spawned)`);
               return [resProcess, resVersion];
             },
           );
+          this.logger.trace(`${logPfx2}, end (activated)`);
           return res;
         })();
       }
