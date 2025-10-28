@@ -38,8 +38,10 @@ export class LoggerBase extends Disposable implements ILogger {
     super.dispose();
   }
 
-  public error(message?: any, ...optionalParams: any[]): void {
-    if (this.base) this.base.error(message, ...optionalParams);
+  public error(message?: any, ...optionalParams: any[]): string {
+    const errMsg = this.errorToText(message);
+    if (this.base) this.base.error(errMsg, ...optionalParams);
+    return errMsg;
   }
 
   public warn(message?: any, ...optionalParams: any[]): void {
@@ -56,6 +58,18 @@ export class LoggerBase extends Disposable implements ILogger {
 
   public trace(message?: any, ...optionalParams: any[]): void {
     if (this.base) this.base.trace(message, ...optionalParams);
+  }
+
+  private errorToText(err: any): string {
+    if (typeof err === "string") {
+      return err;
+    } else if (err instanceof Error) {
+      return err.stack ?? err.message;
+    } else if (err && typeof err.toString === "function") {
+      return err.toString();
+    } else {
+      return JSON.stringify(err);
+    }
   }
 }
 
@@ -135,10 +149,11 @@ export class OutputLogger extends LoggerBase implements IOutputLogger {
     this.outputChannel.warn(message, ...optionalParams);
   }
 
-  override error(message?: any, ...optionalParams: any[]): void {
-    super.error(message, ...optionalParams);
+  override error(message?: any, ...optionalParams: any[]): string {
+    const errMsg = super.error(message, ...optionalParams);
     this._ensureOutputChannel();
-    this.outputChannel.error(message, ...optionalParams);
+    this.outputChannel.error(errMsg, ...optionalParams);
+    return errMsg;
   }
 }
 
@@ -190,10 +205,11 @@ export class FileLogger extends LoggerBase {
     this.stream.write(line);
   }
 
-  override error(message?: any, ...optionalParams: any[]): void {
-    super.error(message, ...optionalParams);
+  override error(message?: any, ...optionalParams: any[]): string {
+    const errMsg = super.error(message, ...optionalParams);
     if (this.levelValue >= LogLevel.error)
-      this.logToFile("ERROR", message, ...optionalParams);
+      this.logToFile("ERROR", errMsg, ...optionalParams);
+    return errMsg;
   }
 
   override warn(message?: any, ...optionalParams: any[]): void {

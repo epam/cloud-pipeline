@@ -205,20 +205,26 @@ export class PipeTunnel extends PipeTunnelBase {
         progress.report({ increment: 0 });
 
         return new Promise<void>((resolve, reject) => {
+          const logPfx2 = `${logPfx}.promise`;
           this._register(
-            cancelToken.onCancellationRequested((event) => {
+            cancelToken.onCancellationRequested((_event) => {
               // FIX: Stop process
               reject(new Error("Cancelled"));
             }),
           );
 
           this.on("ready", () => {
+            this.logger.trace(`${logPfx2}, on ready -> resolve`);
             resolve();
           });
           this.on("processError", (err) => {
+            this.logger.trace(`${logPfx2}, on processError -> reject`);
             reject(err);
           });
           this.on("processClose", (code) => {
+            this.logger.trace(
+              `${logPfx2}, on processClose( code: ${code} ) -> reject`,
+            );
             if (code === 0) {
               reject(new Error("Tunnel process closed (exitcode: 0)"));
             } else {

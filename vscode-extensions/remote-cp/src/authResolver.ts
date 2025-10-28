@@ -113,7 +113,6 @@ export class RemoteCpResolver
         await this.cpExt.setReusePipeTunnel(resTunnelInfo);
         return resResolveResult;
       } catch (err) {
-        this.logger.error(`Error at ${logPfx}:`);
         this.logger.error(err);
         throw err;
       } finally {
@@ -162,6 +161,8 @@ export class RemoteCpResolver
           cpRunId,
           reusePipeTunnel,
         );
+        if (!tunnel)
+          throw new Error("Failed to start tunnel.");
         if (!tunnel.toStop) {
           resTunnelInfo = tunnel.getInfo();
         }
