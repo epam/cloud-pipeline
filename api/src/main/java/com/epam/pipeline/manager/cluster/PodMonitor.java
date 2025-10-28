@@ -200,6 +200,9 @@ public class PodMonitor extends AbstractSchedulingManager {
                             }
                         }
 
+                        // update node name, if it is not set yet
+                        addNodeNameToRunIfNone(run.getInstance(), pod, status, run.getId());
+
                         if (status.getPhase().equals(KubernetesConstants.POD_SUCCEEDED_PHASE)) {
                             run.setStatus(TaskStatus.SUCCESS);
                             run.setEndDate(DateUtils.now());
@@ -703,6 +706,17 @@ public class PodMonitor extends AbstractSchedulingManager {
                 return false;
             }
             return true;
+        }
+
+        private void addNodeNameToRunIfNone(final RunInstance runInstance, final Pod pod, final PodStatus status,
+                                            final Long runId) {
+            if (Objects.nonNull(runInstance) && StringUtils.isEmpty(runInstance.getNodeName())) {
+                final String nodeName = pod.getSpec().getNodeName();
+                runInstance.setNodeName(nodeName);
+                runInstance.setNodeIP(Optional.ofNullable(runInstance.getNodeIP()).orElse(status.getHostIP()));
+                runInstance.setNodeId(Optional.ofNullable(runInstance.getNodeId()).orElse(nodeName));
+                pipelineRunManager.updateRunInstance(runId, runInstance);
+            }
         }
     }
 }

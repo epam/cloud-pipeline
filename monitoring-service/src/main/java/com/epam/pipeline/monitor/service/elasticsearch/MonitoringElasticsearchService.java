@@ -70,8 +70,8 @@ public class MonitoringElasticsearchService {
     }
 
     private String readMappingsJson() {
-        try {
-            return IOUtils.toString(openJsonMapping(indexMappingsFile), Charset.defaultCharset());
+        try (InputStream fileStream = openJsonMapping(indexMappingsFile);) {
+            return IOUtils.toString(fileStream, Charset.defaultCharset());
         } catch (IOException e) {
             throw new IllegalArgumentException("Cannot read mappings file: " + indexMappingsFile);
         }

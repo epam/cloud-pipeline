@@ -30,7 +30,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Getter
@@ -52,7 +51,6 @@ public class PipelineRun extends AbstractSecuredEntity {
     public static final String KEY_VALUE_DELIMITER = "=";
     public static final String PARAM_DELIMITER = "|";
     public static final String DEFAULT_PIPELINE_NAME = "pipeline";
-    private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
 
     // Describes the user who actually launch this run, in common case will be the same as owner field,
@@ -192,23 +190,12 @@ public class PipelineRun extends AbstractSecuredEntity {
                 .findFirst();
     }
 
-    public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
-        params = parameters
-                .entrySet().stream()
-                .map(entry -> {
-                    String param = entry.getKey() + KEY_VALUE_DELIMITER +
-                            entry.getValue().getValue();
-                    if (StringUtils.hasText(entry.getValue().getType())) {
-                        param += KEY_VALUE_DELIMITER + (entry.getValue().getType());
-                    }
-                    return param;
-                })
-                .collect(Collectors.joining(PARAM_DELIMITER));
-    }
-
     public void parseParameters() {
+        if (CollectionUtils.isNotEmpty(pipelineRunParameters)) {
+            return;
+        }
         pipelineRunParameters = new ArrayList<>();
-        if (StringUtils.hasText(params)) {
+        if (StringUtils.isNotBlank(params)) {
             String[] parts = params.split("\\|");
 
             pipelineRunParameters = Arrays.stream(parts)
@@ -216,8 +203,14 @@ public class PipelineRun extends AbstractSecuredEntity {
                         String[] chunks = part.split(KEY_VALUE_DELIMITER);
                         if (chunks.length == 2) {
                             return new PipelineRunParameter(chunks[0], chunks[1]);
-                        } else if (chunks.length == 3) {
-                            return new PipelineRunParameter(chunks[0], chunks[1], chunks[2]);
+                        } else if (chunks.length >= 3) {
+                            //We consider everything between first `=` and last `=` - value
+                            int valueStartIndex = chunks[0].length() + 1;
+                            int valueEndIndex = StringUtils.lastIndexOf(part, KEY_VALUE_DELIMITER);
+                            String value = part.substring(valueStartIndex, valueEndIndex);
+                            String type = part.substring(
+                                    valueEndIndex + 1);
+                            return new PipelineRunParameter(chunks[0], value, type);
                         }
                         return new PipelineRunParameter(part);
                     })

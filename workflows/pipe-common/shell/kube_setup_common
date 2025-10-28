@@ -256,6 +256,47 @@ pipe_log_info "- Package manager: $_pkg_type\n \
 - Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR\n \
 - GPUs count: $_node_gpus_count" "$_kube_common_setup_task_name"
 
+CP_CAP_DIND_CONTAINERD_HOME_PATH="/var/lib/containerd"
+if [ ! -d "$CP_CAP_DIND_CONTAINERD_HOME_PATH" ]; then
+    mkdir -p "$CP_CAP_DIND_CONTAINERD_HOME_PATH"
+fi
+mknod "$CP_CAP_DIND_CONTAINERD_HOME_PATH/test" c 0 0
+if [ $? -ne 0 ]; then
+    if [ "$CP_CAP_DIND_CONTAINERD_XFS_ALLOW_RECREATE" == "false" ]; then
+        pipe_log_warn "mknod check has failed with $CP_CAP_DIND_CONTAINERD_HOME_PATH. Recreation is restricted. Subsequent steps may fail." "$_kube_common_setup_task_name"
+    else
+        CP_CAP_DIND_CONTAINERD_XFS_SIZE="${CP_CAP_DIND_CONTAINERD_XFS_SIZE:-10g}"
+        CP_CAP_DIND_CONTAINERD_XFS_PATH="${CP_CAP_DIND_CONTAINERD_XFS_PATH:-/xfs.containerd.img}"
+        CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE="${CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE:-/dev/loop0}"
+        pipe_log_info "mknod check has failed with $CP_CAP_DIND_CONTAINERD_HOME_PATH. Will try to recreate with XFS:\n \
+- CP_CAP_DIND_CONTAINERD_XFS_SIZE: $CP_CAP_DIND_CONTAINERD_XFS_SIZE\n \
+- CP_CAP_DIND_CONTAINERD_XFS_PATH: $CP_CAP_DIND_CONTAINERD_XFS_PATH\n \
+- CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE: $CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE\n \
+- CP_CAP_DIND_CONTAINERD_HOME_PATH: $CP_CAP_DIND_CONTAINERD_HOME_PATH" "$_kube_common_setup_task_name"
+
+        rm -rf "$CP_CAP_DIND_CONTAINERD_HOME_PATH" && \
+        mkdir -p "$CP_CAP_DIND_CONTAINERD_HOME_PATH" && \
+        rm -f "$CP_CAP_DIND_CONTAINERD_XFS_PATH" && \
+        truncate -s "$CP_CAP_DIND_CONTAINERD_XFS_SIZE" "$CP_CAP_DIND_CONTAINERD_XFS_PATH" && \
+        mkfs.xfs -m reflink=1 "$CP_CAP_DIND_CONTAINERD_XFS_PATH" && \
+        mknod "$CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE" b 7 0 && \
+        losetup "$CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE" "$CP_CAP_DIND_CONTAINERD_XFS_PATH" && \
+        mount "$CP_CAP_DIND_CONTAINERD_XFS_LOOP_DEVICE" "$CP_CAP_DIND_CONTAINERD_HOME_PATH"
+
+        if [ $? -ne 0 ]; then
+            pipe_log_fail "Failed to recreate $CP_CAP_DIND_CONTAINERD_HOME_PATH with XFS. Subsequent steps may fail" "$_kube_common_setup_task_name"
+        else
+            mknod "$CP_CAP_DIND_CONTAINERD_HOME_PATH/test" c 0 0
+            if [ $? -ne 0 ]; then
+                pipe_log_warn "mknod check has failed again after XFS recreation. Subsequent steps may fail." "$_kube_common_setup_task_name"
+            else
+                pipe_log_info "mknod check has passed after XFS recreation." "$_kube_common_setup_task_name"
+            fi
+        fi
+    fi
+fi
+unlink "$CP_CAP_DIND_CONTAINERD_HOME_PATH/test"
+
 CP_CAP_DIND_CONTAINERD_LOG="${CP_CAP_DIND_CONTAINERD_LOG:-/var/log/containerd.log}"
 CP_CAP_DIND_CONTAINERD_BIN="${CP_CAP_DIND_CONTAINERD_BIN:-/usr/local/bin/containerd}"
 if [ -f "$CP_CAP_DIND_CONTAINERD_BIN" ]; then

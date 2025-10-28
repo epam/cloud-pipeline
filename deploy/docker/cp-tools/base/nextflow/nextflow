@@ -26,7 +26,10 @@ function generate_params_file() {
         if [ "$cp_param_type" == "boolean" ]; then
             all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": ${!cp_param_clean}"
         else
-            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${!cp_param_clean}\""
+            # Escaping special characters for JSON
+            _value=${!cp_param_clean}
+            _value=${_value//\\/\\\\}
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${_value}\""
         fi
     done
     all_cp_params_json="{ $(echo "$all_cp_params_json" | sed 's/,//') }"

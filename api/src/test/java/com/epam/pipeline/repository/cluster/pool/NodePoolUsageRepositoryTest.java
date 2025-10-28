@@ -16,6 +16,7 @@
 package com.epam.pipeline.repository.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsageEntity;
+import com.epam.pipeline.entity.cluster.pool.Requests;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import org.junit.Test;
@@ -24,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -105,6 +107,7 @@ public class NodePoolUsageRepositoryTest extends AbstractJpaTest {
         entity.setNodePoolId(POOL_ID);
         entity.setOccupiedNodesCount(NODES_COUNT);
         entity.setTotalNodesCount(NODES_COUNT);
+        entity.setRequestsStats(Collections.singletonMap("cpu", new Requests(1L, 1L, 1L)));
         repository.save(entity);
         return entity;
     }

@@ -51,13 +51,19 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class JwtTokenGenerator {
+    public static final int SEC_IN_MIN = 60;
+    public static final int SEC_IN_HOUR = 3600;
+    public static final int SEC_IN_DAY = 24 * 3600;
+
     @Autowired
     private PreferenceManager preferenceManager;
 
@@ -84,12 +90,16 @@ public class JwtTokenGenerator {
         }
     }
 
-    public String encodeToken(JwtTokenClaims claims, Long expirationSeconds) {
-        long jwtExpirationSeconds = preferenceManager.getPreference(SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION);
-        Long expiration = expirationSeconds == null ? jwtExpirationSeconds : expirationSeconds;
+    public String encodeToken(final JwtTokenClaims claims, final Long expirationSeconds,
+                              boolean validateExpirationDuration) {
+        final long expiration = calculateTokenDuration(expirationSeconds, validateExpirationDuration);
         JWTCreator.Builder tokenBuilder = buildToken(claims);
         tokenBuilder.withExpiresAt(toDate(LocalDateTime.now().plusSeconds(expiration)));
         return tokenBuilder.sign(Algorithm.RSA512(privateKey));
+    }
+
+    public String encodeToken(final JwtTokenClaims claims, final Long expirationSeconds) {
+        return encodeToken(claims, expirationSeconds, false);
     }
 
     /**
@@ -101,10 +111,9 @@ public class JwtTokenGenerator {
      * @param dockerRegistryClaims  requested changes, may be empty for 'login' requests
      * @return valid JWT token
      */
-    public String issueDockerToken(JwtTokenClaims claims, Long expirationSeconds, String service,
-            List<DockerRegistryClaim> dockerRegistryClaims) {
-        long jwtExpirationSeconds = preferenceManager.getPreference(SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION);
-        Long expiration = expirationSeconds == null ? jwtExpirationSeconds : expirationSeconds;
+    public String issueDockerToken(final JwtTokenClaims claims, final Long expirationSeconds,
+                                   final String service, final List<DockerRegistryClaim> dockerRegistryClaims) {
+        final long expiration = calculateTokenDuration(expirationSeconds, false);
         JwtTokenDockerCreator.Builder tokenBuilder = buildDockerToken(claims, service, dockerRegistryClaims);
         tokenBuilder.withExpiresAt(toDate(LocalDateTime.now().plusSeconds(expiration)));
         return tokenBuilder.sign(Algorithm.RSA512(privateKey));
@@ -129,6 +138,34 @@ public class JwtTokenGenerator {
             tokenBuilder.withObjectClaim("access", dockerRegistryClaims);
         }
         return tokenBuilder;
+    }
+
+    private long calculateTokenDuration(final Long expirationSeconds,
+                                        final boolean validateExpirationDuration) {
+        final long defaultExpirationSeconds = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION);
+        final long expirationUserLimit = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT);
+        long expiration = expirationSeconds == null ? defaultExpirationSeconds : expirationSeconds;
+        if (validateExpirationDuration && expiration > expirationUserLimit) {
+            log.warn(String.format(
+                    "JWT token expiration duration is too long, it should be < %s, using this value to issue a token",
+                    tokenLimitFormattedString(expirationUserLimit))
+            );
+            expiration = expirationUserLimit;
+        }
+        return expiration;
+    }
+
+    private static String tokenLimitFormattedString(final long maxExpirationSecs) {
+        if (maxExpirationSecs < SEC_IN_MIN) {
+            return String.format("%d seconds", maxExpirationSecs);
+        } else if (maxExpirationSecs < SEC_IN_HOUR) {
+            return String.format("%d minutes", maxExpirationSecs / SEC_IN_MIN);
+        } else if (maxExpirationSecs < SEC_IN_DAY) {
+            return String.format("%d hours", maxExpirationSecs / SEC_IN_HOUR);
+        }
+        return String.format("%d days", maxExpirationSecs / SEC_IN_DAY);
     }
 
     /*

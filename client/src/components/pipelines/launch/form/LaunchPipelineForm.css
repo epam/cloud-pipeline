@@ -164,7 +164,8 @@
   align-self: flex-start;
 }
 
-.path-type {
+.path-type,
+.input-addon-button {
   padding: 5px;
   cursor: pointer;
 }

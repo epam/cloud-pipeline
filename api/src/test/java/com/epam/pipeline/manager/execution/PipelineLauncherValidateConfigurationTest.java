@@ -2,7 +2,7 @@ package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -12,6 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.Collections;
 
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("PMD.UnusedPrivateField")
@@ -35,9 +37,9 @@ public class PipelineLauncherValidateConfigurationTest {
         Mockito.doReturn(PipelineUser.builder().admin(true).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setPodAssignPolicy(
-                RunAssignPolicy.builder()
+                RunContainerSpec.builder()
                         .selector(
-                                RunAssignPolicy.PodAssignSelector.builder()
+                                RunContainerSpec.PodAssignSelector.builder()
                                         .label(SOME_LABEL)
                                         .value(VALUE).build())
                         .build()
@@ -59,9 +61,27 @@ public class PipelineLauncherValidateConfigurationTest {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setPodAssignPolicy(
-                RunAssignPolicy.builder()
+                RunContainerSpec.builder()
                         .selector(
-                                RunAssignPolicy.PodAssignSelector.builder()
+                                RunContainerSpec.PodAssignSelector.builder()
+                                        .label(SOME_LABEL)
+                                        .value(VALUE).build())
+                        .tolerances(Collections.singletonList(RunContainerSpec.PodAssignTolerance.builder()
+                                        .label(SOME_LABEL)
+                                        .value(VALUE).build()))
+                        .build()
+        );
+        pipelineLauncher.validateLaunchConfiguration(configuration);
+    }
+
+    @Test
+    public void checkRunLaunchWithAdvancedRunAssignPolicyWithoutToleranceAllowedForSimpleUser() {
+        Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setPodAssignPolicy(
+                RunContainerSpec.builder()
+                        .selector(
+                                RunContainerSpec.PodAssignSelector.builder()
                                         .label(SOME_LABEL)
                                         .value(VALUE).build())
                         .build()
@@ -74,9 +94,9 @@ public class PipelineLauncherValidateConfigurationTest {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setPodAssignPolicy(
-                RunAssignPolicy.builder()
+                RunContainerSpec.builder()
                         .selector(
-                                RunAssignPolicy.PodAssignSelector.builder()
+                                RunContainerSpec.PodAssignSelector.builder()
                                         .label(KubernetesConstants.RUN_ID_LABEL)
                                         .value(RUN_ID_VALUE).build())
                         .build()

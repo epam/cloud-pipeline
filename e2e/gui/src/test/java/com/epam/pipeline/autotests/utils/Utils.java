@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,10 +135,6 @@ public class Utils {
     }
 
         public static void sendKeysWithSlashes(final String text) {
-            //////////////////////////////////////////////////////////////////////////
-            // ! WARNING: there is robot to fix forward slashed issue
-            // https://sqa.stackexchange.com/questions/25038/selenium-send-keys-on-chromium-confused-by-forward-slashes
-            // http://grokbase.com/t/gg/selenium-users/149s9xe7r5/send-keys-and-slash-character
             final StringSelection stringSelection = new StringSelection(text);
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(stringSelection, null);
@@ -146,8 +142,6 @@ public class Utils {
 //                    .perform();
             sendKeysWithControl("v");
     }
-        //////////////////////////////////////////////////////////////////////////
-
 
     public static void pasteText(final SelenideElement field, final String text) {
         final StringSelection stringSelection = new StringSelection(text);

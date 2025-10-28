@@ -193,6 +193,8 @@ class S3Bucket:
 
     @classmethod
     def __build_tags_command(cls):
+        if os.getenv('CP_TRANSFER_AUTO_TAGGING', 'true').lower() != 'true':
+            return ''
         command = []
         env_vars = os.environ
         if 'RUN_ID' in env_vars:

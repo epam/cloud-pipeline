@@ -20,7 +20,6 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
-import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
 import com.epam.pipeline.autotests.ao.popups.ConfigureInternalDNSPopupAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -30,10 +29,10 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 
+import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
@@ -46,7 +45,6 @@ import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {

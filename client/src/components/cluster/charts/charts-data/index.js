@@ -33,6 +33,7 @@ class ChartsData extends ChartData {
   @observable followCommonRange = true;
   @observable from;
   @observable to;
+  @observable runId;
   @observable cpuUsage;
   @observable memoryUsage;
   @observable lastMemoryUsage;
@@ -61,13 +62,14 @@ class ChartsData extends ChartData {
     }
   }
 
-  constructor (nodeName, from, to, stores) {
+  constructor (nodeName, from, to, stores, runId) {
     const format = 'YYYY-MM-DD HH:mm:ss';
     const instanceFrom = from ? moment.utc(decodeURIComponent(from), format).unix() : undefined;
     const instanceTo = to ? moment.utc(decodeURIComponent(to), format).unix() : undefined;
-    super(nodeName, instanceFrom, instanceTo);
+    super(nodeName, instanceFrom, instanceTo, runId);
     this.preferences = (stores || {}).preferences;
     this.authenticatedUserInfo = (stores || {}).authenticatedUserInfo;
+    this.runId = runId;
     this.nodeName = nodeName;
     this.initialize()
       .then(this.loadData);

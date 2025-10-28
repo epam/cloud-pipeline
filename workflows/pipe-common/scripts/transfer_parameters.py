@@ -350,6 +350,22 @@ class InputDataTask:
                             [os.path.join(path.local_path, path.suffix) if path.suffix else path.local_path
                              for path in location.paths]
                         )
+
+                        not_localized_value_part = None
+                        original_parts = map(str.strip, re.split(location.delimiter, location.original_value))
+                        localized_original_parts = [path.path for path in location.paths]
+                        for original_part in original_parts:
+                            if original_part not in localized_original_parts:
+                                not_localized_value_part = original_part if not not_localized_value_part \
+                                    else location.delimiter.join([not_localized_value_part, original_part])
+
+                        if not_localized_value_part:
+                            Logger.info('Adding values from original variable that were not localized {}...'.format(
+                                not_localized_value_part), task_name=self.task_name)
+                            localized_value = location.delimiter.join([localized_value, not_localized_value_part])
+                            Logger.info('Resulted value for param "{}" is: "{}"...'.format(
+                                env_name, localized_value), task_name=self.task_name)
+
                         report.write('export {}="{}"\n'.format(env_name, localized_value))
                         report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
             Logger.success('Finished localization of remote data', task_name=self.task_name)

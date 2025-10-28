@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 
 from flask import Flask, request
 
@@ -25,6 +26,7 @@ logger = app.logger
 
 API = parse.get_required_env("API")
 RUN_ID = parse.get_required_env("RUN_ID")
+NF_TASK_LOOKUP_FILE = os.getenv("CP_NF_TASK_LOOKUP_FILE_PATH", None)
 APP_PORT = int(parse.get_required_env("CP_NF_WEBLOG_HANDLER_PORT", 8080))
 SYNC_BATCH_SIZE = int(parse.get_required_env("CP_NF_WEBLOG_HANDLER_SYNC_BATCH_SIZE", 10))
 SYNC_BATCH_TIMEOUT = int(parse.get_required_env("CP_NF_WEBLOG_HANDLER_SYNC_BATCH_TIMEOUT", 60))
@@ -36,7 +38,11 @@ if VERBOSE == 1:
 logger.setLevel(logging_level)
 
 api_client = CloudPipelineApi(API, RUN_ID, logger)
-event_handler = NextflowEventHandler(logger, api_client, RUN_ID, SYNC_BATCH_SIZE, SYNC_BATCH_TIMEOUT)
+logger.info(
+    "Configuring NextflowEventHandler with: NF_LOOKUP_FILE - {}, RUN_ID - {}, SYNC_BATCH_SIZE - {}, SYNC_BATCH_TIMEOUT - {}..."
+    .format(NF_TASK_LOOKUP_FILE, RUN_ID, SYNC_BATCH_SIZE, SYNC_BATCH_TIMEOUT)
+)
+event_handler = NextflowEventHandler(logger, api_client, NF_TASK_LOOKUP_FILE, RUN_ID, SYNC_BATCH_SIZE, SYNC_BATCH_TIMEOUT)
 event_handler.enable_sync()
 
 @app.route('/nextflow/event', methods=['POST'])

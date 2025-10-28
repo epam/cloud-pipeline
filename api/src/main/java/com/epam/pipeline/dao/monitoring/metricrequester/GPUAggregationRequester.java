@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringMetrics;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -59,8 +60,9 @@ public class GPUAggregationRequester extends AbstractGPUMetricsRequester {
 
     @Override
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                           final Duration interval) {
-        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to)
+                                           final Duration interval, final String podName) {
+        final String queryType = StringUtils.isNotBlank(podName) ? POD : NODE;
+        final SearchSourceBuilder aggregation = statsQuery(nodeName, queryType, from, to, podName)
                 .size(1)
                 .aggregation(buildHistogram(interval));
         return request(from, to, aggregation);

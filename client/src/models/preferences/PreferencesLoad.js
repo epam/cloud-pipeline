@@ -404,7 +404,7 @@ class PreferencesLoad extends Remote {
             return undefined;
           }
           const {
-            capabilities = {}
+            capabilities: childCapabilities = {}
           } = entry;
           return {
             value: `CP_CAP_CUSTOM_${key}`,
@@ -416,8 +416,8 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(capabilities)
-              .map(c => mapCapability([c, entry])),
+            capabilities: Object.entries(childCapabilities)
+              .map(mapCapability),
             multiple: Boolean(entry?.multiple)
           };
         };
@@ -1082,6 +1082,15 @@ class PreferencesLoad extends Remote {
       }
     }
     return undefined;
+  }
+
+  @computed
+  get launchJWTTokenExpirationUserLimit () {
+    const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 0;
   }
 
   toolScanningEnabledForRegistry (registry) {

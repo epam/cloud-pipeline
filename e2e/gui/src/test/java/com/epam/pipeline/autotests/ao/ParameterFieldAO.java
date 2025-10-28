@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import static java.lang.String.format;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -24,6 +23,7 @@ import org.openqa.selenium.WebElement;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
@@ -87,12 +87,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     /**
-     * @param index The numerical part of {@code id} attribute of the field you search.//$(byId("launch-pipeline-parameters-panel"))
-     * //        .$(byClassName(format("launch-form-parameter-key-parameter_%s", 0))).$(byClassName("arameter-name-input__parameter-name")).click();
-     * //setValue(
-     *         $(byId("launch-pipeline-parameters-panel"))
-     *         .$(byClassName(format("launch-form-parameter-key-parameter_%s", 0))).$(byClassName("aunch-form-parameter-input__launch-parameter-input"))
-     * //                , name);
+     * @param index The numerical part of {@code id} attribute of the field you search.
      */
     public static ParameterFieldAO parameterByIndex(final int index) {
         final By parameterField =

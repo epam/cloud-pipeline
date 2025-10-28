@@ -149,13 +149,13 @@ public class BitbucketCloudService implements GitClientService {
 
     @Override
     public byte[] getFileContents(final GitProject repository, final String path,
-                                  final String revision, final String token) {
+                                  final String revision, final String token, final boolean isDraft) {
         return getClient(repository.getRepoUrl(), token).getFileContent(revision, path);
     }
 
     @Override
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
-                                           final int byteLimit) {
+                                           final int byteLimit, final boolean isDraft) {
         return RestApiUtils.getFileContent(getClient(pipeline).getRawFileContent(revision, path), byteLimit);
     }
 
@@ -238,7 +238,8 @@ public class BitbucketCloudService implements GitClientService {
 
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String rawPath,
-                                                          final String version, final boolean recursive) {
+                                                          final String version, final boolean recursive,
+                                                          final boolean isDraft) {
         final BitbucketCloudClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
@@ -358,7 +359,7 @@ public class BitbucketCloudService implements GitClientService {
         final String bitbucketHost = protocol + "api." + host;
 
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
-                .getMessage(MessageConstants.ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND));
+                .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
         final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
         final String credentials = AuthType.TOKEN.equals(authType) ?
                 buildBearerTokenAuth(token) :
@@ -372,7 +373,7 @@ public class BitbucketCloudService implements GitClientService {
 
     private GitClientException buildUrlParseError(final String urlPart) {
         return new GitClientException(messageHelper.getMessage(
-                MessageConstants.ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH, urlPart));
+                MessageConstants.ERROR_REPOSITORY_PATH_PARSE, urlPart, getType()));
     }
 
     private BitbucketCloudRef fillCommitInfo(final BitbucketCloudRef tag, final BitbucketCloudClient client) {

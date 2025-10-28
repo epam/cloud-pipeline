@@ -37,6 +37,7 @@ from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
+from src.utilities.tokenless_access_manger import TokenlessAccessManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
@@ -70,6 +71,13 @@ STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination 
                                                 'exists an error will be occurred. Cannot be used in combination' \
                                                 ' with --force (-f) option: if --force (-f) specified ' \
                                                 '--verify-destination (-vd) will be ignored.'
+ON_FAILURES_OPTION_CHOICES = ['fail', 'fail-after', 'skip', 'retry']
+ON_FAILURES_OPTION_DESCRIPTION = 'Configure how singular file processing failures should affect overall command execution. '\
+                                 'Allowed values: \n'\
+                                 '[fail] fails immediately (default); \n'\
+                                 '[fail-after] fails only after all files are processed; \n'\
+                                 '[skip] skips all failures;'\
+                                 '[retry] retries all failures.'
 
 
 def silent_print_api_version():
@@ -305,8 +313,10 @@ def cli():
 
 
 @cli.command()
+@click.option('-l', '--login',
+              is_flag=True,
+              help='Redirects to browser for login')
 @click.option('-a', '--auth-token',
-              prompt='Authentication token',
               help='Token for API authentication',
               default=None)
 @click.option('-s', '--api',
@@ -339,16 +349,37 @@ def cli():
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec,
-              config_store):
+@click.option('-nb', '--no-launch-browser',
+              help='Prevents the command from automatically opening a web browser. '
+                   'Works in combination with --login option. '
+                   'If --login is not specified this option will have no effect.',
+              is_flag=True,
+              default=False)
+def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
+              proxy_ntlm_pass, codec, config_store, no_launch_browser):
     """Configures CLI parameters
     """
+    if auth_token and login:
+        raise click.UsageError('Options --auth-token and --login are mutually exclusive. Please specify only one.')
+
+    if not auth_token and not login:
+        auth_token = click.prompt('Authentication token', default=None)
+
     if proxy_ntlm and not proxy_ntlm_user:
         proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
     if proxy_ntlm and not proxy_ntlm_domain:
         proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
     if proxy_ntlm and not proxy_ntlm_pass:
         proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
+
+    if not auth_token and login:
+        proxies = Config.build_proxies(proxy,
+                                       proxy_ntlm,
+                                       proxy_ntlm_user,
+                                       proxy_ntlm_domain,
+                                       proxy_ntlm_pass,
+                                       api)
+        auth_token = TokenlessAccessManager(api, proxies).fetch_token(no_launch_browser)
 
     Config.store(auth_token,
                  api,
@@ -1201,12 +1232,8 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    'The option has effect only if --unsafe-chars option is set to replace value.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip']),
-              help='Configure how singular file processing failures should affect overall command execution. '
-                   'Allowed values: \n'
-                   '[fail] fails immediately (default); \n'
-                   '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures.')
+              type=click.Choice(ON_FAILURES_OPTION_CHOICES),
+              help=ON_FAILURES_OPTION_DESCRIPTION)
 @click.option('--on-empty-files', required=False, default='allow',
               envvar='CP_CLI_TRANSFER_EMPTY_FILES',
               help='Configure how empty files should be handled. '
@@ -1313,12 +1340,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[skip] skips empty files transferring.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip']),
-              help='Configure how singular file processing failures should affect overall command execution. '
-                   'Allowed values: \n'
-                   '[fail] fails immediately (default); \n'
-                   '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures.')
+              type=click.Choice(ON_FAILURES_OPTION_CHOICES),
+              help=ON_FAILURES_OPTION_DESCRIPTION)
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
 @click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '

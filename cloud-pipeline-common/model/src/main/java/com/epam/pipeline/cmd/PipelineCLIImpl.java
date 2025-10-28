@@ -51,6 +51,8 @@ public class PipelineCLIImpl implements PipelineCLI {
     public static final Marker PIPE = MarkerFactory.getMarker("PIPE");
 
     private final String pipelineCliExecutable;
+    private final String pipeCpTemplate;
+    private final String pipeMvTemplate;
     private final String pipeCpSuffix;
     private final boolean forceUpload;
     private final int retryCount;
@@ -218,9 +220,12 @@ public class PipelineCLIImpl implements PipelineCLI {
                                             final boolean deleteSource,
                                             final String pipeCmd,
                                             final String pipeCmdSuffix) {
+
+        final String cpTemplate = StringUtils.isBlank(pipeCpTemplate) ? PIPE_CP_TEMPLATE : pipeCpTemplate;
+        final String mvTemplate = StringUtils.isBlank(pipeMvTemplate) ? PIPE_MV_TEMPLATE : pipeMvTemplate;
         return deleteSource
-                ? buildPipeTransferCommand(PIPE_MV_TEMPLATE, source, destination, include, pipeCmd, pipeCmdSuffix)
-                : buildPipeTransferCommand(PIPE_CP_TEMPLATE, source, destination, include, pipeCmd, pipeCmdSuffix);
+                ? buildPipeTransferCommand(mvTemplate, source, destination, include, pipeCmd, pipeCmdSuffix)
+                : buildPipeTransferCommand(cpTemplate, source, destination, include, pipeCmd, pipeCmdSuffix);
     }
 
     private String buildPipeTransferCommand(final String template, final String source, final String destination,

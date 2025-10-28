@@ -257,7 +257,7 @@ class GeneralInfoTab extends React.Component {
   initializeRange = () => {
     const {rangeInitialized, start, end} = this.state;
     const {chartsData} = this.props;
-    if (!rangeInitialized && chartsData.initialized) {
+    if (!rangeInitialized && chartsData?.initialized) {
       this.setState({
         rangeInitialized: true,
         start: start || chartsData.from || chartsData.instanceFrom,
@@ -479,6 +479,14 @@ class GeneralInfoTab extends React.Component {
     });
   };
 
+  navigateToRun = () => {
+    const {chartsData, router} = this.props;
+    if (!chartsData?.runId || !router) {
+      return;
+    }
+    router.push(`/run/${chartsData.runId}`);
+  }
+
   onExport = (mode, tick) => {
     if (mode && /^custom$/i.test(mode)) {
       this.openExportSettingsWindow();
@@ -503,7 +511,8 @@ class GeneralInfoTab extends React.Component {
           start ? moment.unix(start).utc().format(format) : undefined,
           end ? moment.unix(end).utc().format(format) : undefined,
           tickValue,
-          modeValue
+          modeValue,
+          chartsData.runId
         );
         let res;
         await pipelineFile.fetch();
@@ -543,12 +552,12 @@ class GeneralInfoTab extends React.Component {
     const {
       chartsData
     } = this.props;
-    if (chartsData.error) {
+    if (chartsData?.error) {
       return (
         <Alert type={'error'} message={chartsData.error} />
       );
     }
-    if (!chartsData.initialized) {
+    if (!chartsData || !chartsData.initialized) {
       return (
         <LoadingView />
       );
@@ -576,6 +585,14 @@ class GeneralInfoTab extends React.Component {
         style={{flexDirection: 'column', overflow: 'hidden', height: 'calc(100vh - 120px)'}}
       >
         <Row type={'flex'} justify={'end'} align={'middle'} style={{marginTop: 5, marginBottom: 5}}>
+          {chartsData?.runId ? (
+            <a
+              style={{marginRight: 'auto', marginLeft: 3}}
+              onClick={this.navigateToRun}
+            >
+              Showing statistics for run #{chartsData.runId}
+            </a>
+          ) : null}
           <Checkbox
             checked={chartsData.followCommonRange}
             onChange={this.onFollowCommonRangeChanged}

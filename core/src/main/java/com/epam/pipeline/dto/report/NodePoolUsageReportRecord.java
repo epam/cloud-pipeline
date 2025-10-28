@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.dto.report;
 
+import com.epam.pipeline.entity.cluster.pool.Requests;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -31,4 +33,7 @@ public class NodePoolUsageReportRecord {
     private Integer utilization;
     private Integer nodesCount;
     private Integer occupiedNodesCount;
+    private Integer pendingRunsCount;
+    private Integer activeRunsCount;
+    private Map<String, Requests> requestsStats;
 }

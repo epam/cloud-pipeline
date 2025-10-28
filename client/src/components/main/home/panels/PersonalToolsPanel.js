@@ -63,7 +63,10 @@ import {
   getLimitMountsStorages
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import checkToolVersionErrors from '../../../runs/utilities/check-tool-version-errors';
-import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
+import {
+  getUserTagsValidationResult,
+  getVisibleUserTags
+} from '../../../runs/run-tags/utilities';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -557,6 +560,7 @@ export default class PersonalToolsPanel extends React.Component {
         if (allowedToExecute) {
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
           const validation = await getUserTagsValidationResult({}, {launchPayload: defaultPayload});
+          const visibility = await getVisibleUserTags(defaultPayload);
           this.setState({
             pending: true,
             runToolInfo: {
@@ -574,6 +578,7 @@ export default class PersonalToolsPanel extends React.Component {
                 this.props.preferences
               ),
               userTagsValidation: validation,
+              userTagsVisibility: visibility,
               userTagsPayload: defaultPayload
             }
           }, async () => {
@@ -789,12 +794,14 @@ export default class PersonalToolsPanel extends React.Component {
       const info = await this.getUserTagsValidationInfo();
       const {
         validation,
+        visibility,
         payload
       } = info || {};
       this.setState({
         runToolInfo: {
           ...runToolInfo,
           userTagsValidation: validation,
+          userTagsVisibility: visibility,
           userTagsPayload: payload
         }
       });
@@ -807,8 +814,10 @@ export default class PersonalToolsPanel extends React.Component {
     if (runToolInfo && payload) {
       const {tags = {}} = runToolInfo.payload || {};
       const validation = await getUserTagsValidationResult(tags, {launchPayload: payload});
+      const visibility = await getVisibleUserTags(payload);
       return {
         validation,
+        visibility,
         payload
       };
     }
@@ -962,6 +971,7 @@ export default class PersonalToolsPanel extends React.Component {
                 tags={this.state.runToolInfo.payload.tags}
                 tagsPayload={this.state.runToolInfo.userTagsPayload}
                 tagsValidation={this.state.runToolInfo.userTagsValidation}
+                tagsVisibility={this.state.runToolInfo.userTagsVisibility}
                 onChangeTags={this.onChangeUserTags}
                 onChangeHddSize={this.onChangeDiskSize}
                 nodeCount={+this.state.runToolInfo.payload.nodeCount || 0}

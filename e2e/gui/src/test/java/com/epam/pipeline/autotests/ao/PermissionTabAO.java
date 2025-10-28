@@ -205,6 +205,19 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
             return this;
         }
 
+        public UserPermissionsTableAO set(Privilege privilege, boolean isAllowed) {
+            privilege.setToAllow(isAllowed);
+            return this;
+        }
+
+        public UserPermissionsTableAO savePermissions() {
+            final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+            if (applyButton.isEnabled()) {
+                applyButton.click();
+            }
+            return this;
+        }
+
         @Override
         public void closeAll() {
             parentAO.closeAll();

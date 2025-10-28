@@ -341,12 +341,39 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
   runPipeline = () => {
     const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
-    this.props.router.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
+    const {configurations, currentConfiguration} = this.props;
+    (async () => {
+      let cfg = currentConfiguration;
+      if (!cfg) {
+        cfg = 'default';
+        const hide = configurations.loaded
+          ? () => {}
+          : message.loading(`Fetching pipeline configurations...`, -1);
+        try {
+          configurations.fetchIfNeededOrWait();
+          const values = configurations.value || [];
+          const defaultConfiguration = values.find((v) => v.default) ||
+            values.find((v) => /^default$/i.test(v));
+          if (defaultConfiguration) {
+            cfg = defaultConfiguration.name;
+          }
+        } catch {
+          // noop
+        } finally {
+          hide();
+        }
+      }
+      this.props.router.push(`${baseUrl}/${cfg}`);
+    })();
   };
 
   runPipelineConfiguration = (configuration) => {
+    if (!configuration) {
+      this.runPipeline();
+      return;
+    }
     const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
-    this.props.router.push(`${baseUrl}/${configuration || 'default'}`);
+    this.props.router.push(`${baseUrl}/${configuration}`);
   };
 
   renderRunButton = () => {

@@ -119,6 +119,11 @@ function enable_nf_runtime_data_sync() {
     CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
     CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
 
+    # If wasn't defined by user, define with default as trace.txt file
+    if [ -z "${CP_NF_TASK_LOOKUP_FILE_PATH}" ]; then
+        export CP_NF_TASK_LOOKUP_FILE_PATH="$CP_NF_TRACE_FILE"
+    fi
+
     pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
     run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "$API_TOKEN")
     if [ $? -ne 0 ]; then
@@ -162,21 +167,21 @@ function enable_nf_runtime_data_sync() {
         while true; do
             sleep "$(( CP_SYNC_TO_STORAGE_TIMEOUT_SEC / 2 ))"
 
-            if [ -f "${CP_NF_TRACE_FILE}" ] ; then
-                tail -n +2 "${CP_NF_TRACE_FILE}" | while read -r task
+            if [ -f "${CP_NF_TASK_LOOKUP_FILE_PATH}" ] ; then
+                tail -n +2 "${CP_NF_TASK_LOOKUP_FILE_PATH}" | while read -r task
                 do
                     task_hash=$(echo "$task" | awk '{ print $2 }')
-                    task_workdir=$(realpath "${CP_NF_WORKDIR}/$task_hash*")
-                    if ! grep -q -x -F "$task_hash" $nf_sync_to_storage_processed_task_file ;then
-                        if [ -n "$task_hash" ] && [ -n "$task_workdir" ]; then
-                             sync_to_storage add "$task_workdir/.command.out" "$nf_task_file_sync_path/$task_hash/.command.out"
-                             sync_to_storage add "$task_workdir/.command.err" "$nf_task_file_sync_path/$task_hash/.command.err"
-                             sync_to_storage add "$task_workdir/.command.log" "$nf_task_file_sync_path/$task_hash/.command.log"
-                             sync_to_storage add "$task_workdir/.command.sh" "$nf_task_file_sync_path/$task_hash/.command.sh"
-                             sync_to_storage add "$task_workdir/.command.run" "$nf_task_file_sync_path/$task_hash/.command.run"
-                             sync_to_storage add "$task_workdir/.command.trace" "$nf_task_file_sync_path/$task_hash/.command.trace"
-                             sync_to_storage add "$task_workdir/.command.begin" "$nf_task_file_sync_path/$task_hash/.command.begin"
-                             sync_to_storage add "$task_workdir/.exitcode" "$nf_task_file_sync_path/$task_hash/.exitcode"
+                    if [ -n "$task_hash" ] && ! grep -q -x -F "$task_hash" $nf_sync_to_storage_processed_task_file ; then
+                        task_workdir=$(realpath ${CP_NF_WORKDIR}/$task_hash*)
+                        if [ -d "$task_workdir" ]; then
+                             [ -f "$task_workdir/.command.out" ] && sync_to_storage add "$task_workdir/.command.out" "$nf_task_file_sync_path/$task_hash/.command.out"
+                             [ -f "$task_workdir/.command.err" ] && sync_to_storage add "$task_workdir/.command.err" "$nf_task_file_sync_path/$task_hash/.command.err"
+                             [ -f "$task_workdir/.command.log" ] && sync_to_storage add "$task_workdir/.command.log" "$nf_task_file_sync_path/$task_hash/.command.log"
+                             [ -f "$task_workdir/.command.sh" ] && sync_to_storage add "$task_workdir/.command.sh" "$nf_task_file_sync_path/$task_hash/.command.sh"
+                             [ -f "$task_workdir/.command.run" ] && sync_to_storage add "$task_workdir/.command.run" "$nf_task_file_sync_path/$task_hash/.command.run"
+                             [ -f "$task_workdir/.command.trace" ] && sync_to_storage add "$task_workdir/.command.trace" "$nf_task_file_sync_path/$task_hash/.command.trace"
+                             [ -f "$task_workdir/.command.begin" ] && sync_to_storage add "$task_workdir/.command.begin" "$nf_task_file_sync_path/$task_hash/.command.begin"
+                             [ -f "$task_workdir/.exitcode" ] && sync_to_storage add "$task_workdir/.exitcode" "$nf_task_file_sync_path/$task_hash/.exitcode"
                              if echo "$task" | grep -q -E "COMPLETE|FAILED|CACHED|ABORTED" ; then
                                  sync_to_storage remove "$task_workdir/.command.out"
                                  sync_to_storage remove "$task_workdir/.command.err"
@@ -192,7 +197,7 @@ function enable_nf_runtime_data_sync() {
                     fi
                 done
             else
-                pipe_log_warn "[WARN] There is no ${CP_NF_TRACE_FILE} at the moment, skip runtime data sync iteration." "$SYNC_RUN_RUNTIME_DATA_TASK"
+                pipe_log_warn "[WARN] There is no ${CP_NF_TASK_LOOKUP_FILE_PATH} at the moment, skip runtime data sync iteration." "$SYNC_RUN_RUNTIME_DATA_TASK"
             fi
         done
     else
@@ -224,6 +229,13 @@ fi
 
 if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ]; then
     echo "Enabling Nextflow weblog handler..."
+
+    if [ -n "${CP_NF_TASK_LOOKUP_FILE}" ]; then
+        CP_NF_TASK_LOOKUP_FILE_PATH="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/${CP_NF_TASK_LOOKUP_FILE}"
+        echo "Configuring CP_NF_TASK_LOOKUP_FILE_PATH as: $CP_NF_TASK_LOOKUP_FILE_PATH."
+        # Will be used in nf-weblog-handler to populate this path
+        export CP_NF_TASK_LOOKUP_FILE_PATH
+    fi
 
     if [ -f "$CP_NF_WEBLOG_HANDLER_PID_FILE" ]; then
         _process_pid=$(cat "$CP_NF_WEBLOG_HANDLER_PID_FILE")

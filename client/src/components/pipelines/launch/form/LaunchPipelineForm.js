@@ -148,7 +148,11 @@ import {
 import CustomTagsControl from './components/custom-tags/control';
 import UploadParametersButton from './components/upload-parameters-button';
 import ConfigurePlugins from '../../../plugins/configure';
-import {getUserTagsValidationResult} from '../../../runs/run-tags/utilities';
+import {
+  filterVisibleTagsSync,
+  getUserTagsValidationResult,
+  getVisibleUserTags
+} from '../../../runs/run-tags/utilities';
 import Parameters from './parameters/parameters';
 import AddParameterButton from './parameters/add-parameter-button';
 import {getParameterKeyClassName} from './parameters/utilities';
@@ -156,8 +160,10 @@ import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
 import {
   buildLaunchParametersFromReservationParameters,
+  findReservationParameterConfig,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
+import Markdown from '../../../special/markdown';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -217,7 +223,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.userName;
   };
 
-  friendlyUrlAvailable = () => {
+  prettyUrlAvailable = () => {
     return this.isAdmin || this.isAdvancedUser;
   };
 
@@ -278,6 +284,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   state = {
     userTags: {},
     userTagsValidation: [],
+    userTagsVisibleTags: [],
     userTagsValidationPayload: undefined,
     conditionalParameters: [],
     openedPanels: [PARAMETERS],
@@ -290,6 +297,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     dockerImageBrowserVisible: false,
     pipeline: null,
     version: null,
+    pipelineChanged: false,
     pipelineConfiguration: null,
     launchCluster: false,
     autoScaledCluster: false,
@@ -501,8 +509,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         );
         this.props.onModified && this.props.onModified(this.modified);
         checkIfNotAborted();
-        await this.rebuildLaunchCommand();
-        checkIfNotAborted();
         const validateFields = async () => new Promise((resolve) => {
           const onValidationChange = (formInvalid, values) => {
             resolve({values, errors: formInvalid});
@@ -518,6 +524,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         checkIfNotAborted();
         const payload = values ? await this.generateLaunchPayload(values) : undefined;
         await this.validateUserTags(payload);
+        checkIfNotAborted();
+        await this.rebuildLaunchCommand();
+        checkIfNotAborted();
       } catch (error) {
         if (error instanceof FormFieldChangedAbortedError) {
           // noop
@@ -862,6 +871,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return detachedConfigurations.find((d) => d.name === currentConfigurationName);
   }
 
+  getIsInstanceTypeWithReservation () {
+    const {
+      detached,
+      preferences
+    } = this.props;
+    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return detached
+      ? false
+      : Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+  }
+
   getDefaultRootEntityId () {
     const {currentDetachedConfiguration = {}} = this;
     const {currentMetadataEntity = []} = this.state;
@@ -1179,6 +1199,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         dockerImageBrowserVisible: false,
         pipeline: null,
         version: null,
+        pipelineChanged: false,
         pipelineConfiguration: null,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
@@ -1259,6 +1280,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let payload = {
       instance_size: instanceType,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
+      friendly_url: prettyUrlGenerator.build(values[ADVANCED].friendly_url),
       timeout: +(values[ADVANCED].timeout || 0),
       stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
         ? undefined
@@ -1429,6 +1451,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.props.isDetachedConfiguration) {
       payload.rootEntityId = this.state.rootEntityId;
+      delete payload.friendly_url;
     }
     return payload;
   };
@@ -1441,6 +1464,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       cmd = 'sleep infinity';
     }
     const instanceType = values[EXEC_ENVIRONMENT].type;
+    const tags = filterVisibleTagsSync(
+      this.state.userTags,
+      this.state.userTagsVisibleTags
+    );
     const payload = {
       instanceType,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
@@ -1450,14 +1477,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
-      tags: this.state.userTags,
+      tags,
       params: parameterUtilities.parametersToPayloadParams(this.getParameters(parametersPayloadId)),
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
       prettyUrl: this.prettyUrlEnabled
-        ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
+        ? prettyUrlGenerator.build(values[ADVANCED].friendly_url)
         : undefined,
       notifications: (values[ADVANCED].notifications || []).slice()
     };
@@ -1999,7 +2026,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       averagePrice,
       pending
     } = this.state.estimatedPrice;
-    if (pending || !this.estimatedPriceSectionVisible) {
+    const isInstanceTypeWithReservation = this.getIsInstanceTypeWithReservation();
+    if (isInstanceTypeWithReservation || pending || !this.estimatedPriceSectionVisible) {
       return undefined;
     }
     let priceContent;
@@ -2193,9 +2221,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (pipeline) {
       const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
       if (existedPipeline) {
+        const hide = message.loading('Updating configuration...', 0);
         this.setState({
           pipeline: existedPipeline,
           version: pipeline.version,
+          pipelineChanged: true,
           pipelineConfiguration: pipeline.configuration,
           fireCloudMethodName: null,
           fireCloudMethodNamespace: null,
@@ -2214,11 +2244,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               pipeline: existedPipeline,
               version: pipeline.version,
               configuration: pipeline.configuration
-            }, () => {
-              this.prevParameters = this.props.form.getFieldsValue().parameters;
-              this.reset(true);
-              this.evaluateEstimatedPrice({});
+            }, (anError) => {
+              hide();
+              if (anError) {
+                message.error(anError, 5);
+              } else {
+                this.prevParameters = this.props.form.getFieldsValue().parameters;
+                this.reset(true);
+                this.evaluateEstimatedPrice({});
+              }
             });
+          } else {
+            hide();
           }
         });
       }
@@ -2265,12 +2302,36 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return undefined;
     }
     let inputValue;
-    if (this.state.pipeline) {
-      inputValue = this.state.pipeline.name;
-      if (this.state.version && !this.state.pipeline.unknown) {
-        let versionStr = `(${this.state.version})`;
-        if (this.state.pipelineConfiguration) {
-          versionStr = `(${this.state.version} - ${this.state.pipelineConfiguration})`;
+    const {
+      pipeline,
+      version,
+      pipelineConfiguration
+    } = this.state;
+    const isLatestVersion = !!pipeline && !!version && /^latest$/i.test(version);
+    const onRefreshClick = () => {
+      const {id} = pipeline || {};
+      if (id !== undefined && id !== null) {
+        const selectPipeline = () => this.selectPipeline(
+          {id, version, configuration: pipelineConfiguration}
+        );
+        Modal.confirm({
+          title: 'Are you sure you want to refresh configuration?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          content: 'Current parameters and values may be lost.',
+          onOk: selectPipeline,
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      }
+    };
+    if (pipeline) {
+      inputValue = pipeline.name;
+      if (version && !pipeline.unknown) {
+        let versionStr = `(${version})`;
+        if (pipelineConfiguration) {
+          versionStr = `(${version} - ${pipelineConfiguration})`;
         }
         inputValue = `${inputValue} ${versionStr}`;
       }
@@ -2306,7 +2367,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.openPipelineBrowser}>
               <Icon type="export" />
             </div>
-          } />
+          }
+          addonAfter={isLatestVersion ? (
+            <div className={styles.inputAddonButton} onClick={onRefreshClick}>
+              Refresh configuration
+            </div>
+          ) : undefined}
+        />
       </FormItem>
     );
   };
@@ -2499,6 +2566,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
     let result = [];
+    let visibleTags = [];
     if (
       !this.props.detached &&
       !this.props.isDetachedConfiguration &&
@@ -2506,9 +2574,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       const {userTags} = this.state;
       result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
+      visibleTags = await getVisibleUserTags(payload);
     }
     this.setState({
       userTagsValidation: result,
+      userTagsVisibleTags: visibleTags,
       userTagsValidationPayload: payload
     }, () => {
       resolve(!result || result.length === 0);
@@ -2580,7 +2650,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderParameters = (system = false) => {
     const parameters = this.getParameters();
-    const {isRawEditEnabled} = this.state;
+    const {isRawEditEnabled, pipeline} = this.state;
+    const {detached} = this.props;
+    const pipelineSelected = pipeline !== undefined && pipeline !== null;
+    let description;
+    if (!system) {
+      const {
+        config_description: configurationDescription
+      } = this.props.parameters || {};
+      description = configurationDescription;
+    }
     return [
       <Parameters
         key={`${system ? 'system' : 'default'}-parameters`}
@@ -2590,6 +2669,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         system={system}
         rawEdit={isRawEditEnabled}
         editConfiguration={this.props.editConfigurationMode}
+        currentCloudRegionId={this.currentCloudRegionId}
         currentProjectId={this.state.currentProjectId}
         currentProjectMetadata={this.state.currentProjectMetadata}
         currentMetadataEntity={this.state.currentMetadataEntity}
@@ -2601,8 +2681,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         navigationRef={system ? undefined : (div) => {
           this.parametersNavigationWrapperRef = div;
         }}
-        detached={this.props.detached}
-        pipeline={this.state.pipeline !== undefined && this.state.pipeline !== null}
+        detached={detached}
+        pipeline={pipelineSelected}
+        description={description ? (<Markdown md={description} />) : undefined}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -2618,7 +2699,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           parameters={parameters}
           onChange={this.onParametersChange}
           system={system}
-          disabled={this.props.readOnly && !this.props.canExecute}
+          disabled={(this.props.readOnly && !this.props.canExecute) || (!!detached && !!pipeline)}
         />
       </div>
     ];
@@ -2689,30 +2770,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get prettyUrlSSHMode () {
+    const {dockerRegistries} = this.props;
     if (!this.prettyUrlEnabled) {
       return false;
     }
-    const dockerImage = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
+    const image = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
       this.getDefaultValue('docker_image');
-    if (dockerImage && this.props.dockerRegistries.loaded) {
-      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
-      const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
-        .filter(r => r.path.toLowerCase() === registry);
-      if (imageRegistry) {
-        const [imageGroup] = (imageRegistry.groups || [])
-          .filter(g => g.name.toLowerCase() === group);
-        if (imageGroup) {
-          const [image] = toolAndVersion.split(':');
-          const [im] = (imageGroup.tools || [])
-            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return !(im && im.endpoints && (im.endpoints || []).length > 0);
-        }
-      }
-    }
-    return true;
+    return prettyUrlGenerator.isPrettyUrlSSHMode(image, dockerRegistries);
   }
 
-  checkFriendlyURL = (rule, value, callback) => {
+  checkPrettyURL = (rule, value, callback) => {
     const error = prettyUrlGenerator.validate(value, this.prettyUrlSSHMode);
     if (error) {
       callback(error);
@@ -2721,11 +2788,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
+    if (this.prettyUrlEnabled && this.prettyUrlAvailable()) {
       const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
-          className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
+          className={getFormItemClassName(styles.formItemRow, 'friendly_url')}
           {...this.leftFormItemLayout}
           label="Friendly URL"
           hasFeedback>
@@ -2734,14 +2801,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               className={styles.formItemRow}
               hasFeedback
             >
-              {this.getSectionFieldDecorator(ADVANCED)('prettyUrl',
+              {this.getSectionFieldDecorator(ADVANCED)('friendly_url',
                 {
                   rules: [
                     {
-                      validator: this.checkFriendlyURL
+                      validator: this.checkPrettyURL
                     }
                   ],
-                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('prettyUrl'))
+                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))
                 }
               )(
                 <Input
@@ -2836,13 +2903,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             onChange={this.instanceTypeChanged}
             filterOption={
               (input, option) =>
-                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                (option.props.searchValue || option.props.value)
+                  .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
               getSelectOptions(
                 this.instanceTypes,
                 {
                   hyperThreadingDisabled: this.hyperThreadingDisabled,
-                  displayRegion: this.instanceTypesMergedForRegions
+                  displayRegion: this.instanceTypesMergedForRegions,
+                  preferences: this.props.preferences,
+                  showReservationTag: !this.props.detached
                 }
               )
             }
@@ -3413,6 +3483,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    const isInstanceTypeWithReservation = this.getIsInstanceTypeWithReservation();
     const initialValue = this.correctPriceTypeValue(this.getDefaultValue('is_spot'));
     return (
       <FormItem
@@ -3441,6 +3512,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Select
                   onSelect={(isSpot) => this.evaluateEstimatedPrice({isSpot})}
                   disabled={
+                    isInstanceTypeWithReservation ||
                     !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
                     this.props.defaultPriceTypeIsLoading
@@ -3778,6 +3850,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       userTags,
       userTagsValidation = [],
+      userTagsVisibleTags = [],
       userTagsValidationPayload
     } = this.state;
 
@@ -3790,6 +3863,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <CustomTagsControl
           tags={userTags}
           validation={userTagsValidation}
+          visibleTags={userTagsVisibleTags}
           payload={userTagsValidationPayload}
           onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
           buttonText="Configure"
@@ -4477,7 +4551,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
     const onUploaded = (files) => {
       (async () => {
-        const hide = message.loading('Applying parameters', -1);
+        const hide = message.loading('Applying parameters', 0);
         try {
           const {
             detached = false
@@ -5347,7 +5421,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       pipeline
     } = this.state;
-    this.abortLoading('parametersChanged');
     this.wrapLoading('parameters', async (commitState) => {
       let params = [];
       try {
@@ -5449,13 +5522,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onParametersChange = (newParameters) => {
-    this.wrapLoading('parametersChanged', async (commitState) => {
-      const current = this.getCurrentParametersPayload();
-      await this.updateParametersPayload({
-        ...current,
-        parameters: newParameters
-      });
-      this.onValidateParameters(commitState);
+    const current = this.getCurrentParametersPayload();
+    const payload = {
+      ...current,
+      parameters: newParameters
+    };
+    const {parametersPayloads = []} = this.state;
+    const idx = parametersPayloads.findIndex(p => p.id === payload.id);
+    const updated = parametersPayloads.slice();
+    if (idx >= 0) {
+      updated.splice(idx, 1, {...payload});
+    } else {
+      updated.push(payload);
+    }
+    this.setState({
+      parametersPayloads: updated
+    }, () => {
+      this.onValidateParameters();
       this.formFieldsChanged();
     });
   };

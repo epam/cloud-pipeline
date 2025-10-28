@@ -54,8 +54,10 @@ RUN mkdir -p $NVM_DIR && \
 ENV MLFLOW_JS_BUILD_DIR=/opt/local/mamba/envs/mlflow/lib/python3.10/site-packages/mlflow/server/js/build
 RUN source "$NVM_DIR/nvm.sh" && \
     cd /tmp && \
-    git clone https://github.com/rodichenko/mlflow.git -b embedded-mode && \
-    cd mlflow/mlflow/server/js && \
+    git clone https://github.com/rodichenko/mlflow.git && \
+    cd mlflow && \
+    git checkout 40ece48c449b893c0e7e50fc8920831054efdf22 && \
+    cd mlflow/server/js && \
     yes " " | yarn install && \
     yarn run build && \
     rm -rf $MLFLOW_JS_BUILD_DIR/* && \

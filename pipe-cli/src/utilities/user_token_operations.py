@@ -16,7 +16,9 @@ import click
 
 from src.api.user import User
 from src.config import Config
+from src.api.preferenceapi import PreferenceAPI
 
+LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = "launch.jwt.token.expiration.user.limit"
 
 class UserTokenOperations(object):
 
@@ -29,6 +31,16 @@ class UserTokenOperations(object):
     def generate_user_token(self, user_name, duration=None):
         try:
             duration = self.convert_to_seconds(duration)
+            if duration:
+                token_expiration_user_limit = PreferenceAPI().get_preference(LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT)
+                if token_expiration_user_limit and token_expiration_user_limit.value:
+                    token_expiration_user_limit_int = int(token_expiration_user_limit.value)
+                    if duration > token_expiration_user_limit_int:
+                        click.echo(
+                            'Requested token duration is too long, it should be less that %s'
+                            % self.convert_seconds_to_fmt_str(token_expiration_user_limit_int), err=True
+                        )
+                        sys.exit(1)
             return User().generate_user_token(user_name, duration)
         except Exception as error:
             error_message = str(error)
@@ -48,3 +60,13 @@ class UserTokenOperations(object):
         if duration:
             return int(duration) * 24 * 60 * 60
         return duration
+
+    @staticmethod
+    def convert_seconds_to_fmt_str(duration):
+        if duration < 60:
+            return "%d seconds" % duration
+        if duration < 3600:
+            return "%d minutes" % (duration / 60)
+        if duration < 24 * 3600:
+            return "%d hours" % (duration / 3600)
+        return "%d days" % (duration / 3600 / 24)

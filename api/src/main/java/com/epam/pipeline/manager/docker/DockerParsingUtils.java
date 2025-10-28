@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.docker.HistoryEntryV1;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -171,7 +172,7 @@ public final class DockerParsingUtils {
     }
 
     private static Stream<HistoryEntryV1> getHistoryEntryStream(final RawImageDescription rawImage) {
-        return rawImage.getHistory().stream()
+        return ListUtils.emptyIfNull(rawImage.getHistory()).stream()
             .map(HistoryEntry::getV1Compatibility)
             .map(DockerParsingUtils::parseHistoryEntry);
     }

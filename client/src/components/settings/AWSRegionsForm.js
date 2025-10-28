@@ -1669,6 +1669,7 @@ class AWSRegionForm extends React.Component {
     if (!this.props.region) {
       return null;
     }
+    const {id: internalRegionId} = this.props.region;
     const {resetFields, getFieldDecorator} = this.props.form;
     const revertForm = () => {
       if (this.permissionsModified) {
@@ -1713,10 +1714,11 @@ class AWSRegionForm extends React.Component {
                 rules: [{required: true, message: 'Region id is required'}]
               })(
                 <RegionIdSelector
-                  style={{marginTop: 4}}
+                  style={{width: '100%'}}
                   regions={(this.props.regionIds || [])}
                   provider={this.provider}
                   disabled={!this.props.isNew || this.props.pending}
+                  internalId={this.props.isNew ? undefined : internalRegionId}
                 />
               )}
             </Form.Item>

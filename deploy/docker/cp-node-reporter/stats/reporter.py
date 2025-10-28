@@ -26,10 +26,82 @@ from logging.handlers import TimedRotatingFileHandler
 import subprocess
 import psutil
 from flask import Flask
+from kubernetes import client, config
 
 Value = namedtuple('Value', 'value')
 Limit = namedtuple('Limit', 'soft,hard')
 ProcStat = namedtuple('ProcStat', 'pid,name,type,current,limit')
+
+
+class KubeClient:
+    RUN_ID_LABEL = 'runid'
+    RUN_CONTAINER_NAME = 'pipeline'
+
+    def __init__(self):
+        if 'KUBERNETES_SERVICE_HOST' in os.environ:
+            config.load_incluster_config()
+        else:
+            config.load_kube_config()
+
+        self._client = client.CoreV1Api()
+        self._namespace = self._get_kube_namespace()
+        self._node_name = self._get_node_name()
+
+    def find_run_containers(self):
+        """
+        Return runs for current node
+        @:return map: <run ID> -> <docker container hash>
+        """
+        run_pods = self._client.list_namespaced_pod(namespace=self._namespace,
+                                                    label_selector=self.RUN_ID_LABEL)
+        containers = {}
+        for pod in run_pods.items:
+            if pod.spec.node_name != self._node_name:
+                continue
+            pipeline_containers = [c for c in pod.status.container_statuses if c.name == self.RUN_CONTAINER_NAME]
+            if not pipeline_containers:
+                continue
+            pipeline_container = pipeline_containers[0]
+            container_id = pipeline_container.container_id
+            if container_id:
+                container_id = str(container_id).replace('docker://', '')
+            run_id = pod.metadata.labels.get(self.RUN_ID_LABEL)
+            containers.update({run_id: container_id})
+        return containers
+
+    def _get_node_name(self):
+        current_pod = self._client.read_namespaced_pod(name=os.getenv("HOSTNAME"), namespace=self._namespace)
+        return current_pod.spec.node_name
+
+    @staticmethod
+    def _get_kube_namespace():
+        try:
+            return open('/var/run/secrets/kubernetes.io/serviceaccount/namespace').read().strip()
+        except Exception:
+            return 'default'
+
+
+class DockerClient:
+
+    def __init__(self):
+        pass
+
+    def inspect(self, container_hash):
+        try:
+            process = subprocess.Popen(['docker', 'inspect', container_hash],
+                                       stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            exit_code = process.returncode
+            if exit_code != 0:
+                raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
+
+            container_info = json.loads(stdout)
+            if not container_info:
+                return None
+            return container_info[0]
+        except Exception as e:
+            logging.exception(f'Docker inspect failed with error: {e}')
+            return None
 
 
 class StatType(Enum):
@@ -145,12 +217,70 @@ class JsonStatsViewer(StatsViewer):
 
 
 class GPUStatProcessor:
+    GPUS_COUNT_ENV = 'NVIDIA_VISIBLE_DEVICES'
 
     def __init__(self, metrics):
         self.metrics = metrics
         self.header = metrics.split(',')
+        self._kube_client = KubeClient()
+        self._docker_client = DockerClient()
 
     def get_stat(self):
+        logging.info('Initiating GPU stats collection...')
+        gpu_stats = [gs for gs in self._get_gpu_stats()]
+
+        if not gpu_stats:
+            return gpu_stats
+
+        gpu_stats = self._add_run_id_for_devices(gpu_stats)
+
+        logging.info('GPU stats collection has finished.')
+        return gpu_stats
+
+    def _add_run_id_for_devices(self, gpu_stats):
+        # returns 'pipeline' containers IDs for current node
+        run_containers = self._kube_client.find_run_containers()
+
+        device_by_run = {}
+        device_run_id = None
+        for run_id, container_id in run_containers.items():
+            if not container_id:
+                logging.info(f'No container available for run {run_id}')
+                continue
+            container_info = self._docker_client.inspect(container_id)
+            if not container_info:
+                logging.info(f'No info available for container {container_id}')
+                continue
+            nvidia_devices = self._find_env_value(container_info, self.GPUS_COUNT_ENV)
+            if not nvidia_devices:
+                # no capacity block case
+                device_run_id = run_id
+                logging.debug(f'No nvidia devices specified for run {run_id}')
+                break
+            # capacity block cases
+            if str(nvidia_devices).lower() == 'all':
+                device_run_id = run_id
+                logging.info(f'All nvidia devices occupied by run {run_id}')
+                break
+            for gpu_index in nvidia_devices.split(','):
+                device_by_run.update({int(gpu_index.strip()): run_id})
+            logging.info(f'Found nvidia devices configuration for run {run_id}')
+
+        for gpu_stat in gpu_stats:
+            gpu_index = gpu_stat.get('index')
+            if not gpu_index:
+                continue
+            if device_by_run:
+                run_id = device_by_run.get(int(gpu_index))
+                if run_id:
+                    gpu_stat.update({'run_id': int(run_id)})
+            else:
+                if device_run_id:
+                    gpu_stat.update({'run_id': int(device_run_id)})
+
+        return gpu_stats
+
+    def _get_gpu_stats(self):
         try:
             process = subprocess.Popen(['nvidia-smi',
                                         f'--query-gpu={self.metrics}',
@@ -170,6 +300,13 @@ class GPUStatProcessor:
             # nvidia-smi not installed
             yield {}
 
+    @staticmethod
+    def _find_env_value(container_info: dict, target_env: str):
+        envs = container_info.get('Config', {}).get('Env', [])
+        for env in envs:
+            if str(env).startswith(target_env):
+                return str(env).lstrip(target_env + '=')
+        return None
 
 logging_format = os.getenv('CP_LOGGING_FORMAT', default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 logging_level = os.getenv('CP_LOGGING_LEVEL', default='DEBUG')
@@ -217,4 +354,4 @@ def get_stats():
 
 @app.route('/gpus')
 def get_gpus():
-    return json.dumps([o for o in gpu_processor.get_stat()], indent=1)
+    return json.dumps(gpu_processor.get_stat(), indent=1)

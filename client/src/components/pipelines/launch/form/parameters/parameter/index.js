@@ -17,6 +17,7 @@ function LaunchFormParameter (props) {
     onRemoveParameter,
     rawEdit,
     editConfiguration,
+    currentCloudRegionId,
     currentProjectId,
     currentProjectMetadata,
     currentMetadataEntity,
@@ -31,9 +32,12 @@ function LaunchFormParameter (props) {
   const {name, config = {}, error, system} = parameter;
   const {
     description,
-    required = false
+    required = false,
+    readOnly = false
   } = config;
-  const removeAllowed = !disabled && typeof onRemoveParameter === 'function' &&
+  const removeAllowed = !readOnly &&
+    !disabled &&
+    typeof onRemoveParameter === 'function' &&
     (system || rawEdit || (!required && !(detached && pipeline)));
   const onRemoveParameterClicked = () => {
     if (typeof onRemoveParameter === 'function' && removeAllowed && !disabled) {
@@ -53,6 +57,7 @@ function LaunchFormParameter (props) {
       style={style}
     >
       <ParameterNameInput
+        disabled={disabled || (detached && pipeline)}
         rawEdit={rawEdit}
         parameter={parameter}
         onChange={onChange}
@@ -70,6 +75,7 @@ function LaunchFormParameter (props) {
             onChange={onChange}
             disabled={disabled}
             rawEdit={rawEdit}
+            currentCloudRegionId={currentCloudRegionId}
             currentProjectId={currentProjectId}
             currentProjectMetadata={currentProjectMetadata}
             currentMetadataEntity={currentMetadataEntity}
@@ -129,6 +135,7 @@ LaunchFormParameter.propTypes = {
   onRemoveParameter: PropTypes.func,
   editConfiguration: PropTypes.bool,
   rawEdit: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
