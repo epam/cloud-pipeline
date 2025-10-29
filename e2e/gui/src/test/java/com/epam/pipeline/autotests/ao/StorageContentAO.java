@@ -272,7 +272,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         String parentPath = format("%s/", inputField.should(exist).getValue());
         String addressPath = URI.create(parentPath).resolve(destination).toString();
 
-        inputField.setValue(addressPath).pressEnter();
+        setValue(inputField, addressPath);
+        inputField.pressEnter();
         return this;
     }
 
