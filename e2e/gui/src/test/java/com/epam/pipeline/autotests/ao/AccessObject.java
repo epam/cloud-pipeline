@@ -299,7 +299,8 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE refresh() {
-        Selenide.refresh();
+//        Selenide.refresh();
+        getWebDriver().navigate().refresh();
         return (ELEMENT_TYPE) this;
     }
 

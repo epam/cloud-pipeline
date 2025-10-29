@@ -19,14 +19,12 @@ package com.epam.pipeline.autotests.utils;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Action;
 import org.openqa.selenium.interactions.Actions;
 
 import java.awt.*;
@@ -60,6 +58,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -154,7 +153,7 @@ public class Utils {
     }
 
     public static void sendKeysWithControl(CharSequence ch) {
-        new Actions(WebDriverRunner.getWebDriver())
+        new Actions(getWebDriver())
                 .keyDown(Keys.CONTROL)
                 .sendKeys(ch)
                 .keyUp(Keys.CONTROL)
@@ -177,6 +176,10 @@ public class Utils {
             }
             charNumber++;
         }
+    }
+
+    public static void refresh() {
+        getWebDriver().navigate().refresh();
     }
 
     public static String getPipelineRunId(final String pipelineName) {
@@ -426,7 +429,7 @@ public class Utils {
     }
 
     public static String getCurrentURL() {
-        return WebDriverRunner.getWebDriver().getCurrentUrl();
+        return getWebDriver().getCurrentUrl();
     }
 
     public static void resetClick() {
