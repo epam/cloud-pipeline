@@ -1,12 +1,13 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: azurefile
+  name: cp-system-pvc
+  namespace: cloud-pipeline-test
 spec:
   accessModes:
     - ReadWriteMany
   storageClassName: azurefile-csi
-  volumeName: azurefile
+  volumeName: cp-system-pv
   resources:
     requests:
-      storage: 5Gi
+      storage: 500Gi

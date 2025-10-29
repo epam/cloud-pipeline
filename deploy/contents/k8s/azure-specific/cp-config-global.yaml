@@ -1,10 +1,10 @@
 apiVersion: v1
 data:
-  API_EXTERNAL: https://azure.cloud-pipeline.com:443/pipeline/restapi/
+  API_EXTERNAL: https://<cp-api-srv-external-host>:443/pipeline/restapi/
   CP_CLOUD_REGION_ID:
   CP_API_JWT_ADMIN:
   CP_API_SRV_CERT_DIR: /opt/api/pki
-  CP_API_SRV_EXTERNAL_HOST: azure.cloud-pipeline.com
+  CP_API_SRV_EXTERNAL_HOST: <cp-api-srv-external-host>
   CP_API_SRV_EXTERNAL_PORT: "443"
   CP_API_SRV_FED_META_DIR: /opt/api/sso
   CP_API_SRV_INTERNAL_HOST: cp-api-srv.default.svc.cluster.local
@@ -70,7 +70,7 @@ data:
   CP_EDGE_CLUSTER_RESOLVER: 10.0.0.10
   CP_EDGE_CONNECT_EXTERNAL_PORT: "31092"
   CP_EDGE_CONNECT_INTERNAL_PORT: "31092"
-  CP_EDGE_EXTERNAL_HOST: edge.azure.cloud-pipeline.com
+  CP_EDGE_EXTERNAL_HOST: <cp-edge-external-host>
   CP_EDGE_EXTERNAL_PORT: "31081"
   CP_EDGE_INTERNAL_HOST: cp-edge.default.svc.cluster.local
   CP_EDGE_INTERNAL_PORT: "31081"
@@ -80,7 +80,7 @@ data:
   CP_EDGE_WEB_EXTERNAL_PORT: "31091"
   CP_EDGE_WEB_INTERNAL_PORT: "31091"
   CP_GITLAB_CERT_DIR: /opt/gitlab/pki
-  CP_GITLAB_EXTERNAL_HOST: git.azure.cloud-pipeline.com
+  CP_GITLAB_EXTERNAL_HOST:
   CP_GITLAB_EXTERNAL_PORT: "30080"
   CP_GITLAB_INTERNAL_HOST: cp-git.default.svc.cluster.local
   CP_GITLAB_INTERNAL_PORT: "30080"
@@ -95,7 +95,7 @@ data:
   CP_HEAPSTER_INTERNAL_PORT: "30095"
   CP_HEAPSTER_METRIC_RESOLUTION: 30s
   CP_IDP_CERT_DIR: /opt/idp/pki
-  CP_IDP_EXTERNAL_HOST: idp.azure.cloud-pipeline.com
+  CP_IDP_EXTERNAL_HOST: <cp-idp-external-host>
   CP_IDP_EXTERNAL_PORT: "32080"
   CP_IDP_INTERNAL_HOST: cp-idp.default.svc.cluster.local
   CP_IDP_INTERNAL_PORT: "32080"
@@ -188,10 +188,10 @@ data:
   GITLAB_ROOT_USER: root
   IDP_HOST: cp-idp.default.svc.cluster.local
   IDP_PORT: "8080"
-  PSG_DB: pipeline
-  PSG_HOST:
+  PSG_DB: <psg-db>
+  PSG_HOST: <psg-host>
   PSG_MAX_CONNECTIONS: "100"
-  PSG_PASS: pipeline
+  PSG_PASS: <psg-password>
   PSG_PORT: "5432"
   PSG_SHARED_BUFFERS: 128MB
   PSG_USER: pipeline
@@ -200,4 +200,4 @@ data:
 kind: ConfigMap
 metadata:
   name: cp-config-global
-  namespace: default
+  namespace: cloud-pipeline-test

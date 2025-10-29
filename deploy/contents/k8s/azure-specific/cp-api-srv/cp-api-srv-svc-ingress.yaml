@@ -4,7 +4,7 @@ metadata:
   labels:
     cloud-pipeline/cp-api-srv: "true"
   name: cp-api-srv
-  namespace: default
+  namespace: cloud-pipeline-test
 spec:
   ports:
     - name: cp-api-srv-port-https

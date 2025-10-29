@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-idp
-  namespace: default
+  namespace: cloud-pipeline-test
 spec:
   selector:
     matchLabels:
@@ -10,7 +10,7 @@ spec:
   replicas: 1
   template:
     metadata:
-      namespace: default
+      namespace: cloud-pipeline-test
       labels:
         cloud-pipeline/cp-idp: "true"
         cloud-pipeline/core-component: "Deployment"
@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-idp
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:idp-$CP_VERSION
+          image: quay.io/lifescience/cloud-pipeline:idp-0.17
           imagePullPolicy: "Always"
           command: ["/init"]
           ports:
@@ -32,19 +32,23 @@ spec:
               name: cp-config-global
           volumeMounts:
             - mountPath: /opt/idp/pki
-              name: azurefile
+              subPath: idp/pki
+              name: cp-system-pv
             - mountPath: /opt/idp/pdb
-              name: idp-pd
+              subPath: idp/pdb
+              name: cp-system-pv
             - mountPath: /opt/api/pki
-              name: azurefile
-            - mountPath: /opt/api/sso
-              name: azurefile
+              subPath: api/pki
+              name: cp-system-pv
             - mountPath: /opt/share-srv/pki
-              name: share-pki
+              subPath: share-srv/pki
+              name: cp-system-pv
             - mountPath: /opt/gitlab/pki
-              name: git-pki
+              subPath: gitlab/pki
+              name: cp-system-pv
             - mountPath: /opt/common/pki
-              name: common-pki
+              subPath: common/pki
+              name: cp-system-pv
           readinessProbe:
             httpGet:
               path: /metadata
@@ -53,18 +57,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
       volumes:
-        - name: azurefile
+        - name: cp-system-pv
           persistentVolumeClaim:
-            claimName: azurefile
-        - name: idp-pd
-          hostPath:
-            path: /opt/idp/pdb
-        - name: git-pki
-          hostPath:
-            path: /opt/gitlab/pki
-        - name: share-pki
-          hostPath:
-            path: /opt/share-srv/pki
-        - name: common-pki
-          hostPath:
-            path: /opt/common/pki
+            claimName: cp-system-pvc

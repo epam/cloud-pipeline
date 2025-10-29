@@ -2,39 +2,39 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-edge
-  namespace: default
+  namespace: cloud-pipeline-test
 spec:
   selector:
     matchLabels:
       cloud-pipeline/cp-edge: "true"
       cloud-pipeline/role: "EDGE"
-      cloud-pipeline/region: $CP_CLOUD_REGION_ID
+      cloud-pipeline/region: <cloud-region-id>
   replicas: 1
   template:
     metadata:
-      namespace: default
+      namespace: cloud-pipeline-test
       labels:
         cloud-pipeline/cp-edge: "true"
         cloud-pipeline/role: "EDGE"
-        cloud-pipeline/region: $CP_CLOUD_REGION_ID
+        cloud-pipeline/region: <cloud-region-id>
         cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-edge: "true"
-        cloud-pipeline/region: $CP_CLOUD_REGION_ID
+        cloud-pipeline/region: <cloud-region-id>
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
         - name: cp-edge
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:edge-$CP_VERSION
+          image: quay.io/lifescience/cloud-pipeline:edge-0.17
           imagePullPolicy: "Always"
           command: ["/init"]
           env:
           - name: NODE_OPTIONS
             value: "--max_old_space_size=4096"
           - name: CP_EDGE_REGION
-            value: $CP_CLOUD_REGION_ID
+            value: <cloud-region-id>
           envFrom:
           - configMapRef:
               name: cp-config-global
@@ -49,58 +49,45 @@ spec:
             failureThreshold: 4
           volumeMounts:
             - mountPath: /var/log
-              name: edge-logs
+              subPath: edge/logs/<cloud-region-id>
+              name: cp-system-pv
             - mountPath: /opt/api/pki
-              name: azurefile
+              subPath: api/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/gitlab/pki
-              name: gitlab-pki
+              subPath: gitlab/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/docker-registry/pki
-              name: azurefile
+              subPath: docker-registry/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/idp/pki
-              name: azurefile
+              subPath: idp/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/edge/pki
-              name: azurefile
+              subPath: edge/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/common/pki
-              name: common-pki
+              subPath: common/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /etc/nginx/ext/external-apps
-              name: edge-external-apps
+              subPath: edge/external-apps
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/share-srv/pki
-              name: share-pki
-              readOnly: true
-            - mountPath: /etc/nginx/ext/external-locs
-              name: edge-external-locs
+              subPath: share-srv/pki
+              name: cp-system-pv
               readOnly: true
       dnsConfig:
         options:
           - name: ndots
             value: "1"
       volumes:
-        - name: azurefile
+        - name: cp-system-pv
           persistentVolumeClaim:
-            claimName: azurefile
-        - name: edge-logs
-          hostPath:
-            path: /opt/edge/logs/$CP_CLOUD_REGION_ID
-        - name: gitlab-pki
-          hostPath:
-            path: /opt/gitlab/pki
-        - name: common-pki
-          hostPath:
-            path: /opt/common/pki
-        - name: edge-external-apps
-          hostPath:
-            path: /opt/edge/external-apps
-        - name: share-pki
-          hostPath:
-            path: /opt/share-srv/pki
-        - name:  edge-external-locs
-          hostPath:
-            path: /opt/edge/external-locs
-
+            claimName: cp-system-pvc

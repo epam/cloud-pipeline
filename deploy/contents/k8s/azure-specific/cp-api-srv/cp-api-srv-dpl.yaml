@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-api-srv
-  namespace: default
+  namespace: cloud-pipeline-test
 spec:
   replicas: 1
   selector:
@@ -11,10 +11,11 @@ spec:
       cloud-pipeline/cp-api-srv: "true"
   template:
     metadata:
-      namespace: default
+      namespace: cloud-pipeline-test
       labels:
         cloud-pipeline/cp-api-srv: "true"
         cloud-pipeline/core-component: "Deployment"
+        azure.workload.identity/use: "true"
     spec:
       affinity:
         podAntiAffinity:
@@ -29,9 +30,10 @@ spec:
         - key: node-role.kubernetes.io/master
           effect: NoSchedule
       terminationGracePeriodSeconds: 50
+      serviceAccountName: <cp-service-account>
       containers:
         - name: cp-api-srv-leader-elector
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
+          image: quay.io/lifescience/cloud-pipeline:leader-elector-0.17
           imagePullPolicy: "Always"
           securityContext:
             privileged: true
@@ -49,7 +51,7 @@ spec:
             - configMapRef:
                 name: cp-config-global
         - name: cp-api-srv
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-$CP_VERSION
+          image: quay.io/lifescience/cloud-pipeline:api-srv-0.17
           imagePullPolicy: "Always"
           securityContext:
             privileged: true
@@ -82,31 +84,39 @@ spec:
               name: cp-config-global
           volumeMounts:
             - mountPath: /opt/api/pki
-              name: azurefile
+              subPath: api/pki
+              name: cp-system-pv
             - mountPath: /opt/api/sso
-              name: azurefile
+              subPath: api/sso
+              name: cp-system-pv
             - mountPath: /var/log/cp-api
-              name: azurefile
+              subPath: api/logs
+              name: cp-system-pv
             - mountPath: /opt/api/ext/templates/pipe-templates
-              name: api-pipe-templates
+              subPath: api/templates/pipe-templates
+              name: cp-system-pv
             - mountPath: /opt/api/ext/templates/folder-templates
-              name: api-folder-templates
+              subPath: api/templates/folder-templates
+              name: cp-system-pv
             - mountPath: /opt/api/ext/templates/error-templates
-              name: api-error-templates
+              subPath: api/templates/error-templates
+              name: cp-system-pv
             - mountPath: /opt/api/ext/templates/static
-              name: api-static-assets
+              subPath: api/templates/static
+              name: cp-system-pv
             - mountPath: /opt/api/etc
-              name: api-etc-assets
+              subPath: api/etc
+              name: cp-system-pv
             - mountPath: /opt/idp/pki
-              name: idp-pki
+              subPath: idp/pki
+              name: cp-system-pv
             - mountPath: /opt/common/pki
-              name: common-pki
+              subPath: common/pki
+              name: cp-system-pv
               readOnly: true
             - mountPath: /opt/gitlab/pki
-              name: git-pki
-              readOnly: true
-            - mountPath: /root/.kube
-              name: kube-config
+              subPath: gitlab/pki
+              name: cp-system-pv
               readOnly: true
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
@@ -143,33 +153,9 @@ spec:
           - name: ndots
             value: "1"
       volumes:
-        - name: azurefile
+        - name: cp-system-pv
           persistentVolumeClaim:
-            claimName: azurefile
-        - name: api-pipe-templates
-          hostPath:
-            path: /opt/api/templates/pipe-templates
-        - name: api-folder-templates
-          hostPath:
-            path: /opt/api/templates/folder-templates
-        - name: api-error-templates
-          hostPath:
-            path: /opt/api/templates/error-templates
-        - name: api-static-assets
-          hostPath:
-            path: /opt/api/templates/static
-        - name: api-etc-assets
-          hostPath:
-            path: /opt/api/etc
-        - name: idp-pki
-          hostPath:
-            path: /opt/idp/pki
-        - name: common-pki
-          hostPath:
-            path: /opt/common/pki
-        - name: git-pki
-          hostPath:
-            path: /opt/gitlab/pki
+            claimName: cp-system-pvc
         - name: kube-config
           hostPath:
             path: /root/.kube

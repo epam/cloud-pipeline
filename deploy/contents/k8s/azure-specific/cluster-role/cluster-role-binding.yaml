@@ -2,10 +2,11 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: sa-cluster-reader
+  namespace: cloud-pipeline-test
 subjects:
   - kind: ServiceAccount
-    name: default
-    namespace: default
+    name: <cp-service-account>
+    namespace: cloud-pipeline-test
 roleRef:
   kind: ClusterRole
   name: node-reader
