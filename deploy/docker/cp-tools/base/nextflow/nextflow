@@ -49,9 +49,11 @@ function generate_extra_nf_config_option() {
     done
 }
 
-CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
-CP_NF_CACHEDIR="${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}"
-CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
+function expand() { eval "echo \"$1\""; }
+
+CP_NF_WORKDIR=$(expand "${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}")
+CP_NF_CACHEDIR=$(expand "${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}")
+CP_NF_TRACE_FILE=$(expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt")
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
 CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
 CP_NF_AUTOGENERATE_PARAMETERS_PATH="${CP_NF_AUTOGENERATE_PARAMETERS_PATH:-$SCRIPTS_DIR/cp_params.json}"
@@ -116,7 +118,7 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
         if [ -n "$CP_NF_WORKDIR" ]; then
             echo "trace.enabled = true" >> $NEXTFLOW_CONFIG
             echo "trace.raw = true" >> $NEXTFLOW_CONFIG
-            echo "trace.file = '${CP_NF_TRACE_FILE}'" >> $NEXTFLOW_CONFIG
+            echo "trace.file = \"${CP_NF_TRACE_FILE}\"" >> $NEXTFLOW_CONFIG
             echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes'" >> $NEXTFLOW_CONFIG
         fi
     fi
