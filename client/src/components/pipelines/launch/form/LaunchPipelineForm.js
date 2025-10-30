@@ -75,7 +75,9 @@ import {
   kubeEnabled,
   getAutoScaledPriceTypeValue,
   applyChildNodeInstanceParameters,
-  parseChildNodeInstanceConfiguration
+  parseChildNodeInstanceConfiguration,
+  LAUNCH_CLUSTER_MODES,
+  CLUSTER_TYPE
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -5010,6 +5012,29 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.parameterType === 'path' || this.state.parameterType === 'input') {
       bucketTypes.push('AWS_OMICS_SEQ', 'AWS_OMICS_REF');
     }
+    const launchMode = !!this.props.pipeline && !!this.props.pipeline.id
+      ? LAUNCH_CLUSTER_MODES.pipeline
+      : LAUNCH_CLUSTER_MODES.tool;
+    const getDisplayConfig = () => {
+      const getInitialSelectedClusterType = () => {
+        if (this.state.launchCluster) {
+          return this.state.autoScaledCluster &&
+          !this.state.sparkEnabled
+            ? CLUSTER_TYPE.autoScaledCluster
+            : CLUSTER_TYPE.fixedCluster;
+        } else {
+          return CLUSTER_TYPE.singleNode;
+        }
+      };
+      return ConfigureClusterDialog.getDisplayConfig(
+        launchMode,
+        this.props.uiNavigation,
+        getInitialSelectedClusterType()
+      );
+    };
+    const configureClusterDisplayConfig = getDisplayConfig();
+    const configureClusterEnabled = configureClusterDisplayConfig.autoScaledVisible ||
+      configureClusterDisplayConfig.staticVisible;
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
@@ -5107,14 +5132,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             style={{width: '100%'}}
                           />
                         </Col>
-                        <a
-                          onClick={this.openConfigureClusterDialog}
-                          className="cp-text underline"
-                          style={{marginLeft: 'auto', marginRight: '30px'}}
-                        >
-                          <Icon type="setting" />
-                          {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
-                        </a>
+                        {configureClusterEnabled ? (
+                          <a
+                            onClick={this.openConfigureClusterDialog}
+                            className="cp-text underline"
+                            style={{marginLeft: 'auto', marginRight: '30px'}}
+                          >
+                            <Icon type="setting" />
+                            {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
+                          </a>
+                        ) : null}
                       </Row>
                     )}
                     <ConfigureClusterDialog
@@ -5138,6 +5165,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       visible={this.state.configureClusterDialogVisible}
                       disabled={this.props.readOnly && !this.props.canExecute}
                       instanceTypes={this.instanceTypes}
+                      displayConfig={configureClusterDisplayConfig}
                     />
                     {
                       this.renderFormItemRow(
