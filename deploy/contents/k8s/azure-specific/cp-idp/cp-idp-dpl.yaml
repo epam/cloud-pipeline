@@ -33,22 +33,22 @@ spec:
           volumeMounts:
             - mountPath: /opt/idp/pki
               subPath: idp/pki
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/idp/pdb
               subPath: idp/pdb
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/pki
               subPath: api/pki
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/share-srv/pki
               subPath: share-srv/pki
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/gitlab/pki
               subPath: gitlab/pki
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/common/pki
               subPath: common/pki
-              name: cp-system-pv
+              name: cp-system
           readinessProbe:
             httpGet:
               path: /metadata
@@ -57,6 +57,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
       volumes:
-        - name: cp-system-pv
+        - name: cp-system
           persistentVolumeClaim:
             claimName: cp-system-pvc

@@ -50,44 +50,44 @@ spec:
           volumeMounts:
             - mountPath: /var/log
               subPath: edge/logs/<cloud-region-id>
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/pki
               subPath: api/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/gitlab/pki
               subPath: gitlab/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/docker-registry/pki
               subPath: docker-registry/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/idp/pki
               subPath: idp/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/edge/pki
               subPath: edge/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/common/pki
               subPath: common/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /etc/nginx/ext/external-apps
               subPath: edge/external-apps
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/share-srv/pki
               subPath: share-srv/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
       dnsConfig:
         options:
           - name: ndots
             value: "1"
       volumes:
-        - name: cp-system-pv
+        - name: cp-system
           persistentVolumeClaim:
             claimName: cp-system-pvc

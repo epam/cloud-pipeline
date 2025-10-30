@@ -85,38 +85,38 @@ spec:
           volumeMounts:
             - mountPath: /opt/api/pki
               subPath: api/pki
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/sso
               subPath: api/sso
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /var/log/cp-api
               subPath: api/logs
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/ext/templates/pipe-templates
               subPath: api/templates/pipe-templates
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/ext/templates/folder-templates
               subPath: api/templates/folder-templates
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/ext/templates/error-templates
               subPath: api/templates/error-templates
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/ext/templates/static
               subPath: api/templates/static
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/api/etc
               subPath: api/etc
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/idp/pki
               subPath: idp/pki
-              name: cp-system-pv
+              name: cp-system
             - mountPath: /opt/common/pki
               subPath: common/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - mountPath: /opt/gitlab/pki
               subPath: gitlab/pki
-              name: cp-system-pv
+              name: cp-system
               readOnly: true
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
@@ -153,7 +153,7 @@ spec:
           - name: ndots
             value: "1"
       volumes:
-        - name: cp-system-pv
+        - name: cp-system
           persistentVolumeClaim:
             claimName: cp-system-pvc
         - name: kube-config
