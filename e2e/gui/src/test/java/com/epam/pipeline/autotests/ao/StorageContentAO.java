@@ -280,7 +280,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO tryNavigateToAnotherBucket(String anotherBucketName) {
         SelenideElement inputField = getOpenedNavigationBarInput().should(exist);
         String path = inputField.getValue();
-        inputField.setValue(replaceBucket(path, anotherBucketName)).pressEnter();
+
+        setValue(inputField, anotherBucketName);
+        inputField.pressEnter();
         return this;
     }
 
