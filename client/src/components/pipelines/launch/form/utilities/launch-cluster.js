@@ -365,7 +365,7 @@ export function parseUISettings (settings = {}) {
   return parsed;
 }
 
-@inject('preferences', 'uiNavigation')
+@inject('preferences')
 @observer
 class ConfigureClusterDialog extends React.Component {
   static getClusterName = (ctrl, lowerCased) => {
