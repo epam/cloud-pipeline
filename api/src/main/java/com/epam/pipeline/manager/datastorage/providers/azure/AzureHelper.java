@@ -45,7 +45,7 @@ public final class AzureHelper {
             final AzureResourceManager azure = AzureResourceManager
                     .authenticate(credentials.getCredential(), credentials.getProfile())
                     .withDefaultSubscription();
-            log.info("Authenticated to subscription: {}", azure.subscriptionId());
+            log.debug("Authenticated to subscription: {}", azure.subscriptionId());
             return azure;
         } catch (ManagementException e) {
             throw new AuthenticationException(String.format("Failed to authenticate to Azure: %s", e.getMessage()));
@@ -58,12 +58,12 @@ public final class AzureHelper {
         String subscriptionId;
         AzureProfile profile = new AzureProfile(AzureEnvironment.AZURE);
         if (StringUtils.isNotBlank(region.getManagedIdentity())) {
-            log.info("Authentication using Managed Identity");
+            log.debug("Authentication using Managed Identity");
             credential = new DefaultAzureCredentialBuilder()
                     .managedIdentityClientId(region.getManagedIdentity())
                     .build();
         } else if (StringUtils.isNotBlank(region.getAuthFile())) {
-            log.info("Authentication using Azure auth file");
+            log.debug("Authentication using Azure auth file");
             final File authFile = new File(region.getAuthFile());
             final Map<String, String> config;
             try {
@@ -82,7 +82,8 @@ public final class AzureHelper {
                     .build();
             profile = new AzureProfile(tenantId, subscriptionId, AzureEnvironment.AZURE);
         } else {
-            throw new AuthenticationException("Failed to get Azure credentials.");
+            throw new AuthenticationException("Failed to get Azure credentials. " +
+                    "Auth file or Managed Identity should be provided");
         }
         return AzureCredentials.builder()
                 .credential(credential)

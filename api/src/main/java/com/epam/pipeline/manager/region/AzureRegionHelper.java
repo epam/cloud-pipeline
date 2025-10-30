@@ -132,6 +132,11 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     }
 
     private void validateStorageAccount(final AzureRegion region, final AzureRegionCredentials credentials) {
+        Assert.isTrue(StringUtils.isNotBlank(region.getStorageAccount()),
+                messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_ACC_REQUIRED));
+        Assert.isTrue(StringUtils.isNotBlank(region.getManagedIdentity())
+                || StringUtils.isNotBlank(credentials.getStorageAccountKey()),
+                messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_AUTH_INFO_REQUIRED));
         checkThatCredentialsIsActive(region, credentials);
     }
 
@@ -141,7 +146,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
             blobServiceClient.getProperties();
         } catch (Exception e) {
             throw new IllegalArgumentException(messageHelper
-                    .getMessage(MessageConstants.ERROR_AZURE_STORAGE_CREDENTIAL_INVALID), e);
+                    .getMessage(MessageConstants.ERROR_AZURE_AUTHENTICATION_FAILED), e);
         }
     }
 

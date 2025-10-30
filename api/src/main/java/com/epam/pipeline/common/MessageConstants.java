@@ -271,6 +271,7 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_ROOT_URL_IS_NOT_SET = "error.shared.root.url.is.not.set";
     public static final String ERROR_DATASTORAGE_USED_AS_DEFAULT = "error.datastorage.is.used.default";
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
+    public static final String ERROR_DATASTORAGE_TAG_UPDATE_FAILED = "error.datastorage.tag.update.failed";
     public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
     public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
     public static final String ERROR_DATASTORAGE_FOLDER_CREATE_FAILED = "error.datastorage.folder.create.failed";
@@ -279,7 +280,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_BLOB_UPLOAD_FAILED = "error.datastorage.blob.upload.failed";
     public static final String ERROR_DATASTORAGE_BLOB_COPY_FAILED = "error.datastorage.blob.copy.failed";
     public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
-    public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_DATASTORAGE_PATH_PROCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_DATASTORAGE_GET_CONTENT_FAILED = "error.datastorage.get.content.failed";
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
     public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
         "error.sensitive.datastorage.forbidden.operation";
@@ -672,7 +674,7 @@ public final class MessageConstants {
 
     //Azure
     public static final String ERROR_AZURE_STORAGE_ACC_REQUIRED = "error.azure.storage.account.required";
-    public static final String ERROR_AZURE_STORAGE_KEY_REQUIRED = "error.azure.storage.key.required";
+    public static final String ERROR_AZURE_STORAGE_AUTH_INFO_REQUIRED = "error.azure.storage.auth.info.required";
     public static final String ERROR_AZURE_INSTANCE_NOT_FOUND = "error.azure.instance.not.found";
     public static final String ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE = "error.azure.resource.is.not.vm.like";
     public static final String ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS = "error.azure.scale.set.doesnt.contain.vm";
