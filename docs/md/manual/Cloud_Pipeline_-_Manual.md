@@ -22,6 +22,7 @@
     - [6.3. Delete and unregister pipeline](06_Manage_Pipeline/6.3._Delete_a_pipeline.md)
     - [6.4. Work with AWS HealthOmics Workflow](06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow.md)
     - [6.5. Pipeline configuration](06_Manage_Pipeline/6.5._Pipeline_configuration.md)
+    - [6.6. Pre-packaged pipelines](06_Manage_Pipeline/6.6._Pre-packaged_pipelines.md)
 - [7. Manage Detached configuration](07_Manage_Detached_configuration/7._Manage_Detached_configuration.md)
     - [7.1. Create and customize Detached configuration](07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md)
     - [7.2. Launch Detached Configuration](07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md)
@@ -62,6 +63,8 @@
     - [11.3. Sharing with other users or groups of users](11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md)
     - [11.4. Automatic labels and actions for the runs](11_Manage_Runs/11.4._Automatic_actions_after_notifications.md)
     - [11.5. Archive completed runs](11_Manage_Runs/11.5._Archive_runs.md)
+    - [11.6. Nextflow runs visualization](11_Manage_Runs/11.6._Nextflow_runs_visualization.md)
+    - [11.7. GUI plugins for run pages](11_Manage_Runs/11.7._Plugins_framework.md)
 - [12. Manage Settings](12_Manage_Settings/12._Manage_Settings.md)
     - [12.1. Add a new system event](12_Manage_Settings/12.1._Add_a_new_system_event.md)
     - [12.2. Edit a system event](12_Manage_Settings/12.2._Edit_a_system_event.md)
@@ -99,6 +102,7 @@
     - [17.1. Faceted filters search using tags](17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md)
 - [18. Home page](18_Home_page/18._Home_page.md)
 - [19. Global search](19_Search/19._Global_search.md)
+- [20. Chatbot](20_Chatbot/20._Chatbot.md)
 - [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)
 - [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)
 - [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
@@ -160,8 +164,11 @@ Learn how to manage custom sets of "key-values" attributes for data storage 
 [18. Home page](18_Home_page/18._Home_page.md)  
 Get details about homepage widgets, how to configure homepage view.
 
-[19. Global search](19_Search/19._Global_search.md)
+[19. Global search](19_Search/19._Global_search.md)  
 How to search objects over the Platform.
+
+[20. Chatbot](20_Chatbot/20._Chatbot.md)  
+How to use integrated AI-chatbot to obtain help on the platform features' use and assist with the data analysis and worflows launch.
 
 [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)  
 Learn basics about instance and Docker container lifecycle.

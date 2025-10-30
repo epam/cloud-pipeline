@@ -1,13 +1,16 @@
 # How to setup
 
 ## Description
-This Docker includes additional component `nf-weblog-handler`.
+
+This Docker includes additional component `nf-weblog-handler`.  
 This `handler` can utilize `nextflow` feature `-with-weblog` to redirect events to Cloud-Pipeline `run/{runId}/engine/tasks` API
 
 ## How to use
 
 ### Manually
+
 To manually configure `nf-weblog-handler`. The following steps should be done:
+
 1. Start `nf-weblog-handler` with: `/opt/nf-weblog-handler/nf-weblog-handler.sh --start -p <port [default: 8080]>`
 2. Run nextflow with `-with-weblog http://localhost:<port>/nextflow/event` parameter:
     ```
@@ -15,7 +18,7 @@ To manually configure `nf-weblog-handler`. The following steps should be done:
     ```
 3. Now `nf-weblog-handler` should send event to the Cloud-Pipeline API. And you should be able to see expanded nextflow statistic for the run.
 
-### Configure Cloud-Pipeline custom capamility
+### Configure Cloud-Pipeline custom capability
 
 It is also possible to configure this image to use this functionality automatically:
 
