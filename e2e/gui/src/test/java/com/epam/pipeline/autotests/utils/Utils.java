@@ -127,9 +127,8 @@ public class Utils {
 
     public static void selectAllAndClearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
-        String selectAll = Keys.chord(Keys.CONTROL, "a");
-        actions().moveToElement(field).click()
-                .sendKeys(selectAll);
+        field.click();
+        sendKeysWithControl("a");
         actions().sendKeys(Keys.DELETE).perform();
     }
 
@@ -137,8 +136,6 @@ public class Utils {
             final StringSelection stringSelection = new StringSelection(text);
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(stringSelection, null);
-//            actions().sendKeys(Keys.chord(Keys.CONTROL, "v"))
-//                    .perform();
             sendKeysWithControl("v");
     }
 
@@ -146,9 +143,7 @@ public class Utils {
         final StringSelection stringSelection = new StringSelection(text);
         Toolkit.getDefaultToolkit().getSystemClipboard()
                 .setContents(stringSelection, null);
-        actions().moveToElement(field).click();
-//                .sendKeys(Keys.chord(Keys.CONTROL, "v"))
-//                .perform();
+        field.click();
         sendKeysWithControl("v");
     }
 
