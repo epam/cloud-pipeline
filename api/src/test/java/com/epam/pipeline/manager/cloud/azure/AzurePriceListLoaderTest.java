@@ -21,8 +21,8 @@ import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzureRateCardPricingMeter;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
-import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
+import com.azure.resourcemanager.compute.models.ResourceSkuCapabilities;
+import com.azure.resourcemanager.compute.fluent.models.ResourceSkuInner;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 

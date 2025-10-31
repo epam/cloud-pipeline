@@ -51,4 +51,5 @@ public class AzureRegion extends AbstractCloudRegion {
     private String azureApiUrl;
     private String priceOfferId;
     private boolean enterpriseAgreements;
+    private String managedIdentity;
 }
