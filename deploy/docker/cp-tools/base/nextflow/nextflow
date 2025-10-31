@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ done
 _ARGS=("$@")
 
 # Executor parameters
-NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
+NEXTFLOW_CONFIG="$NXF_HOME/config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
 rm -f "$NEXTFLOW_CONFIG"
 
@@ -130,11 +130,9 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 if [ -f "$NEXTFLOW_CONFIG" ]; then
-    echo "[INFO] Global nextflow config ($NEXTFLOW_CONFIG):"
+    echo "[INFO] Home nextflow config ($NEXTFLOW_CONFIG):"
     cat "$NEXTFLOW_CONFIG"
     echo
-    _ARGS+=('-c')
-    _ARGS+=("$NEXTFLOW_CONFIG")
 fi
 #
 
