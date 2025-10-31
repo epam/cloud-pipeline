@@ -21,7 +21,7 @@ export async function fillUserTagsWithDefaultValues (
     await userAttributes.refresh();
   }
   if (!userAttributes.hasAttribute(RequiredLaunchTags.metadataKey)) {
-    return;
+    return tags;
   }
   try {
     defaults = JSON.parse(
@@ -29,7 +29,7 @@ export async function fillUserTagsWithDefaultValues (
     ) || {};
   } catch (e) {
     console.error('Error parsing required launch tags defaults.', e);
-    return;
+    return tags;
   }
   const required = await getRequiredUserTags(launchPayload);
   visibleTags.forEach((tag) => {

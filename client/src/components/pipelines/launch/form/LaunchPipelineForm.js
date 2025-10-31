@@ -2586,7 +2586,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       result = await getUserTagsValidationResult(newUserTags, {launchPayload: payload});
     }
     this.setState({
-      ...(newUserTags ? {userTags: newUserTags} : {}),
+      userTags: newUserTags,
       userTagsValidation: result,
       userTagsVisibleTags: visibleTags,
       userTagsValidationPayload: payload
