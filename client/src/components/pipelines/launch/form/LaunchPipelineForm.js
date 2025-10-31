@@ -2569,14 +2569,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
     let result = [];
     let visibleTags = [];
-    let newUserTags;
+    let newUserTags = this.state.userTags;
     if (
       !this.props.detached &&
       !this.props.isDetachedConfiguration &&
       !this.props.editConfigurationMode
     ) {
       visibleTags = await getVisibleUserTags(payload);
-      const newUserTags = await fillUserTagsWithDefaultValues(
+      newUserTags = await fillUserTagsWithDefaultValues(
         this.state.userTags,
         this.state.userTagsTouched,
         visibleTags,
