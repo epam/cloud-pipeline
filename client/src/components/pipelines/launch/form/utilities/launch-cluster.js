@@ -424,7 +424,13 @@ class ConfigureClusterDialog extends React.Component {
       lowerCasedString('Configure cluster', lowerCased);
   };
 
-  static getDisplayConfig = (mode, uiNavigation, initialSelectedClusterType) => {
+  static getDisplayConfig = (
+    mode,
+    uiNavigation,
+    initialSelectedClusterType,
+    authenticatedUserInfo
+  ) => {
+    const isAdmin = authenticatedUserInfo?.value?.admin || false;
     const settings = parseUISettings(uiNavigation?.launchForm || {});
     let preferenceConfig;
     switch (mode) {
@@ -435,7 +441,7 @@ class ConfigureClusterDialog extends React.Component {
         preferenceConfig = settings.pipelines?.cluster;
         break;
     }
-    if (!preferenceConfig) {
+    if (!preferenceConfig || isAdmin) {
       return {
         staticEnabled: true,
         staticVisible: true,

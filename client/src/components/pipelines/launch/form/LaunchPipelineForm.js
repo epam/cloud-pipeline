@@ -5029,7 +5029,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return ConfigureClusterDialog.getDisplayConfig(
         launchMode,
         this.props.uiNavigation,
-        getInitialSelectedClusterType()
+        getInitialSelectedClusterType(),
+        this.props.authenticatedUserInfo
       );
     };
     const configureClusterDisplayConfig = getDisplayConfig();
