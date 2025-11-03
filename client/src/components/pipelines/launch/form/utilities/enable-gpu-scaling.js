@@ -187,7 +187,8 @@ const InstanceTypeSelector = (
     gpu = false,
     allowEmpty = false,
     emptyName,
-    emptyTooltip
+    emptyTooltip,
+    disabled = false
   }
 ) => {
   const sorted = instanceTypes.filter(t => !gpu || t.gpu);
@@ -216,6 +217,7 @@ const InstanceTypeSelector = (
       filterOption={filterSelect}
       showSearch
       optionFilterProp="children"
+      disabled={disabled}
     >
       {
         allowEmpty && (
@@ -243,7 +245,8 @@ const InstanceFamilySelector = (
     provider,
     allowEmpty = false,
     emptyName,
-    emptyTooltip
+    emptyTooltip,
+    disabled = false
   }
 ) => {
   const sorted = instanceTypes.filter(t => !gpu || t.gpu);
@@ -275,6 +278,7 @@ const InstanceFamilySelector = (
       filterOption={filterSelect}
       showSearch
       optionFilterProp="children"
+      disabled={disabled}
     >
       {
         allowEmpty && (

@@ -68,6 +68,11 @@ const PARAMETER_TITLE_STYLE = {
   marginRight: PARAMETER_TITLE_RIGHT_MARGIN
 };
 
+export const LAUNCH_CLUSTER_MODES = {
+  tool: 'tool',
+  pipeline: 'pipeline'
+};
+
 export function hybridAutoScaledClusterEnabled (parameters) {
   return autoScaledClusterEnabled(parameters) &&
     booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE_HYBRID);
@@ -282,6 +287,22 @@ export function applyChildNodeInstanceParametersAsArray (parameters, value, hybr
   }
 }
 
+export function parseUISettings (settings = {}) {
+  if (typeof settings === 'object') {
+    return settings;
+  }
+  let parsed;
+  if (typeof settings === 'string') {
+    try {
+      parsed = JSON.parse(settings);
+    } catch (e) {
+      parsed = {};
+      console.error('ConfigureClusterDialog: Error parse ui-settings ', e);
+    }
+  }
+  return parsed;
+}
+
 @inject('preferences')
 @observer
 class ConfigureClusterDialog extends React.Component {
@@ -334,6 +355,45 @@ class ConfigureClusterDialog extends React.Component {
       lowerCasedString('Configure cluster', lowerCased);
   };
 
+  static getDisplayConfig = (
+    mode,
+    uiNavigation,
+    initialSelectedClusterType,
+    authenticatedUserInfo
+  ) => {
+    const isAdmin = authenticatedUserInfo?.value?.admin || false;
+    const settings = parseUISettings(uiNavigation?.launchForm || {});
+    let preferenceConfig;
+    switch (mode) {
+      case LAUNCH_CLUSTER_MODES.tool:
+        preferenceConfig = settings.tools?.cluster;
+        break;
+      case LAUNCH_CLUSTER_MODES.pipeline:
+        preferenceConfig = settings.pipelines?.cluster;
+        break;
+    }
+    if (!preferenceConfig || isAdmin) {
+      return {
+        staticEnabled: true,
+        staticVisible: true,
+        autoScaledEnabled: true,
+        autoScaledVisible: true
+      };
+    }
+    const config = {
+      static: preferenceConfig.static ?? true,
+      autoScaled: preferenceConfig['auto-scaled'] ?? true
+    };
+    return {
+      staticEnabled: config.static,
+      staticVisible: initialSelectedClusterType === CLUSTER_TYPE.fixedCluster ||
+        config.static,
+      autoScaledEnabled: config.autoScaled,
+      autoScaledVisible: initialSelectedClusterType === CLUSTER_TYPE.autoScaledCluster ||
+        config.autoScaled
+    };
+  };
+
   static propTypes = {
     visible: PropTypes.bool,
     disabled: PropTypes.bool,
@@ -353,7 +413,14 @@ class ConfigureClusterDialog extends React.Component {
     onChange: PropTypes.func,
     onClose: PropTypes.func,
     instanceName: PropTypes.string,
-    instanceTypes: PropTypes.array
+    instanceTypes: PropTypes.array,
+    mode: PropTypes.string,
+    displayConfig: PropTypes.shape({
+      staticEnabled: PropTypes.bool,
+      staticVisible: PropTypes.bool,
+      autoScaledEnabled: PropTypes.bool,
+      autoScaledVisible: PropTypes.bool
+    })
   };
 
   state = {
@@ -375,6 +442,26 @@ class ConfigureClusterDialog extends React.Component {
       maxNodesCount: null
     }
   };
+
+  get displayConfig () {
+    return this.props.displayConfig || {
+      staticEnabled: true,
+      staticVisible: true,
+      autoScaledEnabled: true,
+      autoScaledVisible: true
+    };
+  }
+
+  get initialSelectedClusterType () {
+    if (this.props.launchCluster) {
+      return this.props.autoScaledCluster &&
+      !this.props.sparkEnabled
+        ? CLUSTER_TYPE.autoScaledCluster
+        : CLUSTER_TYPE.fixedCluster;
+    } else {
+      return CLUSTER_TYPE.singleNode;
+    }
+  }
 
   get selectedClusterType () {
     if (this.state.launchCluster) {
@@ -602,13 +689,14 @@ class ConfigureClusterDialog extends React.Component {
   };
 
   renderFixedClusterConfiguration = () => {
+    const {staticEnabled} = this.displayConfig;
     return [
       <Row key="nodes count" type="flex" align="middle" style={{marginTop: 5}}>
         <span style={PARAMETER_TITLE_STYLE}>Child nodes:</span>
         <InputNumber
           min={1}
           max={this.launchMaxScheduledNumber}
-          disabled={this.props.disabled}
+          disabled={this.props.disabled || !staticEnabled}
           className={this.getInputStyle('nodesCount')}
           style={{flex: 1}}
           value={this.state.nodesCount}
@@ -635,7 +723,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.gridEngineEnabled}
-          onChange={this.onChangeEnableGridEngine}>
+          onChange={this.onChangeEnableGridEngine}
+          disabled={this.props.disabled || !staticEnabled}
+        >
           Enable GridEngine
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableGridEngine)}
@@ -644,7 +734,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.slurmEnabled}
-          onChange={this.onChangeEnableSlurm}>
+          onChange={this.onChangeEnableSlurm}
+          disabled={this.props.disabled || !staticEnabled}
+        >
           Enable Slurm
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableSlurm)}
@@ -653,7 +745,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.sparkEnabled}
-          onChange={this.onChangeEnableSpark}>
+          onChange={this.onChangeEnableSpark}
+          disabled={this.props.disabled || !staticEnabled}
+        >
           Enable Apache Spark
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableSpark)}
@@ -662,7 +756,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.kubeEnabled}
-          onChange={this.onChangeEnableKube}>
+          onChange={this.onChangeEnableKube}
+          disabled={this.props.disabled || !staticEnabled}
+        >
           Enable Kubernetes
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableKube)}
@@ -672,6 +768,7 @@ class ConfigureClusterDialog extends React.Component {
 
   renderGPUScalingParameter = (value, onChange, gpu = false) => {
     const {hybridAutoScaledClusterEnabled: hybrid} = this.state;
+    const {autoScaledEnabled} = this.displayConfig;
     const label = (
       <span>
         {gpu ? 'GPU' : 'CPU'} {hybrid ? 'family' : 'instance'}:
@@ -702,6 +799,7 @@ class ConfigureClusterDialog extends React.Component {
               provider={cloudRegionProvider}
               gpu={gpu}
               style={{flex: 1}}
+              disabled={this.props.disabled || !autoScaledEnabled}
             />
           )
         }
@@ -713,6 +811,7 @@ class ConfigureClusterDialog extends React.Component {
               instanceTypes={this.props.instanceTypes}
               gpu={gpu}
               style={{flex: 1}}
+              disabled={this.props.disabled || !autoScaledEnabled}
             />
           )
         }
@@ -726,6 +825,7 @@ class ConfigureClusterDialog extends React.Component {
       gpuScalingConfiguration,
       childNodeInstanceConfiguration: value
     } = this.state;
+    const {autoScaledEnabled} = this.displayConfig;
     if (gpuScalingConfiguration) {
       return null;
     }
@@ -801,6 +901,7 @@ class ConfigureClusterDialog extends React.Component {
               allowEmpty
               emptyName={emptyName}
               emptyTooltip={emptyTooltip}
+              disabled={this.props.disabled || !autoScaledEnabled}
             />
           )
         }
@@ -814,6 +915,7 @@ class ConfigureClusterDialog extends React.Component {
               allowEmpty
               emptyName={emptyName}
               emptyTooltip={emptyTooltip}
+              disabled={this.props.disabled || !autoScaledEnabled}
             />
           )
         }
@@ -828,6 +930,7 @@ class ConfigureClusterDialog extends React.Component {
   };
 
   renderAutoScaledClusterConfiguration = () => {
+    const {autoScaledEnabled} = this.displayConfig;
     const onSetUpChildNodesClicked = () => {
       this.setState({
         setDefaultNodesCount: true,
@@ -852,7 +955,7 @@ class ConfigureClusterDialog extends React.Component {
             <InputNumber
               min={1}
               max={this.launchMaxScheduledNumber}
-              disabled={this.props.disabled}
+              disabled={this.props.disabled || !autoScaledEnabled}
               className={this.getInputStyle('nodesCount')}
               style={{flex: 1}}
               value={this.state.nodesCount}
@@ -863,32 +966,36 @@ class ConfigureClusterDialog extends React.Component {
                 {marginLeft: 5}
               )
             }
-            <a
-              onClick={onUnsetChildNodes}
-              className="cp-text underline"
-              style={{marginLeft: 5}}
-            >
-              <Icon type="close" /> Reset
-            </a>
+            {!this.props.disabled && autoScaledEnabled ? (
+              <a
+                onClick={onUnsetChildNodes}
+                className="cp-text underline"
+                style={{marginLeft: 5}}
+              >
+                <Icon type="close" /> Reset
+              </a>
+            ) : null}
           </Row>
         ];
       } else {
         return [
           <Row key="nodes count" type="flex" align="middle" style={{marginTop: 5}}>
-            <span style={{marginLeft: LEFT_MARGIN, flex: 1}}>
-              <a
-                onClick={onSetUpChildNodesClicked}
-                className="cp-text underline"
-              >
-                Setup default child nodes count
-              </a>
-              {
-                renderTooltip(
-                  LaunchClusterTooltip.autoScaledCluster.defaultNodesCount,
-                  {marginLeft: 5}
-                )
-              }
-            </span>
+            {!this.props.disabled && autoScaledEnabled ? (
+              <span style={{marginLeft: LEFT_MARGIN, flex: 1}}>
+                <a
+                  onClick={onSetUpChildNodesClicked}
+                  className="cp-text underline"
+                >
+                  Setup default child nodes count
+                </a>
+                {
+                  renderTooltip(
+                    LaunchClusterTooltip.autoScaledCluster.defaultNodesCount,
+                    {marginLeft: 5}
+                  )
+                }
+              </span>
+            ) : null}
           </Row>
         ];
       }
@@ -910,6 +1017,7 @@ class ConfigureClusterDialog extends React.Component {
               this.setState({autoScaledPriceType});
             }
           }}
+          disabled={this.props.disabled || !autoScaledEnabled}
         >
           <Select.Option key={AUTO_SCALE_PRICE_TYPES.master}>Master's config</Select.Option>
           <Select.Option key={AUTO_SCALE_PRICE_TYPES.spot}>
@@ -944,7 +1052,9 @@ class ConfigureClusterDialog extends React.Component {
           <Checkbox
             style={{marginLeft: LEFT_MARGIN}}
             checked={!!gpuScalingConfiguration}
-            onChange={this.onChangeEnableGPUScaling}>
+            onChange={this.onChangeEnableGPUScaling}
+            disabled={this.props.disabled || !autoScaledEnabled}
+          >
             Enable GPU scaling
           </Checkbox>
           {renderTooltip(LaunchClusterTooltip.autoScaledCluster.gpuScaling, {marginLeft: 5})}
@@ -980,7 +1090,7 @@ class ConfigureClusterDialog extends React.Component {
         <InputNumber
           min={this.state.setDefaultNodesCount ? 2 : 1}
           max={this.launchMaxAutoScaledNumber}
-          disabled={this.props.disabled}
+          disabled={this.props.disabled || !autoScaledEnabled}
           className={this.getInputStyle('maxNodesCount')}
           style={{flex: 1}}
           value={this.state.maxNodesCount}
@@ -1014,7 +1124,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.gridEngineEnabled}
-          onChange={this.onChangeEnableGridEngine}>
+          onChange={this.onChangeEnableGridEngine}
+          disabled={this.props.disabled || !autoScaledEnabled}
+        >
           Enable GridEngine
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableGridEngine)}
@@ -1023,7 +1135,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.slurmEnabled}
-          onChange={this.onChangeEnableSlurm}>
+          onChange={this.onChangeEnableSlurm}
+          disabled={this.props.disabled || !autoScaledEnabled}
+        >
           Enable Slurm
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableSlurm)}
@@ -1032,7 +1146,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.kubeEnabled}
-          onChange={this.onChangeEnableKube}>
+          onChange={this.onChangeEnableKube}
+          disabled={this.props.disabled || !autoScaledEnabled}
+        >
           Enable Kubernetes
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableKube)}
@@ -1041,7 +1157,9 @@ class ConfigureClusterDialog extends React.Component {
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.hybridAutoScaledClusterEnabled}
-          onChange={this.onChangeEnableHybridAutoScaledCluster}>
+          onChange={this.onChangeEnableHybridAutoScaledCluster}
+          disabled={this.props.disabled || !autoScaledEnabled}
+        >
           Enable Hybrid cluster
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster)}
@@ -1083,6 +1201,8 @@ class ConfigureClusterDialog extends React.Component {
 
   render () {
     const {sparkEnabled} = this.state;
+    const {autoScaledEnabled, staticEnabled} = this.displayConfig;
+    const {staticVisible, autoScaledVisible} = this.displayConfig;
     return (
       <Modal
         title={
@@ -1100,14 +1220,22 @@ class ConfigureClusterDialog extends React.Component {
               <Radio.Group
                 onChange={this.onChange}
                 value={this.selectedClusterType}>
-                <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
-                <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
-                <Radio.Button
-                  disabled={sparkEnabled}
-                  value={CLUSTER_TYPE.autoScaledCluster}
-                >
-                  Auto-scaled cluster
+                <Radio.Button value={CLUSTER_TYPE.singleNode}>
+                  Single node
                 </Radio.Button>
+                {staticVisible ? (
+                  <Radio.Button value={CLUSTER_TYPE.fixedCluster}>
+                    Cluster
+                  </Radio.Button>
+                ) : null}
+                {autoScaledVisible ? (
+                  <Radio.Button
+                    disabled={sparkEnabled}
+                    value={CLUSTER_TYPE.autoScaledCluster}
+                  >
+                    Auto-scaled cluster
+                  </Radio.Button>
+                ) : null}
               </Radio.Group>
               {renderTooltip(LaunchClusterTooltip.clusterMode, {marginLeft: 10})}
             </div>
