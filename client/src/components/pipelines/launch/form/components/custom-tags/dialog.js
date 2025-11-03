@@ -17,7 +17,8 @@ class CustomTagsEditor extends React.Component {
     tags: {},
     validation: [],
     required: [],
-    visible: []
+    visible: [],
+    tagsTouched: []
   };
 
   componentDidMount () {
@@ -116,7 +117,7 @@ class CustomTagsEditor extends React.Component {
   };
 
   handleSave = () => {
-    const {tags} = this.state;
+    const {tags, tagsTouched} = this.state;
     const filtered = Object.entries(tags ?? {})
       .map(([key, value]) => ({key, value}))
       .filter((o) => o.value && o.value.trim().length > 0)
@@ -124,12 +125,19 @@ class CustomTagsEditor extends React.Component {
         ...acc,
         [current.key]: current.value
       }), {});
-    this.props.onSave(filtered);
+    this.props.onSave(
+      filtered,
+      tagsTouched
+    );
   }
 
   onChangeTagValue = (tag, value) => {
-    const {tags} = this.state;
-    this.setState({tags: {...tags, [tag.tag]: value}}, this.updateValidation);
+    const {tags, tagsTouched} = this.state;
+    const touchedKeys = [...new Set([...tagsTouched, tag.tag])];
+    this.setState({
+      tags: {...tags, [tag.tag]: value},
+      tagsTouched: touchedKeys
+    }, this.updateValidation);
   };
 
   render () {

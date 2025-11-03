@@ -148,6 +148,7 @@ import {
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import CustomTagsControl from './components/custom-tags/control';
 import {
+  fillUserTagsWithDefaultValues,
   filterVisibleTagsSync,
   getUserTagsValidationResult,
   getVisibleUserTags
@@ -270,6 +271,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   state = {
     userTags: {},
+    userTagsTouched: [],
     userTagsValidation: [],
     userTagsVisibleTags: [],
     userTagsValidationPayload: undefined,
@@ -2882,16 +2884,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
     let result = [];
     let visibleTags = [];
+    let newUserTags = this.state.userTags;
     if (
       !this.props.detached &&
       !this.props.isDetachedConfiguration &&
       !this.props.editConfigurationMode
     ) {
-      const {userTags} = this.state;
-      result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
       visibleTags = await getVisibleUserTags(payload);
+      newUserTags = await fillUserTagsWithDefaultValues(
+        this.state.userTags,
+        this.state.userTagsTouched,
+        visibleTags,
+        this.props.currentUserAttributes,
+        payload
+      );
+      result = await getUserTagsValidationResult(newUserTags, {launchPayload: payload});
     }
     this.setState({
+      userTags: newUserTags,
       userTagsValidation: result,
       userTagsVisibleTags: visibleTags,
       userTagsValidationPayload: payload
@@ -4607,7 +4617,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           validation={userTagsValidation}
           visibleTags={userTagsVisibleTags}
           payload={userTagsValidationPayload}
-          onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
+          onChange={(tags, tagsTouched) => this.setState({
+            userTags: tags,
+            userTagsTouched: tagsTouched
+          }, this.formFieldsChanged)}
           buttonText="Configure"
         />
       </FormItem>

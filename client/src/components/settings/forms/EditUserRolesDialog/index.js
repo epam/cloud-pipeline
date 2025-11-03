@@ -63,6 +63,7 @@ import {
   runAsPermissionsEqual
 } from '../../../runs/logs/forms/configure-run-as-permissions/utilities';
 import styles from './EditUserRolesDialog.css';
+import RequiredLaunchTags from '../../../special/metadata/special/required-launch-tags';
 
 const RESTRICTED_METADATA_KEYS = [
   MuteEmailNotifications.metadataKey
@@ -1042,7 +1043,7 @@ export default class EditUserRolesDialog extends React.Component {
             applyChanges={ApplyChanges.callback}
             onChange={this.onChangeMetadata}
             value={metadata}
-            extraKeys={[CP_CAP_RUN_CAPABILITIES]}
+            extraKeys={[CP_CAP_RUN_CAPABILITIES, RequiredLaunchTags.metadataKey]}
             restrictedKeys={this.restrictedMetadataKeys}
           />
           <div
