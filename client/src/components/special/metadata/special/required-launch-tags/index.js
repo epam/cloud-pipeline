@@ -77,6 +77,9 @@ class RequiredLaunchTags extends React.Component {
 
   render () {
     const {tagDefaults = {}} = this.state;
+    if (this.requiredRunTags.length === 0) {
+      return null;
+    }
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
         <b>Required launch tags default values:</b>
