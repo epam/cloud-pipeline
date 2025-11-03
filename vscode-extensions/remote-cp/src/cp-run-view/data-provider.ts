@@ -82,7 +82,7 @@ export class CpRunTreeDataProvider
 
     registerCommand(HostTreeEvent.add, () => addNewHost());
     registerCommand(HostTreeEvent.configure, () => openSSHConfigFile());
-    registerCommand(Commands.explorer.pipeUpdate, () => this.pipeUpdate());
+    registerCommand(Commands.explorer.pipeUpdate, () => this.pipeClientUpdate());
     registerCommand(Commands.explorer.refresh, () => this.refresh());
     registerCommand(Commands.explorer.emptyWindowInNewWindow, (e) =>
       this.openRemoteCpWindow(e, false),
@@ -239,18 +239,23 @@ export class CpRunTreeDataProvider
     return resItems;
   }
 
-  private pipeUpdate() {
+  /**
+   * Update the pipe client (executable)
+   */
+  private pipeClientUpdate() {
     void this.cpClient
       .ensurePipeExec(true)
-      .catch((err) => {
-        this.logger.error("Failed to update pipe client:\n" + err);
-        vscode.window.showErrorMessage(`Failed to update pipe client: ${err}`);
-      })
       .then(() => {
         vscode.window.showInformationMessage(
           "Pipe client updated successfully.",
         );
         this.refresh();
+      })
+      .catch((err) => {
+        const errMsg = `Failed to update the pipe client: ${err}`;
+        this.logger.error(errMsg);
+        this.logger.error(err);
+        vscode.window.showErrorMessage(errMsg);
       });
   }
 

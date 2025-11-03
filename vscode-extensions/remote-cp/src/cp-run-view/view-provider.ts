@@ -187,11 +187,20 @@ export class CpRunViewProvider<TItem> implements vscode.WebviewViewProvider {
       return;
     }
 
-    this.nodeLookup = new Map();
-    this.nodeIdCounter = 0;
-    const roots = (await this.dataProvider.getChildren()) ?? [];
-    const data = await Promise.all(roots.map((item) => this.convertItem(item)));
-    await this._view.webview.postMessage({ command: "setData", data });
+    try {
+      this.nodeLookup = new Map();
+      this.nodeIdCounter = 0;
+      const roots = (await this.dataProvider.getChildren()) ?? [];
+      const data = await Promise.all(
+        roots.map((item) => this.convertItem(item)),
+      );
+      await this._view.webview.postMessage({ command: "setData", data });
+    } catch (err) {
+      const errMsg = `Failed to update the run view: ${err}`;
+      this.logger.error(errMsg);
+      this.logger.error(err);
+      vscode.window.showErrorMessage(errMsg);
+    }
   }
 
   private async convertItem(item: TItem): Promise<TreeNode> {

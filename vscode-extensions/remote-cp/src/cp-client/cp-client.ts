@@ -125,7 +125,11 @@ async function downloadAndExtract(
       `${cpExtConfig.prefix}: Downloading pipe client '${pipeUrl}'`,
     );
   }
-  await Promise.all([downloadFileP, cleanupBinPipeDirP]);
+  const cleanupRes = await cleanupBinPipeDirP;
+  if (!cleanupRes) {
+    throw new Error("Failed to clean up existing pipe client dir.");
+  }
+  await downloadFileP;
   const binDir = path.join(binPipeDir, "..");
   try {
     // extract archive
