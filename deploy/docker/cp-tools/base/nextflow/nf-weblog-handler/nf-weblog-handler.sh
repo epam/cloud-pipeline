@@ -111,13 +111,15 @@ function parse_options {
     fi
 }
 
+function expand() { eval "echo \"$1\""; }
+
 function enable_nf_runtime_data_sync() {
     SYNC_RUN_RUNTIME_DATA_TASK="SyncRunRuntimeData"
 
     _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 + 1 ))
     export CP_SYNC_TO_STORAGE_THREADS=${CP_SYNC_TO_STORAGE_THREADS:-$_DEFAULT_NUMBER_OF_THREADS}
-    CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
-    CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
+    CP_NF_WORKDIR=$(expand "${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}")
+    CP_NF_TRACE_FILE=$(expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt")
 
     # If wasn't defined by user, define with default as trace.txt file
     if [ -z "${CP_NF_TASK_LOOKUP_FILE_PATH}" ]; then
@@ -231,7 +233,7 @@ if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ]; then
     echo "Enabling Nextflow weblog handler..."
 
     if [ -n "${CP_NF_TASK_LOOKUP_FILE}" ]; then
-        CP_NF_TASK_LOOKUP_FILE_PATH="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/${CP_NF_TASK_LOOKUP_FILE}"
+        CP_NF_TASK_LOOKUP_FILE_PATH=$(expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/${CP_NF_TASK_LOOKUP_FILE}")
         echo "Configuring CP_NF_TASK_LOOKUP_FILE_PATH as: $CP_NF_TASK_LOOKUP_FILE_PATH."
         # Will be used in nf-weblog-handler to populate this path
         export CP_NF_TASK_LOOKUP_FILE_PATH

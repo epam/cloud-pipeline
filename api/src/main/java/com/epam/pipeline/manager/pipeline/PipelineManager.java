@@ -137,6 +137,9 @@ public class PipelineManager implements SecuredEntityManager {
             checkRepositoryVO.setBranch(pipelineVO.getBranch());
             checkRepositoryVO = check(checkRepositoryVO);
             if (!checkRepositoryVO.isRepositoryExists()) {
+                Assert.state(!RepositoryType.AZURE_DEVOPS.equals(pipelineVO.getRepositoryType()),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_CREATION_NOT_SUPPORTED,
+                                pipelineVO.getRepositoryType().name()));
                 GitProject project = pipelineRepositoryService.createGitRepositoryWithRepoUrl(pipelineVO);
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {

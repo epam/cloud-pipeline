@@ -60,9 +60,7 @@ public final class TestUtils {
     public static final String TEMPLATE_REPLACE_MARK = "@@";
     public static final String TEST_PLATFORM = "linux";
     private static final long PROJECT_ID = 1L;
-    private static final int EXTENDED_DEFAULT_ROLES_NUMBER = 6;
-    public static final int EXPECTED_DEFAULT_ROLES_NUMBER =
-            DefaultRoles.values().length + EXTENDED_DEFAULT_ROLES_NUMBER;
+    public static final int EXPECTED_DEFAULT_ROLES_NUMBER = DefaultRoles.values().length;
 
     private TestUtils() {
         // no op

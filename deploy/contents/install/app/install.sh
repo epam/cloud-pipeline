@@ -1319,7 +1319,7 @@ if is_service_requested cp-search; then
         wait_for_deployment "cp-search-elk"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   $CP_SEARCH_ELK_INTERNAL_SCHEME://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml

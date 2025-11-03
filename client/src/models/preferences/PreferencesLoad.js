@@ -1084,6 +1084,15 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
+  @computed
+  get launchJWTTokenExpirationUserLimit () {
+    const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 0;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
