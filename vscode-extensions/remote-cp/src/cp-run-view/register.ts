@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import { RemoteLocationHistory } from "../remoteLocationHistory";
-import { HostTreeDataProvider, ItemInfo } from "./data-provider";
+import { CpRunTreeDataProvider, ItemInfo } from "./data-provider";
 import { CpRunViewProvider } from "./view-provider";
 import { CpExtension } from "../cp-ext";
 
 export function registerHostTreeView(cpExt: CpExtension): void {
   const locationHistory = new RemoteLocationHistory(cpExt.context);
-  const hostTreeDataProvider = new HostTreeDataProvider(
+  const hostTreeDataProvider = new CpRunTreeDataProvider(
     cpExt,
     locationHistory,
     cpExt.logger,

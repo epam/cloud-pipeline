@@ -162,7 +162,8 @@ export class RemoteCpResolver
           reusePipeTunnel,
         );
         if (!tunnel)
-          throw new Error("Failed to start tunnel.");
+          throw new Error(`Failed to start ${this.cpExtConfig.prefix} tunnel to run ${cpRunId}.`);
+
         if (!tunnel.toStop) {
           resTunnelInfo = tunnel.getInfo();
         }

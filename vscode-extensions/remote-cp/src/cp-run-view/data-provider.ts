@@ -42,12 +42,12 @@ export enum HostTreeItemContext {
   folder = "remote-cp.explorer.folder",
 }
 
-export class HostTreeDataProvider
+export class CpRunTreeDataProvider
   extends Disposable
   implements vscode.TreeDataProvider<ItemInfo>
 {
   private static objCounter = 0;
-  private objId = HostTreeDataProvider.objCounter++;
+  private objId = CpRunTreeDataProvider.objCounter++;
 
   protected toLog(): string {
     return `${this.constructor.name}<${this.objId}>`;
