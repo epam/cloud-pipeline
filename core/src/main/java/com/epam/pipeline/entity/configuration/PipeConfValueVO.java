@@ -61,6 +61,12 @@ public class PipeConfValueVO {
     @JsonProperty(value = "enum")
     private List<Object> availableValues;
 
+    /**
+     * Enables multiselection for availableValues property.
+     */
+    @JsonProperty(value = "multiple")
+    private boolean multiple;
+
     private List<Map<String, String>> validation;
     private Map<String, Object> annotation;
     private Map<String, Object> scheme;
