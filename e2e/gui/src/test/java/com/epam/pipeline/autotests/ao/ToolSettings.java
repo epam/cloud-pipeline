@@ -88,7 +88,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-dropdown-button"))),
                 entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                        .closest(".ant-row").find(className("ant-form-item-control ")))
+                        .closest(".ant-row").find(className("ant-form-item-control")))
         );
     }
 
