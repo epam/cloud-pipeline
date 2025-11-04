@@ -35,7 +35,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.getParameterValueLink;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -67,6 +67,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String priceType = ON_DEMAND;
     private final String pauseTask = "PausePipelineRun";
+    private final String testInstanceDisk = "50";
 
     private String endpoint;
     private String defaultClusterDockerExtraMulti;
@@ -109,6 +110,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
+                .setDisk(testInstanceDisk)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
@@ -200,6 +203,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
+                .setDisk(testInstanceDisk)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .activeRuns()
                 .waitUntilPauseButtonAppear(getLastRunId())

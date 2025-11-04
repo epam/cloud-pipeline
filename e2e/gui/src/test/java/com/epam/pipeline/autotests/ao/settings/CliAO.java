@@ -102,7 +102,7 @@ public class CliAO extends SettingsPageAO {
     }
 
     public enum OperationSystem {
-        LINUX_BINARY("Linux-Binary"),
+        LINUX_BINARY("Linux"),
         LINUX_TARBALL("Linux-Tarball"),
         MACOS_BINARY("MacOS-Binary"),
         MACOS_TARBALL("MacOS-Tarball"),

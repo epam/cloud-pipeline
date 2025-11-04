@@ -83,7 +83,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
                     .closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
-            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
+            entry(FRIENDLY_URL, context().find(byId("advanced.friendly_url"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
             entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button"))),
             entry(CONFIGURE_DNS, context().find(byTitle("Internal DNS name")).parent()

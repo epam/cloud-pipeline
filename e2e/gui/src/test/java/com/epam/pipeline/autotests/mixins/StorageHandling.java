@@ -22,11 +22,11 @@ import java.util.Arrays;
 
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.codeborne.selenide.Selenide.screenshot;
 import static com.epam.pipeline.autotests.ao.PipelinesLibraryAO.titleOfTreeItem;
 import static com.epam.pipeline.autotests.ao.PipelinesLibraryAO.treeItem;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;

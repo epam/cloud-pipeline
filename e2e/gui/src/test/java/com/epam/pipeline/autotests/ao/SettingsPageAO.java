@@ -264,9 +264,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public CreateNotificationPopup setActive() {
-                if(!impersonateMode()) {
+//                if(!impersonateMode()) {
                     click(STATE_CHECKBOX);
-                }
+//                }
                 return this;
             }
 

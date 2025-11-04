@@ -96,11 +96,11 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .create()
                 .searchForTableEntry(warningActiveNotification)
                 .ensureSeverityIconIs(severity.name());
-        if(!impersonateMode()) {
+//        if(!impersonateMode()) {
             refresh();
             validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
             closeNotification(warningActiveNotification);
-        }
+//        }
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
@@ -204,11 +204,11 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
     @TestCase(value = {"EPMCMBIBPC-1217"})
     public void validateSeveralInactiveNotifications() {
-        if (!impersonateMode()) {
+//        if (!impersonateMode()) {
             changeStateOf(infoEditedTitle);
             changeStateOf(warningActiveNotification);
             changeStateOf(criticalNotification);
-        }
+//        }
 
         refresh();
         ensureNotificationIsAbsent(infoEditedTitle);

@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.MetadataSectionAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttributes;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;

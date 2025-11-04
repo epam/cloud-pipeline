@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
@@ -31,7 +32,9 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.Utils.selectAllAndClearTextField;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.id;
@@ -49,7 +52,9 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             entry(FIT, context().find(byId("wdl-graph-fit-button"))),
             entry(SHOW_LINKS, context().find(byId("wdl-graph-show-links-button"))),
             entry(ADD_SCATTER, context().find(byId("wdl-graph-workflow-add-scatter-button"))),
-            entry(PROPERTIES, context().find(byClassName("graph__properties-button"))),
+            entry(CALL, $(byClassName("rc-menu-submenu-vertical"))),
+            entry(PROPERTIES, context().find(button("PROPERTIES"))),
+            entry(ACTIONS, context().find(button("Actions"))),
             entry(ADD_TASK, context().find(byId("wdl-graph-workflow-add-task-button"))),
             entry(EDIT_TASK, context().find(byId("wdl-graph-task-edit-button"))),
             entry(EDIT_WORKFLOW, context().find(byId("wdl-graph-workflow-edit-button"))),
@@ -70,8 +75,9 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     }
 
     public TaskAdditionPopupAO openAddTaskDialog() {
-        click(PROPERTIES);
-        click(ADD_TASK);
+//        click(PROPERTIES);
+        $(byClassName("rc-menu-submenu-vertical")).hover();
+        $(By.xpath(".//b[.='new task']")).click();
         return new TaskAdditionPopupAO(this);
     }
 
@@ -330,10 +336,10 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             implements AccessObject<SectionRowAO<PARENT_TYPE>> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(NAME, context().find(byClassName("variable-name"))),
-                entry(TYPE, context().find(byClassName("ant-select-search__field"))),
-                entry(VALUE, context().find(byClassName("variable-value"))),
-                entry(DELETE_ICON, context().find(byId("remove-variable-button")))
+                entry(NAME, context().find(byClassName("dl-parameter__wdl-parameter-name"))),
+                entry(TYPE, context().find(byClassName("dl-parameter__wdl-parameter-type"))),
+                entry(VALUE, context().find(byClassName("dl-parameter__wdl-parameter-value"))),
+                entry(DELETE_ICON, context().find(byClassName("dl-parameter__wdl-parameter-delete-button")))
         );
 
         private final PARENT_TYPE parentAO;
@@ -357,6 +363,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         public SectionRowAO<PARENT_TYPE> setType(String type) {
+            selectAllAndClearTextField(get(TYPE));
             return openTypeCombobox().set(type).close();
         }
 

@@ -61,6 +61,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     public void validationOfFriendlyURL() {
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .doNotMountStoragesSelect(true)
                 .setValue(FRIENDLY_URL, friendlyURL)
                 .launch(this)
                 .showLog(runID = getRunId())

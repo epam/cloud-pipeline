@@ -125,6 +125,15 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
         return new PipelineRunFormAO(pipelineName);
     }
 
+    public void runPipelineWithException(String message) {
+        sleep(2, SECONDS);
+        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
+        sleep(2, SECONDS);
+        click(RUN);
+        sleep(1, SECONDS);
+        new PipelineRunFormAO().validateException(message);
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;

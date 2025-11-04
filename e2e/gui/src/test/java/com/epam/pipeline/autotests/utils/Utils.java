@@ -428,7 +428,7 @@ public class Utils {
     }
 
     public static void resetClick() {
-        Selenide.actions().moveByOffset(-50, -50).click().perform();
+        Selenide.actions().moveByOffset(50, 50).click().perform();
     }
 
     public static String readFile(final String filePath) {

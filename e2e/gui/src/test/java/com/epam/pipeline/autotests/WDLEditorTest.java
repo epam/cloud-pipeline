@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import static com.epam.pipeline.autotests.ao.Primitive.PROPERTIES;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -69,6 +70,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void checkRevertButton() {
         getFirstVersion(pipelineName)
                 .graphTab()
+                .click(PROPERTIES)
                 .openAddTaskDialog()
                 .parent()
                 .clickTask(defaultTask)

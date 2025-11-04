@@ -333,5 +333,6 @@ public enum Primitive {
     TOOL_VERSION,
     PROFILE,
     ADD_ROLE,
-    ADD_SCHEDULE
+    ADD_SCHEDULE,
+    CALL
 }
