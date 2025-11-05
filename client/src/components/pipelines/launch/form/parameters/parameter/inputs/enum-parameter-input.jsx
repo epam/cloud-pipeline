@@ -37,7 +37,7 @@ function unMapValue (value, parameter) {
   return value;
 }
 
-function mapValue (value, parameter) {
+function mapValue (value = '', parameter) {
   if (parameter?.config?.multiple) {
     return (value || '').split(',').filter(Boolean);
   }
