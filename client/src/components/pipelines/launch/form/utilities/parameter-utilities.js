@@ -809,6 +809,7 @@ export function getParameterConfig (
         icon,
         'enum': enumerationRaw,
         enumeration = enumerationRaw,
+        multiple,
         resolvedValue,
         visible,
         validation,
@@ -885,6 +886,7 @@ export function getParameterConfig (
         enumeration: enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))
           ? [...enumeration]
           : undefined,
+        multiple,
         resolvedValue: typedValue(resolvedValue),
         visible,
         validation,
@@ -1201,8 +1203,10 @@ function validateParameter (parameter, parameters, rawEdit = false) {
   try {
     if (actualConfig.visible) {
       if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
-        value = actualConfig.enumeration.find((o) => o === value);
-        if (!value) {
+        if (!actualConfig.multiple) {
+          value = actualConfig.enumeration.find((o) => o === value);
+        }
+        if (!actualConfig.multiple && !value) {
           value = actualConfig.value;
         }
       } else if (configChanged) {
@@ -1640,6 +1644,7 @@ export function parameterConfigToPayloadConfig (parameterConfig) {
     no_override: parameterConfig.noOverride,
     visible: parameterConfig.visible,
     icon: parameterConfig.icon,
+    multiple: parameterConfig.multiple,
     section: parameterConfig.section,
     'enum': parameterConfig.enumeration,
     resolvedValue: parameterConfig.resolvedValue,
@@ -1754,6 +1759,9 @@ function getTypedValue (value, config) {
   }
   if (type === 'object' || typeof value === 'object') {
     return buildSchemeParameterValue(value, scheme);
+  }
+  if (typeof value === 'string' && type === 'enum' && config.multiple) {
+    return value.split(',').sort().join(',');
   }
   return value;
 }
