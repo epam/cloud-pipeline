@@ -34,7 +34,7 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
 
 deactivate
 
-source ~/venv3.8.17/bin/activate
+source ~/venv3.8/bin/activate
 pip install awscli
 
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
