@@ -418,10 +418,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO validateDisabledParameter(final String parameter) {
-        ensure(byValue(parameter), cssClass("ant-input-disabled"));
-        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
-                .shouldHave(Condition.not(visible));
+    public PipelineRunFormAO validateDisabledParameter(final String parameterName) {
+        final RunParameterAO parameter = new RunParameterAO(this,
+                parameterByName(parameterName).index());
+        final SelenideElement valueElement = parameter.get(PARAMETER_VALUE);
+        ensure(valueElement, cssClass("ant-input-disabled"));
+        ensure(parameter.get(Primitive.REMOVE_PARAMETER), not(visible));
         return this;
     }
 
