@@ -561,24 +561,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       return false;
     }
     const {form} = this.props;
-    // let repoType;
-    // try {
-    //   repoType = form.getFieldValue('repositoryType');
-    // } catch (e) {}
-    // if (!repoType && this.props.pipeline) {
-    //   repoType = this.props.pipeline.repositoryType;
-    // }
     const fieldsError = form.getFieldsError() || {};
     const anyError = Object.keys(fieldsError || {}).some((key) => {
       const err = fieldsError[key];
       return Array.isArray(err) ? err.length > 0 : !!err;
     });
-    // const repoMissing =
-    //   repoType === RepositoryTypes.AzureDevOps &&
-    //   !form.getFieldValue('repository');
-    // const tokenMissing =
-    //   repoType === RepositoryTypes.AzureDevOps &&
-    //   !form.getFieldValue('token');
     const disableSubmit = this.props.pending || anyError;
     const isManager = isVersionedStorage
       ? roleModel.isManager.versionedStorage(this)
