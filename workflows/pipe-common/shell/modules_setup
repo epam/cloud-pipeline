@@ -179,6 +179,8 @@ result="You are not allowed to launch this module. Please contact your administr
 
 delimiter="."
 current_user_info_base64=$(echo "$API_TOKEN" | cut -d "$delimiter" -f 2)
+padding_needed=$(( (4 - ${#current_user_info_base64} % 4) % 4 ))
+current_user_info_base64="${current_user_info_base64}$(printf '%*s' "$padding_needed" | tr ' ' '=')"
 current_user_info=$(echo "$current_user_info_base64" | base64 -d)
 current_user=$(echo "$current_user_info" | jq -r '.sub')
 
@@ -224,7 +226,7 @@ local module_msg = {}
 local function load_hook(t)
     if (mode() ~= "load") then return end
 
-    local cmdCheckPermissions = "bash " .. \"$CP_CAP_MODULES_CONFIG_DIR\" .. "/CheckPermissions.sh " .. t.fn
+    local cmdCheckPermissions = "bash " .. "$CP_CAP_MODULES_CONFIG_DIR" .. "/CheckPermissions.sh " .. t.fn
     local handle = io.popen(cmdCheckPermissions)
     local cmdResult = handle:read("*a")
     handle:close()
