@@ -195,7 +195,7 @@ export default class PipelineConfiguration extends React.Component {
 
   @computed
   get canModifySources () {
-    if (this.props.pipeline.pending || this.isBitBucket) {
+    if (this.props.readOnly || this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&

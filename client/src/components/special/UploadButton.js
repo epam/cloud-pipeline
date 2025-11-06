@@ -49,7 +49,8 @@ class UploadButton extends React.Component {
     region: PropTypes.string,
     owner: PropTypes.string,
     onInitialized: PropTypes.func,
-    style: PropTypes.object
+    style: PropTypes.object,
+    disabled: PropTypes.bool
   };
 
   state = {
@@ -546,7 +547,7 @@ class UploadButton extends React.Component {
       <Button
         size="small"
         id="upload-button"
-        disabled={this.props.uploadToS3 && !!this.s3StorageError}
+        disabled={this.props.disabled || (this.props.uploadToS3 && !!this.s3StorageError)}
       >
         <Icon type="upload" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
@@ -557,7 +558,7 @@ class UploadButton extends React.Component {
       <div style={{display: 'inline'}}>
         <Upload
           {...uploadProps}
-          disabled={this.props.uploadToS3 && !!this.s3StorageError}
+          disabled={this.props.disabled || (this.props.uploadToS3 && !!this.s3StorageError)}
           ref={component => {
             this.uploadButton = component;
           }}

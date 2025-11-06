@@ -91,8 +91,8 @@ export default class PipelineCode extends Component {
     },
     {
       key: 'actions',
-      render: item => this.renderSourceItemActions(item)
-
+      render: item => this.renderSourceItemActions(item),
+      disabled: true
     }
   ];
 
@@ -141,7 +141,7 @@ export default class PipelineCode extends Component {
 
   @computed
   get canModifySources () {
-    if (!this.props.pipeline.loaded || this.isBitBucket) {
+    if (this.props.readOnly || !this.props.pipeline.loaded || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
@@ -173,6 +173,7 @@ export default class PipelineCode extends Component {
               className={styles.sourceItemAction}
               onClick={(event) => this.openRenameFolderDialog(item, event)}
               size="small"
+              disabled={this.props.readOnly}
             >
               Rename
             </Button>
@@ -181,6 +182,7 @@ export default class PipelineCode extends Component {
               onClick={(event) => this.deleteFolderConfirm(item, event)}
               type="danger"
               size="small"
+              disabled={this.props.readOnly}
             >
               <Icon type="delete" /> Delete
             </Button>
@@ -193,6 +195,7 @@ export default class PipelineCode extends Component {
               className={styles.sourceItemAction}
               onClick={(event) => this.openRenameFileDialog(item, event)}
               size="small"
+              disabled={this.props.readOnly}
             >
               Rename
             </Button>
@@ -201,6 +204,7 @@ export default class PipelineCode extends Component {
               onClick={(event) => this.deleteFileConfirm(item, event)}
               type="danger"
               size="small"
+              disabled={this.props.readOnly}
             >
               <Icon type="delete" /> Delete
             </Button>
@@ -588,7 +592,11 @@ export default class PipelineCode extends Component {
             breadcrumbContent = <b>{part.name}</b>;
           } else if (part.isCreateNewFolder) {
             breadcrumbContent = (
-              <Button onClick={() => this.openCreateFolderDialog()} size="small">
+              <Button
+                onClick={() => this.openCreateFolderDialog()}
+                size="small"
+                disabled={this.props.readOnly}
+              >
                 <Icon type="plus" />
               </Button>
             );
@@ -657,7 +665,10 @@ export default class PipelineCode extends Component {
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               <Button
                 type="primary"
-                onClick={this.openCreateFileDialog} size="small">
+                onClick={this.openCreateFileDialog}
+                size="small"
+                disabled={this.props.readOnly}
+              >
                 <Icon type="plus" />NEW FILE
               </Button>
               <UploadButton
@@ -672,6 +683,7 @@ export default class PipelineCode extends Component {
                     removeSlashes(this.props.path) || this.rootFolder
                   )
                 }
+                disabled={this.props.readOnly}
               />
             </Row>
           }

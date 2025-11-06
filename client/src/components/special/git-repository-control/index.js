@@ -31,21 +31,24 @@ const RepositoryTypes = {
   GitLab: 'GITLAB',
   GitHub: 'GITHUB',
   BitBucket: 'BITBUCKET',
-  ButBucketCloud: 'BITBUCKET_CLOUD'
+  ButBucketCloud: 'BITBUCKET_CLOUD',
+  AzureDevOps: 'AZURE_DEVOPS'
 };
 
 const availableRepositoryTypes = [
   RepositoryTypes.GitLab,
   RepositoryTypes.GitHub,
   RepositoryTypes.BitBucket,
-  RepositoryTypes.ButBucketCloud
+  RepositoryTypes.ButBucketCloud,
+  RepositoryTypes.AzureDevOps
 ];
 
 const RepositoryTypeNames = {
   [RepositoryTypes.GitLab]: 'GitLab',
   [RepositoryTypes.GitHub]: 'GitHub',
   [RepositoryTypes.BitBucket]: 'BitBucket',
-  [RepositoryTypes.ButBucketCloud]: 'BitBucket Cloud'
+  [RepositoryTypes.ButBucketCloud]: 'BitBucket Cloud',
+  [RepositoryTypes.AzureDevOps]: 'Azure DevOps'
 };
 
 export {RepositoryTypes, RepositoryTypeNames, availableRepositoryTypes};
