@@ -186,6 +186,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
         historyTab()
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
 
         navigateToPipelineHistory()
