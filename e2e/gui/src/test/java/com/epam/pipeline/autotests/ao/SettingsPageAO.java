@@ -22,7 +22,6 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;

@@ -392,8 +392,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
             library()
                     .configurationWithin(configuration, configuration -> {
                         configuration
-                                .expandTabs(advancedTab);
-                        new PipelineRunFormAO()
+                                .expandTabs(advancedTab)
                                 .validateDisabledParameter(CP_FSBROWSER_ENABLED);
                     });
         } finally {
