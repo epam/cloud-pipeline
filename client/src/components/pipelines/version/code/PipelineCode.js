@@ -91,8 +91,7 @@ export default class PipelineCode extends Component {
     },
     {
       key: 'actions',
-      render: item => this.renderSourceItemActions(item),
-      disabled: true
+      render: item => this.renderSourceItemActions(item)
     }
   ];
 
