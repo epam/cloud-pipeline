@@ -15,8 +15,8 @@
  */
 package com.epam.pipeline.elasticsearchagent.service;
 
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticActionRequest;
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticBulkResponse;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -28,7 +28,7 @@ import java.util.List;
 public interface ElasticsearchServiceClient {
 
     void createIndex(String indexName, String source);
-    BulkResponse sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests);
+    ElasticBulkResponse sendRequests(String indexName, List<? extends ElasticActionRequest> docWriteRequests);
     void deleteIndex(String indexName);
     boolean isIndexExists(String indexName);
     void createIndexAlias(String indexName, String indexAlias);

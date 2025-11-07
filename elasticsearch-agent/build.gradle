@@ -43,7 +43,7 @@ dependencies {
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-
+    implementation project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
     // DB
     // Pool
     implementation group: "com.mchange", name: "c3p0", version: c3p0Version

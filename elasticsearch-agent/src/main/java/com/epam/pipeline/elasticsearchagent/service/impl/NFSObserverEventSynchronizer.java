@@ -163,8 +163,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final String eventsProducer,
                                         final List<DataStorageFile> files) {
         try (IndexRequestContainer requestContainer =
-                 new IndexRequestContainer(requests -> getElasticsearchServiceClient().sendRequests(null, requests),
-                                           getBulkInsertSize())) {
+                 new IndexRequestContainer(null, getElasticsearchServiceClient(), getBulkInsertSize())) {
             groupEventsByStorage(storagePathMapping, files, eventsStorage)
                 .forEach((dataStorage, events) -> processStorageEvents(requestContainer, dataStorage, events));
             deleteEventFiles(eventsStorage, files);

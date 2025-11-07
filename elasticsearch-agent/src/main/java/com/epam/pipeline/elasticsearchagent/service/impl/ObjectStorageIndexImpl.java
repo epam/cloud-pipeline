@@ -293,8 +293,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     }
 
     IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
-        return new IndexRequestContainer(requests -> elasticsearchServiceClient.sendRequests(indexName, requests),
-                bulkInsertSize);
+        return new IndexRequestContainer(indexName, elasticsearchServiceClient, bulkInsertSize);
     }
 
     private TemporaryCredentials getTemporaryCredentials(final AbstractDataStorage dataStorage) {

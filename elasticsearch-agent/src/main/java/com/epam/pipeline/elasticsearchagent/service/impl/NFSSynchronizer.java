@@ -176,8 +176,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                                  final AbstractDataStorage dataStorage,
                                  final String regionCode,
                                  final PermissionsContainer permissionsContainer) {
-        try (IndexRequestContainer walker = new IndexRequestContainer(requests ->
-                elasticsearchServiceClient.sendRequests(indexName, requests), bulkInsertSize);
+        try (IndexRequestContainer walker = new IndexRequestContainer(indexName,
+                elasticsearchServiceClient, bulkInsertSize);
              Stream<Path> paths = Files.walk(mountFolder)) {
             final LinkOption[] options = { LinkOption.NOFOLLOW_LINKS };
             final Stream<DataStorageFile> files = paths

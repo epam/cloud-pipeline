@@ -15,31 +15,33 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticActionRequest;
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticBulkResponse;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.search.MultiSearchRequest;
-import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.search.Scroll;
+import org.apache.http.HttpHost;
+import shaded.org.elasticsearch.v7.ElasticsearchException;
+import shaded.org.elasticsearch.v7.action.admin.indices.alias.IndicesAliasesRequest;
+import shaded.org.elasticsearch.v7.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
+import shaded.org.elasticsearch.v7.action.admin.indices.create.CreateIndexRequest;
+import shaded.org.elasticsearch.v7.action.admin.indices.create.CreateIndexResponse;
+import shaded.org.elasticsearch.v7.action.admin.indices.delete.DeleteIndexRequest;
+import shaded.org.elasticsearch.v7.action.admin.indices.get.GetIndexRequest;
+import shaded.org.elasticsearch.v7.action.admin.indices.get.GetIndexResponse;
+import shaded.org.elasticsearch.v7.action.bulk.BulkRequest;
+import shaded.org.elasticsearch.v7.action.bulk.BulkResponse;
+import shaded.org.elasticsearch.v7.action.search.*;
+import shaded.org.elasticsearch.v7.client.RequestOptions;
+import shaded.org.elasticsearch.v7.client.RestClient;
+import shaded.org.elasticsearch.v7.client.RestHighLevelClient;
+import shaded.org.elasticsearch.v7.common.xcontent.XContentType;
+import shaded.org.elasticsearch.v7.rest.RestStatus;
+import shaded.org.elasticsearch.v7.search.Scroll;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -49,15 +51,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-@Service
 @Slf4j
-public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClient {
+@Service
+@ConditionalOnProperty(name = "elasticsearch.client.version", value = "7")
+public class ElasticsearchServiceClientV7Impl implements ElasticsearchServiceClient {
 
     private RestHighLevelClient client;
 
     @Autowired
-    public ElasticsearchServiceClientImpl(RestHighLevelClient client) {
-        this.client = client;
+    public ElasticsearchServiceClientV7Impl(
+            @Value("${elasticsearch.client.url:#{null}}") String elasticsearchUrl,
+            @Value("${elasticsearch.client.port:9200}") int elasticsearchPort,
+            @Value("${elasticsearch.client.scheme:http}") String elasticsearchScheme) {
+        this.client = new RestHighLevelClient(
+                RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
+        );
     }
 
     @Override
@@ -76,7 +84,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
 
             Assert.isTrue(createIndexResponse.isAcknowledged(),
-                    "Create Elasticsearch index: " + createIndexResponse.toString());
+                    "Create Elasticsearch index: " + createIndexResponse);
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to create index request: " + e.getMessage(), e);
         }
@@ -85,13 +93,13 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
     }
 
     @Override
-    public BulkResponse sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests) {
+    public ElasticBulkResponse sendRequests(String indexName, List<? extends ElasticActionRequest> docWriteRequests) {
         if (CollectionUtils.isEmpty(docWriteRequests)) {
             log.warn("Index requests are empty. ");
             return null;
         }
         BulkRequest bulkRequest = new BulkRequest();
-        docWriteRequests.forEach(bulkRequest::add);
+        docWriteRequests.stream().map(ElasticActionRequest::toElasticV7Request).forEach(bulkRequest::add);
 
         log.debug("Start to insert documents for index {}", indexName);
 
@@ -102,7 +110,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
 
             log.debug("Stop to insert documents for index {}", indexName);
 
-            return bulkResponse;
+            return ElasticBulkResponse.builder().version(ElasticStackVersion.V7).v7Response(bulkResponse).build();
         } catch(IOException e) {
             throw new ElasticsearchException("Failed to insert Elasticsearch documents: " + e.getMessage(), e);
         }

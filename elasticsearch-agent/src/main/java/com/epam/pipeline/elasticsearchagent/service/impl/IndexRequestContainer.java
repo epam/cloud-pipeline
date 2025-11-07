@@ -15,10 +15,11 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.epam.pipeline.elasticsearchagent.service.BulkRequestCreator;
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticActionRequest;
+import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticBulkResponse;
+import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkResponse;
 
@@ -28,17 +29,20 @@ import java.util.List;
 
 @Slf4j
 public class IndexRequestContainer implements AutoCloseable {
-    private List<DocWriteRequest> requests;
-    private BulkRequestCreator bulkRequestCreator;
+    private final String indexName;
+    private List<ElasticActionRequest> requests;
+    private ElasticsearchServiceClient elasticsearchServiceClient;
     private Integer bulkSize;
 
-    public IndexRequestContainer(BulkRequestCreator bulkRequestCreator, Integer bulkSize) {
-        this.requests = new ArrayList<>();
-        this.bulkRequestCreator = bulkRequestCreator;
+    public IndexRequestContainer(String indexName,
+                                 ElasticsearchServiceClient elasticsearchServiceClient, Integer bulkSize) {
+        this.indexName = indexName;
+        this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.bulkSize = bulkSize;
+        this.requests = new ArrayList<>();
     }
 
-    public void add(final DocWriteRequest request) {
+    public void add(final ElasticActionRequest request) {
         requests.add(request);
         if (requests.size() == bulkSize) {
             flush();
@@ -54,28 +58,28 @@ public class IndexRequestContainer implements AutoCloseable {
     }
 
     private void flush() {
-        BulkResponse documents = bulkRequestCreator.sendRequest(requests);
-        long successfulRequestsCount = 0L;
+        ElasticBulkResponse documents = elasticsearchServiceClient.sendRequests(indexName, requests);
         long unsuccessfulRequestsCount = 0L;
         if (documents != null && documents.getItems() != null) {
-            for (final BulkItemResponse response : documents.getItems()) {
+            BulkItemResponse[] documentsItems = documents.getItems();
+            for (final BulkItemResponse response : documentsItems) {
                 if (response.isFailed()) {
                     unsuccessfulRequestsCount += 1;
-                } else {
-                    successfulRequestsCount += 1;
                 }
             }
-        }
-        if (unsuccessfulRequestsCount == 0) {
-            log.info("{} files have been uploaded", successfulRequestsCount);
+            if (unsuccessfulRequestsCount == 0) {
+                log.info("{} files have been uploaded", documentsItems.length);
+            } else {
+                log.info("{} files have been uploaded and {} files have not been uploaded",
+                        documentsItems.length, unsuccessfulRequestsCount);
+                Arrays.stream(documentsItems)
+                        .filter(BulkItemResponse::isFailed)
+                        .findFirst()
+                        .ifPresent(response -> log.debug("One of the files has not been uploaded due to: {}",
+                                response.getFailureMessage()));
+            }
         } else {
-            log.info("{} files have been uploaded and {} files have not been uploaded",
-                    successfulRequestsCount, unsuccessfulRequestsCount);
-            Arrays.stream(documents.getItems())
-                    .filter(BulkItemResponse::isFailed)
-                    .findFirst()
-                    .ifPresent(response -> log.debug("One of the files has not been uploaded due to: {}",
-                            response.getFailureMessage()));
+            log.info("No documents where uploaded");
         }
         requests.clear();
     }

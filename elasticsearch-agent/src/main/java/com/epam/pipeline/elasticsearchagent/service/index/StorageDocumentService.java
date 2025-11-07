@@ -103,8 +103,7 @@ public class StorageDocumentService {
     }
 
     private IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
-        return new IndexRequestContainer(requests -> elasticsearchServiceClient.sendRequests(indexName, requests),
-                bulkInsertSize);
+        return new IndexRequestContainer(indexName, elasticsearchServiceClient, bulkInsertSize);
     }
 
     private IndexRequest createIndexRequest(final DataStorageFile file,

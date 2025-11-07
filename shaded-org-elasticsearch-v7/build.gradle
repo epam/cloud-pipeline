@@ -1,0 +1,25 @@
+buildscript {
+    repositories { mavenCentral() }
+}
+
+
+plugins {
+    id "com.github.johnrengelman.shadow" version "4.0.4"
+}
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories { mavenCentral() }
+
+
+dependencies {
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: '7.2.0'
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: '7.2.0'
+    implementation group: "org.elasticsearch", name: "elasticsearch", version: '7.2.0'
+}
+
+shadowJar {
+    relocate('org.elasticsearch', 'shaded.org.elasticsearch.v7')
+}
