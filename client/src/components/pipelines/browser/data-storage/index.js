@@ -592,6 +592,10 @@ export default class DataStorage extends React.Component {
     if (!info) {
       return [];
     }
+    const isAzure = /^az$/i.test(
+      this.storage.info.storageType ||
+      this.storage.info.type
+    );
     const {sensitive} = info;
     const items = [];
     const documentPreviewAvailable = (item) => {
@@ -665,7 +669,9 @@ export default class DataStorage extends React.Component {
     };
     items.push(...elements.map(i => {
       const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
-      const archived = i.labels && !isStandardClass(i.labels['StorageClass']);
+      const archived = isAzure
+        ? false
+        : i.labels && !isStandardClass(i.labels['StorageClass']);
       const active = i.labels && isActiveClass(i.labels['StorageClass']);
       const type = i.type.toLowerCase();
       const isDownloadable = !this.isOmicsStore
