@@ -57,27 +57,27 @@ public class ToolApiService {
     private final ToolVersionManager toolVersionManager;
     private final ToolScanInfoManager toolScanInfoManager;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR hasPermission(#tool.toolGroupId, 'com.epam.pipeline.entity.pipeline.ToolGroup', 'WRITE')")
     public Tool create(final Tool tool) { // tool.registryId was tested, but only tool.registry field is required
         return toolManager.create(tool, true);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR @grantPermissionManager.toolPermission(#tool.registry, #tool.image, 'WRITE')")
     @AclMask
     public Tool updateTool(Tool tool) {
         return toolManager.updateTool(tool);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY)
     @AclMask
     public ToolVersionScanResult updateWhiteListWithToolVersion(final long toolId, final String version,
                                                                           final boolean fromWhiteList) {
         return toolManager.updateWhiteListWithToolVersionStatus(toolId, version, fromWhiteList);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR @grantPermissionManager.toolPermission(#registry, #image, 'READ')")
     @AclMask
     public Tool loadTool(String registry, final String image) {
@@ -88,13 +88,13 @@ public class ToolApiService {
         }
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR @grantPermissionManager.toolPermission(#registry, #image, 'WRITE')")
     public Tool delete(String registry, final String image, boolean hard) {
         return toolManager.delete(registry, image, hard);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR @grantPermissionManager.toolPermission(#registry, #image, 'WRITE')")
     public Tool deleteToolVersion(String registry, final String image, String version) {
         return toolManager.deleteToolVersion(registry, image, version);
@@ -125,18 +125,18 @@ public class ToolApiService {
         return toolManager.loadToolDefaultCommand(id, tag);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "@grantPermissionManager.toolPermission(#registry, #image, 'OWNER')")
     public void forceScanTool(final String registry, final String image, final String version, final Boolean rescan) {
         toolScanScheduler.forceScheduleScanTool(registry, image, version, rescan);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY)
     public void clearToolScan(final String registry, final String image, final String version) {
         toolManager.clearToolScan(registry, image, version);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR @grantPermissionManager.toolPermission(#registry, #image, 'READ')")
     public ToolScanResultView loadToolScanResult(String registry, String image) {
         ToolScanResult toolScanResult = toolManager.loadToolScanResult(registry, image);
@@ -196,7 +196,7 @@ public class ToolApiService {
         return toolVersionManager.loadToolVersionSettings(id, version);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY +
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.TOOL_ADMIN_ONLY +
             "OR hasPermission(#request.toolId, 'com.epam.pipeline.entity.pipeline.Tool', 'READ') " +
             "AND hasRole('TOOL_GROUP_MANAGER') " +
             "AND @grantPermissionManager.toolGroupPermission(#request.groupId, 'WRITE')")

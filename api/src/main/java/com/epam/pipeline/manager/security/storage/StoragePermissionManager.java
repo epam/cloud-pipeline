@@ -186,7 +186,7 @@ public class StoragePermissionManager {
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames,
                               final boolean allPermissions) {
-        if (permissionHelper.isAdmin() || grantPermissionManager.isStorageAdmin()) {
+        if (permissionHelper.isAdmin() || grantPermissionManager.isScopedAdmin(storages.stream().findFirst().orElse(null))) {
             return;
         }
         final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),
@@ -209,7 +209,7 @@ public class StoragePermissionManager {
     }
 
     public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return grantPermissionManager.isOwnerOrAdmin(storage) || grantPermissionManager.isStorageAdmin()
+        return grantPermissionManager.isOwnerOrAdmin(storage) || grantPermissionManager.isScopedAdmin(storage)
                 || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
     }
 
@@ -237,7 +237,7 @@ public class StoragePermissionManager {
 
     private boolean storageMgmtPermission(final AbstractSecuredEntity storage, final String permission) {
         return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                && (grantPermissionManager.isAdmin() || grantPermissionManager.isScopedAdmin(storage)
                 || !isRestrictedMgmtAccessEnabled(storage));
     }
 
@@ -275,7 +275,7 @@ public class StoragePermissionManager {
     private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
                                           final String permission) {
         return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                && (grantPermissionManager.isAdmin() || grantPermissionManager.isScopedAdmin(storage)
                 || !isRestrictedTagsAccessEnabled()
                 || !hasRestrictedTags(tags)
                 || permissionHelper.hasAnyRole(

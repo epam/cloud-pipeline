@@ -49,7 +49,7 @@ public enum DefaultRoles {
     ROLE_TOOLS_ADMIN(new Role(null, "ROLE_TOOLS_ADMIN", true, false, null, null, null, null)),
     ROLE_USER_ADMIN(new Role(null, "ROLE_USER_ADMIN", true, false, null, null, null, null)),
     ROLE_PIPELINE_ADMIN(new Role(null, "ROLE_PIPELINE_ADMIN", true, false, null, null, null, null)),
-    ROLE_RUNS_ADMIN(new Role(null, "ROLE_RUNS_ADMIN", true, false, null, null, null, null)),
+    ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null)),
     ROLE_ADVANCED_RUN_POLICY_MANAGER(new Role(null, "ROLE_ADVANCED_RUN_POLICY_MANAGER", true, false,
             null, null, null, null)),
     ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null)),

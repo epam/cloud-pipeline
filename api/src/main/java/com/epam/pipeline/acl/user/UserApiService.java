@@ -47,12 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
-import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
-import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_FILTER;
-import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_PERMISSION;
-import static com.epam.pipeline.security.acl.AclExpressions.OR;
+import static com.epam.pipeline.security.acl.AclExpressions.*;
 
 @Service
 public class UserApiService {
@@ -77,7 +72,7 @@ public class UserApiService {
      * @param userVO specifies user to create
      * @return created user
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     @AclMask
     public PipelineUser createUser(PipelineUserVO userVO) {
         return userManager.create(userVO);
@@ -89,7 +84,7 @@ public class UserApiService {
      * @param userVO
      * @return
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     @AclMask
     public PipelineUser updateUser(final Long id, final PipelineUserVO userVO) {
         return userManager.updateUser(id, userVO);
@@ -101,7 +96,7 @@ public class UserApiService {
      * @param blockStatus boolean condition of user (true - blocked, false - not blocked)
      * @return updated user
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         return userManager.updateUserBlockingStatus(id, blockStatus);
     }
@@ -112,12 +107,12 @@ public class UserApiService {
      * @param blockStatus boolean condition of group (true - blocked, false - not blocked)
      * @return created/updated groupStatus
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
         return userManager.upsertGroupBlockingStatus(groupName, blockStatus);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public GroupStatus deleteGroupBlockingStatus(final String groupName) {
         return userManager.deleteGroupBlockingStatus(groupName);
     }
@@ -139,12 +134,12 @@ public class UserApiService {
         return userManager.loadByNameOrId(name);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public void deleteUser(Long id) {
         userManager.delete(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public PipelineUser updateUserRoles(Long id, List<Long> roles) {
         return userManager.updateUser(id, roles);
     }
@@ -162,7 +157,7 @@ public class UserApiService {
     }
 
     //TODO
-    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + USER_ADMIN_ONLY + OR_USER_READER)
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
         return userManager.loadUsersInfo(userNames);
     }
@@ -221,7 +216,7 @@ public class UserApiService {
         return userManager.findUsers(prefix);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER)
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         return userManager.exportUsers(attr);
     }
@@ -232,12 +227,12 @@ public class UserApiService {
      * @param expiration token expiration time (seconds)
      * @return generated token
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public JwtRawToken issueToken(final String userName, final Long expiration) {
         return userManager.issueToken(userName, expiration);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public List<PipelineUserEvent> importUsersFromCsv(final boolean createUser, final boolean createGroup,
                                                       final List<String> systemDictionariesToCreate,
                                                       final MultipartFile file) {
@@ -251,7 +246,7 @@ public class UserApiService {
      *                launch pipelines as specified user
      * @return the list of the runners
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public List<RunnerSidVO> updateRunners(final Long id, final List<RunnerSidVO> runners) {
         return userRunnersManager.saveRunners(id, runners);
     }
@@ -261,7 +256,7 @@ public class UserApiService {
      * @param id the user ID
      * @return the list of the runners
      */
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER)
     public List<RunnerSid> getRunners(final Long id) {
         return userRunnersManager.getRunners(id);
     }
@@ -270,12 +265,12 @@ public class UserApiService {
         return userManager.getImpersonationStatus();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public OnlineUsers saveCurrentlyOnlineUsers() {
         return onlineUsersService.saveCurrentlyOnlineUsers();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public boolean deleteExpiredOnlineUsers(final LocalDate date) {
         return onlineUsersService.deleteExpired(date);
     }
