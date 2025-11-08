@@ -1,4 +1,4 @@
-# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE="centos:7"
+ARG BASE_IMAGE="rockylinux:8.7"
 FROM $BASE_IMAGE
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
 
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE=en_US
@@ -29,43 +24,44 @@ RUN yum install -y curl \
                    openssh-server \
                    wget \
                    unzip \
-                   python  \
-                   python-devel \
-                   gcc && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
-    pip install pillow==6.2.2 tifffile==2019.7.26.2 numpy==1.16.6 imagecodecs-lite==2019.12.3 pandas==0.24.2 openpyxl==2.6.4
+                   python2  \
+                   python2-devel \
+                   gcc \
+                   which \
+                   bzip2 && \
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 - && \
+    python2 -m pip install numpy==1.16.6 && \
+    python2 -m pip install pillow==6.2.2 \
+                    tifffile==2019.7.26.2 \
+                    imagecodecs-lite==2019.12.3 \
+                    pandas==0.24.2 \
+                    openpyxl==2.6.4
 
-ARG ANACONDA_VERSION="3-latest"
-ENV ANACONDA_HOME=/opt/local/anaconda
-ENV PATH="$PATH:$ANACONDA_HOME/bin"
-
+ENV ANACONDA_HOME=/opt/local/mamba
 ARG CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
 
 RUN mkdir -p "$ANACONDA_HOME" && \
-    setfacl -d -m g::rwx "$ANACONDA_HOME" && \
-    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh --no-check-certificate && \
-    bash /tmp/Anaconda_Install.sh -f -b -p "$ANACONDA_HOME" && \
-    rm -f /tmp/Anaconda_Install.sh && \
-    conda init bash && \
-    source $ANACONDA_HOME/etc/profile.d/conda.sh && \
-    conda create -y -n hcs python=3.9 && \
-    conda activate hcs && \
+    cd "$ANACONDA_HOME" && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    export PATH=$PATH:$ANACONDA_HOME/bin && \
+    export MAMBA_ROOT_PREFIX=$ANACONDA_HOME && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -y -n hcs python=3.9 && \
+    micromamba activate hcs && \
     yum install -y epel-release && \
-    yum clean all && \
     yum install -y blosc \
                    ImageMagick \
                    java-1.8.0-openjdk-devel && \
     pip3 install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7 && \
-    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli && \
-    conda deactivate
+    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli
 
-ARG BIOFORMATS_TO_RAW_VERSION=0.6.1
+ARG BIOFORMATS_TO_RAW_VERSION=0.11.0
 ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION.zip"
 
-ARG RAW_TO_OMETIFF_VERSION=0.4.1
+ARG RAW_TO_OMETIFF_VERSION=0.8.0
 ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION.zip"
 
-ARG BFTOOLS_VERSION=6.13.0
+ARG BFTOOLS_VERSION=8.3.0
 ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
 ENV HCS_TOOLS_HOME="/opt/local/hcs-tools"
