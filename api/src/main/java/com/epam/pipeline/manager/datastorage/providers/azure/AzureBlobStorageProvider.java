@@ -149,7 +149,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
                 .setReadPermission(true)
                 .setAddPermission(true)
                 .setWritePermission(true);
-        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString(), false);
+        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString());
     }
 
     @Override
