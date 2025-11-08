@@ -99,7 +99,11 @@ class AddParameterButton extends React.Component {
           onClick={() => onAddParameter('string')}>
           Add parameter
         </Button>
-        <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
+        <Dropdown
+          overlay={parameterTypeMenu}
+          placement="bottomRight"
+          trigger={disabled ? [] : ['hover']}
+        >
           <Button
             disabled={disabled}
             id="add-parameter-dropdown-button"
