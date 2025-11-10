@@ -815,6 +815,7 @@ class AWSRegionForm extends React.Component {
       'priceOfferId',
       'enterpriseAgreements',
       'fileShareMounts',
+      'managedIdentity',
       'mountStorageRule',
       'mountFileStorageRule',
       'mountCredentialsRule',
@@ -1232,8 +1233,15 @@ class AWSRegionForm extends React.Component {
     }
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
+        this.props.form.validateFields(
+          ['storageAccount', 'storageAccountKey'],
+          {force: true}
+        );
         message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
         return;
+      }
+      if (/^azure$/i.test(this.provider)) {
+        delete values['authorizeByManagedIdentity'];
       }
       this.cloudRegionFileShareMountsComponent &&
       this.cloudRegionFileShareMountsComponent.validate &&
@@ -1690,6 +1698,8 @@ class AWSRegionForm extends React.Component {
     const onRemove = async () => {
       this.props.onRemove && await this.props.onRemove();
     };
+    const managedIdentityAvailable = /^azure$/i.test(this.provider);
+    const authorizeByManagedIdentity = this.props.form.getFieldValue('authorizeByManagedIdentity');
     return (
       <div style={{width: '100%', flex: 1, display: 'flex', flexDirection: 'column'}}>
         <div
@@ -1928,15 +1938,54 @@ class AWSRegionForm extends React.Component {
                   provider={this.provider} />
               )}
             </Form.Item>
+            {managedIdentityAvailable ? (
+              <Form.Item
+                label="Authorize by Managed Identity"
+                {...this.formItemLayout}
+              >
+                {getFieldDecorator('authorizeByManagedIdentity', {
+                  valuePropName: 'checked',
+                  initialValue: !!this.props.region.managedIdentity
+                })(
+                  <Checkbox
+                    size="small"
+                    disabled={this.props.pending}
+                  />
+                )}
+              </Form.Item>
+            ) : null}
+            {managedIdentityAvailable && authorizeByManagedIdentity ? (
+              <Form.Item
+                label="Managed Identity Client Id"
+                required={this.providerSupportsField('managedIdentity')}
+                {...this.formItemLayout}
+                className={this.getFieldClassName('managedIdentity')}>
+                {getFieldDecorator('managedIdentity', {
+                  initialValue: this.props.region.managedIdentity,
+                  rules: [{
+                    required: this.providerSupportsField('managedIdentity') &&
+                      authorizeByManagedIdentity,
+                    message: 'Managed Identity Client Id is required'
+                  }]
+                })(
+                  <Input
+                    size="small"
+                    disabled={this.props.pending} />
+                )}
+              </Form.Item>
+            ) : null}
             <Form.Item
               label="Storage account"
-              required={this.providerSupportsField('storageAccount')}
+              required={
+                this.providerSupportsField('storageAccount') && !authorizeByManagedIdentity
+              }
               className={this.getFieldClassName('storageAccount')}
               {...this.formItemLayout}>
               {getFieldDecorator('storageAccount', {
                 initialValue: this.props.region.storageAccount,
                 rules: [{
-                  required: this.providerSupportsField('storageAccount'),
+                  required: this.providerSupportsField('storageAccount') &&
+                    !authorizeByManagedIdentity,
                   message: 'Storage account is required'
                 }]
               })(
@@ -1947,12 +1996,21 @@ class AWSRegionForm extends React.Component {
             </Form.Item>
             <Form.Item
               label="Storage account key"
-              required={this.props.isNew && this.providerSupportsField('storageAccountKey')}
+              required={
+                this.props.isNew &&
+                this.providerSupportsField('storageAccountKey') &&
+                !authorizeByManagedIdentity
+              }
               className={this.getFieldClassName('storageAccountKey')}
               {...this.formItemLayout}>
               {getFieldDecorator('storageAccountKey', {
                 initialValue: undefined,
-                rules: [{required: this.props.isNew && this.providerSupportsField('storageAccountKey'), message: 'Storage account key is required'}]
+                rules: [{
+                  required: this.props.isNew &&
+                    this.providerSupportsField('storageAccountKey') &&
+                    !authorizeByManagedIdentity,
+                  message: 'Storage account key is required'
+                }]
               })(
                 <Input
                   size="small"
