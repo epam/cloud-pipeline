@@ -82,7 +82,7 @@ export class CpClient extends CpClientBase {
       resVersion = await this.getVersion();
     }
 
-    if (!resVersion) throw new Error("Unexpected undefined version");
+    if (!resVersion) throw new Error(`Unexpected version '${resVersion}'.`);
     return resVersion;
   }
 }

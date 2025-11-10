@@ -219,14 +219,26 @@ export abstract class CpClientBase extends Disposable {
         this.logger.debug(
           `Pipe client command exec for ${(dt2 - dt1) / 1000} s`,
         );
-        if (error || stderr) {
+        const fltStderrList = [];
+        for (const stderrLine of stderr.split("\n")) {
+          const m = stderrLine.match(CpTokenExpiredError.soonRe);
+          if (m) {
+            vscode.window.showInformationMessage(
+              `${this.cpExtConfig.prefix} pipe client: ${stderrLine}`,
+            );
+          } else {
+            fltStderrList.push(stderrLine);
+          }
+        }
+        const fltStderr = fltStderrList.join("\n");
+        if (error || fltStderr) {
           const m =
             error?.message.match(CpTokenExpiredError.re) ||
-            stderr.match(CpTokenExpiredError.re);
+            fltStderr.match(CpTokenExpiredError.re);
           if (m) {
             reject(new CpTokenExpiredError(m[0]));
           } else {
-            reject(error || new Error(stderr));
+            reject(error || new Error(fltStderr));
           }
         } else {
           resolve(stdout);

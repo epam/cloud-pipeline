@@ -82,7 +82,9 @@ export class CpRunTreeDataProvider
 
     registerCommand(HostTreeEvent.add, () => addNewHost());
     registerCommand(HostTreeEvent.configure, () => openSSHConfigFile());
-    registerCommand(Commands.explorer.pipeUpdate, () => this.pipeClientUpdate());
+    registerCommand(Commands.explorer.pipeUpdate, () =>
+      this.updatePipeClient(),
+    );
     registerCommand(Commands.explorer.refresh, () => this.refresh());
     registerCommand(Commands.explorer.emptyWindowInNewWindow, (e) =>
       this.openRemoteCpWindow(e, false),
@@ -242,7 +244,7 @@ export class CpRunTreeDataProvider
   /**
    * Update the pipe client (executable)
    */
-  private pipeClientUpdate() {
+  private updatePipeClient() {
     void this.cpClient
       .ensurePipeExec(true)
       .then(() => {
