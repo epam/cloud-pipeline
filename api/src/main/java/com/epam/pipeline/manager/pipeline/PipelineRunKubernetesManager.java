@@ -53,7 +53,7 @@ public class PipelineRunKubernetesManager {
                                         final KubernetesManager kubernetesManager,
                                         final MessageHelper messageHelper,
                                         final PreferenceManager preferenceManager,
-                                        @Value("${kube.namespace:}") final String namespace) {
+                                        @Value("${kube.namespace:default}") final String namespace) {
         this.pipelineRunCRUDService = pipelineRunCRUDService;
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
