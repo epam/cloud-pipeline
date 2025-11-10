@@ -627,8 +627,10 @@ export default class DataStorage extends React.Component {
       const fileRestored = restoreStatus.status === STATUS.SUCCEEDED;
       for (let version in versions) {
         if (versions.hasOwnProperty(version)) {
-          const archived = versions[version].labels &&
-            !isStandardClass(versions[version].labels['StorageClass']);
+          const {labels} = versions[version] || {};
+          const archived = isAzure
+            ? false
+            : labels && !isStandardClass(labels['StorageClass']);
           const versionRestored = restoreStatus.restoreVersions &&
             restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
@@ -2664,6 +2666,7 @@ export default class DataStorage extends React.Component {
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}
                   uploadToNFS={/^nfs$/i.test(type)}
+                  uploadToAzure={/^az$/i.test(type)}
                   action={
                     DataStorageItemUpdate.uploadUrl(
                       this.props.storageId,
