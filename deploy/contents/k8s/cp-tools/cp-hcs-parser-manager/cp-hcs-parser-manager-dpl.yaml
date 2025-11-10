@@ -24,6 +24,7 @@ spec:
         - name: cp-hcs-parser-manager
           image: library/rockylinux:8.7
           imagePullPolicy: "IfNotPresent"
+          command: [ "bash", "/start.sh" ]
           env:
             - name: API
               value: https://domain/pipeline/restapi

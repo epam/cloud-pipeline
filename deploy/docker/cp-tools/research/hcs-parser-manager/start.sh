@@ -93,8 +93,8 @@ function start_processing() {
       HCS_PARSING_TAG_MAPPING 'Plate description=Plate Type,OWNER=Owner,CHANNELTYPE=Channel type,PLANES=Multiple planes,TIMEPOINTS=Timecourse,Compound=Compound,Cell type=Cell type,Cell Type=Cell type,Staining=Staining,Antibody=Antibody' \
       HCS_PARSING_PLATE_DETAILS_DICT '{\"96 PerkinElmer CellCarrier Spheroid ULA\": {\"size\": 0.00684},\"384 Corning Optical Imaging\": {\"size\": 0.00327}, \"96 PerkinElmer CellCarrier\": {\"size\": 0.00658}, \"96 PerkinElmer CellCarrier Ultra\": {\"size\": 0.00684},\"96-well CellCarrier Spheroid ULA\": {\"size\": 0.00635},\"384 PerkinElmer CellCarrier\": {\"size\": 0.00327},\"384 PerkinElmer CellCarrier Ultra\": {\"size\": 0.00326},\"1536-well CellCarrier\": {\"size\": 0.00153},\"Thermo Fisher 152036\": {\"size\": 0.00645},\"Thermo Fisher 164564\": {\"size\": 0.0037}}' \
       HCS_IGNORE_MODIFIED_FILES 'index.xml' \
-      HCS_DAEMON_DIRS_TO_PROCESS "$_s3_path" \
-      HCS_DAEMON_RESULTS_PATH "$_result_path" \
+      HCS_DAEMON_DIRS_TO_PROCESS "$_s3_path_diff" \
+      HCS_DAEMON_RESULTS_PATH "$_result_path"
 }
 
 if [ -z "$API" ] || \
@@ -117,6 +117,8 @@ HCS_DAEMON_TMP_INSTRUMENT_LIST_PATH="/tmp/instrument_dirs.txt"
 HCS_DAEMON_TMP_INSTRUMENT_DIFF_PATH="/tmp/instrument_diff.txt"
 
 while true; do
+
+  sleep "$HCS_DAEMON_IDLE_SEC"
 
   # Install pipe not yet
   if [ ! -f "$HCS_DAEMON_PIPE_BIN" ]; then
