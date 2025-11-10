@@ -41,6 +41,7 @@ while read _dataset_path; do
   python2 "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py" > "${_logs_dir}/${_hcs_file_name}.process_hcs_files.log" 2>&1
   if [ $? -ne 0 ]; then
     echo "hcs.parser.failed" > "${_dataset_path}/hcs.parser.failed"
+    echo "[ERROR] Processing failed for $_dataset_path dataset. This dataset will not be processed further, delete \"hcs.parser.failed\" file to resume processing."
   fi
   pipe storage cp -f "${_logs_dir}/${_hcs_file_name}.process_hcs_files.log" "$HCS_PARSING_LOGS_OUTPUT/"
 done <"$_instrument_diff_path_to_submit"
