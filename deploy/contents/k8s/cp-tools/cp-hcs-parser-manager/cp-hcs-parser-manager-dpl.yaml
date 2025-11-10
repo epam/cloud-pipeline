@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-hcs-parser-manager
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-hcs-parser-manager: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-hcs-parser-manager: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-hcs-parser-manager: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-hcs-parser-manager
+          image: library/rockylinux:8.7
+          imagePullPolicy: "IfNotPresent"
+          env:
+            - name: API
+              value: https://domain/pipeline/restapi
+            - name: API_TOKEN
+              value: JWT_KEY
+            - name: HCS_DAEMON_INSTRUMENTS_PATHS
+              value: s3://bucket/instrument1/hs,s3://bucket/instrument2/hs
+            - name: HCS_DAEMON_RESULTS_PATH
+              value: "s3://bucket/hcs_result_files"
+            - name: HCS_DAEMON_MOUNTS_ROOT
+              value: /cloud-data
+            - name: HCS_DAEMON_WORKER_DOCKER_IMAGE
+              value: library/hcs-parser-manager:latest
+            - name: HCS_DAEMON_WORKER_HCS_PARSING_LOGS_OUTPUT
+              value: s3://bucket/logs
+            - name: HCS_DAEMON_WORKER_CP_CAP_LIMIT_MOUNTS
+              value: 1,2,3
+            - name: HCS_DAEMON_WORKER_HCS_MARKUP_STORAGE_ID
+              value: 1
+            - name: HCS_DAEMON_WORKER_HCS_DEPLOY_NAME
+              value: Cloud Pipeline
+            - name: HCS_DAEMON_WORKER_HCS_DATA_STORAGE_ID
+              value: 1
+          volumeMounts:
+            - mountPath: /opt/local/hcs-daemon
+              name: hcs-daemon-logs
+          securityContext:
+            privileged: true
+      volumes:
+        - name: hcs-daemon-logs
+          hostPath:
+            path: /opt/hcs-daemon/logs

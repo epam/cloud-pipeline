@@ -89,5 +89,6 @@ COPY parser "$HCS_TOOLS_HOME/scripts/parser"
 COPY convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
 COPY start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
 COPY start_cluster.sh "$HCS_TOOLS_HOME/scripts/start_cluster.sh"
+COPY start_list.sh "$HCS_TOOLS_HOME/scripts/start_list.sh"
 
 RUN chmod +x $HCS_TOOLS_HOME/scripts/*.sh
