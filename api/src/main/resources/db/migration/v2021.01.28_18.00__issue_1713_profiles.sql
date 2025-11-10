@@ -1,4 +1,4 @@
-CREATE TABLE pipeline.cloud_profile_credentials (
+CREATE TABLE cloud_profile_credentials (
     id SERIAL PRIMARY KEY,
     cloud_provider varchar,
     policy varchar,
