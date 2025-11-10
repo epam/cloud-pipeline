@@ -39,6 +39,5 @@ while read _dataset_path; do
   echo "[INFO] Processing HCS_TARGET_PATHS=${HCS_TARGET_PATHS}, HCS_TARGET_IMG_NAMES=${HCS_TARGET_IMG_NAMES}"
 
   python2 "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py" > "${_logs_dir}/${_hcs_file_name}.process_hcs_files.log" 2>&1
+  pipe storage cp -f "${_logs_dir}/${_hcs_file_name}.process_hcs_files.log" "$HCS_PARSING_LOGS_OUTPUT/"
 done <"$_instrument_diff_path_to_submit"
-
-pipe storage cp -r -s -vd "$_logs_dir/" "$HCS_PARSING_LOGS_OUTPUT/"
