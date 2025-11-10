@@ -68,6 +68,6 @@ public class PipelinePermissionManager {
         } else {
             roleToVerify = DefaultRoles.ROLE_PIPELINE_MANAGER;
         }
-        return permissionHelper.hasAnyRole(roleToVerify);
+        return permissionHelper.hasRole(roleToVerify);
     }
 }

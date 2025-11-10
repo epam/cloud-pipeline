@@ -42,8 +42,13 @@ public final class AclExpressions {
 
     public static final String PIPELINE_ID_READ = "hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN')" +
                     " OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ')";
-    public static final String PIPELINE_COPY = "hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR " +
-            "@pipelinePermissionManager.hasCopyPermission(#id, #parentFolderId)";
+    public static final String PIPELINE_COPY = "hasRole('ADMIN') OR " +
+            "(" +
+            " hasRole('PIPELINE_ADMIN') " +
+            " AND " +
+            " hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder','WRITE')" +
+            ") " +
+            "OR @pipelinePermissionManager.hasCopyPermission(#id, #parentFolderId)";
 
     public static final String PIPELINE_ID_WRITE = "hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') " +
             "OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE')";
@@ -53,7 +58,7 @@ public final class AclExpressions {
             + "hasPermission(#folder.parentId, 'com.epam.pipeline.entity.pipeline.Folder','WRITE'))";
 
     public static final String PIPELINE_OBJECT_WRITE =
-            "hasRole('ADMIN') OR hasPermission(#pipeline, 'WRITE')";
+            "hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(#pipeline, 'WRITE')";
 
     public static final String PIPELINE_VO_WRITE = "hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR " +
             "hasPermission(#pipeline.id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE')";
@@ -127,7 +132,7 @@ public final class AclExpressions {
             + ") "
             + AND + STORAGE_SHARED;
 
-    public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
+    public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY + OR +
             "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";
 
     public static final String RUN_COMMIT_EXECUTE =
@@ -172,19 +177,19 @@ public final class AclExpressions {
 
     public static final String ADMIN_OR_GENERAL_USER = "hasRole('ADMIN') OR hasRole('ROLE_USER')";
 
-    public static final String NODE_READ = ADMIN_ONLY + OR +
+    public static final String NODE_READ = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";
 
-    public static final String CLOUD_NODE_READ = ADMIN_ONLY + OR +
+    public static final String CLOUD_NODE_READ = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, #machineType, 'READ')";
 
-    public static final String NODE_USAGE_READ = ADMIN_ONLY + OR +
+    public static final String NODE_USAGE_READ = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR +
             "@grantPermissionManager.nodeUsagePermission(#name, 'READ')";
 
-    public static final String NODE_READ_FILTER = ADMIN_ONLY + OR +
+    public static final String NODE_READ_FILTER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(filterObject, 'READ')";
     
-    public static final String NODE_STOP = ADMIN_ONLY + OR +
+    public static final String NODE_STOP = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR +
             "@grantPermissionManager.nodeStopPermission(#name, #machineType, 'EXECUTE')";
 
     public static final String TOOL_READ = ADMIN_ONLY + OR + TOOL_ADMIN_ONLY + OR +
@@ -204,7 +209,8 @@ public final class AclExpressions {
     public static final String ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT =
         ADMIN_ONLY + OR + "hasPermission(returnObject, 'READ')";
 
-    public static final String ADMIN_OR_CLUSTER_READER = ADMIN_ONLY + OR + "hasRole('ROLE_CLUSTER_READER')";
+    public static final String ADMIN_OR_CLUSTER_READER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY
+            + OR + "hasRole('ROLE_CLUSTER_READER')";
 
     public static final String ADMIN_OR_BILLING_MANAGER = ADMIN_ONLY + OR
             + "hasRole('ROLE_BILLING_MANAGER')";

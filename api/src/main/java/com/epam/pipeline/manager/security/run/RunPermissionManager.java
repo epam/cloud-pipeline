@@ -161,7 +161,7 @@ public class RunPermissionManager {
     }
 
     public void extendFilter(final AclSecuredRunFilter filter) {
-        if (permissionsHelper.isAdmin() || permissionsHelper.hasAnyRole(DefaultRoles.ROLE_RUN_ADMIN)) {
+        if (permissionsHelper.isAdmin() || permissionsHelper.hasRole(DefaultRoles.ROLE_RUN_ADMIN)) {
             return;
         }
         filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());

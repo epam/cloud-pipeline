@@ -111,6 +111,10 @@ public class CheckPermissionHelper {
         return getSids(userName).stream().anyMatch(sid -> sid.equals(admin));
     }
 
+    public boolean hasRole(final DefaultRoles roles) {
+        return hasAnyRole(roles);
+    }
+
     public boolean hasAnyRole(final DefaultRoles... roles) {
         return hasAnyRole(Arrays.asList(roles));
     }

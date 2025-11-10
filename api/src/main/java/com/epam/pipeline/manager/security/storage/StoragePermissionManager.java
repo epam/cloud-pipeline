@@ -186,7 +186,7 @@ public class StoragePermissionManager {
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames,
                               final boolean allPermissions) {
-        if (permissionHelper.isAdmin() || grantPermissionManager.isScopedAdmin(storages.stream().findFirst().orElse(null))) {
+        if (permissionHelper.isAdmin() || permissionHelper.hasRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
             return;
         }
         final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),

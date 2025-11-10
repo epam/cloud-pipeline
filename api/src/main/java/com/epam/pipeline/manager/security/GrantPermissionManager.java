@@ -920,10 +920,10 @@ public class GrantPermissionManager {
             return hasRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
         } else if (entity instanceof PipelineRun) {
             return hasRole(sids, DefaultRoles.ROLE_RUN_ADMIN);
-        } else if (entity instanceof Pipeline) {
+        } else if (entity instanceof Pipeline || entity instanceof RunConfiguration) {
             return hasRole(sids, DefaultRoles.ROLE_PIPELINE_ADMIN);
         } else if (entity instanceof Tool || entity instanceof ToolGroup || entity instanceof DockerRegistry) {
-            return hasRole(sids, DefaultRoles.ROLE_TOOLS_ADMIN);
+            return hasRole(sids, DefaultRoles.ROLE_TOOL_ADMIN);
         } else if (entity instanceof PipelineUser || entity instanceof Role) {
             return hasRole(sids, DefaultRoles.ROLE_USER_ADMIN);
         }
