@@ -182,6 +182,8 @@ while true; do
         [ $(basename "$_instrument_dataset_path") == "_configdata" ] && continue
         dataset_version_path="${_instrument_dataset_path}/dataset.version.txt"
         [ ! -f "$dataset_version_path" ] && continue
+        failed_token_path="${_instrument_dataset_path}/hcs.parser.failed"
+        [ -f "$failed_token_path" ] && continue
         index_xml_path="${_instrument_dataset_path}/images/index.xml"
         [ ! -f "$index_xml_path" ] && continue
         index_xml_time=$(date -r "$index_xml_path" +%s)
@@ -190,7 +192,7 @@ while true; do
         basename "$_instrument_dataset_path" >> "$HCS_DAEMON_TMP_INSTRUMENT_LIST_PATH"
     done
     if [ ! -f "$HCS_DAEMON_TMP_INSTRUMENT_LIST_PATH" ]; then
-      print "[WARN] No directories (with index.xml newer than $HCS_DAEMON_NEWER_THAN_DAYS days) found"
+      print "[WARN] No directories (with index.xml, no hcs.parser.failed token, newer than $HCS_DAEMON_NEWER_THAN_DAYS days) found"
       continue
     fi
     print "[INFO] Got $(cat "$HCS_DAEMON_TMP_INSTRUMENT_LIST_PATH" | wc -l) directories"
