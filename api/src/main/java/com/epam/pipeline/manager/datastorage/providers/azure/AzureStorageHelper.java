@@ -371,6 +371,12 @@ public class AzureStorageHelper {
                                                            final boolean exist) {
         final BlobContainerClient containerClient = getBlobContainerClient(dataStorage);
         validateBlob(containerClient, dataStorage, path, exist);
+        return generatePresignedUrl(dataStorage, path, permission);
+    }
+
+    public DataStorageDownloadFileUrl generatePresignedUrl(final AzureBlobStorage dataStorage,
+                                                           final String path,
+                                                           final String permission) {
         return generateGenericPresignedUrl(dataStorage, path, permission, Duration.ZERO);
     }
 
