@@ -1977,15 +1977,14 @@ class AWSRegionForm extends React.Component {
             <Form.Item
               label="Storage account"
               required={
-                this.providerSupportsField('storageAccount') && !authorizeByManagedIdentity
+                this.providerSupportsField('storageAccount')
               }
               className={this.getFieldClassName('storageAccount')}
               {...this.formItemLayout}>
               {getFieldDecorator('storageAccount', {
                 initialValue: this.props.region.storageAccount,
                 rules: [{
-                  required: this.providerSupportsField('storageAccount') &&
-                    !authorizeByManagedIdentity,
+                  required: this.providerSupportsField('storageAccount'),
                   message: 'Storage account is required'
                 }]
               })(
