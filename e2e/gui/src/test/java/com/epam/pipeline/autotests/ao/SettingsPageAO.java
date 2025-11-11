@@ -18,10 +18,8 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -38,9 +36,11 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
@@ -263,9 +263,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public CreateNotificationPopup setActive() {
-//                if(!impersonateMode()) {
-                    click(STATE_CHECKBOX);
-//                }
+                click(STATE_CHECKBOX);
                 return this;
             }
 

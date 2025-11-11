@@ -16,14 +16,17 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
+import com.epam.pipeline.autotests.ao.Template;
+import com.epam.pipeline.autotests.utils.TestCase;
+
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.NAME;
-import com.epam.pipeline.autotests.ao.Template;
-import com.epam.pipeline.autotests.utils.TestCase;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.Test;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static org.testng.Assert.assertEquals;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -40,6 +43,8 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
             .createPipeline(Template.SHELL, getPipelineName())
             .firstVersion()
             .runPipeline()
+            .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+            .doNotMountStoragesSelect(true)
             .launch(this);
 
         clusterMenu()
@@ -72,6 +77,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
         clusterMenu()
                 .filterByHasRunId()
                 .sortByIncrease(LABEL)
+                .sleep(3, SECONDS)
                 .validateSortedByIncrease(LABEL)
                 .resetFiltering(LABEL);
     }
@@ -82,6 +88,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
         clusterMenu()
                 .filterByHasRunId()
                 .sortByDecrease(LABEL)
+                .sleep(3, SECONDS)
                 .validateSortedByDecrease(LABEL)
                 .resetFiltering(LABEL);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.MetadataSectionAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttributes;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
