@@ -88,6 +88,7 @@ import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
 import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
 import ToolHistory from './ToolHistory';
+import {fillUserTagsWithDefaultValues, getVisibleUserTags} from '../runs/run-tags/utilities';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -1621,6 +1622,17 @@ export default class Tool extends localization.LocalizedReactComponent {
         this.props.preferences,
         platform
       );
+      const visibility = await getVisibleUserTags(payload);
+      const tags = await fillUserTagsWithDefaultValues(
+        payload.tags || {},
+        [],
+        visibility,
+        currentUserAttributes,
+        payload
+      );
+      if (Object.keys(tags).length > 0) {
+        payload.tags = tags;
+      }
       hide();
       const runResolved = await run(this)(
         payload,

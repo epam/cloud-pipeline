@@ -64,6 +64,7 @@ import {
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 import checkToolVersionErrors from '../../../runs/utilities/check-tool-version-errors';
 import {
+  fillUserTagsWithDefaultValues,
   getUserTagsValidationResult,
   getVisibleUserTags
 } from '../../../runs/run-tags/utilities';
@@ -559,8 +560,21 @@ export default class PersonalToolsPanel extends React.Component {
           registry);
         if (allowedToExecute) {
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
-          const validation = await getUserTagsValidationResult({}, {launchPayload: defaultPayload});
           const visibility = await getVisibleUserTags(defaultPayload);
+          const tags = await fillUserTagsWithDefaultValues(
+            defaultPayload.tags || {},
+            [],
+            visibility,
+            this.props.currentUserAttributes,
+            defaultPayload
+          );
+          if (Object.keys(tags).length > 0) {
+            defaultPayload.tags = tags;
+          }
+          const validation = await getUserTagsValidationResult(
+            defaultPayload.tags || {},
+            {launchPayload: defaultPayload}
+          );
           this.setState({
             pending: true,
             runToolInfo: {
