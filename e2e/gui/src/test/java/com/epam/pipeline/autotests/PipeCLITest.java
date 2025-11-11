@@ -39,7 +39,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
-import static org.testng.Assert.assertTrue;
+import static org.testng.assertTrue;
 
 public class PipeCLITest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {

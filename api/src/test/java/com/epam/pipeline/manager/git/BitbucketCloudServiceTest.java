@@ -29,15 +29,17 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.bitbucketcloud.BitbucketCloudService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BitbucketCloudServiceTest extends AbstractSpringTest {
 
@@ -72,87 +74,86 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     @Autowired
     private PreferenceManager preferenceManager;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         final Preference preference = SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE.toPreference();
         preference.setValue(AuthType.TOKEN.name());
         preferenceManager.update(Collections.singletonList(preference));
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetRepository() throws GitClientException {
         final GitProject project = service.getRepository(repositoryPath, token);
-        Assert.assertNotNull(project);
+        assertNotNull(project);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testDeleteRepository() throws GitClientException {
         service.deleteRepository(getPipeline());
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetBranches() throws GitClientException {
         final List<String> branches = service.getBranches(repositoryPath, token);
-        Assert.assertTrue(branches.size() > 0);
+        assertTrue(branches.size() > 0);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetTags() throws GitClientException {
         final List<Revision> tags = service.getTags(getPipeline());
-        Assert.assertTrue(tags.size() > 0);
+        assertTrue(tags.size() > 0);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testCreateTag() throws GitClientException {
         final Revision tag = service.createTag(getPipeline(), TAG, COMMIT_ID, MESSAGE, "");
-        Assert.assertNotNull(tag);
+        assertNotNull(tag);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetTag() throws GitClientException {
         final GitTagEntry tag = service.getTag(getPipeline(), TAG);
-        Assert.assertNotNull(tag);
+        assertNotNull(tag);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetCommit() throws GitClientException {
         final GitCommitEntry commit = service.getCommit(getPipeline(), COMMIT_ID);
-        Assert.assertNotNull(commit);
+        assertNotNull(commit);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetLastRevision() throws GitClientException {
         final Revision commit = service.getLastRevision(getPipeline(), "");
-        Assert.assertNotNull(commit);
+        assertNotNull(commit);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testCreateFile() throws GitClientException {
         service.createFile(getGitProject(), FILE_PATH, CONTENT, token, BRANCH);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetFile() throws GitClientException {
         final byte[] content = service.getFileContents(getGitProject(), FILE_PATH, COMMIT_ID, token);
-        Assert.assertNotNull(content);
+        assertNotNull(content);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void testGetFiles() throws GitClientException {
         final List<GitRepositoryEntry> contents = service.getRepositoryContents(getPipeline(),
                 FOLDER_PATH, COMMIT_ID, true);
-        Assert.assertTrue(contents.size() > 0);
+        assertTrue(contents.size() > 0);
     }
 
     private Pipeline getPipeline() {

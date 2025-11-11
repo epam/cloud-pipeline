@@ -40,7 +40,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
@@ -359,81 +359,65 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params, DataStorageParameters.getRowMapper());
     }
 
-    @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
     }
-    @Required
     public void setDataStorageSequence(String dataStorageSequence) {
         this.dataStorageSequence = dataStorageSequence;
     }
 
-    @Required
     public void setLoadAllDataStoragesQuery(String loadAllDataStoragesQuery) {
         this.loadAllDataStoragesQuery = loadAllDataStoragesQuery;
     }
 
-    @Required
     public void setLoadDataStorageByIdQuery(String loadDataStorageByIdQuery) {
         this.loadDataStorageByIdQuery = loadDataStorageByIdQuery;
     }
 
-    @Required
     public void setLoadRootDataStoragesQuery(String loadRootDataStoragesQuery) {
         this.loadRootDataStoragesQuery = loadRootDataStoragesQuery;
     }
 
-    @Required
     public void setCreateDataStorageQuery(String createDataStorageQuery) {
         this.createDataStorageQuery = createDataStorageQuery;
     }
 
-    @Required
     public void setDeleteDataStorageQuery(String deleteDataStorageQuery) {
         this.deleteDataStorageQuery = deleteDataStorageQuery;
     }
 
-    @Required
     public void setUpdateDataStorageQuery(String updateDataStorageQuery) {
         this.updateDataStorageQuery = updateDataStorageQuery;
     }
 
-    @Required
     public void setUpdateDataStorageMountStatusQuery(String updateDataStorageMountStatusQuery) {
         this.updateDataStorageMountStatusQuery = updateDataStorageMountStatusQuery;
     }
 
-    @Required
     public void setLoadDataStorageByNameQuery(String loadDataStorageByNameQuery) {
         this.loadDataStorageByNameQuery = loadDataStorageByNameQuery;
     }
 
-    @Required
     public void setLoadDataStorageByNameAndParentIdQuery(String loadDataStorageByNameAndParentIdQuery) {
         this.loadDataStorageByNameAndParentIdQuery = loadDataStorageByNameAndParentIdQuery;
     }
 
-    @Required
     public void setUpdateStorageLocksQuery(String updateStorageLocksQuery) {
         this.updateStorageLocksQuery = updateStorageLocksQuery;
     }
 
-    @Required
     public void setLoadStorageCountQuery(String loadStorageCountQuery) {
         this.loadStorageCountQuery = loadStorageCountQuery;
     }
 
-    @Required
     public void setLoadAllStoragesWithParentsQuery(String loadAllStoragesWithParentsQuery) {
         this.loadAllStoragesWithParentsQuery = loadAllStoragesWithParentsQuery;
     }
 
-    @Required
     public void setLoadStorageWithParentsQuery(String loadStorageWithParentsQuery) {
         this.loadStorageWithParentsQuery = loadStorageWithParentsQuery;
     }
 
-    @Required
     public void setLoadDataStorageByPrefixesQuery(String loadDataStorageByPrefixesQuery) {
         this.loadDataStorageByPrefixesQuery = loadDataStorageByPrefixesQuery;
     }
@@ -482,7 +466,6 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByRootIdsQuery = loadDataStoragesByRootIdsQuery;
     }
 
-    @Required
     public void setLoadDataStoragesFilterQuery(final String loadDataStoragesFilterQuery) {
         this.loadDataStoragesFilterQuery = loadDataStoragesFilterQuery;
     }

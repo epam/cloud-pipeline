@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
+import static org.testng.assertEquals;
 
 public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
 

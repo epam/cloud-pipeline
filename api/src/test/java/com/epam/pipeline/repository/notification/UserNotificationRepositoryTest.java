@@ -6,20 +6,22 @@ import com.epam.pipeline.entity.notification.UserNotificationEntity;
 import com.epam.pipeline.entity.notification.UserNotificationResourceEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Transactional
 public class UserNotificationRepositoryTest extends AbstractJpaTest {
@@ -35,7 +37,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
     private static final boolean IS_READ = false;
     private static final String STORAGE_PATH = "storagePath";
     private static final Long STORAGE_RULE_ID = 1L;
-    private static final PageRequest PAGEABLE = new PageRequest(0, 100);
+    private static final PageRequest PAGEABLE = PageRequest.of(0, 100);
 
     @Autowired
     private UserNotificationRepository notificationRepository;
@@ -48,7 +50,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, null));
 
         flush();
-        final UserNotificationEntity loaded = notificationRepository.findOne(saved.getId());
+        final UserNotificationEntity loaded = notificationRepository.findById(saved.getId()).orElseThrow(() -> new IllegalArgumentException());
         assertNotNull(loaded);
         assertNotNull(loaded.getId());
         assertNotification(loaded);
@@ -60,7 +62,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
                 null, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, null));
 
         flush();
-        final UserNotificationEntity loaded = notificationRepository.findOne(saved.getId());
+        final UserNotificationEntity loaded = notificationRepository.findById(saved.getId()).orElseThrow();
         assertNotNull(loaded);
         assertNotNull(loaded.getId());
     }
@@ -76,7 +78,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         final UserNotificationEntity saved = notificationRepository.save(notification);
 
         flush();
-        final UserNotificationEntity loaded = notificationRepository.findOne(saved.getId());
+        final UserNotificationEntity loaded = notificationRepository.findById(saved.getId()).orElseThrow();
         assertThat(loaded.getResources().size(), is(1));
         assertResource(loaded.getResources().get(0));
     }
@@ -126,10 +128,10 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         final UserNotificationEntity saved = notificationRepository.save(new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, null));
 
-        notificationRepository.delete(saved.getId());
+        notificationRepository.deleteById(saved.getId());
 
         flush();
-        assertThat(notificationRepository.findOne(saved.getId()), nullValue());
+        assertEquals(Optional.empty(), notificationRepository.findById(saved.getId()));
     }
 
     @Test
@@ -141,10 +143,10 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         resource.setNotification(notification);
         final UserNotificationEntity saved = notificationRepository.save(notification);
 
-        notificationRepository.delete(saved.getId());
+        notificationRepository.deleteById(saved.getId());
 
         flush();
-        assertThat(notificationRepository.findOne(saved.getId()), nullValue());
+        assertEquals(Optional.empty(), notificationRepository.findById(saved.getId()));
     }
 
     @Test
@@ -159,7 +161,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         notificationRepository.deleteByUserId(USER_ID);
 
         flush();
-        assertThat(notificationRepository.findOne(saved.getId()), nullValue());
+        assertEquals(Optional.empty(), notificationRepository.findById(saved.getId()));
     }
 
     @Test
@@ -174,7 +176,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         notificationRepository.deleteByCreatedDateLessThan(CREATED.plusDays(1));
 
         flush();
-        assertThat(notificationRepository.findOne(saved.getId()), nullValue());
+        assertEquals(Optional.empty(), notificationRepository.findById(saved.getId()));
     }
 
     private void flush() {

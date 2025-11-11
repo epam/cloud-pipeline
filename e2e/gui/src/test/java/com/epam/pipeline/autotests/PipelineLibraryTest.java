@@ -32,7 +32,7 @@ import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import static com.epam.pipeline.autotests.utils.Utils.getCurrentURL;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertNotEquals;
+import static org.testng.assertNotEquals;
 
 public class PipelineLibraryTest extends AbstractSeveralPipelineRunningTest implements Authorization {
     private final String pipeline = "pipeline-1353-" + Utils.randomSuffix();

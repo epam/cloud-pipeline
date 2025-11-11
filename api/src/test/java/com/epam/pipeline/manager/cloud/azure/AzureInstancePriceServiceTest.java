@@ -21,8 +21,8 @@ import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -30,8 +30,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AzureInstancePriceServiceTest extends AbstractSpringTest {
 
@@ -94,12 +95,12 @@ public class AzureInstancePriceServiceTest extends AbstractSpringTest {
 
         double priceForDisk = azureInstancePriceService.getPriceForDisk(diskOffers, INSTANCE_DISK_FOR_64,
                 INSTANCE_TYPE, SPOT, region);
-        Assert.assertEquals(PRICE_FOR_P4_DISK, priceForDisk, 0.0);
+        assertEquals(PRICE_FOR_P4_DISK, priceForDisk, 0.0);
         priceForDisk = azureInstancePriceService.getPriceForDisk(diskOffers, INSTANCE_DISK_FOR_32,
                 INSTANCE_TYPE, SPOT, region);
-        Assert.assertEquals(PRICE_FOR_P6_DISK, priceForDisk, 0.0);
+        assertEquals(PRICE_FOR_P6_DISK, priceForDisk, 0.0);
         priceForDisk = azureInstancePriceService.getPriceForDisk(diskOffers, INSTANCE_DISK_FOR_128,
                 INSTANCE_TYPE, SPOT, region);
-        Assert.assertEquals(PRICE_FOR_E8_DISK, priceForDisk, 0.0);
+        assertEquals(PRICE_FOR_E8_DISK, priceForDisk, 0.0);
     }
 }

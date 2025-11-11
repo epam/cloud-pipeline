@@ -39,13 +39,12 @@ import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramB
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,10 +61,10 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Controller
-@Api(value = "Cluster methods")
+@Tag(name = "Cluster methods")
 @RequiredArgsConstructor
 public class ClusterController extends AbstractRestController {
 
@@ -86,13 +85,12 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping(value = "/cluster/master")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns kubernetes nodes used in cluster as a master API node",
-            notes = "Returns kubernetes nodes used in cluster as a master API node",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns kubernetes nodes used in cluster as a master API node",
+            description = "Returns kubernetes nodes used in cluster as a master API node"
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<List<MasterNode>> loadMasterNodes() {
         return Result.success(clusterApiService.getMasterNodes());
@@ -100,24 +98,22 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping("/cluster/edge/externalUrl")
     @ResponseBody
-    @ApiOperation(
-            value = "Return EDGE external URL.",
-            notes = "Return EDGE external URL.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Return EDGE external URL.",
+            description = "Return EDGE external URL.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<String> buildEdgeExternalUrl(@RequestParam(required = false) final String region) {
         return Result.success(clusterApiService.buildEdgeExternalUrl(region));
     }
 
     @GetMapping(value = "/cluster/node/loadAll")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all nodes used in cluster",
-            notes = "Returns all nodes used in cluster",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns all nodes used in cluster",
+            description = "Returns all nodes used in cluster"
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<List<NodeInstance>> loadNodes(
             @RequestParam(required = false, defaultValue = KUBE) final MachineType machineType) {
@@ -126,13 +122,12 @@ public class ClusterController extends AbstractRestController {
 
     @PostMapping("/cluster/node/filter")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all nodes used in cluster, filtered by runId or address",
-            notes = "Returns all nodes used in cluster, filtered by runId or address",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns all nodes used in cluster, filtered by runId or address",
+            description = "Returns all nodes used in cluster, filtered by runId or address"
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<List<NodeInstance>> filterNodes(@RequestBody final FilterNodesVO filterNodesVO,
                                                   @RequestParam(required = false, defaultValue = KUBE)
@@ -142,13 +137,12 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping(value = "/cluster/node/{name}/load")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a node, specified by name.",
-            notes = "Returns a node, specified by name.",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns a node, specified by name.",
+            description = "Returns a node, specified by name."
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<NodeInstance> loadNode(@PathVariable(value = NAME) final String name,
                                          @RequestParam(required = false, defaultValue = KUBE)
@@ -159,13 +153,12 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/node/{name}/run", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns run id associated with nodename.",
-            notes = "Returns run id associated with nodename.",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns run id associated with nodename.",
+            description = "Returns run id associated with nodename."
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<RunInfo> loadRunIdForNode(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadRunIdForNode(name));
@@ -173,13 +166,12 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/node/{name}/load", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns an ec2 node, specified by name. Filter pods by statuses",
-            notes = "Returns an ec2 node, specified by name. Filter pods by statuses",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns an ec2 node, specified by name. Filter pods by statuses",
+            description = "Returns an ec2 node, specified by name. Filter pods by statuses"
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<NodeInstance> loadNodeFiltered(@PathVariable(value = NAME) final String name,
             @RequestBody FilterPodsRequest request) {
@@ -188,13 +180,12 @@ public class ClusterController extends AbstractRestController {
 
     @DeleteMapping(value = "/cluster/node/{name}")
     @ResponseBody
-    @ApiOperation(
-            value = "Terminates a node, specified by name.",
-            notes = "Terminates a node, specified by name.",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Terminates a node, specified by name.",
+            description = "Terminates a node, specified by name."
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<NodeInstance> terminateNode(@PathVariable(value = NAME) final String name,
                                               @RequestParam(required = false, defaultValue = KUBE)
@@ -205,13 +196,12 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/instance/loadAll", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all instance types.",
-            notes = "Returns all instance types in the specified or default region.",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns all instance types.",
+            description = "Returns all instance types in the specified or default region."
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<InstanceType>> loadAllInstanceTypes(
             @RequestParam(required = false) final Long regionId,
@@ -224,14 +214,13 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/instance/allowed", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns allowed instance types and allowed prices types for the authorized user.",
-            notes = "Returns allowed instance types and allowed prices types for the authorized user " +
-                    "in the specified or default region.",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns allowed instance types and allowed prices types for the authorized user.",
+            description = "Returns allowed instance types and allowed prices types for the authorized user " +
+                    "in the specified or default region."
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AllowedInstanceAndPriceTypes> loadAllowedInstanceAndPriceTypes(
             @RequestParam(required = false) final Long toolId,
@@ -242,13 +231,12 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/node/{name}/usage", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns stats from instance by given IP address",
-            notes = "Returns stats from instance by given IP address",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns stats from instance by given IP address",
+            description = "Returns stats from instance by given IP address"
         )
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<MonitoringStats>> getNodeUsageStatistics(
             @PathVariable(value = NAME) final String name,
@@ -261,12 +249,11 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping("/cluster/node/{name}/usage/gpus")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns GPU stats from instance by given IP address",
-            notes = "Returns GPU stats from instance by given IP address",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns GPU stats from instance by given IP address",
+            description = "Returns GPU stats from instance by given IP address")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GpuMonitoringStats> getNodeUsageGpuStatistics(
             @PathVariable(value = NAME) final String name,
@@ -282,12 +269,11 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping("/cluster/node/{name}/usage/report")
     @ResponseBody
-    @ApiOperation(
-        value = "Download resource utilization report for given instance as a csv file.",
-        notes = "Download resource utilization report for given instance as a csv file.",
-        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+        summary = "Download resource utilization report for given instance as a csv file.",
+        description = "Download resource utilization report for given instance as a csv file.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public void downloadNodeUsageStatisticsReport(
         @PathVariable(value = NAME) final String name,
@@ -307,22 +293,20 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-        value = "Returns node disks.",
-        notes = "Returns node disks.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
+    @Operation(
+        summary = "Returns node disks.",
+        description = "Returns node disks.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
     }
 
     @PostMapping("/cluster/dnsrecord")
     @ResponseBody
-    @ApiOperation(
-            value = "Creates dns record.",
-            notes = "Creates dns record.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Creates dns record.",
+            description = "Creates dns record.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<InstanceDNSRecord> requestDnsRecord(@RequestParam final Long regionId,
                                                       @RequestBody final InstanceDNSRecord dnsRecord) {
         return Result.success(infrastructureApiService.createInstanceDNSRecord(regionId, dnsRecord));
@@ -330,22 +314,20 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping("/cluster/pods/core")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns core pods.",
-            notes = "Returns core pods.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
+    @Operation(
+            summary = "Returns core pods.",
+            description = "Returns core pods.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<List<PodInstance>> loadCorePods() {
         return Result.success(clusterApiService.getCorePods());
     }
 
     @GetMapping("/cluster/pods/info")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns pod description.",
-            notes = "Returns pod description.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
+    @Operation(
+            summary = "Returns pod description.",
+            description = "Returns pod description.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<PodDescription> loadPodDescription(@RequestParam final String podId,
                                                      @RequestParam(required = false, defaultValue = FALSE)
                                                      final boolean detailed) {
@@ -354,11 +336,10 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping("/cluster/containers/logs")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns pod container logs.",
-            notes = "Returns pod container logs.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
+    @Operation(
+            summary = "Returns pod container logs.",
+            description = "Returns pod container logs.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<String> loadContainerLogs(@RequestParam final String podId,
                                             @RequestParam final String containerId,
                                             @RequestParam(required = false) final Integer limit) {
@@ -367,12 +348,11 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/network/usage", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns available filters to filter network usage of the platform.",
-            notes = "Returns available filters to filter network usage of the platform.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns available filters to filter network usage of the platform.",
+            description = "Returns available filters to filter network usage of the platform.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<NetworkEventFilter> getPlatformNetworkEventFilter() {
         return Result.success(clusterApiService.getPlatformNetworkEventFilter());
@@ -380,12 +360,11 @@ public class ClusterController extends AbstractRestController {
 
     @RequestMapping(value = "/cluster/network/usage", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns histogram for platform network usage, filtered by specified filter object",
-            notes = "Returns histogram for platform network usage, filtered by specified filter object",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns histogram for platform network usage, filtered by specified filter object",
+            description = "Returns histogram for platform network usage, filtered by specified filter object")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<HistogramBin>> filterPlatformNetworkEvents(
             @RequestParam final HistogramType histogramType,

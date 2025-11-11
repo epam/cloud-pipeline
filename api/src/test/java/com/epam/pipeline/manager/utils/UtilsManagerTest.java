@@ -28,12 +28,14 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UtilsManagerTest extends AbstractManagerTest {
     @Autowired
@@ -54,6 +56,6 @@ public class UtilsManagerTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(pref));
 
         List<DefaultSystemParameter> params = utilsManager.getSystemParameters();
-        Assert.assertFalse(params.isEmpty());
+        assertFalse(params.isEmpty());
     }
 }

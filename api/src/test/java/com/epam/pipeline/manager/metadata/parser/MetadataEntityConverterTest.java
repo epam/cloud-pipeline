@@ -20,13 +20,15 @@ import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.*;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.lang.System.lineSeparator;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MetadataEntityConverterTest {
     private static final String TEST_ARGUMENT1 = "age";
@@ -58,8 +60,7 @@ public class MetadataEntityConverterTest {
     private MetadataClass sampleSetClass;
     private MetadataClass pairSetClass;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         participantClass = getMetadataClass(PARTICIPANT_TYPE_NAME, FireCloudClass.PARTICIPANT);
         sampleClass = getMetadataClass(SAMPLE_TYPE_NAME, FireCloudClass.SAMPLE);
         pairClass = getMetadataClass(PAIR_TYPE_NAME, FireCloudClass.PAIR);
@@ -164,7 +165,7 @@ public class MetadataEntityConverterTest {
                      "HCC_pairs\tHCC1954_100_gene_pair", result.get("pair_set_membership"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfFireCloudClassIsNull() {
         MetadataClass entityClass = new MetadataClass();
         entityClass.setName(PARTICIPANT_TYPE_NAME);
@@ -172,50 +173,50 @@ public class MetadataEntityConverterTest {
         Map<String, PipeConfValue> participantData = new HashMap<>();
         participantData.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_1));
         MetadataEntity participant = getEntity(entityClass, PARTICIPANT_ENTITY_ID1, participantData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(participant));
+        assertThrows(IllegalArgumentException.class,
+                () -> MetadataEntityConverter.convert(Collections.singletonList(participant)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfSampleWithoutParticipantAttribute() {
         Map<String, PipeConfValue> sampleData = new HashMap<>();
         sampleData.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_1));
         MetadataEntity sample = getEntity(sampleClass, SAMPLE_ENTITY_ID1, sampleData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(sample));
+        assertThrows(IllegalArgumentException.class,
+                () -> MetadataEntityConverter.convert(Collections.singletonList(sample)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfPairWithoutParticipantAttribute() {
         Map<String, PipeConfValue> pairData = new HashMap<>();
         pairData.put(CASE_SAMPLE_ARGUMENT, new PipeConfValue(SAMPLE_ATTRIBUTE_TYPE, SAMPLE_ENTITY_ID2));
         pairData.put(CONTROL_SAMPLE_ARGUMENT, new PipeConfValue(SAMPLE_ATTRIBUTE_TYPE, SAMPLE_ENTITY_ID1));
         MetadataEntity pair = getEntity(pairClass, PAIR_ENTITY_ID1, pairData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(pair));
+        assertThrows(IllegalArgumentException.class,
+                () -> MetadataEntityConverter.convert(Collections.singletonList(pair)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfPairWithoutControlSampleAttribute() {
         Map<String, PipeConfValue> pairData = new HashMap<>();
         pairData.put(PARTICIPANT_TYPE_NAME, new PipeConfValue(PARTICIPANT_TYPE_NAME, PARTICIPANT_ENTITY_ID1));
         pairData.put(CASE_SAMPLE_ARGUMENT, new PipeConfValue(SAMPLE_ATTRIBUTE_TYPE, SAMPLE_ENTITY_ID2));
         MetadataEntity pair = getEntity(pairClass, PAIR_ENTITY_ID1, pairData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(pair));
+        assertThrows(IllegalArgumentException.class,
+            () -> MetadataEntityConverter.convert(Collections.singletonList(pair)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfPairWithoutCaseSampleAttribute() {
         Map<String, PipeConfValue> pairData = new HashMap<>();
         pairData.put(PARTICIPANT_TYPE_NAME, new PipeConfValue(PARTICIPANT_TYPE_NAME, PARTICIPANT_ENTITY_ID1));
         pairData.put(CONTROL_SAMPLE_ARGUMENT, new PipeConfValue(SAMPLE_ATTRIBUTE_TYPE, SAMPLE_ENTITY_ID1));
         MetadataEntity pair = getEntity(pairClass, PAIR_ENTITY_ID1, pairData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(pair));
+        assertThrows(IllegalArgumentException.class,
+            () -> MetadataEntityConverter.convert(Collections.singletonList(pair)));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailWithInconsistentData() {
         Map<String, PipeConfValue> participantData1 = new HashMap<>();
         participantData1.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_1));
@@ -228,11 +229,10 @@ public class MetadataEntityConverterTest {
         List<MetadataEntity> entities = new ArrayList<>();
         entities.add(participant1);
         entities.add(participant2);
-
-        MetadataEntityConverter.convert(entities);
+        assertThrows(IllegalStateException.class, () -> MetadataEntityConverter.convert(entities));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailWithMissingColumnInData() {
         Map<String, PipeConfValue> participantData1 = new HashMap<>();
         participantData1.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_1));
@@ -246,35 +246,35 @@ public class MetadataEntityConverterTest {
         List<MetadataEntity> entities = new ArrayList<>();
         entities.add(participant1);
         entities.add(participant2);
-
-        MetadataEntityConverter.convert(entities);
+        assertThrows(IllegalStateException.class, () -> MetadataEntityConverter.convert(entities));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailIfParticipantSetWithoutParticipants() {
         Map<String, PipeConfValue> participantSetData = new HashMap<>();
         participantSetData.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_2));
         MetadataEntity participantSet = getEntity(participantSetClass, "HCC_participants", participantSetData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(participantSet));
+        assertThrows(IllegalStateException.class,
+            () -> MetadataEntityConverter.convert(Collections.singletonList(participantSet)));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailIfSampleSetWithoutSamples() {
         Map<String, PipeConfValue> sampleSetData = new HashMap<>();
         sampleSetData.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_2));
         MetadataEntity sampleSet = getEntity(sampleSetClass, "HCC_samples", sampleSetData);
-
-        MetadataEntityConverter.convert(Collections.singletonList(sampleSet));
+        assertThrows(IllegalStateException.class,
+                () -> MetadataEntityConverter.convert(Collections.singletonList(sampleSet)));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailIfPairSetWithoutPairs() {
         Map<String, PipeConfValue> pairSetData = new HashMap<>();
         pairSetData.put(TEST_ARGUMENT1, new PipeConfValue(STRING_TYPE, TEST_VALUE_2));
         MetadataEntity pairSet = getEntity(pairSetClass, "HCC_pairs", pairSetData);
 
-        MetadataEntityConverter.convert(Collections.singletonList(pairSet));
+        assertThrows(IllegalStateException.class,
+            () -> MetadataEntityConverter.convert(Collections.singletonList(pairSet)));
     }
 
     private static MetadataEntity getEntity(MetadataClass entityClass, String externalName,

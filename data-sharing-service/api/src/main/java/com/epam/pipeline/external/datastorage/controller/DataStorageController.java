@@ -28,13 +28,10 @@ import com.epam.pipeline.external.datastorage.manager.datastorage.DataStorageMan
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.vo.data.storage.UpdateDataStorageItemVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,7 +48,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@Api(value = "Datastorage API")
+@Tag(name = "Datastorage API")
 public class DataStorageController {
 
     private static final String FALSE = "false";
@@ -66,10 +63,9 @@ public class DataStorageController {
     }
 
     @GetMapping(value = "/datastorage/{id}/load")
-    @ApiOperation(
-            value = "Returns a data storage, specified by id.",
-            notes = "Returns a data storage, specified by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a data storage, specified by id.",
+            description = "Returns a data storage, specified by id.")
     public Result<AbstractDataStorage> loadDataStorage(@PathVariable final Long id) {
         return Result.success(dataStorageManager.loadStorage(id));
     }

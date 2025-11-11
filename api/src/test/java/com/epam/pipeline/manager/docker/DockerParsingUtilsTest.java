@@ -20,8 +20,8 @@ import com.epam.pipeline.entity.docker.HistoryEntry;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.utils.StreamUtils;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DockerParsingUtilsTest {
     private static final String LATEST_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:59:07.729529044Z\"}";
@@ -152,28 +154,28 @@ public class DockerParsingUtilsTest {
 
         final List<String> result = processCommands("BASE_IMAGE", commands, commandsPatternsToSkip);
 
-        Assert.assertEquals("FROM BASE_IMAGE", result.get(0));
+        assertEquals("FROM BASE_IMAGE", result.get(0));
 
-        Assert.assertEquals(1, result.stream().filter(r -> r.startsWith("CMD ")).count());
-        Assert.assertEquals("CMD cmd2", result.get(result.size() - 2));
+        assertEquals(1, result.stream().filter(r -> r.startsWith("CMD ")).count());
+        assertEquals("CMD cmd2", result.get(result.size() - 2));
 
-        Assert.assertEquals(1, result.stream().filter(r -> r.startsWith("ENTRYPOINT ")).count());
-        Assert.assertEquals("ENTRYPOINT entrypoint2", result.get(result.size() - 1));
+        assertEquals(1, result.stream().filter(r -> r.startsWith("ENTRYPOINT ")).count());
+        assertEquals("ENTRYPOINT entrypoint2", result.get(result.size() - 1));
 
-        Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("ARG ")));
-        Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("LABEL ")));
+        assertTrue(result.stream().anyMatch(r -> r.startsWith("ARG ")));
+        assertTrue(result.stream().anyMatch(r -> r.startsWith("LABEL ")));
 
-        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("ADD <source-location> .+")));
-        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("COPY <source-location> .+")));
+        assertTrue(result.stream().anyMatch(r -> r.matches("ADD <source-location> .+")));
+        assertTrue(result.stream().anyMatch(r -> r.matches("COPY <source-location> .+")));
 
-        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD file:.+")));
-        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD multi:.+")));
-        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY file:.+")));
-        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY dir:.+")));
+        assertTrue(result.stream().noneMatch(r -> r.matches("ADD file:.+")));
+        assertTrue(result.stream().noneMatch(r -> r.matches("ADD multi:.+")));
+        assertTrue(result.stream().noneMatch(r -> r.matches("COPY file:.+")));
+        assertTrue(result.stream().noneMatch(r -> r.matches("COPY dir:.+")));
 
-        Assert.assertTrue(result.contains(ARGS_CMD_DOCKERFILE));
-        Assert.assertEquals(3, result.stream().filter(s -> s.equals(RUN_AND_ARG_CMD_DOCKERFILE)).count());
+        assertTrue(result.contains(ARGS_CMD_DOCKERFILE));
+        assertEquals(3, result.stream().filter(s -> s.equals(RUN_AND_ARG_CMD_DOCKERFILE)).count());
 
-        Assert.assertFalse(result.contains(POD_LAUNCH_CMD));
+        assertFalse(result.contains(POD_LAUNCH_CMD));
     }
 }

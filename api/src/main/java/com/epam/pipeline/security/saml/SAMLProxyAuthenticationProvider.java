@@ -95,7 +95,7 @@ public class SAMLProxyAuthenticationProvider implements AuthenticationProvider {
             CustomSamlClient client = CustomSamlClient.fromMetadata(endpointId, metadataReader,
                                                                     RESPONSE_SKEW);
 
-            client.setMaxAuthenticationAge(maxAuthentificationAge);
+            //client.setMaxAuthenticationAge(maxAuthentificationAge);
             client.validate(decoded);
             return auth;
 

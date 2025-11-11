@@ -26,8 +26,8 @@ import java.util.Set;
 
 import static com.epam.pipeline.autotests.utils.Privilege.*;
 import static java.util.stream.Collectors.toSet;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.testng.assertFalse;
+import static org.testng.assertTrue;
 
 public class RunToolsInSandboxCheckDataStorageTest
         extends AbstractSinglePipelineRunningTest

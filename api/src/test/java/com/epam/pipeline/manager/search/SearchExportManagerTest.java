@@ -22,12 +22,13 @@ import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.test.creator.search.SearchCreatorUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
@@ -36,10 +37,12 @@ import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.HEADER_WI
 import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.HUMAN;
 import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.ROLE_USER;
 import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.SPECIES;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SearchExportManagerTest extends AbstractSpringTest {
 
@@ -56,8 +59,7 @@ public class SearchExportManagerTest extends AbstractSpringTest {
     @SpyBean
     private PreferenceManager preferenceManager;
 
-    @Before
-    public void setUpPreferenceManager() {
+    @BeforeEach    public void setUpPreferenceManager() {
         ReflectionTestUtils.setField(searchExportManager, "preferenceManager", preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE)).thenReturn(PAGE_SIZE);
     }
@@ -71,10 +73,10 @@ public class SearchExportManagerTest extends AbstractSpringTest {
                 .getFacetedSearchExportRequest(EXPORT_FILE_NAME, SPECIES);
         final String[] exportedCsv = new String(searchExportManager.export(facetedSearchExportRequest))
                 .split("\n");
-        Assert.assertNotNull(exportedCsv);
-        Assert.assertEquals(3, exportedCsv.length);
-        Assert.assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
-        Assert.assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(ROLE_USER) && s.contains(HUMAN)));
+        assertNotNull(exportedCsv);
+        assertEquals(3, exportedCsv.length);
+        assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
+        assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(ROLE_USER) && s.contains(HUMAN)));
     }
 
     @Test
@@ -89,18 +91,18 @@ public class SearchExportManagerTest extends AbstractSpringTest {
                 .split("\n");
         verify(searchManager).facetedSearch(facetedSearchRequest);
         verify(preferenceManager, atLeast(1)).getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE);
-        Assert.assertNotNull(exportedCsv);
-        Assert.assertEquals(3, exportedCsv.length);
-        Assert.assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
-        Assert.assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(ROLE_USER) && s.contains(HUMAN)));
+        assertNotNull(exportedCsv);
+        assertEquals(3, exportedCsv.length);
+        assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
+        assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(ROLE_USER) && s.contains(HUMAN)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailToExportWithoutPageSize() {
         when(preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE)).thenReturn(null);
         final FacetedSearchExportRequest facetedSearchExportRequest = SearchCreatorUtils
                 .getFacetedSearchExportRequest(EXPORT_FILE_NAME, SPECIES);
         facetedSearchExportRequest.getFacetedSearchRequest().setPageSize(null);
-        searchExportManager.export(facetedSearchExportRequest);
+        assertThrows(IllegalArgumentException.class, () -> searchExportManager.export(facetedSearchExportRequest));
     }
 }

@@ -35,8 +35,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
+import static org.testng.assertEquals;
+import static org.testng.assertNotEquals;
 
 public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningTest {
     private final String pipeline1 = "pipe-config-" + Utils.randomSuffix();

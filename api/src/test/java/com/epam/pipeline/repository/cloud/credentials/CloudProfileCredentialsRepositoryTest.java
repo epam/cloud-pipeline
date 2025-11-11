@@ -27,7 +27,8 @@ import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.test.creator.cloud.credentials.CloudProfileCredentialsCreatorUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -76,7 +78,8 @@ public class CloudProfileCredentialsRepositoryTest extends AbstractJpaTest {
         assertThat(awsEntity.getId(), notNullValue());
         final Long entityId = awsEntity.getId();
 
-        final AWSProfileCredentialsEntity storedAwsEntity = awsProfileCredentialsRepository.findOne(entityId);
+        final AWSProfileCredentialsEntity storedAwsEntity = awsProfileCredentialsRepository
+                .findById(entityId).orElseThrow();
         assertEquals(awsEntity, storedAwsEntity);
 
         awsEntity.setProfileName(TEST_STRING);
@@ -84,25 +87,26 @@ public class CloudProfileCredentialsRepositoryTest extends AbstractJpaTest {
         entityManager.flush();
         entityManager.clear();
 
-        final AWSProfileCredentialsEntity updatedEntity = awsProfileCredentialsRepository.findOne(entityId);
+        final AWSProfileCredentialsEntity updatedEntity = awsProfileCredentialsRepository
+                .findById(entityId).orElseThrow();
         assertEquals(awsEntity, updatedEntity);
 
-        final CloudProfileCredentialsEntity storedEntity = cloudProfileCredentialsRepository.findOne(entityId);
+        final CloudProfileCredentialsEntity storedEntity = cloudProfileCredentialsRepository
+                .findById(entityId).orElseThrow();
         assertThat(storedEntity.getId(), is(entityId));
         assertThat(storedEntity.getCloudProvider(), is(CloudProvider.AWS));
 
         final List<CloudProfileCredentialsEntity> entities =
-                StreamSupport.stream(cloudProfileCredentialsRepository.findAll().spliterator(), false)
-                        .collect(Collectors.toList());
+            StreamSupport.stream(cloudProfileCredentialsRepository.findAll().spliterator(), false).toList();
         assertThat(entities.size(), is(1));
         assertThat(entities.get(0).getId(), is(entityId));
 
-        cloudProfileCredentialsRepository.delete(entityId);
+        cloudProfileCredentialsRepository.deleteById(entityId);
 
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(cloudProfileCredentialsRepository.findOne(entityId), nullValue());
+        Assertions.assertEquals(Optional.empty(), cloudProfileCredentialsRepository.findById(entityId));
     }
 
     @Test
@@ -119,18 +123,19 @@ public class CloudProfileCredentialsRepositoryTest extends AbstractJpaTest {
         final List<CloudProfileCredentialsEntity> profiles = new ArrayList<>();
         profiles.add(profileEntity);
 
-        final PipelineUser userEntity1 = userRepository.findOne(user1.getId());
+        final PipelineUser userEntity1 = userRepository.findById(user1.getId()).orElseThrow();
         userEntity1.setCloudProfiles(profiles);
         userRepository.save(userEntity1);
 
-        final PipelineUser userEntity2 = userRepository.findOne(user2.getId());
+        final PipelineUser userEntity2 = userRepository.findById(user2.getId()).orElseThrow();
         userEntity2.setCloudProfiles(profiles);
         userRepository.save(userEntity2);
 
         entityManager.flush();
         entityManager.clear();
 
-        final CloudProfileCredentialsEntity storedProfileEntity = cloudProfileCredentialsRepository.findOne(profileId);
+        final CloudProfileCredentialsEntity storedProfileEntity = cloudProfileCredentialsRepository
+                .findById(profileId).orElseThrow();
         assertThat(storedProfileEntity.getId(), is(profileId));
         assertThat(storedProfileEntity.getUsers().size(), is(2));
     }
@@ -157,7 +162,8 @@ public class CloudProfileCredentialsRepositoryTest extends AbstractJpaTest {
         entityManager.flush();
         entityManager.clear();
 
-        final CloudProfileCredentialsEntity storedProfileEntity = cloudProfileCredentialsRepository.findOne(profileId);
+        final CloudProfileCredentialsEntity storedProfileEntity = cloudProfileCredentialsRepository
+                .findById(profileId).orElseThrow();
         assertThat(storedProfileEntity.getId(), is(profileId));
         assertThat(storedProfileEntity.getRoles().size(), is(2));
     }

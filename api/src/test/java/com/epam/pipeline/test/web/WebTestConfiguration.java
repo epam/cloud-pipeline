@@ -44,7 +44,7 @@ import java.lang.annotation.Target;
         ControllerTestBeans.class,
         RestConfiguration.class,
         AppMVCConfiguration.class,
-        JWTSecurityConfiguration.class})
+        /*JWTSecurityConfiguration.class*/})
 @WebAppConfiguration
 @AutoConfigureMockMvc
 @TestPropertySource(value={"classpath:test-application.properties"})

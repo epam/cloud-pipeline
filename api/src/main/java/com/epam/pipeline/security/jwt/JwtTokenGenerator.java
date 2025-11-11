@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
+
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
@@ -52,12 +52,13 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class JwtTokenGenerator {
+public class JwtTokenGenerator implements InitializingBean {
     @Autowired
     private PreferenceManager preferenceManager;
 
@@ -72,8 +73,8 @@ public class JwtTokenGenerator {
 
     private RSAPublicKey publicKey;
 
-    @PostConstruct
-    public void initKey() {
+    @Override
+    public void afterPropertiesSet() {
         try {
             this.privateKey = (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(
                     new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyString)));

@@ -59,8 +59,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -69,6 +69,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -321,11 +322,13 @@ public class ServerlessConfigurationManager {
         final CloseableHttpClient httpClient = HttpClients.custom()
                 .setSSLSocketFactory(csf)
                 .build();
+
         final HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-        requestFactory.setHttpClient(httpClient);
+        //requestFactory.setHttpClient(httpClient);
+
         return builder
-                .requestFactory(requestFactory)
-                .setConnectTimeout(REQUEST_TIMEOUT)
+                .requestFactory(() -> requestFactory)
+                .setConnectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .build();
     }
 

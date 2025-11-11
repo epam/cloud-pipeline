@@ -27,8 +27,8 @@ import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +45,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.extractAttributesContent;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
 
 @Transactional
 public class MetadataDaoTest extends AbstractJdbcTest {
@@ -86,26 +87,26 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         // metadata registration
         metadataDao.registerMetadataItem(metadataToSave);
         MetadataEntry createdMetadata = metadataDao.loadMetadataItem(entityVO);
-        Assert.assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
-        Assert.assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
-        Assert.assertEquals(data, createdMetadata.getData());
+        assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
+        assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
+        assertEquals(data, createdMetadata.getData());
 
         // add key to metadata
         data.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_2, DATA_VALUE_2));
         metadataDao.uploadMetadataItemKey(entityVO, DATA_KEY_2, DATA_VALUE_2, DATA_TYPE_2);
         createdMetadata = metadataDao.loadMetadataItem(entityVO);
-        Assert.assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
-        Assert.assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
-        Assert.assertEquals(data, createdMetadata.getData());
+        assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
+        assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
+        assertEquals(data, createdMetadata.getData());
 
         // delete key from metadata
         data.clear();
         data.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
         metadataDao.deleteMetadataItemKey(entityVO, DATA_KEY_2);
         createdMetadata = metadataDao.loadMetadataItem(entityVO);
-        Assert.assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
-        Assert.assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
-        Assert.assertEquals(data, createdMetadata.getData());
+        assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
+        assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
+        assertEquals(data, createdMetadata.getData());
 
         // update metadata
         data.clear();
@@ -113,9 +114,9 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         metadataToSave.setData(data);
         metadataDao.uploadMetadataItem(metadataToSave);
         createdMetadata = metadataDao.loadMetadataItem(entityVO);
-        Assert.assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
-        Assert.assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
-        Assert.assertEquals(data, createdMetadata.getData());
+        assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
+        assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
+        assertEquals(data, createdMetadata.getData());
 
         // delete several keys from metadata
         data.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
@@ -127,16 +128,16 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         keysToDelete.add(NON_EXISTING_DATA_KEY);
         metadataDao.deleteMetadataItemKeys(metadataToSave, keysToDelete);
         createdMetadata = metadataDao.loadMetadataItem(entityVO);
-        Assert.assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
-        Assert.assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
+        assertEquals(ID_1, createdMetadata.getEntity().getEntityId());
+        assertEquals(CLASS_1, createdMetadata.getEntity().getEntityClass());
         data.remove(DATA_KEY_1);
         data.remove(DATA_KEY_3);
-        Assert.assertEquals(data, createdMetadata.getData());
+        assertEquals(data, createdMetadata.getData());
 
         // delete metadata
         metadataDao.deleteMetadataItem(entityVO);
         createdMetadata = metadataDao.loadMetadataItem(entityVO);
-        Assert.assertNull(createdMetadata);
+        assertNull(createdMetadata);
     }
 
     @Test
@@ -163,12 +164,12 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         metadataEntries.add(metadataToSave1);
         metadataEntries.add(metadataToSave2);
         List<MetadataEntry> createdMetadata = metadataDao.loadMetadataItems(entities);
-        Assert.assertEquals(metadataEntries, createdMetadata);
+        assertEquals(metadataEntries, createdMetadata);
 
         metadataDao.deleteMetadataItem(entity1);
         metadataDao.deleteMetadataItem(entity2);
         createdMetadata = metadataDao.loadMetadataItems(entities);
-        Assert.assertNull(createdMetadata);
+        assertNull(createdMetadata);
     }
 
     @Test
@@ -187,7 +188,7 @@ public class MetadataDaoTest extends AbstractJdbcTest {
                         .collect(Collectors.toList()));
         Map<EntityVO, MetadataEntry> expectedMap = expectedMetadataEntries.stream()
                 .collect(Collectors.toMap(MetadataEntry::getEntity, Function.identity()));
-        actualMetadataEntries.forEach(m -> Assert.assertEquals(expectedMap.get(m.getEntity()), m));
+        actualMetadataEntries.forEach(m -> assertEquals(expectedMap.get(m.getEntity()), m));
     }
 
     @Test
@@ -208,8 +209,8 @@ public class MetadataDaoTest extends AbstractJdbcTest {
 
         List<EntityVO> loadedEntities = metadataDao.searchMetadataByClassAndKeyValue(CLASS_1,
                 Collections.singletonMap(DATA_KEY_1, new PipeConfValue(null, DATA_VALUE_1)));
-        Assert.assertEquals(1, loadedEntities.size());
-        Assert.assertEquals(entityVO, loadedEntities.get(0));
+        assertEquals(1, loadedEntities.size());
+        assertEquals(entityVO, loadedEntities.get(0));
     }
 
     @Test
@@ -229,9 +230,9 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         metadataDao.registerMetadataItem(metadataToSave);
 
         List<EntityVO> loadedEntities = metadataDao.searchMetadataByClassAndKey(CLASS_1, DATA_KEY_1);
-        Assert.assertEquals(2, loadedEntities.size());
-        Assert.assertEquals(entityVO, loadedEntities.get(0));
-        Assert.assertEquals(entityVO2, loadedEntities.get(1));
+        assertEquals(2, loadedEntities.size());
+        assertEquals(entityVO, loadedEntities.get(0));
+        assertEquals(entityVO2, loadedEntities.get(1));
     }
 
     @Test
@@ -242,11 +243,11 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         createMetadataForEntity(ID_4, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_2);
         final List<String> uniqueAttributeValues =
             metadataDao.loadUniqueValuesFromEntitiesAttribute(CLASS_1, DATA_KEY_1);
-        Assert.assertEquals(2, uniqueAttributeValues.size());
+        assertEquals(2, uniqueAttributeValues.size());
         assertThat(uniqueAttributeValues, CoreMatchers.hasItems(DATA_VALUE_1, DATA_VALUE_2));
         final List<String> emptyValues =
             metadataDao.loadUniqueValuesFromEntitiesAttribute(CLASS_1, NON_EXISTING_DATA_KEY);
-        Assert.assertEquals(0, emptyValues.size());
+        assertEquals(0, emptyValues.size());
     }
 
     @Test
@@ -256,13 +257,13 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         createMetadataForEntityWithSensitiveValue(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1, DATA_VALUE_2);
         final Map<String, List<String>> metadataDict =
             extractAttributesContent(metadataDao.buildFullMetadataDict(Collections.singletonList(SENSITIVE_DATA_KEY)));
-        Assert.assertEquals(2, metadataDict.size());
+        assertEquals(2, metadataDict.size());
         assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
         assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
-        Assert.assertFalse(metadataDict.containsKey(SENSITIVE_DATA_KEY));
+        assertFalse(metadataDict.containsKey(SENSITIVE_DATA_KEY));
         final MetadataEntry metadataEntryWithSensitiveField = metadataDao.loadMetadataItem(new EntityVO(ID_3, CLASS_1));
         final Map<String, PipeConfValue> sensitiveEntryData = metadataEntryWithSensitiveField.getData();
-        Assert.assertEquals(2, sensitiveEntryData.size());
+        assertEquals(2, sensitiveEntryData.size());
         assertMetadataValue(sensitiveEntryData.get(DATA_KEY_2), DATA_TYPE_1, DATA_VALUE_1);
         assertMetadataValue(sensitiveEntryData.get(SENSITIVE_DATA_KEY), DATA_TYPE_1, DATA_VALUE_2);
     }
@@ -274,7 +275,7 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         createMetadataForEntity(ID_3, CLASS_1, DATA_KEY_2, DATA_TYPE_1, DATA_VALUE_1);
         final Map<String, List<String>> metadataDict =
             extractAttributesContent(metadataDao.buildFullMetadataDict(Collections.emptyList()));
-        Assert.assertEquals(2, metadataDict.size());
+        assertEquals(2, metadataDict.size());
         assertThat(metadataDict.get(DATA_KEY_1), CoreMatchers.is(Arrays.asList(DATA_VALUE_1, DATA_VALUE_2)));
         assertThat(metadataDict.get(DATA_KEY_2), CoreMatchers.is(Collections.singletonList(DATA_VALUE_1)));
     }
@@ -289,8 +290,8 @@ public class MetadataDaoTest extends AbstractJdbcTest {
 
     private void assertMetadataValue(final PipeConfValue sensitivePipeConfValue, final String dataType,
                                      final String dataValue) {
-        Assert.assertEquals(sensitivePipeConfValue.getType(), dataType);
-        Assert.assertEquals(sensitivePipeConfValue.getValue(), dataValue);
+        assertEquals(sensitivePipeConfValue.getType(), dataType);
+        assertEquals(sensitivePipeConfValue.getValue(), dataValue);
     }
 
     private void createMetadataForEntity(final Long entityId, final AclClass entityClass,

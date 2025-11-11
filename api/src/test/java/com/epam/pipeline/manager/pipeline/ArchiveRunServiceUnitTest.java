@@ -29,9 +29,10 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -40,9 +41,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -71,8 +73,7 @@ public class ArchiveRunServiceUnitTest {
     private final ArchiveRunService archiveRunService = new ArchiveRunService(preferenceManager, messageHelper,
             metadataDao, userManager, roleManager, archiveRunAsyncService);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
@@ -100,20 +101,19 @@ public class ArchiveRunServiceUnitTest {
         notInvoked(metadataDao).loadMetadataItem(any());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailArchiveRunsForUserWithoutDaysAndMetadata() {
         doReturn(user()).when(userManager).loadByNameOrId(USER1);
         doReturn(new MetadataEntry()).when(metadataDao).loadMetadataItem(USER_ENTITY1);
-
-        archiveRunService.archiveRuns(USER1, true, null);
+        assertThrows(IllegalStateException.class, () -> archiveRunService.archiveRuns(USER1, true, null));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailArchiveRunsForUserWithoutDaysAndMetadataNotNumeric() {
         doReturn(user()).when(userManager).loadByNameOrId(USER1);
         doReturn(invalidMetadata(USER_ENTITY1)).when(metadataDao).loadMetadataItem(USER_ENTITY1);
-
-        archiveRunService.archiveRuns(USER1, true, null);
+        assertThrows(IllegalStateException.class,
+                () -> archiveRunService.archiveRuns(USER1, true, null));
     }
 
     @Test
@@ -138,20 +138,19 @@ public class ArchiveRunServiceUnitTest {
         notInvoked(metadataDao).loadMetadataItem(any());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailArchiveRunsForGroupWithoutDaysAndMetadata() {
         doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(new MetadataEntry()).when(metadataDao).loadMetadataItem(GROUP_ENTITY1);
-
-        archiveRunService.archiveRuns(GROUP1, false, null);
+        assertThrows(IllegalStateException.class, () -> archiveRunService.archiveRuns(GROUP1, false, null));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldFailArchiveRunsForGroupWithoutDaysAndMetadataNotNumeric() {
         doReturn(role()).when(roleManager).loadByNameOrId(GROUP1);
         doReturn(invalidMetadata(GROUP_ENTITY1)).when(metadataDao).loadMetadataItem(GROUP_ENTITY1);
 
-        archiveRunService.archiveRuns(GROUP1, false, null);
+        assertThrows(IllegalStateException.class, () -> archiveRunService.archiveRuns(GROUP1, false, null));
     }
 
     @Test

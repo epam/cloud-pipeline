@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc.[](https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 
@@ -45,11 +45,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -90,7 +90,7 @@ public class InstanceOfferManagerUnitTest {
     private static final String ANY_PATTERN = "*";
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
-    private static final String SPOT_AND_ON_DEMAND_TYPES = String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND);
+    private static final String SPOT_AND_ON_DEMAND_TYPES = String.format("%s,%s", SPOT, ON_DEMAND);
     private static final String TERM_TYPE = "OnDemand";
 
     private final AbstractCloudRegion defaultRegion = region(REGION_ID);
@@ -111,7 +111,7 @@ public class InstanceOfferManagerUnitTest {
             pipelineRunManager, messageHelper, preferenceManager, cloudRegionManager,
             contextualPreferenceManager, cloudFacade);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
         when(cloudRegionManager.load(defaultRegion.getId())).thenReturn(defaultRegion);
@@ -366,19 +366,23 @@ public class InstanceOfferManagerUnitTest {
         return region;
     }
 
-    class InstanceRequestByRegion extends ArgumentMatcher<InstanceOfferRequestVO> {
-        private long regionId;
+    static class InstanceRequestByRegion implements ArgumentMatcher<InstanceOfferRequestVO> {
+        private final long regionId;
 
         InstanceRequestByRegion(long id) {
             this.regionId = id;
         }
 
         @Override
-        public boolean matches(Object argument) {
-            if (!(argument instanceof InstanceOfferRequestVO)) {
+        public boolean matches(InstanceOfferRequestVO argument) {
+            if (argument == null) {
                 return false;
             }
-            return ((InstanceOfferRequestVO) argument).getRegionId().equals(regionId);
+            Long argRegionId = argument.getRegionId();
+            if (argRegionId == null) {
+                return false;
+            }
+            return argRegionId.equals(regionId);
         }
     }
 

@@ -44,7 +44,7 @@ import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static org.testng.Assert.assertFalse;
+import static org.testng.assertFalse;
 
 public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements Authorization, Navigation {
     private final String storage = "deactGenUrl-storage-" + Utils.randomSuffix();

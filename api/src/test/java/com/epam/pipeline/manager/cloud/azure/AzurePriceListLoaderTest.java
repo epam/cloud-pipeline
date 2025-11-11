@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.pricing.azure.AzureRateCardPricingMeter;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
 import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.manager.cloud.CloudInstancePriceService.HOURS_UNIT;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AzurePriceListLoaderTest {
 

@@ -19,6 +19,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Data
+@EqualsAndHashCode
 public class NodePool implements NodePoolInfo {
 
     private Long id;

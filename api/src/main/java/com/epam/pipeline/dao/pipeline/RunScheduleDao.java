@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -157,42 +156,34 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setScheduleSequence(final String scheduleSequence) {
         this.scheduleSequence = scheduleSequence;
     }
 
-    @Required
     public void setCreateRunScheduleQuery(final String createRunScheduleQuery) {
         this.createRunScheduleQuery = createRunScheduleQuery;
     }
 
-    @Required
     public void setUpdateRunScheduleQuery(final String updateRunScheduleQuery) {
         this.updateRunScheduleQuery = updateRunScheduleQuery;
     }
 
-    @Required
     public void setDeleteRunScheduleQuery(final String deleteRunScheduleQuery) {
         this.deleteRunScheduleQuery = deleteRunScheduleQuery;
     }
 
-    @Required
     public void setLoadRunScheduleQuery(final String loadRunScheduleQuery) {
         this.loadRunScheduleQuery = loadRunScheduleQuery;
     }
 
-    @Required
     public void setLoadAllRunSchedulesByRunIdQuery(final String loadAllRunSchedulesByRunIdQuery) {
         this.loadAllRunSchedulesByRunIdQuery = loadAllRunSchedulesByRunIdQuery;
     }
 
-    @Required
     public void setLoadAllRunSchedulesQuery(final String loadAllRunSchedulesQuery) {
         this.loadAllRunSchedulesQuery = loadAllRunSchedulesQuery;
     }
 
-    @Required
     public void setDeleteRunSchedulesForRunQuery(final String deleteRunSchedulesForRunQuery) {
         this.deleteRunSchedulesForRunQuery = deleteRunSchedulesForRunQuery;
     }

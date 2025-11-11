@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.app;
 
-import com.epam.pipeline.entity.user.DefaultRoles;
+/*import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.saml.impersonation.ImpersonateFailureHandler;
 import com.epam.pipeline.security.saml.impersonation.ImpersonateSuccessHandler;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
@@ -33,23 +33,22 @@ import org.opensaml.xml.parse.ParserPool;
 import org.opensaml.xml.parse.StaticBasicParserPool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
+
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+*//*import org.springframework.security.saml.SAMLProcessingFilter;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.saml.SAMLAuthenticationProvider;
-import org.springframework.security.saml.SAMLBootstrap;
-import org.springframework.security.saml.SAMLDiscovery;
-import org.springframework.security.saml.SAMLEntryPoint;
-import org.springframework.security.saml.SAMLLogoutProcessingFilter;
-import org.springframework.security.saml.SAMLProcessingFilter;
+//import org.springframework.security.saml.SAMLAuthenticationProvider;
+//import org.springframework.security.saml.SAMLBootstrap;
+//import org.springframework.security.saml.SAMLDiscovery;
+//import org.springframework.security.saml.SAMLEntryPoint;
+//import org.springframework.security.saml.SAMLLogoutProcessingFilter;
 import org.springframework.security.saml.SAMLWebSSOHoKProcessingFilter;
 import org.springframework.security.saml.context.SAMLContextProviderImpl;
 import org.springframework.security.saml.key.JKSKeyManager;
@@ -81,7 +80,7 @@ import org.springframework.security.saml.websso.WebSSOProfileConsumerHoKImpl;
 import org.springframework.security.saml.websso.WebSSOProfileConsumerImpl;
 import org.springframework.security.saml.websso.WebSSOProfileECPImpl;
 import org.springframework.security.saml.websso.WebSSOProfileImpl;
-import org.springframework.security.saml.websso.WebSSOProfileOptions;
+import org.springframework.security.saml.websso.WebSSOProfileOptions;*//*
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -105,11 +104,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.stream.Collectors;*/
+
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.List;
 
 @Configuration
 @Order(3)
-public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
+public class SAMLSecurityConfiguration implements WebMvcConfigurer {
 
     private static final int RESPONSE_SKEW = 1200;
     private static final int LOGOUT_RESPONSE_SKEW = 120;
@@ -159,15 +165,15 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
     private String[] swaggerAccessRoles;
 
-    @Autowired
+    /*@Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
-    /**
+    *//**
      * Defines the web based security configuration.
      *
      * @param   http It allows configuring web based security for specific http requests.
      * @throws  Exception
-     */
+     *//*
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.requestMatcher(getFullRequestMatcher());
@@ -221,12 +227,12 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return new OrRequestMatcher(matchers);
     }
 
-    /**
+    *//**
      * Sets a custom authentication provider.
      *
      * @param   auth SecurityBuilder used to create an AuthenticationManager.
      * @throws  Exception
-     */
+     *//*
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(samlAuthenticationProvider());
@@ -537,12 +543,12 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return new SAMLProcessorImpl(bindings);
     }
 
-    /**
+    *//**
      * Define the security filter chain in order to support SSO Auth by using SAML 2.0
      *
      * @return Filter chain proxy
      * @throws Exception
-     */
+     *//*
     @Bean
     public FilterChainProxy samlFilter() throws Exception {
         List<SecurityFilterChain> chains = new ArrayList<>();
@@ -563,13 +569,13 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return new FilterChainProxy(chains);
     }
 
-    /**
+    *//**
      * Returns the authentication manager currently used by Spring.
      * It represents a bean definition with the aim allow wiring from
      * other classes performing the Inversion of Control (IoC).
      *
      * @throws  Exception
-     */
+     *//*
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
@@ -586,7 +592,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         filter.setFailureHandler(new ImpersonateFailureHandler(getImpersonationStartUrl(), getImpersonationStopUrl()));
         filter.setSuccessHandler(new ImpersonateSuccessHandler(getImpersonationStartUrl(), getImpersonationStopUrl()));
         return filter;
-    }
+    }*/
 
     public String getImpersonationStartUrl() {
         return impersonationOperationsRootUrl + "/start";

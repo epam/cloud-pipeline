@@ -19,26 +19,19 @@ package com.epam.pipeline.security.saml;
 import com.coveo.saml.SamlException;
 import com.coveo.saml.SamlResponse;
 import com.epam.pipeline.utils.URLUtils;
-import com.sun.org.apache.xerces.internal.parsers.DOMParser;
 import org.joda.time.DateTime;
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.binding.decoding.BasicURLComparator;
 import org.opensaml.common.binding.decoding.URIComparator;
 import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.AuthnStatement;
 import org.opensaml.saml2.core.Response;
 import org.opensaml.saml2.core.validator.ResponseSchemaValidator;
 import org.opensaml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml2.metadata.KeyDescriptor;
 import org.opensaml.saml2.metadata.SingleSignOnService;
-import org.opensaml.saml2.metadata.impl.EndpointImpl;
-import org.opensaml.saml2.metadata.provider.DOMMetadataProvider;
 import org.opensaml.saml2.metadata.provider.MetadataProvider;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
-import org.opensaml.xml.Configuration;
-import org.opensaml.xml.encryption.DecryptionException;
-import org.opensaml.xml.io.UnmarshallingException;
 import org.opensaml.xml.security.credential.Credential;
 import org.opensaml.xml.security.credential.UsageType;
 import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
@@ -50,14 +43,9 @@ import org.opensaml.xml.util.Base64;
 import org.opensaml.xml.validation.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.saml.context.SAMLMessageContext;
-import org.springframework.security.saml.websso.WebSSOProfileConsumerImpl;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-import java.io.IOException;
+/*import org.springframework.security.saml.context.SAMLMessageContext;
+import org.springframework.security.saml.websso.WebSSOProfileConsumerImpl;*/
 import java.io.Reader;
-import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -66,10 +54,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.springframework.security.saml.util.SAMLUtil.isDateTimeSkewValid;
+//import static org.springframework.security.saml.util.SAMLUtil.isDateTimeSkewValid;
 
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class CustomSamlClient extends WebSSOProfileConsumerImpl {
+public class CustomSamlClient /*extends WebSSOProfileConsumerImpl*/ {
     private static final Logger logger = LoggerFactory.getLogger(CustomSamlClient.class);
     public static final String SSO_ENDPOINT = "/saml/SSO";
 
@@ -161,7 +149,7 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
 
         logger.trace("Validating SAML response: " + decodedResponse);
 
-        try {
+        /*try {
             DOMParser parser = createDOMParser();
             parser.parse(new InputSource(new StringReader(decodedResponse)));
             return (Response) Configuration.getUnmarshallerFactory()
@@ -169,7 +157,8 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
                         .unmarshall(parser.getDocument().getDocumentElement());
         } catch (IOException | SAXException | UnmarshallingException ex) {
             throw new SAMLException("Cannot decode xml encoded response", ex);
-        }
+        }*/
+        return null;
     }
 
     /**
@@ -182,7 +171,7 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
         validateResponse(response);
         validateSignature(response);
         validateIssueTime(response);
-        validateAssertion(response);
+        //validateAssertion(response);
         validateDestination(response);
 
         Assertion assertion = response.getAssertions().get(0);
@@ -191,10 +180,10 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
 
     private void validateIssueTime(Response response) throws SAMLException {
         DateTime time = response.getIssueInstant();
-        if (!isDateTimeSkewValid(responseSkew, time)) {
+        /*if (!isDateTimeSkewValid(responseSkew, time)) {
             throw new SAMLException("Response issue time is either too old or with date in the future, skew "
                                     + responseSkew + ", time " + time);
-        }
+        }*/
     }
 
     private void validateDestination(Response response) throws SAMLException {
@@ -287,7 +276,7 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
         }
     }
 
-    private void validateAssertion(Response response) throws SAMLException {
+    /*private void validateAssertion(Response response) throws SAMLException {
         if (response.getAssertions().size() != 1) {
             throw new SAMLException("The response doesn't contain exactly 1 assertion");
         }
@@ -333,7 +322,7 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
         } else {
             verifyAssertionConditions(assertion.getConditions(), context, false);
         }
-    }
+    }*/
 
     private void validateSignature(Response response) throws SAMLException {
         Signature responseSignature = response.getSignature();
@@ -372,8 +361,8 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
                 });
     }
 
-    private static DOMParser createDOMParser() throws SAMLException {
-        DOMParser parser =
+    /*private static DOMParser createDOMParser() throws SAMLException {
+        *//*DOMParser parser =
             new DOMParser() {
                 {
                     try {
@@ -384,13 +373,15 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
                             ex);
                     }
                 }
-            };
+            };*//*
 
-        return parser;
-    }
+
+        //return parser;
+        return null;
+    }*/
 
     private static MetadataProvider createMetadataProvider(Reader metadata) throws SAMLException {
-        try {
+        /*try {
             DOMParser parser = createDOMParser();
             parser.parse(new InputSource(metadata));
             DOMMetadataProvider provider =
@@ -399,7 +390,8 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
             return provider;
         } catch (IOException | SAXException | MetadataProviderException ex) {
             throw new SAMLException("Cannot load identity provider metadata", ex);
-        }
+        }*/
+        return null;
     }
 
     private static EntityDescriptor getEntityDescriptor(MetadataProvider metadataProvider)

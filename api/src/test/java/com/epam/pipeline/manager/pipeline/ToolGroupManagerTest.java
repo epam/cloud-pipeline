@@ -21,13 +21,15 @@ import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration(classes = TestApplication.class)
 public class ToolGroupManagerTest extends AbstractManagerTest {
@@ -45,8 +47,7 @@ public class ToolGroupManagerTest extends AbstractManagerTest {
 
     private DockerRegistry registry;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         registry = new DockerRegistry();
         registry.setPath(TEST_REPO);
         registry.setOwner(TEST_USER);
@@ -59,8 +60,8 @@ public class ToolGroupManagerTest extends AbstractManagerTest {
         ToolGroup group = createToolGroup();
 
         ToolGroup loadedGroup = toolGroupManager.loadByNameOrId(registry.getPath() + "/" + group.getName());
-        Assert.assertEquals(group.getId(), loadedGroup.getId());
-        Assert.assertEquals(group.getName(), loadedGroup.getName());
+        assertEquals(group.getId(), loadedGroup.getId());
+        assertEquals(group.getName(), loadedGroup.getName());
     }
 
     @Test
@@ -71,7 +72,7 @@ public class ToolGroupManagerTest extends AbstractManagerTest {
         toolGroupManager.changeOwner(group.getId(), TEST_OTHER_USER);
         ToolGroup loaded = toolGroupManager.load(group.getId());
 
-        Assert.assertEquals(TEST_OTHER_USER, loaded.getOwner());
+        assertEquals(TEST_OTHER_USER, loaded.getOwner());
     }
 
     private ToolGroup createToolGroup() {
@@ -98,9 +99,9 @@ public class ToolGroupManagerTest extends AbstractManagerTest {
         toolGroupManager.updateToolGroup(group);
         ToolGroup updated = toolGroupManager.load(group.getId());
 
-        Assert.assertEquals(TEST_OTHER_DESCRIPTION, updated.getDescription());
-        Assert.assertEquals(original.getName(), updated.getName());
-        Assert.assertEquals(original.getOwner(), updated.getOwner());
-        Assert.assertEquals(original.getRegistryId(), updated.getRegistryId());
+        assertEquals(TEST_OTHER_DESCRIPTION, updated.getDescription());
+        assertEquals(original.getName(), updated.getName());
+        assertEquals(original.getOwner(), updated.getOwner());
+        assertEquals(original.getRegistryId(), updated.getRegistryId());
     }
 }

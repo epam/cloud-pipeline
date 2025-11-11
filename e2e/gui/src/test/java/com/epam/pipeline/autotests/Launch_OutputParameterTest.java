@@ -27,7 +27,7 @@ import java.util.List;
 
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
+import static org.testng.assertEquals;
 
 public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunningTest {
 

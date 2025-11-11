@@ -29,7 +29,6 @@ import lombok.Setter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.SingleColumnRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -277,62 +276,50 @@ public class AclTestDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreateAclSidQuery(String createAclSidQuery) {
         this.createAclSidQuery = createAclSidQuery;
     }
 
-    @Required
     public void setCreateAclObjectIdentityQuery(String createAclObjectIdentityQuery) {
         this.createAclObjectIdentityQuery = createAclObjectIdentityQuery;
     }
 
-    @Required
     public void setSidSequenceName(String sidSequenceName) {
         this.sidSequenceName = sidSequenceName;
     }
 
-    @Required
     public void setObjectIdentitySequenceName(String objectIdentitySequenceName) {
         this.objectIdentitySequenceName = objectIdentitySequenceName;
     }
 
-    @Required
     public void setLoadAclClassQuery(String loadAclClassQuery) {
         this.loadAclClassQuery = loadAclClassQuery;
     }
 
-    @Required
     public void setCreateAclClassQuery(String createAclClassQuery) {
         this.createAclClassQuery = createAclClassQuery;
     }
 
-    @Required
     public void setClassSequenceName(String classSequenceName) {
         this.classSequenceName = classSequenceName;
     }
 
-    @Required
     public void setEntrySequenceName(String entrySequenceName) {
         this.entrySequenceName = entrySequenceName;
     }
 
-    @Required
     public void setCreateAclEntryQuery(String createAclEntryQuery) {
         this.createAclEntryQuery = createAclEntryQuery;
     }
 
-    @Required
     public void setLoadAclSidQuery(String loadAclSidQuery) {
         this.loadAclSidQuery = loadAclSidQuery;
     }
 
-    @Required
     public void setLoadAclObjectIdentityQuery(String loadAclObjectIdentityQuery) {
         this.loadAclObjectIdentityQuery = loadAclObjectIdentityQuery;
     }
 
-    @Required
     public void setLoadAclEntriesQuery(String loadAclEntriesQuery) {
         this.loadAclEntriesQuery = loadAclEntriesQuery;
     }

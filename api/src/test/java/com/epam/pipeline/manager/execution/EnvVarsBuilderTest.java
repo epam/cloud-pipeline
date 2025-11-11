@@ -20,14 +20,16 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import io.fabric8.kubernetes.api.model.EnvVar;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class EnvVarsBuilderTest {
 
@@ -56,8 +58,7 @@ public class EnvVarsBuilderTest {
     private Map<SystemParams, String> systemParams;
     private PipelineConfiguration configuration;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         systemParams = matchSystemParams();
         configuration = matchPipeConfig();
     }
@@ -66,12 +67,12 @@ public class EnvVarsBuilderTest {
     public void buildEnvVarsTest() throws Exception {
         List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(new PipelineRun(), configuration, systemParams,
                 null);
-        Assert.assertTrue(isParameterRight(envVars, P1, P1_VALUE, NUMBER_TYPE));
-        Assert.assertTrue(isParameterRight(envVars, P2, P2_VALUE, STRING_TYPE));
-        Assert.assertTrue(isParameterRight(envVars, MAIN_CLASS, MAIN_CLASS_VALUE, STRING_TYPE));
-        Assert.assertTrue(isParameterRight(envVars, MAIN_FILE, MAIN_FILE_VALUE, STRING_TYPE));
-        Assert.assertTrue(isParameterRight(envVars, VERSION, VERSION_VALUE, STRING_TYPE));
-        Assert.assertTrue(isParameterRight(envVars, PIPELINE_ID, PIPELINE_ID_VALUE, STRING_TYPE));
+        assertTrue(isParameterRight(envVars, P1, P1_VALUE, NUMBER_TYPE));
+        assertTrue(isParameterRight(envVars, P2, P2_VALUE, STRING_TYPE));
+        assertTrue(isParameterRight(envVars, MAIN_CLASS, MAIN_CLASS_VALUE, STRING_TYPE));
+        assertTrue(isParameterRight(envVars, MAIN_FILE, MAIN_FILE_VALUE, STRING_TYPE));
+        assertTrue(isParameterRight(envVars, VERSION, VERSION_VALUE, STRING_TYPE));
+        assertTrue(isParameterRight(envVars, PIPELINE_ID, PIPELINE_ID_VALUE, STRING_TYPE));
     }
 
     private boolean isParameterRight(List<EnvVar> envVars, String name, String value, String type) {

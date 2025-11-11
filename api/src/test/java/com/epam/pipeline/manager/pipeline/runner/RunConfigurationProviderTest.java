@@ -17,8 +17,8 @@
 package com.epam.pipeline.manager.pipeline.runner;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,8 +35,8 @@ import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -70,8 +70,7 @@ public class RunConfigurationProviderTest {
             toolManager, permissionsHelper, pipelineConfigurationManager, instanceOfferManager, messageHelper, runner,
             cloudRegionDao);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         when(instanceOfferManager.isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), any(), eq(false)))
                 .thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), any(), eq(false)))

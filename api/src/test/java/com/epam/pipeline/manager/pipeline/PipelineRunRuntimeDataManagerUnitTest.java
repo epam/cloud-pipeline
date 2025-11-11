@@ -28,16 +28,19 @@ import com.epam.pipeline.manager.pipeline.runtime.PipelineRunRuntimeDataExtracto
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 
 
 public class PipelineRunRuntimeDataManagerUnitTest {
@@ -62,22 +65,22 @@ public class PipelineRunRuntimeDataManagerUnitTest {
             new PipelineRunNextflowTraceDataExtractor(new JsonMapper())
     );
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void getPipelineRunRuntimeDataShouldFailIfPreferenceIsNotConfiguredTest() {
         final PipelineRunRuntimeDataManager runRuntimeDataManager = new PipelineRunRuntimeDataManager(
                 preferenceManager, storageManager, dataExtractors);
 
         Mockito.when(preferenceManager.getPreference(Mockito.eq(SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA)))
                 .thenReturn(new RunSyncRuntimeDataConfig(SYNC_TIMEOUT, null));
-        runRuntimeDataManager.getPipelineRunRuntimeData(RUN_ID, RunSyncRuntimeDataType.NF_TRACE, null);
+        assertThrows(IllegalArgumentException.class, () -> runRuntimeDataManager.getPipelineRunRuntimeData(RUN_ID,
+            RunSyncRuntimeDataType.NF_TRACE, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test//(expected = .class)
     public void getPipelineRunRuntimeDataShouldFailIfExtractorDoesntDefinedTest() {
         final PipelineRunRuntimeDataManager runRuntimeDataManager = new PipelineRunRuntimeDataManager(
                 preferenceManager, storageManager, Collections.emptyList());
@@ -87,7 +90,8 @@ public class PipelineRunRuntimeDataManagerUnitTest {
                     RunSyncRuntimeDataType.NF_TRACE,
                     new RunSyncRuntimeDataConfigEntry(S3_STORAGE_PATH + FOLDER_STORAGE_PREFIX, DATA_PATH_PREFIX)))
             );
-        runRuntimeDataManager.getPipelineRunRuntimeData(RUN_ID, RunSyncRuntimeDataType.NF_TRACE, null);
+        assertThrows(IllegalArgumentException.class, () -> runRuntimeDataManager.getPipelineRunRuntimeData(RUN_ID,
+            RunSyncRuntimeDataType.NF_TRACE, null));
     }
 
     @Test

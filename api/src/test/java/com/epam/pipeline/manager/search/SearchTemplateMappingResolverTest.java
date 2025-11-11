@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.search;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.entity.search.SearchTemplateExportColumnData;
 import com.epam.pipeline.entity.search.SearchTemplateExportSheetMapping;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
 
 public class SearchTemplateMappingResolverTest {
     private static final String FACET_1 = "Study name";

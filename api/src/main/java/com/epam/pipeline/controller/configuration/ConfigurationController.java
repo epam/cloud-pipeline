@@ -21,12 +21,14 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Api(value = "Run Configuration methods")
+@Tag(name = "Run Configuration methods")
 public class ConfigurationController extends AbstractRestController {
 
     @Autowired
@@ -46,12 +48,11 @@ public class ConfigurationController extends AbstractRestController {
 
     @PostMapping(value = "/configuration")
     @ResponseBody
-    @ApiOperation(
-            value = "Creates or updates run configuration.",
-            notes = "Creates or updates run configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates or updates run configuration.",
+            description = "Creates or updates run configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<RunConfiguration> saveConfiguration(
             @RequestBody RunConfigurationVO configuration) {
@@ -64,12 +65,11 @@ public class ConfigurationController extends AbstractRestController {
 
     @DeleteMapping(value = "/configuration/{id}")
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes run configuration.",
-            notes = "Deletes run configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes run configuration.",
+            description = "Deletes run configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<RunConfiguration> deleteConfiguration(@PathVariable Long id) {
         return Result.success(configurationApiService.delete(id));
@@ -77,12 +77,11 @@ public class ConfigurationController extends AbstractRestController {
 
     @GetMapping(value = "/configuration/{id}")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads run configuration.",
-            notes = "Loads run configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads run configuration.",
+            description = "Loads run configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<RunConfiguration> loadConfiguration(@PathVariable Long id) {
         return Result.success(configurationApiService.load(id));
@@ -90,12 +89,11 @@ public class ConfigurationController extends AbstractRestController {
 
     @GetMapping(value = "/configuration/loadAll")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all run configurations.",
-            notes = "Loads all run configurations.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all run configurations.",
+            description = "Loads all run configurations.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<RunConfiguration>> loadAllConfigurations() {
         return Result.success(configurationApiService.loadAll());

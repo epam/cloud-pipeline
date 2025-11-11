@@ -19,11 +19,13 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderLogRequestFilter;
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GitReaderClientTest {
 
@@ -32,11 +34,11 @@ public class GitReaderClientTest {
         GitReaderLogRequestFilter mapped = GitReaderClient.toGitReaderRequestFilter(
                 GitCommitsFilter.builder().build(), Collections.emptyList());
 
-        Assert.assertTrue(CollectionUtils.isEmpty(mapped.getPathMasks()));
-        Assert.assertNull(mapped.getAuthors());
-        Assert.assertNull(mapped.getRef());
-        Assert.assertNull(mapped.getDateFrom());
-        Assert.assertNull(mapped.getDateTo());
+        assertTrue(CollectionUtils.isEmpty(mapped.getPathMasks()));
+        assertNull(mapped.getAuthors());
+        assertNull(mapped.getRef());
+        assertNull(mapped.getDateFrom());
+        assertNull(mapped.getDateTo());
     }
 
     @Test
@@ -46,7 +48,7 @@ public class GitReaderClientTest {
                         .extensions(Collections.singletonList("js"))
                         .build(), Collections.emptyList());
 
-        Assert.assertArrayEquals(mapped.getPathMasks().toArray(), Collections.singletonList("*.js").toArray());
+        assertArrayEquals(mapped.getPathMasks().toArray(), Collections.singletonList("*.js").toArray());
     }
 
     @Test
@@ -56,7 +58,7 @@ public class GitReaderClientTest {
                         .extensions(Arrays.asList("js", "py"))
                         .build(), Collections.emptyList());
 
-        Assert.assertArrayEquals(mapped.getPathMasks().toArray(), new String[]{"*.js", "*.py"});
+        assertArrayEquals(mapped.getPathMasks().toArray(), new String[]{"*.js", "*.py"});
     }
 
     @Test
@@ -67,7 +69,7 @@ public class GitReaderClientTest {
                         .extensions(Arrays.asList("js", "py"))
                         .build(), Collections.emptyList());
 
-        Assert.assertArrayEquals(mapped.getPathMasks().toArray(), new String[]{"path/*.js", "path/*.py"});
+        assertArrayEquals(mapped.getPathMasks().toArray(), new String[]{"path/*.js", "path/*.py"});
     }
 
     @Test
@@ -77,7 +79,7 @@ public class GitReaderClientTest {
                         .path("path/")
                         .build(), Collections.emptyList());
 
-        Assert.assertArrayEquals(mapped.getPathMasks().toArray(), new String[]{"path/"});
+        assertArrayEquals(mapped.getPathMasks().toArray(), new String[]{"path/"});
     }
 
 }

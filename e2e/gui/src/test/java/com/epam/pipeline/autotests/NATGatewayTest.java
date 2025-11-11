@@ -61,8 +61,8 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
+import static org.testng.assertEquals;
+import static org.testng.assertNotEquals;
 
 public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements Authorization {
 

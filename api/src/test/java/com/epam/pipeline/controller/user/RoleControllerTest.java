@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;

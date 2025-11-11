@@ -19,12 +19,14 @@ import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,7 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Api(value = "Datastorage usage methods")
+@Tag(name = "Datastorage usage methods")
 @RequiredArgsConstructor
 public class StorageUsageController extends AbstractRestController {
 
@@ -40,12 +42,11 @@ public class StorageUsageController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/path/usage")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns storage usage statistics.",
-            notes = "Returns storage usage statistics.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns storage usage statistics.",
+            description = "Returns storage usage statistics.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<StorageUsage> getStorageUsage(@RequestParam final String id,
                                                 @RequestParam(required = false) final String path) {
@@ -54,12 +55,11 @@ public class StorageUsageController extends AbstractRestController {
 
     @PutMapping(value = "/datastorage/path/usage")
     @ResponseBody
-    @ApiOperation(
-            value = "Request update of storage usage statistics.",
-            notes = "Request update of storage usage statistics.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Request update of storage usage statistics.",
+            description = "Request update of storage usage statistics.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result updateStorageUsage(@RequestParam final String id) {
         dataStorageApiService.updateStorageUsage(id);

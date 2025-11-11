@@ -55,13 +55,14 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ import java.util.stream.LongStream;
 @Slf4j
 @ConditionalOnProperty(value = "cluster.disable.autoscaling", matchIfMissing = true, havingValue = "false")
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class AutoscaleManager extends AbstractSchedulingManager {
+public class AutoscaleManager extends AbstractSchedulingManager implements InitializingBean {
     private final AutoscaleManagerCore core;
 
     @Autowired
@@ -91,8 +92,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
             scheduleFixedDelaySecured(core::runAutoscaling, SystemPreferences.CLUSTER_AUTOSCALE_RATE,
                     "Autoscaling job");

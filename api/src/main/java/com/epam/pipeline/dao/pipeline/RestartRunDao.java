@@ -21,7 +21,6 @@ import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
@@ -110,37 +109,30 @@ public class RestartRunDao extends DryRunJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreatePipelineRestartRunQuery(String createPipelineRestartRunQuery) {
         this.createPipelineRestartRunQuery = createPipelineRestartRunQuery;
     }
 
-    @Required
     public void setCountPipelineRestartRunQuery(String countPipelineRestartRunQuery) {
         this.countPipelineRestartRunQuery = countPipelineRestartRunQuery;
     }
 
-    @Required
     public void setLoadPipelineRestartedRunForParentRunQuery(String loadPipelineRestartedRunForParentRunQuery) {
         this.loadPipelineRestartedRunForParentRunQuery = loadPipelineRestartedRunForParentRunQuery;
     }
 
-    @Required
     public void setLoadAllRestartedRunsQuery(String loadAllRestartedRunsQuery) {
         this.loadAllRestartedRunsQuery = loadAllRestartedRunsQuery;
     }
 
-    @Required
     public void setLoadAllRestartedRunsForInitialRunQuery(String loadAllRestartedRunsForInitialRunQuery) {
         this.loadAllRestartedRunsForInitialRunQuery = loadAllRestartedRunsForInitialRunQuery;
     }
 
-    @Required
     public void setLoadRestartRunByIdQuery(final String loadRestartRunByIdQuery) {
         this.loadRestartRunByIdQuery = loadRestartRunByIdQuery;
     }
 
-    @Required
     public void setDeleteRestartRunByIdsQuery(final String deleteRestartRunByIdsQuery) {
         this.deleteRestartRunByIdsQuery = deleteRestartRunByIdsQuery;
     }

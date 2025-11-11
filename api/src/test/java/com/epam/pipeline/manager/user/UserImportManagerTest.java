@@ -29,7 +29,7 @@ import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -46,10 +46,13 @@ import static com.epam.pipeline.util.CustomMatchers.anyLongList;
 import static com.epam.pipeline.util.CustomMatchers.anyStringList;
 import static com.epam.pipeline.util.CustomMatchers.anyStringMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,18 +82,18 @@ public class UserImportManagerTest {
         final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, buildMetadata());
         final CategoricalAttribute categoricalAttribute = getCategoricalAttribute(KEY, VALUE, null);
 
-        when(userManager.create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong()))
+        when(userManager.create(nullable(String.class), anyList(), anyList(), anyMap(), nullable(Long.class)))
                 .thenReturn(getPipelineUser(USER_NAME));
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.empty());
-        when(roleManager.create(anyString(), anyBoolean(), anyBoolean(), anyLong())).thenReturn(role);
+        when(roleManager.create(nullable(String.class), anyBoolean(), anyBoolean(), nullable(Long.class))).thenReturn(role);
 
         final List<PipelineUserEvent> resultEvents = userImportManager
                 .processUser(userWithMetadata, true, true,
                         Collections.singletonList(categoricalAttribute));
 
-        verify(userManager).create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
-        verify(roleManager).create(anyString(), anyBoolean(), anyBoolean(), anyLong());
-        verify(roleManager).assignRole(anyLong(), anyLongList());
+        verify(userManager).create(anyString(), anyList(), anyList(), anyMap(), any());
+        verify(roleManager).create(anyString(), anyBoolean(), anyBoolean(), any());
+        verify(roleManager).assignRole(any(), anyLongList());
         verify(metadataManager).updateEntityMetadata(any(), any(), any());
         assertThat(resultEvents).hasSize(4);
     }

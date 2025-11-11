@@ -37,7 +37,7 @@ import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -99,7 +99,7 @@ public class CloudProfileCredentialsManagerProvider {
         Assert.state(CollectionUtils.isEmpty(entity.getUsers())
                         && CollectionUtils.isEmpty(entity.getRoles()),
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_HAS_LINKS, id));
-        repository.delete(id);
+        repository.deleteById(id);
         return mapper.toDto(entity);
     }
 
@@ -155,9 +155,8 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     private CloudProfileCredentialsEntity findEntity(final Long id) {
-        final CloudProfileCredentialsEntity entity = repository.findOne(id);
-        Assert.notNull(entity, messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ID_NOT_FOUND, id));
-        return entity;
+        return repository.findById(id).orElseThrow(() -> new IllegalArgumentException(
+            messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ID_NOT_FOUND, id)));
     }
 
     private List<? extends AbstractCloudProfileCredentials> toDtos(
@@ -193,15 +192,13 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     private PipelineUser findUserEntity(final Long userId) {
-        final PipelineUser userEntity = userRepository.findOne(userId);
-        Assert.notNull(userEntity, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, userId));
-        return userEntity;
+        return userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException(
+            messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, userId)));
     }
 
     private Role findRoleEntity(final Long roleId) {
-        final Role roleEntity = roleRepository.findOne(roleId);
-        Assert.notNull(roleEntity, messageHelper.getMessage(MessageConstants.ERROR_ROLE_ID_NOT_FOUND, roleId));
-        return roleEntity;
+        return roleRepository.findById(roleId).orElseThrow(() -> new IllegalArgumentException(
+            messageHelper.getMessage(MessageConstants.ERROR_ROLE_ID_NOT_FOUND, roleId)));
     }
 
     private List<? extends AbstractCloudProfileCredentials> findUserProfiles(final Long id) {

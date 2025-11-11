@@ -25,12 +25,14 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Api(value = "Folders")
+@Tag(name = "Folders")
 public class FolderController  extends AbstractRestController {
 
     @Autowired
@@ -53,12 +55,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/register", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new update.",
-            notes = "Registers a new update.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new update.",
+            description = "Registers a new update.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> registerFolder(@RequestBody Folder folder,
                                          @RequestParam(required = false) final String templateName) {
@@ -70,12 +71,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/update", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates a update.",
-            notes = "Updates a update.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates a update.",
+            description = "Updates a update.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> updateFolder(@RequestBody Folder folder) {
         return Result.success(folderApiService.update(folder));
@@ -83,12 +83,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/project", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a project for an input entity id and class.",
-            notes = "Returns a project for an input entity id and class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a project for an input entity id and class.",
+            description = "Returns a project for an input entity id and class.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> loadProject(@RequestParam Long id, @RequestParam AclClass aclClass) {
         return Result.success(folderApiService.getProject(id, aclClass));
@@ -96,12 +95,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/projects", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists all folders with project indicator.",
-            notes = "Lists all folders with project indicator.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists all folders with project indicator.",
+            description = "Lists all folders with project indicator.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> loadProjects() {
         return Result.success(folderApiService.loadProjects());
@@ -109,12 +107,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/loadTree", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists folders tree.",
-            notes = "Lists folders tree.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists folders tree.",
+            description = "Lists folders tree.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> loadFolderTree() {
         return Result.success(folderApiService.loadTree());
@@ -124,12 +121,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/{id}/load", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a update subtree, specified by ID.",
-            notes = "Returns a update subtree, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a update subtree, specified by ID.",
+            description = "Returns a update subtree, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> loadFolder(@PathVariable(value = "id") final Long id) {
         return Result.success(folderApiService.load(id));
@@ -137,12 +133,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/find", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a folder, specified by ID or name.",
-            notes = "Returns a folder, specified by ID or name.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a folder, specified by ID or name.",
+            description = "Returns a folder, specified by ID or name.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> findFolder(@RequestParam(value = "id") final String identifier) {
         return Result.success(folderApiService.loadByIdOrPath(identifier));
@@ -150,12 +145,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/{id}/metadata", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a list of entities, specified by class.",
-            notes = "Returns a list of entities, specified by class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a list of entities, specified by class.",
+            description = "Returns a list of entities, specified by class.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<MetadataEntity>> loadFolderMetadataEntitiesByClass(
             @PathVariable(value = "id") final Long id,
@@ -165,12 +159,11 @@ public class FolderController  extends AbstractRestController {
 
     @RequestMapping(value = "/folder/{id}/delete", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a folder, specified by ID.",
-            notes = "Deletes a folder, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a folder, specified by ID.",
+            description = "Deletes a folder, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> deleteFolder(
             @PathVariable(value = "id") final Long id,
@@ -184,12 +177,11 @@ public class FolderController  extends AbstractRestController {
 
     @PostMapping(value = "/folder/{id}/clone")
     @ResponseBody
-    @ApiOperation(
-            value = "Clones a folder, specified by ID.",
-            notes = "Clones a folder, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Clones a folder, specified by ID.",
+            description = "Clones a folder, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> cloneFolder(@PathVariable final Long id,
                                       @RequestParam(required = false) final Long parentId,
@@ -200,12 +192,11 @@ public class FolderController  extends AbstractRestController {
 
     @PostMapping(value = "/folder/{id}/lock")
     @ResponseBody
-    @ApiOperation(
-            value = "Locks a project and all its children from any changes from non-admin users.",
-            notes = "Locks a project and all its children from any changes from non-admin users.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Locks a project and all its children from any changes from non-admin users.",
+            description = "Locks a project and all its children from any changes from non-admin users.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> lockFolder(@PathVariable final Long id) {
         return Result.success(folderApiService.lockFolder(id));
@@ -213,12 +204,11 @@ public class FolderController  extends AbstractRestController {
 
     @PostMapping(value = "/folder/{id}/unlock")
     @ResponseBody
-    @ApiOperation(
-            value = "Unlocks a project and all its children.",
-            notes = "Unlocks a project and all its children.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Unlocks a project and all its children.",
+            description = "Unlocks a project and all its children.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Folder> unlockFolder(@PathVariable final Long id) {
         return Result.success(folderApiService.unlockFolder(id));

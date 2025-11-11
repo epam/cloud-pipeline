@@ -33,7 +33,6 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolOSVersion;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -316,64 +315,52 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             return registry;
         }
     }
-    @Required
     public void setLoadAllDockerRegistriesQuery(String loadAllDockerRegistriesQuery) {
         this.loadAllDockerRegistriesQuery = loadAllDockerRegistriesQuery;
     }
 
-    @Required
     public void setLoadDockerRegistryByIdQuery(String loadDockerRegistryByIdQuery) {
         this.loadDockerRegistryByIdQuery = loadDockerRegistryByIdQuery;
     }
 
-    @Required
     public void setDockerRegistrySequence(String dockerRegistrySequence) {
         this.dockerRegistrySequence = dockerRegistrySequence;
     }
 
-    @Required
     public void setCreateDockerRegistryQuery(String createDockerRegistryQuery) {
         this.createDockerRegistryQuery = createDockerRegistryQuery;
     }
 
-    @Required
     public void setDeleteDockerRegistryQuery(String deleteDockerRegistryQuery) {
         this.deleteDockerRegistryQuery = deleteDockerRegistryQuery;
     }
 
-    @Required
     public void setUpdateDockerRegistryQuery(String updateDockerRegistryQuery) {
         this.updateDockerRegistryQuery = updateDockerRegistryQuery;
     }
 
-    @Required
     public void setLoadDockerRegistryByNameQuery(String loadDockerRegistryByNameQuery) {
         this.loadDockerRegistryByNameQuery = loadDockerRegistryByNameQuery;
     }
 
-    @Required
     public void setLoadDockerRegistriesWithCertsQuery(String loadDockerRegistriesWithCertsQuery) {
         this.loadDockerRegistriesWithCertsQuery = loadDockerRegistriesWithCertsQuery;
     }
 
-    @Required
     public void setLoadDockerRegistryByExtUrlQuery(String loadDockerRegistryByExtUrlQuery) {
         this.loadDockerRegistryByExtUrlQuery = loadDockerRegistryByExtUrlQuery;
     }
 
-    @Required
     public void setLoadDockerRegistriesWithContentQuery(
             String loadDockerRegistriesWithContentQuery) {
         this.loadDockerRegistriesWithContentQuery = loadDockerRegistriesWithContentQuery;
     }
 
-    @Required
     public void setLoadDockerRegistriesWithSecurityScanEnabledQuery(
         String loadDockerRegistriesWithSecurityScanEnabledQuery) {
         this.loadDockerRegistriesWithSecurityScanEnabledQuery = loadDockerRegistriesWithSecurityScanEnabledQuery;
     }
 
-    @Required
     public void setLoadDockerRegistryWithContentQuery(String loadDockerRegistryWithContentQuery) {
         this.loadDockerRegistryWithContentQuery = loadDockerRegistryWithContentQuery;
     }

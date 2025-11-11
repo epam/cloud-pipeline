@@ -23,12 +23,14 @@ import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,22 +39,22 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Api(value = "Statistics reporting")
+@Tag(name = "Statistics reporting")
 @RequestMapping(value = "/report")
 @RequiredArgsConstructor
 public class ReportController extends AbstractRestController {
     private final ReportApiService reportApiService;
 
     @PostMapping("/users")
-    @ApiOperation(value = "Reports users statistics", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Reports users statistics")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<UsersUsageInfo>> loadUsersUsage(@RequestBody final UsersUsageReportFilterVO filter) {
         return Result.success(reportApiService.loadUsersUsage(filter));
     }
 
     @PostMapping("/pools")
-    @ApiOperation(value = "Reports node pools usage statistics", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Reports node pools usage statistics")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<NodePoolUsageReport>> loadNodePoolUsage(@RequestBody final ReportFilter filter) {
         return Result.success(reportApiService.loadNodePoolReport(filter));
     }

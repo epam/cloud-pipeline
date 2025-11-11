@@ -37,26 +37,35 @@ import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.quality.Strictness.LENIENT;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 public class ToolManagerTest extends AbstractManagerTest {
 
     private static final String TEST = "test";
@@ -121,9 +130,9 @@ public class ToolManagerTest extends AbstractManagerTest {
     private ToolGroup firstToolGroup;
     private ToolGroup secondToolGroup;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        //MockitoAnnotations.initMocks(this);
 
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactory);
 
@@ -160,7 +169,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolVersion.setDigest("test_digest");
         toolVersion.setSize(DOCKER_SIZE);
         toolVersion.setVersion("test_version");
-        Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.any()))
+        Mockito.when(dockerClient.getVersionAttributes(any(), any(), any()))
                 .thenReturn(toolVersion);
 
         Mockito.when(instanceOfferManager.isToolInstanceAllowedInAnyRegion(eq(TEST_ALLOWED_INSTANCE_TYPE), any()))
@@ -180,10 +189,10 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         Tool loaded = toolManager.loadTool(tool.getRegistry(), tool.getImage());
 
-        Assert.assertEquals(tool.getImage(), loaded.getImage());
-        Assert.assertEquals(TEST_REPO, loaded.getRegistry());
-        Assert.assertEquals(tool.getCpu(), loaded.getCpu());
-        Assert.assertEquals(tool.getRam(), loaded.getRam());
+        assertEquals(tool.getImage(), loaded.getImage());
+        assertEquals(TEST_REPO, loaded.getRegistry());
+        assertEquals(tool.getCpu(), loaded.getCpu());
+        assertEquals(tool.getRam(), loaded.getRam());
     }
 
     @Test
@@ -215,35 +224,36 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void createToolShouldThrowIfInstanceTypeIsNotAllowed() {
         final Tool tool = generateTool(TEST_GROUP_ID1);
         tool.setToolGroupId(firstToolGroup.getId());
         tool.setInstanceType(TEST_NOT_ALLOWED_INSTANCE_TYPE);
-
-        toolManager.create(tool, true);
+        assertThrows(IllegalArgumentException.class, () -> toolManager.create(tool, true));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void createToolShouldThrownExceptionIfToolAlreadyExists() {
         Tool tool = generateTool(TEST_GROUP_ID1);
 
         tool.setRegistry(firstRegistry.getPath());
+        tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
-        toolManager.create(tool, true);
+        assertThrows(IllegalArgumentException.class, () -> toolManager.create(tool, true));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void createToolShouldThrownExceptionIfToolAlreadyExistsInAnotherRegistry() {
         Tool tool = generateTool(TEST_GROUP_ID1);
 
         tool.setRegistry(firstRegistry.getPath());
+        tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
         tool.setRegistry(secondRegistry.getPath());
-        toolManager.create(tool, true);
+        assertThrows(IllegalArgumentException.class, () -> toolManager.create(tool, true));
     }
 
     @Test
@@ -264,13 +274,13 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.updateTool(tool);
         Tool loaded = toolManager.loadTool(tool.getRegistry(), tool.getImage());
 
-        Assert.assertEquals(TEST_IMAGE, loaded.getImage());
-        Assert.assertEquals(firstRegistry.getPath(), loaded.getRegistry());
-        Assert.assertEquals(CHANGED_TEST_CPU, loaded.getCpu());
-        Assert.assertEquals(CHANGED_TEST_RAM, loaded.getRam());
-        Assert.assertEquals(LABELS, loaded.getLabels());
-        Assert.assertEquals(ENDPOINTS, loaded.getEndpoints());
-        Assert.assertFalse(loaded.isAllowCommit());
+        assertEquals(TEST_IMAGE, loaded.getImage());
+        assertEquals(firstRegistry.getPath(), loaded.getRegistry());
+        assertEquals(CHANGED_TEST_CPU, loaded.getCpu());
+        assertEquals(CHANGED_TEST_RAM, loaded.getRam());
+        assertEquals(LABELS, loaded.getLabels());
+        assertEquals(ENDPOINTS, loaded.getEndpoints());
+        assertFalse(loaded.isAllowCommit());
     }
 
     @Test
@@ -308,7 +318,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.updateTool(createdTool);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void updateToolShouldThrowIfInstanceTypeIsNotAllowed() {
         final Tool tool = generateTool(TEST_GROUP_ID1);
@@ -316,10 +326,10 @@ public class ToolManagerTest extends AbstractManagerTest {
         final Tool createdTool = toolManager.create(tool, true);
 
         createdTool.setInstanceType(TEST_NOT_ALLOWED_INSTANCE_TYPE);
-        toolManager.updateTool(createdTool);
+        assertThrows(IllegalArgumentException.class, () -> toolManager.updateTool(createdTool));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void assertThatToolUniqueAcrossRegistriesShouldThrowsWhenToolAlreadyExistInOtherReg() {
         Tool tool = generateTool(TEST_GROUP_ID1);
@@ -328,7 +338,8 @@ public class ToolManagerTest extends AbstractManagerTest {
         tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
 
-        toolManager.assertThatToolUniqueAcrossRegistries(TEST_IMAGE, secondRegistry.getPath());
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.assertThatToolUniqueAcrossRegistries(TEST_IMAGE, secondRegistry.getPath()));
     }
 
     @Test
@@ -366,11 +377,11 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         // without filter by registry
         List<Tool> tools = toolManager.loadAllTools(null, null);
-        Assert.assertEquals(2, tools.size());
+        assertEquals(2, tools.size());
 
         // with filter by registry
         tools = toolManager.loadAllTools(firstRegistry.getPath(), null);
-        Assert.assertEquals(1, tools.size());
+        assertEquals(1, tools.size());
     }
 
     @Test
@@ -390,19 +401,19 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         // without filters
         List<Tool> tools = toolManager.loadAllTools();
-        Assert.assertEquals(2, tools.size());
+        assertEquals(2, tools.size());
 
         // with filter by labels and registry (1 filters - 1 result)
         tools = toolManager.loadAllTools(secondRegistry.getPath(), generateLabels(LABEL_2));
-        Assert.assertEquals(1, tools.size());
+        assertEquals(1, tools.size());
 
         // with filter by labels and registry (2 filters - 1 result)
         tools = toolManager.loadAllTools(secondRegistry.getPath(), generateLabels(LABEL_1, LABEL_2));
-        Assert.assertEquals(1, tools.size());
+        assertEquals(1, tools.size());
 
         // with filter by labels and registry (wrong filter - no result)
         tools = toolManager.loadAllTools(secondRegistry.getPath(), generateLabels(LABEL_1));
-        Assert.assertEquals(0, tools.size());
+        assertEquals(0, tools.size());
     }
 
     @Test
@@ -413,9 +424,9 @@ public class ToolManagerTest extends AbstractManagerTest {
         tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
 
-        Assert.assertEquals(1, toolManager.loadAllTools().size());
+        assertEquals(1, toolManager.loadAllTools().size());
         toolManager.delete(firstRegistry.getPath(), tool.getImage(), true);
-        Assert.assertEquals(0, toolManager.loadAllTools().size());
+        assertEquals(0, toolManager.loadAllTools().size());
     }
 
     @Test
@@ -426,24 +437,26 @@ public class ToolManagerTest extends AbstractManagerTest {
         tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
 
-        Assert.assertEquals(1, toolManager.loadAllTools().size());
+        assertEquals(1, toolManager.loadAllTools().size());
         toolManager.delete(null, tool.getImage(), true);
-        Assert.assertEquals(0, toolManager.loadAllTools().size());
+        assertEquals(0, toolManager.loadAllTools().size());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void deleteToolShouldThrownExceptionIfRegistryWasntProvidedAndItHasTwoToolsWithImage()  {
         Tool tool = generateTool(TEST_GROUP_ID1);
 
         tool.setRegistry(firstRegistry.getPath());
+        tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
 
         tool.setRegistry(secondRegistry.getPath());
+        tool.setToolGroupId(secondToolGroup.getId());
         toolManager.create(tool, true);
 
-        Assert.assertEquals(2, toolManager.loadAllTools().size());
-        toolManager.delete(null, tool.getImage(), true);
+        assertEquals(2, toolManager.loadAllTools().size());
+        assertThrows(IllegalArgumentException.class, () -> toolManager.delete(null, tool.getImage(), true));
     }
 
     @Test
@@ -460,9 +473,9 @@ public class ToolManagerTest extends AbstractManagerTest {
                 new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST, new HashMap<>(), null, null, false);
         toolManager.updateToolVulnerabilities(Collections.emptyList(), tool.getId(), LATEST_TAG);
         toolManager.updateToolDependencies(Collections.emptyList(), tool.getId(), LATEST_TAG);
-        Assert.assertNotNull(toolManager.load(tool.getId()));
+        assertNotNull(toolManager.load(tool.getId()));
         toolManager.delete(null, tool.getImage(), true);
-        Assert.assertNull(toolManager.load(tool.getId()));
+        assertNull(toolManager.load(tool.getId()));
     }
 
     @Test
@@ -475,22 +488,24 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         Tool loaded = toolManager.loadByNameOrId(firstRegistry.getPath() + "/" + tool.getImage() + ":" + "tag");
 
-        Assert.assertEquals(tool.getImage() + ":" + "tag", loaded.getImage());
-        Assert.assertEquals(TEST_REPO, loaded.getRegistry());
+        assertEquals(tool.getImage() + ":" + "tag", loaded.getImage());
+        assertEquals(TEST_REPO, loaded.getRegistry());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void loadToolShouldThrowExceptionWhenTwoTagsGiven() {
         Tool tool = generateTool(TEST_GROUP_ID1);
 
         tool.setRegistry(firstRegistry.getPath());
+        tool.setToolGroupId(firstToolGroup.getId());
         toolManager.create(tool, true);
 
-        toolManager.loadByNameOrId(firstRegistry.getPath() + "/" + tool.getImage() + ":tag1" + ":tag2");
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> toolManager.loadByNameOrId(firstRegistry.getPath() + "/" + tool.getImage() + ":tag1" + ":tag2"));
     }
 
-    @Test()
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testUpdateToolScanStatus() {
         Tool tool = generateTool(TEST_GROUP_ID1);
@@ -508,10 +523,10 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.updateWhiteListWithToolVersionStatus(tool.getId(), LATEST_TAG, true);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
-        Assert.assertEquals(status, versionScan.getStatus());
-        Assert.assertEquals(now, versionScan.getScanDate());
-        Assert.assertEquals(now, versionScan.getSuccessScanDate());
-        Assert.assertEquals(layerRef, versionScan.getLastLayerRef());
+        assertEquals(status, versionScan.getStatus());
+        assertEquals(now, versionScan.getScanDate());
+        assertEquals(now, versionScan.getSuccessScanDate());
+        assertEquals(layerRef, versionScan.getLastLayerRef());
 
         layerRef = "newlayerref";
         digest = "newdigest";
@@ -519,12 +534,12 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
                 layerRef, digest, new HashMap<>(), null, null, false);
-        Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
+        assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
-        Assert.assertEquals(now, versionScan.getScanDate());
-        Assert.assertEquals(now, versionScan.getSuccessScanDate());
-        Assert.assertEquals(layerRef, versionScan.getLastLayerRef());
-        Assert.assertFalse(versionScan.isFromWhiteList());
+        assertEquals(now, versionScan.getScanDate());
+        assertEquals(now, versionScan.getSuccessScanDate());
+        assertEquals(layerRef, versionScan.getLastLayerRef());
+        assertFalse(versionScan.isFromWhiteList());
     }
 
     @Test
@@ -550,21 +565,21 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
-        Assert.assertNotNull(toolOSVersion);
-        Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
-        Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
+        assertNotNull(toolOSVersion);
+        assertEquals(CENTOS, toolOSVersion.getDistribution());
+        assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
 
         toolOSPref = SystemPreferences.DOCKER_SECURITY_TOOL_OS.toPreference();
         toolOSPref.setValue("ubuntu:14.04");
         preferenceManager.update(Collections.singletonList(toolOSPref));
         loaded = toolManager.loadToolScanResult(tool);
         toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
-        Assert.assertNotNull(toolOSVersion);
-        Assert.assertEquals(CENTOS, toolOSVersion.getDistribution());
-        Assert.assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
+        assertNotNull(toolOSVersion);
+        assertEquals(CENTOS, toolOSVersion.getDistribution());
+        assertEquals(CENTOS_VERSION, toolOSVersion.getVersion());
     }
 
-    @Test()
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadToolScanResult() {
         String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
@@ -581,30 +596,30 @@ public class ToolManagerTest extends AbstractManagerTest {
                 latestVersion, new ToolOSVersion(TEST, TEST), testRef, testRef, new HashMap<>(), null, null, false);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
-        Assert.assertEquals(
+        assertEquals(
                 ToolScanStatus.COMPLETED,
                 loaded.getToolVersionScanResults().get(latestVersion).getStatus()
         );
 
-        Assert.assertEquals(scanDate, loaded.getToolVersionScanResults().get(latestVersion).getSuccessScanDate());
-        Assert.assertEquals(scanDate, loaded.getToolVersionScanResults().get(latestVersion).getScanDate());
+        assertEquals(scanDate, loaded.getToolVersionScanResults().get(latestVersion).getSuccessScanDate());
+        assertEquals(scanDate, loaded.getToolVersionScanResults().get(latestVersion).getScanDate());
 
         Optional<String> loadedRef = toolManager.loadToolVersionScan(tool.getId(), latestVersion)
                 .map(ToolVersionScanResult::getLastLayerRef);
-        Assert.assertTrue(loadedRef.isPresent());
-        Assert.assertEquals(testRef, loadedRef.get());
+        assertTrue(loadedRef.isPresent());
+        assertEquals(testRef, loadedRef.get());
 
         Optional<String> loadedDigest = toolManager.loadToolVersionScan(tool.getId(), latestVersion)
                 .map(ToolVersionScanResult::getDigest);
-        Assert.assertTrue(loadedDigest.isPresent());
-        Assert.assertEquals(testRef, loadedDigest.get());
+        assertTrue(loadedDigest.isPresent());
+        assertEquals(testRef, loadedDigest.get());
 
         // check that we will get empty ToolVersionScanResult for not scanned version
-        Assert.assertEquals(
+        assertEquals(
                 ToolScanStatus.NOT_SCANNED,
                 loaded.getToolVersionScanResults().get(prevVersion).getStatus()
         );
-        Assert.assertEquals(null, loaded.getToolVersionScanResults().get(prevVersion).getSuccessScanDate());
+        assertEquals(null, loaded.getToolVersionScanResults().get(prevVersion).getSuccessScanDate());
     }
 
     @Test
@@ -614,10 +629,10 @@ public class ToolManagerTest extends AbstractManagerTest {
         String repoImage = "repo/image";
         String imageTag = "image:tag";
         String image = "image";
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(repoImageTag));
-        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(repoImage));
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(imageTag));
-        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(image));
+        assertEquals(TAG, toolManager.getTagFromImageName(repoImageTag));
+        assertEquals(LATEST_TAG, toolManager.getTagFromImageName(repoImage));
+        assertEquals(TAG, toolManager.getTagFromImageName(imageTag));
+        assertEquals(LATEST_TAG, toolManager.getTagFromImageName(image));
     }
 
     @Test
@@ -634,7 +649,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         String testFileName = TEST;
 
         toolManager.updateToolIcon(tool.getId(), testFileName, randomBytes);
-        Assert.assertNotNull(toolManager.loadToolIcon(tool.getId()));
+        assertNotNull(toolManager.loadToolIcon(tool.getId()));
 
         toolManager.delete(tool.getRegistry(), tool.getImage(), false);
     }
@@ -657,10 +672,10 @@ public class ToolManagerTest extends AbstractManagerTest {
                 digest, new HashMap<>(), null, null);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
-        Assert.assertEquals(status, versionScan.getStatus());
-        Assert.assertEquals(now, versionScan.getScanDate());
-        Assert.assertEquals(null, versionScan.getSuccessScanDate());
-        Assert.assertEquals(layerRef, versionScan.getLastLayerRef());
+        assertEquals(status, versionScan.getStatus());
+        assertEquals(now, versionScan.getScanDate());
+        assertEquals(null, versionScan.getSuccessScanDate());
+        assertEquals(layerRef, versionScan.getLastLayerRef());
     }
 
     @Test
@@ -682,9 +697,9 @@ public class ToolManagerTest extends AbstractManagerTest {
                 new HashMap<>(), null, null, false);
         ToolVersionScanResult versionScan =
                 toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
-        Assert.assertEquals(status, versionScan.getStatus());
-        Assert.assertEquals(scanDate, versionScan.getScanDate());
-        Assert.assertEquals(scanDate, versionScan.getSuccessScanDate());
+        assertEquals(status, versionScan.getStatus());
+        assertEquals(scanDate, versionScan.getScanDate());
+        assertEquals(scanDate, versionScan.getSuccessScanDate());
 
         status = ToolScanStatus.FAILED;
         layerRef = "newlayerref";
@@ -693,10 +708,10 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         toolManager.updateToolVersionScanStatus(
                 tool.getId(), status, newScanDate, LATEST_TAG, layerRef, digest, new HashMap<>(), null, null);
-        Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
+        assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
-        Assert.assertEquals(newScanDate, versionScan.getScanDate());
-        Assert.assertEquals(scanDate, versionScan.getSuccessScanDate());
+        assertEquals(newScanDate, versionScan.getScanDate());
+        assertEquals(scanDate, versionScan.getSuccessScanDate());
     }
 
     @Test

@@ -21,26 +21,26 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(Parameterized.class) public class CommandBuilderTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyList;
+
+@ExtendWith(MockitoExtension.class)
+public class CommandBuilderTest {
 
     private static final String PYTHON_SRC = "python src/";
     private static final String RUN_DATE = "run_date";
@@ -59,88 +59,79 @@ import org.mockito.junit.MockitoRule;
 
     private static final boolean ENABLE_AUTOSCALING = true;
 
+    @InjectMocks
+    private CommandBuilder commandBuilder;
 
-    private String template;
-    private String expected;
+    @Mock
+    private MessageHelper messageHelper;
 
-    public CommandBuilderTest(String template, String expected) {
-        this.template = template;
-        this.expected = expected;
+    @BeforeEach
+    public void setUp() {
+        Mockito.lenient().when(messageHelper.getMessage(Mockito.anyString(), anyList())).thenReturn("");
     }
 
-    @InjectMocks private CommandBuilder commandBuilder;
-
-    @Mock private MessageHelper messageHelper;
-
-    @Rule public MockitoRule rule = MockitoJUnit.rule();
-
-    @Before public void setUp() {
-        Mockito.when(messageHelper.getMessage(Mockito.anyString(), Mockito.anyObject()))
-                .thenReturn("");
-    }
-
-    @Parameters public static List<Object[]> balanceRates() {
-        return Arrays.asList(
-            new Object[][] {
-                {
-                    PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] -a [api] -v [pipeline-version]",
-                    PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
-                        + " -a " + API_HOST + " -v " + TEST_VERSION
-                },
-                {
-                    PYTHON_SRC + "[main_file] [main_class] [user-params] [sys-params]",
-                    PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " --sample $" + SAMPLE + " --input-fastq $"
-                        + INPUT_FASTQ + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION
-                        + " --namespace " + KUBE_NAMESPACE + " --parent " + POD_ID + " --pipeline-name "
-                        + PIPELINE_NAME + " --run-date " + RUN_DATE + " --run-time " + RUN_TIME + " --run-id " + RUN_ID
-                        + " --pipeline-id " + PIPELINE_ID + " --autoscaling-enabled "
-                },
-                {
-                    PYTHON_SRC + "[main_file] [main_class] [user-params] -srv [api]",
-                    PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " --sample $" + SAMPLE + " --input-fastq $"
-                        + INPUT_FASTQ + " -srv " + API_HOST
-                },
-                {
-                    PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] [sys-params]",
-                    PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
-                        + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION
-                        + " --namespace " + KUBE_NAMESPACE
-                        + " --parent " + POD_ID + " --pipeline-name " + PIPELINE_NAME + " --run-date " + RUN_DATE
-                        + " --run-time " + RUN_TIME + " --run-id " + RUN_ID + " --pipeline-id " + PIPELINE_ID
-                        + " --autoscaling-enabled "
-                }
-            }
+    static Stream<Arguments> balanceRates() {
+        return Stream.of(
+                Arguments.of(
+                        PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] -a [api] -v [pipeline-version]",
+                        PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
+                                + " -a " + API_HOST + " -v " + TEST_VERSION
+                ),
+                Arguments.of(
+                        PYTHON_SRC + "[main_file] [main_class] [user-params] [sys-params]",
+                        PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " --sample $" + SAMPLE + " --input-fastq $"
+                                + INPUT_FASTQ + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION
+                                + " --namespace " + KUBE_NAMESPACE + " --parent " + POD_ID + " --pipeline-name "
+                                + PIPELINE_NAME + " --run-date " + RUN_DATE + " --run-time " + RUN_TIME + " --run-id " + RUN_ID
+                                + " --pipeline-id " + PIPELINE_ID + " --autoscaling-enabled "
+                ),
+                Arguments.of(
+                        PYTHON_SRC + "[main_file] [main_class] [user-params] -srv [api]",
+                        PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " --sample $" + SAMPLE + " --input-fastq $"
+                                + INPUT_FASTQ + " -srv " + API_HOST
+                ),
+                Arguments.of(
+                        PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] [sys-params]",
+                        PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
+                                + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION
+                                + " --namespace " + KUBE_NAMESPACE
+                                + " --parent " + POD_ID + " --pipeline-name " + PIPELINE_NAME + " --run-date " + RUN_DATE
+                                + " --run-time " + RUN_TIME + " --run-id " + RUN_ID + " --pipeline-id " + PIPELINE_ID
+                                + " --autoscaling-enabled "
+                )
         );
     }
 
-    @Test public void testBuild() {
+    @ParameterizedTest
+    @MethodSource("balanceRates")
+    public void testBuild(String template, String expected) {
         Map<SystemParams, String> sysParams = matchSystemParams();
-        Assert.assertEquals(expected, commandBuilder.build(constructConfiguration(), sysParams));
+        assertEquals(expected, commandBuilder.build(constructConfiguration(template), sysParams));
     }
 
-    private PipelineConfiguration constructConfiguration() {
+    private PipelineConfiguration constructConfiguration(String template) {
 
         PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setCmdTemplate(template);
         configuration.setMainFile(MAIN_FILE);
         configuration.setMainClass(MAIN_CLASS);
         configuration.setEnvironmentParams(
-            new LinkedHashMap<String, String>(){
-                {
-                    put("main_class", MAIN_CLASS);
-                    put("main_file", MAIN_FILE);
-                    put("cmd_template", template);
+                new LinkedHashMap<String, String>(){
+                    {
+                        put("main_class", MAIN_CLASS);
+                        put("main_file", MAIN_FILE);
+                        put("cmd_template", template);
+                    }
                 }
-            }
         );
 
         configuration.setParameters(
-            new LinkedHashMap<String, PipeConfValueVO>() {
-                {
-                    put("sample", new PipeConfValueVO(SAMPLE));
-                    put("input-fastq", new PipeConfValueVO(INPUT_FASTQ));
+                new LinkedHashMap<String, PipeConfValueVO>() {
+                    {
+                        put("sample", new PipeConfValueVO(SAMPLE));
+                        put("input-fastq", new PipeConfValueVO(INPUT_FASTQ));
+                    }
                 }
-            }
         );
         return configuration;
     }

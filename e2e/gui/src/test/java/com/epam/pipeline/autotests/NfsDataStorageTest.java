@@ -394,8 +394,8 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     private void assertFileSize(File file, int expectedFileSize) {
         long actualFileSize = file.length();
 
-        Assert.assertTrue(file.exists());
-        Assert.assertEquals(actualFileSize, expectedFileSize);
+        assertTrue(file.exists());
+        assertEquals(actualFileSize, expectedFileSize);
     }
 
     private void reloadPageAndWait() {

@@ -38,6 +38,7 @@ public class SchedulingService extends AbstractSchedulingService implements Init
         this.taskName = taskName;
     }
 
+    @Override
     public void afterPropertiesSet() {
         scheduleFixedDelay(monitoringService::monitor, monitorDelayPreferenceName, taskName);
     }

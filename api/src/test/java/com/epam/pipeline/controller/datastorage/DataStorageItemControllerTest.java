@@ -29,8 +29,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DataStorageItemControllerTest extends AbstractDataStorageControllerTest {
 
@@ -441,7 +442,7 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final List<UploadFileMetadata> actualResult = JsonMapper
                 .parseData(mvcResult.getResponse().getContentAsString(),
                         new TypeReference<List<UploadFileMetadata>>() { });
-        Assert.assertEquals(uploadFileMetadataList, actualResult);
+        assertEquals(uploadFileMetadataList, actualResult);
     }
 
     @Test
@@ -488,7 +489,7 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
 
         final String actualData = mvcResult.getResponse().getContentAsString();
         final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
-        Assert.assertEquals(TEST, actualData);
+        assertEquals(TEST, actualData);
         assertThat(contentDispositionHeader).contains(TEST);
     }
 

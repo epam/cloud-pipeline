@@ -23,7 +23,7 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
-import static org.testng.Assert.assertEquals;
+import static org.testng.assertEquals;
 
 public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
 

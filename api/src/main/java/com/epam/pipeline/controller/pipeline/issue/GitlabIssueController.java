@@ -25,13 +25,12 @@ import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueFilter;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueVO;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,14 +40,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/issue/gitlab")
-@Api(value = "Gitlab Issues")
+@Tag(name = "Gitlab Issues")
 @RequiredArgsConstructor
 public class GitlabIssueController extends AbstractRestController {
 
@@ -56,50 +55,46 @@ public class GitlabIssueController extends AbstractRestController {
     private final GitlabIssueApiService gitlabIssueApiService;
 
     @PostMapping
-    @ApiOperation(
-            value = "Creates Issue in System Gitlab project.",
-            notes = "Creates Issue in System Gitlab project." +
-                    "Attachments should be specified as list of files paths.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates Issue in System Gitlab project.",
+            description = "Creates Issue in System Gitlab project." +
+                    "Attachments should be specified as list of files paths.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitlabIssue> createIssue(@RequestBody final GitlabIssueVO issue) {
         return Result.success(gitlabIssueApiService.createIssue(issue));
     }
 
     @PutMapping
-    @ApiOperation(
-            value = "Updates Issue in System Gitlab project.",
-            notes = "Updates Issue in System Gitlab project." +
-                    "Attachments should be specified as list of files paths.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates Issue in System Gitlab project.",
+            description = "Updates Issue in System Gitlab project." +
+                    "Attachments should be specified as list of files paths.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitlabIssue> updateIssue(@RequestBody final GitlabIssueVO issue) {
         return Result.success(gitlabIssueApiService.updateIssue(issue));
     }
 
     @DeleteMapping(value = "/{issue_id}")
-    @ApiOperation(
-            value = "Deletes Issue in System Gitlab project.",
-            notes = "Deletes Issue in System Gitlab project.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes Issue in System Gitlab project.",
+            description = "Deletes Issue in System Gitlab project.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Boolean> deleteIssue(@PathVariable(value = ISSUE_ID) final Long issueId) {
         return Result.success(gitlabIssueApiService.deleteIssue(issueId));
     }
 
     @PostMapping(value = "/filter")
-    @ApiOperation(
-            value = "Gets all users issues.",
-            notes = "Gets all users issues.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets all users issues.",
+            description = "Gets all users issues.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PagedResult<List<GitlabIssue>>> getIssues(@RequestParam final Integer page,
                                                             @RequestParam final Integer pageSize,
@@ -108,20 +103,18 @@ public class GitlabIssueController extends AbstractRestController {
     }
 
     @GetMapping(value = "/{issue_id}")
-    @ApiOperation(
-            value = "Gets Gitlab project issue.",
-            notes = "Gets Gitlab project issue.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets Gitlab project issue.",
+            description = "Gets Gitlab project issue.")
 
     public Result<GitlabIssue> getIssue(@PathVariable(value = ISSUE_ID) final Long issueId) {
         return Result.success(gitlabIssueApiService.getIssue(issueId));
     }
 
     @GetMapping(value = "/attachment")
-    @ApiOperation(
-            value = "Downloads Gitlab project attachment.",
-            notes = "Downloads Gitlab project attachment.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Downloads Gitlab project attachment.",
+            description = "Downloads Gitlab project attachment.")
     void downloadAttachment(@RequestParam final String secret,
                             final HttpServletResponse response) throws IOException {
         byte[] bytes = gitlabIssueApiService.downloadAttachment(secret);
@@ -129,12 +122,11 @@ public class GitlabIssueController extends AbstractRestController {
     }
 
     @PostMapping(value = "/{issue_id}/comment")
-    @ApiOperation(
-            value = "Adds comment to Gitlab project issue.",
-            notes = "Adds comment to Gitlab project issue.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Adds comment to Gitlab project issue.",
+            description = "Adds comment to Gitlab project issue.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitlabIssueComment> addIssueComment(@PathVariable(value = ISSUE_ID) final Long issueId,
                                                       @RequestBody final GitlabIssueCommentRequest comment) {

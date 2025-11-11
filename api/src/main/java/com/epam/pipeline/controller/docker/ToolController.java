@@ -32,15 +32,14 @@ import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.fileupload2.core.FileUploadException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,9 +51,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -63,7 +60,7 @@ import java.util.List;
 import java.util.Set;
 
 @Controller
-@Api(value = "Tools")
+@Tag(name = "Tools")
 public class ToolController extends AbstractRestController {
 
     public static final String REGISTRY_PARAM = "registry";
@@ -83,12 +80,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/register", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new tool.",
-            notes = "Registers a new tool.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new tool.",
+            description = "Registers a new tool.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Tool> registerTool(@RequestBody Tool tool) {
         return Result.success(toolApiService.create(tool));
@@ -96,12 +92,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/update", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates tool's requirements.",
-            notes = "Updates tool's requirements.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates tool's requirements.",
+            description = "Updates tool's requirements.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Tool> updateTool(@RequestBody Tool tool) {
         return Result.success(toolApiService.updateTool(tool));
@@ -109,12 +104,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/updateWhiteList", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Add or remove image from white list.",
-            notes = "Add or remove image from white list.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Add or remove image from white list.",
+            description = "Add or remove image from white list.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ToolVersionScanResult> updateWhiteListWithToolVersion(@RequestParam long toolId,
                                                                         @RequestParam String version,
@@ -125,12 +119,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/load", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a tool, specified by image name.",
-            notes = "Returns a tool, specified by image name.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a tool, specified by image name.",
+            description = "Returns a tool, specified by image name.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Tool> loadTool(@RequestParam(required = false, value = REGISTRY_PARAM) final String registry,
                                  @RequestParam(value = IMAGE_PARAM) final String image) {
@@ -139,15 +132,14 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/delete", method= RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a tool, specified by image name.",
-            notes = "Deletes a tool, specified by image name. "
+    @Operation(
+            summary = "Deletes a tool, specified by image name.",
+            description = "Deletes a tool, specified by image name. "
                     + "To delete tools's version, provide a auxiliary parameter \"version\". "
                     + "To delete the whole tool, provide no \"version\" parameter. "
-                    + "Use \"hard\" == true to delete tool from database and docker registry as well.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+                    + "Use \"hard\" == true to delete tool from database and docker registry as well.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Tool> deleteTool(@RequestParam(required = false, value = REGISTRY_PARAM) final String registry,
                                    @RequestParam(value = IMAGE_PARAM) final String image,
@@ -162,12 +154,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/{id}/tags", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a list of tags for a tool, specified by ID.",
-            notes = "Returns a list of tags for a tool, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a list of tags for a tool, specified by ID.",
+            description = "Returns a list of tags for a tool, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<String>> loadImageTags(@PathVariable final Long id) {
         return Result.success(toolApiService.loadImageTags(id));
@@ -175,12 +166,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/{id}/description", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a description of a tool, specified by ID and tag.",
-            notes = "Returns a description of a tool, specified by ID and tag.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a description of a tool, specified by ID and tag.",
+            description = "Returns a description of a tool, specified by ID and tag.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ImageDescription> loadImageDescription(@PathVariable final Long id,
             @RequestParam(value = "tag") final String tag) {
@@ -189,12 +179,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/{id}/history", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-        value = "Returns a history of a tool, specified by ID and version.",
-        notes = "Returns a history of a tool, which contains list of commands by layers of the image.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Returns a history of a tool, specified by ID and version.",
+        description = "Returns a history of a tool, which contains list of commands by layers of the image.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<List<ImageHistoryLayer>> loadImageHistory(@PathVariable final Long id,
                                                             @RequestParam(value = VERSION) final String version) {
@@ -203,12 +192,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/{id}/dockerfile", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-        value = "Returns a dockerfile of a tool, specified by ID and version.",
-        notes = "Returns a dockerfile of a tool, which contains list of commands by layers of the image.",
-        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+        summary = "Returns a dockerfile of a tool, specified by ID and version.",
+        description = "Returns a dockerfile of a tool, which contains list of commands by layers of the image.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public void loadDockerFile(@PathVariable final Long id,
                                          @RequestParam(value = VERSION) final String version,
@@ -221,12 +209,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/{id}/defaultCmd", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-        value = "Returns a default command [ENTRYPOINT + CMD] of a tool, specified by ID and version.",
-        notes = "Returns a default command for a tool, extracted from image history.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Returns a default command [ENTRYPOINT + CMD] of a tool, specified by ID and version.",
+        description = "Returns a default command for a tool, extracted from image history.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<String> loadDefaultImageCmd(@PathVariable final Long id,
                                               @RequestParam(value = VERSION) final String version) {
@@ -274,9 +261,11 @@ public class ToolController extends AbstractRestController {
 
     @PostMapping(value = "/tool/{toolId}/icon")
     @ResponseBody
-    public Result<Long> uploadToolIcon(HttpServletRequest request, @PathVariable long toolId)
+    public Result<Long> uploadToolIcon(@RequestParam("file") final MultipartFile file, @PathVariable long toolId)
         throws FileUploadException, IOException {
-        MultipartFile file = consumeMultipartFile(request, ALLOWED_ICON_EXTENSIONS);
+        if (file.isEmpty()) {
+            throw new FileUploadException("File is empty!");
+        }
         return Result.success(toolApiService.updateToolIcon(toolId, file.getOriginalFilename(), file.getBytes()));
     }
 
@@ -296,12 +285,11 @@ public class ToolController extends AbstractRestController {
 
     @GetMapping(value = "/tool/{toolId}/attributes")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads tool attributes for all tool versions, specified by tool ID.",
-            notes = "Loads tool attributes for all tool versions, specified by tool ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads tool attributes for all tool versions, specified by tool ID.",
+            description = "Loads tool attributes for all tool versions, specified by tool ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ToolDescription> loadToolAttributes(@PathVariable Long toolId) {
         return Result.success(toolApiService.loadToolAttributes(toolId));
@@ -309,12 +297,11 @@ public class ToolController extends AbstractRestController {
 
     @GetMapping(value = "/tool/{toolId}/info")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads tool and info for all its versions",
-            notes = "Loads tool and info for all its versions",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads tool and info for all its versions",
+            description = "Loads tool and info for all its versions")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ToolDescription> loadToolInfo(@PathVariable Long toolId) {
         return Result.success(toolApiService.loadToolInfo(toolId));
@@ -322,12 +309,11 @@ public class ToolController extends AbstractRestController {
 
     @GetMapping(value = "/tool/{toolId}/attributes", params = VERSION)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads tool attributes for a tool version, specified by tool ID.",
-            notes = "Loads tool attributes for a tool version, specified by tool ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads tool attributes for a tool version, specified by tool ID.",
+            description = "Loads tool attributes for a tool version, specified by tool ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ToolVersionAttributes> loadToolVersionAttributes(@PathVariable final Long toolId,
                                                                    @RequestParam final String version) {
@@ -336,12 +322,11 @@ public class ToolController extends AbstractRestController {
 
     @PostMapping(value = "/tool/{toolId}/settings")
     @ResponseBody
-    @ApiOperation(
-            value = "Creates tool settings for tool version.",
-            notes = "Creates tool settings for tool version.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates tool settings for tool version.",
+            description = "Creates tool settings for tool version.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ToolVersion> createToolVersionSettings(@PathVariable final Long toolId,
                                                          @RequestParam final String version,
@@ -353,12 +338,11 @@ public class ToolController extends AbstractRestController {
 
     @GetMapping(value = "/tool/{toolId}/settings")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads tool settings for tool version.",
-            notes = "Loads tool settings for tool version.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads tool settings for tool version.",
+            description = "Loads tool settings for tool version.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<ToolVersion>> loadToolVersionSettings(@PathVariable final Long toolId,
                                                              @RequestParam(required = false) final String version) {
@@ -367,12 +351,11 @@ public class ToolController extends AbstractRestController {
 
     @RequestMapping(value = "/tool/symlink", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Symlinks an existing tool.",
-            notes = "Symlinks an existing tool.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Symlinks an existing tool.",
+            description = "Symlinks an existing tool.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Tool> symlinkTool(@RequestBody final ToolSymlinkRequest request) {
         return Result.success(toolApiService.symlink(request));

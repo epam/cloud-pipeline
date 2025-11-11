@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;

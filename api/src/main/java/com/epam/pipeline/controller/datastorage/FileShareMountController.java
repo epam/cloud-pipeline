@@ -20,17 +20,19 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@Api(value = "FileShareMount methods")
+@Tag(name = "FileShareMount methods")
 @RequestMapping(value = "/filesharemount")
 public class FileShareMountController extends AbstractRestController {
 
@@ -39,12 +41,11 @@ public class FileShareMountController extends AbstractRestController {
 
     @PostMapping
     @ResponseBody
-    @ApiOperation(
-            value = "Create or update file share mount.",
-            notes = "Create or update file share mount.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Create or update file share mount.",
+            description = "Create or update file share mount.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<FileShareMount> save(@RequestBody FileShareMount fileShareMount) {
         return Result.success(fileShareMountApiService.save(fileShareMount));
@@ -52,12 +53,11 @@ public class FileShareMountController extends AbstractRestController {
 
     @DeleteMapping(value = "/{id}")
     @ResponseBody
-    @ApiOperation(
-            value = "Delete file share mount.",
-            notes = "Delete file share mount.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Delete file share mount.",
+            description = "Delete file share mount.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void delete(@PathVariable Long id) {
         fileShareMountApiService.delete(id);
@@ -65,12 +65,11 @@ public class FileShareMountController extends AbstractRestController {
 
     @GetMapping(value = "/{id}")
     @ResponseBody
-    @ApiOperation(
-            value = "Load file share mount.",
-            notes = "Load file share mount details.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Load file share mount.",
+            description = "Load file share mount details.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<FileShareMount> load(final @PathVariable Long id) {
         return Result.success(fileShareMountApiService.load(id));

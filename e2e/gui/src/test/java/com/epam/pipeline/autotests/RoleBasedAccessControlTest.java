@@ -52,7 +52,7 @@ import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertTrue;
+import static org.testng.assertTrue;
 
 public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTest implements Authorization, Tools {
 

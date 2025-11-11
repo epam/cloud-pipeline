@@ -18,15 +18,17 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PipelineConfigurationPostProcessorTest {
 
@@ -44,10 +46,9 @@ public class PipelineConfigurationPostProcessorTest {
 
     private PipelineConfigurationPostProcessor processor;
 
-    @Before
-    public void setUp() throws URISyntaxException {
+    @BeforeEach    public void setUp() throws URISyntaxException {
         final JsonMapper jsonMapper = new JsonMapper();
-        jsonMapper.init();
+        jsonMapper.afterPropertiesSet();
         final URL fileUrl = Thread.currentThread().getContextClassLoader()
                 .getResource(TEMPLATES_TEST_ALIASES_JSON);
         final Path path = Paths.get(fileUrl.toURI()).toAbsolutePath();
@@ -59,7 +60,7 @@ public class PipelineConfigurationPostProcessorTest {
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setDockerImage(OLD_REGISTRY + DELIMITER + TOOL);
         processor.postProcessPipelineConfig(configuration);
-        Assert.assertEquals(configuration.getDockerImage(), NEW_REGISTRY + DELIMITER + TOOL);
+        assertEquals(configuration.getDockerImage(), NEW_REGISTRY + DELIMITER + TOOL);
     }
 
     @Test
@@ -67,7 +68,7 @@ public class PipelineConfigurationPostProcessorTest {
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setDockerImage(NEW_REGISTRY + DELIMITER + TOOL);
         processor.postProcessPipelineConfig(configuration);
-        Assert.assertEquals(configuration.getDockerImage(), NEW_REGISTRY + DELIMITER + TOOL);
+        assertEquals(configuration.getDockerImage(), NEW_REGISTRY + DELIMITER + TOOL);
     }
 
     @Test
@@ -77,7 +78,7 @@ public class PipelineConfigurationPostProcessorTest {
         params.put(PARAM_NAME, new PipeConfValueVO(OLD_BUCKET + DELIMITER + FILE_TXT, "input"));
         configuration.setParameters(params);
         processor.postProcessPipelineConfig(configuration);
-        Assert.assertEquals(configuration.getParameters().get(PARAM_NAME).getValue(),
+        assertEquals(configuration.getParameters().get(PARAM_NAME).getValue(),
                 NEW_BUCKET + DELIMITER + FILE_TXT);
     }
 
@@ -88,7 +89,7 @@ public class PipelineConfigurationPostProcessorTest {
         params.put(PARAM_NAME, new PipeConfValueVO(NEW_BUCKET + DELIMITER + FILE_TXT, "input"));
         configuration.setParameters(params);
         processor.postProcessPipelineConfig(configuration);
-        Assert.assertEquals(configuration.getParameters().get(PARAM_NAME).getValue(),
+        assertEquals(configuration.getParameters().get(PARAM_NAME).getValue(),
                 NEW_BUCKET + DELIMITER + FILE_TXT);
     }
 

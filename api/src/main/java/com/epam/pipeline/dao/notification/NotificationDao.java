@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
 import com.epam.pipeline.entity.notification.SystemNotificationState;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -181,37 +181,30 @@ public class NotificationDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setNotificationSequence(String notificationSequence) {
         this.notificationSequence = notificationSequence;
     }
 
-    @Required
     public void setCreateNotificationQuery(String query) {
         this.createNotificationQuery = query;
     }
 
-    @Required
     public void setUpdateNotificationQuery(String query) {
         this.updateNotificationQuery = query;
     }
 
-    @Required
     public void setDeleteNotificationQuery(String query) {
         this.deleteNotificationQuery = query;
     }
 
-    @Required
     public void setListNotificationsQuery(String query) {
         this.listNotificationsQuery = query;
     }
 
-    @Required
     public void setFilterNotificationsQuery(String query) {
         this.filterNotificationsQuery = query;
     }
 
-    @Required
     public void setLoadNotificationQuery(String query) {
         this.loadNotificationQuery = query;
     }

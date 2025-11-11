@@ -54,9 +54,9 @@ import com.epam.pipeline.util.TestUtils;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -77,8 +77,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -155,8 +160,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Autowired
     private MetadataManager metadataManager;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
         doReturn(new AwsRegion()).when(regionManager).getAwsRegion(any());
@@ -188,7 +192,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
-        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+        assertFalse(loaded.getToolsToMount().isEmpty());
 
         storageVO.setId(loaded.getId());
         storageVO.setToolsToMount(
@@ -199,8 +203,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageVO.setId(loaded.getId());
         storageManager.update(storageVO);
         loaded = storageManager.load(saved.getId());
-        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
-        Assert.assertTrue(
+        assertFalse(loaded.getToolsToMount().isEmpty());
+        assertTrue(
                 CollectionUtils.isEmpty(
                         loaded.getToolsToMount().stream().filter(t -> t.getVersions() != null)
                                 .flatMap(v -> v.getVersions().stream())
@@ -209,7 +213,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCantAddRelationForDataStorageAndToolVersionIfItDoesNotExists() {
         final Tool tool = createTool();
@@ -226,7 +230,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                         ).build()
                 )
         );
-        storageManager.create(storageVO, false, false, false);
+        assertThrows(IllegalArgumentException.class,
+            () -> storageManager.create(storageVO, false, false, false));
     }
 
     @Test
@@ -249,10 +254,10 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false,
                 false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
-        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+        assertFalse(loaded.getToolsToMount().isEmpty());
         toolVersionManager.deleteToolVersions(tool.getId());
         loaded = storageManager.load(saved.getId());
-        Assert.assertTrue(loaded.getToolsToMount().isEmpty());
+        assertTrue(loaded.getToolsToMount().isEmpty());
 
     }
 
@@ -276,10 +281,10 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false,
                 false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
-        Assert.assertFalse(loaded.getToolsToMount().isEmpty());
+        assertFalse(loaded.getToolsToMount().isEmpty());
         toolVersionManager.deleteToolVersion(tool.getId(), TEST_VERSION);
         loaded = storageManager.load(saved.getId());
-        Assert.assertTrue(loaded.getToolsToMount().isEmpty());
+        assertTrue(loaded.getToolsToMount().isEmpty());
     }
 
     private Tool createTool() {
@@ -343,7 +348,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                                                             WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
-        Assert.assertTrue(storageManager.exists(saved.getId()));
+        assertTrue(storageManager.exists(saved.getId()));
     }
 
     @Test
@@ -363,10 +368,10 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         List<AbstractDataStorage> loaded = storageManager.getDatastoragesByIds(
                 Arrays.asList(saved.getId(), saved2.getId())
         );
-        Assert.assertTrue(
+        assertTrue(
                 loaded.stream().anyMatch(ds -> ds.getId().equals(saved.getId()) || ds.getId().equals(saved2.getId()))
         );
-        Assert.assertEquals(2, loaded.size());
+        assertEquals(2, loaded.size());
     }
 
     @Test
@@ -386,11 +391,11 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         List<AbstractDataStorage> loaded = storageManager.getDatastoragesByPaths(
                 Arrays.asList(saved.getPath(), saved2.getPath())
         );
-        Assert.assertTrue(
+        assertTrue(
                 loaded.stream().anyMatch(ds -> ds.getPath().equals(saved.getPath())
                         || ds.getPath().equals(saved2.getPath()))
         );
-        Assert.assertEquals(2, loaded.size());
+        assertEquals(2, loaded.size());
     }
 
     @Test
@@ -405,11 +410,11 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
-        Assert.assertFalse(metadataEntries.isEmpty());
-        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        assertFalse(metadataEntries.isEmpty());
+        assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void failToRequestForSmallerTimeDavMountIfAlreadyExistsTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
@@ -421,10 +426,10 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
-        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
 
-        storageManager.requestDataStorageDavMount(saved.getId(),
-                SECS_IN_MIN);
+        assertThrows(IllegalStateException.class,
+            () -> storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_MIN));
     }
 
     @Test
@@ -439,16 +444,16 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
-        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
         long firstValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
 
         storageManager.requestDataStorageDavMount(saved.getId(), 2 * SECS_IN_HOUR);
         metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
-        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
         long secondValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
 
-        Assert.assertTrue(secondValue > firstValue);
+        assertTrue(secondValue > firstValue);
     }
 
     @Test
@@ -463,13 +468,13 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
         List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
-        Assert.assertFalse(metadataEntries.isEmpty());
+        assertFalse(metadataEntries.isEmpty());
 
         storageManager.callOffDataStorageDavMount(saved.getId());
 
         metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
                 AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
-        Assert.assertTrue(metadataEntries.isEmpty());
+        assertTrue(metadataEntries.isEmpty());
     }
 
     @Test
@@ -535,35 +540,37 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateDefaultUserStorage() {
         final Optional<AbstractDataStorage> defaultStorage = storageManager.createDefaultStorageForUser(NAME);
-        Assert.assertTrue(defaultStorage.isPresent());
+        assertTrue(defaultStorage.isPresent());
         final AbstractDataStorage defaultStorageContent = defaultStorage.get();
         final String expectedDefaultUserStorageName =
             TestUtils.DEFAULT_STORAGE_NAME_PATTERN.replace(TestUtils.TEMPLATE_REPLACE_MARK, NAME);
-        Assert.assertEquals(expectedDefaultUserStorageName, defaultStorageContent.getName());
-        Assert.assertEquals(expectedDefaultUserStorageName, defaultStorageContent.getPath());
-        Assert.assertEquals(DataStorageType.S3, defaultStorageContent.getType());
+        assertEquals(expectedDefaultUserStorageName, defaultStorageContent.getName());
+        assertEquals(expectedDefaultUserStorageName, defaultStorageContent.getPath());
+        assertEquals(DataStorageType.S3, defaultStorageContent.getType());
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailCreateOfStorageWithForbiddenMountPoint() {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, FORBIDDEN_MOUNT_POINT,
                 TEST_MOUNT_OPTIONS);
-        storageManager.create(storageVO, false, false, false);
+        assertThrows(IllegalArgumentException.class,
+            () -> storageManager.create(storageVO, false, false, false));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailCreateStorageWithRootMountPoint() {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                                                                             PATH, WITHOUT_PARENT_ID, "/",
                                                                             TEST_MOUNT_OPTIONS);
-        storageManager.create(storageVO, false, false, false);
+        assertThrows(IllegalArgumentException.class,
+            () -> storageManager.create(storageVO, false, false, false));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailCreateOfStorageWithForbiddenMountPointWildCard() {
         Preference preference = SystemPreferences.DATA_STORAGE_NFS_MOUNT_BLACK_LIST.toPreference();
@@ -574,10 +581,11 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, FORBIDDEN_MOUNT_POINT_2,
                 TEST_MOUNT_OPTIONS);
-        storageManager.create(storageVO, false, false, false);
+        assertThrows(IllegalArgumentException.class,
+            () -> storageManager.create(storageVO, false, false, false));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailCreateOfStorageWithForbiddenMountPointWildCard2() {
         Preference preference = SystemPreferences.DATA_STORAGE_NFS_MOUNT_BLACK_LIST.toPreference();
@@ -588,7 +596,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, FORBIDDEN_MOUNT_POINT_3,
                 TEST_MOUNT_OPTIONS);
-        storageManager.create(storageVO, false, false, false);
+        assertThrows(IllegalArgumentException.class,
+            () -> storageManager.create(storageVO, false, false, false));
     }
 
     @Test
@@ -604,20 +613,20 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageVO.setShared(true);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         String url = storageManager.generateSharedUrlForStorage(saved.getId());
-        Assert.assertEquals(SHARED_BASE_URL + saved.getId(), url);
+        assertEquals(SHARED_BASE_URL + saved.getId(), url);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailToGenerateSharedURLForNotSharedStorage() {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
-        storageManager.generateSharedUrlForStorage(saved.getId());
+        assertThrows(IllegalArgumentException.class, () -> storageManager.generateSharedUrlForStorage(saved.getId()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailUpdateOfStorageWithForbiddenMountPoint() {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
@@ -626,7 +635,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         storageVO.setId(saved.getId());
         storageVO.setMountPoint(FORBIDDEN_MOUNT_POINT);
-        storageManager.update(storageVO);
+        assertThrows(IllegalArgumentException.class, () -> storageManager.update(storageVO));
     }
 
     @Test
@@ -641,7 +650,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                                                             WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS);
         storageManager.create(storageVO, false, false, false);
-        Assert.assertFalse(storageManager.createDefaultStorageForUser(NAME).isPresent());
+        assertFalse(storageManager.createDefaultStorageForUser(NAME).isPresent());
     }
 
     @Test
@@ -682,25 +691,25 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     private void assertDataStorageAccordingToUpdateStorageVO(DataStorageVO updateStorageVO,
                                                              AbstractDataStorage loaded) {
-        Assert.assertNotNull(loaded);
-        Assert.assertEquals(updateStorageVO.getName(), loaded.getName());
-        Assert.assertEquals(updateStorageVO.getDescription(), loaded.getDescription());
-        Assert.assertEquals(updateStorageVO.getParentFolderId(), loaded.getParentFolderId());
+        assertNotNull(loaded);
+        assertEquals(updateStorageVO.getName(), loaded.getName());
+        assertEquals(updateStorageVO.getDescription(), loaded.getDescription());
+        assertEquals(updateStorageVO.getParentFolderId(), loaded.getParentFolderId());
     }
 
     private void compareDataStorage(AbstractDataStorage saved, AbstractDataStorage loaded) {
-        Assert.assertNotNull(loaded);
-        Assert.assertEquals(saved.getName(), loaded.getName());
-        Assert.assertEquals(saved.getDescription(), loaded.getDescription());
+        assertNotNull(loaded);
+        assertEquals(saved.getName(), loaded.getName());
+        assertEquals(saved.getDescription(), loaded.getDescription());
         StoragePolicy savedStoragePolicy = saved.getStoragePolicy();
         StoragePolicy loadedStoragePolicy = loaded.getStoragePolicy();
-        Assert.assertEquals(savedStoragePolicy.getShortTermStorageDuration(),
+        assertEquals(savedStoragePolicy.getShortTermStorageDuration(),
                 loadedStoragePolicy.getShortTermStorageDuration());
-        Assert.assertEquals(savedStoragePolicy.getLongTermStorageDuration(),
+        assertEquals(savedStoragePolicy.getLongTermStorageDuration(),
                 loadedStoragePolicy.getLongTermStorageDuration());
-        Assert.assertEquals(savedStoragePolicy.getIncompleteUploadCleanupDays(),
+        assertEquals(savedStoragePolicy.getIncompleteUploadCleanupDays(),
                 loadedStoragePolicy.getIncompleteUploadCleanupDays());
-        Assert.assertEquals(saved.getType(), loaded.getType());
+        assertEquals(saved.getType(), loaded.getType());
     }
 
     private String makeSysIndependentPath(String path) {
@@ -712,8 +721,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     }
 
     private void assertNfsMountStatus(final AbstractDataStorage storage, final NFSStorageMountStatus status) {
-        Assert.assertEquals(DataStorageType.NFS, storage.getType());
+        assertEquals(DataStorageType.NFS, storage.getType());
         final NFSDataStorage nfsDataStorage = (NFSDataStorage) storage;
-        Assert.assertEquals(status, nfsDataStorage.getMountStatus());
+        assertEquals(status, nfsDataStorage.getMountStatus());
     }
 }

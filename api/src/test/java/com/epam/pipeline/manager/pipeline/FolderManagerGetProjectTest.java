@@ -30,12 +30,12 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
@@ -44,8 +44,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.pipeline.FolderManagerTest.initFolderWithMetadata;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 public class FolderManagerGetProjectTest extends AbstractSpringTest {
@@ -72,15 +74,14 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
     @MockBean
     protected UserManager userManager;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         data.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
         dataWithIndicator.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, PROJECT_INDICATOR_VALUE));
 
         folder1 = initFolderWithMetadata(folder1, 1L, "folder1", null, data);
         folder2 = initFolderWithMetadata(folder2, 2L, "folder2", folder1.getId(), dataWithIndicator);
         folder3 = initFolderWithMetadata(folder3, 3L, "folder3", folder2.getId(), data);
-        Mockito.when(folderDao.loadParentFolders(Matchers.any(Long.class)))
+        Mockito.when(folderDao.loadParentFolders(any(Long.class)))
                 .thenReturn(Stream.of(folder1, folder2, folder3).collect(Collectors.toList()));
 
         PreferenceManager preferenceManager = mock(PreferenceManager.class);
@@ -91,7 +92,7 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
 
     @Test
     public void getProjectShouldWorkWithFolderAsInputEntity() {
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(folder3);
         Folder actualFolder = folderManager.getProject(folder3.getId(), AclClass.FOLDER);
         assertFolders(folder2, actualFolder);
@@ -99,7 +100,7 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
 
     @Test
     public void getProjectShouldWorkWithoutParent() {
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(folder1);
         FolderWithMetadata project = folderManager.getProject(folder1.getId(), AclClass.FOLDER);
         assertNull(project);
@@ -111,7 +112,7 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
         pipeline.setId(1L);
         pipeline.setParent(folder3);
 
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(pipeline);
 
         Folder actualFolder = folderManager.getProject(pipeline.getId(), AclClass.PIPELINE);
@@ -124,7 +125,7 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
         configuration.setId(1L);
         configuration.setParent(folder3);
 
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(configuration);
 
         Folder actualFolder = folderManager.getProject(configuration.getId(), AclClass.CONFIGURATION);
@@ -136,7 +137,7 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
         S3bucketDataStorage dataStorage = new S3bucketDataStorage(1L, "dataStorage", "path_to_bucket");
         dataStorage.setParent(folder3);
 
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(dataStorage);
 
         Folder actualFolder = folderManager.getProject(dataStorage.getId(), AclClass.DATA_STORAGE);
@@ -149,21 +150,21 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
         metadataEntity.setId(1L);
         metadataEntity.setParent(folder3);
 
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(metadataEntity);
 
         Folder actualFolder = folderManager.getProject(metadataEntity.getId(), AclClass.METADATA_ENTITY);
         assertFolders(folder2, actualFolder);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void getProjectShouldFailWithUnsupportedInputEntity() {
-        folderManager.getProject(1L, AclClass.TOOL);
+        assertThrows(IllegalArgumentException.class, () -> folderManager.getProject(1L, AclClass.TOOL));
     }
 
     @Test
     public void getProjectShouldFailIfProjectNotFound() {
-        Mockito.when(entityManager.load(Matchers.any(AclClass.class), Matchers.any(Long.class)))
+        Mockito.when(entityManager.load(any(AclClass.class), any(Long.class)))
                 .thenReturn(folder3);
         folder2 = initFolderWithMetadata(folder2, 2L, "folder2", folder1.getId(), data);
         FolderWithMetadata project = folderManager.getProject(folder3.getId(), AclClass.FOLDER);

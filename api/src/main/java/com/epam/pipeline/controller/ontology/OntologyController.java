@@ -21,12 +21,11 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.ontology.Ontology;
 import com.epam.pipeline.dto.ontology.OntologyType;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,48 +35,47 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 
 @RestController
-@Api(value = "Ontologies management methods")
+@Tag(name = "Ontologies management methods")
 @RequestMapping(value = "/ontologies")
 @RequiredArgsConstructor
 public class OntologyController extends AbstractRestController {
     private final OntologyApiService ontologyApiService;
 
     @PostMapping
-    @ApiOperation(value = "Creates ontology", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Creates ontology")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Ontology> create(@RequestBody final Ontology ontology) {
         return Result.success(ontologyApiService.create(ontology));
     }
 
     @GetMapping("/{id}")
-    @ApiOperation(value = "Gets the ontology by identifier", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Gets the ontology by identifier")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Ontology> get(@PathVariable final Long id) {
         return Result.success(ontologyApiService.get(id));
     }
 
     @PutMapping("/{id}")
-    @ApiOperation(value = "Updates ontology by id", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Updates ontology by id")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Ontology> update(@PathVariable final Long id, @RequestBody final Ontology ontology) {
         return Result.success(ontologyApiService.update(id, ontology));
     }
 
     @DeleteMapping("/{id}")
-    @ApiOperation(value = "Deletes ontology", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Deletes ontology")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Ontology> delete(@PathVariable final Long id,
                                    @RequestParam(required = false) final boolean recursive) {
         return Result.success(ontologyApiService.delete(id, recursive));
     }
 
     @GetMapping("/tree")
-    @ApiOperation(value = "Loads ontology tree by parent id", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Loads ontology tree by parent id")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<Ontology>> getTree(@RequestParam final OntologyType type,
                                           @RequestParam(required = false) final Long parentId,
                                           @RequestParam(defaultValue = "1") final Integer depth) {
@@ -85,15 +83,15 @@ public class OntologyController extends AbstractRestController {
     }
 
     @GetMapping("/externals")
-    @ApiOperation(value = "Loads ontologies by external ids", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Loads ontologies by external ids")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<Ontology>> getExternals(@RequestParam final List<String> externalIds) {
         return Result.success(ontologyApiService.getExternals(externalIds));
     }
 
     @GetMapping("/external")
-    @ApiOperation(value = "Loads ontology by external id and parent id", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Loads ontology by external id and parent id")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Ontology> getExternal(@RequestParam final String externalId,
                                         @RequestParam(required = false) final Long parentId) {
         return Result.success(ontologyApiService.getExternal(externalId, parentId));

@@ -23,7 +23,7 @@ import java.util.Optional;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -137,47 +137,38 @@ public class ToolGroupDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setToolGroupSequenceName(String toolGroupSequenceName) {
         this.toolGroupSequenceName = toolGroupSequenceName;
     }
 
-    @Required
     public void setCreateToolGroupQuery(String createToolGroupQuery) {
         this.createToolGroupQuery = createToolGroupQuery;
     }
 
-    @Required
     public void setLoadToolGroupQuery(String loadToolGroupQuery) {
         this.loadToolGroupQuery = loadToolGroupQuery;
     }
 
-    @Required
     public void setLoadAllToolGroupsQuery(String loadAllToolGroupsQuery) {
         this.loadAllToolGroupsQuery = loadAllToolGroupsQuery;
     }
 
-    @Required
     public void setLoadToolGroupsByRegistryIdQuery(String loadToolGroupsByRegistryIdQuery) {
         this.loadToolGroupsByRegistryIdQuery = loadToolGroupsByRegistryIdQuery;
     }
 
-    @Required
     public void setDeleteToolGroupQuery(String deleteToolGroupQuery) {
         this.deleteToolGroupQuery = deleteToolGroupQuery;
     }
 
-    @Required
     public void setLoadToolGroupByNameAndRegistryIdQuery(String loadToolGroupByNameAndRegistryIdQuery) {
         this.loadToolGroupByNameAndRegistryIdQuery = loadToolGroupByNameAndRegistryIdQuery;
     }
 
-    @Required
     public void setUpdateToolGroupQuery(String updateToolGroupQuery) {
         this.updateToolGroupQuery = updateToolGroupQuery;
     }
 
-    @Required
     public void setLoadToolGroupsByNameAndRegistryNameQuery(String loadToolGroupsByNameAndRegistryNameQuery) {
         this.loadToolGroupsByNameAndRegistryNameQuery = loadToolGroupsByNameAndRegistryNameQuery;
     }

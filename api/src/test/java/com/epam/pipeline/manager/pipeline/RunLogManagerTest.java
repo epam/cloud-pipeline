@@ -22,16 +22,17 @@ import java.io.Writer;
 import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RunLogManagerTest extends AbstractManagerTest {
 
@@ -44,8 +45,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @InjectMocks
     private RunLogManager logManager;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         MockitoAnnotations.initMocks(this.getClass());
     }
 
@@ -54,7 +54,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         PipelineRun run = new PipelineRun(1L, "");
         Mockito.doReturn(run).when(runCRUDServiceMock).loadRunById(run.getId());
         Mockito.doAnswer((Answer<Void>) invocation -> {
-            final Writer writer = invocation.getArgumentAt(1, Writer.class);
+            final Writer writer = invocation.getArgument(1, Writer.class);
             writer.write("First task Log1");
             writer.write("Second task Log1");
             writer.write("First task log2");
@@ -64,7 +64,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         ResultWriter writer = logManager.exportLogs(run.getId());
         writer.write(os);
         String result = os.toString();
-        Assert.assertNotNull(result);
-        Assert.assertTrue(!result.isEmpty());
+        assertNotNull(result);
+        assertTrue(!result.isEmpty());
     }
 }

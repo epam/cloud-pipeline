@@ -19,14 +19,14 @@ package com.epam.pipeline.manager.metadata.writer;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class MetadataWriterTest {
@@ -368,13 +368,13 @@ public class MetadataWriterTest {
         final String[] actualRecords = actualCsv.split("\n");
         final String expectedHeader = expectedRecords[0];
         final String actualHeader = actualRecords[0];
-        Assert.assertEquals("Csv header mismatch (ignoring order)", expectedHeader, actualHeader);
+        assertEquals(expectedHeader, actualHeader, "Csv header mismatch (ignoring order)");
         final List<String> expectedLines = Arrays.stream(expectedRecords).skip(1).collect(Collectors.toList());
         final List<String> actualLines = Arrays.stream(actualRecords).skip(1).collect(Collectors.toList());
-        Assert.assertTrue(String.format("Csv content mismatch:\nExpected:%s\nActual:%s", expectedLines, actualLines),
-                expectedLines.size() == actualLines.size()
-                        && expectedLines.containsAll(actualLines)
-                        && actualLines.containsAll(expectedLines)
-        );
+        assertTrue(expectedLines.size() == actualLines.size()
+                                && expectedLines.containsAll(actualLines)
+                                && actualLines.containsAll(expectedLines),
+                String.format("Csv content mismatch:\nExpected:%s\nActual:%s", expectedLines, actualLines)
+                );
     }
 }

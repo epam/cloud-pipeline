@@ -18,7 +18,7 @@ package com.epam.pipeline.dao.cluster;
 
 import com.epam.pipeline.dao.DaoHelper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +34,6 @@ public class ClusterDao  extends NamedParameterJdbcDaoSupport {
         return daoHelper.createId(freeNodeSequence);
     }
 
-    @Required
     public void setFreeNodeSequence(String freeNodeSequence) {
         this.freeNodeSequence = freeNodeSequence;
     }

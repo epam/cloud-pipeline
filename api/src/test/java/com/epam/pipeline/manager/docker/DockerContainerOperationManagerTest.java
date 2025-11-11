@@ -42,34 +42,38 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import io.fabric8.kubernetes.api.model.Pod;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
 import static com.epam.pipeline.entity.cloud.CloudInstanceOperationResult.Status;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.quality.Strictness.LENIENT;
 
 @SuppressWarnings("PMD.UnusedPrivateField")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 public class DockerContainerOperationManagerTest {
 
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
@@ -123,9 +127,9 @@ public class DockerContainerOperationManagerTest {
     @Mock
     private PreferenceManager preferenceManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        //MockitoAnnotations.initMocks(this);
         when(runManager.updatePipelineStatus(any())).thenReturn(null);
     }
 
@@ -135,10 +139,10 @@ public class DockerContainerOperationManagerTest {
         region.setRegionCode("eu-central-1");
         region.setId(1L);
         when(regionManager.load(any())).thenReturn(region);
-        when(cloudFacade.startInstance(Mockito.anyLong(), anyString()))
+        when(cloudFacade.startInstance(Mockito.nullable(Long.class), nullable(String.class)))
                 .thenReturn(CloudInstanceOperationResult.builder().status(Status.ERROR)
                         .message(INSUFFICIENT_INSTANCE_CAPACITY).build());
-        doReturn(CloudInstanceState.STOPPED).when(cloudFacade).getInstanceState(anyLong());
+        doReturn(CloudInstanceState.STOPPED).when(cloudFacade).getInstanceState(nullable(Long.class));
 
         final PipelineRun run = pipelineRun();
         operationManager.resumeRun(run, Collections.emptyList());
@@ -153,15 +157,16 @@ public class DockerContainerOperationManagerTest {
         final PipelineRun pressuredRun =
                 createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, TEST_TAG);
 
-        when(kubernetesManager.getContainerIdFromKubernetesPod(anyString(), anyString())).thenReturn(TEST_TAG);
+        when(kubernetesManager.getContainerIdFromKubernetesPod(nullable(String.class), nullable(String.class)))
+            .thenReturn(TEST_TAG);
         when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
         when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(TEST_TAG);
         final Process sshConnection = Mockito.mock(Process.class);
-        doReturn(sshConnection).when(operationManager).submitCommandViaSSH(anyString(), anyString(),
-                eq(DEFAULT_SSH_PORT));
+        doReturn(sshConnection).when(operationManager)
+            .submitCommandViaSSH(nullable(String.class), nullable(String.class), eq(DEFAULT_SSH_PORT));
         when(sshConnection.exitValue()).thenReturn(0);
-        when(cloudFacade.getInstanceState(anyLong())).thenReturn(CloudInstanceState.RUNNING);
-        when(regionManager.load(anyLong())).thenReturn(region());
+        when(cloudFacade.getInstanceState(nullable(Long.class))).thenReturn(CloudInstanceState.RUNNING);
+        when(regionManager.load(nullable(Long.class))).thenReturn(region());
         doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
 
         operationManager.pauseRun(idledRun, false);
@@ -171,28 +176,28 @@ public class DockerContainerOperationManagerTest {
         assertRunStateAfterPause(pressuredRun, TEST_TAG);
 
         verify(operationManager, times(2)).submitCommandViaSSH(
-                anyString(), anyString(), eq(DEFAULT_SSH_PORT));
+                any(), any(), eq(DEFAULT_SSH_PORT));
         verifyPostPauseProcessing(2);
         verify(cloudFacade, times(2)).stopInstance(REGION_ID, NODE_ID);
     }
 
     @Test
     public void runShouldBeStillRunningIfCommandCannotExecute() throws IOException, InterruptedException {
-        when(kubernetesManager.getContainerIdFromKubernetesPod(anyString(), anyString())).thenReturn(TEST_TAG);
+        when(kubernetesManager.getContainerIdFromKubernetesPod(nullable(String.class), nullable(String.class))).thenReturn(TEST_TAG);
         when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
         when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(TEST_TAG);
-        when(regionManager.load(anyLong())).thenReturn(region());
+        when(regionManager.load(nullable(Long.class))).thenReturn(region());
         final Process sshConnection = Mockito.mock(Process.class);
         doReturn(sshConnection).when(operationManager).submitCommandViaSSH(
-                anyString(), anyString(), eq(DEFAULT_SSH_PORT));
-        when(sshConnection.waitFor(anyLong(), any())).thenReturn(true);
+                nullable(String.class), nullable(String.class), eq(DEFAULT_SSH_PORT));
+        when(sshConnection.waitFor(nullable(Long.class), any())).thenReturn(true);
         when(sshConnection.exitValue()).thenReturn(CANNOT_EXECUTE_EXIT_CODE);
         final PipelineRun run = pipelineRun();
         doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
 
         operationManager.pauseRun(run, false);
 
-        verify(operationManager).submitCommandViaSSH(anyString(), anyString(), eq(DEFAULT_SSH_PORT));
+        verify(operationManager).submitCommandViaSSH(any(), any(), eq(DEFAULT_SSH_PORT));
         verifyPostPauseProcessing(0);
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
@@ -213,7 +218,7 @@ public class DockerContainerOperationManagerTest {
         verifyResumeProcessing(1);
         verify(cloudFacade).startInstance(REGION_ID, NODE_ID);
         verify(pipelineLauncher)
-                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any());
+                .launch(any(), any(), any(), anyBoolean(), nullable(String.class), nullable(String.class), any());
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
@@ -247,7 +252,7 @@ public class DockerContainerOperationManagerTest {
         verifyResumeProcessing(1);
         verify(cloudFacade, never()).startInstance(REGION_ID, NODE_ID);
         verify(pipelineLauncher)
-                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any());
+                .launch(any(), any(), any(), anyBoolean(), anyString(), nullable(String.class), any());
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
@@ -273,7 +278,7 @@ public class DockerContainerOperationManagerTest {
         final Map<String, String> updatedTags = run.getTags();
         assertEquals(expectedTags.length, updatedTags.size());
         for (String expectedTag : expectedTags) {
-            Assert.assertTrue(updatedTags.containsKey(expectedTag));
+            assertTrue(updatedTags.containsKey(expectedTag));
         }
         assertEquals(TaskStatus.PAUSED, run.getStatus());
     }

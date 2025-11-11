@@ -7,12 +7,12 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -34,11 +34,10 @@ public class ToolManagerUnitTest {
     private final DockerRegistryManager dockerRegistryManager = mock(DockerRegistryManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
 
-    @Before
-    public void setUp() {
-        Whitebox.setInternalState(manager, "toolDao", toolDao);
-        Whitebox.setInternalState(manager, "dockerRegistryManager", dockerRegistryManager);
-        Whitebox.setInternalState(manager, "messageHelper", messageHelper);
+    @BeforeEach    public void setUp() {
+        ReflectionTestUtils.setField(manager, "toolDao", toolDao);
+        ReflectionTestUtils.setField(manager, "dockerRegistryManager", dockerRegistryManager);
+        ReflectionTestUtils.setField(manager, "messageHelper", messageHelper);
     }
 
     @Test

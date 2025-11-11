@@ -22,11 +22,10 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
@@ -46,33 +45,30 @@ public class BillingController extends AbstractRestController {
 
     @RequestMapping(value = "/billing/charts", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-        value = "Get info for building expenses charts.",
-        notes = "Get info for building expenses charts.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Get info for building expenses charts.",
+        description = "Get info for building expenses charts.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<BillingChartInfo>> getBillingChartInfo(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfo(request));
     }
 
     @RequestMapping(value = "/billing/charts/pagination", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-        value = "Get paginated info about billing expenses.",
-        notes = "Get paginated info about billing expenses.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Get paginated info about billing expenses.",
+        description = "Get paginated info about billing expenses.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<BillingChartInfo>> getBillingChartInfoPaginated(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfoPaginated(request));
     }
 
     @RequestMapping(value = "/billing/export", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Export raw data for billing expenses.",
-            notes = "Export raw data for billing expenses.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Export raw data for billing expenses.",
+            description = "Export raw data for billing expenses.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public void export(@RequestBody final BillingExportRequest request,
                        final HttpServletResponse response) throws IOException {
         writeToResponse(response, billingApi.export(request));
@@ -80,11 +76,10 @@ public class BillingController extends AbstractRestController {
 
     @GetMapping(value = "/billing/centers")
     @ResponseBody
-    @ApiOperation(
-        value = "Get list containing all billing centers.",
-        notes = "Get list containing all billing centers.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Get list containing all billing centers.",
+        description = "Get list containing all billing centers.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<String>> getAllBillingCenters() {
         return Result.success(billingApi.getAllBillingCenters());
     }

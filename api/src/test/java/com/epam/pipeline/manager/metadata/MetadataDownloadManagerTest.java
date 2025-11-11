@@ -23,16 +23,20 @@ import com.epam.pipeline.manager.metadata.writer.MetadataWriterProvider;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.access.AccessDeniedException;
+
 import java.io.InputStream;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Matchers.*;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataDownloadManagerTest {
 
@@ -48,27 +52,30 @@ public class MetadataDownloadManagerTest {
     private final MetadataDownloadManager manager =
             new MetadataDownloadManager(metadataEntityManager, folderManager, messageHelper, metadataWriterProvider);
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void getInputStreamShouldThrowIfFolderDoesNotExist() {
         when(folderManager.load(FOLDER_ID)).thenThrow(new IllegalArgumentException());
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
+        assertThrows(IllegalArgumentException.class,
+            () -> manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void getInputStreamShouldThrowIfMetadataEntityDoesNotExistInParentFolder() {
         when(metadataEntityManager.loadMetadataEntityByClassNameAndFolderId(FOLDER_ID, SAMPLE))
                 .thenReturn(Collections.emptyList());
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
+        assertThrows(IllegalArgumentException.class,
+            () -> manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void getInputStreamShouldThrowIfRequestedFileFormatIsNotSupported() {
         final List<MetadataEntity> entities = Collections.singletonList(new MetadataEntity());
         when(metadataEntityManager.loadMetadataEntityByClassNameAndFolderId(FOLDER_ID, SAMPLE)).thenReturn(entities);
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, "unsupportedFileFormat");
+        assertThrows(IllegalArgumentException.class,
+            () -> manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, "unsupportedFileFormat"));
     }
 
     @Test
@@ -95,7 +102,7 @@ public class MetadataDownloadManagerTest {
 
         final InputStream actualInputStream = manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
 
-        Assert.assertEquals("message", inputStreamAsString(actualInputStream));
+        assertEquals("message", inputStreamAsString(actualInputStream));
     }
 
     @SneakyThrows

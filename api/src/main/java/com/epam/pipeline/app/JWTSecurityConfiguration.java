@@ -16,12 +16,10 @@
 
 package com.epam.pipeline.app;
 
-import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
-import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,30 +27,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.saml.SAMLAuthenticationProvider;
-import org.springframework.security.saml.SAMLEntryPoint;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+//import org.springframework.security.saml.SAMLAuthenticationProvider;
+//import org.springframework.security.saml.SAMLEntryPoint;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.OrRequestMatcher;
+//import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.security.jwt"})
 @Order(2)
-public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
+public class JWTSecurityConfiguration implements WebMvcConfigurer {
 
     private static final String REST_API_PREFIX = "/restapi/**";
 
@@ -77,11 +67,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
     private String[] swaggerAccessRoles;
 
-    @Autowired
-    private SAMLAuthenticationProvider samlAuthenticationProvider;
+    /*@Autowired
+    private SAMLAuthenticationProvider samlAuthenticationProvider;*/
 
-    @Autowired
-    private SAMLEntryPoint samlEntryPoint;
+    /*@Autowired
+    private SAMLEntryPoint samlEntryPoint;*/
 
     @Autowired
     private UserAccessService userAccessService;
@@ -90,13 +80,13 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return publicKey;
     }
 
-    @Override
+   /* @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth.authenticationProvider(samlAuthenticationProvider);
         auth.authenticationProvider(jwtAuthenticationProvider());
-    }
+    }*/
 
-    @Override
+    /*@Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .exceptionHandling()
@@ -124,7 +114,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .and()
                 .addFilterBefore(getJwtAuthenticationFilter(),
                         UsernamePasswordAuthenticationFilter.class);
-    }
+    }*/
 
     @Bean public JwtTokenVerifier jwtTokenVerifier() {
         return new JwtTokenVerifier(getPublicKey());
@@ -139,7 +129,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected RequestMatcher getFullRequestMatcher() {
-        return new AntPathRequestMatcher(getSecuredResources());
+        //return new AntPathRequestMatcher(getSecuredResources());
+        return null;
     }
 
     protected String getSecuredResources() {
@@ -170,15 +161,15 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private RequestCache requestCache() {
         final HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
-        requestCache.setRequestMatcher(getRedirectRequestMatcher());
+        //requestCache.setRequestMatcher(getRedirectRequestMatcher());
         return requestCache;
     }
 
     //Only one of redirectedUrls
-    private RequestMatcher getRedirectRequestMatcher() {
+    /*private RequestMatcher getRedirectRequestMatcher() {
         return new OrRequestMatcher(Arrays.stream(redirectedResources)
                 .map(AntPathRequestMatcher::new)
                 .collect(Collectors.toCollection(ArrayList::new)));
-    }
+    }*/
 
 }

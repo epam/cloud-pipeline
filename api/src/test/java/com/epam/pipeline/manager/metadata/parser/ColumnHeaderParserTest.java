@@ -16,12 +16,16 @@
 
 package com.epam.pipeline.manager.metadata.parser;
 
-import static org.junit.Assert.*;
-
 import com.epam.pipeline.exception.MetadataReadingException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
+
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ColumnHeaderParserTest {
     private static final String VALID_CLASS_COLUMN = "Sample:ID";
@@ -72,9 +76,9 @@ public class ColumnHeaderParserTest {
         assertEquals(expectedPath, pathField);
     }
 
-    @Test(expected = MetadataReadingException.class)
+    @Test
     public void readInvalidColumn() throws Exception {
-        parser.readFieldColumn(INVALID_ATTRIBUTE);
+        assertThrows(MetadataReadingException.class, () -> parser.readFieldColumn(INVALID_ATTRIBUTE));
     }
 
 }

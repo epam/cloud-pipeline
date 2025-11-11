@@ -20,19 +20,21 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodeScheduleVO;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Controller
-@Api(value = "Node Schedule Management")
+@Tag(name = "Node Schedule Management")
 @RequiredArgsConstructor
 @RequestMapping("/cluster/nodeSchedule")
 @ResponseBody
@@ -41,29 +43,29 @@ public class NodeScheduleController extends AbstractRestController {
     private final NodeScheduleApiService apiService;
 
     @GetMapping
-    @ApiOperation(value = "Returns all registered node schedules", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Returns all registered node schedules")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<NodeSchedule>> loadAll() {
         return Result.success(apiService.loadAll());
     }
 
     @GetMapping("{id}")
-    @ApiOperation(value = "Returns a node schedule by id", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Returns a node schedule by id")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NodeSchedule> load(final @PathVariable long id) {
         return Result.success(apiService.load(id));
     }
 
     @PostMapping
-    @ApiOperation(value = "Creates or updates a node schedule", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Creates or updates a node schedule")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NodeSchedule> createOrUpdate(final @RequestBody NodeScheduleVO vo) {
         return Result.success(apiService.createOrUpdate(vo));
     }
 
     @DeleteMapping("{id}")
-    @ApiOperation(value = "Deletes a node schedule by id", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Deletes a node schedule by id")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NodeSchedule> delete(final @PathVariable long id) {
         return Result.success(apiService.delete(id));
     }

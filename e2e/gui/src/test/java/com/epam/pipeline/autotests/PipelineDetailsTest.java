@@ -57,8 +57,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.assertEquals;
+import static org.testng.assertTrue;
 
 public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest implements Authorization {
 

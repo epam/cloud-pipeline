@@ -19,8 +19,8 @@ include 'git-reader'
 include 'storage-lifecycle-service'
 include 'workflows'
 include 'data-transfer-service'
-/*
 include 'api'
+/*
 include 'data-sharing-service'
 include 'data-sharing-service:api'
 include 'data-sharing-service:client'

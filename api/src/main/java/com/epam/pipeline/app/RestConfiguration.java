@@ -17,31 +17,21 @@
 package com.epam.pipeline.app;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.paths.RelativePathProvider;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.controller"})
 @EnableWebMvc
-@EnableSwagger2
 public class RestConfiguration {
 
     @Autowired
     private ServletContext servletContext;
 
-    @Bean
+    /*@Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)
                 .select()
@@ -62,9 +52,9 @@ public class RestConfiguration {
                 .useDefaultResponseMessages(false);
 
 
-    }
+    }*/
 
-    private ApiInfo apiInfo() {
+    /*private ApiInfo apiInfo() {
         return new ApiInfo(
                 "Template REST API",
                 "Some custom description of API.",
@@ -73,5 +63,5 @@ public class RestConfiguration {
                 new Contact("dev", "url", "email"),
                 "License of API",
                 "API license URL");
-    }
+    }*/
 }

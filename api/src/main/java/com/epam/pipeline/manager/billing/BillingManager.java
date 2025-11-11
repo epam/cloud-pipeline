@@ -512,14 +512,14 @@ public class BillingManager {
             groupingInfo.putAll(details);
             if (grouping.isRunUsageDetailsRequired()) {
                 final ParsedSum usageAggResult = aggregations.get(BillingUtils.RUN_USAGE_AGG);
-                final long usageVal = new Double(usageAggResult.getValue()).longValue();
+                final long usageVal = Double.valueOf(usageAggResult.getValue()).longValue();
                 groupingInfo.put(BillingUtils.RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedScriptedMetric uniqueRunIds = aggregations.get(BillingUtils.RUN_COUNT_AGG);
                 groupingInfo.put(BillingUtils.RUNS, Long.toString((Integer) uniqueRunIds.aggregation()));
             }
             if (grouping.isStorageUsageDetailsRequired()) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(BillingUtils.TOTAL_STORAGE_USAGE_AGG);
-                final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
+                final long storageUsageVal = Double.valueOf(totalStorageUsage.value()).longValue();
                 groupingInfo.put(BillingUtils.TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));
                 if (BillingGrouping.STORAGE.equals(grouping)) {
                     final ParsedTopHits hits = aggregations.get(BillingUtils.BUCKET_DOCUMENTS);

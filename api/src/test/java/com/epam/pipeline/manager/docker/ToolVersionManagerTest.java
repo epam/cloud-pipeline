@@ -27,8 +27,8 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -39,9 +39,9 @@ import java.util.Date;
 import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.isA;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -84,7 +84,7 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
     private Tool tool;
     private Tool symlink;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactory);
         

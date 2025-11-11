@@ -21,12 +21,12 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Api(value = "Detached configuration scheduling")
+@Tag(name = "Detached configuration scheduling")
 @RequestMapping(value = "/schedule/configuration")
 @RequiredArgsConstructor
 public class DetachedConfigurationScheduleController extends AbstractRestController {
@@ -52,11 +52,10 @@ public class DetachedConfigurationScheduleController extends AbstractRestControl
 
     @PostMapping(value = CONFIGURATION_ID_PATH)
     @ResponseBody
-    @ApiOperation(
-        value = "Creates detached configuration schedules.",
-        notes = "Creates detached configuration schedules.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Creates detached configuration schedules.",
+        description = "Creates detached configuration schedules.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<RunSchedule>> createRunSchedule(@PathVariable(value = ID) final Long configurationId,
                                                        @RequestBody final List<PipelineRunScheduleVO> schedules) {
         return Result.success(runScheduleApiService.createRunConfigurationSchedules(configurationId, schedules));
@@ -64,11 +63,10 @@ public class DetachedConfigurationScheduleController extends AbstractRestControl
 
     @PutMapping(value = CONFIGURATION_ID_PATH)
     @ResponseBody
-    @ApiOperation(
-        value = "Updates detached configuration schedules.",
-        notes = "Updates detached configuration schedules.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Updates detached configuration schedules.",
+        description = "Updates detached configuration schedules.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<RunSchedule>> updateRunSchedule(@PathVariable(value = ID) final Long configurationId,
                                                        @RequestBody final List<PipelineRunScheduleVO> schedules) {
         return Result.success(runScheduleApiService.updateRunConfigurationSchedules(configurationId, schedules));
@@ -76,22 +74,20 @@ public class DetachedConfigurationScheduleController extends AbstractRestControl
 
     @GetMapping(value = CONFIGURATION_ID_PATH)
     @ResponseBody
-    @ApiOperation(
-        value = "Loads all schedules for a given detached configuration.",
-        notes = "Loads all schedules for a given detached configuration.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Loads all schedules for a given detached configuration.",
+        description = "Loads all schedules for a given detached configuration.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<RunSchedule>> loadAllRunSchedules(@PathVariable(value = ID) final Long configurationId) {
         return Result.success(runScheduleApiService.loadAllRunConfigurationSchedulesByConfigurationId(configurationId));
     }
 
     @DeleteMapping(value = CONFIGURATION_ID_PATH)
     @ResponseBody
-    @ApiOperation(
-        value = "Deletes given schedules of detached configuration.",
-        notes = "Deletes given schedules of detached configuration.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Deletes given schedules of detached configuration.",
+        description = "Deletes given schedules of detached configuration.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<RunSchedule>> deleteRunSchedule(@PathVariable(value = ID) final Long configurationId,
                                                        @RequestBody final List<PipelineRunScheduleVO> schedules) {
         return Result.success(runScheduleApiService.deleteRunConfigurationSchedule(configurationId, schedules));
@@ -99,11 +95,10 @@ public class DetachedConfigurationScheduleController extends AbstractRestControl
 
     @DeleteMapping(value = CONFIGURATION_ID_PATH + "/all")
     @ResponseBody
-    @ApiOperation(
-        value = "Deletes all pipeline configuration's schedules.",
-        notes = "Deletes all pipeline configuration's schedules.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Deletes all pipeline configuration's schedules.",
+        description = "Deletes all pipeline configuration's schedules.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public void deleteAllRunSchedules(@PathVariable(value = ID) final Long configurationId) {
         runScheduleApiService.deleteAllRunConfigurationSchedules(configurationId);
     }

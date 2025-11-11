@@ -25,8 +25,8 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -260,7 +260,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser
-    @Ignore("with changes from issue #1936 this test shall be updated")
+    @Disabled("with changes from issue #1936 this test shall be updated")
     public void shouldDenyLoadEntityPermissionForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         mockAuthUser(ANOTHER_SIMPLE_USER);

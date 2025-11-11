@@ -32,24 +32,32 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
+import com.epam.pipeline.util.CheckedRunnable;
 import com.google.common.collect.Iterables;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion.*;
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class DataStorageLifecycleManagerTest {
 
@@ -95,7 +103,7 @@ public class DataStorageLifecycleManagerTest {
             storageManager, providerManager, preferenceManager, userManager
     );
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Mockito.doReturn(createS3Bucket(ID, "bucket", "bucket", "TEST_USER"))
                 .when(storageManager)
@@ -109,9 +117,9 @@ public class DataStorageLifecycleManagerTest {
                 .when(lifecycleRuleRepository)
                 .save(any(StorageLifecycleRuleEntity.class));
 
-        Mockito.doReturn(mapper.toEntity(RULE_WITH_ID))
+        Mockito.doReturn(Optional.of(mapper.toEntity(RULE_WITH_ID)))
                 .when(lifecycleRuleRepository)
-                .findOne(RULE_WITH_ID.getId());
+                .findById(RULE_WITH_ID.getId());
     }
 
     @Test
@@ -120,28 +128,29 @@ public class DataStorageLifecycleManagerTest {
         verifyRule(created, RULE_WITH_ID);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailCreateLifecycleRuleIfExists() {
         Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
                 .when(lifecycleRuleRepository)
                 .findByDatastorageId(eq(ID));
-        lifecycleManager.createStorageLifecyclePolicyRule(ID, RULE);
+        assertThrows(IllegalArgumentException.class, () -> lifecycleManager.createStorageLifecyclePolicyRule(ID, RULE));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailCreateLifecycleRuleIfExistsButCriterionEmpty() {
         Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
                 .when(lifecycleRuleRepository)
                 .findByDatastorageId(eq(ID));
         final StorageLifecycleRule ruleWithoutCriterion = RULE.toBuilder().transitionCriterion(null).build();
-        lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithoutCriterion);
+        assertThrows(IllegalArgumentException.class,
+            () -> lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithoutCriterion));
     }
 
     @Test
     public void shouldFailCreateLifecycleRuleIfPathNotFromRoot() {
         final StorageLifecycleRule rule = RULE.toBuilder().pathGlob("path/not/from/root").build();
         final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
-        Assert.assertTrue(created.getPathGlob().startsWith("/"));
+        assertTrue(created.getPathGlob().startsWith("/"));
     }
 
     @Test
@@ -176,7 +185,7 @@ public class DataStorageLifecycleManagerTest {
                 .when(lifecycleRuleRepository)
                 .findByDatastorageId(eq(ID));
         final List<StorageLifecycleRule> listed = lifecycleManager.listStorageLifecyclePolicyRules(ID, null);
-        Assert.assertEquals(2, listed.size());
+        assertEquals(2, listed.size());
     }
 
     @Test
@@ -187,7 +196,7 @@ public class DataStorageLifecycleManagerTest {
                 .findByDatastorageId(eq(ID));
         final List<StorageLifecycleRule> listed =
                 lifecycleManager.listStorageLifecyclePolicyRules(ID, "/root/data_folder/dataset1");
-        Assert.assertEquals(1, listed.size());
+        assertEquals(1, listed.size());
     }
 
     @Test
@@ -208,14 +217,15 @@ public class DataStorageLifecycleManagerTest {
         Mockito.verify(lifecycleRuleExecutionRepository).save(Mockito.any(StorageLifecycleRuleExecutionEntity.class));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailCreateLifecycleRuleExecutionIfPathNotMatch() {
-        lifecycleManager.createStorageLifecycleRuleExecution(ID,
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            lifecycleManager.createStorageLifecycleRuleExecution(ID,
                 StorageLifecycleRuleExecution.builder()
                         .ruleId(ID).path("data/1/dataset2")
                         .storageClass(STORAGE_CLASS)
                         .status(StorageLifecycleRuleExecutionStatus.RUNNING)
-                        .build());
+                        .build()));
     }
 
     @Test
@@ -227,7 +237,7 @@ public class DataStorageLifecycleManagerTest {
                 .status(StorageLifecycleRuleExecutionStatus.RUNNING)
                 .updated(DateUtils.nowUTC())
                 .build();
-        Mockito.doReturn(execution).when(lifecycleRuleExecutionRepository).findOne(eq(ID));
+        Mockito.doReturn(Optional.of(execution)).when(lifecycleRuleExecutionRepository).findById(eq(ID));
         Mockito.doReturn(execution).when(lifecycleRuleExecutionRepository)
                 .save(any(StorageLifecycleRuleExecutionEntity.class));
 
@@ -235,11 +245,11 @@ public class DataStorageLifecycleManagerTest {
         final ArgumentCaptor<StorageLifecycleRuleExecutionEntity> updated =
                 ArgumentCaptor.forClass(StorageLifecycleRuleExecutionEntity.class);
         Mockito.verify(lifecycleRuleExecutionRepository).save(updated.capture());
-        Assert.assertTrue(updated.getValue().getUpdated().isAfter(startPoint));
-        Assert.assertEquals(updated.getValue().getStatus(), StorageLifecycleRuleExecutionStatus.SUCCESS);
+        assertTrue(updated.getValue().getUpdated().isAfter(startPoint));
+        assertEquals(updated.getValue().getStatus(), StorageLifecycleRuleExecutionStatus.SUCCESS);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowIfLifecycleRuleMalformedPathRoot() {
         final StorageLifecycleRule rule = StorageLifecycleRule.builder()
                 .datastorageId(ID)
@@ -253,10 +263,10 @@ public class DataStorageLifecycleManagerTest {
                                         .build()
                         )
                 ).build();
-        lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
+        assertThrows(IllegalArgumentException.class, () -> lifecycleManager.createStorageLifecyclePolicyRule(ID, rule));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowIfLifecycleRuleMalformedTransitions() {
         final StorageLifecycleRule rule = StorageLifecycleRule.builder()
                 .datastorageId(ID)
@@ -264,16 +274,16 @@ public class DataStorageLifecycleManagerTest {
                 .objectGlob(OBJECT_GLOB)
                 .transitionMethod(StorageLifecycleTransitionMethod.EARLIEST_FILE)
                 .build();
-        lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
+        assertThrows(IllegalArgumentException.class, () -> lifecycleManager.createStorageLifecyclePolicyRule(ID, rule));
     }
 
     private void verifyRule(final StorageLifecycleRule created, final StorageLifecycleRule ruleWithId) {
-        Assert.assertNotNull(created.getId());
-        Assert.assertEquals(ruleWithId.getPathGlob(), created.getPathGlob());
-        Assert.assertEquals(ruleWithId.getObjectGlob(), created.getObjectGlob());
-        Assert.assertEquals(ruleWithId.getTransitionMethod(), created.getTransitionMethod());
-        Assert.assertEquals(ruleWithId.getTransitions().size(), created.getTransitions().size());
-        Assert.assertEquals(ruleWithId.getNotification(), created.getNotification());
+        assertNotNull(created.getId());
+        assertEquals(ruleWithId.getPathGlob(), created.getPathGlob());
+        assertEquals(ruleWithId.getObjectGlob(), created.getObjectGlob());
+        assertEquals(ruleWithId.getTransitionMethod(), created.getTransitionMethod());
+        assertEquals(ruleWithId.getTransitions().size(), created.getTransitions().size());
+        assertEquals(ruleWithId.getNotification(), created.getNotification());
     }
 
 }

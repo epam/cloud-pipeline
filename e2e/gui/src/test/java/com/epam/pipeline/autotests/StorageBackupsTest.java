@@ -37,8 +37,8 @@ import java.util.Map;
 
 import static com.epam.pipeline.autotests.ao.Primitive.ALL_STORAGES;
 import static java.lang.String.format;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
+import static org.testng.assertEquals;
+import static org.testng.assertNotEquals;
 
 public class StorageBackupsTest extends AbstractBfxPipelineTest implements Navigation, StorageHandling {
 

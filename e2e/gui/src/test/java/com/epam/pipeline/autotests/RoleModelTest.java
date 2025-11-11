@@ -41,7 +41,7 @@ import static com.epam.pipeline.autotests.utils.PrivilegeValue.*;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
+import static org.testng.assertEquals;
 
 public class RoleModelTest
         extends AbstractSeveralPipelineRunningTest

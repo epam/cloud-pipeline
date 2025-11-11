@@ -43,7 +43,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.util.Assert;
 
-public class OptionalSAMLLogoutFilter extends LogoutFilter {
+public class OptionalSAMLLogoutFilter extends LogoutFilter implements InitializingBean {
 
     protected SingleLogoutProfile profile;
     protected SAMLLogger samlLogger;

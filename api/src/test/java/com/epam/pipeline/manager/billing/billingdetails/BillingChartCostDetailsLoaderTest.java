@@ -24,8 +24,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.PipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BillingChartCostDetailsLoaderTest {
 
@@ -139,12 +140,12 @@ public class BillingChartCostDetailsLoaderTest {
         BillingChartDetails details = BillingChartCostDetailsLoader.parseResponse(
                 BillingCostDetailsRequest.builder().enabled(true)
                         .grouping(BillingGrouping.STORAGE).build(), null);
-        Assert.assertNotNull(details);
+        assertNotNull(details);
     }
 
     @Test
     public void parseResponseReturnNullIfCriteriaDontMatch() {
-        Assert.assertNull(
+        assertNull(
                 BillingChartCostDetailsLoader.parseResponse(
                         BillingCostDetailsRequest.builder().enabled(false).build(), null)
         );

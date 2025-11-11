@@ -42,29 +42,35 @@ import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
-
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class AutoscaleManagerTest {
     private static final String TEST_KUBE_NAMESPACE = "testNamespace";
     private static final Long TEST_RUN_ID = 111L;
@@ -111,17 +117,15 @@ public class AutoscaleManagerTest {
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-
         autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(
                 pipelineRunManager, executorService,
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
                 runRegionShiftHandler, metadataManager);
-        Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
+        ReflectionTestUtils.setField(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 
@@ -206,17 +210,16 @@ public class AutoscaleManagerTest {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any(), any()))
+                argThat(hasProperty("spot", Matchers.is(true))), any(), any()))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
         autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("spot", Matchers.is(true))),
-                any(), any());
+                argThat(hasProperty("spot", Matchers.is(true))), any(), any());
 
         autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
-                Matchers.hasProperty("spot", Matchers.is(false))), any(), any());
+                hasProperty("spot", Matchers.is(false))), any(), any());
     }
 }

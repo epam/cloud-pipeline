@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -126,27 +126,22 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreateQuotaTriggerQuery(final String createQuotaTriggerQuery) {
         this.createQuotaTriggerQuery = createQuotaTriggerQuery;
     }
 
-    @Required
     public void setUpdateQuotaTriggerQuery(final String updateQuotaTriggerQuery) {
         this.updateQuotaTriggerQuery = updateQuotaTriggerQuery;
     }
 
-    @Required
     public void setFindQuotaTriggerQuery(final String findQuotaTriggerQuery) {
         this.findQuotaTriggerQuery = findQuotaTriggerQuery;
     }
 
-    @Required
     public void setLoadAllQuotaTriggersQuery(final String loadAllQuotaTriggersQuery) {
         this.loadAllQuotaTriggersQuery = loadAllQuotaTriggersQuery;
     }
 
-    @Required
     public void setDeleteQuotaTriggerQuery(String deleteQuotaTriggerQuery) {
         this.deleteQuotaTriggerQuery = deleteQuotaTriggerQuery;
     }

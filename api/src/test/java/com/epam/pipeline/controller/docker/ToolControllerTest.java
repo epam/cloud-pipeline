@@ -33,8 +33,8 @@ import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -57,6 +57,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(controllers = ToolController.class)
 public class ToolControllerTest extends AbstractControllerTest {
@@ -417,7 +418,7 @@ public class ToolControllerTest extends AbstractControllerTest {
                 MediaType.IMAGE_PNG_VALUE);
 
         verify(mockToolApiService).loadToolIcon(ID);
-        Assert.assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
+        assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
         assertFileResponse(mvcResult, FILE_NAME, TEST_STRING.getBytes());
     }
 

@@ -21,11 +21,13 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.notification.UserNotification;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,25 +48,23 @@ public class UserNotificationController extends AbstractRestController {
     private final UserNotificationApiService notificationApiService;
 
     @PostMapping("/message")
-    @ApiOperation(
-            value = "Creates custom user notification.",
-            notes = "Creates a custom notification with the specified parameters. " +
-                    "Subject, text and toUser fields are the required ones.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates custom user notification.",
+            description = "Creates a custom notification with the specified parameters. " +
+                    "Subject, text and toUser fields are the required ones.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<UserNotification> create(@RequestBody final UserNotification notification) {
         return Result.success(notificationApiService.save(notification));
     }
 
     @PutMapping("/message/readAll")
-    @ApiOperation(
-            value = "Mark all user notifications as read.",
-            notes = "Mark all user notifications as read.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Mark all user notifications as read.",
+            description = "Mark all user notifications as read.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<Boolean> readAll() {
         notificationApiService.readAll();
@@ -72,12 +72,11 @@ public class UserNotificationController extends AbstractRestController {
     }
 
     @GetMapping("/message/{userId}")
-    @ApiOperation(
-            value = "Gets user notifications.",
-            notes = "Gets user notifications by userId.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets user notifications.",
+            description = "Gets user notifications by userId.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<PagedResult<List<UserNotification>>> findByUserId(@PathVariable final Long userId,
                                                        @RequestParam final Boolean isRead,
@@ -87,12 +86,11 @@ public class UserNotificationController extends AbstractRestController {
     }
 
     @GetMapping("/message/my")
-    @ApiOperation(
-            value = "Gets current user's notifications.",
-            notes = "Gets current user's notifications.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets current user's notifications.",
+            description = "Gets current user's notifications.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<PagedResult<List<UserNotification>>> findMy(@RequestParam final Boolean isRead,
                                                               @RequestParam final int pageNum,
@@ -101,12 +99,11 @@ public class UserNotificationController extends AbstractRestController {
     }
 
     @DeleteMapping("/message/{messageId}")
-    @ApiOperation(
-            value = "Deletes a custom user notification.",
-            notes = "Deletes a custom user notification.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a custom user notification.",
+            description = "Deletes a custom user notification.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<Boolean> delete(@PathVariable final Long messageId) {
         notificationApiService.delete(messageId);

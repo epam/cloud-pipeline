@@ -18,7 +18,6 @@ package com.epam.pipeline.dao.user;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.user.GroupStatus;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -83,22 +82,18 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setUpsertGroupStatusQuery(final String upsertGroupStatusQuery) {
         this.upsertGroupStatusQuery = upsertGroupStatusQuery;
     }
 
-    @Required
     public void setLoadGroupsBlockedStatusQuery(final String loadGroupsBlockedStatusQuery) {
         this.loadGroupsBlockedStatusQuery = loadGroupsBlockedStatusQuery;
     }
 
-    @Required
     public void setDeleteGroupStatusQuery(final String deleteGroupStatusQuery) {
         this.deleteGroupStatusQuery = deleteGroupStatusQuery;
     }
 
-    @Required
     public void setLoadAllGroupsStatusesQuery(final String loadAllGroupsStatusesQuery) {
         this.loadAllGroupsStatusesQuery = loadAllGroupsStatusesQuery;
     }

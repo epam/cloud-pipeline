@@ -28,13 +28,12 @@ import com.epam.pipeline.entity.firecloud.FirecloudMethodParameters;
 import com.epam.pipeline.exception.GoogleAccessException;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Api(value = "Firecloud methods")
+@Tag(name = "Firecloud methods")
 @RequestMapping(value = "/firecloud")
 @Slf4j
 @AllArgsConstructor
@@ -57,12 +56,11 @@ public class FirecloudController extends AbstractRestController {
     private MessageHelper messageHelper;
 
     @GetMapping(value = "/auth")
-    @ApiOperation(
-            value = "Exchanges Google auth code to user refresh token.",
-            notes = "Exchanges Google auth code to user refresh token.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Exchanges Google auth code to user refresh token.",
+            description = "Exchanges Google auth code to user refresh token.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<RefreshToken> processAuthorizationCode(@RequestParam String authorizationCode) {
         if (!StringUtils.hasText(authorizationCode)) {
@@ -73,12 +71,11 @@ public class FirecloudController extends AbstractRestController {
     }
 
     @GetMapping(value = "/methods")
-    @ApiOperation(
-            value = "Lists Method Repository methods.",
-            notes = "Lists Method Repository methods.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists Method Repository methods.",
+            description = "Lists Method Repository methods.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<FirecloudMethod>> loadAllMethods(
             @RequestHeader(value = Constants.FIRECLOUD_TOKEN_HEADER, required = false) String refreshToken) {
@@ -86,12 +83,11 @@ public class FirecloudController extends AbstractRestController {
     }
 
     @GetMapping(value = "/methods/{namespace}/{method}/{snapshot}/configurations")
-    @ApiOperation(
-            value = "Returns configurations of a method specified by workspace, method name, and snapshotId.",
-            notes = "Returns configurations of a method specified by workspace, method name, and snapshotId.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns configurations of a method specified by workspace, method name, and snapshotId.",
+            description = "Returns configurations of a method specified by workspace, method name, and snapshotId.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<FirecloudMethodConfiguration>> loadMethodConfigurations(
             @RequestHeader(value = Constants.FIRECLOUD_TOKEN_HEADER, required = false) String refreshToken,
@@ -102,12 +98,12 @@ public class FirecloudController extends AbstractRestController {
     }
 
     @GetMapping(value = "/methods/{namespace}/{method}/{snapshot}/parameters")
-    @ApiOperation(
-            value = "Returns inputs/outputs and wdl of a method specified by workspace, method name, and snapshotId.",
-            notes = "Returns inputs/outputs and wdl of a method specified by workspace, method name, and snapshotId.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns inputs/outputs and wdl of a method specified by workspace, method name, and snapshotId.",
+            description = "Returns inputs/outputs and wdl of a method specified by workspace, " +
+                    "method name, and snapshotId.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<FirecloudMethodParameters> loadMethodParameters(
             @RequestHeader(value = Constants.FIRECLOUD_TOKEN_HEADER, required = false) String refreshToken,

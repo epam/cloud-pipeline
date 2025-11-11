@@ -33,8 +33,8 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
@@ -47,6 +47,7 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DataStorageControllerTest extends AbstractDataStorageControllerTest {
 
@@ -311,7 +312,7 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
             Mockito.doReturn(dataStoragePair.getLeft()).when(mockStorageApiService).loadByNameOrId(TEST);
             final MvcResult mvcResult = performRequest(get(FIND_URL).param(ID_PARAM, TEST));
 
-            Assert.assertNotNull(mvcResult);
+            assertNotNull(mvcResult);
             assertResponse(mvcResult, dataStoragePair.getLeft(), dataStoragePair.getRight());
         });
         Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceList.size())).loadByNameOrId(TEST);

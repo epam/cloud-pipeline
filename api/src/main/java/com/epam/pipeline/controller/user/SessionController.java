@@ -19,7 +19,8 @@ package com.epam.pipeline.controller.user;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
-import io.swagger.annotations.Api;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -28,11 +29,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequiredArgsConstructor
-@Api(value = "Session API")
+@Tag(name = "Session API")
 public class SessionController extends AbstractRestController {
 
 

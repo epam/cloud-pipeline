@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.event;
 
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,6 @@ public class EventDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(insertUpdateEventQuery, objectType, objectId);
     }
 
-    @Required
     public void setInsertUpdateEventQuery(String insertUpdateEventQuery) {
         this.insertUpdateEventQuery = insertUpdateEventQuery;
     }

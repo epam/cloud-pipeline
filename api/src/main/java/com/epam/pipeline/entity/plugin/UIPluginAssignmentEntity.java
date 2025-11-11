@@ -19,7 +19,7 @@ package com.epam.pipeline.entity.plugin;
 import com.epam.pipeline.entity.quota.QuotaSidEntity;
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.List;
 

@@ -52,8 +52,8 @@ import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.assertEquals;
+import static org.testng.assertTrue;
 
 public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization {
 

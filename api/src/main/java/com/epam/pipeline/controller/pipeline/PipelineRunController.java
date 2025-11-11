@@ -59,10 +59,10 @@ import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -75,15 +75,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@Api(value = "Pipeline runs")
+@Tag(name = "Pipeline runs")
 public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
@@ -97,12 +96,11 @@ public class PipelineRunController extends AbstractRestController {
     private String prolongRedirect;
 
     @PostMapping(value = "/run")
-    @ApiOperation(
-            value = "Launches pipeline version execution.",
-            notes = "Launches pipeline version execution.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Launches pipeline version execution.",
+            description = "Launches pipeline version execution.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PipelineRun> runPipeline(@RequestBody PipelineStart runVo) {
         if (runVo.getPipelineId() == null) {
@@ -113,12 +111,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/runConfiguration")
-    @ApiOperation(
-            value = "Launches execution according to passed configuration.",
-            notes = "Launches execution according to passed configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Launches execution according to passed configuration.",
+            description = "Launches execution according to passed configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<PipelineRun>> runPipeline(
             @RequestHeader(value = Constants.FIRECLOUD_TOKEN_HEADER, required = false) String refreshToken,
@@ -128,12 +125,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/log")
-    @ApiOperation(
-            value = "Adds log entry for specified pipeline run.",
-            notes = "Adds log entry for specified pipeline run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Adds log entry for specified pipeline run.",
+            description = "Adds log entry for specified pipeline run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<RunLog> addLog(@PathVariable(value = RUN_ID) Long runId, @RequestBody RunLog log) {
         Assert.notNull(runId, "Run id is required");
@@ -142,12 +138,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/logs")
-    @ApiOperation(
-            value = "Loads pipeline run logs.",
-            notes = "Loads pipeline run logs.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads pipeline run logs.",
+            description = "Loads pipeline run logs.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<RunLog>> loadLogs(@PathVariable(value = RUN_ID) Long runId,
                                          @RequestParam(required = false) Integer offset,
@@ -157,12 +152,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/price")
-    @ApiOperation(
-            value = "Gets estimated price for pipeline run.",
-            notes = "Gets estimated price for pipeline run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets estimated price for pipeline run.",
+            description = "Gets estimated price for pipeline run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PipelineRunPrice> getRunEstimatedPrice(@PathVariable(value = RUN_ID) Long runId,
                                                          @RequestParam(required = false) Long regionId) {
@@ -170,12 +164,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/logfile")
-    @ApiOperation(
-            value = "Downloads pipeline run logs as a text file.",
-            notes = "Downloads pipeline run logs a text file.",
-            produces = MediaType.TEXT_PLAIN_VALUE)
+    @Operation(
+            summary = "Downloads pipeline run logs as a text file.",
+            description = "Downloads pipeline run logs a text file.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void exportLogs(@PathVariable(value = RUN_ID) Long runId,
                            HttpServletResponse response) throws IOException {
@@ -183,22 +176,20 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/tasks")
-    @ApiOperation(
-            value = "Loads pipeline run tasks.",
-            notes = "Loads pipeline run tasks.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads pipeline run tasks.",
+            description = "Loads pipeline run tasks.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineTask>> loadTasks(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.loadTasksByRunId(runId));
     }
 
     @GetMapping(value = "/run/{runId}/task")
-    @ApiOperation(
-            value = "Loads logs for a task.",
-            notes = "Loads logs for a task.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads logs for a task.",
+            description = "Loads logs for a task.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<RunLog>> loadTaskLogs(@PathVariable(value = RUN_ID) Long runId,
                                              @RequestParam(value = "taskName") String taskName,
@@ -211,11 +202,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/status")
-    @ApiOperation(
-            value = "Updates pipeline run status.",
-            notes = "Updates pipeline run status.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates pipeline run status.",
+            description = "Updates pipeline run status.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> updateRunStatus(@PathVariable(value = RUN_ID) Long runId,
             @RequestBody RunStatusVO statusVO) {
         return Result.success(runApiService.updatePipelineStatusIfNotFinal(runId,
@@ -223,22 +213,20 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/instance")
-    @ApiOperation(
-            value = "Updates pipeline run instance.",
-            notes = "Updates pipeline run instance.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates pipeline run instance.",
+            description = "Updates pipeline run instance.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> updateRunInstance(@PathVariable(value = RUN_ID) Long runId,
                                                @RequestBody RunInstance instance) {
         return Result.success(runApiService.updateRunInstance(runId, instance));
     }
 
     @PostMapping(value = "/run/{runId}/commit")
-    @ApiOperation(
-        value = "Commit and push docker container in which run is executing.",
-        notes = "Commit and push docker container in which run is executing.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Commit and push docker container in which run is executing.",
+        description = "Commit and push docker container in which run is executing.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> commitRun(@PathVariable(value = RUN_ID) Long runId,
         @RequestBody RunCommitVO commitVO, @RequestParam(defaultValue = TRUE) boolean checkSize) {
         return Result.success(runApiService.commitRun(runId,
@@ -251,44 +239,40 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/layers")
-    @ApiOperation(
-        value = "Gets run docker container layers count.",
-        notes = "Gets run docker container layers count.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Gets run docker container layers count.",
+        description = "Gets run docker container layers count.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Long> getContainerLayersCount(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.getContainerLayersCount(runId));
     }
 
     @GetMapping(value = "/run/{runId}/commit/check")
-    @ApiOperation(
-            value = "Checks if user can commit a run without a problem. " +
+    @Operation(
+            summary = "Checks if user can commit a run without a problem. " +
                     "Checks free disk space is available and size of the container is appropriate.",
-            notes = "Checks if user can commit a run without a problem. " +
-                    "Checks free disk space is available and size of the container is appropriate.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+            description = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<CommitRunConditions> getCommitRunCheckResult(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.getCommitRunCheckResult(runId));
     }
 
     @PostMapping(value = "/run/{runId}/commitStatus")
-    @ApiOperation(
-            value = "Update commit status of the pipeline.",
-            notes = "Update commit status of the pipeline.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Update commit status of the pipeline.",
+            description = "Update commit status of the pipeline.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> updateCommitRunStatus(@PathVariable(value = RUN_ID) Long runId,
                                          @RequestBody CommitRunStatusVO commitRunStatusVO) {
         return Result.success(runApiService.updateCommitRunStatus(runId, commitRunStatusVO.getCommitStatus()));
     }
 
     @PostMapping("/run/{runId}/serviceUrl")
-    @ApiOperation(
-            value = "Updates pipeline run service url.",
-            notes = "Updates pipeline run service url.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates pipeline run service url.",
+            description = "Updates pipeline run service url.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) final Long runId,
                                                    @RequestParam(required = false) final String region,
                                                    @RequestBody final PipelineRunServiceUrlVO serviceUrlVO) {
@@ -296,69 +280,63 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/prettyUrl")
-    @ApiOperation(
-            value = "Updates pipeline run pretty url.",
-            notes = "Updates pipeline run pretty url.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates pipeline run pretty url.",
+            description = "Updates pipeline run pretty url.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> updateRunPrettyUrl(@PathVariable(value = RUN_ID) Long runId,
                                                   @RequestParam String url) {
         return Result.success(runApiService.updatePrettyUrl(runId, url));
     }
 
     @GetMapping(value = "/run/prettyUrl")
-    @ApiOperation(
-            value = "Finds pipeline run by pretty url.",
-            notes = "Finds pipeline run by pretty url.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Finds pipeline run by pretty url.",
+            description = "Finds pipeline run by pretty url.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> getRunByPrettyUrl(@RequestParam String url) {
         return Result.success(runApiService.getRunByPrettyUrl(url));
     }
 
     @GetMapping(value = "/run/{runId}")
-    @ApiOperation(
-            value = "Loads pipeline run details with full list of it's restarted runs.",
-            notes = "Loads pipeline run details with full list of it's restarted runs.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads pipeline run details with full list of it's restarted runs.",
+            description = "Loads pipeline run details with full list of it's restarted runs.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PipelineRun> loadRun(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.loadPipelineRunWithRestartedRuns(runId));
     }
 
     @GetMapping(value = "/run/{runId}/ssh")
-    @ApiOperation(
-            value = "Return URL to access run ssh client.",
-            notes = "Return URL to access run ssh client.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Return URL to access run ssh client.",
+            description = "Return URL to access run ssh client.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<String, String>> buildSshUrl(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
     @GetMapping(value = "/run/{runId}/fsbrowser")
-    @ApiOperation(
-            value = "Return URL to access run fsbrowser client.",
-            notes = "Return URL to access run fsbrowser client.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Return URL to access run fsbrowser client.",
+            description = "Return URL to access run fsbrowser client.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<String, String>> buildFSBrowserUrl(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.buildFSBrowserUrl(runId));
     }
 
     @PostMapping(value = "/run/filter")
-    @ApiOperation(
-            value = "Filters pipeline runs.",
-            notes = "Filters pipeline runs by specified criteria.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Filters pipeline runs.",
+            description = "Filters pipeline runs by specified criteria.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PagedResult<List<PipelineRun>>> filterRuns(
             @RequestBody PagingRunFilterVO filterVO,
@@ -367,12 +345,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/filter/export")
-    @ApiOperation(
-            value = "Exports pipeline runs.",
-            notes = "Exports pipeline runs, filtered by specified criteria.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Exports pipeline runs.",
+            description = "Exports pipeline runs, filtered by specified criteria.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void exportRuns(
             @RequestBody PagingRunFilterVO filterVO,
@@ -384,12 +361,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/search")
-    @ApiOperation(
-            value = "Search pipeline runs.",
-            notes = "Search pipeline runs by specified criteria.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Search pipeline runs.",
+            description = "Search pipeline runs by specified criteria.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PagedResult<List<PipelineRun>>> searchRuns(@RequestBody PagingRunFilterExpressionVO filterVO)
             throws WrongFilterException {
@@ -397,24 +373,22 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/search/keywords")
-    @ApiOperation(
-            value = "Gets pipeline runs search query keywords.",
-            notes = "Gets pipeline runs search query keywords.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets pipeline runs search query keywords.",
+            description = "Gets pipeline runs search query keywords.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<FilterFieldVO>> searchRunsKeywords() {
         return Result.success(runApiService.getRunSearchQueryKeywords());
     }
 
     @PostMapping(value = "/run/count")
-    @ApiOperation(
-            value = "Returns number of pipeline runs matching filter.",
-            notes = "Returns number of pipeline runs matching filter.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns number of pipeline runs matching filter.",
+            description = "Returns number of pipeline runs matching filter.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Integer> countRuns(@RequestBody PipelineRunFilterVO filterVO) {
         return Result.success(runApiService.countPipelineRuns(filterVO));
@@ -422,89 +396,81 @@ public class PipelineRunController extends AbstractRestController {
 
 
     @GetMapping(value = "/run/defaultParameters")
-    @ApiOperation(
-            value = "Returns list of predefined run parameters.",
-            notes = "Returns list of predefined run parameters.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns list of predefined run parameters.",
+            description = "Returns list of predefined run parameters.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<DefaultSystemParameter>> getSystemParameters() {
         return Result.success(runApiService.getSystemParameters());
     }
 
     @PostMapping(value = "/run/{runId}/pause")
-    @ApiOperation(
-            value = "Pauses executing run.",
-            notes = "Pauses executing run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Pauses executing run.",
+            description = "Pauses executing run.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> pauseRun(@PathVariable(value = RUN_ID) Long runId,
                                         @RequestParam(defaultValue = TRUE) boolean checkSize) {
         return Result.success(runApiService.pauseRun(runId, checkSize));
     }
 
     @PostMapping("/run/{runId}/resume")
-    @ApiOperation(
-            value = "Resumes paused run.",
-            notes = "Resumes paused run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Resumes paused run.",
+            description = "Resumes paused run.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> resumeRun(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.resumeRun(runId));
     }
 
     @PostMapping(value = "/run/{runId}/updateSids")
-    @ApiOperation(
-            value = "Updates pipeline run sids.",
-            notes = "Updates pipeline run sids.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates pipeline run sids.",
+            description = "Updates pipeline run sids.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> updateRunSids(@PathVariable(value = RUN_ID) Long runId,
                                                @RequestBody List<RunSid> runSids) {
         return Result.success(runApiService.updateRunSids(runId, runSids));
     }
 
     @GetMapping(value = "/run/{runId}/prolongExt", consumes = MediaType.TEXT_HTML_VALUE)
-    @ApiOperation(
-            value = "Prolong idle pipeline run for new period. " +
+    @Operation(
+            summary = "Prolong idle pipeline run for new period. " +
                     "As a result, method will redirect user to prolong page.",
-            notes = "Prolong idle pipeline run for new period. " +
-                    "As a result, method will redirect user to prolong page.",
-            produces = MediaType.TEXT_HTML_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+            description = "Prolong idle pipeline run for new period. " +
+                    "As a result, method will redirect user to prolong page.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public String prolongIdleRunExt(@PathVariable(value = RUN_ID) Long runId) {
         runApiService.prolongIdleRun(runId);
         return String.format("redirect:%s", prolongRedirect);
     }
 
     @GetMapping(value = "/run/{runId}/prolong")
-    @ApiOperation(
-            value = "Prolong idle pipeline run for new period.",
-            notes = "Prolong idle pipeline run for new period.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Prolong idle pipeline run for new period.",
+            description = "Prolong idle pipeline run for new period.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result prolongIdleRun(@PathVariable(value = RUN_ID) Long runId) {
         runApiService.prolongIdleRun(runId);
         return Result.success();
     }
 
     @PostMapping(value = "/run/{runId}/terminate")
-    @ApiOperation(
-            value = "Terminates paused pipeline run.",
-            notes = "Terminates paused pipeline run cloud instance if it exists and stops the pipeline run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Terminates paused pipeline run.",
+            description = "Terminates paused pipeline run cloud instance if it exists and stops the pipeline run.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun>  terminateRun(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.terminateRun(runId));
     }
 
     @PostMapping(value = "/run/{runId}/tag")
-    @ApiOperation(
-            value = "Updates tags for pipeline run.",
-            notes = "Updates tags for pipeline run. To remove all the tags pass empty map or null inside VO.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates tags for pipeline run.",
+            description = "Updates tags for pipeline run. To remove all the tags pass empty map or null inside VO.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun>  updateRunTags(
             @PathVariable(value = RUN_ID) final Long runId,
             @RequestBody final TagsVO tagsVO,
@@ -513,24 +479,22 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/disk/attach")
-    @ApiOperation(
-            value = "Creates and attaches new disk to pipeline run.",
-            notes = "Creates and attaches new disk to pipeline run cloud instance by the given request. " +
-                    "Disk size should be specified in GB.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Creates and attaches new disk to pipeline run.",
+            description = "Creates and attaches new disk to pipeline run cloud instance by the given request. " +
+                    "Disk size should be specified in GB.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> attachDisk(@PathVariable(value = RUN_ID) final Long runId,
                                           @RequestBody final DiskAttachRequest request) {
         return Result.success(runApiService.attachDisk(runId, request));
     }
 
     @GetMapping(value = "/run/activity")
-    @ApiOperation(
-        value = "Load runs with its activity statuses.",
-        notes = "Load runs with its activity statuses. " +
-                "Only runs that possibly could cause spending for described period will be returned.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+        summary = "Load runs with its activity statuses.",
+        description = "Load runs with its activity statuses. " +
+                "Only runs that possibly could cause spending for described period will be returned.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRun>> loadRunsActivityStats(
         @RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         final LocalDateTime start,
@@ -541,31 +505,28 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/cmd")
-    @ApiOperation(
-            value = "Returns launch command for specified run",
-            notes = "Returns launch command for specified run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Returns launch command for specified run",
+            description = "Returns launch command for specified run")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<String> generateLaunchCommand(@RequestBody final PipeRunCmdStartVO runVO) {
         return Result.success(runApiService.generateLaunchCommand(runVO));
     }
 
     @GetMapping(value = "/runs")
-    @ApiOperation(
-            value = "Returns runs with associated tools",
-            notes = "Returns runs with associated tools",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Returns runs with associated tools",
+            description = "Returns runs with associated tools")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRunWithTool>> getRunsWithTools(@RequestParam final List<Long> runIds) {
         return Result.success(runApiService.getRunsWithTools(runIds));
     }
 
     @PostMapping(value = "/run/{runId}/kube/services")
-    @ApiOperation(
-            value = "Creates kubernetes service",
-            notes = "Creates kubernetes service",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Creates kubernetes service",
+            description = "Creates kubernetes service")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<KubernetesService> createKubernetesService(@RequestParam final String serviceName,
                                                              @PathVariable final Long runId,
                                                              @RequestBody final List<KubernetesServicePort> ports) {
@@ -573,72 +534,66 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/kube/services")
-    @ApiOperation(
-            value = "Returns kubernetes service description",
-            notes = "Returns kubernetes service description",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Returns kubernetes service description",
+            description = "Returns kubernetes service description")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<KubernetesService> getKubernetesService(@PathVariable final Long runId) {
         return Result.success(runApiService.getKubernetesService(runId));
     }
 
     @GetMapping(value = "/edge/services")
-    @ApiOperation(
-            value = "Loads all edge services",
-            notes = "Loads all edge services",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads all edge services",
+            description = "Loads all edge services")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<ServiceDescription>> loadEdgeServices() {
         return Result.success(runApiService.loadEdgeServices());
     }
 
     @GetMapping("/run/pools/{id}")
-    @ApiOperation(
-            value = "Loads runs associated with certain node pool ID",
-            notes = "Loads runs associated with certain node pool ID",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads runs associated with certain node pool ID",
+            description = "Loads runs associated with certain node pool ID")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRun>> loadRunsByPoolId(@PathVariable("id") final Long poolId) {
         return Result.success(runApiService.loadRunsByPoolId(poolId));
     }
 
     @GetMapping("/run/parents/{runId}")
-    @ApiOperation(
-            value = "Loads a compact representation of child runs of a cluster by parent run ID",
-            notes = "Loads a compact representation of child runs of a cluster by parent run ID",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads a compact representation of child runs of a cluster by parent run ID",
+            description = "Loads a compact representation of child runs of a cluster by parent run ID")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<RunInfo>> loadRunsByParentId(@PathVariable(RUN_ID) final Long parentId) {
         return Result.success(runApiService.loadRunsByParentId(parentId));
     }
 
     @PostMapping("/runs/charts")
-    @ApiOperation(
-            value = "Loads active runs charts info",
-            notes = "Loads active runs charts info",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads active runs charts info",
+            description = "Loads active runs charts info")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<RunChartInfo> loadActiveRunsCharts(@RequestBody final RunChartFilterVO filter) {
         return Result.success(runApiService.loadActiveRunsCharts(filter));
     }
 
     @PostMapping("/runs/archive")
-    @ApiOperation(
-            value = "Migrate runs to archive table according to owner's metadata configuration",
-            notes = "Migrate runs to archive table according to owner's metadata configuration",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Migrate runs to archive table according to owner's metadata configuration",
+            description = "Migrate runs to archive table according to owner's metadata configuration")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> archiveRuns() {
         runApiService.archiveRuns();
         return Result.success(true);
     }
 
     @PostMapping("/runs/archive/owners")
-    @ApiOperation(
-            value = "Migrate runs to archive table for specified user (or group).",
-            notes = "If no 'days' specified try to find days in metadata. Otherwise, ignore metadata configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Migrate runs to archive table for specified user (or group).",
+            description = "If no 'days' specified try to find days in metadata. " +
+                    "Otherwise, ignore metadata configuration.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> archiveRunsByOwner(@RequestParam final String ownerSid,
                                               @RequestParam final boolean principal,
                                               @RequestParam(required = false) final Integer days) {
@@ -647,12 +602,11 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("/run/{runId}/network/limit")
-    @ApiOperation(
-            value = "Set limit boundary",
-            notes = "Sets a special tag for a run based on boundary param: NETWORK_LIMIT: <boundary> (Bytes/s) " +
-                    "in case of enable = true, otherwise removes the tag.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Set limit boundary",
+            description = "Sets a special tag for a run based on boundary param: NETWORK_LIMIT: <boundary> (Bytes/s) " +
+                    "in case of enable = true, otherwise removes the tag.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> setLimitBoundary(@PathVariable(value = RUN_ID) final Long runId,
                                             @RequestParam(defaultValue = "true") final Boolean enable,
                                             @RequestParam(required = false) final Integer boundary) {
@@ -661,11 +615,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("/run/{runId}/runtime/data")
-    @ApiOperation(
-            value = "Get run data for the specific run by ID and data type",
-            notes = "Get run data for the specific run by ID and data type",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Get run data for the specific run by ID and data type",
+            description = "Get run data for the specific run by ID and data type")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<RunRuntimeData> getPipelineRunData(
             @PathVariable(value = RUN_ID) final Long runId,
             @RequestParam final RunSyncRuntimeDataType type,
@@ -674,22 +627,20 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("/run/{runId}/engine/tasks")
-    @ApiOperation(
-            value = "Consumes engine task events for run",
-            notes = "Consumes engine task events for run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Consumes engine task events for run",
+            description = "Consumes engine task events for run")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
                                                       @RequestBody final List<EngineRunTask> tasks) {
         return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
     }
 
     @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
-    @ApiOperation(
-            value = "Loads engine task statistics for run and engine type",
-            notes = "Loads engine task statistics for run and engine type",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads engine task statistics for run and engine type",
+            description = "Loads engine task statistics for run and engine type")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Map<String, Map<EngineTaskStatus, Long>>> loadEngineRunTasksStats(
             @PathVariable(value = RUN_ID) final Long runId,
             @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
@@ -697,11 +648,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("run/{runId}/engine/{engineType}/tasks/filter")
-    @ApiOperation(
-            value = "Loads engine task for run with applied filters",
-            notes = "Loads engine task for run with applied filters",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads engine task for run with applied filters",
+            description = "Loads engine task for run with applied filters")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PagedResult<List<EngineRunTask>>> filterEngineRunTasks(
             @PathVariable(value = RUN_ID) final Long runId,
             @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
@@ -710,11 +660,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("/run/{runId}/result")
-    @ApiOperation(
-            value = "Adds set of run result objects for the specified run",
-            notes = "Adds set of run result objects for the specified run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Adds set of run result objects for the specified run",
+            description = "Adds set of run result objects for the specified run")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result addPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId,
                                         @RequestBody final List<PipelineRunResult> results) {
         runApiService.addPipelineRunResults(runId, results);
@@ -722,11 +671,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping("/run/{runId}/result")
-    @ApiOperation(
-            value = "Loads run result objects for the specified run",
-            notes = "Loads run result objects for the specified run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads run result objects for the specified run",
+            description = "Loads run result objects for the specified run")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRunResult>> loadPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.loadPipelineRunResultsForRun(runId));
     }

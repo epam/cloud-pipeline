@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -121,47 +120,38 @@ public class IssueCommentDao extends NamedParameterJdbcDaoSupport {
                 Collections.singletonMap("ISSUES_IDS", issuesIds));
     }
 
-    @Required
     public void setIssueCommentSequence(String issueCommentSequence) {
         this.issueCommentSequence = issueCommentSequence;
     }
 
-    @Required
     public void setCreateIssueCommentQuery(String createIssueCommentQuery) {
         this.createIssueCommentQuery = createIssueCommentQuery;
     }
 
-    @Required
     public void setLoadIssueCommentByIdQuery(String loadIssueCommentByIdQuery) {
         this.loadIssueCommentByIdQuery = loadIssueCommentByIdQuery;
     }
 
-    @Required
     public void setLoadAllCommentsForIssueQuery(String loadAllCommentsForIssueQuery) {
         this.loadAllCommentsForIssueQuery = loadAllCommentsForIssueQuery;
     }
 
-    @Required
     public void setUpdateIssueCommentQuery(String updateIssueCommentQuery) {
         this.updateIssueCommentQuery = updateIssueCommentQuery;
     }
 
-    @Required
     public void setDeleteIssueCommentQuery(String deleteIssueCommentQuery) {
         this.deleteIssueCommentQuery = deleteIssueCommentQuery;
     }
 
-    @Required
     public void setDeleteAllCommentsForIssueQuery(String deleteAllCommentsForIssueQuery) {
         this.deleteAllCommentsForIssueQuery = deleteAllCommentsForIssueQuery;
     }
 
-    @Required
     public  void setDeleteCommentsForIssuesListQuery(String deleteCommentsForIssuesListQuery) {
         this.deleteCommentsForIssuesListQuery = deleteCommentsForIssuesListQuery;
     }
 
-    @Required
     public void setLoadAllCommentsForIssuesQuery(String loadAllCommentsForIssuesQuery) {
         this.loadAllCommentsForIssuesQuery = loadAllCommentsForIssuesQuery;
     }

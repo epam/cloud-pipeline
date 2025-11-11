@@ -19,7 +19,7 @@ package com.epam.pipeline.dao.notification;
 import java.util.List;
 
 import com.epam.pipeline.entity.notification.NotificationTemplate;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -93,27 +93,22 @@ public class NotificationTemplateDao extends NamedParameterJdbcDaoSupport {
 
     }
 
-    @Required
     public void setCreateNotificationTemplateQuery(String createNotificationTemplateQuery) {
         this.createNotificationTemplateQuery = createNotificationTemplateQuery;
     }
 
-    @Required
     public void setLoadNotificationTemplateQuery(String loadNotificationTemplateQuery) {
         this.loadNotificationTemplateQuery = loadNotificationTemplateQuery;
     }
 
-    @Required
     public void setLoadAllNotificationTemplatesQuery(String loadAllNotificationTemplatesQuery) {
         this.loadAllNotificationTemplatesQuery = loadAllNotificationTemplatesQuery;
     }
 
-    @Required
     public void setUpdateNotificationTemplateQuery(String updateNotificationTemplateQuery) {
         this.updateNotificationTemplateQuery = updateNotificationTemplateQuery;
     }
 
-    @Required
     public void setDeleteNotificationTemplateQuery(String deleteNotificationTemplateQuery) {
         this.deleteNotificationTemplateQuery = deleteNotificationTemplateQuery;
     }

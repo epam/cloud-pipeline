@@ -17,6 +17,8 @@
 package com.epam.pipeline.app;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +29,7 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
@@ -36,16 +39,16 @@ import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
+public class AppMVCConfiguration implements WebMvcConfigurer {
 
     private static final String[] CACHED_RESOURCES_PATH =
         {"/iconfont/**", "/static/css/*.css", "/static/js/*.js"};
@@ -62,7 +65,6 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
                 new MappingJackson2HttpMessageConverter();
         converter.setObjectMapper(objectMapper());
         converters.add(converter);
-        super.configureMessageConverters(converters);
     }
 
     @Override
@@ -83,7 +85,7 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
 
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
-        super.configurePathMatch(configurer);
+        //super.configurePathMatch(configurer);
         configurer.setUseSuffixPatternMatch(false);
     }
 

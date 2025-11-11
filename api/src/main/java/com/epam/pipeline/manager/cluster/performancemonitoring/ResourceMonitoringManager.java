@@ -55,6 +55,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -74,7 +75,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 
-import javax.annotation.PostConstruct;
+
 
 /**
  * A service component for monitoring resource usage.
@@ -88,7 +89,7 @@ import javax.annotation.PostConstruct;
 @Service
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 @Slf4j
-public class ResourceMonitoringManager extends AbstractSchedulingManager {
+public class ResourceMonitoringManager extends AbstractSchedulingManager implements InitializingBean {
 
     public static final String UTILIZATION_LEVEL_LOW = "IDLE";
     public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
@@ -102,8 +103,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
                 "Resource Usage Monitoring");
     }

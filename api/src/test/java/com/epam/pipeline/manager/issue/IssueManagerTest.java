@@ -16,10 +16,11 @@
 
 package com.epam.pipeline.manager.issue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,14 +55,15 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.IssueMapper;
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -107,8 +109,7 @@ public class IssueManagerTest extends AbstractSpringTest {
     private Attachment testAttachment;
     private S3bucketDataStorage testSystemDataStorage = new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "test");
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         Folder folder = new Folder();
         folder.setName(FOLDER_NAME);
         folder.setOwner(AUTHOR);
@@ -148,22 +149,22 @@ public class IssueManagerTest extends AbstractSpringTest {
         assertEquals(ISSUE_TEXT, htmlTextCaptor.getValue());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void creatingIssueForNonExistentEntityShouldThrowException() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         Long nonExistentEntityId = 1L;
         EntityVO nonExistentEntity = new EntityVO(nonExistentEntityId, AclClass.PIPELINE);
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, nonExistentEntity);
-        issueManager.createIssue(issueVO);
-
+        assertThrows(IllegalArgumentException.class,
+            () -> issueManager.createIssue(issueVO));
         verify(notificationManager, Mockito.never()).notifyIssue(any(), any(), any());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void creatingIssueWithEmptyNameShouldThrowException() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO("", ISSUE_TEXT, entityVO);
-        issueManager.createIssue(issueVO);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.createIssue(issueVO));
     }
 
     @Test
@@ -182,23 +183,23 @@ public class IssueManagerTest extends AbstractSpringTest {
         compareIssues(issueManager.loadIssue(issueId), updated);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void updatingClosedIssueShouldThrowException() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         Issue closedIssue = getClosedIssue();
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
         issueVO.setLabels(Collections.singletonList(LABEL1));
-        issueManager.updateIssue(closedIssue.getId(), issueVO);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.updateIssue(closedIssue.getId(), issueVO));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testDeleteIssueWithComment() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
         IssueCommentVO commentVO = getCommentVO(COMMENT_TEXT);
         issueManager.createComment(issueId, commentVO);
         issueManager.deleteIssue(issueId);
-        issueManager.loadIssue(issueId);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.loadIssue(issueId));
     }
 
     @Test
@@ -219,26 +220,26 @@ public class IssueManagerTest extends AbstractSpringTest {
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void creatingCommentForNonExistentIssueShouldThrowException() {
         IssueCommentVO commentVO = getCommentVO(COMMENT_TEXT);
         Long nonExistentIssueId = 1L;
-        issueManager.createComment(nonExistentIssueId, commentVO);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.createComment(nonExistentIssueId, commentVO));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void creatingCommentForClosedIssueShouldThrowException() {
         Issue issue = getClosedIssue();
         IssueCommentVO commentVO = getCommentVO(COMMENT_TEXT);
-        issueManager.createComment(issue.getId(), commentVO);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.createComment(issue.getId(), commentVO));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void creatingCommentWithEmptyTextShouldThrowException() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
         IssueCommentVO commentVO = getCommentVO("");
-        issueManager.createComment(issueId, commentVO);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.createComment(issueId, commentVO));
     }
 
     @Test
@@ -265,13 +266,13 @@ public class IssueManagerTest extends AbstractSpringTest {
         assertEquals(COMMENT_TEXT2, issueManager.loadComment(issueId, commentId).getText());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testDeleteComment() {
         IssueComment comment = registerComment();
         Long issueId = comment.getIssueId();
         Long commentId = comment.getId();
         issueManager.deleteComment(issueId, commentId);
-        issueManager.loadComment(issueId, commentId);
+        assertThrows(IllegalArgumentException.class, () -> issueManager.loadComment(issueId, commentId));
     }
 
     @Test
@@ -378,7 +379,7 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Ignore("test relies on timeout")
+    @Disabled("test relies on timeout")
     public void updateCommentWithAttachments() throws InterruptedException {
         Attachment newAttachment = new Attachment();
         newAttachment.setPath("///");

@@ -24,17 +24,19 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import com.epam.pipeline.util.CustomAssertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +45,12 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryGroups;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryTools;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
@@ -93,9 +100,9 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
         DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
 
-        Assert.assertEquals(created.getId(), loaded.getId());
-        Assert.assertEquals(created.getDescription(), loaded.getDescription());
-        Assert.assertEquals(created.getPath(), loaded.getPath());
+        assertEquals(created.getId(), loaded.getId());
+        assertEquals(created.getDescription(), loaded.getDescription());
+        assertEquals(created.getPath(), loaded.getPath());
 
         ToolGroup library = createToolGroup(created);
         toolGroupDao.createToolGroup(library);
@@ -107,13 +114,13 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         toolDao.createTool(tool2);
 
         loaded = registryDao.loadDockerRegistry(created.getId());
-        Assert.assertEquals(loaded.getTools().size(), EXPECTED_TOOLS_TOTAL_COUNT);
+        assertEquals(loaded.getTools().size(), EXPECTED_TOOLS_TOTAL_COUNT);
         Tool loadedTool = loaded.getTools().get(0);
         Tool loadedTool2 = loaded.getTools().get(1);
 
-        Assert.assertNotEquals(loadedTool.getImage(), loadedTool2.getImage());
-        Assert.assertEquals(loaded.getPath(), loadedTool.getRegistry());
-        Assert.assertEquals(loaded.getPath(), loadedTool2.getRegistry());
+        assertNotEquals(loadedTool.getImage(), loadedTool2.getImage());
+        assertEquals(loaded.getPath(), loadedTool.getRegistry());
+        assertEquals(loaded.getPath(), loadedTool2.getRegistry());
     }
 
     private ToolGroup createToolGroup(DockerRegistry created) {
@@ -144,7 +151,7 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         registryDao.updateDockerRegistry(created);
 
         DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
-        Assert.assertEquals(EMPTY, loaded.getDescription());
+        assertEquals(EMPTY, loaded.getDescription());
     }
 
     @Test
@@ -155,10 +162,10 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         registryDao.deleteDockerRegistry(created.getId());
 
         DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
-        Assert.assertNull(loaded);
+        assertNull(loaded);
     }
 
-    @Test(expected = DataIntegrityViolationException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void deleteDockerRegistryWithToolShouldThrowsException() throws Exception {
         DockerRegistry created = getDockerRegistry();
@@ -168,7 +175,7 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         Tool tool = createTool(TOOL_IMAGE, created.getId(), library);
         toolDao.createTool(tool);
 
-        registryDao.deleteDockerRegistry(created.getId());
+        assertThrows(DataIntegrityViolationException.class, () -> registryDao.deleteDockerRegistry(created.getId()));
     }
 
     @Test
@@ -303,32 +310,32 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
     // TODO 02.06.2020: Why is it ignored out?
     @Test
-    @Ignore
+    @Disabled
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testLoadAllRegistriesContent() {
         List<DockerRegistry> created = initTestHierarchy();
         Set<Long> createdRegistryIds = created.stream().map(BaseEntity::getId).collect(Collectors.toSet());
 
         List<DockerRegistry> dockerRegistries = registryDao.loadAllRegistriesContent();
-        Assert.assertFalse(dockerRegistries.isEmpty());
+        assertFalse(dockerRegistries.isEmpty());
         for (int i = 0; i < dockerRegistries.size(); i++) {
             DockerRegistry loadedRegistry = dockerRegistries.get(i);
 
             if (createdRegistryIds.contains(loadedRegistry.getId())) {
-                Assert.assertFalse(loadedRegistry.getGroups().isEmpty());
-                Assert.assertEquals(loadedRegistry.getGroups().get(0).getName(),
+                assertFalse(loadedRegistry.getGroups().isEmpty());
+                assertEquals(loadedRegistry.getGroups().get(0).getName(),
                                     created.get(i).getGroups().get(0).getName());
-                Assert.assertEquals(loadedRegistry.getGroups().get(0).getDescription(),
+                assertEquals(loadedRegistry.getGroups().get(0).getDescription(),
                                     created.get(i).getGroups().get(0).getDescription());
-                /*Assert.assertEquals(loadedRegistry.getGroups().get(0).getId(),
+                /*assertEquals(loadedRegistry.getGroups().get(0).getId(),
                                     created.get(i).getGroups().get(0).getId());*/
 
                 for (int j = 0; j < created.get(i).getGroups().get(0).getTools().size(); j++) {
                     Tool tool = created.get(i).getGroups().get(0).getTools().get(j);
                     Tool loadedTool = loadedRegistry.getGroups().get(0).getTools().get(j);
-                    Assert.assertEquals(tool.getId(), loadedTool.getId());
-                    Assert.assertEquals(tool.getImage(), loadedTool.getImage());
-                    Assert.assertEquals(tool.getCpu(), loadedTool.getCpu());
+                    assertEquals(tool.getId(), loadedTool.getId());
+                    assertEquals(tool.getImage(), loadedTool.getImage());
+                    assertEquals(tool.getCpu(), loadedTool.getCpu());
                 }
             }
         }

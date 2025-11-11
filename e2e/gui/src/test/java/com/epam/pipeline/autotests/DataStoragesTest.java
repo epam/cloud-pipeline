@@ -576,8 +576,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     private void assertFileSize(File file, int expectedFileSize) {
         final long actualFileSize = file.length();
 
-        Assert.assertTrue(file.exists());
-        Assert.assertEquals(actualFileSize, expectedFileSize);
+        assertTrue(file.exists());
+        assertEquals(actualFileSize, expectedFileSize);
     }
 
     private void reloadPageAndWait() {

@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -114,22 +113,18 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setUpsertPreferenceQuery(String upsertPreferenceQuery) {
         this.upsertPreferenceQuery = upsertPreferenceQuery;
     }
 
-    @Required
     public void setLoadPreferenceByNameQuery(String loadPreferenceByNameQuery) {
         this.loadPreferenceByNameQuery = loadPreferenceByNameQuery;
     }
 
-    @Required
     public void setLoadAllPreferencesQuery(String loadAllPreferencesQuery) {
         this.loadAllPreferencesQuery = loadAllPreferencesQuery;
     }
 
-    @Required
     public void setDeletePreferenceQuery(String deletePreferenceQuery) {
         this.deletePreferenceQuery = deletePreferenceQuery;
     }

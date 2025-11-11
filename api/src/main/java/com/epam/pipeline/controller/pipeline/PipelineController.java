@@ -53,17 +53,16 @@ import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.fileupload2.core.FileUploadException;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -75,15 +74,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
 @Controller
-@Api(value = "Pipelines")
+@Tag(name = "Pipelines")
 public class PipelineController extends AbstractRestController {
 
     private static final int BYTES_IN_KB = 1024;
@@ -103,12 +100,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/register", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new pipeline.",
-            notes = "Registers a new pipeline.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new pipeline.",
+            description = "Registers a new pipeline.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> registerPipeline(@RequestBody PipelineVO pipeline)
             throws GitClientException {
@@ -117,12 +113,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/check", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Checks repository existence.",
-            notes = "Checks repository existence.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Checks repository existence.",
+            description = "Checks repository existence.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<CheckRepositoryVO> checkPipelineRepository(@RequestBody CheckRepositoryVO checkRepositoryVO)
             throws GitClientException {
@@ -131,12 +126,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/update", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates a pipeline.",
-            notes = "Updates a pipeline.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates a pipeline.",
+            description = "Updates a pipeline.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> updatePipeline(@RequestBody PipelineVO pipeline) {
         return Result.success(pipelineApiService.update(pipeline));
@@ -144,12 +138,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/updateToken", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates pipeline token.",
-            notes = "Updates pipeline token.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates pipeline token.",
+            description = "Updates pipeline token.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> updatePipelineToken(@RequestBody PipelineVO pipeline) {
         return Result.success(pipelineApiService.updateToken(pipeline));
@@ -157,12 +150,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/loadAll", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists all registered pipelines.",
-            notes = "Lists all registered pipelines.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists all registered pipelines.",
+            description = "Lists all registered pipelines.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<Pipeline>> loadAllPipelines(
             @RequestParam(defaultValue = "false") Boolean loadVersion) {
@@ -171,12 +163,11 @@ public class PipelineController extends AbstractRestController {
 
     @PostMapping("/pipeline/filter")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all registered pipelines with specified filters.",
-            notes = "Loads all registered pipelines with specified filters.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all registered pipelines with specified filters.",
+            description = "Loads all registered pipelines with specified filters.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<PipelineWithMetadata>> filterPipelines(
             @RequestBody final EntityFilterVO filter,
@@ -187,12 +178,11 @@ public class PipelineController extends AbstractRestController {
 
     @GetMapping(value = "/pipeline/permissions")
     @ResponseBody
-    @ApiOperation(
-            value = "Lists all registered pipelines with permissions.",
-            notes = "Lists all registered pipelines with permissions.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists all registered pipelines with permissions.",
+            description = "Lists all registered pipelines with permissions.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PipelinesWithPermissionsVO> loadAllPipelinesWithPermissions(
             @RequestParam(required = false) final Integer pageNum,
@@ -202,12 +192,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/load", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a pipeline, specified by ID.",
-            notes = "Returns a pipeline, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a pipeline, specified by ID.",
+            description = "Returns a pipeline, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> loadPipeline(@PathVariable(value = ID) final Long id) {
         return Result.success(pipelineApiService.load(id));
@@ -215,12 +204,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/find", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a pipeline, specified by ID or name.",
-            notes = "Returns a pipeline, specified by ID or name.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a pipeline, specified by ID or name.",
+            description = "Returns a pipeline, specified by ID or name.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> findPipeline(@RequestParam(value = ID) final String identifier) {
         return Result.success(pipelineApiService.loadPipelineByIdOrName(identifier));
@@ -228,12 +216,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/delete", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a pipeline, specified by ID.",
-            notes = "Deletes a pipeline, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a pipeline, specified by ID.",
+            description = "Deletes a pipeline, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> deletePipeline(@PathVariable(value = ID) final Long id,
                                            @RequestParam(value = KEEP_REPOSITORY, required = false)
@@ -243,12 +230,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/runs", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all pipeline runs for a specified pipeline.",
-            notes = "Loads all pipeline runs for a specified pipeline.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all pipeline runs for a specified pipeline.",
+            description = "Loads all pipeline runs for a specified pipeline.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<PipelineRun>> loadRunsByPipeline(@PathVariable(value = ID) final Long id) {
         return Result.success(pipelineApiService.loadAllRunsByPipeline(id));
@@ -256,12 +242,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/versions", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all pipeline versions for a specified pipeline.",
-            notes = "Loads all pipeline versions for a specified pipeline.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all pipeline versions for a specified pipeline.",
+            description = "Loads all pipeline versions for a specified pipeline.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<Revision>> loadVersionsByPipeline(@PathVariable(value = ID) final Long id)
             throws GitClientException {
@@ -271,12 +256,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/version", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a pipeline version, specified by ID.",
-            notes = "Returns a pipeline version, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a pipeline version, specified by ID.",
+            description = "Returns a pipeline version, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitTagEntry> loadPipelineVersion(
             @PathVariable(value = ID) final Long id,
@@ -287,12 +271,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/clone", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns pipeline clone URL.",
-            notes = "Returns pipeline clone URL.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns pipeline clone URL.",
+            description = "Returns pipeline clone URL.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<String> getPipelineCloneURL(
             @PathVariable(value = ID) final Long id) {
@@ -301,12 +284,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/git/credentials", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-        value = "Returns user's git credentials for internal Gitlab.",
-        notes = "Returns user's git credentials for internal Gitlab.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Returns user's git credentials for internal Gitlab.", 
+        description = "Returns user's git credentials for internal Gitlab.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<GitCredentials> getPipelineCredentials(@RequestParam(required = false) Long duration) {
         return Result.success(pipelineApiService.getPipelineCredentials(duration));
@@ -315,12 +297,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/price", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets estimated price for pipeline run.",
-            notes = "Gets estimated price for pipeline run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets estimated price for pipeline run.",
+            description = "Gets estimated price for pipeline run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<InstancePrice> getPipelineEstimatedPrice(
             @PathVariable(value = ID) Long id,
@@ -336,12 +317,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/price", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets estimated price for run.",
-            notes = "Gets estimated price for run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets estimated price for run.",
+            description = "Gets estimated price for run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<InstancePrice> getEstimatedPrice(
             @RequestBody InstanceOfferParametersVO instanceOfferParametersVO) {
@@ -355,12 +335,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/graph", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a workflow graph for a specified version.",
-            notes = "Returns a workflow graph for a specified version.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a workflow graph for a specified version.",
+            description = "Returns a workflow graph for a specified version.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<TaskGraphVO> getWorkflowGraph(
             @PathVariable(value = ID) final Long id,
@@ -370,12 +349,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/sources", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets list of source files of pipeline version.",
-            notes = "Gets list of source files of pipeline version, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets list of source files of pipeline version.",
+            description = "Gets list of source files of pipeline version, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<GitRepositoryEntry>> getPipelineSources(
             @PathVariable(value = ID) Long id,
@@ -393,12 +371,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/folder", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates or renames pipeline folder.",
-            notes = "Creates or renames pipeline folder.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates or renames pipeline folder.",
+            description = "Creates or renames pipeline folder.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitCommitEntry> createOrRenamePipelineFolder(
             @PathVariable(value = ID) Long id,
@@ -409,12 +386,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/folder", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Removes pipeline update.",
-            notes = "Removes pipeline update.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Removes pipeline update.",
+            description = "Removes pipeline update.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitCommitEntry> removeFolder(
             @PathVariable(value = ID) Long id,
@@ -426,12 +402,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/docs", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets list of docs files of pipeline version.",
-            notes = "Gets list of docs files of pipeline version, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets list of docs files of pipeline version.",
+            description = "Gets list of docs files of pipeline version, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<GitRepositoryEntry>> getPipelineDocs(
             @PathVariable(value = ID) Long id,
@@ -441,13 +416,12 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets file content",
-            notes = "Gets content of the file, specified by path in the repository and pipeline version ID. " +
-                    "The file content is returned Base64 encoded",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets file content",
+            description = "Gets content of the file, specified by path in the repository and pipeline version ID. " +
+                    "The file content is returned Base64 encoded")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public ResponseEntity<byte[]> getPipelineFile(
             @PathVariable(value = ID) Long id,
@@ -458,13 +432,12 @@ public class PipelineController extends AbstractRestController {
 
     @GetMapping(value = "/pipeline/{id}/file/truncate")
     @ResponseBody
-    @ApiOperation(
-        value = "Truncate first bytes of a file content",
-        notes = "Gets first bytes of content of the file, specified by path in the repository and pipeline "
-                + "version ID. The file content is returned Base64 encoded",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Truncate first bytes of a file content",
+        description = "Gets first bytes of content of the file, specified by path in the repository and pipeline "
+                + "version ID. The file content is returned Base64 encoded")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public ResponseEntity<byte[]> getTruncatedPipelineFile(
         @PathVariable(value = ID) Long id,
@@ -477,12 +450,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates, updates or moves a file",
-            notes = "Creates, updates or moves a  file",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates, updates or moves a file",
+            description = "Creates, updates or moves a  file")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitCommitEntry> modifyPipelineFile(
             @PathVariable(value = ID) Long id,
@@ -492,12 +464,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file/revert", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Revert a given file to specific commit",
-            notes = "Revert a given file to specific commit",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Revert a given file to specific commit",
+            description = "Revert a given file to specific commit")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitCommitEntry> revertPipelineFile(
             @PathVariable(value = ID) Long id,
@@ -507,12 +478,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/files", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates, updates or moves files",
-            notes = "Creates, updates or moves files",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates, updates or moves files",
+            description = "Creates, updates or moves files")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitCommitEntry> modifyPipelineFiles(
             @PathVariable(value = ID) Long id,
@@ -522,16 +492,16 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file/upload", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Uploads a file.",
-            notes = "Uploads a file.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Uploads a file.",
+            description = "Uploads a file.")
     public List<UploadFileMetadata> uploadFile(
             @PathVariable(value = ID) Long id,
             @RequestParam(value = PATH) final String folder,
-            HttpServletRequest request) throws GitClientException, FileUploadException {
-        MultipartFile file = consumeMultipartFile(request);
-
+            @RequestParam("file") MultipartFile file) throws GitClientException, FileUploadException {
+        if (file.isEmpty()) {
+            throw new FileUploadException("File is empty!");
+        }
         List<UploadFileMetadata> uploadedFiles = new LinkedList<>();
         UploadFileMetadata fileMeta = new UploadFileMetadata();
         fileMeta.setFileName(FilenameUtils.getName(file.getOriginalFilename()).replaceAll("[ ]", "_"));
@@ -552,12 +522,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file", method= RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a file",
-            notes = "Deletes a file",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a file",
+            description = "Deletes a file")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitCommitEntry> deletePipelineFile(
             @PathVariable(value = ID) Long id,
@@ -569,12 +538,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file/download", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets file content",
-            notes = "Gets the file, specified by path in the repository and pipeline version ID. The file",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+            summary = "Gets file content",
+            description = "Gets the file, specified by path in the repository and pipeline version ID. The file")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void downloadPipelineFile(
             @PathVariable(value = ID) Long id,
@@ -587,13 +555,12 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/file/generate", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets file content",
-            notes = "Gets content of the file, specified by path in the repository and pipeline version ID. The file " +
-                    "content is returned Base64 encoded",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+            summary = "Gets file content",
+            description = "Gets content of the file, specified by path in the repository and pipeline version ID. " +
+                    "The file content is returned Base64 encoded")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void generateFileByTemplate(
             @PathVariable(value = ID) Long id,
@@ -607,12 +574,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/version/register", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new pipeline version.",
-            notes = "Registers a new pipeline version.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new pipeline version.",
+            description = "Registers a new pipeline version.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Revision> registerPipelineVersion(@RequestBody RegisterPipelineVersionVO registerPipelineVersionVO)
             throws GitClientException {
@@ -621,12 +587,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/template/properties", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets pipeline document generation properties",
-            notes = "Gets pipeline document generation properties, specified by pipeline ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets pipeline document generation properties",
+            description = "Gets pipeline document generation properties, specified by pipeline ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<DocumentGenerationProperty>> getPipelineDocumentGenerationProperties(
             @PathVariable(value = ID) Long id) {
@@ -635,12 +600,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/template/properties/{name}", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets pipeline document generation property",
-            notes = "Gets pipeline document generation property, specified by name and pipeline ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets pipeline document generation property",
+            description = "Gets pipeline document generation property, specified by name and pipeline ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DocumentGenerationProperty> getPipelineDocumentGenerationProperty(
             @PathVariable(value = ID) Long id, @PathVariable(value = NAME) String name) {
@@ -649,12 +613,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/template/properties", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates or updates pipeline document generation property.",
-            notes = "Creates or updates pipeline document generation property.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates or updates pipeline document generation property.",
+            description = "Creates or updates pipeline document generation property.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DocumentGenerationProperty> savePipelineDocumentGenerationProperty(
             @RequestBody DocumentGenerationProperty property) {
@@ -663,12 +626,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/template/properties", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes pipeline document generation property.",
-            notes = "Deletes pipeline document generation property.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes pipeline document generation property.",
+            description = "Deletes pipeline document generation property.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DocumentGenerationProperty> deletePipelineDocumentGenerationProperty(
             @RequestBody DocumentGenerationProperty property) {
@@ -678,12 +640,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/findByUrl", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a pipeline, specified by repository URL.",
-            notes = "Returns a pipeline, specified by repository URL.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a pipeline, specified by repository URL.",
+            description = "Returns a pipeline, specified by repository URL.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Pipeline> findPipelineByRepoUrl(@RequestParam String url) {
         return Result.success(pipelineApiService.loadPipelineByRepoUrl(url));
@@ -691,12 +652,11 @@ public class PipelineController extends AbstractRestController {
 
     @PostMapping("/pipeline/{id}/addHook")
     @ResponseBody
-    @ApiOperation(
-            value = "Add webhook to pipeline repository.",
-            notes = "Add webhook to pipeline repository.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Add webhook to pipeline repository.",
+            description = "Add webhook to pipeline repository.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitRepositoryEntry> addHookToPipelineRepository(@PathVariable(value = ID) Long id)
             throws GitClientException {
@@ -705,12 +665,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/repository", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all pipeline repository content.",
-            notes = "Loads all pipeline repository content.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all pipeline repository content.",
+            description = "Loads all pipeline repository content.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<GitRepositoryEntry>> loadRepositoryContent(
             @PathVariable(value = ID) Long id,
@@ -721,11 +680,10 @@ public class PipelineController extends AbstractRestController {
 
     @PostMapping(value = "/pipeline/{id}/copy")
     @ResponseBody
-    @ApiOperation(
-            value = "Copies specified pipeline.",
-            notes = "Copies specified pipeline.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Copies specified pipeline.",
+            description = "Copies specified pipeline.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Pipeline> copyPipeline(@PathVariable(ID) final Long id,
                                          @RequestParam(value = "parentId", required = false) final Long parentId,
                                          @RequestParam(value = "name", required = false) final String name) {
@@ -734,12 +692,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/ls_tree", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "List pipeline repository content.",
-            notes = "List pipeline repository content.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "List pipeline repository content.",
+            description = "List pipeline repository content.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryListing<GitReaderObject>> lsTreeRepositoryContent(
             @PathVariable(value = ID) final Long id,
@@ -752,12 +709,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/path", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns pipeline repository object.",
-            notes = "Returns pipeline repository object or throws exception of such path doesn't exists.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns pipeline repository object.",
+            description = "Returns pipeline repository object or throws exception of such path doesn't exists.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderObject> lsTreeRepositoryObject(
             @PathVariable(value = ID) final Long id,
@@ -768,12 +724,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/logs_tree", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists pipeline repository content with last commit information.",
-            notes = "Lists pipeline repository content with last commit information.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists pipeline repository content with last commit information.",
+            description = "Lists pipeline repository content with last commit information.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> logsTreeRepositoryContent(
             @PathVariable(value = ID) final Long id,
@@ -786,12 +741,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/logs_tree", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists pipeline repository content with last commit information by specific paths.",
-            notes = "Lists pipeline repository content with last commit information by specific paths.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists pipeline repository content with last commit information by specific paths.",
+            description = "Lists pipeline repository content with last commit information by specific paths.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryListing<GitReaderRepositoryLogEntry>> logsTreeRepositoryContent(
             @PathVariable(value = ID) final Long id,
@@ -802,12 +756,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/commits", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads commit information regarding specified filters.",
-            notes = "Loads commit information regarding specified filters.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads commit information regarding specified filters.",
+            description = "Loads commit information regarding specified filters.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderEntryIteratorListing<GitReaderRepositoryCommit>> getRepositoryCommits(
             @PathVariable(value = ID) final Long id,
@@ -819,12 +772,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/diff", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads commits and its diffs regarding to specified filters.",
-            notes = "Loads commits and its diffs regarding to specified filters.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads commits and its diffs regarding to specified filters.",
+            description = "Loads commits and its diffs regarding to specified filters.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderDiff> getRepositoryCommitDiffs(
             @PathVariable(value = ID) final Long id,
@@ -835,12 +787,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/diff/{commit}", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads commit diff regarding to specified sha and path.",
-            notes = "Loads commit diff regarding to specified sha and path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads commit diff regarding to specified sha and path.",
+            description = "Loads commit diff regarding to specified sha and path.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<GitReaderDiffEntry> getRepositoryCommitDiff(
             @PathVariable(value = ID) final Long id,
@@ -851,12 +802,11 @@ public class PipelineController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/report", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Generate Version Storage Report",
-            notes = "Generate Version Storage Report, based on provided filters",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+            summary = "Generate Version Storage Report",
+            description = "Generate Version Storage Report, based on provided filters")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void generateFileByTemplate(
             @PathVariable(value = ID) final Long id,

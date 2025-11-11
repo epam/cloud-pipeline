@@ -31,8 +31,8 @@ import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -44,8 +44,8 @@ import java.util.List;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -54,6 +54,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(controllers = IssueController.class)
 public class IssueControllerTest extends AbstractControllerTest {
@@ -265,7 +266,7 @@ public class IssueControllerTest extends AbstractControllerTest {
                 APPLICATION_OCTET_STREAM_VALUE);
 
         verify(mockAttachmentFileManager).downloadAttachment(ID);
-        Assert.assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
+        assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
     }
 
     @Test

@@ -20,15 +20,18 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.Collections;
 import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FileShareMountManagerTest extends AbstractSpringTest {
 
@@ -39,7 +42,7 @@ public class FileShareMountManagerTest extends AbstractSpringTest {
     FileShareMountDao shareMountDao;
 
 
-    @Before
+    @BeforeEach
     public void setup() {
         Mockito.doReturn(Optional.of(azureShareMount())).when(shareMountDao).loadById(0L);
         Mockito.doReturn(Collections.singletonList(azureShareMount())).when(shareMountDao).loadAllByRegionId(0L);
@@ -49,39 +52,39 @@ public class FileShareMountManagerTest extends AbstractSpringTest {
 
     @Test
     public void load() {
-        Assert.assertEquals(azureShareMount(), shareMountManager.load(azureShareMount().getId()));
-        Assert.assertEquals(awsShareMount(), shareMountManager.load(awsShareMount().getId()));
+        assertEquals(azureShareMount(), shareMountManager.load(azureShareMount().getId()));
+        assertEquals(awsShareMount(), shareMountManager.load(awsShareMount().getId()));
     }
 
     @Test
     public void loadByRegionId() {
-        Assert.assertArrayEquals(Collections.singletonList(azureShareMount()).toArray(new FileShareMount[0]),
+        assertArrayEquals(Collections.singletonList(azureShareMount()).toArray(new FileShareMount[0]),
                 shareMountManager.loadByRegionId(azureShareMount().getRegionId()).toArray(new FileShareMount[0]));
-        Assert.assertArrayEquals(Collections.singletonList(awsShareMount()).toArray(new FileShareMount[0]),
+        assertArrayEquals(Collections.singletonList(awsShareMount()).toArray(new FileShareMount[0]),
                 shareMountManager.loadByRegionId(awsShareMount().getRegionId()).toArray(new FileShareMount[0]));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void saveThrowIfRegionIdIsNull() {
         FileShareMount fileShareMount = new FileShareMount();
         fileShareMount.setMountType(MountType.NFS);
-        shareMountManager.save(fileShareMount);
+        assertThrows(IllegalArgumentException.class, () -> shareMountManager.save(fileShareMount));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void saveThrowIfMountTypeIsNull() {
         FileShareMount fileShareMount = new FileShareMount();
         fileShareMount.setRegionId(0L);
-        shareMountManager.save(fileShareMount);
+        assertThrows(IllegalArgumentException.class, () -> shareMountManager.save(fileShareMount));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void saveThrowIfLustreMountRootIsInvalid() {
         final FileShareMount fileShareMount = new FileShareMount();
         fileShareMount.setRegionId(0L);
         fileShareMount.setMountType(MountType.LUSTRE);
         fileShareMount.setMountRoot("host");
-        shareMountManager.save(fileShareMount);
+        assertThrows(IllegalArgumentException.class, () -> shareMountManager.save(fileShareMount));
     }
 
     private FileShareMount azureShareMount() {

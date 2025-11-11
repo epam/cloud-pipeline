@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -39,7 +39,7 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-@WebMvcTest(controllers = BillingController.class)
+@WebMvcTest(BillingController.class)
 public class BillingControllerTest extends AbstractControllerTest {
 
     private static final long COST = 7367L;

@@ -26,13 +26,15 @@ import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
 import com.epam.pipeline.acl.notification.SystemNotificationApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Api(value = "System notifications")
+@Tag(name = "System notifications")
 public class SystemNotificationController  extends AbstractRestController {
 
     private static final String ID = "id";
@@ -53,12 +55,11 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates or updates notification.",
-            notes = "Creates or updates notification.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates or updates notification.",
+            description = "Creates or updates notification.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<SystemNotification> createOrUpdateNotification(@RequestBody final SystemNotification notification) {
         return Result.success(systemNotificationApiService.createOrUpdateNotification(notification));
@@ -66,12 +67,11 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification/list", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets all notifications.",
-            notes = "Gets all notifications.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets all notifications.",
+            description = "Gets all notifications.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<List<SystemNotification>> loadNotifications() {
         return Result.success(systemNotificationApiService.loadAllNotifications());
@@ -79,12 +79,11 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification/active", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets all active notifications.",
-            notes = "Gets all active notifications.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets all active notifications.",
+            description = "Gets all active notifications.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<List<SystemNotification>> loadActiveNotifications(
             @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss")
@@ -94,12 +93,11 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification/filter", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Filters notifications.",
-            notes = "Filters notifications.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Filters notifications.",
+            description = "Filters notifications.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<List<SystemNotification>> filterNotifications(
             @RequestBody final SystemNotificationFilterVO filterVO) {
@@ -108,12 +106,11 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification/{id}", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets notification by identifier.",
-            notes = "Gets notification by identifier.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets notification by identifier.",
+            description = "Gets notification by identifier.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<SystemNotification> loadNotification(@PathVariable(value = ID) Long id) {
         return Result.success(systemNotificationApiService.loadNotification(id));
@@ -121,12 +118,11 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification/{id}", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes notification by identifier.",
-            notes = "Deletes notification by identifier.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes notification by identifier.",
+            description = "Deletes notification by identifier.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<SystemNotification> deleteNotification(@PathVariable(value = ID) Long id) {
         return Result.success(systemNotificationApiService.deleteNotification(id));
@@ -134,13 +130,12 @@ public class SystemNotificationController  extends AbstractRestController {
 
     @RequestMapping(value = "/notification/confirm", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Confirms notification.",
-            notes = "Confirms notification by identifier with the given title and body for the currently authorized " +
-                    "user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Confirms notification.",
+            description = "Confirms notification by identifier with the given title and body " +
+                    "for the currently authorized user.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<SystemNotificationConfirmation> confirmNotification(
             @RequestBody final SystemNotificationConfirmationRequest request) {

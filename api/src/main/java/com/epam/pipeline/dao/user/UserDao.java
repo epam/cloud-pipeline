@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -428,119 +428,95 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreateUserQuery(String createUserQuery) {
         this.createUserQuery = createUserQuery;
     }
 
-    @Required
     public void setAddRoleToUserQuery(String addRoleToUserQuery) {
         this.addRoleToUserQuery = addRoleToUserQuery;
     }
 
-    @Required
     public void setLoadUserByNameQuery(String loadUserByNameQuery) {
         this.loadUserByNameQuery = loadUserByNameQuery;
     }
 
-    @Required
     public void setLoadUserByIdQuery(String loadUserByIdQuery) {
         this.loadUserByIdQuery = loadUserByIdQuery;
     }
 
-    @Required
     public void setDeleteUserRolesQuery(String deleteUserRolesQuery) {
         this.deleteUserRolesQuery = deleteUserRolesQuery;
     }
 
-    @Required
     public void setDeleteUserQuery(String deleteUserQuery) {
         this.deleteUserQuery = deleteUserQuery;
     }
 
-    @Required
     public void setUserSequence(String userSequence) {
         this.userSequence = userSequence;
     }
 
-    @Required
     public void setUpdateUserQuery(String updateUserQuery) {
         this.updateUserQuery = updateUserQuery;
     }
 
-    @Required
     public void setLoadAllUsersQuery(String loadAllUsersQuery) {
         this.loadAllUsersQuery = loadAllUsersQuery;
     }
 
-    @Required
     public void setLoadAllUsersWithActivityStateQuery(final String loadAllUsersWithActivityStateQuery) {
         this.loadAllUsersWithActivityStateQuery = loadAllUsersWithActivityStateQuery;
     }
 
-    @Required
     public void setFindUsersByPrefixQuery(String findUsersByPrefixQuery) {
         this.findUsersByPrefixQuery = findUsersByPrefixQuery;
     }
 
-    @Required
     public void setFindUsersByAttributeQuery(String findUsersByAttributeQuery) {
         this.findUsersByAttributeQuery = findUsersByAttributeQuery;
     }
 
-    @Required
     public void setLoadUserListQuery(String loadUserListQuery) {
         this.loadUserListQuery = loadUserListQuery;
     }
 
-    @Required
     public void setDeleteRoleFromUserQuery(String deleteRoleFromUserQuery) {
         this.deleteRoleFromUserQuery = deleteRoleFromUserQuery;
     }
 
-    @Required
     public void setLoadUsersByGroupQuery(String loadUsersByGroupQuery) {
         this.loadUsersByGroupQuery = loadUsersByGroupQuery;
     }
 
-    @Required
     public void setLoadUserByGroupQuery(String loadUserByGroupQuery) {
         this.loadUserByGroupQuery = loadUserByGroupQuery;
     }
 
-    @Required
     public void setFindGroupsByPrefixQuery(String findGroupsByPrefixQuery) {
         this.findGroupsByPrefixQuery = findGroupsByPrefixQuery;
     }
 
-    @Required
     public void setLoadAllGroupsQuery(String loadAllGroupsQuery) {
         this.loadAllGroupsQuery = loadAllGroupsQuery;
     }
 
-
-    @Required
     public void setLoadUsersByNamesQuery(String loadUsersByNamesQuery) {
         this.loadUsersByNamesQuery = loadUsersByNamesQuery;
     }
 
-    @Required
     public void setLoadUsersByStorageIdQuery(final String loadUsersByStorageIdQuery) {
         this.loadUsersByStorageIdQuery = loadUsersByStorageIdQuery;
     }
 
-    @Required
     public void setLoadAllUsersWithDefaultDataStoragePathQuery(
-            final String loadAllUsersWithDefaultDataStoragePathQuery) {
+        final String loadAllUsersWithDefaultDataStoragePathQuery) {
         this.loadAllUsersWithDefaultDataStoragePathQuery = loadAllUsersWithDefaultDataStoragePathQuery;
     }
 
-    @Required
     public void setLoadUsersByGroupOrRoleQuery(final String loadUsersByGroupOrRoleQuery) {
         this.loadUsersByGroupOrRoleQuery = loadUsersByGroupOrRoleQuery;
     }
 
-    @Required
     public void setLoadOnlineUsersQuery(final String loadOnlineUsersQuery) {
         this.loadOnlineUsersQuery = loadOnlineUsersQuery;
     }

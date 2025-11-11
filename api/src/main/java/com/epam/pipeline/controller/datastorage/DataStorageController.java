@@ -48,20 +48,15 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.fileupload.FileItemIterator;
-import org.apache.commons.fileupload.FileItemStream;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload2.core.FileUploadException;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,10 +69,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,7 +79,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Controller
-@Api(value = "Datastorage methods")
+@Tag(name = "Datastorage methods")
 public class DataStorageController extends AbstractRestController {
 
     private static final String ID = "id";
@@ -104,12 +97,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/loadAll", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all data storages.",
-            notes = "Returns all data storages.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns all data storages.",
+            description = "Returns all data storages.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorage>> getDataStorages() {
         return Result.success(dataStorageApiService.getDataStorages());
@@ -117,12 +109,11 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping("/datastorage/filter")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all data storages with specified filters.",
-            notes = "Loads all data storages with specified filters.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all data storages with specified filters.",
+            description = "Loads all data storages with specified filters.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorage>> filterDataStorages(@RequestBody final EntityFilterVO filter) {
         return Result.success(dataStorageApiService.getDataStorages(filter));
@@ -130,12 +121,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/available", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE).",
-            notes = "Returns all data storages allowed for current user (READ or WRITE).",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns all data storages allowed for current user (READ or WRITE).",
+            description = "Returns all data storages allowed for current user (READ or WRITE).")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorage>> getAvailableStorages() {
         return Result.success(dataStorageApiService.getAvailableStorages());
@@ -143,16 +133,15 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/availableWithMounts", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
+    @Operation(
+            summary = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
                     "If fromRegion is specified this method will return only allowed for mount" +
                     " storages for specified region.",
-            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fromRegion is specified this method will return only allowed for mount " +
-                    "storages for specified region.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+            description = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount " +
+                    "object. If fromRegion is specified this method will return only allowed for mount " +
+                    "storages for specified region.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<DataStorageWithShareMount>> getAvailableStoragesWithMountObjects(
             @RequestParam(value = FROM_REGION, required = false) final Long regionId) {
@@ -161,13 +150,12 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/mount", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all data storages that current user is allowed to mount.",
-            notes = "Returns all data storages that current user is allowed to mount " +
-                    "(user has READ and WRITE permissions).",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns all data storages that current user is allowed to mount.",
+            description = "Returns all data storages that current user is allowed to mount " +
+                    "(user has READ and WRITE permissions).")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorage>> getWritableDataStorages() {
         return Result.success(dataStorageApiService.getWritableStorages());
@@ -175,12 +163,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/load", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a data storage, specified by id.",
-            notes = "Returns a data storage, specified by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a data storage, specified by id.",
+            description = "Returns a data storage, specified by id.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorage> loadDataStorage(@PathVariable(value = ID) final Long id) {
         return Result.success(dataStorageApiService.load(id));
@@ -188,12 +175,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/find", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a datastorage, specified by ID or name.",
-            notes = "Returns a datastorage, specified by ID or name.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a datastorage, specified by ID or name.",
+            description = "Returns a datastorage, specified by ID or name.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorage> findDataStorage(@RequestParam(value = ID) final String identifier) {
         return Result.success(dataStorageApiService.loadByNameOrId(identifier));
@@ -201,12 +187,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/findByPath", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a datastorage, specified by ID, name or one of path prefixes.",
-            notes = "Returns a datastorage, specified by ID, name or one of path prefixes.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a datastorage, specified by ID, name or one of path prefixes.",
+            description = "Returns a datastorage, specified by ID, name or one of path prefixes.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorage> findDataStorageByPath(@RequestParam(value = ID) final String identifier) {
         return Result.success(dataStorageApiService.loadByPathOrId(identifier));
@@ -214,12 +199,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/findAllByPath", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a list of datastorage, specified by one of path prefixes.",
-            notes = "Returns a list of datastorage, specified by one of path prefixes.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a list of datastorage, specified by one of path prefixes.",
+            description = "Returns a list of datastorage, specified by one of path prefixes.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID)
                                                                           final String identifier) {
@@ -228,12 +212,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage's items.",
-            notes = "Returns data storage's items",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage's items.",
+            description = "Returns data storage's items")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorageItem>> getDataStorageItems(
             @PathVariable(value = ID) final Long id,
@@ -253,12 +236,11 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping(value = "/datastorage/{id}/list/filter")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns filtered data storage's items.",
-            notes = "Returns filtered data storage's items",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns filtered data storage's items.",
+            description = "Returns filtered data storage's items")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageListing> filterDataStorageItems(
             @PathVariable(value = ID) final Long id,
@@ -273,12 +255,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/list/page", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a paged result with data storage's items.",
-            notes = "Returns a paged with storage's items",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a paged result with data storage's items.",
+            description = "Returns a paged with storage's items")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageListing> getDataStorageItems(
             @PathVariable(value = ID) final Long id,
@@ -299,12 +280,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates or renames files or folders.",
-            notes = "Creates or renames files or folders.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates or renames files or folders.",
+            description = "Creates or renames files or folders.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<AbstractDataStorageItem>> updateDataStorageItems(
             @PathVariable(value = ID) final Long id,
@@ -314,16 +294,13 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/list/upload", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Uploads a file to data storage.",
-            notes = "Uploads a file to data storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Uploads a file to data storage.",
+            description = "Uploads a file to data storage.")
     public List<UploadFileMetadata> uploadFile(
             @PathVariable(value = ID) Long id,
             @RequestParam(value = PATH, required = false) final String folder,
-            HttpServletRequest request) throws FileUploadException {
-        MultipartFile file = consumeMultipartFile(request);
-
+            @RequestParam("file") final MultipartFile file) throws FileUploadException {
         UploadFileMetadata fileMeta = new UploadFileMetadata();
         fileMeta.setFileName(FilenameUtils.getName(file.getOriginalFilename()));
         fileMeta.setFileSize(file.getSize() / BYTES_IN_KB + " Kb");
@@ -338,30 +315,23 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/upload/stream", method= RequestMethod.POST)
     @ResponseBody
-    public Result<List<DataStorageFile>> uploadStream(HttpServletRequest request,
+    public Result<List<DataStorageFile>> uploadStream(@RequestParam("files") List<MultipartFile> files,
                                         @PathVariable Long id,
                                         @RequestParam(value = PATH, required = false) String folder)
         throws IOException, FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), "Not a multipart request");
+        if (files.isEmpty()) {
+            throw new FileUploadException(NO_FILES_SPECIFIED);
+        }
 
-        ServletFileUpload upload = new ServletFileUpload();
-        FileItemIterator iterator = upload.getItemIterator(request);
-
-        Assert.isTrue(iterator.hasNext(), NO_FILES_SPECIFIED);
-        boolean found = false;
         List<DataStorageFile> uploadedFiles = new ArrayList<>();
-        while (iterator.hasNext()) {
-            FileItemStream stream = iterator.next();
-            if (!stream.isFormField()) {
-                found = true;
-                try (InputStream dataStream = stream.openStream()) { //TODO: try with Buffered streams
-                    uploadedFiles.add(dataStorageApiService.createDataStorageFile(id, folder, stream.getName(),
-                            dataStream));
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                try (var inputStream = file.getInputStream()) {
+                    uploadedFiles.add(dataStorageApiService.createDataStorageFile(id, folder,
+                            file.getOriginalFilename(), inputStream));
                 }
             }
         }
-
-        Assert.isTrue(found, NO_FILES_SPECIFIED);
 
         return Result.success(uploadedFiles);
     }
@@ -377,12 +347,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/content", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Uploads a file represented as bytes to data storage.",
-            notes = "Uploads a file represented as bytes to data storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Uploads a file represented as bytes to data storage.",
+            description = "Uploads a file represented as bytes to data storage.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageFile> uploadStorageItem(
             @PathVariable(value = ID) final Long id,
@@ -394,12 +363,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes files or folders.",
-            notes = "Deletes files or folders.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes files or folders.",
+            description = "Deletes files or folders.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Integer> deleteDataStorageItems(
             @PathVariable(value = ID) final Long id,
@@ -414,12 +382,11 @@ public class DataStorageController extends AbstractRestController {
     }
 
     @RequestMapping(value = "/datastorage/{id}/downloadRedirect", method = RequestMethod.GET)
-    @ApiOperation(
-            value = "Generates item's download url and redirect to it.",
-            notes = "Generates item's download url and redirect to it",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Generates item's download url and redirect to it.",
+            description = "Generates item's download url and redirect to it")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public String generateItemUrlAndRedirect(
             @PathVariable(value = ID) final Long id,
@@ -435,12 +402,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/generateUrl", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item's download url.",
-            notes = "Returns data storage item's download url",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage item's download url.",
+            description = "Returns data storage item's download url")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageDownloadFileUrl> generateDataStorageItemUrl(
             @PathVariable(value = ID) final Long id,
@@ -458,12 +424,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/type", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item's type.",
-            notes = "Returns data storage item's type",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage item's type.",
+            description = "Returns data storage item's type")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageItemType> getStorageItemType(
             @PathVariable(value = ID) final Long id,
@@ -478,11 +443,10 @@ public class DataStorageController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/{id}/generateUploadUrl")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item's upload url.",
-            notes = "Returns data storage item's upload url.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Returns data storage item's upload url.",
+            description = "Returns data storage item's upload url.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<DataStorageDownloadFileUrl> generateDataStorageItemUploadUrl(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path) {
@@ -491,12 +455,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/content", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item's download url.",
-            notes = "Returns data storage item's download url",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage item's download url.",
+            description = "Returns data storage item's download url")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageItemContent> getDataStorageItemContent(
             @PathVariable(value = ID) final Long id,
@@ -511,12 +474,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/generateUrl", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage items download urls.",
-            notes = "Returns data storage items download urls",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage items download urls.",
+            description = "Returns data storage items download urls")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<DataStorageDownloadFileUrl>> generateDataStorageItemsUrls(
             @PathVariable(value = ID) final Long id,
@@ -529,11 +491,10 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping("/datastorage/{id}/generateUploadUrl")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage items upload urls.",
-            notes = "Returns data storage items upload urls.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Returns data storage items upload urls.",
+            description = "Returns data storage items upload urls.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<DataStorageDownloadFileUrl>> generateDataStorageItemsUploadUrls(
             @PathVariable(value = ID) final Long id,
             @RequestBody final List<String> paths) {
@@ -542,12 +503,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/list/restore", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Restores file version.",
-            notes = "Restores file version",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Restores file version.",
+            description = "Restores file version")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result restoreFileVersion(
             @PathVariable(value = ID) final Long id,
@@ -560,12 +520,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/save", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new data storage.",
-            notes = "Registers a new data storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new data storage.",
+            description = "Registers a new data storage.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
             @RequestBody DataStorageVO dataStorageVO,
@@ -576,12 +535,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/update", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Update the given data storage.",
-            notes = "It's possible to update name, description and parent folder",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Update the given data storage.",
+            description = "It's possible to update name, description and parent folder")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorage> updateDataStorage(@RequestBody DataStorageVO dataStorageVO){
         return Result.success(dataStorageApiService.update(dataStorageVO));
@@ -589,12 +547,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/policy", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Update the given data storage policy.",
-            notes = "It's possible to update storage policy: versioning, backup, sts and lts duration",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Update the given data storage policy.",
+            description = "It's possible to update storage policy: versioning, backup, sts and lts duration")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorage> updateStoragePolicy(@RequestBody DataStorageVO dataStorageVO){
         return Result.success(dataStorageApiService.updatePolicy(dataStorageVO));
@@ -603,12 +560,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/delete", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a data storage, specified by ID.",
-            notes = "Deletes a data storage, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a data storage, specified by ID.",
+            description = "Deletes a data storage, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorage> deleteDataStorage(@PathVariable(value = ID) final Long id,
                                                          @RequestParam(value = CLOUD, defaultValue = FALSE)
@@ -618,12 +574,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/rule/register", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new data storage rule.",
-            notes = "Registers a new data storage rule.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new data storage rule.",
+            description = "Registers a new data storage rule.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageRule> saveDataStorageRule(@RequestBody DataStorageRule rule) {
         return Result.success(dataStorageApiService.createRule(rule));
@@ -631,12 +586,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/rule/load", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads a data storage rule specified by id.",
-            notes = "Loads a data storage rule specified by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads a data storage rule specified by id.",
+            description = "Loads a data storage rule specified by id.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<DataStorageRule>> loadDataStorageRule(
             @RequestParam(value = PIPELINE_ID, required = false) Long pipelineId,
@@ -646,12 +600,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/rule/delete", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a data storage rule specified by id.",
-            notes = "Deletes a data storage rule specified by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a data storage rule specified by id.",
+            description = "Deletes a data storage rule specified by id.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DataStorageRule> deleteDataStorageRule(@RequestParam(value = ID) Long pipelineId,
             @RequestParam(value = "fileMask") String fileMask) {
@@ -660,12 +613,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/tempCredentials/", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Generate temporary credentials for bucket operations (cp/mv).",
-            notes = "Generate temporary credentials for bucket operations (cp/mv).",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Generate temporary credentials for bucket operations (cp/mv).",
+            description = "Generate temporary credentials for bucket operations (cp/mv).")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<TemporaryCredentials> generateTemporaryCredentials(
             @RequestBody List<DataStorageAction> operations) {
@@ -675,12 +627,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/tags", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates or updates data storage item tags, by datastorage id and object path.",
-            notes = "Creates or updates data storage item tags, by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates or updates data storage item tags, by datastorage id and object path.",
+            description = "Creates or updates data storage item tags, by datastorage id and object path.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<String, String>> updateTags(@PathVariable(value = ID) final Long id,
                                                   @RequestParam(value = PATH) String path,
@@ -692,12 +643,11 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/{id}/tags", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item tags, specified by datastorage id and object path.",
-            notes = "Returns data storage item tags, specified by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage item tags, specified by datastorage id and object path.",
+            description = "Returns data storage item tags, specified by datastorage id and object path.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<String, String>> loadTagsById(@PathVariable(value = ID) final Long id,
                                                     @RequestParam(value = PATH) String path,
@@ -709,12 +659,11 @@ public class DataStorageController extends AbstractRestController {
 
     @DeleteMapping(value = "/datastorage/{id}/tags")
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes data storage item tags, specified by datastorage id and object path.",
-            notes = "Deletes data storage item tags, specified by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes data storage item tags, specified by datastorage id and object path.",
+            description = "Deletes data storage item tags, specified by datastorage id and object path.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<String, String>> deleteTagsById(@PathVariable(value = ID) final Long id,
                                                       @RequestParam(value = PATH) String path,
@@ -725,12 +674,11 @@ public class DataStorageController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/{id}/tags/list")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage's item with tags, specified by datastorage id and object path.",
-            notes = "Returns data storage's item with tags, specified by datastorage id and object path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns data storage's item with tags, specified by datastorage id and object path.",
+            description = "Returns data storage's item with tags, specified by datastorage id and object path.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractDataStorageItem> getDataStorageItemsWithTags(
             @PathVariable(value = ID) final Long id,
@@ -746,14 +694,13 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/tags/search", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Search datastorage items by tag.",
-            notes = "Search datastorage items by tag. " +
+    @Operation(
+            summary = "Search datastorage items by tag.",
+            description = "Search datastorage items by tag. " +
                     "Returns map where key is a storage ID and value is a list of DataStorageTag" +
-                    " representing storage item with specified tag",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+                    " representing storage item with specified tag")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<DataStorageTagSearchResult>> searchDataStorageItemByTag(
             @RequestBody final DataStorageObjectSearchByTagRequest request) {
@@ -762,12 +709,11 @@ public class DataStorageController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/{id}/sharedLink")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns shared link for the datastorage.",
-            notes = "Returns shared link for the datastorage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns shared link for the datastorage.",
+            description = "Returns shared link for the datastorage.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<String> getDataStorageSharedLink(@PathVariable(value = ID) final Long id) {
         return Result.success(dataStorageApiService.getDataStorageSharedLink(id));
@@ -775,12 +721,11 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping(value = "/datastorage/{id}/convert")
     @ResponseBody
-    @ApiOperation(
-            value = "Converts data storage to versioned storage.",
-            notes = "Converts data storage to versioned storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Converts data storage to versioned storage.",
+            description = "Converts data storage to versioned storage.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractSecuredEntity> convert(@PathVariable(value = ID) final Long id,
                                                  @RequestBody(required = false)
@@ -790,12 +735,11 @@ public class DataStorageController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/permission")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns all data storages with permissions for all users.",
-            notes = "Returns all data storages with permissions for all users.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns all data storages with permissions for all users.",
+            description = "Returns all data storages with permissions for all users.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<EntityWithPermissionVO> getStoragePermissions(
             @RequestParam final Integer page,
@@ -806,12 +750,11 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping(value = "/datastorage/path/size")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns full size specified by path.",
-            notes = "Returns full size specified by path.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns full size specified by path.",
+            description = "Returns full size specified by path.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<PathDescription>> getDataSizes(@RequestBody final List<String> paths) {
         return Result.success(dataStorageApiService.getDataSizes(paths));
@@ -820,12 +763,11 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping(value = "/datastorage/sharedStorage")
     @ResponseBody
-    @ApiOperation(
-            value = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
-            notes = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates and returns storage to be used as shared folder of a Pipeline Run.",
+            description = "Creates and returns storage to be used as shared folder of a Pipeline Run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<StorageMountPath> createSharedFSSPathForRun(@RequestParam final Long runId) {
         return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, true));
@@ -833,12 +775,11 @@ public class DataStorageController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/sharedStorage")
     @ResponseBody
-    @ApiOperation(
-            value = "Returns storage to be used as shared folder of a Pipeline Run.",
-            notes = "Returns storage to be used as shared folder of a Pipeline Run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns storage to be used as shared folder of a Pipeline Run.",
+            description = "Returns storage to be used as shared folder of a Pipeline Run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<StorageMountPath> getSharedFSSPathForRun(@RequestParam final Long runId) {
         return Result.success(dataStorageApiService.getSharedFSSPathForRun(runId, false));
@@ -846,12 +787,11 @@ public class DataStorageController extends AbstractRestController {
 
     @PostMapping(value = "/datastorage/davmount")
     @ResponseBody
-    @ApiOperation(
-            value = "Request storage to be mounted to dav service by setting metadata.",
-            notes = "Request storage to be mounted to dav service by setting metadata.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Request storage to be mounted to dav service by setting metadata.",
+            description = "Request storage to be mounted to dav service by setting metadata.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result requestDataStorageDavMount(@RequestBody final DataStorageMountVO request) {
         dataStorageApiService.requestDataStorageDavMount(request.getId(), request.getTime());
@@ -860,12 +800,11 @@ public class DataStorageController extends AbstractRestController {
 
     @DeleteMapping(value = "/datastorage/{id}/davmount")
     @ResponseBody
-    @ApiOperation(
-            value = "Call off storage to be mounted to dav service by setting metadata.",
-            notes = "Request storage to be mounted to dav service by setting metadata.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Call off storage to be mounted to dav service by setting metadata.",
+            description = "Request storage to be mounted to dav service by setting metadata.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result callOffDataStorageDavMount(@PathVariable(value = ID) final Long id) {
         dataStorageApiService.callOffDataStorageDavMount(id);

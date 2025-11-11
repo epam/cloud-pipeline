@@ -18,13 +18,15 @@ package com.epam.pipeline.dao.notification;
 
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NotificationTemplateDaoTest extends AbstractJdbcTest {
 
@@ -40,7 +42,7 @@ public class NotificationTemplateDaoTest extends AbstractJdbcTest {
     public void createNotificationTemplate() {
         NotificationTemplate template = createTemplate();
         NotificationTemplate notificationTemplate = notificationTemplateDao.createNotificationTemplate(template);
-        Assert.assertNotNull(notificationTemplateDao.loadNotificationTemplate(notificationTemplate.getId()));
+        assertNotNull(notificationTemplateDao.loadNotificationTemplate(notificationTemplate.getId()));
     }
 
     @Test
@@ -49,12 +51,12 @@ public class NotificationTemplateDaoTest extends AbstractJdbcTest {
         NotificationTemplate template = createTemplate();
         NotificationTemplate notificationTemplate = notificationTemplateDao.createNotificationTemplate(template);
         NotificationTemplate loaded = notificationTemplateDao.loadNotificationTemplate(notificationTemplate.getId());
-        Assert.assertEquals(loaded.getSubject(), SUBJECT_STRING);
-        Assert.assertEquals(loaded.getBody(), BODY_STRING);
-        Assert.assertEquals(loaded.getName(), TEST_NAME);
+        assertEquals(loaded.getSubject(), SUBJECT_STRING);
+        assertEquals(loaded.getBody(), BODY_STRING);
+        assertEquals(loaded.getName(), TEST_NAME);
 
         List<NotificationTemplate> templates = notificationTemplateDao.loadAllNotificationTemplates();
-        Assert.assertFalse(templates.isEmpty());
+        assertFalse(templates.isEmpty());
     }
 
     private NotificationTemplate createTemplate() {

@@ -20,17 +20,17 @@ import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.datastorage.omics.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@Api(value = "AWS Omics store methods")
+@Tag(name = "AWS Omics store methods")
 @RequestMapping(value = "/omicsstore")
 public class AWSOmicsController extends AbstractRestController {
 
@@ -39,12 +39,11 @@ public class AWSOmicsController extends AbstractRestController {
 
     @PostMapping("/{id}/import")
     @ResponseBody
-    @ApiOperation(
-            value = "Imports new files in AWS Omics storage.",
-            notes = "Imports new files in AWS Omics storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Imports new files in AWS Omics storage.",
+            description = "Imports new files in AWS Omics storage.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AWSOmicsFileImportJob> importOmicsFiles(@PathVariable final Long id,
                                                           @RequestBody final AWSOmicsFileImportRequest importRequest) {
@@ -53,12 +52,11 @@ public class AWSOmicsController extends AbstractRestController {
 
     @PostMapping("/{id}/import/list")
     @ResponseBody
-    @ApiOperation(
-            value = "List AWS Omics storage import jobs according to filter.",
-            notes = "List AWS Omics storage import jobs according to filter.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "List AWS Omics storage import jobs according to filter.",
+            description = "List AWS Omics storage import jobs according to filter.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AWSOmicsFileImportJobListing> listImportJobs(
             @PathVariable final Long id,
@@ -70,12 +68,11 @@ public class AWSOmicsController extends AbstractRestController {
 
     @PostMapping("/{id}/activate")
     @ResponseBody
-    @ApiOperation(
-            value = "Activate AWS Omics storage files.",
-            notes = "Activate AWS Omics storage files.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Activate AWS Omics storage files.",
+            description = "Activate AWS Omics storage files.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AWSOmicsFilesActivationJob> activateOmicsFiles(
             @PathVariable final Long id,

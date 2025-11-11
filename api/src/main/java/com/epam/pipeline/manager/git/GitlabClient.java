@@ -274,6 +274,7 @@ public class GitlabClient {
         try {
             String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
             Response<GitProject> response = gitLabApi.getProject(apiVersion, projectId).execute();
+            System.out.println("rrrrrrreeesssppp:"+ response.toString());
             return response.isSuccessful();
         } catch (IOException e) {
             throw new GitClientException(e.getMessage(), e);

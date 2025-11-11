@@ -22,9 +22,9 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +33,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AttachmentDaoTest extends AbstractJdbcTest {
     private static final String TEST_OWNER = "testUser";
@@ -49,8 +51,7 @@ public class AttachmentDaoTest extends AbstractJdbcTest {
     private Issue issue;
     private IssueComment comment;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         EntityVO entity = new EntityVO(1L, AclClass.PIPELINE);
         issue = IssueDaoTest.getIssue("test", entity);
         issueDao.createIssue(issue);
@@ -69,35 +70,35 @@ public class AttachmentDaoTest extends AbstractJdbcTest {
         attachment.setOwner(TEST_OWNER);
         attachmentDao.createAttachment(attachment);
 
-        Assert.assertNotNull(attachment.getId());
+        assertNotNull(attachment.getId());
 
         attachmentDao.updateAttachmentIssueId(attachment.getId(), issue.getId());
         List<Attachment> attachments = attachmentDao.loadAttachmentsByIssueId(issue.getId());
-        Assert.assertFalse(attachments.isEmpty());
+        assertFalse(attachments.isEmpty());
 
         Attachment loaded = attachments.get(0);
 
-        Assert.assertEquals(attachment.getId(), loaded.getId());
-        Assert.assertEquals(attachment.getName(), loaded.getName());
-        Assert.assertEquals(attachment.getPath(), loaded.getPath());
-        Assert.assertEquals(attachment.getCreatedDate(), loaded.getCreatedDate());
+        assertEquals(attachment.getId(), loaded.getId());
+        assertEquals(attachment.getName(), loaded.getName());
+        assertEquals(attachment.getPath(), loaded.getPath());
+        assertEquals(attachment.getCreatedDate(), loaded.getCreatedDate());
 
         attachmentDao.updateAttachmentCommentId(attachment.getId(), comment.getId());
 
         Map<Long, List<Attachment>> attachmentsMap = attachmentDao.loadAttachmentsByCommentIds(
             Collections.singletonList(comment.getId()));
-        Assert.assertFalse(attachmentsMap.isEmpty());
+        assertFalse(attachmentsMap.isEmpty());
 
         loaded = attachmentsMap.get(comment.getId()).get(0);
 
-        Assert.assertEquals(attachment.getId(), loaded.getId());
-        Assert.assertEquals(attachment.getName(), loaded.getName());
-        Assert.assertEquals(attachment.getPath(), loaded.getPath());
-        Assert.assertEquals(attachment.getCreatedDate(), loaded.getCreatedDate());
+        assertEquals(attachment.getId(), loaded.getId());
+        assertEquals(attachment.getName(), loaded.getName());
+        assertEquals(attachment.getPath(), loaded.getPath());
+        assertEquals(attachment.getCreatedDate(), loaded.getCreatedDate());
 
         attachmentDao.deleteAttachment(attachment.getId());
 
-        Assert.assertTrue(attachmentDao.loadAttachmentsByIssueId(issue.getId()).isEmpty());
+        assertTrue(attachmentDao.loadAttachmentsByIssueId(issue.getId()).isEmpty());
     }
 
     @Test
@@ -110,11 +111,11 @@ public class AttachmentDaoTest extends AbstractJdbcTest {
         attachment.setOwner(TEST_OWNER);
         attachmentDao.createAttachment(attachment);
 
-        Assert.assertNotNull(attachment.getId());
+        assertNotNull(attachment.getId());
 
         attachmentDao.updateAttachmentIssueId(attachment.getId(), issue.getId());
         attachmentDao.deleteAttachmentsByIssueId(issue.getId());
-        Assert.assertTrue(attachmentDao.loadAttachmentsByIssueId(issue.getId()).isEmpty());
+        assertTrue(attachmentDao.loadAttachmentsByIssueId(issue.getId()).isEmpty());
     }
 
     @Test
@@ -127,11 +128,11 @@ public class AttachmentDaoTest extends AbstractJdbcTest {
         attachment.setOwner(TEST_OWNER);
         attachmentDao.createAttachment(attachment);
 
-        Assert.assertNotNull(attachment.getId());
+        assertNotNull(attachment.getId());
 
         attachmentDao.updateAttachmentCommentId(attachment.getId(), comment.getId());
         attachmentDao.deleteAttachmentsByCommentIds(Collections.singletonList(comment.getId()));
-        Assert.assertTrue(attachmentDao.loadAttachmentsByCommentIds(Collections.singletonList(comment.getId()))
+        assertTrue(attachmentDao.loadAttachmentsByCommentIds(Collections.singletonList(comment.getId()))
                               .isEmpty());
     }
 }

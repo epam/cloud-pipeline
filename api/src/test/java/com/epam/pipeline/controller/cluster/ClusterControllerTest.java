@@ -30,8 +30,8 @@ import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Test;
+//import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -51,6 +51,7 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(controllers = ClusterController.class)
 public class ClusterControllerTest extends AbstractControllerTest {
@@ -311,7 +312,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
                                                                      MonitoringReportType.CSV);
         final String actualResponseData = mvcResult.getResponse().getContentAsString();
         final String contentDispositionHeader = mvcResult.getResponse().getHeader(CONTENT_DISPOSITION_HEADER);
-        Assert.assertEquals(TEST_DATA, actualResponseData);
+        assertEquals(TEST_DATA, actualResponseData);
         Assertions.assertThat(contentDispositionHeader).contains(expectedFileName);
     }
 

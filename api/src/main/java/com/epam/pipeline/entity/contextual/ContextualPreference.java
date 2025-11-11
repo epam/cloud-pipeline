@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.preference.PreferenceType;
 import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 /**
  * Contextual preference.
@@ -30,7 +30,7 @@ import lombok.experimental.Wither;
  * A tuple of {@link #name}, {@link #resource} is a contextual preference primary key.
  */
 @Value
-@Wither
+@With
 @AllArgsConstructor
 public class ContextualPreference {
     private final String name;

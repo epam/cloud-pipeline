@@ -13,16 +13,16 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -44,8 +44,7 @@ public class DataStorageConvertManagerTest {
     private final DataStorageConvertManager manager = new DataStorageConvertManager(dataStorageManager,
             preferenceManager, messageHelper, innerManagers);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(STORAGE).when(dataStorageManager).load(CommonCreatorConstants.ID);
     }
 

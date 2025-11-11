@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 

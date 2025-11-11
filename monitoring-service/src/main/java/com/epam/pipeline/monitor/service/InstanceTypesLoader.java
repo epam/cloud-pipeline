@@ -44,6 +44,7 @@ public class InstanceTypesLoader implements InitializingBean {
     private final CloudPipelineAPIClient client;
     private final Set<String> gpuInstanceTypes = ConcurrentHashMap.newKeySet();
 
+    @Override
     public void afterPropertiesSet() {
         try {
             refreshInstances();

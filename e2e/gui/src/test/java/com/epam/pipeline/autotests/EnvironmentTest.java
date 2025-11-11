@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 import static com.epam.pipeline.autotests.utils.C.AUTH_TOKEN;
 import static com.epam.pipeline.autotests.utils.C.TEST_RUN_TAG;
 import static java.lang.String.format;
-import static org.testng.Assert.assertNotEquals;
+import static org.testng.assertNotEquals;
 
 /**
  * Test should be performed after the application update.

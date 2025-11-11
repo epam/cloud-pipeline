@@ -46,7 +46,7 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.StringUtils.rightPad;
-import static org.testng.Assert.assertEquals;
+import static org.testng.assertEquals;
 
 public class RunToolsInSandBoxTest
         extends AbstractSeveralPipelineRunningTest

@@ -20,7 +20,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.event.EventDao;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.manager.issue.IssueManager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Propagation;
@@ -28,9 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
