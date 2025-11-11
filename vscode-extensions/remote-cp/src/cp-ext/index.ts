@@ -31,17 +31,13 @@ export class CpExtension extends Disposable {
     return this._cpClient!;
   }
 
-  private _cpResolver: RemoteCpResolver | null = null;
-  public get cpResolver(): RemoteCpResolver {
-    return this._cpResolver!;
-  }
-
   // prettier-ignore
   async activate(): Promise<void> {
     // this.cpAuthProvider = await this.registerAuthProvider();
     this._cpClient = await this.registerCpClient();
     this._register(this.cpClient);
 
+    RemoteCpResolver.createAndRegister(this);
     registerUriHandler(this.context, this.logger);
 
     if (vscode.env.remoteName === REMOTE_CP_AUTHORITY) {
@@ -50,7 +46,6 @@ export class CpExtension extends Disposable {
     }
 
     registerHostTreeView(this);
-    this._cpResolver = RemoteCpResolver.createAndRegister(this);
 
     vscode.workspace.onDidChangeWorkspaceFolders(async (e) => {
       this.logger.info(`Workspace folders changed.`);

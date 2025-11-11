@@ -26,7 +26,7 @@ export async function askUserForUpdatePipe(
     const snoozedDt = DateTime.now().plus(snoozeDuration);
     logger.info("Pipe client update snoozed till `${snoozedDt}`.");
     cpExtConfig.pipeSnoozeUpdate = snoozedDt;
-    await cpExtConfig.save("askUserForUpdatePipe.updateSnooze()s");
+    // await cpExtConfig.save("askUserForUpdatePipe.updateSnooze()");
   };
   const choices: ActionItem[] = [
     {

@@ -213,12 +213,16 @@ export class PipeTunnel extends PipeTunnelBase {
             }),
           );
 
+          let ready: boolean = false;
           this.on("ready", () => {
-            this.logger.trace(`${logPfx2}, on ready -> resolve`);
-            resolve();
+            if (!ready) {
+              ready = true;
+              this.logger.trace(`${logPfx2}, on ready -> resolve`);
+              resolve();
+            }
           });
           this.on("processError", (err) => {
-            this.logger.trace(`${logPfx2}, on processError -> reject`);
+            this.logger.error(`${logPfx2}, on processError -> reject`);
             reject(err);
           });
           this.on("processClose", (code) => {

@@ -130,7 +130,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get platformUrl(): string {
     let res = this.data.platformUrl;
-    if (!res)
+    if (res === undefined)
       res =
         /* this.data.platformUrl = */
         this.configData.get<string | undefined>(
@@ -149,7 +149,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get prefix(): string {
     let res = this.data.prefix;
-    if (!res)
+    if (res === undefined)
       res = /* this.data.prefix = */ this.configData.get<string>(
         CpExtConfigKeys.prefix,
         this.defaults[CpExtConfigKeys.prefix] ?? "CP",
@@ -163,7 +163,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get apiEndpoint(): string {
     let res = this.data.apiEndpoint;
-    if (!res)
+    if (res === undefined)
       res =
         /*this.data.apiEndpoint = */
         this.configData.get<string | undefined>(
@@ -181,7 +181,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get authEndpoint(): string {
     let res = this.data.authEndpoint;
-    if (!res)
+    if (res === undefined)
       res =
         /* this.data.authEndpoint = */
         this.configData.get<string | undefined>(
@@ -199,7 +199,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get pipeApiUri(): string | null {
     let res = this.data.pipeApiUri;
-    if (!res)
+    if (res === undefined)
       res =
         /* this.data.pipeApiUri = */
         this.configData.get<string | null>(
@@ -217,7 +217,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get pipeApiToken(): string | null {
     let res = this.data.pipeApiToken;
-    if (!res)
+    if (res === undefined)
       res =
         /* this.data.pipeApiToken = */
         this.configData.get<string | null>(
@@ -235,7 +235,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get pipeSnoozeUpdate(): DateTime | null {
     let res = this.data.pipeSnoozeUpdate;
-    if (!res) {
+    if (res === undefined) {
       const str = this.configData.get<string | null>(
         CpExtConfigKeys.pipeSnoozeUpdate,
         null,
@@ -258,7 +258,7 @@ export class CpExtConfig implements ICpExtConfig {
 
   public get logLevel(): LogLevelName {
     let res = this.data.logLevel;
-    if (!res)
+    if (res === undefined)
       res =
         /* this.data.logLevel = */
         this.configData.get<LogLevelName | undefined>(

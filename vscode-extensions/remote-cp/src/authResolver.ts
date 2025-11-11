@@ -56,15 +56,21 @@ export class RemoteCpResolver
   }
 
   static createAndRegister(cpExt: CpExtension): RemoteCpResolver {
-    const resolver = new RemoteCpResolver(cpExt);
-    cpExt.context.subscriptions.push(
-      vscode.workspace.registerRemoteAuthorityResolver(
-        REMOTE_CP_AUTHORITY,
+    const logPfx = "RemoteCpResolver.createAndRegister()";
+    cpExt.logger.trace(`${logPfx}, in`);
+    try {
+      const resolver = new RemoteCpResolver(cpExt);
+      cpExt.context.subscriptions.push(
+        vscode.workspace.registerRemoteAuthorityResolver(
+          REMOTE_CP_AUTHORITY,
+          resolver,
+        ),
         resolver,
-      ),
-      resolver,
-    );
-    return resolver;
+      );
+      return resolver;
+    } finally {
+      cpExt.logger.trace(`${logPfx}, out`);
+    }
   }
 
   private proxyConnections: SSHConnection[] = [];
