@@ -178,7 +178,8 @@ function getFormItemClassName (rootClass, key) {
   'dtsList',
   'preferences',
   'dockerRegistries',
-  'dataStorageAvailable'
+  'dataStorageAvailable',
+  'uiNavigation'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo

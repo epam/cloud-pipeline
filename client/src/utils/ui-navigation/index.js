@@ -27,6 +27,8 @@ const DASHBOARD_CONFIGURATION_ATTRIBUTE = 'ui-dashboard';
 const HOME_PAGE_ATTRIBUTE = 'ui-home-page';
 const LIBRARY_EXPANDED_ATTRIBUTE = 'ui-library-expanded';
 
+const LAUNCH_FORM_ATTRIBUTE = 'ui-launch-form';
+
 const LIBRARY_EXPANDED_STORAGE_KEY = 'library_expanded';
 
 function parseAttributes (data, ignore = {}) {
@@ -34,13 +36,15 @@ function parseAttributes (data, ignore = {}) {
     dashboard: ignoreDashboardSettings = false,
     pages: ignorePagesSettings = false,
     homePage: ignoreHomePageSettings = false,
-    libraryExpanded: libraryExpandedSetting
+    libraryExpanded: libraryExpandedSetting,
+    launchForm: ignoreLaunchFormSetting = false,
   } = ignore;
   const ignoreLibraryExpandedSetting = libraryExpandedSetting !== undefined;
   let pages;
   let dashboard;
   let homePage;
   let libraryExpanded;
+  let launchForm;
   if (!ignorePagesSettings && data.hasOwnProperty(UI_PAGES_ATTRIBUTE)) {
     pages = (data[UI_PAGES_ATTRIBUTE].value || '').split(',').map(o => o.trim());
   }
@@ -61,7 +65,16 @@ function parseAttributes (data, ignore = {}) {
   if (pages && pages.length === 0) {
     pages = undefined;
   }
-  return {pages, dashboard, homePage, libraryExpanded};
+  if (!ignoreLaunchFormSetting && data.hasOwnProperty(LAUNCH_FORM_ATTRIBUTE)) {
+    launchForm = data[LAUNCH_FORM_ATTRIBUTE].value;
+  }
+  return {
+    pages,
+    dashboard,
+    homePage,
+    libraryExpanded,
+    launchForm
+  };
 }
 
 function fetchUserAttributes (userId) {
@@ -85,7 +98,8 @@ function joinAttributes (values, options) {
     pages = [],
     dashboard,
     homePage,
-    libraryExpanded
+    libraryExpanded,
+    launchForm
   } = options || {};
   (values || [])
     .forEach((data) => {
@@ -93,7 +107,8 @@ function joinAttributes (values, options) {
         pages: parsedPages,
         dashboard: parsedDashboard,
         homePage: parsedHomePage,
-        libraryExpanded: parsedLibraryExpanded
+        libraryExpanded: parsedLibraryExpanded,
+        launchForm: parsedLaunchForm
       } = parseAttributes(
         data,
         options
@@ -117,6 +132,9 @@ function joinAttributes (values, options) {
       if (parsedLibraryExpanded !== undefined) {
         libraryExpanded = parsedLibraryExpanded;
       }
+      if (parsedLaunchForm && !launchForm) {
+        launchForm = parsedLaunchForm;
+      }
     });
   if (pages && pages.length === 0) {
     pages = undefined;
@@ -125,7 +143,8 @@ function joinAttributes (values, options) {
     pages,
     dashboard,
     homePage,
-    libraryExpanded
+    libraryExpanded,
+    launchForm
   };
 }
 
@@ -214,6 +233,7 @@ class UINavigation {
   @observable dashboard;
   @observable homePage;
   @observable supportTemplate;
+  @observable launchForm;
   @observable _libraryExpanded;
   @observable _loaded;
 
@@ -320,7 +340,14 @@ class UINavigation {
           }
           return Promise.resolve();
         })
-        .then(({pages, dashboard, homePage, libraryExpanded} = {}) => {
+        .then((opts = {}) => {
+          const {
+            pages,
+            dashboard,
+            homePage,
+            libraryExpanded,
+            launchForm
+          } = opts;
           const {
             admin = false
           } = this.user.loaded ? (this.user.value || {}) : {};
@@ -328,6 +355,7 @@ class UINavigation {
           this.dashboard = dashboard;
           this.homePage = homePage;
           this.libraryExpanded = libraryExpanded;
+          this.launchForm = launchForm;
           this.parseSupportTemplate();
           this._loaded = true;
         })
