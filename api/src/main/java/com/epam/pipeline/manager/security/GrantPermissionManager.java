@@ -45,7 +45,6 @@ import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineWithPermissions;
 import com.epam.pipeline.entity.pipeline.RepositoryTool;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -59,7 +58,6 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.exception.cluster.NodeNotFoundException;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
@@ -457,14 +455,14 @@ public class GrantPermissionManager {
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
         AbstractSecuredEntity entity = entityManager.load(aclClass, id);
-        if (isScopedAdmin(entity)) {
+        if (permissionsHelper.isScopedAdmin(entity)) {
             return true;
         }
         return permissionsHelper.isOwner(entity);
     }
 
     public boolean isOwnerOrAdmin(AbstractSecuredEntity entity) {
-        if (isScopedAdmin(entity)) {
+        if (permissionsHelper.isScopedAdmin(entity)) {
             return true;
         }
         return isOwnerOrAdmin(entity.getOwner());
@@ -482,12 +480,8 @@ public class GrantPermissionManager {
         return isAdmin(getSids());
     }
 
-    public boolean isScopedAdmin(final AbstractSecuredEntity entity) {
-        return isScopedAdmin(entity, getSids());
-    }
-
     public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
-        if (isScopedAdmin(storage, getSids())) {
+        if (permissionsHelper.isScopedAdmin(storage, getSids())) {
             return true;
         }
         if (forbiddenByStorageStatus(storage, permissionName)) {
@@ -911,25 +905,6 @@ public class GrantPermissionManager {
         return hasRole(sids, DefaultRoles.ROLE_ADMIN);
     }
 
-    private boolean isScopedAdmin(final AbstractSecuredEntity entity, final List<Sid> sids) {
-        if (entity == null) {
-            return false;
-        }
-
-        if (entity instanceof AbstractDataStorage) {
-            return hasRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
-        } else if (entity instanceof PipelineRun) {
-            return hasRole(sids, DefaultRoles.ROLE_RUN_ADMIN);
-        } else if (entity instanceof Pipeline || entity instanceof RunConfiguration) {
-            return hasRole(sids, DefaultRoles.ROLE_PIPELINE_ADMIN);
-        } else if (entity instanceof Tool || entity instanceof ToolGroup || entity instanceof DockerRegistry) {
-            return hasRole(sids, DefaultRoles.ROLE_TOOL_ADMIN);
-        } else if (entity instanceof PipelineUser || entity instanceof Role) {
-            return hasRole(sids, DefaultRoles.ROLE_USER_ADMIN);
-        }
-        return false;
-    }
-
     private boolean hasRole(final List<Sid> sids, final DefaultRoles role) {
         final GrantedAuthoritySid sid = new GrantedAuthoritySid(role.getName());
         return sids.stream().anyMatch(s -> s.equals(sid));
@@ -1050,7 +1025,7 @@ public class GrantPermissionManager {
         final Integer fullMask = merge ?
                 AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                 AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
-        if (this.isScopedAdmin(entity, sidsByType.get(SidType.ROLE))) {
+        if (permissionsHelper.isScopedAdmin(entity, sidsByType.get(SidType.ROLE))) {
             return fullMask;
         }
         if (entity instanceof  AbstractDataStorage) {

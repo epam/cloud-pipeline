@@ -16,7 +16,7 @@ public class UserPermissionsManager {
     private final CheckPermissionHelper permissionHelper;
 
     public boolean impersonatePermission(final UserContext details) {
-        if (permissionHelper.isAdmin() || permissionHelper.hasRole(DefaultRoles.ROLE_USER_ADMIN)) {
+        if (permissionHelper.isAdmin() || permissionHelper.hasAnyRole(DefaultRoles.ROLE_USER_ADMIN)) {
             return true;
         }
         final PipelineUser user = userManager.loadByNameOrId(details.getUsername());

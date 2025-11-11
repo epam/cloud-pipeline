@@ -37,7 +37,7 @@ public class PipelinePermissionManager {
     private final EntityManager entityManager;
 
     public boolean hasCreatePermission(final PipelineType type, final Long folderId) {
-        return checkManagerRole(type) && folderId != null &&
+        return checkManagerOrScopedAdminRole(type) && folderId != null &&
                 permissionHelper.isAllowed(WRITE, entityManager.load(AclClass.FOLDER, folderId));
     }
 
@@ -47,7 +47,7 @@ public class PipelinePermissionManager {
     }
 
     public boolean hasManagePermission(final Pipeline pipeline) {
-        return checkManagerRole(pipeline.getPipelineType()) && permissionHelper.isAllowed(WRITE, pipeline);
+        return checkManagerOrScopedAdminRole(pipeline.getPipelineType()) && permissionHelper.isAllowed(WRITE, pipeline);
     }
 
     public boolean hasCopyPermission(final Long id, final Long folderId) {
@@ -58,16 +58,16 @@ public class PipelinePermissionManager {
     public boolean hasCopyPermission(final Pipeline pipeline, final Long folderId) {
         return permissionHelper.isAllowed(READ, pipeline)
                 && folderId != null && hasCreatePermission(pipeline.getPipelineType(), folderId)
-                && checkManagerRole(pipeline.getPipelineType());
+                && checkManagerOrScopedAdminRole(pipeline.getPipelineType());
     }
 
-    private boolean checkManagerRole(final PipelineType type) {
+    private boolean checkManagerOrScopedAdminRole(final PipelineType type) {
         final DefaultRoles roleToVerify;
         if (type == PipelineType.VERSIONED_STORAGE) {
             roleToVerify = DefaultRoles.ROLE_VERSIONED_STORAGE_MANAGER;
         } else {
             roleToVerify = DefaultRoles.ROLE_PIPELINE_MANAGER;
         }
-        return permissionHelper.hasRole(roleToVerify);
+        return permissionHelper.hasAnyRole(roleToVerify, DefaultRoles.ROLE_PIPELINE_ADMIN);
     }
 }

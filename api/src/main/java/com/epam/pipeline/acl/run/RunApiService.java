@@ -288,7 +288,7 @@ public class RunApiService {
         return edgeServiceManager.buildFSBrowserUrl(runId);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasRole('RUN_ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
+    @PreAuthorize("hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
             + " AND @runPermissionManager.commitPermission(#registryId, #imageName, 'WRITE'))")
     @AclMask
     public PipelineRun commitRun(Long runId, Long registryId, String imageName, boolean deleteFiles,
@@ -363,13 +363,12 @@ public class RunApiService {
         return runManager.attachDisk(runId, request);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasRole('RUN_ADMIN') " +
-            "OR @grantPermissionManager.hasPermissionToRun(#runVO.pipelineStart, 'EXECUTE')")
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.hasPermissionToRun(#runVO.pipelineStart, 'EXECUTE')")
     public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
         return runManager.generateLaunchCommand(runVO);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<PipelineRunWithTool> getRunsWithTools(final List<Long> runIds) {
         return runManager.loadRunsWithTools(runIds);
     }

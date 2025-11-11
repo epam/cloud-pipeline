@@ -34,7 +34,7 @@ public final class AclExpressions {
             ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(filterObject, 'READ')";
     public static final String USER_READ_PERMISSION =
             "hasPermission(#id, 'com.epam.pipeline.entity.user.PipelineUser', 'READ')";
-    public static final String PIPELINE_CREATE = "hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR " +
+    public static final String PIPELINE_CREATE = "hasRole('ADMIN') OR " +
             "@pipelinePermissionManager.hasCreatePermission(#pipeline.pipelineType, #pipeline.parentFolderId)";
 
     public static final String PIPELINE_ID_MANAGE =

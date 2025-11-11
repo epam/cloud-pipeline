@@ -17,7 +17,12 @@
 package com.epam.pipeline.manager.security;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.pipeline.*;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
@@ -58,6 +63,9 @@ public class CheckPermissionHelper {
         if (isOwnerOrAdmin(entity.getOwner())) {
             return true;
         }
+        if (isScopedAdmin(entity)) {
+            return true;
+        }
         return permissionEvaluator
                 .hasPermission(authManager.getAuthentication(), entity.getId(),
                         entity.getClass().getName(), permissionName);
@@ -66,6 +74,9 @@ public class CheckPermissionHelper {
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity,
                              final String pipelineUserName) {
         if (isOwnerOrAdmin(entity.getOwner(), pipelineUserName)) {
+            return true;
+        }
+        if (isScopedAdmin(entity)) {
             return true;
         }
         return permissionEvaluator.hasPermission(getAuthentication(pipelineUserName), entity, permissionName);
@@ -111,12 +122,38 @@ public class CheckPermissionHelper {
         return getSids(userName).stream().anyMatch(sid -> sid.equals(admin));
     }
 
-    public boolean hasRole(final DefaultRoles roles) {
-        return hasAnyRole(roles);
+    public boolean isScopedAdmin(final AbstractSecuredEntity entity) {
+        return isScopedAdmin(entity, getSids());
+    }
+
+    public boolean isScopedAdmin(final AbstractSecuredEntity entity, final List<Sid> sids) {
+        if (entity == null) {
+            return false;
+        }
+
+        if (entity instanceof AbstractDataStorage) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
+        } else if (entity instanceof PipelineRun) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_RUN_ADMIN);
+        } else if (entity instanceof Pipeline || entity instanceof RunConfiguration) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_ADMIN);
+        } else if (entity instanceof Tool || entity instanceof ToolGroup || entity instanceof DockerRegistry) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_TOOL_ADMIN);
+        } else if (entity instanceof PipelineUser || entity instanceof Role) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_USER_ADMIN);
+        }
+        return false;
     }
 
     public boolean hasAnyRole(final DefaultRoles... roles) {
         return hasAnyRole(Arrays.asList(roles));
+    }
+
+    public boolean hasAnyRole(final List<Sid> sids, final DefaultRoles... roles) {
+        return hasAnySid(sids, Arrays.stream(roles)
+                .map(DefaultRoles::getName)
+                .map(GrantedAuthoritySid::new)
+                .collect(Collectors.toList()));
     }
 
     public boolean hasAnyRole(final List<DefaultRoles> roles) {
@@ -127,7 +164,11 @@ public class CheckPermissionHelper {
     }
 
     public boolean hasAnySid(final List<Sid> sids) {
-        return getSids().stream().anyMatch(sids::contains);
+        return hasAnySid(getSids(), sids);
+    }
+
+    public boolean hasAnySid(final List<Sid> sids, final List<Sid> sidsToCheck) {
+        return sids.stream().anyMatch(sidsToCheck::contains);
     }
 
     public List<Sid> getSids() {

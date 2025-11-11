@@ -117,18 +117,18 @@ public class UserApiService {
         return userManager.deleteGroupBlockingStatus(groupName);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_ADMIN_ONLY)
     public List<GroupStatus> loadAllGroupsBlockingStatuses() {
         return userManager.loadAllGroupsBlockingStatuses();
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_READ_PERMISSION)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_ADMIN_ONLY + OR + USER_READ_PERMISSION)
     @AclMask
     public PipelineUser loadUser(Long id, final boolean quotas) {
         return userManager.load(id, quotas);
     }
 
-    @PostAuthorize(ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
+    @PostAuthorize(ADMIN_ONLY+ OR + USER_ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
     @AclMask
     public PipelineUser loadUserByName(final String name) {
         return userManager.loadByNameOrId(name);

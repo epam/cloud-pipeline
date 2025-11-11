@@ -69,7 +69,7 @@ public class MetadataPermissionManager {
         }
 
         if (entityClass.equals(AclClass.DATA_STORAGE) &&
-                permissionHelper.hasRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
             return true;
         }
 
@@ -126,7 +126,7 @@ public class MetadataPermissionManager {
         final EntityVO entity = metadataVO.getEntity();
         final AclClass entityClass = entity.getEntityClass();
         if (entityClass.equals(AclClass.DATA_STORAGE) &&
-                permissionHelper.hasRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
             return true;
         }
         if (allowUser && entityClass.equals(AclClass.PIPELINE_USER)) {

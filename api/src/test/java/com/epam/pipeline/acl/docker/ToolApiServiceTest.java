@@ -48,6 +48,7 @@ import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.security.acl.AclExpressions.TOOL_ADMIN_ONLY;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
@@ -109,6 +110,14 @@ public class ToolApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldCreateToolForToolAdmin() {
+        doReturn(tool).when(mockToolManager).create(tool, true);
+
+        assertThat(toolApiService.create(tool)).isEqualTo(tool);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateToolWhenPermissionIsGranted() {
         doReturn(tool).when(mockToolManager).create(tool, true);
@@ -128,6 +137,14 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateToolForAdmin() {
+        doReturn(tool).when(mockToolManager).updateTool(tool);
+
+        assertThat(toolApiService.updateTool(tool)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldUpdateToolForToolAdmin() {
         doReturn(tool).when(mockToolManager).updateTool(tool);
 
         assertThat(toolApiService.updateTool(tool)).isEqualTo(tool);
@@ -194,6 +211,22 @@ public class ToolApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldLoadToolWithRegistryForToolAdmin() {
+        doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
+
+        assertThat(toolApiService.loadTool(TEST_STRING, TEST_STRING)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldLoadToolWithoutRegistryForToolAdmin() {
+        doReturn(tool).when(mockToolManager).loadByNameOrId(TEST_STRING);
+
+        assertThat(toolApiService.loadTool(StringUtils.EMPTY, TEST_STRING)).isEqualTo(tool);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolWithRegistryWhenPermissionIsGranted() {
         initAclEntity(tool, AclPermission.READ);
@@ -250,6 +283,17 @@ public class ToolApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = ANOTHER_SIMPLE_USER, roles = TOOL_ADMIN_ONLY)
+    public void shouldDeleteToolForToolAdmin() {
+        doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
+        doReturn(tool).when(mockToolManager).delete(TEST_STRING, TEST_STRING, true);
+        initAclEntity(tool, AclPermission.OWNER);
+        mockSecurityContext();
+
+        assertThat(toolApiService.delete(TEST_STRING, TEST_STRING, true)).isEqualTo(tool);
+    }
+
+    @Test
     @WithMockUser(SIMPLE_USER)
     public void shouldDeleteToolWhenPermissionIsGranted() {
         doReturn(tool).when(mockToolManager).delete(TEST_STRING, TEST_STRING, true);
@@ -273,6 +317,14 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteToolVersionForAdmin() {
+        doReturn(tool).when(mockToolManager).deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING);
+
+        assertThat(toolApiService.deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldDeleteToolVersionForToolAdmin() {
         doReturn(tool).when(mockToolManager).deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING);
 
         assertThat(toolApiService.deleteToolVersion(TEST_STRING, TEST_STRING, TEST_STRING)).isEqualTo(tool);
@@ -303,6 +355,14 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadImageTagsForAdmin() {
+        doReturn(TEST_STRING_LIST).when(mockToolManager).loadTags(ID);
+
+        assertThat(toolApiService.loadImageTags(ID)).isEqualTo(TEST_STRING_LIST);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldLoadImageTagsForToolAdmin() {
         doReturn(TEST_STRING_LIST).when(mockToolManager).loadTags(ID);
 
         assertThat(toolApiService.loadImageTags(ID)).isEqualTo(TEST_STRING_LIST);
@@ -411,6 +471,14 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldForceScanToolForAdmin() {
+        toolApiService.forceScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true);
+
+        verify(mockToolScanScheduler).forceScheduleScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldForceScanToolForToolAdmin() {
         toolApiService.forceScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true);
 
         verify(mockToolScanScheduler).forceScheduleScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true);
@@ -602,6 +670,15 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateToolVersionSettingsForAdmin() {
+        doReturn(toolVersion).when(mockToolVersionManager)
+                .createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST);
+
+        assertThat(toolApiService.createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST)).isEqualTo(toolVersion);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldCreateToolVersionSettingsForToolAdmin() {
         doReturn(toolVersion).when(mockToolVersionManager)
                 .createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST);
 

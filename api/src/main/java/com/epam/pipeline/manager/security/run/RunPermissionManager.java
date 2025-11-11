@@ -122,6 +122,9 @@ public class RunPermissionManager {
         if (permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner())) {
             return true;
         }
+        if (permissionsHelper.isScopedAdmin(pipelineRun)) {
+            return true;
+        }
         final List<RunSid> sshSharedSids = ListUtils.emptyIfNull(pipelineRun.getRunSids())
                 .stream()
                 .filter(sid -> RunAccessType.SSH.equals(sid.getAccessType()))
@@ -161,7 +164,7 @@ public class RunPermissionManager {
     }
 
     public void extendFilter(final AclSecuredRunFilter filter) {
-        if (permissionsHelper.isAdmin() || permissionsHelper.hasRole(DefaultRoles.ROLE_RUN_ADMIN)) {
+        if (permissionsHelper.isAdmin() || permissionsHelper.hasAnyRole(DefaultRoles.ROLE_RUN_ADMIN)) {
             return;
         }
         filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());
