@@ -15,8 +15,9 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
 import com.codeborne.selenide.SelenideElement;
-import org.openqa.selenium.By;
 
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,7 @@ public class Registry implements AccessObject<Registry> {
         sleep(1, SECONDS);
         if (!get(GROUP).getText().equals(groupName)) {
             click(GROUP);
+            $(byText("All groups")).shouldBe(visible).click();
             get(GROUPS_LIST).find(button(groupName)).shouldBe(visible).click();
             ensure(GROUP, text(groupName));
         }

@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -129,17 +131,16 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     }
 
     @Test
-    public void loadCredentialsByIdShouldThrowForAwsRegion() {
+    public void loadCredentialsByIdAwsRegion() {
         cloudRegionManager.create(createRegionDTO());
 
-        assertThrows(() -> cloudRegionManager.loadCredentials(ID));
+        assertThat(cloudRegionManager.loadCredentials(ID), equalTo(credentials()));
     }
 
     @Test
-    public void loadCredentialsByRegionShouldThrowForAwsRegion() {
+    public void loadCredentialsByAwsRegion() {
         cloudRegionManager.create(createRegionDTO());
-
-        assertThrows(() -> cloudRegionManager.loadCredentials(commonRegion()));
+        assertThat(cloudRegionManager.loadCredentials(commonRegion()), equalTo(credentials()));
     }
 
     @Override
@@ -174,7 +175,7 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
     @Override
     AbstractCloudRegionCredentials credentials() {
-        return null;
+        return new AwsRegionCredentials();
     }
 
     @Override

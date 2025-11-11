@@ -27,7 +27,7 @@ public final class GitRepositoryUrl {
     private static final String INVALID_URL_FORMAT_MESSAGE = "Invalid repository URL format.";
     private static final String PROTOCOL_PATTERN = "https?";
     // Username could be either placeholder ${GIT_USER} or a real username
-    private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-_A-Za-z0-9]++";
+    private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-._A-Za-z0-9]++";
     // Password could be either placeholder ${GIT_TOKEN} or a real password
     private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
@@ -57,6 +57,18 @@ public final class GitRepositoryUrl {
                     + "(?:/(?<namespace>" + PATH_PART_PATTERN + "))?"     // Optional namespace
                     + "(?:/(?<project>" + PATH_PART_PATTERN + ")\\.git)?$" // Optional repository that ends with .git suffix
     );
+    private static final Pattern AZURE_DEVOPS_REPOSITORY_URL_PATTERN = Pattern.compile(
+            "^(?<protocol>" + PROTOCOL_PATTERN + "://)"   // Any url supposed to start with protocol
+                    + "(?:"                                 // Open optional non-capturing group for authentication
+                    + "(?<username>" + PATH_PART_PATTERN + ")"  // Organization; would not be used
+                    + "(?::(?<password>" + PASS_PATTERN + "))?"  // Optional token
+                    + "@"                                    // that group should end with @ symbol
+                    + ")?"                               // Close optional non-capturing group for authentication
+                    + "(?<host>" + HOST_PATTERN + ")/"    // Host with optional port
+                    + "(?<namespace>" + PATH_PART_PATTERN + ")/"
+                    + "(?<project>" + PATH_PART_PATTERN + ")/_git/"
+                    + "(?<repository>" + PATH_PART_PATTERN + ")$"
+    );
 
     private final String protocol;
     private final String username;
@@ -64,19 +76,22 @@ public final class GitRepositoryUrl {
     private final String host;
     private final String namespace;
     private final String project;
+    private final String repository;
 
     private GitRepositoryUrl(final String protocol,
                              final String username,
                              final String password,
                              final String host,
                              final String namespace,
-                             final String project) {
+                             final String project,
+                             final String repository) {
         this.protocol = protocol;
         this.username = username;
         this.password = password;
         this.host = host;
         this.namespace = namespace;
         this.project = project;
+        this.repository = repository;
     }
 
     public static GitRepositoryUrl from(final String url) {
@@ -87,6 +102,11 @@ public final class GitRepositoryUrl {
     public static GitRepositoryUrl fromBitbucket(final String url) {
         final Matcher matcher = BITBUCKET_REPOSITORY_URL_PATTERN.matcher(url);
         return parseUrl(matcher);
+    }
+
+    public static GitRepositoryUrl fromAzureDevOps(final String url) {
+        final Matcher matcher = AZURE_DEVOPS_REPOSITORY_URL_PATTERN.matcher(url);
+        return parseUrl(matcher, true);
     }
 
     public static String asString(final String protocol,
@@ -134,34 +154,38 @@ public final class GitRepositoryUrl {
         return Optional.ofNullable(project);
     }
 
+    public Optional<String> getRepository() {
+        return Optional.ofNullable(repository);
+    }
+
     public GitRepositoryUrl withProtocol(final String protocol) {
         final String checkedProtocol = ensureMatches(protocol, PROTOCOL_PATTERN, false);
-        return new GitRepositoryUrl(checkedProtocol, username, password, host, namespace, project);
+        return new GitRepositoryUrl(checkedProtocol, username, password, host, namespace, project, null);
     }
 
     public GitRepositoryUrl withUsername(final String username) {
         final String checkedUsername = ensureMatches(username, USERNAME_PATTERN);
-        return new GitRepositoryUrl(protocol, checkedUsername, password, host, namespace, project);
+        return new GitRepositoryUrl(protocol, checkedUsername, password, host, namespace, project, null);
     }
 
     public GitRepositoryUrl withPassword(final String password) {
         final String checkedPassword = ensureMatches(password, PASS_PATTERN);
-        return new GitRepositoryUrl(protocol, username, checkedPassword, host, namespace, project);
+        return new GitRepositoryUrl(protocol, username, checkedPassword, host, namespace, project, null);
     }
 
     public GitRepositoryUrl withHost(final String host) {
         final String checkedHost = ensureMatches(host, HOST_PATTERN, false);
-        return new GitRepositoryUrl(protocol, username, password, checkedHost, namespace, project);
+        return new GitRepositoryUrl(protocol, username, password, checkedHost, namespace, project, null);
     }
 
     public GitRepositoryUrl withNamespace(final String namespace) {
         final String checkedNamespace = ensureMatches(namespace, PATH_PART_PATTERN);
-        return new GitRepositoryUrl(protocol, username, password, host, checkedNamespace, project);
+        return new GitRepositoryUrl(protocol, username, password, host, checkedNamespace, project, null);
     }
 
     public GitRepositoryUrl withProject(final String project) {
         final String checkedProject = ensureMatches(project, PATH_PART_PATTERN);
-        return new GitRepositoryUrl(protocol, username, password, host, namespace, checkedProject);
+        return new GitRepositoryUrl(protocol, username, password, host, namespace, checkedProject, null);
     }
 
     private static String ensureMatches(final String value, final String pattern) {
@@ -183,6 +207,10 @@ public final class GitRepositoryUrl {
     }
 
     private static GitRepositoryUrl parseUrl(final Matcher matcher) {
+        return parseUrl(matcher, false);
+    }
+
+    private static GitRepositoryUrl parseUrl(final Matcher matcher, final boolean hasRepository) {
         Assert.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
         return new GitRepositoryUrl(
                 matcher.group("protocol"),
@@ -190,7 +218,8 @@ public final class GitRepositoryUrl {
                 matcher.group("password"),
                 matcher.group("host"),
                 matcher.group("namespace"),
-                matcher.group("project")
+                matcher.group("project"),
+                hasRepository ? matcher.group("repository") : null
         );
     }
 }

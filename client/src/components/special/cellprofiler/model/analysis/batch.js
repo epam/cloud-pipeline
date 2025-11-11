@@ -51,6 +51,7 @@ import generateUUID from '../common/generate-uuid';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import {generateResourceUrlWithAccessCallback} from './output-utilities';
 import {getWellRowName} from '../../../hcs-image/hcs-cell-selector/utilities';
+import {alphabeticalSorter} from '../../../../../utils/sorting';
 
 const CELLPROFILER_API_BATCH = 'CELLPROFILER_API_BATCH';
 const CELLPROFILER_API_RAW_DATA_ROOT_DIR = 'CELLPROFILER_API_RAW_DATA_ROOT_DIR';
@@ -87,7 +88,8 @@ export function getInputFilesPresentation (inputs = {}) {
     } = input;
     return `${getWellRowName(row - 1)}${column}`;
   };
-  const wells = [...new Set(files.map(wellPresentation))].sort();
+  const wells = [...new Set(files.map(wellPresentation))]
+    .sort(alphabeticalSorter);
   const timePoints = [...new Set(files.map(input => input.timepoint))].sort((a, b) => a - b);
   const zCoordinates = [...new Set(files.map(input => input.z))].sort((a, b) => a - b);
   const fields = [...new Set(files.map(input => input.fieldId))].sort((a, b) => a - b);
@@ -183,7 +185,6 @@ export async function submitBatchAnalysis (specification) {
   const limitMountsParameter = [...new Set(
     (getParameterValue(CP_CAP_LIMIT_MOUNTS) || '')
       .split(',')
-      .map(o => Number(o))
       .concat(storagesToMount)
   )].join(',');
   setParameterValue(CP_CAP_LIMIT_MOUNTS, limitMountsParameter);
@@ -374,8 +375,8 @@ export function filtersAreEqual (a, b, ignorePagination = false) {
     pageSize: bPageSize,
     source: bSource
   } = b || {};
-  const aNames = [...new Set(aUserNames)].sort();
-  const bNames = [...new Set(bUserNames)].sort();
+  const aNames = [...new Set(aUserNames)].sort(alphabeticalSorter);
+  const bNames = [...new Set(bUserNames)].sort(alphabeticalSorter);
   if (aNames.length !== bNames.length) {
     return false;
   }

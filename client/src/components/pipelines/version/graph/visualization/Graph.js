@@ -203,7 +203,7 @@ export default class Graph extends React.Component {
     return null;
   };
 
-  renderBottomGraphControlls = () => {
+  renderBottomGraphControls = () => {
     if (this._error) {
       return null;
     }
@@ -256,7 +256,7 @@ export default class Graph extends React.Component {
         className={containerStyle}
       >
         {this.renderGraph()}
-        {this.renderBottomGraphControlls()}
+        {this.renderBottomGraphControls()}
         <CodeFileCommitForm
           configChangedWarning={this.state.configChanged
             ? 'Input or output parameters was changed for the workflow'

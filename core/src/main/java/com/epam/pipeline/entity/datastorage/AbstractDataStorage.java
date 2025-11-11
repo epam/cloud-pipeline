@@ -58,6 +58,12 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
     private String mountOptions;
 
     /**
+     * Defines if this storage should be mounted with its fileShareMount path or directly with its own path.
+     * By default, false, which means to use fileShareMount path.
+     */
+    private boolean mountExactPath;
+
+    /**
      * Defines if that data storage can be shared though a proxy service
      */
     private boolean shared;
@@ -79,6 +85,11 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
 
     private Set<String> linkingMasks;
     private Long sourceStorageId;
+
+    /**
+     * Indicates that permissions can be granted for particular paths in this storage.
+     */
+    private boolean pathPermissionsEnabled;
 
     public AbstractDataStorage(final Long id, final String name,
             final String path, final DataStorageType type) {

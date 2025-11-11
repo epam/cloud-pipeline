@@ -241,4 +241,8 @@ public class CloudPipelineAPIClient {
     public FileShareMount loadFileShareMount(final Long id) {
         return executor.execute(cloudPipelineAPI.loadShareMount(id));
     }
+
+    public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
+        return executor.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
+    }
 }

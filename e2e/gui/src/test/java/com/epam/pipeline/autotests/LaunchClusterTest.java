@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -58,11 +61,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String testingTool = C.ANOTHER_TESTING_TOOL_NAME;
     private final String testingNode = C.ANOTHER_INSTANCE;
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
-    private final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
+    private final String gridEngineAutoscalingTask = "SGEAutoscaling";
     private final String spotPrice = C.SPOT_PRICE_NAME;
     private final String onDemandPrice = ON_DEMAND;
     private final String mastersConfigPrice = "Master's config";
     private final String sleepCommand = "sleep";
+    private final String errorMessage = "The following jobs cannot be satisfied with " +
+            "the requested resources and therefore will be killed: #1";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -198,7 +203,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .setPriceType(onDemandPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setDefaultChildNodes("1")
@@ -222,9 +227,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         runsMenu()
                 .activeRuns()
                 .showLog(getRunId())
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s and instance type=%s has been created.",
-                        String.format("pipeline-%s", childRunID2), C.DEFAULT_INSTANCE));
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .waitForLog(format("Additional worker %s \\(%s\\) has been scaled up.",
+                        format("pipeline-%s", childRunID2), C.DEFAULT_INSTANCE));
         navigationMenu()
                 .runs()
                 .activeRuns()
@@ -233,9 +238,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun("pipeline", childRunID2)
                 .showLog(getRunId())
                 .ensure(taskWithName(gridEngineAutoscalingTask), visible)
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker %s has been scaled down.",
-                        String.format("pipeline-%s", childRunID2)));
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .waitForLog(format("Additional worker %s has been scaled down.",
+                        format("pipeline-%s", childRunID2)));
 
         navigationMenu()
                 .runs()
@@ -275,23 +280,23 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SGE", "true"), exist)
                 .waitForSshLink()
-                .click(taskWithName("SGEMasterSetup"))
+                .clickTaskWithName("SGEMasterSetup")
                 .ensure(log(), containsMessages("SGE master node was successfully configured"))
-                .click(taskWithName("SGEMasterSetupWorkers"))
+                .clickTaskWithName("SGEMasterSetupWorkers")
                 .ensure(log(), containsMessages("All execution hosts are connected"))
                 .ssh(shell -> shell
-                        .assertPageContains(String.format("[root@%s-%s",
+                        .assertPageContains(format("[root@%s-%s",
                                 getPipelineName().toLowerCase(), getRunId()))
                         .execute("qhost")
-                        .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()), String.format("%s-%s lx-amd64",
+                        .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
+                                getPipelineName().toLowerCase(), getRunId()), format("%s-%s lx-amd64",
                                 getPipelineName().toLowerCase(), childRunID))
                         .execute("qstat")
                         .execute("qsub -b y -t 1:10 sleep 10m")
                         .assertOutputContains("Your job-array 1.1-10:1 (\"sleep\") has been submitted")
                         .sleep(2, SECONDS)
                         .execute("qstat")
-                        .assertOutputContains(String.format("main.q@%s", getPipelineName().toLowerCase()).substring(0, 30))
+                        .assertOutputContains(format("main.q@%s", getPipelineName().toLowerCase()).substring(0, 30))
                         .close());
     }
 
@@ -304,6 +309,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
@@ -324,17 +330,18 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SLURM", "true"), exist)
                 .waitForSshLink()
-                .click(taskWithName("SLURMMasterSetup"))
-                .ensure(log(), containsMessages("Master ENV is ready"))
-                .click(taskWithName("SLURMMasterSetupWorkers"))
+                .clickTaskWithName("SLURMMasterSetup")
+                .ensure(log(), containsMessages("SLURM master node has been successfully configured"))
+                .clickTaskWithName("SLURMMasterSetupWorkers")
                 .ensure(log(), containsMessages("All SLURM hosts are connected"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("sinfo")
-                        .assertOutputContains("main.q*", "idle", String.format("%s-[%s-%s]",
+                        .assertOutputContains("main.q*", "idle", format("%s-[%s-%s]",
                                 getPipelineName().toLowerCase(), getRunId(), childRunID))
                         .execute("srun -N2 -l /bin/hostname")
-                        .assertOutputContains(String.format("0: %s-%s", getPipelineName().toLowerCase(), getRunId()),
-                                String.format("1: %s-%s", getPipelineName().toLowerCase(), childRunID))
+                        .assertOutputContains(format("0: %s-%s", getPipelineName().toLowerCase(), getRunId()),
+                                format("1: %s-%s", getPipelineName().toLowerCase(), childRunID))
                         .close());
     }
 
@@ -342,9 +349,10 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @TestCase({"EPMCMBIBPC-3152"})
     public void validationOfApacheSparkCluster() {
         tools()
-                .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool),
+                .perform(defaultRegistry, defaultGroup, format("%s/%s", defaultGroup, testingTool),
                         ToolTab::runWithCustomSettings)
                 .selectValue(INSTANCE_TYPE, testingNode)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Apache Spark")
@@ -359,15 +367,15 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SPARK", "true"), exist)
                 .waitForEndpointLink()
-                .click(taskWithName("SparkMasterSetup"))
+                .clickTaskWithName("SparkMasterSetup")
                 .ensure(log(), containsMessages("Spark master is started"))
-                .click(taskWithName("SparkWorkerSetup"))
+                .clickTaskWithName("SparkWorkerSetup")
                 .ensure(log(), containsMessages("Spark worker is started and connected to the master"))
-                .click(taskWithName("SparkMasterSetupWorkers"))
+                .clickTaskWithName("SparkMasterSetupWorkers")
                 .ensure(log(), containsMessages("All workers are connected"))
                 .clickOnEndpointLink("SparkUI")
                 .sleep(3, SECONDS)
-                .validationPageHeader(String.format("Spark Master at spark://pipeline-%s", getRunId()))
+                .validationPageHeader(format("Spark Master at spark://pipeline-%s", getRunId()))
                 .validateAliveWorkersSparkPage(" 2")
                 .assertPageContains("Workers (2)")
                 .closeTab();
@@ -404,6 +412,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @Test
     @TestCase({"EPMCMBIBPC-3154"})
     public void hybridAutoScaledClusterCPUDeadlock() {
+        String command = "qsub -b y -pe local %s sleep 5m";
         library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
@@ -415,28 +424,32 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .enableHybridClusterSelect()
                 .ok()
                 .click(START_IDLE)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
                 .waitForSshLink()
+                .sleep(1, MINUTES) //time needed for synchronization
                 .ssh(shell -> shell
-                        .execute("qsub -b y -pe local 150 sleep 5m")
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
+                        .execute(format(command, "150"))
                         .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .close());
+
         navigationMenu()
                 .runs()
                 .activeRuns()
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (150 cpu)"))
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .ensure(log(), containsMessages(errorMessage))
                 .ssh(shell -> shell
-                        .execute("qsub -b y -pe local 50 sleep 5m")
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
+                        .execute(format(command, "50"))
                         .sleep(20, SECONDS)
-                        .execute("qstat")
                         .close());
         final String nestedRunID = navigationMenu()
                 .runs()
@@ -464,7 +477,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
                 .ok()
-                .setCommand(String.format("qsub -b y -pe local %s sleep 15m && sleep infinity", Integer.parseInt(cpu) + 1))
+                .setCommand(format("qsub -b y -pe local %s sleep 15m && sleep infinity", Integer.parseInt(cpu) + 1))
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
@@ -474,14 +488,15 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_HYBRID", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qhost")
-                        .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
+                        .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
                                 getPipelineName().toLowerCase(), getRunId()))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " 1 ")
                         .assertPageContains(sleepCommand, " qw ")
-                        .assertPageContains(sleepCommand, String.format(" %s ", Integer.parseInt(cpu) + 1))
+                        .assertPageContains(sleepCommand, format(" %s ", Integer.parseInt(cpu) + 1))
                         .close());
         String nestedRunID = navigationMenu()
                                 .runs()
@@ -499,14 +514,15 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qhost")
-                        .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()), String.format("pipeline-%s",
+                        .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
+                                getPipelineName().toLowerCase(), getRunId()), format("pipeline-%s",
                                 nestedRunID))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " r ")
-                        .assertPageContains(sleepCommand, String.format("main.q@pipeline-%s", nestedRunID))
+                        .assertPageContains(sleepCommand, format("main.q@pipeline-%s", nestedRunID))
                         .close());
     }
 
@@ -534,6 +550,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
                         .sleep(20, SECONDS)
@@ -544,9 +561,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .activeRuns()
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (50 cpu)"));
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .ensure(log(), containsMessages(errorMessage));
     }
 
     @Test

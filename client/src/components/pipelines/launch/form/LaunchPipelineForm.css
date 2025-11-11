@@ -37,8 +37,14 @@
 
 .item-header {
   font-size: medium;
-  margin-left: 5px;
   vertical-align: middle;
+}
+
+.item-header-configuration-control {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin: 1px 5px 1px 0;
 }
 
 .section {
@@ -46,8 +52,17 @@
   margin-bottom: 5px;
 }
 
+.section.hidden {
+  display: none;
+}
+
 .form-item-row {
   margin: 2px 0 !important;
+  flex: 1;
+}
+
+.pipeline-name-form-item-row {
+  margin: 0;
 }
 
 .form-item-action {
@@ -61,11 +76,11 @@
 }
 
 .price {
-
+  margin: 0 5px;
 }
 
 .hidden-item {
-  display: none;
+  display: none !important;
 }
 
 .code-editor {
@@ -81,15 +96,49 @@
   cursor: pointer;
 }
 
+.parameter-name-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  cursor: text;
+}
+
+.parameter-name-container.disabled {
+  cursor: default;
+}
+
+.parameter-name-container.collapsed:not(.disabled):hover {
+  cursor: text;
+}
+
+.parameter-name-container .parameter-name-edit-icon {
+  margin-left: 5px;
+  font-size: larger;
+  display: none;
+}
+
+.parameter-name-container.collapsed:not(.disabled):hover .parameter-name-edit-icon {
+  display: inline-block;
+}
+
 .parameter-name {
-  margin-left: -10px;
-  text-align: right;
   border: 1px dashed #777;
   font-size: 0.9rem;
 }
 
 .parameter-value {
   font-size: 0.9rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  position: relative;
+}
+
+.parameter-icon {
+  position: absolute;
+  left: -27px;
+  font-size: larger;
+  top: 10px;
 }
 
 .system-parameter-name {
@@ -103,7 +152,6 @@
 }
 
 .remove-parameter {
-  padding-left: 10px;
   vertical-align: middle;
   height: 36px;
 }
@@ -113,9 +161,11 @@
   vertical-align: middle;
   font-size: larger;
   cursor: pointer;
+  align-self: flex-start;
 }
 
-.path-type {
+.path-type,
+.input-addon-button {
   padding: 5px;
   cursor: pointer;
 }
@@ -134,6 +184,12 @@
 
 .hint {
   cursor: pointer;
+}
+
+.actions {
+  text-align: right;
+  line-height: 32px;
+  padding: 1px 0;
 }
 
 .actions button {
@@ -254,6 +310,11 @@
   text-align: center;
 }
 
+.reservation-parameters {
+  margin-left: 150px;
+  margin-right: 32px;
+}
+
 .fire-cloud-sign-in-container {
   display: flex;
   flex-direction: column;
@@ -271,4 +332,27 @@
 
 ul.list {
   list-style: disc inside;
+}
+
+.parameters-navigation {
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+
+.parameters-navigation:global(.sticky) {
+  position: fixed;
+  top: 20px;
+}
+
+.parameter-section-header * {
+  transition: all 1s linear;
+}
+
+.parameter-section-header.highlighted * {
+  transition: all 0s linear;
+}
+
+.section-link {
+  font-size: larger;
 }

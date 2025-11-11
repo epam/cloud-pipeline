@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROUTE;
@@ -54,8 +53,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -229,7 +229,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .getInternalIP(server1Port80ExternalIPAddress, PORT_80);
         tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .doNotMountStoragesSelect(true)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()

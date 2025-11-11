@@ -28,6 +28,7 @@ import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceDimensions;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceList;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceRate;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPricingCard;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsProduct;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsTerms;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.utils.StreamUtils;
@@ -93,6 +94,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     public static final String STORAGE_TYPE = "storageType";
     public static final String LUSTRE = "Lustre";
     public static final String SSD = "SSD";
+    public static final String N_A = "N/A";
     private final AwsService awsService;
     private final ObjectMapper mapper;
     private final PriceLoadingMode priceLoadingMode;
@@ -154,7 +156,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
                     return null;
                 }
                 final StoragePricing storagePricing =
-                        convertAwsPricing(storageClass, price.getTerms().getOnDemand(), price.getThroughput());
+                        convertAwsPricing(storageClass, price.getTerms().getOnDemand(), parseThroughput(price));
                 if (CollectionUtils.isEmpty(storagePricing.getPrices().values())) {
                     log.warn(String.format("Region [%s] doesn't have price rates specified in USD, will be skipped.",
                                            region.getName()));
@@ -162,6 +164,14 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
                 }
                 return ImmutablePair.of(region.getName(), storagePricing);
             });
+    }
+
+    private static int parseThroughput(AwsPricingCard price) {
+        String throughputStr = Optional.ofNullable(price.getProduct())
+                .map(AwsProduct::getAttributes)
+                .map(attributes -> attributes.get(THROUGHPUT_CAPACITY))
+                .orElse(N_A);
+        return throughputStr.equals(N_A) ? 0 : Integer.parseInt(throughputStr);
     }
 
     private static String matchStorageClass(final AwsPricingCard price) {
@@ -247,8 +257,11 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
                                     .withField(f.getKey())
                                     .withValue(f.getValue())
                             ).collect(Collectors.toList()))
-                    .withNextToken(nextToken)
                     .withFormatVersion(AWS_PRICE_FORMAT_VERSION);
+
+            if (!nextToken.equals(StringUtils.EMPTY)) {
+                request.withNextToken(nextToken);
+            }
 
             final GetProductsResult result = awsPricingService.getProducts(request);
             result.getPriceList().stream()

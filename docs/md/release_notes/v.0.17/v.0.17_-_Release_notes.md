@@ -5,18 +5,27 @@
 - [Cloud Data application](#cloud-data-application)
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
-- ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
-- [Export custom user's attributes](#export-custom-users-attributes)
-- [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+- [Cluster utilization enhancements](#cluster-utilization-enhancements)
+    - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
+    - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
+    - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
+    - [GPU statistics](#gpu-statistics)
+- [User management enhancements](#user-management-enhancements)
+    - [Allowed instance count](#allowed-instance-count)
+    - [Export custom user's attributes](#export-custom-users-attributes)
+    - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+    - [Batch users import](#batch-users-import)
+    - [User states](#user-states)
+    - [Usage report](#usage-report)
+    - [GUI impersonation](#gui-impersonation)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Sensitive storages](#sensitive-storages)
+- [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
-- [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
-- [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
+- [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
-- [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
 - [Updates of Metadata object](#updates-of-metadata-object)
 - [Custom node images](#custom-node-images)
@@ -29,11 +38,15 @@
 - [NAT gateway](#nat-gateway)
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
-- [Image history](#image-history)
+- [Image history and generating of Dockerfile](#image-history-and-generating-of-dockerfile)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
 - [System Jobs](#system-jobs)
+- [Completed runs archiving](#completed-runs-archiving)
 - [Cluster run usage](#cluster-run-usage)
+- [Cluster run estimation price](#cluster-run-estimation-price)
+- [Terminal view](#terminal-view)
+- [Container limits](#container-limits-for-commitlaunch-tool-operations)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -360,6 +373,35 @@ It could be configured via the corresponding field at the **`IDLE_RUN`** notific
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_06.png)  
 If the _Resend delay_ is specified and the _Action_ for the **_idle_** runs is set as `NOTIFY`, then the **`IDLE_RUN`** notification will being resent every appropriate time interval.
 
+### Notifications for runs with high-consumed network
+
+In **`v0.17`**, new email notification type was added - **`HIGH_CONSUMED_NETWORK_BANDWIDTH`**.  
+This notification is being sent when the pod's network consumption is higher than pre-defined threshold for a long time:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_08.png)
+
+This new notification type has the following configurable parameters:
+
+- **Network bandwidth limit** - the network bandwidth threshold (in bytes/sec)
+- **Network bandwidth measurement period** - the duration in minutes after which the system will check pod's network consuming in case when **Network bandwidth limit** > 0.  
+    If pod's network consuming turns out to be higher than **Network bandwidth limit**:  
+    - email notification **`HIGH_CONSUMED_NETWORK_BANDWIDTH`** will be sent to the user
+    - the run itself will be marked by the ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_09.png) label
+- **Action delay** - the duration in minutes after which an action specified in **Action** field will be performed cyclically, if pod's network consuming is higher than **Network bandwidth limit**
+- **Action** - sets action to perform with the pod, that has the network consuming higher than **Network bandwidth limit**. Currently, possible action only **_NOTIFY_** - it sends the email notification **`HIGH_CONSUMED_NETWORK_BANDWIDTH`**.
+
+For more details on configuring described settings, see section [here](../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md#network-pressure-runs).
+
+Besides, admins are able to restrict network bandwidth for such runs with high network consumption - via special API method `POST /run/{runId}/network/limit?enable=<boolean>&boundary=<int>`.  
+For runs with the restricted network bandwidth:
+
+- at the **Run logs** page, the warning message is shown with the bandwidth threshold limit
+- in run logs, the task `LimitNetworkBandwidth` appears. This task contains logs of the bandwidth limit applying  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_10.png)
+- at the **Active runs** section and **Runs** page, an additional label is displayed for a run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_11.png)
+
+For more details on network bandwidth restriction, see section [here](../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md#limit-pods-network-bandwidth).
+
 ### Allow to exclude certain node type from the specific notifications
 
 For quite small/cheap nodes, the users may not want to receive the following email notifications for the run:
@@ -417,7 +459,9 @@ Specified value for that preference defines which price type(s) will be shown in
 
 **_Note_**: **`cluster.allowed.price.types.master`** preference doesn't apply on the price types for single-node jobs
 
-## "Max" data series at the "Resource Monitoring" dashboard
+## Cluster utilization enhancements
+
+### "Max" data series at the "Resource Monitoring" dashboard
 
 Previously, **Cloud Pipeline** displayed the resources utilization as an average value. This could hide some spikes (which resulted in job failure), when reviewing at a high zoom-level (e.g. several days).
 
@@ -429,7 +473,102 @@ For example:
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
-## Export custom user's attributes
+### Export cluster utilization in Excel format
+
+Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
+
+From now, the ability to export these reports in **`XLSX`** format is implemented.  
+Users can choose the format of the report before the download:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
+
+**Excel**-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.  
+Example of the **Excel**-report sheets:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_02.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_03.png)
+
+For more details how to configure **Cluster Node Monitor** reports see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#export-utilization-data).
+
+### Export cluster utilization via `pipe`
+
+Also in the current version, the ability to export **Cluster Node Monitor** reports by `pipe` CLI is introduced.
+
+The command to download the node usage metrics:
+
+``` bash
+pipe cluster monitor [OPTIONS]
+```
+
+The one of the below options should be specified:
+
+- **`-i`** / **`--instance-id`** **{ID}** - allows to specify the cloud instance ID. This option cannot be used in conjunction with the **`--run-id`** option
+- **`-r`** / **`--run-id`** **{RUN\_ID}** - allows to specify the pipeline run ID. This option cannot be used in conjunction with the **`--instance-id`** option
+
+Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
+
+For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
+
+### GPU statistics
+
+From the current version, **Cloud Pipeline** provides monitoring of GPU cards utilization metrics for the GPU instances.  
+GPU statistics monitoring can be found in the usage monitoring of the node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_01.png)
+
+GPU statistics dashboard includes 3 parts:
+
+- **Global GPU metrics**:
+    - **GPU utilization** - `mean`/`max`/`min` of all average GPU utilization values for the selected node's run time range
+    - **GPU Memory utilization** - `mean`/`max`/`min` of all average GPU cards memory utilization values for the selected node's run time range  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_02.png)
+- **Global chart** - line chart for the following metrics:
+    - **Time GPU Active** - percentage of GPU cards which have GPU utilization more than 0
+    - **GPU Utilization** - `mean`/`max`/`min` GPU utilization (in percents) among all node's GPU cards
+    - **GPU Memory** - `mean`/`max`/`min` GPU memory utilization (in percents) among all node's GPU cards  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_03.png)
+    - When hovering over any point of the chart, a tooltip is shown with details:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_04.png)
+- **Detailed heatmap** - shows **Time GPU Active**, **GPU Utilization** and **GPU Memory** metrics as heatmap at each time point:
+    - heatmap is divided to blocks vertically where each block presents a single metric
+    - in each heatmap block, one GPU card is shown per row
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_05.png)
+
+There are abilities to configure:
+
+- the time range for which metrics shall be calculated and displayed
+- type of metrics aggregation among GPU cards (`mean`/`max`/`min`)
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#gpu-statistics).
+
+## User management enhancements
+
+### Allowed instance count
+
+Sometimes users' scripts may spawn hundreds of machines without a real need.  
+This could lead to different bugs on the Platform.
+
+To prevent such situation, a new setting - **Allowed instance max count** - was added to the user's options. It allows to restrict the number of instances a user can run at the same time:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_1.png)
+
+Behavior is configured by the following way: for example, if this setting for the user is specified to 5 - they can launch only 5 jobs at a maximum. This includes worker nodes of the clusters.  
+
+If the user tries to launch a job, but it exceeds a current limit (e.g. limit is 5 and user starts a new instance which is going to be a 6th job), GUI will warn the user before submitting a job:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_2.png)  
+And if the user confirms a run operation - it will be rejected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_3.png)  
+
+Even if the user will try to start a new job via `pipe` CLI - it will be rejected as well, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_4.png)
+
+Such restrictions could be set not only for a user, but on another levels too (in descending order of priority):  
+
+- **User-level** - i.e. specified for a user. This overrides any other limit for a particular user. See details [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#allowed-instance-count).
+- **User group level** - i.e. specified for a group/role. Count of jobs of each member of the group/role is summed and compared to this parameter. If a number of jobs exceeds a limit - the job submission is rejected. This level is configured via the **Allowed instance max count** setting for a group/role. See details [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#allowed-instance-count).
+- globally via the system preference **`launch.max.runs.user.global`** - it can be used to set a global default restriction for all the users. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum.
+
+Additionally, a new command was added to `pipe` CLI that allows to show the count of instances running by the user at the moment, and also all possible restrictions to the allowed count of instances to launch - `pipe users instances`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_5.png)  
+See details [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#instances-usage).
+
+### Export custom user's attributes
 
 Previously, user's metadata attributes couldn't be exported in an automatic way.
 
@@ -445,7 +584,7 @@ Now, before the users export, there is the ability to select which user's metada
 
 For more details about users export see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
 
-## User management and export in read-only mode
+### User management and export in read-only mode
 
 Previously, only admins had access to the users info/metadata.
 In the current version, a new "built-in" role **_ROLE\_USER\_READER_** was added.  
@@ -458,6 +597,130 @@ This role allows:
     - export users list - **including** users' metadata
 
 For more details about user roles see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#roles).
+
+### Batch users import
+
+Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
+
+To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
+
+`CSV` format of the file for the batch import:
+
+``` csv
+UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
+<user1>,<group1>,<Value1>,<Value2>,<ValueN>
+<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
+<user3>,,<Value3>,<Value4>,<ValueN>
+<user4>,<group4>,,,
+```
+
+Where:
+
+- **UserName** - contains the user name
+- **Groups** - contains the "permission" groups, which shall be assigned to the user
+- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
+
+The import process takes a number of inputs:
+
+- `CSV` file
+- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
+    - "`create-user`"
+    - "`create-group`"
+    - "`create-<ATTRIBUTE_ITEM_NAME>`"
+
+#### Import users via GUI
+
+Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
+
+1. Click the "**Import users**" button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
+2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
+3. After the options are selected, click the **IMPORT** button, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
+4. Once the import is done - you can review the import results:  
+    - Users and groups have been created
+    - Users were assigned to the specified groups
+    - Attributes were assigned to the users as well
+
+For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
+
+#### Import users via CLI
+
+Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
+
+``` bash
+pipe users import [OPTIONS] FILE_PATH
+```
+
+Where **FILE_PATH** - defines a path to the `CSV` file with users list
+
+Possible options:
+
+- **`-cu`** / **`--create-user`** - allows the creation of new users
+- **`-cg`** / **`--create-group`** - allows the creation of new groups
+- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
+
+Results of the command execution are similar to the users import operation via GUI.
+
+For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
+
+### User states
+
+Previously, admins could monitor Platform usage, for example, by list of **ACTIVE RUNS** or via **CLUSTER STATE** pages.  
+But for some cases, it can be useful to know which users do utilize the Platform in the current moment.
+
+In the current version, the displaying of user states in the "User management" system tab was implemented - now, that state is shown as an circle icon near the user name:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserStates_1.png)
+
+Possible states:
+
+- _Online_ (green circle) - for users who are logged in and use the Platform in the moment
+- _Offline_ (blank white circle) - for users who are not logged in at the moment/do not use the Platform for some time
+
+By hover over the _Offline_ icons - admin can know when the specific user has utilized the Platform the last time, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserStates_2.png)
+
+### Usage report
+
+It is convenient to have the ability to view Platform statistics of users activity.  
+E.g. when creating different schedulers or node pools and info about number of online users can be helpful.
+
+For that, the **Usage report** subtab, showing the Platform's statistics of users activity, was added to the "User Management" system tab.  
+At this subtab, the summary info about total count of Platform users that were online at different time moments during the certain period is displayed in a chart form:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UsageReport_1.png)
+
+User can configure the showing chart by the following ways:
+
+- select the type of period of view - day (_by default_) or month
+- select to display data for a specific day/month from the calendar
+- restrict the displayed data for specific user(s) or user group(s)/role(s) only
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#usage-report).
+
+### GUI impersonation
+
+While performing administrating, it is common to help users resolve issues, which can't be reproduced from the administrative accounts.  
+This requires to perform operations on the users' behalf.  
+
+To assist with such tasks, **Cloud Pipeline** offers "Impersonation" feature. It allows admins to login as a selected user into the **Cloud Pipeline** GUI and have the same permissions/level of access as the user.
+
+To start the impersonation, admin shall:
+
+- Open the **Users** subtab of the "User Management" section of the system-level settings
+- Load the user profile on whom behalf you are going to impersonate and click the **Impersonate** button in the top-right corner, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Impersonation_1.png)
+- Platform GUI will be reloaded using the selected user:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Impersonation_2.png)
+
+While in the "Impersonation" mode, the following changes happen to the GUI:
+
+- Main menu turns orange, indicating that the impersonation mode is _ON_
+- **Logout** button is being changed to the **Stop impersonation** button
+
+To stop the "Impersonation" mode, user shall click the **Stop impersonation** button.
+
+For more details see [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#gui-impersonation).
 
 ## "All pipelines" and "All storages" repositories
 
@@ -507,6 +770,87 @@ Files from the sensitive storages can't be viewed **_outside_** the sensitive ru
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_5.png)
 
 For more details and restrictions that are imposed by using of sensitive storages see [here](../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md).
+
+## Versioned storages
+
+In some cases, users want to have a full-fledged system of the revision control of their stored data - to view revisions, history of changes, diffs between revisions.  
+So far, for separate storages types (e.g. `AWS` s3 buckets), there is the ability to enable the versioning option. But it is not enough. Such versioning allows to manage the versions of the certain file, not the revisions of the full storage, which revision can contain changes of several files or folders.  
+For the needs of full version control of the storing data, there was implemented a special storage type - **Versioned storage**.
+
+These storages are GitLab repositories under the hood, all changes performed in their data are versioned. Users can view the history of changes, diffs, etc.  
+
+Versioned storages are created via the special menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_01.png)
+
+The view of the versioned storage is similar to regular data storage with some differences:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_02.png)
+
+For each file/folder in the storage, additional info is displayed:
+
+- _Revision_ - latest revision (SHA-1 hash of the latest commit) touched that file/folder
+- _Date changed_ - date and time of the latest commit touched that file/folder
+- _Author_ - user name who performed the latest commit touched that file/folder
+- _Message_ - message of the latest commit touched that file/folder
+
+Moreover, there are extra controls for this storage type:
+
+- **RUN** button - allows to run the tool with cloning of the opened versioned storage into the instance
+- **Generate report** button - allows to configure and then download the report of the storage usage (commit history, diffs, etc.) as the Microsoft Word document (`docx` format)
+- **Show history** button - allows to open the panel with commit history info of the current versioned storage or selected folder
+
+Each change in a such storage - is a commit by the fact, therefore each change has its related comment message - explicit or automatic created:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_03.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_04.png)
+
+One of the important advantages of versioned storages in condition with regular object storages - ability to view commit history and all changes that were performed with the data in details.  
+Users can view the commit history of the file in the versioned storage - i.e. history of all commits that touched this file, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_06.png)
+
+Using the commit history of the file, users can:
+
+- revert the content of the file to the selected commit
+- view/download revert version of the file corresponding to the specific commit
+- view diffs between the content of the specific file in the selected commit and in the previous commit, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_07.png)
+
+Besides that, users can view the commit history of the folder or the whole versioned storage - i.e. history of all changes touched files inside that folder or its subfolders, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_08.png)  
+Using the commit history of the folder, users can view diffs between the content of the specific folder in the selected commit and in the previous commit.
+
+Versioned storages can be also mounted during the runs, data can be used for the computations and results can be comitted back to such storages - with all the benefits of a version control system.
+
+For that, new management controls were added to the menu of the active runs:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_09.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_10.png)
+
+Via this controls, users can:
+
+- clone the versioned storage(s) to the existing running instance
+- check differences between cloned and current changed versions of the versioned storage
+- save (commit) changes performed in the cloned version of the storage during the run
+- checkout revision of the cloned storage in the run
+- resolve conflicts appeared during the save or checkout operation
+
+The main scenario of using versioned storage during the run looks like:
+
+- user clones selected versioned storage to the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_11.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_12.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_13.png)
+- cloned versioned storages are available inside the run by the path `/versioned-data/<storage_name>/`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_14.png)
+- user works with the data, performed changes can be viewed at any moment, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_16.png)
+- user saves performed changes (i.e. creates a new commit):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_18.png)
+- saved changes become available in the origin versioned storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_19.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_20.png)
+
+For more details about versioned storages and operations with them see [here](../../manual/08_Manage_Data_Storage/8.13._Versioned_storages.md#813-versioned-storages).
 
 ## Updates of "Limit mounts" for object storages
 
@@ -584,39 +928,66 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
 
-## Export cluster utilization in Excel format
+## FS quotas
 
-Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
+In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
+Such amount of extra files may lead to unnecessary storage costs.  
+To prevent extra spending in this case, in the current version a new ability was implemented - FS quotas.
 
-From now, the ability to export these reports in **`XLSX`** format is implemented.  
-Users can choose the format of the report before the download:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
+There is a feature that allows admins to configure quota(s) to the FS storage volume that user can occupy.
+On exceeding such quota(s), different actions can be applied - e.g., just user notifying or fully read-only mode for the storage.
 
-**Excel**-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.  
-Example of the **Excel**-report sheets:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_02.png)  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_03.png)
+This allows to minimize the shared filesystem costs by limiting the amount of data being stored in them and to notify the users/admins when FS storage is running out of the specific volume.
 
-For more details how to configure **Cluster Node Monitor** reports see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#export-utilization-data).
+To configure notifications/quota settings for the storage, admin shall:
 
-## Export cluster utilization via `pipe`
+- click the **Configure notifications** hyperlink in the Attributes panel of the storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_01.png)
+- in the appeared pop-up, specify the username(s) or a groupname(s) in the **Recipients** input to choose who will get the FS quota notifications via emails and push notifications, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_02.png)
+- then click the **Add notification** to configure rules/thresholds:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_03.png)
+- Put a threshold in `Gb` or `%` of the total volume and choose which action shall be performed when that threshold is reached. The following actions can be taken by the platform:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_04.png)  
+    - _Send email_ - just notify the recipients that a quota has been reached (notification will be resent each hour)
+    - _Disable mount_ - used to let the users cleanup the data:  
+        - GUI will still allow to perform the modification of this storage (`read-write` mode )
+        - In existing nodes (launched runs), FS storage mount will be switched to a `read-only` mode (if it was mounted previously)
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+    - _Make read-only_ - used to stop any data activities from the users, only admins can cleanup the data per a request:  
+        - GUI will show this FS storage in a `read-only` mode
+        - Existing nodes (launched runs) will turn this mounted FS storage in a `read-only` mode as well
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+- The notification/quota rules can be combined in any form. E.g., the following example sets three levels of the thresholds. Each level notifies the users about the threshold exceeding and also introduces a new restriction:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_05.png)
 
-Also in the current version, the ability to export **Cluster Node Monitor** reports by `pipe` CLI is introduced.
+For example, if admin will configure notifications/quotas for the storage as described above:
 
-The command to download the node usage metrics:
+- when user(s) will create/upload some files in the storage and summary FS size will exceed 5 Gb threshold - only notifications will be sent to recipients
+- when user(s) will create/upload some more files in the storage and summary FS size will exceed 10 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount becomes `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_06.png)
+    - in GUI:  
+        - permissions will not be changed. Write operations can be performed, according to the permissions
+        - "**Warning**" icon will be displayed in the storage page. It will show `MOUNT DISABLED` state:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_07.png)
+        - Storage size will be more than 10 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_08.png)
+- when user(s) will create/upload some more files in the storage (e.g. via GUI) and summary FS size will exceed 20 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount will remain `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`
+    - in GUI:  
+        - storage will become `read-only`. User will not be able to perform any modification to the filesystem
+        - "Warning" icon will be still displayed. It will show `READ ONLY` state  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_09.png)
+        - Storage size will be more than 20 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_10.png)
+    
+Please note, these restrictions will be applied to "general" users only.  
+Admins will not be affected by the restrictions. Even if the storage is in `read-only` state - they can perform _READ_ and _WRITE_ operations.
 
-``` bash
-pipe cluster monitor [OPTIONS]
-```
-
-The one of the below options should be specified:
-
-- **`-i`** / **`--instance-id`** **{ID}** - allows to specify the cloud instance ID. This option cannot be used in conjunction with the **`--run-id`** option
-- **`-r`** / **`--run-id`** **{RUN\_ID}** - allows to specify the pipeline run ID. This option cannot be used in conjunction with the **`--instance-id`** option
-
-Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
-
-For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
+For more details about FS quotas, their settings and options see [here](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md#fs-quotas).
 
 ## Pause/resume runs via `pipe`
 
@@ -672,73 +1043,6 @@ The newly created storage is being set as a "default" storage in the user's prof
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_03.png)
 
 For more details and examples see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#home-storage-for-each-user).
-
-## Batch users import
-
-Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
-
-To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
-
-`CSV` format of the file for the batch import:
-
-``` csv
-UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
-<user1>,<group1>,<Value1>,<Value2>,<ValueN>
-<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
-<user3>,,<Value3>,<Value4>,<ValueN>
-<user4>,<group4>,,,
-```
-
-Where:
-
-- **UserName** - contains the user name
-- **Groups** - contains the "permission" groups, which shall be assigned to the user
-- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
-
-The import process takes a number of inputs:
-
-- `CSV` file
-- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
-    - "`create-user`"
-    - "`create-group`"
-    - "`create-<ATTRIBUTE_ITEM_NAME>`"
-
-### Import users via GUI
-
-Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
-
-1. Click the "**Import users**" button:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
-2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
-3. After the options are selected, click the **IMPORT** button, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
-4. Once the import is done - you can review the import results:  
-    - Users and groups have been created
-    - Users were assigned to the specified groups
-    - Attributes were assigned to the users as well
-
-For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
-
-### Import users via CLI
-
-Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
-
-``` bash
-pipe users import [OPTIONS] FILE_PATH
-```
-
-Where **FILE_PATH** - defines a path to the `CSV` file with users list
-
-Possible options:
-
-- **`-cu`** / **`--create-user`** - allows the creation of new users
-- **`-cg`** / **`--create-group`** - allows the creation of new groups
-- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
-
-Results of the command execution are similar to the users import operation via GUI.
-
-For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
 
 ## SSH tunnel to the running compute instance
 
@@ -1161,7 +1465,7 @@ _Data restoring_ can be applied to previously archived files. Separate files or 
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
 
-## Image history
+## Image history and generating of Dockerfile
 
 **Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
 
@@ -1176,6 +1480,11 @@ It can be viewed via the specific tab in the tool version menu - **Image history
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_1.png)
 
 This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
+
+Besides that you can easily compose a Dockerfile based on the tool image history - using the corresponding button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_2.png)  
+Generated Dockerfile will be downloaded automatically to the local workstation:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_3.png)
 
 For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
 
@@ -1193,7 +1502,7 @@ Synchronization can be performed with or without synchronization of attributes (
 
 During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
 
-For details and examples see [here](../../installation/management/environments_sync.md).
+For details and examples see [here](../../operation/environments_sync/environments_sync.md).
 
 ## Data access audit
 
@@ -1253,6 +1562,29 @@ Userjourney looks like:
 
 For more details see [here](../../manual/12_Manage_Settings/12.15._System_jobs.md).
 
+## Completed runs archiving
+
+Currently, **Cloud Pipeline** does not allow users to remove runs.  
+But for large deployments, a huge runs count can affect queries performance.  
+To avoid such cases, in **`v0.17`**, a mechanism of the runs archiving was implemented.  
+This mechanism allows to place records of the completed runs and their statuses into special DB tables for archived runs.  
+
+Details:
+
+- archived runs are not available via the platform GUI
+- archiving can be configured for specific users and/or user groups
+- period in days after which runs will be archived is being configured individually for each user/group
+
+Behavior of the archiving monitor is defined by the following main preferences:
+
+- **`monitoring.archive.runs.enable`** - enables archiving mechanism for completed runs
+- **`monitoring.archive.runs.delay`** - manipulates the frequency of archiving operations. Operations of runs archiving are asynchronous and performed after each period of time specified via this preference
+- **`system.archive.run.metadata.key`** - defines the name of the metadata key that shall be specified for users/groups which runs shall be archived. Default value - `run_archive_days`
+
+Archiving monitor checks every **`monitoring.archive.runs.delay`** period of time whether there are any users/user groups with `run_archive_days` metadata key. If so, info about all completed runs of such users/users from such groups (if these runs were completed more than count of days specified as value of `run_archive_days`) is being placed to special DB tables for archived runs and is being removed from DB tables for general runs.
+
+For more details and usage example see [here](../../manual/11_Manage_Runs/11.5._Archive_runs.md).
+
 ## Cluster run usage
 
 Previously, user can view the state of the cluster run (master and its nested runs) via the **Run logs** page of the cluster master node. But this information was actual only at the specific time moment.  
@@ -1267,6 +1599,66 @@ The chart pop-up will be opened, e.g.:
 The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#cluster-run-usage).
+
+## Cluster run estimation price
+
+Previously, **Cloud Pipeline** allowed to view a price estimation for the single instance jobs.  
+But the clusters did not provide such information (summary). Users could see a price only for a master node.
+
+Now, **Cloud Pipeline** offers a cost estimation, when any compute instances are running:
+
+- **Standalone instance** - reports it's own cost:
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_1.png)
+    - Run's list:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_2.png)
+- **Static cluster** - reports the full cluster cost (summary for a master node and all workers), since it is started:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_3.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_4.png)
+- **Autoscaled cluster** - reports the costs, based on the workers lifetime (summary for a master node and all workers). As the workers may be created and terminated all the time - there costs are computed only for the _RUNNING_ state:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_5.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_6.png)
+
+## Terminal view
+
+From the current version, users have the ability to configure the view of the SSH terminal session:
+
+- _Dark_ (default)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_1.png)
+- _Light_  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_2.png)
+
+Required color schema can be configured in two ways:
+
+- **Persistent** - schema is being stored in the user profile and used any time SSH session is opened:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_3.png)
+- **Temporary** - schema is being used during a current SSH session only - toggling _Dark_ <-> _Light_ can be performed via the special control in the terminal frame:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_4.png)
+
+For details see [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#terminal-view).
+
+## Container limits for commit/launch tool operations
+
+Docker images can be extremely large.  
+Therefore in the current version, a mechanism to warn/reject users from using of too big images was implemented.
+
+There are new system preferences **`commit.container.size.limits`** and **`launch.tool.size.limits`** to manage that behavior:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ContainerSize_1.png)
+
+Both preferences have the same format and define "**soft**" and "**hard**" limits for a container size in bytes:
+
+- **`commit.container.size.limits`** defines limits of the docker container that are taken into account during the tool commit operation:  
+    - if container size exceeds "soft" limit - user will get warning, but can proceed the commit at their own risk
+    - if the container size exceeds "hard" limit - tool commit operation will be prohibited
+- **`launch.tool.size.limits`** defines limits of the docker container that are taken into account during the tool launch operation:  
+    - if container size exceeds "soft" limit - user will get warning, but can launch the tool at their own risk
+    - if the container size exceeds "hard" limit - tool launch will be prohibited
+
+For more details see sections in [Tool commit](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#container-size-limits) and [Tool launch](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#container-size-limits).
 
 ## AWS: seamless authentication
 

@@ -49,6 +49,11 @@ class StorageLifecycleServiceProperties:
         else:
             self.properties = {}
 
+    def get(self, key):
+        if self.properties and key in self.properties:
+            return self.properties[key]
+        return None
+
 
 class AWSRegionAttributes:
 

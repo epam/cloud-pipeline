@@ -131,7 +131,7 @@ public class ContextualNotificationRegistrationManagerTest {
     }
 
     private void mockUser(final long id, final String name) {
-        doReturn(UserCreatorUtils.getPipelineUser(name, id)).when(userManager).loadUserByNameOrId(name);
+        doReturn(UserCreatorUtils.getPipelineUser(name, id)).when(userManager).loadByNameOrId(name);
     }
 
     private void mockTemplate() {

@@ -63,6 +63,7 @@ public class NodeInstance extends AbstractSecuredEntity {
     private PipelineRun pipelineRun;
     private String region;
     private CloudProvider provider;
+    private MachineType machineType;
 
     public NodeInstance() {
         this.pods = new ArrayList<>();
@@ -105,6 +106,7 @@ public class NodeInstance extends AbstractSecuredEntity {
             this.setAllocatable(QuantitiesConverter.convertQuantityMap(status.getAllocatable()));
             this.setCapacity(QuantitiesConverter.convertQuantityMap(status.getCapacity()));
         }
+        this.machineType = MachineType.KUBE;
     }
 
 

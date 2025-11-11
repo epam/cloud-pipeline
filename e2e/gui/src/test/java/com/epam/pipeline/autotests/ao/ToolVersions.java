@@ -207,6 +207,12 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         return this;
     }
 
+    public static boolean hasOnPage(String customTag) {
+        return $(byClassName("ant-table-tbody"))
+                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .exists();
+    }
+
     public PipelineRunFormAO runVersion(final String version) {
         actions().click($(toolVersion(version)).find(byId(format("run-%s-button", version)))).perform();
         return new PipelineRunFormAO();
@@ -328,9 +334,10 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         scanComponent.find(byClassName("ant-table-row-expand-icon")).click();
         final ElementsCollection advisors = $$(".tool-scanning-info__vulnerability-row").filterBy(visible);
         advisors.forEach(a -> {
-            a.find("a").shouldHave(attribute("href")).shouldHave(text("CVE-"));
+            a.find("a").shouldHave(attribute("href"))
+                    .shouldHave(Condition.or("component", text("GHSA-"), text("PYSEC-")));
             a.shouldHave(Condition.or("severity",
-                    text(severity[0]), text(severity[1]), text(severity[2]), text(severity[3]), text(severity[4])));
+                    text(severity[0]), text(severity[1]), text(severity[2]), text(severity[3]), text(severity[4]), text("Unknown")));
         });
         return this;
     }

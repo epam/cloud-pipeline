@@ -297,7 +297,7 @@ public class SAMLUserDetailsServiceImplTest {
 
     private void mockUserDoesNotExistSituation() {
         when(mockUserManager.loadUserByName(anyString())).thenReturn(null);
-        when(mockUserManager.createUser(anyString(),
+        when(mockUserManager.create(anyString(),
                 anyListOf(Long.class), anyListOf(String.class),
                 anyMapOf(String.class, String.class), any()))
                 .thenReturn(user);

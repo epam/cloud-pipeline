@@ -118,8 +118,8 @@ export default function getMarkdownRenderer (options = {}) {
         );
       }
     };
-    const elementLinkRegex = /@\[([A-Za-z]+):([\d]+):([^W\]]+)\]/;
-    const userNameRegex = /@[^ ]+[^\W]/;
+    const elementLinkRegex = /@\[([A-Za-z]+):(\d+):([^\]]+)]/; // @[elementType:111:element Name with Spaces 123]
+    const userNameRegex = /@\S+/; // @user.name@with_or_without.domain
     o.inline.ruler.push('pipeline-rules', (state, check) => {
       if (!renderPipelineLinks()) {
         return false;

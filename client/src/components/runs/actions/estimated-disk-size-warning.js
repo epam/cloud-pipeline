@@ -33,8 +33,16 @@ const TB = 1024 * GB;
 
 const MAXIMUM = 16 * TB;
 
+function filterNonEmpty (element) {
+  return typeof element === 'string' && element.length > 0;
+}
+
 function filterUnique (element, index, array) {
   return array.indexOf(element) === index;
+}
+
+function filterObjectStorages (element) {
+  return typeof element === 'string' && /^(s3|az|gs|cp):\/\//i.test(element);
 }
 
 function getPaths (parameters) {
@@ -45,9 +53,11 @@ function getPaths (parameters) {
   return Object.values(parameters || {})
     .filter(v => types.indexOf(v.type) >= 0)
     .map(v => v.value)
-    .reduce((paths, value) => ([...paths, ...value.split(',')]), [])
+    .reduce((paths, value) => ([...paths, ...(value || '').split(',')]), [])
     .map(v => v.trim())
-    .filter(filterUnique);
+    .filter(filterNonEmpty)
+    .filter(filterUnique)
+    .filter(filterObjectStorages);
 }
 
 @inject((stores, {parameters, skipCheck}) => {

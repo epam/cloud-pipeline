@@ -1,0 +1,85 @@
+.run-logs-section {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.run-logs-section .run-logs-section-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.run-logs-section .run-logs-section-header .run-logs-section-actions {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.run-logs-section .run-logs-section-button {
+  line-height: 1;
+}
+
+.run-logs-section .run-logs-section-split-panel {
+  overflow: auto;
+  position: relative;
+  width: 100%;
+  flex: 1;
+}
+
+.run-task {
+  padding: 5px 0;
+}
+
+.run-task .run-task-title {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  line-height: 24px;
+}
+
+.run-task .run-task-title .run-task-name {
+  margin-left: 5px;
+}
+
+.run-task.active .run-task-title .run-task-name {
+  font-weight: bold;
+}
+
+.run-task .time-info {
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: smaller;
+}
+
+.run-task .time-info > span {
+  padding-left: 18px;
+}
+
+.run-tasks-list-container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  height: 100%;
+}
+
+.run-tasks-list-container .run-tasks-search {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.run-tasks-list-container .run-tasks-list {
+  flex: 1;
+  overflow: auto;
+}
+
+.logs {
+  height: 100%;
+  overflow: auto;
+}

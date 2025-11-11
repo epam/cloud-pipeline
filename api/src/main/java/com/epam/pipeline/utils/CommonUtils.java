@@ -21,6 +21,7 @@ import com.epam.pipeline.manager.cloud.CloudAwareService;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,9 +106,23 @@ public final class CommonUtils {
                 .collect(Collectors.toList());
     }
 
+    @SafeVarargs
+    public static <K, V> Map<K, V> toMap(final Pair<K, V>... pairs) {
+        if (Objects.isNull(pairs)) {
+            return Collections.emptyMap();
+        }
+        return Arrays.stream(pairs).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+    }
+
     public static <T> List<T> subtract(final List<T> left, final List<T> right) {
         final List<T> result = new ArrayList<>(left);
         result.removeAll(right);
+        return result;
+    }
+
+    public static <T> List<T> reversed(final List<T> items) {
+        final List<T> result = new ArrayList<>(items);
+        Collections.reverse(result);
         return result;
     }
 }

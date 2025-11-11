@@ -33,6 +33,7 @@ class ChartsData extends ChartData {
   @observable followCommonRange = true;
   @observable from;
   @observable to;
+  @observable runId;
   @observable cpuUsage;
   @observable memoryUsage;
   @observable lastMemoryUsage;
@@ -61,11 +62,14 @@ class ChartsData extends ChartData {
     }
   }
 
-  constructor (nodeName, from, to) {
+  constructor (nodeName, from, to, stores, runId) {
     const format = 'YYYY-MM-DD HH:mm:ss';
     const instanceFrom = from ? moment.utc(decodeURIComponent(from), format).unix() : undefined;
     const instanceTo = to ? moment.utc(decodeURIComponent(to), format).unix() : undefined;
-    super(nodeName, instanceFrom, instanceTo);
+    super(nodeName, instanceFrom, instanceTo, runId);
+    this.preferences = (stores || {}).preferences;
+    this.authenticatedUserInfo = (stores || {}).authenticatedUserInfo;
+    this.runId = runId;
     this.nodeName = nodeName;
     this.initialize()
       .then(this.loadData);
@@ -75,6 +79,35 @@ class ChartsData extends ChartData {
   initialize = async () => {
     this.node = new NodeInstance(this.nodeName);
     await this.node.fetchIfNeededOrWait();
+    if (this.preferences && this.authenticatedUserInfo) {
+      // For admins and advanced users, if the
+      // `ui.cluster.monitoring.admins.allow.range` is enabled,
+      // ranges restriction will be set to node life period instead of
+      // run life period (we're passing "from=...&to=..." query parameters
+      // when opening node monitor logs for specific run; in that case,
+      // we were restricting range selection to a run start-end by initializing
+      // chartsData.instanceFrom & .instanceTo properties)
+      await Promise.all([
+        this.preferences.fetchIfNeededOrWait(),
+        this.authenticatedUserInfo.fetchIfNeededOrWait()
+      ]);
+      let adminOrAdvancedUser = false;
+      if (this.authenticatedUserInfo.loaded && this.authenticatedUserInfo.value) {
+        const {
+          admin,
+          roles = []
+        } = this.authenticatedUserInfo.value;
+        adminOrAdvancedUser = admin || roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+      }
+      if (
+        this.preferences.uiClusterMonitoringAdminsAllowRange &&
+        adminOrAdvancedUser
+      ) {
+        this.instanceFrom = undefined;
+        this.instanceTo = undefined;
+        this.rangeEndIsFixed = false;
+      }
+    }
     if (this.node.loaded) {
       const {creationTimestamp, name} = this.node.value;
       this.nodeName = name;

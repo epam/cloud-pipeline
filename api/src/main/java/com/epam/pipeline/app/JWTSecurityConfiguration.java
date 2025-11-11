@@ -71,11 +71,14 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
-    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
-    private String impersonationOperationsRootUrl;
-
     @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
+
+    @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
+    private String[] swaggerAccessRoles;
+
+    @Value("${api.security.disable.logging:false}")
+    private boolean disableLogging;
 
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
@@ -112,8 +115,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
-                .antMatchers(getImpersonationStartUrl())
-                     .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
+                .antMatchers(getSwaggerResources())
+                .hasAnyAuthority(swaggerAccessRoles)
                 .antMatchers(getSecuredResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
@@ -135,7 +138,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected JwtFilterAuthenticationFilter getJwtAuthenticationFilter() {
-        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService);
+        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService, disableLogging);
     }
 
     protected RequestMatcher getFullRequestMatcher() {
@@ -149,22 +152,25 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected String[] getUnsecuredResources() {
         final List<String> excludePaths = Arrays.asList(
                 "/restapi/dockerRegistry/oauth",
+                "/restapi/proxy/**",
+                "/error",
+                "/error/**",
+                "/restapi/access/token",
+                "/restapi/access/code");
+        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+    }
+
+    protected String[] getSwaggerResources() {
+        final List<String> paths = Arrays.asList(
                 "/restapi/swagger-resources/**",
                 "/restapi/swagger-ui.html",
                 "/restapi/webjars/springfox-swagger-ui/**",
-                "/restapi/v2/api-docs/**",
-                "/restapi/proxy/**",
-                "/error",
-                "/error/**");
-        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+                "/restapi/v2/api-docs/**");
+        return paths.toArray(new String[0]);
     }
 
     public String[] getAnonymousResources() {
         return anonymousResources;
-    }
-
-    public String getImpersonationStartUrl() {
-        return impersonationOperationsRootUrl + "/start";
     }
 
     private RequestCache requestCache() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Privilege.*;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -94,6 +95,8 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .firstVersion()
                 .runPipeline()
                 .setCommand(sleepingCommand)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
         runsMenu()
                 .activeRuns()
@@ -115,6 +118,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
                 .setCommand(defaultCommand)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, Utils.nameWithoutGroup(tool));
         final String sshLink =
                 runsMenu()

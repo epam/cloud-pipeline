@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -39,12 +39,11 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.FOLDERS;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
@@ -64,6 +63,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -192,7 +192,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 )
                                 .click(SAVE)
                                 .ensureDisable(SAVE)
-                                .ensure(byText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
@@ -217,6 +217,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         try {
             loginAs(admin);
             setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
+            openEditUserTab(user.login)
+                    .addRoleOrGroupIfNonExist("ROLE_CONFIGURATION_MANAGER")
+                    .ok();
             logout();
             loginAs(user);
             library()
@@ -244,6 +247,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             logout();
             loginAs(admin);
             setMaskForUser(user.login, instanceTypesMask, "");
+            openEditUserTab(user.login)
+                    .deleteRoleOrGroupIfExist("ROLE_CONFIGURATION_MANAGER")
+                    .ok();
         }
     }
 
@@ -358,7 +364,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .sleep(2, SECONDS)
                                     .click(SAVE)
                                     .ensureDisable(SAVE)
-                                    .ensure(byText("Estimated price per hour:"), visible))
+                                    .ensure(ESTIMATED_PRICE, visible))
                     .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();

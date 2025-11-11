@@ -361,13 +361,37 @@ const refreshAuthenticationInfo = async ({props}) => {
   }
 };
 
+function wrapUserIs (role) {
+  return (user) => userHasRole(user, role);
+}
+
+const userIs = {
+  archiveReader: wrapUserIs('ROLE_STORAGE_ARCHIVE_READER'),
+  archiveManager: wrapUserIs('ROLE_STORAGE_ARCHIVE_MANAGER'),
+  storageAdmin: wrapUserIs('ROLE_STORAGE_ADMIN'),
+  dtsManager: wrapUserIs('ROLE_DTS_MANAGER'),
+  pipeline: wrapUserIs('ROLE_PIPELINE_MANAGER'),
+  versionedStorage: wrapUserIs('ROLE_VERSIONED_STORAGE_MANAGER'),
+  folder: wrapUserIs('ROLE_FOLDER_MANAGER'),
+  configuration: wrapUserIs('ROLE_CONFIGURATION_MANAGER'),
+  storage: wrapUserIs('ROLE_STORAGE_MANAGER'),
+  storageTag: wrapUserIs('ROLE_STORAGE_TAG_MANAGER'),
+  toolGroup: wrapUserIs('ROLE_TOOL_GROUP_MANAGER'),
+  entities: wrapUserIs('ROLE_ENTITIES_MANAGER'),
+  billing: wrapUserIs('ROLE_BILLING_MANAGER')
+};
+
 const manager = {
   archiveReader: management('ROLE_STORAGE_ARCHIVE_READER'),
   archiveManager: management('ROLE_STORAGE_ARCHIVE_MANAGER'),
+  dtsManager: management('ROLE_DTS_MANAGER'),
+  storageAdmin: management('ROLE_STORAGE_ADMIN'),
   pipeline: management('ROLE_PIPELINE_MANAGER'),
+  versionedStorage: management('ROLE_VERSIONED_STORAGE_MANAGER'),
   folder: management('ROLE_FOLDER_MANAGER'),
   configuration: management('ROLE_CONFIGURATION_MANAGER'),
   storage: management('ROLE_STORAGE_MANAGER'),
+  storageTag: management('ROLE_STORAGE_TAG_MANAGER'),
   toolGroup: management('ROLE_TOOL_GROUP_MANAGER'),
   entities: management('ROLE_ENTITIES_MANAGER'),
   billing: management('ROLE_BILLING_MANAGER')
@@ -376,10 +400,14 @@ const manager = {
 const isManager = {
   archiveReader: hasRole('ROLE_STORAGE_ARCHIVE_READER'),
   archiveManager: hasRole('ROLE_STORAGE_ARCHIVE_MANAGER'),
+  storageAdmin: hasRole('ROLE_STORAGE_ADMIN'),
+  dtsManager: hasRole('ROLE_DTS_MANAGER'),
   pipeline: hasRole('ROLE_PIPELINE_MANAGER'),
+  versionedStorage: hasRole('ROLE_VERSIONED_STORAGE_MANAGER'),
   folder: hasRole('ROLE_FOLDER_MANAGER'),
   configuration: hasRole('ROLE_CONFIGURATION_MANAGER'),
   storage: hasRole('ROLE_STORAGE_MANAGER'),
+  storageTag: hasRole('ROLE_STORAGE_TAG_MANAGER'),
   toolGroup: hasRole('ROLE_TOOL_GROUP_MANAGER'),
   entities: hasRole('ROLE_ENTITIES_MANAGER'),
   billing: hasRole('ROLE_BILLING_MANAGER')
@@ -397,6 +425,7 @@ export default {
   collapseMask,
   manager,
   isManager,
+  userIs,
   hasRole,
   userHasRole,
   authenticationInfo,

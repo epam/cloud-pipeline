@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,26 @@
  */
 
 import {action, computed, observable} from 'mobx';
+import HCSBaseState from './base-state';
+
+class DelayedSliceValue {
+  constructor (callback, property, delay = 50) {
+    this.delay = delay;
+    this.callback = callback;
+    this.property = property;
+    this.handle = undefined;
+  }
+
+  setValue (value) {
+    this.value = value;
+    if (this.handle === undefined) {
+      this.handle = setTimeout(() => {
+        this.callback({[this.property]: this.value});
+        this.handle = undefined;
+      }, this.delay);
+    }
+  }
+}
 
 function shallowCompareArrays (array1, array2) {
   if (array1 && array2 && array1.length === array2.length) {
@@ -84,9 +104,10 @@ class ChannelState {
   }
 }
 
-class ViewerState {
+class ViewerState extends HCSBaseState {
   @observable loader;
   @observable use3D = false;
+  @observable volumetricViewerAvailable = false;
   @observable useLens = false;
   @observable useColorMap = false;
   @observable colorMap = '';
@@ -94,11 +115,21 @@ class ViewerState {
   @observable lensChannel = 0;
   @observable pending = false;
   @observable isRGB = false;
-  @observable xSlice = [];
-  @observable ySlice = [];
-  @observable zSlice = [];
+  @observable xSlice = [0, 0];
+  @observable xSliceRange = [0, 0];
+  @observable ySlice = [0, 0];
+  @observable ySliceRange = [0, 0];
+  @observable zSlice = [0, 0];
+  @observable zSliceRange = [0, 0];
+  @observable xSliceEnabled = false;
+  @observable ySliceEnabled = false;
+  @observable zSliceEnabled = false;
   @observable selection = [];
   @observable dimensions = [];
+  @observable downsamplingModes = [];
+  @observable downsamplingMode = 0;
+  @observable renderingModes = [];
+  @observable renderingMode = 0;
   /**
    * Channels state
    * @type {ChannelState[]}
@@ -117,27 +148,10 @@ class ViewerState {
   }
 
   constructor (viewer) {
-    this.attachToViewer(viewer);
-  }
-
-  attachToViewer (viewer) {
-    this.detachFromViewer();
-    if (viewer) {
-      this.viewer = viewer;
-      this.viewer.addEventListener(
-        this.viewer.Events.viewerStateChanged,
-        this.onViewerStateChange
-      );
-    }
-  }
-
-  detachFromViewer () {
-    if (this.viewer) {
-      this.viewer.removeEventListener(
-        this.viewer.Events.viewerStateChanged,
-        this.onViewerStateChange
-      );
-    }
+    super(viewer, 'viewerStateChanged');
+    this.xSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'xSlice');
+    this.ySliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'ySlice');
+    this.zSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'zSlice');
   }
 
   addEventListener = (listener) => {
@@ -155,7 +169,7 @@ class ViewerState {
   };
 
   @action
-  onViewerStateChange = (viewer, newState) => {
+  onStateChanged (viewer, newState) {
     const {
       loader,
       identifiers = [],
@@ -174,12 +188,22 @@ class ViewerState {
       useColorMap = true,
       colorMap = '',
       xSlice = [],
+      xSliceRange = [],
       ySlice = [],
+      ySliceRange = [],
       zSlice = [],
+      zSliceRange = [],
+      xSliceEnabled = false,
+      ySliceEnabled = false,
+      zSliceEnabled = false,
       use3D = false,
       isRGB,
       pending = false,
-      metadata
+      metadata,
+      loader3DIndex: downsamplingMode,
+      loadersInfo = [],
+      renderingModeIdx: renderingMode,
+      renderingModes3D = []
     } = newState || {};
     this.pending = pending;
     this.loader = loader;
@@ -194,13 +218,28 @@ class ViewerState {
     this.colorMap = colorMap;
     this.isRGB = isRGB;
     this.xSlice = xSlice;
+    this.xSliceRange = xSliceRange;
     this.ySlice = ySlice;
+    this.ySliceRange = ySliceRange;
     this.zSlice = zSlice;
+    this.zSliceRange = zSliceRange;
+    this.xSliceEnabled = xSliceEnabled;
+    this.ySliceEnabled = ySliceEnabled;
+    this.zSliceEnabled = zSliceEnabled;
     this.selection = globalSelection;
     this.dimensions = globalDimensions;
     this.imageZPosition = globalSelection && globalSelection.z
       ? globalSelection.z
       : 0;
+    this.downsamplingMode = downsamplingMode;
+    this.downsamplingModes = loadersInfo.filter((dm) => dm.loadable).map((dm) => ({
+      id: dm.loaderIdx,
+      name: dm.loaderIdx === 0 ? 'No downsampling' : `Downsample ${dm.loaderIdx + 1}x`,
+      bytes: dm.bytesPerChannel
+    }));
+    this.renderingMode = renderingMode;
+    this.renderingModes = renderingModes3D;
+    this.volumetricViewerAvailable = this.downsamplingModes.length > 0 && this.renderingModes.length > 0;
     if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
       const e = /field ([\d]+)/i.exec(metadata.Name);
       if (e && e.length) {
@@ -250,7 +289,7 @@ class ViewerState {
       }
     }
     this.emitOnChange();
-  };
+  }
 
   @action
   changeChannelVisibility = (channel, visible) => {
@@ -335,6 +374,76 @@ class ViewerState {
     if (this.viewer && typeof this.viewer.setColorMap === 'function') {
       this.colorMap = colorMap;
       this.viewer.setColorMap(colorMap);
+    }
+  };
+
+  @action
+  set3D = (opts = {}) => {
+    if (this.use3D) {
+      const slice = (o) => [o[0], o[1]];
+      const payload = {
+        use3D: true,
+        loader3DIndex: this.downsamplingMode,
+        renderingModeIdx: this.renderingMode,
+        xSlice: this.xSlice.slice(),
+        ySlice: this.ySlice.slice(),
+        zSlice: this.zSlice.slice(),
+        ...opts
+      };
+      payload.xSlice = slice(payload.xSlice);
+      payload.ySlice = slice(payload.ySlice);
+      payload.zSlice = slice(payload.zSlice);
+      this.viewer.set3D(payload);
+    } else {
+      this.viewer.set3D(false);
+    }
+  }
+
+  @action
+  change3dMode = (enabled) => {
+    if (this.viewer) {
+      this.use3D = enabled;
+      this.viewer.set3D(enabled);
+    }
+  };
+
+  @action
+  changeDownsamplingMode = (mode) => {
+    if (this.viewer) {
+      this.downsamplingMode = mode;
+      this.set3D();
+    }
+  };
+
+  @action
+  changeRenderingMode = (mode) => {
+    if (this.viewer) {
+      this.renderingMode = mode;
+      this.set3D();
+    }
+  };
+
+  @action
+  changeXSlice = (slice) => {
+    if (this.viewer) {
+      this.xSlice = slice;
+      this.xSliceDelayed.setValue(slice);
+    }
+  };
+
+  @action
+  changeYSlice = (slice) => {
+    if (this.viewer) {
+      this.ySlice = slice;
+      this.ySliceDelayed.setValue(slice);
+    }
+  };
+
+  @action
+  changeZSlice = (slice) => {
+    if (this.viewer) {
+      this.zSlice = slice;
+      this.zSliceDelayed.setValue(slice);
     }
   };
 

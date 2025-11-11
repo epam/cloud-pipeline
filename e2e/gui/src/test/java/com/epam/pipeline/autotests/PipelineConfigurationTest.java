@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.profileWithName;
 import static com.epam.pipeline.autotests.utils.Conditions.collapsedTab;
@@ -56,12 +56,13 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.menu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
     private final String configurationFileName = "config.json";
     private final String defaultConfigurationName = "default";
-    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
     private final String defaultDisk = "15";
     private String configurationName = "test_conf";
     private final String pipeline795 = resourceName("epmcmbibpc-795");
@@ -156,7 +157,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .launch(this)
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
-            .click(taskWithName("InitializeNode"))
+            .clickTaskWithName("InitializeNode")
             .ensure(logMessage("- IsSpot: False"), visible);
     }
 
@@ -187,11 +188,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             })
             .sleep(5, SECONDS)
             .editConfiguration(defaultProfile, profile ->
-                profile.refresh().ensure(byValue(firstParameter), visible)
+                profile.refresh().ensure(byText(firstParameter), exist)
                        .ensure(byValue(firstParameterValue), visible)
             )
             .editConfiguration(anotherProfile, profile ->
-                profile.refresh().ensure(byValue(secondParameter), visible)
+                profile.refresh().ensure(byText(secondParameter), exist)
                        .ensure(byValue(secondParameterValue), visible)
             );
     }
@@ -213,7 +214,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(profileWithName(defaultConfigurationName), visible)
                 .editConfiguration(defaultConfigurationName, profile ->
                         profile.ensure(SAVE, visible)
-                               .ensure(ESTIMATE_PRICE, visible)
+                               .ensure(ESTIMATED_PRICE, visible)
                                .ensure(INSTANCE, expandedTab)
                                .ensure(EXEC_ENVIRONMENT, collapsedTab)
                                .ensure(PARAMETERS, expandedTab)
@@ -244,13 +245,14 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(profileWithName(configurationName), exist, visible)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
-                .shouldContainInCode(String.format("\"name\" : \"%s\"", configurationName))
+                .shouldContainInCode(format("\"name\" : \"%s\"", configurationName))
                 .close();
     }
 
     @Test(priority = 3, dependsOnMethods = "validationOfAddingNewConfigurationFeature")
     @TestCase("EPMCMBIBPC-797")
     public void validationOfEditNewConfiguration() {
+        String updatemessage = format("Updating '%s' configuration", configurationName);
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
                 .editConfiguration(configurationName, profile ->
@@ -263,9 +265,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .sleep(2, SECONDS)
                                .click(SAVE)
                 )
-                .messageShouldAppear(String.format("Updating '%s' configuration", configurationName))
+                .messageShouldAppear(updatemessage)
+                .ensure(withText(updatemessage), not(visible))
                 // Because the page refreshes
                 .sleep(5, SECONDS)
+                .ensureDisable(SAVE)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
                 .shouldContainInCode("\"name\" : \"conf\"")
@@ -347,13 +351,13 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @Test(priority = 8, dependsOnMethods = "validationOfSettingAsDefaultBehavior")
     @TestCase("EPMCMBIBPC-805")
     public void validationOfConfigurationRemoving() {
-        final String expectedTitle = String.format(
+        final String expectedTitle = format(
                 "Are you sure you want to remove configuration '%s'?", configurationName
         );
-        final String deletionWasCancelled = String.format(
+        final String deletionWasCancelled = format(
                 "Configuration with name %s supposed exists as deletion was cancelled.", configurationName
         );
-        final String deletionWasConfirmed = String.format(
+        final String deletionWasConfirmed = format(
                 "Configuration with name %s supposed to be deleted.", configurationName
         );
         onPipelinePage()

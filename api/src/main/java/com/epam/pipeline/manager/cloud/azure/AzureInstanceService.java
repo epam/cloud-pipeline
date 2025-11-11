@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
+import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -23,6 +25,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -55,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -102,7 +106,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     public RunInstance scaleUpNode(final AzureRegion region,
                                    final Long runId,
                                    final RunInstance instance,
-                                   final Map<String, String> runtimeParameters) {
+                                   final Map<String, String> runtimeParameters,
+                                   final Map<String, String> tags) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap(),
                 runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptAzureEnvVars(region));
@@ -136,17 +141,19 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
+    public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId,
+                                final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProvider().name());
+                nodeReassignScript, oldId, newId, getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptAzureEnvVars(region));
     }
 
     @Override
-    public boolean reassignPoolNode(final AzureRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final AzureRegion region, final String nodeLabel, final Long newId,
+                                    final Map<String, String> tags) {
         final String command = commandService.
-            buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+            buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
                                                      String.valueOf(newId), buildScriptAzureEnvVars(region));
     }
@@ -233,7 +240,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         vmService.createAndAttachVolume(String.valueOf(runId), request.getSize(), region);
     }
 
@@ -278,6 +286,26 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public InstanceImage getInstanceImageDescription(final AzureRegion region, final String imageName) {
         return InstanceImage.EMPTY;
+    }
+
+    @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+    }
+
+    @Override
+    public void deleteInstanceTags(final AzureRegion region, final String runId, final Set<String> tagNames) {
+
+    }
+
+    @Override
+    public List<NodeInstance> getCloudNodes(final AzureRegion region, final FilterNodesVO filter) {
+        throw new UnsupportedOperationException("Loading instances doesn't work with Azure provider yet.");
+    }
+
+    @Override
+    public Optional<NodeInstance> findCloudNode(final AzureRegion region, final String instanceId) {
+        // not supported yet
+        return Optional.empty();
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {

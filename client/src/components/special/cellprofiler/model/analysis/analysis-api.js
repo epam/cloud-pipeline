@@ -113,7 +113,15 @@ class AnalysisApi extends EndpointAPI {
   generateVideo = (options) => this.apiCall({
     uri: 'hcs/clip',
     query: options
-  })
+  });
+
+  generateScreenshot = (options, pollingIntervalSeconds, abortSignal) => this.pollingApiCall({
+    uri: '/hcs/images',
+    pollingURI: 'hcs/images/statuses',
+    pollingIntervalSeconds,
+    query: options,
+    abortSignal
+  });
 }
 
 export default AnalysisApi;

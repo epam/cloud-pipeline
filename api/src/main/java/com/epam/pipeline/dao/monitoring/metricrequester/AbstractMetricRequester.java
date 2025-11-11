@@ -19,11 +19,13 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -38,6 +40,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.max.MaxAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -49,12 +52,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,6 +79,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String WORKING_SET = "working_set";
     protected static final String CPU_CAPACITY = "cpu_capacity";
     protected static final String CPU_UTILIZATION = "cpu_utilization";
+    protected static final String GPU_UTILIZATION = "gpu_utilization";
     protected static final String MEMORY_UTILIZATION = "memory_utilization";
     protected static final String MEMORY_CAPACITY = "memory_capacity";
     protected static final String LIMIT = "limit";
@@ -96,11 +95,13 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String TX_RATE = "tx_rate";
 
     protected static final String NODE = "node";
+    protected static final String POD = "pod";
     protected static final String RESOURCE_ID = "resource_id";
     protected static final String POD_CONTAINER = "pod_container";
 
     protected static final String AVG_AGGREGATION = "avg_";
     protected static final String MAX_AGGREGATION = "max_";
+    protected static final String MIN_AGGREGATION = "min_";
     protected static final String DIVISION_AGGREGATION = "division_";
     protected static final String AGGREGATION_POD_NAME = "pod_name";
     protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
@@ -112,15 +113,23 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String SWAP_FILESYSTEM = "tmpfs";
 
     private final HeapsterElasticRestHighLevelClient client;
+    private final String indexNamePattern;
 
     AbstractMetricRequester(final HeapsterElasticRestHighLevelClient client) {
         this.client = client;
+        this.indexNamePattern = INDEX_NAME_PATTERN;
+    }
+
+    AbstractMetricRequester(final HeapsterElasticRestHighLevelClient client,
+                            final String indexNamePattern) {
+        this.client = client;
+        this.indexNamePattern = indexNamePattern;
     }
 
     protected abstract ELKUsageMetric metric();
 
     protected abstract SearchRequest buildStatsRequest(String nodeName, LocalDateTime from, LocalDateTime to,
-                                                       Duration interval);
+                                                       Duration interval, String podName);
 
     protected abstract List<MonitoringStats> parseStatsResponse(SearchResponse response);
 
@@ -133,6 +142,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new MemoryRequester(client);
             case FS:
                 return new FSRequester(client);
+            case NETWORK:
+                return new NetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
@@ -151,6 +162,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new PodFSRequester(client);
             case NETWORK:
                 return new NetworkRequester(client);
+            case POD_CPU:
+                return new PodCPURequester(client);
+            case POD_MEM:
+                return new PodMemoryRequester(client);
+            case POD_NETWORK:
+                return new PodNetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
@@ -197,13 +214,13 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .indicesOptions(INDICES_OPTIONS);
     }
 
-    private static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+    private String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
         final LocalDate fromDate = from.toLocalDate();
         final LocalDate toDate = to.toLocalDate();
         return Stream.iterate(fromDate, date -> date.plusDays(1))
                 .limit(Period.between(fromDate, toDate).getDays() + 1)
                 .map(date -> date.format(DATE_FORMATTER))
-                .map(str -> String.format(INDEX_NAME_PATTERN, str))
+                .map(str -> String.format(indexNamePattern, str))
                 .toArray(String[]::new);
     }
 
@@ -223,21 +240,26 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     @Override
     public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
-        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval);
+                                              final Duration interval, final String podName) {
+        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval, podName);
         return parseStatsResponse(executeRequest(request));
     }
 
     protected SearchSourceBuilder statsQuery(final String nodeName, final String type,
-                                             final LocalDateTime from, final LocalDateTime to) {
+                                             final LocalDateTime from, final LocalDateTime to,
+                                             final String podName) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
+                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
+                .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli()));
+        if (StringUtils.isNotBlank(podName)) {
+            queryBuilder.filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podName));
+        }
         return new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())));
+                .query(queryBuilder);
     }
 
     protected DateHistogramAggregationBuilder dateHistogram(final String name, final Duration interval) {
@@ -248,12 +270,16 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     protected AvgAggregationBuilder average(final String name, final String field) {
-        return AggregationBuilders.avg(name)
+        return AggregationBuilders.avg(AVG_AGGREGATION + name)
                 .field(field(field));
     }
 
     protected MaxAggregationBuilder max(final String name, final String field) {
-        return AggregationBuilders.max(name).field(field(field));
+        return AggregationBuilders.max(MAX_AGGREGATION + name).field(field(field));
+    }
+
+    protected MinAggregationBuilder min(final String name, final String field) {
+        return AggregationBuilders.min(MIN_AGGREGATION + name).field(field(field));
     }
 
     protected PipelineAggregationBuilder division(final String name, final String divider, final String divisor) {
@@ -283,5 +309,9 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
             throw new PipelineException(e);
         }
         return terms;
+    }
+
+    protected Double getDoubleValue(final List<Aggregation> aggregations, final String metricName) {
+        return doubleValue(aggregations, metricName).orElse(null);
     }
 }

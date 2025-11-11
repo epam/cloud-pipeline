@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ cd ..
                     -x fs-browser:build \
                     -x cloud-pipeline-webdav-client:buildLinux \
                     -x cloud-pipeline-webdav-client:buildWin \
+                    -x cloud-pipeline-webdav-client:buildCli \
                     -Pfast \
                     --no-daemon
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2021-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.manager.cluster.costs;
 
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,9 +64,10 @@ public class ClusterCostsMonitoringServiceCoreTest {
 
     @Test
     public void shouldUpdateClusterPrices() {
-        final PipelineRun master1 = masterRun(MASTER_ID_1, 2);
-        final PipelineRun master2 = masterRun(MASTER_ID_2, 1);
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(master1, master2));
+        final PipelineRun master1 = masterRun(MASTER_ID_1, 2, 3);
+        final PipelineRun master2 = masterRun(MASTER_ID_2, 1, 1);
+        when(pipelineRunManager.searchPipelineRuns(any(), anyBoolean(), anyBoolean()))
+                .thenReturn(new PagedResult<>(Arrays.asList(master1, master2), 2));
 
         final PipelineRun worker11 = workerRun(WORKER_ID_11, MASTER_ID_1, PRICE_1); // no start times
         final PipelineRun worker12 = workerRun(WORKER_ID_12, MASTER_ID_1, PRICE_1); // no instance start time
@@ -100,10 +103,11 @@ public class ClusterCostsMonitoringServiceCoreTest {
         assertThat(actualMaster2.getWorkersPrice().doubleValue(), is(EXPECTED_PRICE_2));
     }
 
-    private PipelineRun masterRun(final Long id, final int nodeCount) {
+    private PipelineRun masterRun(final Long id, final int nodeCount, final int childRunsCount) {
         final PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setId(id);
         pipelineRun.setNodeCount(nodeCount);
+        pipelineRun.setChildRunsCount(childRunsCount);
         return pipelineRun;
     }
 

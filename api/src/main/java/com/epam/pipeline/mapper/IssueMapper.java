@@ -16,12 +16,17 @@
 
 package com.epam.pipeline.mapper;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.IssueCommentVO;
 import com.epam.pipeline.controller.vo.IssueVO;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.MapUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.util.Map;
 
 @Mapper(componentModel = "spring")
 public interface IssueMapper {
@@ -39,4 +44,12 @@ public interface IssueMapper {
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "updatedDate", ignore = true)
     IssueComment toIssueComment(IssueCommentVO issueCommentVO);
+
+    static Map<String, Object> map(final Issue issue, final JsonMapper mapper) {
+        return MapUtils.emptyIfNull(mapper.convertValue(issue, new TypeReference<Map<String, Object>>() {}));
+    }
+
+    static Map<String, Object> map(final IssueComment comment, final JsonMapper mapper) {
+        return MapUtils.emptyIfNull(mapper.convertValue(comment, new TypeReference<Map<String, Object>>() {}));
+    }
 }

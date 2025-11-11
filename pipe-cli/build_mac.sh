@@ -57,7 +57,6 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath /tmp/mount/dist \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
@@ -80,6 +79,34 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
         --name ntlmaps
 
 chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
+
+###
+# Build pipe-omics
+###
+export PATH=$PATH:~/mamba/bin
+export MAMBA_ROOT_PREFIX=~/mamba
+eval "$(micromamba shell hook --shell bash)"
+micromamba activate py3
+python3 -m pip install pyinstaller==6.5.0
+python3 -m pip install -r ${PIPE_OMICS_SOURCES_DIR}/requirements.txt
+cd $PIPE_OMICS_SOURCES_DIR && \
+pyinstaller \
+  --paths "${PIPE_OMICS_SOURCES_DIR}" \
+  --hidden-import=itertools \
+  --hidden-import=collections \
+  --hidden-import=base64 \
+  --hidden-import=math \
+  --hidden-import=reprlib \
+  --hidden-import=functools \
+  --hidden-import=re \
+  --hidden-import=subprocess \
+  -y \
+  --clean \
+  --distpath /tmp/pipe-omics/dist \
+  ${PIPE_OMICS_SOURCES_DIR}/pipe-omics.py
+
+chmod +x /tmp/pipe-omics/dist/pipe-omics/pipe-omics
+micromamba deactivate
 
 ###
 # Build pipe
@@ -124,10 +151,10 @@ function build_pipe {
                                     --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
                                     -y \
                                     --clean \
-                                    --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                     --distpath $distpath \
                                     --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
+                                    --add-data /tmp/pipe-omics/dist/pipe-omics:pipe-omics \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py $onefile
 }
 build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file --onefile

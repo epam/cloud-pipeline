@@ -61,37 +61,18 @@ function checkPermission (parameter, storageList, permissionChecker, permissionN
   return errors;
 }
 
-function getPaths (formParameters, defaultParameters, types) {
-  const result = [];
-  if (
-    formParameters &&
-    formParameters.hasOwnProperty('params') &&
-    formParameters.hasOwnProperty('keys')
-  ) {
-    result.push(
-      ...(
-        Object.values(formParameters.params)
-          .filter(p => formParameters.keys.indexOf(p.key) >= 0 && types.indexOf(p.type) >= 0)
-      )
-    );
-  } else if (defaultParameters) {
-    result.push(
-      ...(
-        Object.entries(defaultParameters)
-          .map(([name, param]) => ({name, ...param}))
-          .filter(p => types.indexOf(p.type) >= 0)
-      )
-    );
-  }
-  return result;
+function getPaths (parameters, types) {
+  return Object.entries(parameters || {})
+    .map(([name, param]) => ({name, ...param}))
+    .filter(p => types.indexOf(p.type) >= 0)
 }
 
-export function getInputPaths (formParameters, defaultParameters) {
-  return getPaths(formParameters, defaultParameters, ['input', 'common']);
+export function getInputPaths (parameters) {
+  return getPaths(parameters, ['input', 'common']);
 }
 
-export function getOutputPaths (formParameters, defaultParameters) {
-  return getPaths(formParameters, defaultParameters, ['output']);
+export function getOutputPaths (parameters) {
+  return getPaths(parameters, ['output']);
 }
 
 function parameterChanged (oldParameter, newParameter) {
@@ -332,7 +313,9 @@ class SubmitButton extends React.Component {
     htmlType: PropTypes.string,
     size: PropTypes.string,
     style: PropTypes.object,
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    disabled: PropTypes.bool,
+    loading: PropTypes.bool
   };
 
   state = {
@@ -394,7 +377,8 @@ class SubmitButton extends React.Component {
           htmlType={htmlType}
           onClick={onClick}
           style={style}
-          disabled={pending || errors.length > 0}
+          disabled={this.props.disabled || pending || errors.length > 0}
+          loading={this.props.loading}
         >
           {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
           {children}
@@ -402,7 +386,7 @@ class SubmitButton extends React.Component {
         <Dropdown
           overlay={dropdownRenderer()}
           placement="bottomRight"
-          disabled={pending || errors.length > 0}
+          disabled={this.props.disabled || pending || errors.length > 0}
         >
           <Button
             id={dropdownId || null}
@@ -411,6 +395,7 @@ class SubmitButton extends React.Component {
               e.stopPropagation();
             }}
             type="primary"
+            loading={this.props.loading}
           >
             <Icon
               type="down"
@@ -427,9 +412,10 @@ class SubmitButton extends React.Component {
         type={type}
         htmlType={htmlType}
         style={style}
-        disabled={pending || errors.length > 0}
+        disabled={this.props.disabled || pending || errors.length > 0}
         onClick={onClick}
         size={size}
+        loading={this.props.loading}
       >
         {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
         {children}

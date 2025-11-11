@@ -20,7 +20,7 @@
   overflow-x: hidden;
   display: flex;
   justify-content: stretch;
-} 
+}
 
 .rule-row {
   width: 100%;
@@ -38,6 +38,7 @@
 
 .scheduling-with-timezone {
   padding: 5px 5px 0;
+  width: 100%;
 }
 
 .timezone {
@@ -45,4 +46,5 @@
   color: rgba(0, 0, 0, 0.5);
   text-align: right;
   font-size: 11px;
+  width: 100%;
 }

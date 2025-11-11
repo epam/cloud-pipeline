@@ -20,6 +20,8 @@
  * @property {string} path
  */
 
+import React from 'react';
+import {message} from 'antd';
 import GenerateDownloadUrls from '../../models/dataStorage/GenerateDownloadUrls';
 import auditStorageAccessManager from '../../utils/audit-storage-access';
 
@@ -47,7 +49,7 @@ async function downloadSingleStorageItems (items = []) {
  * @param {StorageItem[]} items
  * @returns {Promise<void>}
  */
-export default async function downloadStorageItems (items) {
+async function downloadStorageItems (items) {
   const storageIds = [...new Set(items.map(item => Number(item.storageId)))]
     .filter((id) => !Number.isNaN(id));
   const results = await Promise.all(
@@ -62,4 +64,33 @@ export default async function downloadStorageItems (items) {
     path: item.downloadOverride || item.path,
     reportStorageType: 'S3'
   })));
+}
+
+export default async function handleDownloadItems (preferences, items = []) {
+  const hide = message.loading('Downloading...', 0);
+  try {
+    if (preferences) {
+      await preferences.fetchIfNeededOrWait();
+    }
+    const {maximum} = preferences
+      ? preferences.facetedFilterDownload
+      : undefined;
+    if (maximum && maximum < items.length) {
+      message.info(
+        (
+          <span>
+            {/* eslint-disable-next-line max-len */}
+            It is allowed to download up to <b>{maximum}</b> file{maximum === 1 ? '' : 's'} at a time.
+          </span>
+        ),
+        5
+      );
+    } else {
+      await downloadStorageItems(items);
+    }
+  } catch (error) {
+    message.error(error.message, 5);
+  } finally {
+    hide();
+  }
 }

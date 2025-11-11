@@ -131,7 +131,7 @@ public class DtsRuleExpanderService {
             .map(suffix -> String.join(SYNC_DEST_DELIMITER, syncDestinationRoot, suffix))
             .orElse(syncDestinationRoot);
         return new AutonomousSyncRule(syncSource, syncDestination, null, deleteSource,
-                null, syncRule.getCheckSyncToken(), syncRule);
+                null, syncRule.getCheckSyncToken(), syncRule.getCheckIllumina(), syncRule);
     }
 
     private List<String> searchForGivenTrigger(final String dirPath, final TransferTrigger transferTrigger) {

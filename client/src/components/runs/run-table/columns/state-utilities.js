@@ -99,6 +99,142 @@ export function onFilterGenerator (
   };
 }
 
+/**
+ * @typedef {Object} MultipleParametersResult
+ * @property {boolean} visible
+ * @property {Object} values
+ * @property {boolean} filtered
+ * @property {(function(...[*[]]): Promise<void>)} onFilter
+ * @property {(function(...[*[]]): void)} onChange
+ * @property {(function(visible: boolean): void)} onDropdownVisibilityChanged
+ */
+
+/**
+ * Creates callbacks / state for multiple parameters, i.e.:
+ *  - visible: true if there is at least one parameter that has visible filter control
+ *  - filtered: true if there is at least one parameter with specified value
+ *  - onChange: callback for multiple parameter
+ *      values - onChange(parameter1value, parameter2value, ...)
+ *  - etc.
+ * @param state
+ * @param setState
+ * @param {string} parameter
+ * @returns {MultipleParametersResult}
+ */
+export function multipleParametersFilterState (state, setState, ...parameter) {
+  const {
+    filtersState: currentFiltersState = {}
+  } = state || {};
+  const filtersState = {...currentFiltersState};
+  let visible = false;
+  let filtered = false;
+  const parametersValues = {};
+  parameter.forEach((parameterName) => {
+    const {
+      [parameterName]: parameterState = {}
+    } = filtersState;
+    const {
+      visible: parameterVisible = false,
+      value: parameterValue
+    } = parameterState;
+    visible = visible || parameterVisible;
+    parametersValues[parameterName] = parameterValue;
+    filtered = filtered || !filterValueIsEmpty(parameterValue);
+  });
+  /**
+   * @param {*[]} newValue
+   */
+  function onChange (...newValue) {
+    const {
+      filtersState: currentFiltersState = {}
+    } = state || {};
+    const filtersState = {...currentFiltersState};
+    const getState = () => {
+      const newFiltersState = {
+        ...filtersState
+      };
+      parameter.forEach((parameterName, idx) => {
+        const parameterState = filtersState[parameterName] || {};
+        newFiltersState[parameterName] = {
+          ...parameterState,
+          value: filterValueIsEmpty(newValue[idx]) ? undefined : newValue[idx]
+        };
+      });
+      return {
+        filtersState: newFiltersState
+      };
+    };
+    setState(getState());
+  }
+
+  /**
+   * @param {*[]} newValue
+   * @returns {Promise<unknown>}
+   */
+  function onFilter (...newValue) {
+    return new Promise((resolve) => {
+      const {
+        filters: currentFilters = {},
+        filtersState: currentFiltersState = {}
+      } = state || {};
+      const filters = {...currentFilters};
+      const filtersState = {...currentFiltersState};
+      parameter.forEach((parameterName, idx) => {
+        const parameterValue = newValue[idx];
+        if (filterValueIsEmpty(parameterValue)) {
+          delete filters[parameterName];
+        } else {
+          filters[parameterName] = parameterValue;
+        }
+        filtersState[parameterName] = {
+          search: undefined,
+          value: filters[parameterName],
+          visible: false
+        };
+      });
+      setState({filters, filtersState}, resolve);
+    });
+  }
+  function onDropdownVisibilityChanged (visible) {
+    const {
+      filters = {},
+      filtersState: currentFiltersState = {}
+    } = state || {};
+    const filtersState = {...currentFiltersState};
+    const updateDropdownVisibilityCallback = (...value) => {
+      parameter.forEach((parameterName, idx) => {
+        filtersState[parameterName] = {
+          search: undefined,
+          value: value[idx],
+          visible
+        };
+      });
+      setState({filtersState});
+    };
+    if (!visible) {
+      const value = parameter.map((parameterName, idx) => {
+        const {
+          [parameterName]: parameterState = {}
+        } = filtersState;
+        return parameterState.value;
+      });
+      onFilter(...value).then(() => updateDropdownVisibilityCallback(...value));
+    } else {
+      const value = parameter
+        .map((parameterName, idx) => filters[parameterName]);
+      updateDropdownVisibilityCallback(...value);
+    }
+  }
+  return {
+    onChange,
+    onFilter,
+    visible,
+    filtered,
+    values: parametersValues,
+    onDropdownVisibilityChanged
+  };
+}
+
 export function onFilterDropdownVisibilityChangedGenerator (
   parameter,
   state,

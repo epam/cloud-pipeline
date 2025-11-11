@@ -29,15 +29,18 @@ public class ClusterCommandService {
     private final String kubeToken;
     private final String kubeCertHash;
     private final String kubeNodeToken;
+    private final String kubeClusterName;
 
     public ClusterCommandService(@Value("${kube.master.ip}") final String kubeMasterIP,
                                  @Value("${kube.kubeadm.token}") final String kubeToken,
                                  @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
-                                 @Value("${kube.node.token}") final String kubeNodeToken) {
+                                 @Value("${kube.node.token}") final String kubeNodeToken,
+                                 @Value("${kube.cluster.name}") final String kubeClusterName) {
         this.kubeMasterIP = kubeMasterIP;
         this.kubeToken = kubeToken;
         this.kubeCertHash = kubeCertHash;
         this.kubeNodeToken = kubeNodeToken;
+        this.kubeClusterName = kubeClusterName;
     }
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommand(final String nodeUpScript,
@@ -58,6 +61,7 @@ public class ClusterCommandService {
                 .kubeToken(kubeToken)
                 .kubeCertHash(kubeCertHash)
                 .kubeNodeToken(kubeNodeToken)
+                .kubeClusterName(kubeClusterName)
                 .cloud(cloud)
                 .runtimeParameters(runtimeParameters)
                 .prePulledImages(instance.getPrePulledDockerImages())
@@ -85,20 +89,23 @@ public class ClusterCommandService {
     public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final Long oldId,
                                            final Long newId,
-                                           final String cloud) {
-        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud);
+                                           final String cloud,
+                                           final Map<String, String> tags) {
+        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud, tags);
     }
 
     public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final String oldId,
                                            final String newId,
-                                           final String cloud) {
+                                           final String cloud,
+                                           final Map<String, String> tags) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeReassignScript)
                 .oldRunId(oldId)
                 .newRunId(newId)
                 .cloud(cloud)
+                .tags(tags)
                 .build()
                 .getCommand();
     }

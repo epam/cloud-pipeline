@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,76 @@
  */
 
 import React, {Component} from 'react';
-import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
+import {Alert, Menu, Row, Button, Modal, message, Popover} from 'antd';
 import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
-import clusterNodes from '../../models/cluster/ClusterNodes';
+import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
 import {getRoles, nodeRoles, PIPELINE_INFO_LABEL, testRole} from './node-roles';
 import roleModel from '../../utils/roleModel';
+import {checkTerminateNodeErrors} from './constants';
+import PipelineRunInfo from '../../models/pipelines/PipelineRunInfo';
 
+@inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
-  const {from, to} = location?.query;
+  const {type, runId, from, to} = location?.query;
   return {
     pools,
     name: params.nodeName,
-    node: clusterNodes.getNode(params.nodeName),
-    chartsData: new ChartsData(params.nodeName, from, to)
+    node: clusterNodes.getNode(params.nodeName, type),
+    machineType: type,
+    stores,
+    runId,
+    from,
+    to
   };
 })
 @observer
 class ClusterNode extends Component {
+  state = {
+    labelsToShow: undefined
+  };
+
+  @observable _chartsData;
+
+  resizeListener;
+  labelRefs = [];
+
+  componentDidMount () {
+    this.resizeListener = window.addEventListener('resize', this.onResize);
+    this.onResize();
+    this.initializeChartsData();
+  }
+
+  componentDidUpdate (prevProps) {
+    this.onResize();
+    if (
+      this.props.from !== prevProps.from ||
+      this.props.to !== prevProps.to ||
+      this.props.runId !== prevProps.runId ||
+      this.props.name !== prevProps.name
+    ) {
+      this.initializeChartsData();
+    }
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('resize', this.onResize);
+  }
+
+  @computed
+  get chartsData () {
+    return this._chartsData;
+  }
+
   @computed
   get windowsOS () {
     const {node} = this.props;
@@ -58,12 +101,49 @@ class ClusterNode extends Component {
     return false;
   }
 
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
+  };
+
+  get isCloudNode () {
+    return this.props.machineType === MACHINE_TYPES.cloud;
+  }
+
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const {preferences} = this.props;
+    if (preferences) {
+      return preferences.uiStandaloneNodesAllowTerminate;
+    }
+    return true;
+  }
+
+  initializeChartsData = async () => {
+    const {location, name, stores} = this.props;
+    const {from: queryFrom, to: queryTo, runId} = location.query;
+    let from = queryFrom;
+    let to = queryTo;
+    if (runId) {
+      const request = new PipelineRunInfo(runId);
+      await request.fetch();
+      const run = request.value;
+      if (run) {
+        from = run.startDate;
+        to = run.endDate;
+      }
+    }
+    this._chartsData = new ChartsData(name, from, to, stores, runId);
+  }
+
   refreshNodeInstance = () => {
     if (!this.props.node.pending) {
       this.props.node.fetch();
     }
-    if (!this.props.chartsData.pending) {
-      this.props.chartsData.fetch();
+    if (this.chartsData && !this.chartsData.pending) {
+      this.chartsData.fetch();
     }
     if (!this.props.pools.pending) {
       this.props.pools.fetch();
@@ -90,12 +170,20 @@ class ClusterNode extends Component {
   };
 
   renderMenu = () => {
-    if (this.props.node.pending || this.props.node.error) {
+    if (this.isCloudNode || this.props.node.pending || this.props.node.error) {
       return null;
     }
     let activeTab = this.props.router.location.pathname.split('/').slice(-1)[0];
     if (activeTab === 'monitor' && this.windowsOS) {
       activeTab = 'info';
+    }
+    const isRunId = Boolean(this.props.runId) && !this.windowsOS;
+    if (isRunId) {
+      return (
+        <div>
+          {'\u00A0'}
+        </div>
+      );
     }
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
@@ -132,7 +220,7 @@ class ClusterNode extends Component {
 
   renderNodeLabels = () => {
     if (this.props.node.error) {
-      return null;
+      return [];
     }
     const labels = Object.assign({}, this.props.node.value ? this.props.node.value.labels : {});
 
@@ -146,7 +234,6 @@ class ClusterNode extends Component {
         labels[PIPELINE_INFO_LABEL] = `${parts[parts.length - 1]}`;
       }
     }
-
     return generateNodeLabels(
       labels,
       {
@@ -157,7 +244,8 @@ class ClusterNode extends Component {
         },
         location: this.props.router.location,
         pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null,
-        pools: this.props.pools.loaded ? (this.props.pools.value || []) : []
+        pools: this.props.pools.loaded ? (this.props.pools.value || []) : [],
+        sortFn: (a, b) => (a.info || {}).role - (b.info || {}).role
       });
   };
 
@@ -166,7 +254,7 @@ class ClusterNode extends Component {
     const request = new TerminateNodeRequest(this.props.name);
     await request.fetch();
     hide();
-    if (request.error) {
+    if (request.error && checkTerminateNodeErrors) {
       message.error(request.error, 5);
     } else {
       this.props.router.push('/cluster');
@@ -194,7 +282,25 @@ class ClusterNode extends Component {
     return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
   };
 
+  onResize = () => {
+    const containerWidth = this.containerRef?.offsetWidth - 60;
+    const {show} = (this.labelRefs || []).reduce((acc, label) => {
+      if (label) {
+        const nextWidth = label.offsetLeft + label.getBoundingClientRect().width;
+        if (nextWidth < containerWidth) {
+          acc.show += 1;
+          acc.totalWidth = nextWidth;
+        }
+      }
+      return acc;
+    }, {show: 0, totalWidth: 0});
+    if (this.state.labelsToShow !== show) {
+      this.setState({labelsToShow: show});
+    }
+  };
+
   render () {
+    const {labelsToShow} = this.state;
     const result = [
       this.renderError(),
       this.renderMenu(),
@@ -203,19 +309,24 @@ class ClusterNode extends Component {
           child,
           {
             node: this.props.node,
-            chartsData: this.props.chartsData,
-            nodeName: this.props.nodeName
+            chartsData: this.chartsData,
+            nodeName: this.props.name,
+            isCloudNode: this.isCloudNode
           }
         )
       )
     ];
-    const nodeLabels = this.renderNodeLabels();
-    const allowToTerminate = this.props.node.loaded &&
+    const nodeLabels = this.renderNodeLabels().filter(label => label !== ' ');
+    let allowToTerminate = this.props.node.loaded &&
       roleModel.executeAllowed(this.props.node.value) &&
       roleModel.isOwner(this.props.node.value) &&
       this.nodeIsSlave(this.props.node.value);
+    if (this.isCloudNode) {
+      allowToTerminate = this.isAdmin && this.uiStandaloneNodesAllowTerminate;
+    }
     return (
       <div
+        style={{display: 'flex', flexDirection: 'column'}}
         key={this.props.name}
         className={
           classNames(
@@ -226,36 +337,88 @@ class ClusterNode extends Component {
           )
         }
       >
-        <Row align="middle">
-          <Col span={1}>
-            <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
-          </Col>
-          <Col span={18}>
-            <span className={parentStyles.nodeMainInfo}>
-              Node: {this.props.name}{nodeLabels}</span>
-          </Col>
-          <Col span={5} className={parentStyles.refreshButtonContainer}>
-            {
-              allowToTerminate && (
-                <Button
-                  id="terminate-cluster-node-button"
-                  type="danger"
-                  disabled={this.props.node.pending || this.props.chartsData.pending}
-                  style={{marginRight: 5}}
-                  onClick={this.nodeTerminationConfirm}
-                >
-                  Terminate
-                </Button>
-              )
-            }
-            <Button
-              id="refresh-cluster-node-button"
-              onClick={this.refreshNodeInstance}
-              disabled={this.props.node.pending || this.props.chartsData.pending}>
-              Refresh
-            </Button>
-          </Col>
-        </Row>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            gap: 5,
+            alignItems: 'center'
+          }}>
+          <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
+          <div
+            style={{whiteSpace: 'nowrap'}}
+            className={parentStyles.nodeMainInfo}
+          >
+            Node: {this.props.name}
+          </div>
+          <div
+            style={{textWrap: 'nowrap', overflow: 'hidden', position: 'relative', flexGrow: 1}}
+            ref={el => { this.containerRef = el; }}
+          >
+            {(nodeLabels || []).map((label, index) => (
+              <span
+                style={{
+                  visibility: index + 1 > labelsToShow ? 'hidden' : 'visible',
+                  marginRight: 5
+                }}
+                className={parentStyles.nodeMainInfo}
+                key={index}
+                ref={(el) => {
+                  this.labelRefs[index] = el;
+                }}>
+                {label}
+              </span>
+            ))}
+            {labelsToShow < nodeLabels.length ? (
+              <Popover
+                placement="bottomRight"
+                content={(
+                  <div style={{display: 'flex', width: 400, flexWrap: 'wrap'}}>
+                    {(nodeLabels || []).slice(labelsToShow).map((label, index) => (
+                      <span
+                        style={{marginRight: 5}}
+                        key={index}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                title={false}
+                trigger="hover"
+              >
+                <a style={{
+                  whiteSpace: 'nowrap',
+                  left: (this.labelRefs[labelsToShow]?.offsetLeft || 0) + 10,
+                  position: 'absolute',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer'
+                }}>
+                  +{nodeLabels.length - labelsToShow} more
+                </a>
+              </Popover>
+            ) : null}
+          </div>
+          {
+            allowToTerminate && (
+              <Button
+                id="terminate-cluster-node-button"
+                type="danger"
+                disabled={this.props.node.pending || this.chartsData?.pending}
+                style={{marginRight: 5}}
+                onClick={this.nodeTerminationConfirm}
+              >
+                Terminate
+              </Button>
+            )
+          }
+          <Button
+            id="refresh-cluster-node-button"
+            onClick={this.refreshNodeInstance}
+            disabled={this.props.node.pending || this.chartsData?.pending}>
+            Refresh
+          </Button>
+        </div>
         {result}
       </div>
     );

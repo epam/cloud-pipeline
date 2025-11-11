@@ -64,6 +64,8 @@ class S3StorageOperations(StorageOperations):
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     DELETION = "DELETION"
 
+    ALL_POSSIBLE_SOURCE_CLASSES = [STANDARD, GLACIER_IR, GLACIER, DEEP_ARCHIVE]
+
     EXPEDITED_RESTORE_MODE = "EXPEDITED"
     STANDARD_RESTORE_MODE = "STANDARD"
     BULK_RESTORE_MODE = "BULK"
@@ -94,7 +96,18 @@ class S3StorageOperations(StorageOperations):
     def __init__(self, logger):
         self.logger = logger
 
-    def prepare_bucket_if_needed(self, region, storage_container):
+    def prepare_bucket_if_needed(self, region, storage_container, object_size_for_transit=None):
+
+        def _finetune_rule(_object_size_for_transit, _rule):
+            if _object_size_for_transit is not None and _object_size_for_transit >= 0:
+                _rule["Filter"] = {
+                    "And": {
+                        "Tags": [_rule["Filter"]["Tag"]],
+                        "ObjectSizeGreaterThan": _object_size_for_transit
+                    }
+                }
+            return _rule
+
         bucket = storage_container.bucket
         s3_client = self._build_s3_client(region, storage_container, "s3")
         try:
@@ -103,38 +116,52 @@ class S3StorageOperations(StorageOperations):
             self.logger.log("Cannot load BucketLifecycleConfiguration, seems it doesn't exist. {}".format(e))
             existing_slc = {'Rules': []}
 
-        cp_lsc_rules = [rule for rule in existing_slc['Rules'] if rule['ID'].startswith(CP_SLC_RULE_NAME_PREFIX)]
+        slc_rules_to_apply = []
+        # Copy all non SLS rules as is
+        for existing_rule in existing_slc['Rules']:
+            if not existing_rule["ID"].startswith(CP_SLC_RULE_NAME_PREFIX):
+                slc_rules_to_apply.append(existing_rule)
 
-        if not cp_lsc_rules:
-            self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(bucket))
-            slc_rules = existing_slc['Rules']
-            for rule in self.S3_STORAGE_CLASS_TO_RULE.values():
-                slc_rules.append(rule)
-            slc_rules.append(self.DELETION_RULE)
+        # Identify if SLS rules need to be updated
+        s3_lsc_rules_should_be_updated = False
+        list_of_rule_to_construct = list(self.S3_STORAGE_CLASS_TO_RULE.values())
+        list_of_rule_to_construct.append(self.DELETION_RULE)
+        for rule in list_of_rule_to_construct:
+            new_rule = _finetune_rule(object_size_for_transit, dict(rule))
+            old_rule = next(filter(lambda r: r["ID"] == rule["ID"], existing_slc['Rules']), None)
+            if not old_rule or old_rule != new_rule:
+                slc_rules_to_apply.append(new_rule)
+                s3_lsc_rules_should_be_updated = True
+            else:
+                slc_rules_to_apply.append(old_rule)
+
+        if s3_lsc_rules_should_be_updated:
+            self.logger.log("S3 Lifecycle rules for storage: {}, will be updated.".format(bucket))
             s3_client.put_bucket_lifecycle_configuration(
                 Bucket=bucket,
-                LifecycleConfiguration={"Rules": slc_rules})
+                LifecycleConfiguration={"Rules": slc_rules_to_apply}
+            )
         else:
-            self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
+            self.logger.log("There are already defined S3 Lifecycle SLS rules for storage: {}.".format(bucket))
 
-    def list_objects_by_prefix(self, region, storage_container, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,
+                               list_versions=False, convert_paths=True):
         return self._list_objects_by_prefix(
             self._build_s3_client(region, storage_container, "s3"),
-            storage_container.bucket, storage_container.bucket_prefix, list_versions, convert_paths)
+            storage_container.bucket, storage_container.bucket_prefix, classes_to_list, list_versions, convert_paths)
 
-    def _list_objects_by_prefix(self, s3_client, bucket, prefix, list_versions=False, convert_paths=True):
+    def _list_objects_by_prefix(self, s3_client, bucket, prefix,
+                                classes_to_list=None, list_versions=False, convert_paths=True):
+        if classes_to_list and all(sc in classes_to_list for sc in S3StorageOperations.ALL_POSSIBLE_SOURCE_CLASSES):
+            classes_to_list = None
+
         result = []
         paginator = s3_client.get_paginator('list_objects' if not list_versions else 'list_object_versions')
         page_iterator = paginator.paginate(Bucket=bucket, Prefix=self._path_to_s3_format(prefix))
-        for page in page_iterator:
-            if not list_versions:
-                if 'Contents' in page:
-                    for obj in page['Contents']:
-                        result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
-            else:
-                if 'Versions' in page:
-                    for version in page['Versions']:
-                        result.append(self._map_s3_obj_to_cloud_obj(version, convert_paths))
+        filtered_iterator = page_iterator.search(S3StorageOperations._configure_listing_filter(list_versions, classes_to_list))
+        for obj in filtered_iterator:
+            if obj:
+                result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
         return result
 
     def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):
@@ -411,6 +438,7 @@ class S3StorageOperations(StorageOperations):
             S3StorageOperations._path_from_s3_format(s3_object["Key"]) if convert_path else s3_object["Key"],
             s3_object["LastModified"],
             s3_object["StorageClass"],
+            s3_object["Size"],
             s3_object["VersionId"] if 'VersionId' in s3_object else None
         )
 
@@ -441,3 +469,14 @@ class S3StorageOperations(StorageOperations):
             elif restore_mode == self.STANDARD_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=12)
         return updated + check_shift_period < now
+
+    @staticmethod
+    def _configure_listing_filter(list_versions, classes_to_list):
+        field_to_check = "Versions" if list_versions else "Contents"
+        filter_condition = ""
+        if classes_to_list:
+            filter_condition = "? contains([{}], {})".format(
+                ",".join(["'{}'".format(sc) for sc in classes_to_list]),
+                "StorageClass"
+            )
+        return field_to_check + "[" + filter_condition + "][]"

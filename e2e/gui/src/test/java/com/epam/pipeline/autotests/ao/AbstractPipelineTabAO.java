@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.lang.reflect.Constructor;
@@ -24,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.not;
@@ -43,6 +43,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.MESSAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.UPDATE_CONFIGURATION;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 
@@ -81,23 +82,23 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     public DocumentTabAO documentsTab() {
-        return onTab(DocumentTabAO.class);
+        return onTab(DocumentTabAO.class).tabShouldBeActive(DOCUMENTS_TAB);
     }
 
     public PipelineCodeTabAO codeTab() {
-        return onTab(PipelineCodeTabAO.class);
+        return onTab(PipelineCodeTabAO.class).tabShouldBeActive(CODE_TAB);
     }
 
     public PipelineConfigurationTabAO configurationTab() {
-        return onTab(PipelineConfigurationTabAO.class);
+        return onTab(PipelineConfigurationTabAO.class).tabShouldBeActive(CONFIGURATION_TAB);
     }
 
     public PipelineGraphTabAO graphTab() {
-        return onTab(PipelineGraphTabAO.class);
+        return onTab(PipelineGraphTabAO.class).tabShouldBeActive(GRAPH_TAB);
     }
 
     public PipelineHistoryTabAO historyTab() {
-        return onTab(PipelineHistoryTabAO.class);
+        return onTab(PipelineHistoryTabAO.class).tabShouldBeActive(HISTORY_TAB);
     }
 
     public StorageRulesTabAO storageRulesTab() {
@@ -105,7 +106,8 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     protected void changeTabTo(Primitive tab) {
-        sleep(2, SECONDS).click(tab).tabShouldBeActive(tab);
+        sleep(2, SECONDS).get(tab).waitUntil(enabled, DEFAULT_TIMEOUT);
+        click(tab).tabShouldBeActive(tab);
     }
 
     protected abstract TAB_AO open();
@@ -116,11 +118,20 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public PipelineRunFormAO runPipeline() {
         sleep(2, SECONDS);
-        get(RUN).waitUntil(not(disabled), C.DEFAULT_TIMEOUT);
+        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
         sleep(2, SECONDS);
         click(RUN);
         sleep(1, SECONDS);
         return new PipelineRunFormAO(pipelineName);
+    }
+
+    public void runPipelineWithException(String message) {
+        sleep(2, SECONDS);
+        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
+        sleep(2, SECONDS);
+        click(RUN);
+        sleep(1, SECONDS);
+        new PipelineRunFormAO().validateException(message);
     }
 
     @Override

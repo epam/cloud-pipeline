@@ -32,13 +32,17 @@ import static org.junit.Assert.*;
 public class PipelineConfigurationTest {
 
     private static final String GENERAL_SECTION = "General";
+    private static final String PRETTY_NAME = "PrettyName";
+    private static final String ICON = "icon";
     private static final String WITH_TYPE_OF_PARAMS_JSON =
             "{" +
                 "\"parameters\": {" +
                     "\"main_file\" : {" +
+                        "\"pretty_name\" : \"" + PRETTY_NAME + "\"," +
                         "\"value\" : \"\"," +
                         "\"required\" : \"true\"," +
                         "\"type\" : \"string\"," +
+                        "\"icon\" : \"" + ICON + "\"," +
                         "\"section\" : \"" + GENERAL_SECTION + "\"," +
                         "\"enum\" : [{\"name\": \"v1\"}, {\"name\": \"v2\"}]" +
                     "}," +
@@ -50,7 +54,9 @@ public class PipelineConfigurationTest {
                     "}," +
                     "\"instance_size\" : {" +
                         "\"type\" : \"string\"," +
-                        "\"validation\": [{\"throw\":\"a == a\", \"message\": \"error\"}]" +
+                        "\"validation\": [{\"throw\":\"a == a\", \"message\": \"error\"}]," +
+                        "\"annotation\": { \"key\": \"value\", \"tag\": \"value\" }," +
+                        "\"scheme\": { \"properties\": \"value\", \"field\": \"value\" }" +
                     "}," +
                     "\"instance_disk\" : \"200\"" +
                 "}" +
@@ -88,6 +94,8 @@ public class PipelineConfigurationTest {
         assertEquals(STRING_TYPE, mainFile.getType());
         assertTrue(mainFile.isRequired());
         assertEquals(mainFile.getSection(), GENERAL_SECTION);
+        assertEquals(mainFile.getPrettyName(), PRETTY_NAME);
+        assertEquals(mainFile.getIcon(), ICON);
 
         final PipeConfValueVO mainClass = pipelineConfiguration.getParameters().get("main_class");
         assertEquals(CLASS_TYPE, mainClass.getType());
@@ -98,6 +106,10 @@ public class PipelineConfigurationTest {
         assertFalse(instanceSize.isRequired());
         assertEquals(EMPTY, instanceSize.getValue());
         assertEquals(1, instanceSize.getValidation().size());
+        assertEquals(2, instanceSize.getAnnotation().size());
+        assertTrue(instanceSize.getAnnotation().containsKey("key"));
+        assertTrue(instanceSize.getAnnotation().containsKey("tag"));
+        assertNotNull(instanceSize.getScheme());
 
         final PipeConfValueVO instanceDisk = pipelineConfiguration.getParameters().get("instance_disk");
         assertEquals(STRING_TYPE, instanceDisk.getType());

@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import org.testng.annotations.Test;
 
 public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelineRunningTest {
@@ -38,6 +39,7 @@ public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelin
                                 Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .validateThereIsParameterOfType("param", "value", ParameterType.STRING, false);
     }

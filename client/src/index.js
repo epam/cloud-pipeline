@@ -21,6 +21,7 @@ import ReactDOM from 'react-dom';
 import Root from './components/main/Root';
 import 'rc-dropdown/assets/index.css';
 import 'rc-menu/assets/index.css';
+import 'rc-slider/assets/index.css';
 import './index.css';
 import './staticStyles/rc-menu.css';
 import './staticStyles/antd-extensions.css';

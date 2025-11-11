@@ -1,15 +1,19 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-api-db
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-api-db: "true"
   replicas: 1
   template:
     metadata:
       namespace: default
       labels:
         cloud-pipeline/cp-api-db: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-api-db: "true"
@@ -18,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-api-db
-          image: postgres:9.6
+          image: postgres:${PSG_VERSION}
           imagePullPolicy: "IfNotPresent"
           args:
             - --shared_buffers=${PSG_SHARED_BUFFERS}

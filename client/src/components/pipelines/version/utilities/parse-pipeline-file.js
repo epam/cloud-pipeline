@@ -16,11 +16,12 @@
 
 import Papa from 'papaparse';
 import VersionFile from '../../../../models/pipelines/VersionFile';
+import {base64toString} from '../../../../utils/base64';
 
 function process (result, path) {
   return new Promise((resolve, reject) => {
     try {
-      const content = atob(result);
+      const content = base64toString(result);
       // eslint-disable-next-line
       const isBinary = o => /[\x00-\x08\x0B-\x0C\x0E-\x1F]/.test(o);
       const binary = isBinary(content);

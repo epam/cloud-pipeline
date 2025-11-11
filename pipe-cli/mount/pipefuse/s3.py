@@ -20,9 +20,11 @@ from datetime import datetime
 
 from boto3 import Session
 from botocore.config import Config
-from botocore.credentials import RefreshableCredentials
+from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
 from dateutil.tz import tzlocal
+import requests
+requests.urllib3.disable_warnings()
 
 from pipefuse import fuseutils
 from pipefuse.fsclient import File
@@ -143,7 +145,9 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
     def _generate_s3_client(self, pipe):
         session = self._generate_aws_session(pipe, self.bucket_object)
-        return session.client('s3', config=Config(), region_name=self.bucket_object.region_name)
+        custom_endpoint = self.bucket_object.endpoint
+        return session.client('s3', config=Config(), region_name=self.bucket_object.region_name,
+                              endpoint_url=custom_endpoint, verify=False if custom_endpoint else None)
 
     def _generate_aws_session(self, pipe, bucket_object):
         def refresh():
@@ -159,10 +163,13 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
         self._is_read_only = not fresh_metadata['write_allowed']
 
-        session_credentials = RefreshableCredentials.create_from_metadata(
-            metadata=fresh_metadata,
-            refresh_using=refresh,
-            method='sts-assume-role')
+        if 'token' not in fresh_metadata or not fresh_metadata['token']:
+            session_credentials = Credentials(fresh_metadata['access_key'], fresh_metadata['secret_key'])
+        else:
+            session_credentials = RefreshableCredentials.create_from_metadata(
+                metadata=fresh_metadata,
+                refresh_using=refresh,
+                method='sts-assume-role')
 
         s = get_session()
         s._credentials = session_credentials
@@ -214,7 +221,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     ctime=None,
                     contenttype='',
                     is_dir=True,
-                    storage_class=None)
+                    storage_class=None,
+                    mask=None)
 
     def get_file_name(self, file, prefix, recursive):
         return file['Key'] if recursive else fuseutils.get_item_name(file['Key'], prefix=prefix)
@@ -226,7 +234,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     ctime=None,
                     contenttype='',
                     is_dir=False,
-                    storage_class=file['StorageClass'])
+                    storage_class=file['StorageClass'],
+                    mask=None)
 
     def upload(self, buf, path):
         with io.BytesIO(bytearray(buf)) as body:

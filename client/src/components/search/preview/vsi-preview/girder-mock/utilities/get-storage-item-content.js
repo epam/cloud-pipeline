@@ -15,6 +15,7 @@
  */
 
 import DataStorageItemContent from '../../../../../../models/dataStorage/DataStorageItemContent';
+import {base64toString} from '../../../../../../utils/base64';
 
 export default function getStorageItemContent (storage, path) {
   return new Promise((resolve) => {
@@ -28,7 +29,7 @@ export default function getStorageItemContent (storage, path) {
           } = request.value;
           if (content) {
             try {
-              resolve(atob(content));
+              resolve(base64toString(content));
             } catch (e) {
               // eslint-disable-next-line
               throw new Error(`Error reading content for path ${path} (storage #${storage}): ${e.message}`);

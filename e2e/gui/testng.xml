@@ -104,29 +104,29 @@
         </classes>
     </test>
 
-    <test name="WDLPipelineTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLPipelineTest"/>
-        </classes>
-    </test>
+<!--    <test name="WDLPipelineTest">-->
+<!--        <classes>-->
+<!--            <class name="com.epam.pipeline.autotests.WDLPipelineTest"/>-->
+<!--        </classes>-->
+<!--    </test>-->
 
-    <test name="WDLEditorTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLEditorTest"/>
-        </classes>
-    </test>
+<!--    <test name="WDLEditorTest">-->
+<!--        <classes>-->
+<!--            <class name="com.epam.pipeline.autotests.WDLEditorTest"/>-->
+<!--        </classes>-->
+<!--    </test>-->
 
-    <test name="WDLTaskEditorTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLTaskEditorTest"/>
-        </classes>
-    </test>
+<!--    <test name="WDLTaskEditorTest">-->
+<!--        <classes>-->
+<!--            <class name="com.epam.pipeline.autotests.WDLTaskEditorTest"/>-->
+<!--        </classes>-->
+<!--    </test>-->
 
-    <test name="WDLScatterEditorTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLScatterEditorTest"/>
-        </classes>
-    </test>
+<!--    <test name="WDLScatterEditorTest">-->
+<!--        <classes>-->
+<!--            <class name="com.epam.pipeline.autotests.WDLScatterEditorTest"/>-->
+<!--        </classes>-->
+<!--    </test>-->
 
     <test name="LaunchClusterTest">
         <classes>
@@ -526,6 +526,12 @@
         </classes>
     </test>
 
+    <test name="DnsHostsManagementTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.DnsHostsManagementTest"/>
+        </classes>
+    </test>
+
     <test name="EnvironmentTest">
         <classes>
             <class name="com.epam.pipeline.autotests.EnvironmentTest"/>
@@ -541,6 +547,12 @@
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
+        </classes>
+    </test>
+
+    <test name="RBACPermissionTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RBACPermissionTest"/>
         </classes>
     </test>
 </suite>

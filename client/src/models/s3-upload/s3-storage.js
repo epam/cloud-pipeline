@@ -20,6 +20,7 @@ import DataStorageTagsUpdate from '../dataStorage/tags/DataStorageTagsUpdate';
 import fetchTempCredentials from './fetch-temp-credentials';
 import displaySize from '../../utils/displaySize';
 import auditStorageAccessManager from '../../utils/audit-storage-access';
+import preferences from '../preferences/PreferencesLoad';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -27,9 +28,8 @@ const GB = 1024 * MB;
 const TB = 1024 * GB;
 const S3_MAX_FILE_SIZE_TB = 5;
 
-const UPLOAD_CONCURRENCY_LIMIT = 9;
-const S3_MIN_UPLOAD_CHUNK_SIZE = 5 * MB;
-const S3_MAX_UPLOAD_CHUNKS_COUNT = 10000;
+const UPLOAD_CONCURRENCY_LIMIT = 5;
+const S3_MIN_UPLOAD_CHUNK_SIZE_MB = 5;
 
 const MAX_FILE_SIZE = S3_MAX_FILE_SIZE_TB * TB;
 const MAX_FILE_SIZE_DESCRIPTION = displaySize(MAX_FILE_SIZE, false);
@@ -62,17 +62,35 @@ AWS.util.update(AWS.S3.prototype, {
   }
 });
 // ====================================================================
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
+
+AWS.config.update({
+  httpOptions: {
+    timeout: 10 * MINUTE, // 10 minutes
+    connectTimeout: 2 * MINUTE // 2 minutes
+  }
+});
 
 class S3Storage {
   _s3;
   _storage;
+  /**
+   * @private {TempCredentialsStorageObject}
+   */
+  _storageObject;
   _prefix;
   _credentials;
 
-  constructor (storage) {
+  /**
+   * @param {Object} [storage]
+   * @param {TempCredentialsStorageObject} [storageObject]
+   */
+  constructor (storage, storageObject) {
     if (storage) {
       this.storage = storage;
     }
+    this._storageObject = storageObject;
   };
 
   get storage () {
@@ -108,7 +126,9 @@ class S3Storage {
             {
               read: this._storage.read === undefined ? true : this._storage.read,
               write: this._storage.write === undefined ? true : this._storage.write
-            })
+            },
+            this._storageObject
+          )
             .then(resolve)
             .catch((e) => {
               updateCredentialsAttempt(attempt + 1, e)
@@ -152,8 +172,10 @@ class S3Storage {
   };
 
   refreshCredentialsIfNeeded = async () => {
-    this._credentials.get();
-    if (this._credentials.needsRefresh()) {
+    if (this._credentials) {
+      this._credentials.get();
+    }
+    if (!this._s3 || !this._credentials || this._credentials.needsRefresh()) {
       await this.updateCredentials();
     }
   }
@@ -167,10 +189,13 @@ class S3Storage {
     if (this._credentials.needsRefresh()) {
       return undefined;
     }
+    if (!this._s3) {
+      return undefined;
+    }
     return this._s3.getSignedUrl('getObject', params);
   };
 
-  completeMultipartUploadStorageObject = (name, parts, uploadId) => {
+  completeMultipartUploadStorageObject = async (name, parts, uploadId) => {
     const params = {
       Bucket: this._storage.path,
       Key: this.prefix + name,
@@ -179,21 +204,29 @@ class S3Storage {
       },
       UploadId: uploadId
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     const upload = this._s3.completeMultipartUpload(params);
     return upload.promise();
   };
 
-  abortMultipartUploadStorageObject = (name, uploadId) => {
+  abortMultipartUploadStorageObject = async (name, uploadId) => {
     const params = {
       Bucket: this._storage.path,
       Key: this.prefix + name,
       UploadId: uploadId
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     const upload = this._s3.abortMultipartUpload(params);
     return upload.promise();
   };
 
-  createMultipartUpload = (name, tags) => {
+  createMultipartUpload = async (name, tags) => {
     const tagging = Object.entries(tags)
       .filter(([, value]) => !!value)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
@@ -203,10 +236,14 @@ class S3Storage {
       Key: this.prefix + name,
       Tagging: tagging.length > 0 ? tagging.join('&') : undefined
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     return this._s3.createMultipartUpload(params).promise();
   };
 
-  multipartUploadStorageObject = (name, body, partNumber, uploadId, uploadProgress) => {
+  multipartUploadStorageObject = async (name, body, partNumber, uploadId, uploadProgress) => {
     const params = {
       Body: body,
       Bucket: this._storage.path,
@@ -214,36 +251,47 @@ class S3Storage {
       PartNumber: partNumber,
       UploadId: uploadId
     };
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
+    }
     const upload = this._s3.uploadPart(params);
     upload.on('httpUploadProgress', uploadProgress);
     return upload;
   };
 
-  doUpload = (file, options, callbacks) => {
+  doUpload = async (file, options, callbacks) => {
+    const {
+      uploadID: currentUploadID,
+      partNumber: currentPartNumber,
+      multipartParts = [],
+      owner,
+      fileName = file.name
+    } = options;
     if (this.storage) {
-      const path = [this.prefix, file.name].filter((o) => o.length).join('/');
+      const path = [this.prefix, fileName].filter((o) => o.length).join('/');
       auditStorageAccessManager.reportWriteAccess({
         fullPath: `s3://${this.storage.path}/${path}`,
         storageId: this.storage.id
       });
     }
     const {
-      uploadID: currentUploadID,
-      partNumber: currentPartNumber,
-      multipartParts = [],
-      owner
-    } = options;
-    const {
       onPartError,
       onProgress,
       setAbort,
       setMultipartUploadParts
     } = callbacks;
+    await preferences.fetchIfNeededOrWait();
+    const chunkCountPreference = preferences.uiUploadChunkCount;
+    const chunkSizePreference = Math.max(
+      S3_MIN_UPLOAD_CHUNK_SIZE_MB,
+      (preferences.uiUploadChunkSizeMB || S3_MIN_UPLOAD_CHUNK_SIZE_MB)
+    ) * MB;
     const chunkSize =
-      Math.ceil(file.size / S3_MIN_UPLOAD_CHUNK_SIZE) > S3_MAX_UPLOAD_CHUNKS_COUNT
-        ? Math.ceil(file.size / S3_MAX_UPLOAD_CHUNKS_COUNT)
-        : S3_MIN_UPLOAD_CHUNK_SIZE;
-    const upload = (uploadID, part = 0) => {
+      Math.ceil(file.size / chunkSizePreference) > chunkCountPreference
+        ? Math.ceil(file.size / chunkCountPreference)
+        : chunkSizePreference;
+    const upload = async (uploadID, part = 0) => {
       const chunks = [];
       let last = false;
       const startPosition = part * chunkSize;
@@ -268,9 +316,9 @@ class S3Storage {
         }));
       }
       const next = last ? null : part + UPLOAD_CONCURRENCY_LIMIT;
-      const promises = chunks.map(chunk => {
-        const uploadStorageObject = this.multipartUploadStorageObject(
-          file.name,
+      const promises = await Promise.all(chunks.map(async (chunk) => {
+        const uploadStorageObject = await this.multipartUploadStorageObject(
+          fileName,
           chunk.body,
           chunk.partNumber + 1,
           uploadID,
@@ -300,13 +348,13 @@ class S3Storage {
             });
         });
         return {abort, promise};
-      });
+      }));
       const abort = promises
         .map(promise => promise.abort)
         .filter(Boolean)
         .reduce(
           (a, c) => () => { c(); return a(); },
-          () => this.abortMultipartUploadStorageObject(file.name, uploadID)
+          () => this.abortMultipartUploadStorageObject(fileName, uploadID)
         );
       return {
         abort,
@@ -320,7 +368,7 @@ class S3Storage {
         if (file.size > MAX_FILE_SIZE) {
           reject(new Error(`error: Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`));
         } else {
-          this.createMultipartUpload(file.name, fileTags)
+          this.createMultipartUpload(fileName, fileTags)
             .then((data) => {
               resolve(data.UploadId);
             }, reject);
@@ -330,7 +378,7 @@ class S3Storage {
     const updateDataStorageTags = () => {
       const request = new DataStorageTagsUpdate(
         this._storage.id,
-        this.prefix + file.name
+        this.prefix + fileName
       );
       return new Promise((resolve) => {
         request
@@ -338,7 +386,7 @@ class S3Storage {
           .then(() => {
             if (request.error) {
               console.warn(
-                `Error updating data storage item (${this.prefix + file.name}) tags:`,
+                `Error updating data storage item (${this.prefix + fileName}) tags:`,
                 request.error
               );
             }
@@ -346,72 +394,56 @@ class S3Storage {
           })
           .catch((e) => {
             console.warn(
-              `Error updating data storage item (${this.prefix + file.name}) tags:`,
+              `Error updating data storage item (${this.prefix + fileName}) tags:`,
               e.message
             );
             resolve();
           });
       });
     };
-    const finishUpload = (uploadID, parts, done) => {
-      this.completeMultipartUploadStorageObject(
-        file.name,
-        parts,
-        uploadID
-      )
-        .then(
-          () => {
-            updateDataStorageTags()
-              .then(() => done());
-          },
-          (error) => {
-            onPartError && onPartError(parts.length, error.message);
-            done(error.message);
-          }
+    const finishUpload = async (uploadID, parts) => {
+      try {
+        await this.completeMultipartUploadStorageObject(
+          fileName,
+          parts,
+          uploadID
         );
+        await updateDataStorageTags();
+        return undefined;
+      } catch (error) {
+        onPartError && onPartError(parts.length, error.message);
+        return error.message;
+      }
     };
-    const continueUpload = (uploadID, part = 0) => {
+    const continueUpload = async (uploadID, part = 0) => {
       const {
         abort,
         next,
         promise
-      } = upload(uploadID, part);
+      } = await upload(uploadID, part);
       setAbort && setAbort(abort);
-      return new Promise((resolve) => {
-        promise
-          .then((parts) => {
-            const errorParts = parts.filter(part => !!part.error);
-            if (errorParts.length > 0) {
-              const partNumber = Math.min(...errorParts.map(p => p.partNumber));
-              const errorPart = errorParts.find(p => p.partNumber === partNumber);
-              onPartError && onPartError(partNumber, errorPart.error);
-              resolve(errorPart.error);
-            } else {
-              multipartParts.push(...parts.map(part => part.payload));
-              setMultipartUploadParts && setMultipartUploadParts(uploadID, multipartParts);
-              if (next !== null) {
-                continueUpload(uploadID, next)
-                  .then(resolve);
-              } else {
-                finishUpload(uploadID, multipartParts, resolve);
-              }
-            }
-          });
-      });
+      const parts = await promise;
+      const errorParts = parts.filter(part => !!part.error);
+      if (errorParts.length > 0) {
+        const partNumber = Math.min(...errorParts.map(p => p.partNumber));
+        const errorPart = errorParts.find(p => p.partNumber === partNumber);
+        onPartError && onPartError(partNumber, errorPart.error);
+        return errorPart.error;
+      }
+      multipartParts.push(...parts.map(part => part.payload));
+      setMultipartUploadParts && setMultipartUploadParts(uploadID, multipartParts);
+      if (next !== null) {
+        return continueUpload(uploadID, next);
+      } else {
+      }
+      return finishUpload(uploadID, multipartParts);
     };
     if (currentUploadID && currentPartNumber !== undefined && currentPartNumber !== null) {
       return continueUpload(currentUploadID, currentPartNumber);
-    } else {
-      return new Promise((resolve, reject) => {
-        startUpload()
-          .then((uploadID) => {
-            setMultipartUploadParts && setMultipartUploadParts(uploadID, []);
-            continueUpload(uploadID)
-              .then(resolve);
-          })
-          .catch(reject);
-      });
     }
+    const uploadID = await startUpload();
+    setMultipartUploadParts && setMultipartUploadParts(uploadID, []);
+    return continueUpload(uploadID);
   };
 }
 

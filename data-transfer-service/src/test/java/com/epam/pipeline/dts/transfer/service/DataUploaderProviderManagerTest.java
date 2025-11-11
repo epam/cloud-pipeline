@@ -25,6 +25,7 @@ import com.epam.pipeline.dts.transfer.service.impl.SyncDataUploaderProviderManag
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,16 +49,16 @@ public class DataUploaderProviderManagerTest extends AbstractTransferTest {
 
     @Test
     void transferDataShouldSetSuccessTaskStatusAfterItFinishes() {
-        manager.transferData(transferTask);
+        manager.transferData(transferTask, false, null, null);
 
         verify(taskService).updateStatus(eq(transferTask.getId()), eq(TaskStatus.SUCCESS));
     }
 
     @Test
     void transferDataShouldSetFailureStatusAndFailureReasonIfItFails() {
-        doThrow(exception).when(dataUploader).transfer(eq(transferTask));
+        doThrow(exception).when(dataUploader).transfer(eq(transferTask), eq(false), isNull(), isNull());
 
-        manager.transferData(transferTask);
+        manager.transferData(transferTask, false, null, null);
 
         verify(taskService).updateStatus(eq(transferTask.getId()), eq(TaskStatus.FAILURE), eq(exception.getMessage()));
     }

@@ -15,6 +15,7 @@
  */
 
 import {action, computed, observable} from 'mobx';
+import HCSBaseState from './base-state';
 
 function shallowCompareArrays (array1, array2) {
   if (array1 && array2 && array1.length === array2.length) {
@@ -84,7 +85,7 @@ class ChannelState {
   }
 }
 
-class ViewerState {
+class ViewerState extends HCSBaseState {
   @observable loader;
   @observable use3D = false;
   @observable useLens = false;
@@ -117,27 +118,7 @@ class ViewerState {
   }
 
   constructor (viewer) {
-    this.attachToViewer(viewer);
-  }
-
-  attachToViewer (viewer) {
-    this.detachFromViewer();
-    if (viewer) {
-      this.viewer = viewer;
-      this.viewer.addEventListener(
-        this.viewer.Events.viewerStateChanged,
-        this.onViewerStateChange
-      );
-    }
-  }
-
-  detachFromViewer () {
-    if (this.viewer) {
-      this.viewer.removeEventListener(
-        this.viewer.Events.viewerStateChanged,
-        this.onViewerStateChange
-      );
-    }
+    super(viewer, 'viewerStateChanged');
   }
 
   addEventListener = (listener) => {
@@ -155,7 +136,7 @@ class ViewerState {
   };
 
   @action
-  onViewerStateChange = (viewer, newState) => {
+  onStateChanged (viewer, newState) {
     const {
       loader,
       identifiers = [],
@@ -250,7 +231,7 @@ class ViewerState {
       }
     }
     this.emitOnChange();
-  };
+  }
 
   @action
   changeChannelVisibility = (channel, visible) => {

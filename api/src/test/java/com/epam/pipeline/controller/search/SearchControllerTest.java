@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.search;
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.entity.search.SearchResult;
+import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
@@ -52,6 +53,9 @@ public class SearchControllerTest extends AbstractControllerTest {
     @Autowired
     private SearchManager mockSearchManager;
 
+    @Autowired
+    private SearchExportManager mockSearchExportManager;
+
     @Test
     public void shouldFailSearchForUnauthorizedUser() {
         performUnauthorizedRequest(post(SEARCH_URL));
@@ -73,12 +77,12 @@ public class SearchControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldExportSearchResults() throws Exception {
         final String content = getObjectMapper().writeValueAsString(facetedSearchExportRequest);
-        doReturn(EXPORT_TEST_ARRAY).when(mockSearchManager).export(facetedSearchExportRequest);
+        doReturn(EXPORT_TEST_ARRAY).when(mockSearchExportManager).export(facetedSearchExportRequest);
 
         final MvcResult mvcResult = performRequest(post(EXPORT_URL).content(content),
                 EXPECTED_CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
-        verify(mockSearchManager).export(facetedSearchExportRequest);
+        verify(mockSearchExportManager).export(facetedSearchExportRequest);
         assertFileResponse(mvcResult, EXPORT_FILE_NAME, EXPORT_TEST_ARRAY);
     }
 }

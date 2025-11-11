@@ -136,10 +136,6 @@ class SelectMetadataItems extends React.Component {
     }
   }
 
-  get pageIsSelected () {
-
-  }
-
   updateState = () => {
     const {type, selection} = this.props;
     this.setState({

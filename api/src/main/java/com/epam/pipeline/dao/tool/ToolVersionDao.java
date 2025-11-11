@@ -52,6 +52,7 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
     private String loadToolVersionListSettingsQuery;
     private String createToolVersionWithSettingsQuery;
     private String updateToolVersionWithSettingsQuery;
+    private String loadAllLatestToolVersionsQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -119,6 +120,11 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
                 .query(loadToolVersionListSettingsQuery, params, ToolVersionParameters.getRowMapper())
                 .stream()
                 .collect(Collectors.toMap(ToolVersion::getVersion, Function.identity()));
+    }
+
+    public List<ToolVersion> loadAllLatestToolVersions() {
+        return getJdbcTemplate().query(loadAllLatestToolVersionsQuery,
+                ToolVersionParameters.getRowMapperWithSettings());
     }
 
     enum ToolVersionParameters {
@@ -244,5 +250,10 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadToolVersionListSettingsQuery(final String loadToolVersionListSettingsQuery) {
         this.loadToolVersionListSettingsQuery = loadToolVersionListSettingsQuery;
+    }
+
+    @Required
+    public void setLoadAllLatestToolVersionsQuery(final String loadAllLatestToolVersionsQuery) {
+        this.loadAllLatestToolVersionsQuery = loadAllLatestToolVersionsQuery;
     }
 }

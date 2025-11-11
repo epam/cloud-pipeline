@@ -229,7 +229,9 @@ local api_endpoint = os.getenv("API_EXTERNAL")
 if not api_endpoint then
     api_endpoint = os.getenv("API")
 end
-local api_uri = api_endpoint .. "/route?url=" .. req_uri .. "&type=FORM"
+
+local encoded_req_uri = ngx.escape_uri(req_uri)
+local api_uri = api_endpoint .. "/route?url=" .. encoded_req_uri .. "&type=FORM"
 
 -- Get list of POST params, if a request from API is received
 ngx.req.read_body()

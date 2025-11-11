@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM quay.io/coreos/clair:v2.1.8
+FROM quay.io/lifescience/cloud-pipeline:clair-base-2.1.8
 
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh

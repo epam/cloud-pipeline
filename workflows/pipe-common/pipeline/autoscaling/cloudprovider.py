@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 LIMIT_EXCEEDED_EXIT_CODE = 6
+LIMIT_EXCEEDED_ERROR_MESSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
+
+INSUFFICIENT_CAPACITY_EXIT_CODE = 7
+INSUFFICIENT_CAPACITY_ERROR_MESSAGE = 'Insufficient instance capacity.'
 
 
 class AbstractInstanceProvider(object):

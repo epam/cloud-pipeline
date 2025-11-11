@@ -19,6 +19,7 @@ import {computed, observable} from 'mobx';
 import roleModel from './roleModel';
 import MetadataLoad from '../models/metadata/MetadataLoad';
 import {CP_CAP_LIMIT_MOUNTS} from '../components/pipelines/launch/form/utilities/parameters';
+import {correctLimitMountsParameterValue} from './limit-mounts/get-limit-mounts-storages';
 
 const FILTER_NON_SENSITIVE_STORAGES = false;
 
@@ -96,14 +97,11 @@ class CurrentUserAttributes {
         this.dataStorages.loaded
       ) {
         const dataStorages = this.dataStorages.value || [];
-        return (value || '')
-          .split(',')
-          .map(o => Number(o.trim()))
-          .filter(o => !Number.isNaN(Number(o)))
-          .map(o => dataStorages.find(ds => ds.id === o) || {id: o})
-          .filter(storage => storage && !storage.sensitive)
-          .map(o => o.id)
-          .join(',');
+        return correctLimitMountsParameterValue(
+          value || '',
+          dataStorages,
+          {allowSensitive, keepUnmappedIdentifiers: true}
+        );
       }
       return value;
     }

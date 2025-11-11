@@ -54,13 +54,13 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   }
 
   handleFilterClick = ({key}) => {
-    const {disabled, selection, onChange} = this.props;
+    const {disabled, selection, onChange, showCounts} = this.props;
     const filter = this.filters.find(f => f.key === key);
-    if (disabled || (!filter.enabled && filter.count === 0)) {
+    if (disabled || (showCounts && !filter.enabled && filter.count === 0)) {
       return;
     }
     let newSelection = [];
-    if (filter.count > 0) {
+    if (!showCounts || filter.count > 0) {
       newSelection = (selection || []).filter(s => !filter.test(s));
       if (!filter.enabled) {
         newSelection.push(...filter.types);
@@ -76,7 +76,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   };
 
   render () {
-    const {disabled, size} = this.props;
+    const {disabled, size, showCounts} = this.props;
     const {overlayVisible} = this.state;
     const filterMenu = (
       <Menu
@@ -99,7 +99,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
                   'cp-search-faceted-button',
                   {
                     'selected': filter.enabled,
-                    'disabled': (!filter.enabled && filter.count === 0) || disabled
+                    'disabled': (!filter.enabled && showCounts && filter.count === 0) || disabled
                   }
                 )
               }
@@ -109,7 +109,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
                 type={filter.icon}
               />
               {filter.title(this.localizedString)()}
-              {filter.count > 0
+              {filter.count > 0 && showCounts
                 ? (
                   <span
                     className={styles.count}
@@ -165,7 +165,8 @@ DocumentTypeFilter.propTypes = {
   onChange: PropTypes.func,
   selection: PropTypes.array,
   values: PropTypes.array,
-  size: PropTypes.string
+  size: PropTypes.string,
+  showCounts: PropTypes.bool
 };
 
 const DocumentTypeFilterName = 'doc_type';

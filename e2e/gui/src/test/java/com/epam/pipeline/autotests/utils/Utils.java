@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.epam.pipeline.autotests.utils;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import org.openqa.selenium.By;
@@ -28,9 +27,8 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Robot;
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -60,6 +58,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -128,33 +127,33 @@ public class Utils {
 
     public static void selectAllAndClearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
-        String selectAll = Keys.chord(Keys.CONTROL, "a");
-        actions().moveToElement(field).click()
-                .sendKeys(selectAll)
-                .sendKeys(Keys.DELETE)
-                .perform();
+        field.click();
+        sendKeysWithControl("a");
+        actions().sendKeys(Keys.DELETE).perform();
     }
 
-    public static void sendKeysWithSlashes(final String text) {
-        //////////////////////////////////////////////////////////////////////////
-        // ! WARNING: there is robot to fix forward slashed issue
-        // https://sqa.stackexchange.com/questions/25038/selenium-send-keys-on-chromium-confused-by-forward-slashes
-        // http://grokbase.com/t/gg/selenium-users/149s9xe7r5/send-keys-and-slash-character
-        for (String s : text.split("")) {
-            if (s.equals("/")) {
-                Robot robot;
-                try {
-                    robot = new Robot();
-                } catch (AWTException e) {
-                    throw new RuntimeException("Something wrong with robot", e);
-                }
-                robot.keyPress('/');
-                robot.keyRelease('/');
-                continue;
-            }
-            actions().sendKeys(s).perform();
-        }
-        //////////////////////////////////////////////////////////////////////////
+        public static void sendKeysWithSlashes(final String text) {
+            final StringSelection stringSelection = new StringSelection(text);
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(stringSelection, null);
+            sendKeysWithControl("v");
+    }
+
+    public static void pasteText(final SelenideElement field, final String text) {
+        final StringSelection stringSelection = new StringSelection(text);
+        Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(stringSelection, null);
+        field.click();
+        sendKeysWithControl("v");
+    }
+
+    public static void sendKeysWithControl(CharSequence ch) {
+        new Actions(getWebDriver())
+                .keyDown(Keys.CONTROL)
+                .sendKeys(ch)
+                .keyUp(Keys.CONTROL)
+                .build()
+                .perform();
     }
 
     public static void sendKeysByChars(final SelenideElement field, final String text) {
@@ -172,6 +171,10 @@ public class Utils {
             }
             charNumber++;
         }
+    }
+
+    public static void refresh() {
+        getWebDriver().navigate().refresh();
     }
 
     public static String getPipelineRunId(final String pipelineName) {
@@ -421,11 +424,11 @@ public class Utils {
     }
 
     public static String getCurrentURL() {
-        return WebDriverRunner.getWebDriver().getCurrentUrl();
+        return getWebDriver().getCurrentUrl();
     }
 
     public static void resetClick() {
-        Selenide.actions().moveByOffset(-50, -50).click().perform();
+        Selenide.actions().moveByOffset(50, 50).click().perform();
     }
 
     public static String readFile(final String filePath) {

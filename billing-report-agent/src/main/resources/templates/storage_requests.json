@@ -1,0 +1,24 @@
+{
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "doc_type": { "type": "keyword", "store": true },
+        "created_date": { "type": "date" },
+        "period": { "type": "date" },
+        "user": { "type": "keyword" },
+        "user_id": { "type": "keyword" },
+        "storage_id": { "type": "keyword", "store": true },
+        "storage_name": { "type": "keyword" },
+        "read_requests": { "type": "long" },
+        "write_requests":  { "type": "long" },
+        "total_requests": { "type": "long" }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
+    }
+  }
+}

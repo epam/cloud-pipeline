@@ -30,7 +30,7 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -50,6 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -70,6 +71,8 @@ public class PipelineConfigurationManager {
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
     public static final String WORKER_CLUSTER_ROLE = "worker";
     public static final String WORKER_CMD_TEMPLATE = "sleep infinity";
+    public static final String INHERITABLE_PARAMETER_NAMES = "CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES";
+    public static final String INHERITABLE_PARAMETER_PREFIXES = "CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_PREFIXES";
 
     @Autowired
     private PipelineVersionManager pipelineVersionManager;
@@ -94,6 +97,9 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private CloudRegionManager regionManager;
+
+    @Autowired
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
 
     public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
                                                                      final PipelineStart runVO) {
@@ -133,7 +139,7 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
-        getParametersFromNetworkConfig(runVO.getInstanceType(), runVO.getCloudRegionId())
+        getParametersFromNetworkConfig(configuration.getInstanceType(), runVO.getCloudRegionId())
                 .forEach((key, parameter) -> {
                     if(!configuration.getParameters().containsKey(key)) {
                         configuration.getParameters().put(key, parameter);
@@ -148,14 +154,12 @@ public class PipelineConfigurationManager {
     }
 
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
-        Map<String, PipeConfValueVO> params = runVO.getParams() == null
-                ? Collections.emptyMap() : runVO.getParams();
+        Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
 
         configuration.setMainFile(defaultConfig.getMainFile());
         configuration.setMainClass(defaultConfig.getMainClass());
         configuration.setEnvironmentParams(defaultConfig.getEnvironmentParams());
-        configuration.setPrettyUrl(runVO.getPrettyUrl());
         configuration.setCloudRegionId(defaultConfig.getCloudRegionId());
         Map<String, PipeConfValueVO> runParameters = new LinkedHashMap<>();
 
@@ -164,6 +168,8 @@ public class PipelineConfigurationManager {
                 .stream()
                 .filter(entry -> entry.getValue().isRequired() || !StringUtils.isEmpty(entry.getValue().getValue()))
                 .forEach(entry -> runParameters.put(entry.getKey(), entry.getValue()));
+
+        runParameters.putAll(launchCapabilitiesProcessor.process(runParameters));
 
         //fill in default values, only if user's value wasn't provided
         if (defaultConfig.getParameters() != null) {
@@ -210,6 +216,12 @@ public class PipelineConfigurationManager {
             configuration.setKubeLabels(defaultConfig.getKubeLabels());
         }
 
+        if (StringUtils.hasText(runVO.getPrettyUrl())) {
+            configuration.setPrettyUrl(runVO.getPrettyUrl());
+        } else {
+            configuration.setPrettyUrl(defaultConfig.getPrettyUrl());
+        }
+
         // TODO: merging parentNodeId together with runAssignPolicy,
         //  in a future we can delete it if we get rid of parentNodeId in favor of runAssignPolicy
         configuration.setPodAssignPolicy(mergeAssignPolicy(runVO, defaultConfig));
@@ -244,9 +256,9 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
-    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
+    private RunContainerSpec mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
         final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
-        final RunAssignPolicy assignPolicy = runVO.getPodAssignPolicy();
+        final RunContainerSpec assignPolicy = runVO.getPodAssignPolicy();
 
         if (useRunId != null && assignPolicy != null) {
             throw new IllegalArgumentException(
@@ -265,9 +277,9 @@ public class PipelineConfigurationManager {
                     String.format("Configuring RunAssignPolicy as: label %s, value: %s.",
                             KubernetesConstants.RUN_ID_LABEL, value)
                 );
-                return RunAssignPolicy.builder()
+                return RunContainerSpec.builder()
                         .selector(
-                            RunAssignPolicy.PodAssignSelector.builder()
+                            RunContainerSpec.PodAssignSelector.builder()
                                 .label(KubernetesConstants.RUN_ID_LABEL)
                                 .value(value).build())
                         .build();
@@ -275,7 +287,7 @@ public class PipelineConfigurationManager {
                 if (defaultConfig.getPodAssignPolicy() != null && defaultConfig.getPodAssignPolicy().isValid()) {
                     return defaultConfig.getPodAssignPolicy();
                 }
-                return RunAssignPolicy.builder().build();
+                return RunContainerSpec.builder().build();
             }
         }
     }
@@ -327,12 +339,17 @@ public class PipelineConfigurationManager {
                 SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
         ListUtils.emptyIfNull(systemParameters)
                 .stream()
-                .filter(param -> param.isPassToWorkers() &&
-                        configParameters.containsKey(param.getName()))
+                .filter(DefaultSystemParameter::isPassToWorkers)
                 .forEach(param -> {
-                    final String paramName = param.getName();
-                    updatedParams.put(paramName, configParameters.get(paramName));
+                    if (param.isPrefix()) {
+                        processPrefixParam(param.getName(), configParameters, updatedParams);
+                    } else {
+                        processInheritedParam(param.getName(), configParameters, updatedParams);
+                    }
                 });
+
+        processExplicitlyInheritedParams(INHERITABLE_PARAMETER_NAMES, configParameters, updatedParams, false);
+        processExplicitlyInheritedParams(INHERITABLE_PARAMETER_PREFIXES, configParameters, updatedParams, true);
 
         updatedParams.put(PipelineRun.PARENT_ID_PARAM, new PipeConfValueVO(parentId));
         if (isNFS) {
@@ -411,7 +428,7 @@ public class PipelineConfigurationManager {
         final CloudRegionsConfiguration cloudRegionsConfiguration = preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_NETWORKS_CONFIG);
 
-        if (cloudRegionsConfiguration == null) {
+        if (cloudRegionsConfiguration == null || !StringUtils.hasText(instanceType)) {
             return Collections.emptyMap();
         }
 
@@ -527,5 +544,40 @@ public class PipelineConfigurationManager {
 
     private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {
         return StringUtils.isEmpty(configuration.getRunAs()) ? runVO.getRunAs() : configuration.getRunAs();
+    }
+
+    private static void processExplicitlyInheritedParams(final String paramName,
+                                                         final Map<String, PipeConfValueVO> configParameters,
+                                                         final Map<String, PipeConfValueVO> updatedParams,
+                                                         final boolean prefix) {
+        final PipeConfValueVO inheritableParameters = configParameters.get(paramName);
+        if (inheritableParameters != null && StringUtils.hasText(inheritableParameters.getValue())) {
+            Arrays.stream(StringUtils.commaDelimitedListToStringArray(inheritableParameters.getValue()))
+                    .forEach(param -> {
+                        if (prefix) {
+                            processPrefixParam(param, configParameters, updatedParams);
+                        } else {
+                            processInheritedParam(param, configParameters, updatedParams);
+                        }
+                    });
+        }
+    }
+
+    private static void processInheritedParam(final String paramName,
+                                              final Map<String, PipeConfValueVO> configParameters,
+                                              final Map<String, PipeConfValueVO> updatedParams) {
+        if (configParameters.containsKey(paramName)) {
+            updatedParams.put(paramName, configParameters.get(paramName));
+        }
+    }
+
+    private static void processPrefixParam(final String paramName,
+                                           final Map<String, PipeConfValueVO> configParameters,
+                                           final Map<String, PipeConfValueVO> updatedParams) {
+        configParameters.forEach((name, value) -> {
+            if (name.startsWith(paramName)) {
+                updatedParams.put(name, value);
+            }
+        });
     }
 }

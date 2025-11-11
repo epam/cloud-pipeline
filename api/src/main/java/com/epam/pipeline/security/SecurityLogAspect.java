@@ -55,12 +55,15 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.user.RoleManager.removeRole(..))";
 
     public static final String IMPERSONATE_RELATED_METHODS_POINTCUT =
-            "execution(* com.epam.pipeline.manager.user.ImpersonateSuccessHandler.onAuthenticationSuccess(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.ImpersonateFailureHandler.onAuthenticationFailure(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.ImpersonationManager.check(..))";
+            "execution(* com.epam.pipeline.security.saml.impersonation." +
+                    "ImpersonateSuccessHandler.onAuthenticationSuccess(..))" +
+            "|| execution(* com.epam.pipeline.security.saml.impersonation." +
+                    "ImpersonateFailureHandler.onAuthenticationFailure(..))" +
+            "|| execution(* com.epam.pipeline.security.saml.impersonation.ImpersonationManager.check(..))";
 
     public static final String AUDIT_RELATED_METHODS_POINTCUT =
-            "execution(* com.epam.pipeline.manager.audit.AuditClient.put(..))";
+            "execution(* com.epam.pipeline.manager.audit.AuditClient.put(..))" +
+                    "|| execution(* com.epam.pipeline.manager.audit.CommonAuditClient.log(..))";
 
     public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.create*(..))" +

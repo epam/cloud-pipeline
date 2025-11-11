@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.SPOT;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -44,14 +46,14 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String diskSize = "15";
-    private final String onDemand = ON_DEMAND;
+    private final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
 
     private String maxIdleTimeout;
     private String idleActionTimeout;
     private String idleCpuThreshold;
     private String idleAction;
+    private boolean userIsAdvancedUser;
 
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
@@ -60,12 +62,33 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
             idleActionTimeout = getSystemValue(SystemTabAO::getIdleActionTimeout);
             idleCpuThreshold = getSystemValue(SystemTabAO::getIdleCpuThreshold);
             idleAction = getSystemValue(SystemTabAO::getIdleAction);
+            EditUserPopup editUserPopup = navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(user.login)
+                    .edit();
+            userIsAdvancedUser = editUserPopup
+                    .isUserHasRoleOrGroup(ROLE_ADVANCED_USER);
+            editUserPopup
+                    .addRoleOrGroupIfNonExist(ROLE_ADVANCED_USER)
+                    .ok();
         });
     }
 
     @AfterClass(alwaysRun = true)
     public void fallBackPreferences() {
         setSystemPreferences(maxIdleTimeout, idleActionTimeout, idleCpuThreshold, idleAction);
+        if(!userIsAdvancedUser) {
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(user.login)
+                    .edit()
+                    .deleteRoleOrGroupIfExist(ROLE_ADVANCED_USER)
+                    .ok();
+        }
     }
 
     @Test
@@ -74,8 +97,8 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "STOP");
         relogin();
 
-        final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(defaultPriceType, hidden);
+        final String run1 = launchTool(ON_DEMAND, enabled);
+        final String run2 = launchTool(SPOT, hidden);
         runsMenu()
                 .activeRuns()
                 .ensure(runWithId(run2), visible)
@@ -93,8 +116,8 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "PAUSE_OR_STOP");
         relogin();
 
-        final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(defaultPriceType, hidden);
+        final String run1 = launchTool(ON_DEMAND, enabled);
+        final String run2 = launchTool(SPOT, hidden);
         runsMenu()
                 .activeRuns()
                 .waitUntilResumeButtonAppear(run1)
@@ -115,7 +138,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "PAUSE");
         relogin();
 
-        final String runId = launchTool(onDemand, enabled);
+        final String runId = launchTool(ON_DEMAND, enabled);
 
         runsMenu()
                 .activeRuns()
@@ -145,10 +168,10 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                         .settings()
                         .switchToPreferences()
                         .switchToSystem()
-                        .setMaxIdleTimeout(maxIdleTimeout)
                         .setIdleActionTimeout(idleActionTimeout)
                         .setIdleCpuThreshold(idleCpuThreshold)
                         .setIdleAction(idleAction)
+                        .setMaxIdleTimeout(maxIdleTimeout)
                         .saveIfNeeded()
         );
     }

@@ -171,6 +171,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         PIPELINE_REPOSITORY_TOKEN,
         PIPELINE_REPOSITORY_TYPE,
         PIPELINE_VISIBILITY,
+        PIPELINE_CONFIG,
         PIPELINE_CODE,
         PIPELINE_DOCS,
         PIPELINE_LOCKED,
@@ -187,17 +188,20 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_ALLOWED_CIDRS,
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
+        DATASTORAGE_MOUNT_EXACT_PATH,
         DATASTORAGE_SENSITIVE,
         DATASTORAGE_MOUNT_DISABLED,
         DATASTORAGE_S3_KMS_KEY_ARN,
         DATASTORAGE_S3_USE_ASSUMED_CREDS,
         DATASTORAGE_S3_TEMP_CREDS_ROLE,
         DATASTORAGE_MOUNT_STATUS,
+        DATASTORAGE_PATH_PERMISSIONS_ENABLED,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
         LTS_DURATION,
         OWNER,
+        DESCRIPTION,
         ENTITY_ID,
         CLASS_NAME,
         CONFIG_ID,
@@ -211,6 +215,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PARENT_ID.name(), folder.getParentId());
             params.addValue(CREATED_DATE.name(), folder.getCreatedDate());
             params.addValue(OWNER.name(), folder.getOwner());
+            params.addValue(DESCRIPTION.name(), folder.getDescription());
             params.addValue(LOCKED.name(), folder.isLocked());
             return params;
         }
@@ -248,6 +253,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         Long parentId = rs.getLong(PARENT_ID.name());
                         if (!rs.wasNull()) {
                             folder.setParentId(parentId);
+                            folder.setParent(new Folder(parentId));
                             folderToChildren.putIfAbsent(parentId, new HashSet<>());
                             folderToChildren.get(parentId).add(folderId);
                         }
@@ -267,11 +273,13 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                 new Date(rs.getTimestamp(PIPELINE_CREATED_DATE.name()).getTime()));
                         pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
                         pipeline.setParentFolderId(folderId);
+                        pipeline.setParent(new Folder(folderId));
                         pipeline.setOwner(rs.getString(OWNER.name()));
                         String rawVisibility = rs.getString(PIPELINE_VISIBILITY.name());
                         pipeline.setVisibility(
                                 StringUtils.isNotBlank(rawVisibility) ?
                                         RunVisibilityPolicy.valueOf(rawVisibility) : null);
+                        pipeline.setConfigurationPath(rs.getString(PIPELINE_CONFIG.name()));
                         pipeline.setCodePath(rs.getString(PIPELINE_CODE.name()));
                         pipeline.setDocsPath(rs.getString(PIPELINE_DOCS.name()));
                         folder.getPipelines().add(pipeline);
@@ -305,6 +313,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         allowedCidrs,
                                         regionId,
                                         fileShareMountId,
+                                        rs.getBoolean(DATASTORAGE_MOUNT_EXACT_PATH.name()),
                                         rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
                                         rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
                                         rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()),
@@ -318,11 +327,14 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         StoragePolicy policy = DataStorageDao.DataStorageParameters.getStoragePolicy(rs);
                         dataStorage.setStoragePolicy(policy);
                         dataStorage.setParentFolderId(folderId);
+                        dataStorage.setParent(new Folder(folderId));
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
                         dataStorage.setMountDisabled(rs.getBoolean(DATASTORAGE_MOUNT_DISABLED.name()));
                         dataStorage.setOwner(rs.getString(OWNER.name()));
+                        dataStorage.setPathPermissionsEnabled(
+                                rs.getBoolean(DATASTORAGE_PATH_PERMISSIONS_ENABLED.name()));
                         folder.getStorages().add(dataStorage);
                     }
                     rs.getLong(CONFIG_ID.name());
@@ -353,14 +365,16 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             long parentId = rs.getLong(PARENT_ID.name());
             if (!rs.wasNull()) {
                 folder.setParentId(parentId);
+                folder.setParent(new Folder(parentId));
             }
             folder.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             folder.setOwner(rs.getString(OWNER.name()));
+            folder.setDescription(rs.getString(DESCRIPTION.name()));
             folder.setLocked(rs.getBoolean(LOCKED.name()));
             return folder;
         }
-
     }
+
     @Required
     public void setFolderSequence(String folderSequence) {
         this.folderSequence = folderSequence;

@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -42,12 +43,16 @@ public class ReassignHandlerTest {
     private final AutoscalerService autoscalerService = mock(AutoscalerService.class);
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
+    private final MetadataManager metadataManager = mock(MetadataManager.class);
+    private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
 
     private final ReassignHandler reassignHandler = new ReassignHandler(
             autoscalerService,
             cloudFacade,
             pipelineRunManager,
-            new ArrayList<>());
+            new ArrayList<>(),
+            metadataManager,
+            iamProfileVerifier);
 
     @Test
     public void shouldNotReassignWithCreateNewNodeParameter() {

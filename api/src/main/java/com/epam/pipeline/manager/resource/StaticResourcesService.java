@@ -97,7 +97,7 @@ public class StaticResourcesService {
         return items.stream()
                 .map(i -> HtmlStorageItem.builder()
                     .name(i.getName())
-                    .path(i.getPath().replaceFirst(folder, ""))
+                    .path(ProviderUtils.withoutTrailingDelimiter(i.getPath().replaceFirst(folder, "")))
                     .size(getFileSize(i))
                     .type(i.getType())
                     .changed(i.getType() == DataStorageItemType.File ? ((DataStorageFile) i).getChanged() : "")

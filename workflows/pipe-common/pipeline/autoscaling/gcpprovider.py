@@ -18,7 +18,9 @@ import sys
 import time
 import uuid
 
-from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from cloudprovider import AbstractInstanceProvider, \
+    LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE, \
+    INSUFFICIENT_CAPACITY_ERROR_MESSAGE, INSUFFICIENT_CAPACITY_EXIT_CODE
 from random import randint
 from time import sleep
 
@@ -39,6 +41,7 @@ GPU_CUSTOM_INSTANCE_TYPE_INDEX = 3
 GPU_CUSTOM_INSTANCE_COUNT_INDEX = 4
 GPU_NVIDIA_PREFIX = 'nvidia-tesla-'
 GPU_TYPE_PREFIX = 'gpu-'
+CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX = '-ext'
 
 
 class GCPInstanceProvider(AbstractInstanceProvider):
@@ -50,26 +53,36 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
+                     global_distribution_url, pre_pull_images=[], is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
+                     skip_system_images_load=''):
         ssh_pub_key = utils.read_ssh_key(ins_key)
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "GCP")
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, ins_platform,
                                                       kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                                      global_distribution_url, swap_size, pre_pull_images)
+                                                      global_distribution_url, swap_size, pre_pull_images, docker_data_root, docker_storage_driver,
+                                                      skip_system_images_load)
 
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
-        machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
+        if ins_type.startswith('a3'):
+            machine_type = 'projects/{}/zones/{}/machineTypes/{}'.format(self.project_id, self.cloud_region, instance_type)
+        else:
+            machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
 
-        network_interfaces = self.__build_networks()
+        network_interfaces = self.__build_networks(instance_type)
+        spot_type = utils.get_contextual_preference(utils.SPOT_INSTANCE_TYPE)
         if is_spot:
-            utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
+            utils.pipe_log('{} instance with run id: {} will be launched'.format(spot_type, run_id))
+        
+        maintenance_type = 'terminate'
+        if ins_type.startswith('e2') and not is_spot:
+            maintenance_type = 'migrate'
+
         body = {
             'name': instance_name,
             'machineType': machine_type,
             'scheduling': {
-                'onHostMaintenance': 'terminate',
-                'preemptible': is_spot
+                'onHostMaintenance': maintenance_type
             },
             # No need for IP forwarding as it can be used as a security breach
             'canIpForward': False,
@@ -98,6 +111,13 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         }
 
+        if is_spot:
+            if spot_type.lower() == 'preemptible':
+                body['scheduling']['preemptible'] = True
+            elif spot_type.lower() == 'spot':
+                body['scheduling']['provisioning_model'] = 'spot'
+                body['scheduling']['instance_termination_action'] = 'DELETE'
+
         if gpu_type is not None and gpu_count > 0:
             gpu = {"guestAccelerators": [ 
                 {
@@ -110,6 +130,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 ]}
             body.update(gpu)
 
+        
+
         try:
             response = self.client.instances().insert(
                 project=self.project_id,
@@ -117,9 +139,13 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 body=body).execute()
             self.__wait_for_operation(response['name'])
         except Exception as client_error:
-            if 'quota' in client_error.__str__().lower():
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+            err_msg = client_error.__str__().lower()
+            if 'quota' in err_msg:
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+            elif 'instance is currently unavailable' in err_msg:
+                utils.pipe_log_warn(INSUFFICIENT_CAPACITY_ERROR_MESSAGE)
+                sys.exit(INSUFFICIENT_CAPACITY_EXIT_CODE)
             else:
                 raise client_error
 
@@ -135,15 +161,34 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     def parse_instance_type(self, ins_type):
         # Custom type with GPU: gpu-custom-4-16000-k80-1
         # Custom type with CPU only: custom-4-16000
+        # Custom type with CPU and extended RAM: custom-1-65536-ext
         # Predefined type: n1-standard-1
         if not ins_type.startswith(GPU_TYPE_PREFIX):
             return ins_type, None, 0
-        parts = ins_type[len(GPU_TYPE_PREFIX):].split('-')
-        if len(parts) != GPU_CUSTOM_INSTANCE_PARTS:
-            raise RuntimeError('Custom instance type with GPU "%s" does not match expected pattern.' % ins_type)
-        gpu_type = parts[GPU_CUSTOM_INSTANCE_TYPE_INDEX]
-        gpu_count = parts[GPU_CUSTOM_INSTANCE_COUNT_INDEX]
-        return '-'.join(parts[0:GPU_CUSTOM_INSTANCE_TYPE_INDEX]), GPU_NVIDIA_PREFIX + gpu_type, gpu_count
+
+        # Custom GPU type with extended RAM: gpu-custom-4-16000-k80-1-ext
+        extended_ram = str(ins_type).endswith(CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX)
+        if extended_ram:
+            parts = ins_type[len(GPU_TYPE_PREFIX):-len(CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX)].split('-')
+        else:
+            parts = ins_type[len(GPU_TYPE_PREFIX):].split('-')
+
+        if len(parts) == GPU_CUSTOM_INSTANCE_PARTS:
+            return self.parse_gpu_instance_type(
+                parts, GPU_CUSTOM_INSTANCE_TYPE_INDEX, GPU_CUSTOM_INSTANCE_COUNT_INDEX, extended_ram)
+        # Custom GPU type with family: gpu-n2-custom-4-16000-k80-1
+        if len(parts) == GPU_CUSTOM_INSTANCE_PARTS + 1:
+            return self.parse_gpu_instance_type(
+                parts, GPU_CUSTOM_INSTANCE_TYPE_INDEX + 1, GPU_CUSTOM_INSTANCE_COUNT_INDEX + 1, extended_ram)
+        raise RuntimeError('Custom instance type with GPU "%s" does not match expected pattern.' % ins_type)
+
+    def parse_gpu_instance_type(self, parts, gpu_type_index, gpu_count_index, extended_ram):
+        gpu_type = parts[gpu_type_index]
+        gpu_count = parts[gpu_count_index]
+        machine_type = '-'.join(parts[0:gpu_type_index])
+        if extended_ram:
+            machine_type = machine_type + CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX
+        return machine_type, GPU_NVIDIA_PREFIX + gpu_type, gpu_count
 
     def find_and_tag_instance(self, old_id, new_id):
         instance = self.__find_instance(old_id)
@@ -305,7 +350,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
             time.sleep(1)
 
-    def __build_networks(self):
+    def __build_networks(self, instance_type):
         region_name = self.cloud_region[:self.cloud_region.rfind('-')]
         allowed_networks = utils.get_networks_config(self.cloud_region)
         subnet_id = 'default'
@@ -330,6 +375,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
                 project=self.project_id, subnet=subnet_id, region=region_name)
         }
+        utils.pipe_log('- Checking GVNIC for {}'.format(instance_type))
+        if instance_type.startswith('c3') or instance_type.startswith('a3'):
+            utils.pipe_log('- GVNIC is set')
+            network['nicType'] = 'GVNIC'
         if not disable_external_access:
             network['accessConfigs'] = [
                 {

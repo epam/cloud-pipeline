@@ -283,7 +283,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
                                                 ToolOSVersion toolOSVersion, String layerRef, String digest,
                                                 Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
-                                                String defaultCmd, Integer layersCount) {
+                                                String defaultCmd, Integer layersCount, boolean cudaAvailable) {
             Assert.assertNotNull(version);
 
             ToolVersionScanResult versionScan = new ToolVersionScanResult();
@@ -310,7 +310,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                                                 Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
                                                 String defaultCmd, Integer layersCount) {
             updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef,
-                    digest, vulnerabilityCount, defaultCmd, layersCount);
+                    digest, vulnerabilityCount, defaultCmd, layersCount, false);
         }
 
         @Override

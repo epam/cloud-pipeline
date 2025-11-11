@@ -21,14 +21,15 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
 import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -184,6 +185,14 @@ public class CloudRegionManager implements SecuredEntityManager {
         return (AzureRegionCredentials) loadCredentials((AbstractCloudRegion) region);
     }
 
+    public AwsRegionCredentials loadCredentials(final AwsRegion region) {
+        return cloudRegionDao.loadCredentials(region.getId())
+                .map(credentials -> {
+                    validateProvider(credentials.getProvider(), region.getProvider());
+                    return (AwsRegionCredentials) credentials;
+                }).orElse(null);
+    }
+
     public AbstractCloudRegionCredentials loadCredentials(final AbstractCloudRegion region) {
         return cloudRegionDao.loadCredentials(region.getId())
                 .map(credentials -> {
@@ -271,7 +280,7 @@ public class CloudRegionManager implements SecuredEntityManager {
         return CloudProvider.valueOf(preferenceManager.getPreference(SystemPreferences.CLOUD_DEFAULT_PROVIDER));
     }
 
-    public AwsRegion getAwsRegion(final S3bucketDataStorage dataStorage) {
+    public AwsRegion getAwsRegion(final AbstractAWSDataStorage dataStorage) {
         return (AwsRegion) getCloudRegion(CloudProvider.AWS, dataStorage.getRegionId());
     }
 

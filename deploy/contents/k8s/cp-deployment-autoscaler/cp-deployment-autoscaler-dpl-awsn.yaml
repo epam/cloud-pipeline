@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_NAME}
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-deployment-autoscaler: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: ${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_NAME}
+      namespace: default
+      labels:
+        cloud-pipeline/cp-deployment-autoscaler: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-deployment-autoscaler: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-deployment-autoscaler
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:deployment-autoscaler-${CP_VERSION}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          env:
+            - name: CP_LOGGING_LEVEL
+              value: "DEBUG"
+            - name: CP_LOGGING_FILE
+              value: "/opt/deployment-autoscaler/logs/${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_NAME}.log"
+            - name: CP_LOGGING_HISTORY
+              value: "10"
+            - name: CP_DEPLOYMENT_AUTOSCALE_CONFIGURATION_FILE
+              value: "/etc/config/config.json"
+            - name: CP_DEPLOYMENT_AUTOSCALE_POLLING_TIMEOUT
+              value: "10"
+          volumeMounts:
+            - name: cp-deployment-autoscaler-config
+              mountPath: /etc/config
+              readOnly: true
+            - name: cp-deployment-autoscaler-logs
+              mountPath: /opt/deployment-autoscaler/logs
+            - mountPath: /root/.kube
+              name: kube-config
+              readOnly: true
+            - name: cp-cloud-credentials
+              mountPath: /root/.cloud
+              readOnly: true
+      volumes:
+        - name: cp-deployment-autoscaler-config
+          configMap:
+            name: ${CP_DEPLOYMENT_AUTOSCALER_CONFIGMAP_NAME}
+        - name: cp-deployment-autoscaler-logs
+          hostPath:
+            path: /opt/deployment-autoscaler/logs
+        - name: kube-config
+          hostPath:
+            path: /root/.kube
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

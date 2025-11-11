@@ -207,6 +207,11 @@ public class DockerClient {
             }).collect(Collectors.toList());
     }
 
+    public Map<String, String> getImageLabels(final DockerRegistry registry, final String imageName, final String tag) {
+        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+        return DockerParsingUtils.getLabels(rawImage);
+    }
+
     private Map<String, Long> getLayersSize(final DockerRegistry registry, final String imageName, final String tag) {
         return getManifest(registry, imageName, tag)
             .map(ManifestV2::getLayers)

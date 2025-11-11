@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline.runner;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.CloudPlatformPreferences;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -37,8 +39,10 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,6 +57,7 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
     private final InstanceOfferManager instanceOfferManager;
     private final MessageHelper messageHelper;
     private final CloudPlatformRunner runner;
+    private final CloudRegionDao cloudRegionDao;
 
     @Override
     public ExecutionEnvironment getExecutionEnvironment() {
@@ -127,21 +132,34 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
 
     private void validateEntryConfiguration(final PipelineConfiguration configuration) {
         if (configuration.getInstanceType() != null) {
-            final ContextualPreferenceExternalResource resource = retrieveResource(configuration);
-            Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(configuration.getInstanceType(),
-                    resource, configuration.getCloudRegionId(), BooleanUtils.isTrue(configuration.getIsSpot())),
+            final List<ContextualPreferenceExternalResource> resources = retrieveResource(configuration);
+            Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(configuration.getInstanceType(), resources,
+                            configuration.getCloudRegionId(), BooleanUtils.isTrue(configuration.getIsSpot())),
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                             configuration.getInstanceType()));
         }
     }
 
-    private ContextualPreferenceExternalResource retrieveResource(final PipelineConfiguration configuration) {
+    private List<ContextualPreferenceExternalResource> retrieveResource(final PipelineConfiguration configuration) {
+        final List<ContextualPreferenceExternalResource> resources = new ArrayList<>();
         final String dockerImage = configuration.getDockerImage();
         if (dockerImage != null) {
             final Tool tool = toolManager.loadByNameOrId(dockerImage);
-            return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
-        } else {
-            return null;
+            resources.add(new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL,
+                    tool.getId().toString()));
         }
+
+        final Long regionId = configuration.getCloudRegionId();
+        final String regionIdStr = Objects.nonNull(regionId)
+                ? regionId.toString()
+                : cloudRegionDao.loadDefaultRegion()
+                .map(AbstractCloudRegion::getId)
+                .map(Object::toString)
+                .orElse(null);
+        if (Objects.nonNull(regionIdStr)) {
+            resources.add(new ContextualPreferenceExternalResource(ContextualPreferenceLevel.REGION, regionIdStr));
+        }
+
+        return resources;
     }
 }

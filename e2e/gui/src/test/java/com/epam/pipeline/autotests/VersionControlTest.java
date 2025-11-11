@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,10 +138,10 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementIsPresent(file.getName())
                 .selectFile(file.getName())
                 .showVersions()
-                .selectFile(file.getName() + " (latest)")
+                .selectFileVersion(file.getName(),"(latest)")
                 .validateHasSize(0);
         storageContentAO
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(2, file.getName())
                 .ensureVisible(DOWNLOAD, RELOAD);
     }
 
@@ -155,7 +155,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(file.getName())
                 .showVersions()
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(2, file.getName())
                 .reload()
                 .sleep(2, SECONDS)
                 .selectFile(file.getName() + " (latest)")
@@ -206,7 +206,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(file.getName())
                 .showVersions()
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(2, file.getName())
                 .reload()
                 .showFilesVersions(false)
                 .selectFile(file.getName())

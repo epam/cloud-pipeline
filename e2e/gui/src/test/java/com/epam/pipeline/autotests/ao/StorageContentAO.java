@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.editButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -71,16 +72,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(CREATE_FOLDER, context().find(byClassName("create-folder-button"))),
             entry(CREATE_FILE, context().find(byClassName("create-file-button"))),
             entry(ADDRESS_BAR, context().find(byClassName("ant-breadcrumb"))),
-            entry(CLEAR_SELECTION, context().find(byId("clear-selection-button"))),
-            entry(REMOVE_ALL, context().find(byId("remove-all-selected-button"))),
+            entry(CLEAR_SELECTION, context().find(byClassName("selection-action-clear"))),
+            entry(REMOVE_ALL, context().find(byClassName("selection-action-remove-all"))),
             entry(DESCRIPTION, context().find(byCssSelector(".browser__data-storage-info-container div:first-child"))),
             entry(NAVIGATION, context().find(byClassName("data-storage-navigation__path-components-container"))),
             entry(STORAGEPATH, context().find(byClassName("data-storage-navigation__breadcrumb-item"))),
             entry(HEADER, context().find(byClassName("browser__item-header"))),
-            entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
+            entry(SHOW_METADATA, context().find(byClassName("presentation-action-attributes"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
-            entry(GENERATE_URL, context().find(byId("bulk-url-button"))),
+            entry(GENERATE_URL, context().find(byClassName("selection-action-generate-url"))),
+            entry(ACTIONS, context().find(byId("presentation-actions"))),
+            entry(SELECTION_ACTIONS, context().find(byId("selection-actions")))
             entry(HIDE_METADATA, context().find(byId("hide-metadata-button"))),
             entry(SHARE, context().find(byId("share-storage-button")))
     );
@@ -169,10 +172,23 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO createFolder(String folderName) {
         sleep(1, SECONDS);
-        resetMouse().hover(CREATE).click(CREATE_FOLDER);
-        $$(byId("name")).findBy(visible).setValue(folderName);
+        resetMouse().hover(CREATE);
+        get(CREATE_FOLDER).waitUntil(enabled, DEFAULT_TIMEOUT);
+        click(CREATE_FOLDER);
+        $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
+        $(byText("Create folder")).waitUntil(disappear, DEFAULT_TIMEOUT);
         return this;
+    }
+
+    public StorageContentAO createFolderWithError(String folderName, String message) {
+        sleep(1, SECONDS);
+        resetMouse().hover(CREATE);
+        get(CREATE_FOLDER).waitUntil(enabled, DEFAULT_TIMEOUT);
+        click(CREATE_FOLDER);
+        $(byId("name")).shouldBe(visible).setValue(folderName);
+        $(button("OK")).shouldBe(visible).click();
+        return this.messageShouldAppear(message);
     }
 
     public ElementEditPopupAO clickOnCreateFolderButton() {
@@ -185,6 +201,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FILE);
         $$(byId("name")).findBy(visible).setValue(fileName);
         $(button("OK")).shouldBe(visible).click();
+        $$(byClassName("browser__name-cell")).findBy(text(fileName)).waitUntil(exist, DEFAULT_TIMEOUT);
         return this;
     }
 
@@ -257,14 +274,17 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         String parentPath = format("%s/", inputField.should(exist).getValue());
         String addressPath = URI.create(parentPath).resolve(destination).toString();
 
-        inputField.setValue(addressPath).pressEnter();
+        setValue(inputField, addressPath);
+        inputField.pressEnter();
         return this;
     }
 
     public StorageContentAO tryNavigateToAnotherBucket(String anotherBucketName) {
         SelenideElement inputField = getOpenedNavigationBarInput().should(exist);
         String path = inputField.getValue();
-        inputField.setValue(replaceBucket(path, anotherBucketName)).pressEnter();
+
+        setValue(inputField, anotherBucketName);
+        inputField.pressEnter();
         return this;
     }
 
@@ -328,9 +348,15 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return new FileAO(fileName, 0);
     }
 
+    public FileAO selectFileVersion(String fileName, String version) {
+        int index = $$(byText(fileName)).indexOf($(byText(version)));
+        return new FileAO(fileName, index);
+    }
+
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
         $$(byClassName("browser__name-cell")).findBy(text(filename)).click();
+        $(buttonByIconClass("anticon-arrows-alt")).waitUntil(exist, DEFAULT_TIMEOUT);
         return new MetadataSectionAO(this);
     }
 
@@ -359,7 +385,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO clearSelection() {
-        return click(CLEAR_SELECTION);
+        return click(SELECTION_ACTIONS).click(CLEAR_SELECTION);
     }
 
     public StorageContentAO validateNoElementsAreSelected() {
@@ -434,14 +460,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
-        int attempt = 0;
-        int maxAttempts = 3;
-        while (get(SHOW_METADATA).is(not(visible)) && attempt < maxAttempts) {
-            if (get(HIDE_METADATA).isDisplayed()) {
-                return new MetadataSectionAO(this);
-            }
-            sleep(1, SECONDS);
-            attempt++;
+        click(ACTIONS);
+        if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
+            return new MetadataSectionAO(this);
         }
         click(SHOW_METADATA);
         return new MetadataSectionAO(this);
@@ -461,17 +482,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO showFilesVersions(final boolean requiredState) {
         sleep(1, SECONDS);
-        final SelenideElement inputLabel =
-                $(byText("Show files versions")).closest(".ant-checkbox-wrapper");
+        click(ACTIONS);
+        final SelenideElement inputLabel = $(className("presentation-action-version"));
 
-        if (inputLabel.find("input").isSelected() != requiredState) {
+        if (inputLabel.find(className("anticon-check")).exists() != requiredState) {
             inputLabel.shouldBe(visible).click();
         }
         return this;
     }
 
     public StorageContentAO assertShowFilesVersionsIsChecked() {
-        $(byClassName("ant-checkbox-checked")).shouldBe(visible);
+        click(ACTIONS);
+        $(byClassName("anticon-check")).shouldBe(visible);
         return this;
     }
 
@@ -507,7 +529,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO markCheckboxByName(String name) {
         SelenideElement checkBox = context().shouldBe(visible)
                 .find(byText(format("%s", name)))
-                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
+                .parent()
+                .parent()
+                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"))
+                .find(className("ant-checkbox"));
         checkBox.shouldBe(visible).click();
         return this;
     }
@@ -595,7 +620,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         public SelenideElement context() {
             return Optional.ofNullable(fileName)
                     .map(fileName -> $(byClassName("ant-table-body"))
-                            .findAll(byText(fileName))
+                            .findAll(byXpath(format(".//td[contains(., '%s')]", fileName)))
                             .get(index)
                             .closest("tr")
                             .shouldHave(cssClass("browser__file")))
@@ -695,8 +720,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public StorageContentAO removeAllSelected() {
-            StorageContentAO.this.ensureVisible(CLEAR_SELECTION);
-            StorageContentAO.this.click(REMOVE_ALL);
+            clickOnRemoveAllSelectedButton();
 
             $$(byClassName("ant-modal-content"))
                     .findBy(text("Remove all selected items?"))
@@ -709,6 +733,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public SelectedElementsAO clickOnRemoveAllSelectedButton() {
+            StorageContentAO.this.click(SELECTION_ACTIONS);
             StorageContentAO.this.click(REMOVE_ALL);
             return this;
         }

@@ -62,6 +62,9 @@ public class LookupStrategyImpl implements LookupStrategy {
 
     private static final String STUB = "Stub only";
 
+    public static final String START_WHERE_CLAUSE = "where ( ";
+    public static final String END_WHERE_CLAUSE = ") ";
+
     public static final String DEFAULT_SELECT_CLAUSE = "select acl_object_identity.object_id_identity, "
             + "acl_entry.ace_order,  "
             + "acl_object_identity.id as acl_id, "
@@ -81,14 +84,14 @@ public class LookupStrategyImpl implements LookupStrategy {
             + "left join acl_sid acli_sid on acli_sid.id = acl_object_identity.owner_sid "
             + "left join acl_class on acl_class.id = acl_object_identity.object_id_class   "
             + "left join acl_entry on acl_object_identity.id = acl_entry.acl_object_identity "
-            + "left join acl_sid on acl_entry.sid = acl_sid.id  " + "where ( ";
+            + "left join acl_sid on acl_entry.sid = acl_sid.id ";
 
     private static final String DEFAULT_LOOKUP_KEYS_WHERE_CLAUSE = "(acl_object_identity.id = ?)";
 
     private static final String DEFAULT_LOOKUP_IDENTITIES_WHERE_CLAUSE =
             "(acl_object_identity.object_id_identity = ? and acl_class.class = ?)";
 
-    public static final String DEFAULT_ORDER_BY_CLAUSE = ") order by acl_object_identity.object_id_identity"
+    public static final String DEFAULT_ORDER_BY_CLAUSE = "order by acl_object_identity.object_id_identity"
             + " asc, acl_entry.ace_order asc";
     private static final int BATCH_SIZE = 50;
 
@@ -171,9 +174,9 @@ public class LookupStrategyImpl implements LookupStrategy {
 
         final String endSql = orderByClause;
 
-        StringBuilder sqlStringBldr = new StringBuilder(startSql.length()
-                + endSql.length() + requiredRepetitions * (repeatingSql.length() + 4));
-        sqlStringBldr.append(startSql);
+        StringBuilder sqlStringBldr = new StringBuilder(startSql.length() + START_WHERE_CLAUSE.length() +
+                END_WHERE_CLAUSE.length() + endSql.length() + requiredRepetitions * (repeatingSql.length() + 4));
+        sqlStringBldr.append(startSql).append(START_WHERE_CLAUSE);
 
         for (int i = 1; i <= requiredRepetitions; i++) {
             sqlStringBldr.append(repeatingSql);
@@ -183,7 +186,7 @@ public class LookupStrategyImpl implements LookupStrategy {
             }
         }
 
-        sqlStringBldr.append(endSql);
+        sqlStringBldr.append(END_WHERE_CLAUSE).append(endSql);
 
         return sqlStringBldr.toString();
     }
@@ -335,6 +338,28 @@ public class LookupStrategyImpl implements LookupStrategy {
         }
 
         return result;
+    }
+
+    /**
+     * This method simply loads all ACLs from DB without any clause WHERE, etc.
+     * Useful to reload ACL cache fast in batch mode, instead of doing it one by one.
+     * */
+    Map<ObjectIdentity, Acl> lookupObjectIdentities() {
+        final Map<Serializable, Acl> acls = new HashMap<>();
+
+        jdbcTemplate.query(selectClause + orderByClause, new LookupStrategyImpl.NoCacheProcessResultSet(acls, null));
+
+        Map<ObjectIdentity, Acl> resultMap = new HashMap<>();
+        for (Acl inputAcl : acls.values()) {
+            Assert.isInstanceOf(AclImpl.class, inputAcl,
+                    "Map should have contained an AclImpl");
+            Assert.isInstanceOf(Long.class, ((AclImpl) inputAcl).getId(),
+                    "Acl.getId() must be Long");
+
+            Acl result = convert(acls, (Long) ((AclImpl) inputAcl).getId());
+            resultMap.put(result.getObjectIdentity(), result);
+        }
+        return resultMap;
     }
 
     /**
@@ -529,11 +554,42 @@ public class LookupStrategyImpl implements LookupStrategy {
     // ~ Inner Classes
     // ==================================================================================================
 
-    private class ProcessResultSet implements ResultSetExtractor<Set<Long>> {
-        private final Map<Serializable, Acl> acls;
-        private final List<Sid> sids;
+    private class NoCacheProcessResultSet extends ProcessResultSet {
 
-        ProcessResultSet(Map<Serializable, Acl> acls, List<Sid> sids) {
+        NoCacheProcessResultSet(final Map<Serializable, Acl> acls, final List<Sid> sids) {
+            super(acls, sids);
+        }
+
+        /**
+         * In difference with ProcessResultSet this class doesn't use acl cache, to fully reload from database
+         */
+        public Set<Long> extractData(final ResultSet rs) throws SQLException {
+            Set<Long> parentIdsToLookup = new HashSet<Long>(); // Set of parent_id Longs
+
+            while (rs.next()) {
+                // Convert current row into an Acl (albeit with a StubAclParent)
+                convertCurrentResultIntoObject(acls, rs);
+
+                // Figure out if this row means we need to lookup another parent
+                long parentId = rs.getLong("parent_object");
+                if (parentId != 0) {
+                    // See if it's already in the "acls"
+                    if (acls.containsKey(new Long(parentId))) {
+                        continue; // skip this while iteration
+                    }
+                    parentIdsToLookup.add(new Long(parentId));
+                }
+            }
+            // Return the parents left to lookup to the caller
+            return parentIdsToLookup;
+        }
+    }
+
+    private class ProcessResultSet implements ResultSetExtractor<Set<Long>> {
+        protected final Map<Serializable, Acl> acls;
+        protected final List<Sid> sids;
+
+        ProcessResultSet(final Map<Serializable, Acl> acls, final List<Sid> sids) {
             Assert.notNull(acls, "ACLs cannot be null");
             this.acls = acls;
             // can be null
@@ -550,7 +606,7 @@ public class LookupStrategyImpl implements LookupStrategy {
          * <tt>null</tt>)
          * @throws SQLException
          */
-        public Set<Long> extractData(ResultSet rs) throws SQLException {
+        public Set<Long> extractData(final ResultSet rs) throws SQLException {
             Set<Long> parentIdsToLookup = new HashSet<Long>(); // Set of parent_id Longs
 
             while (rs.next()) {
@@ -592,8 +648,8 @@ public class LookupStrategyImpl implements LookupStrategy {
          *
          * @throws SQLException if something goes wrong converting values
          */
-        private void convertCurrentResultIntoObject(Map<Serializable, Acl> acls,
-                ResultSet rs) throws SQLException {
+        protected void convertCurrentResultIntoObject(
+                final Map<Serializable, Acl> acls, final ResultSet rs) throws SQLException {
             Long id = new Long(rs.getLong("acl_id"));
 
             // If we already have an ACL for this ID, just create the ACE

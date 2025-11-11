@@ -61,7 +61,9 @@ function mapMessage (message) {
     isRead: message.isRead,
     userId: message.userId,
     notificationId: `message_${message.id}`,
-    type: NOTIFICATION_TYPE.message
+    notificationType: NOTIFICATION_TYPE.message,
+    resources: message.resources,
+    type: message.type
   };
 }
 
@@ -309,7 +311,7 @@ export default class NotificationCenter extends React.Component {
       id: notification.notificationId,
       createdDate: notification.createdDate
     });
-    if (notification.type === NOTIFICATION_TYPE.message) {
+    if (notification.notificationType === NOTIFICATION_TYPE.message) {
       this.readMessage(notification);
     }
     if (notification.blocking) {
@@ -459,7 +461,7 @@ export default class NotificationCenter extends React.Component {
 
   openPreviewNotification = (notification) => {
     this.setState({previewNotification: notification}, () => {
-      if (notification.type === NOTIFICATION_TYPE.message) {
+      if (notification.notificationType === NOTIFICATION_TYPE.message) {
         this.readMessage(notification, true);
       }
     });
@@ -489,11 +491,12 @@ export default class NotificationCenter extends React.Component {
                   onHeightInitialized={this.onHeightInitialized}
                   key={notification.notificationId || notification.createdDate}
                   notification={notification}
-                  type={notification.type}
-                  onClick={notification.type === NOTIFICATION_TYPE.message
+                  type={notification.notificationType}
+                  onClick={notification.notificationType === NOTIFICATION_TYPE.message
                     ? this.openPreviewNotification
                     : undefined
                   }
+                  router={this.props.router}
                 />
               );
             })

@@ -183,7 +183,7 @@ function get_unused_device() {
   then
     if [[ "${#UNUSED_DEVICES[@]}" -gt "1" ]]
     then
-      pipe_log_debug "More than one matching unused devices with the required size ${_SIZE}G were found ${UNUSED_DEVICES[*]}. Only the first one will be used."
+      pipe_log_debug "More than one matching unused devices with the required size ${_SIZE}G were found ${UNUSED_DEVICES[*]}. Only the first one will be used." >&2
     fi
     echo "${UNUSED_DEVICES[0]}"
   fi

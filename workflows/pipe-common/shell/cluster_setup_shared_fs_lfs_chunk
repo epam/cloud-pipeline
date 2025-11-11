@@ -118,7 +118,7 @@ mkdir -p $_CHUNK_DIR
 chown -R mfs. $_CHUNK_DIR
 
 echo "$_CHUNK_DIR" >> /etc/mfs/mfshdd.cfg
-echo 'PERFORM_FSYNC = 0' >> /etc/mfs/mfschunkserver.cfg
+echo "PERFORM_FSYNC = ${CP_CAP_SHARE_FS_LFS_PERFORM_FSYNC:-0}" >> /etc/mfs/mfschunkserver.cfg
 sed -i '/# LABEL = _/c\LABEL = CLOUD_PIPELINE' /etc/mfs/mfschunkserver.cfg
 
 mkdir -p $_METADATA_DIR

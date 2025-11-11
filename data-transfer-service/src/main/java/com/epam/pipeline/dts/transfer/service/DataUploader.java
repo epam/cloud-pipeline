@@ -22,5 +22,6 @@ import com.epam.pipeline.dts.transfer.model.TransferTask;
 public interface DataUploader {
 
     void transfer(TransferTask transferTask);
+    void transfer(TransferTask transferTask, boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
     StorageType getStorageType();
 }

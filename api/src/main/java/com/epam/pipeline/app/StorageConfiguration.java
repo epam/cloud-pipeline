@@ -14,6 +14,11 @@ public class StorageConfiguration {
     }
 
     @Bean
+    public StorageEventCollector omicsS3Events(final AuditClient omicsAuditClient) {
+        return new StorageEventCollector(omicsAuditClient);
+    }
+
+    @Bean
     public StorageEventCollector azEvents(final AuditClient azAuditClient) {
         return new StorageEventCollector(azAuditClient);
     }
@@ -21,5 +26,10 @@ public class StorageConfiguration {
     @Bean
     public StorageEventCollector gsEvents(final AuditClient gsAuditClient) {
         return new StorageEventCollector(gsAuditClient);
+    }
+
+    @Bean
+    public StorageEventCollector nfsEvents(final AuditClient nfsAuditClient) {
+        return new StorageEventCollector(nfsAuditClient);
     }
 }

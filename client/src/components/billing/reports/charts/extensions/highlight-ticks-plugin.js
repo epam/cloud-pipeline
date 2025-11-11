@@ -22,7 +22,8 @@ const plugin = {
     const {
       axis = 'x-axis',
       highlightTickFn,
-      request
+      request,
+      tickValues
     } = configuration;
     if (!chart || typeof highlightTickFn !== 'function') {
       return;
@@ -31,7 +32,8 @@ const plugin = {
     if (ticks && ticks.length) {
       for (const tick of ticks) {
         const storage = (request || {}).value;
-        const value = (storage || {})[tick.value];
+        const tickValue = tickValues ? tickValues[tick._index] : tick.value;
+        const value = (storage || {})[tickValue];
         tick.major = highlightTickFn(value, tick);
       }
     }

@@ -14,4 +14,4 @@
 
 source $ANACONDA_HOME/etc/profile.d/conda.sh
 conda activate hcs
-python2 "$HCS_TOOLS_HOME/scripts/process_hcs_files.py" > "$ANALYSIS_DIR/hcs-parser-$RUN_ID.log" 2>&1
+python2 "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py" > "$ANALYSIS_DIR/hcs-parser-$RUN_ID.log" 2>&1

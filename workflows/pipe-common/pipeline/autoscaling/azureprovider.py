@@ -26,7 +26,8 @@ from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
 
-from pipeline.autoscaling.cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from pipeline.autoscaling.cloudprovider import AbstractInstanceProvider, \
+    LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE
 
 from pipeline.autoscaling import utils
 
@@ -55,13 +56,15 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
+                     global_distribution_url, pre_pull_images=[], is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
+                     skip_system_images_load=''):
         try:
             ins_key = utils.read_ssh_key(ins_key)
             swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, ins_platform, kube_ip,
                                                           kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                                          global_distribution_url, swap_size, pre_pull_images)
+                                                          global_distribution_url, swap_size, pre_pull_images, docker_data_root, docker_storage_driver,
+                                                          skip_system_images_load)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
             access_config = utils.get_access_config(self.cloud_region)
             disable_external_access = False
@@ -403,7 +406,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             self.__delete_all_by_run_id(node_parameters['tags']['Name'])
             error_message = client_error.__str__()
             if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error

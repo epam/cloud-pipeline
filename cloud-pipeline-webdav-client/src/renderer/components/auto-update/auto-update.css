@@ -1,0 +1,37 @@
+.auto-update-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  font-size: 10pt;
+}
+
+.update-notification {
+  padding: 15px 35px 15px 15px;
+  z-index: 1;
+  background-color: white;
+  box-shadow: 0 0 2px 0 #aaa;
+  width: 250px;
+}
+
+.update-notification .close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  cursor: pointer;
+}
+
+.update-error {
+  color: red;
+  font-size: smaller;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.auto-update-button-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}

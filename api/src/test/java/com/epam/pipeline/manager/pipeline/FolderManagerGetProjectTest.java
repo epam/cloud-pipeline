@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
@@ -67,6 +68,9 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
 
     @MockBean
     private EntityManager entityManager;
+
+    @MockBean
+    protected UserManager userManager;
 
     @Before
     public void setUp() {

@@ -37,8 +37,10 @@ import java.util.Map;
 @Slf4j
 public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<String, PipeConfValueVO>> {
 
+    private static final String PRETTY_NAME_FIELD = "pretty_name";
     private static final String VALUE_FIELD = "value";
     private static final String TYPE_FIELD = "type";
+    private static final String ICON_FIELD = "icon";
     private static final String SECTION_FIELD = "section";
     private static final String REQUIRED_FIELD = "required";
     private static final String NO_OVERRIDE_FIELD = "no_override";
@@ -46,6 +48,8 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String DESCRIPTION_FIELD = "description";
     private static final String VISIBLE_FIELD = "visible";
     private static final String VALIDATION_FIELD = "validation";
+    private static final String ANNOTATION_FIELD = "annotation";
+    private static final String SCHEME_FIELD = "scheme";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
     private final ObjectMapper mapper;
 
@@ -68,6 +72,10 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
             if (child.isValueNode()) {
                 parameter.setValue(child.asText().trim());
             } else {
+                JsonNode prettyName = child.get(PRETTY_NAME_FIELD);
+                if (hasValue(prettyName)) {
+                    parameter.setPrettyName(prettyName.asText());
+                }
                 JsonNode value = child.get(VALUE_FIELD);
                 if (hasValue(value)) {
                     parameter.setValue(value.asText().trim());
@@ -75,6 +83,10 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 JsonNode type = child.get(TYPE_FIELD);
                 if (hasValue(type)) {
                     parameter.setType(type.asText());
+                }
+                JsonNode icon = child.get(ICON_FIELD);
+                if (hasValue(icon)) {
+                    parameter.setIcon(icon.asText());
                 }
                 JsonNode section = child.get(SECTION_FIELD);
                 if (hasValue(section)) {
@@ -101,6 +113,16 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 if (hasValue(validation) && validation.isArray()) {
                     parameter.setValidation(mapper.readValue(validation.traverse(),
                             new TypeReference<List<Map<String, String>>>(){}));
+                }
+                final JsonNode annotation = child.get(ANNOTATION_FIELD);
+                if (hasValue(annotation) && annotation.isObject()) {
+                    parameter.setAnnotation(mapper.readValue(annotation.traverse(),
+                            new TypeReference<Map<String, Object>>(){}));
+                }
+                final JsonNode scheme = child.get(SCHEME_FIELD);
+                if (hasValue(scheme) && scheme.isObject()) {
+                    parameter.setScheme(mapper.readValue(scheme.traverse(),
+                            new TypeReference<Map<String, Object>>(){}));
                 }
             }
             parameters.put(name, parameter);

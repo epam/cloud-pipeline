@@ -24,16 +24,22 @@ public class ToolOSVersionView {
     private final String distribution;
     private final String version;
     private final Boolean isAllowed;
+    private final Boolean isAllowedWarning;
 
-    public ToolOSVersionView(String distribution, String version, Boolean isAllowed) {
+    public ToolOSVersionView(String distribution, String version, Boolean isAllowed, Boolean isAllowedWarning) {
         this.distribution = distribution;
         this.version = version;
         this.isAllowed = isAllowed;
+        this.isAllowedWarning = isAllowedWarning;
     }
 
-    public static ToolOSVersionView from(final ToolOSVersion osVersion, final boolean isAllowed) {
+    public static ToolOSVersionView from(final ToolOSVersion osVersion,
+                                         final ToolOSVersionExecutionPermit executionPermit) {
         return osVersion != null
-                ? new ToolOSVersionView(osVersion.getDistribution(), osVersion.getVersion(), isAllowed)
+                ? new ToolOSVersionView(
+                        osVersion.getDistribution(), osVersion.getVersion(),
+                        executionPermit.isAllowed(), executionPermit.isAllowedWarning()
+                )
                 : null;
     }
 }

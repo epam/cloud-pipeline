@@ -133,6 +133,10 @@ a.cp-danger:focus,
   background: @panel-border-color;
 }
 
+.cp-divider.light {
+  border-color: @panel-border-color-light;
+}
+
 .cp-primary {
   color: @primary-color;
 }
@@ -190,6 +194,102 @@ a.cp-danger:focus,
   border: 1px solid currentColor;
 }
 
+.cp-grey {
+  color: @color-grey;
+}
+
+.cp-grey.border {
+  border-color: @color-grey;
+}
+
+.cp-grey-light {
+  color: @color-grey-light;
+}
+
+.cp-grey-light.border {
+  border-color: @color-grey-light;
+}
+
+.cp-grey-semi-transparent {
+  color: @color-grey-semi-transparent;
+}
+
+.cp-grey-semi-transparent.border {
+  border-color: @color-grey-semi-transparent;
+}
+
+.cp-violet {
+  color: @color-violet;
+}
+
+.cp-violet.border {
+  border-color: @color-violet;
+}
+
+.cp-pink {
+  color: @color-violet;
+}
+
+.cp-pink.border {
+  border-color: @color-violet;
+}
+
+.cp-pink-light {
+  color: @color-pink-light;
+}
+
+.cp-pink-light.border {
+  border-color: @color-pink-light;
+}
+
+.cp-pink-dusty {
+  color: @color-pink-dusty;
+}
+
+.cp-pink-dusty.border {
+  border-color: @color-pink-dusty;
+}
+
+.cp-aqua {
+  color: @color-aqua;
+}
+
+.cp-aqua.border {
+  border-color: @color-aqua;
+}
+
+.cp-aqua-accent {
+  color: @color-aqua-accent;
+}
+
+.cp-aqua-accent.border {
+  border-color: @color-aqua-accent;
+}
+
+.cp-aqua-light {
+  color: @color-aqua-light;
+}
+
+.cp-aqua-light.border {
+  border-color: @color-aqua-light;
+}
+
+.cp-blue-soft {
+  color: @color-blue-soft;
+}
+
+.cp-blue-soft.border {
+  border-color: @color-blue-soft;
+}
+
+.cp-blue-dimmed {
+  color: @color-blue-dimmed;
+}
+
+.cp-blue-dimmed.border {
+  border-color: @color-blue-dimmed;
+}
+
 .cp-tag {
   background-color: transparent;
   border: 1px solid @card-border-color;
@@ -201,7 +301,8 @@ a.cp-danger:focus,
 }
 
 .cp-tag.filled,
-.cp-tag.link:hover {
+.cp-tag.link:hover,
+.cp-tag.hovered {
   background-color: @application-color;
   border: 1px solid @application-color;
   color: @application-background-color;
@@ -212,7 +313,8 @@ a.cp-danger:focus,
 }
 
 .cp-tag.filled.disabled,
-.cp-tag.link.disabled:hover {
+.cp-tag.link.disabled:hover,
+.cp-tag.disabled.hovered {
   background-color: @application-color-disabled;
   border: 1px solid @application-color-disabled;
 }
@@ -223,7 +325,8 @@ a.cp-danger:focus,
 }
 
 .cp-tag.warning.filled,
-.cp-tag.warning.link:hover {
+.cp-tag.warning.link:hover,
+.cp-tag.warning.hovered {
   background-color: @color-yellow;
   border-color: @color-yellow;
   color: @primary-text-color;
@@ -235,7 +338,8 @@ a.cp-danger:focus,
 }
 
 .cp-tag.critical.filled,
-.cp-tag.critical.link:hover {
+.cp-tag.critical.link:hover,
+.cp-tag.critical.hovered {
   background-color: @color-red;
   border-color: @color-red;
   color: @primary-text-color;
@@ -247,7 +351,8 @@ a.cp-danger:focus,
 }
 
 .cp-tag.success.filled,
-.cp-tag.success.link:hover {
+.cp-tag.success.link:hover,
+.cp-tag.success.hovered {
   background-color: @color-green;
   border-color: @color-green;
   color: @primary-text-color;
@@ -262,9 +367,89 @@ a.cp-danger:focus,
 .cp-tag.primary.filled,
 .cp-tag.cp-primary.filled,
 .cp-tag.primary.link:hover,
-.cp-tag.cp-primary.link:hover {
+.cp-tag.primary.hovered,
+.cp-tag.cp-primary.link:hover,
+.cp-tag.cp-primary.hovered {
   background-color: @primary-color;
   border-color: @primary-color;
+  color: @primary-text-color;
+}
+
+.cp-tag.violet {
+  border-color: currentColor;
+  color: @color-violet;
+}
+
+.cp-tag.violet.filled,
+.cp-tag.violet.link:hover,
+.cp-tag.violet.hovered {
+  background-color: @color-violet;
+  border-color: @color-violet;
+  color: @primary-text-color;
+}
+
+.cp-tag.blue-soft {
+  border-color: currentColor;
+  color: @color-blue-soft;
+}
+
+.cp-tag.blue-soft.filled,
+.cp-tag.blue-soft.link:hover,
+.cp-tag.blue-soft.hovered {
+  background-color: @color-blue-soft;
+  border-color: @color-blue-soft;
+  color: @primary-text-color;
+}
+
+.cp-tag.blue-dimmed {
+  border-color: currentColor;
+  color: @color-blue-dimmed;
+}
+
+.cp-tag.blue-dimmed.filled,
+.cp-tag.blue-dimmed.link:hover,
+.cp-tag.blue-dimmed.hovered {
+  background-color: @color-blue-dimmed;
+  border-color: @color-blue-dimmed;
+  color: @primary-text-color;
+}
+
+.cp-tag.aqua {
+  border-color: currentColor;
+  color: @color-aqua;
+}
+
+.cp-tag.aqua.filled,
+.cp-tag.aqua.link:hover,
+.cp-tag.aqua.hovered {
+  background-color: @color-aqua;
+  border-color: @color-aqua;
+  color: @primary-text-color;
+}
+
+.cp-tag.aqua-light {
+  border-color: currentColor;
+  color: @color-aqua-light;
+}
+
+.cp-tag.aqua-light.filled,
+.cp-tag.aqua-light.link:hover,
+.cp-tag.aqua-light.hovered {
+  background-color: @color-aqua-light;
+  border-color: @color-aqua-light;
+  color: @application-color;
+}
+
+.cp-tag.aqua-accent {
+  border-color: currentColor;
+  color: @color-aqua-accent;
+}
+
+.cp-tag.aqua-accent.filled,
+.cp-tag.aqua-accent.link:hover,
+.cp-tag.aqua-accent.hovered {
+  background-color: @color-aqua-accent;
+  border-color: @color-aqua-accent;
   color: @primary-text-color;
 }
 
@@ -459,8 +644,18 @@ h6 {
 
 .ant-form-item-control.has-error .ant-select-selection,
 .ant-form-item-control.has-error .ant-input,
-.ant-form-item-control.has-error .CodeMirror-wrap {
+.ant-form-item-control.has-error .CodeMirror-wrap,
+.has-error .CodeMirror-wrap {
   border-color: @color-red;
+}
+
+.launch-form-pipeline-name-form-item .ant-form-item-control,
+.launch-form-pipeline-name-form-item .ant-form-item-title {
+  line-height: 24px;
+}
+
+.cp-background-not-important {
+  background-color: @color-grey-semi-transparent;
 }
 
 .cp-text-not-important {
@@ -1718,7 +1913,8 @@ li.ant-time-picker-panel-select-option-selected {
   color: @color-red;
 }
 
-.ant-slider-rail {
+.ant-slider-rail,
+.rc-slider-rail {
   background-color: @card-header-background;
 }
 
@@ -1726,25 +1922,41 @@ li.ant-time-picker-panel-select-option-selected {
   stroke: @card-header-background;
 }
 
-.ant-slider-disabled .ant-slider-track {
+.ant-slider-disabled .ant-slider-track,
+.rc-slider-disabled .rc-slider-track {
   background-color: @application-color-disabled !important;
 }
 
-.ant-slider-dot {
+.ant-slider-dot,
+.rc-slider-dot {
   border-color: @card-header-background;
   background-color: @card-background-color;
 }
 
+.rc-slider-dot-active {
+  border-color: @primary-color;
+  background-color: @card-background-color;
+}
+
 .ant-slider-disabled .ant-slider-handle,
-.ant-slider-disabled .ant-slider-dot {
+.ant-slider-disabled .ant-slider-dot,
+.rc-slider-disabled .rc-slider-handle,
+.rc-slider-disabled .rc-slider-dot {
   border-color: @application-color-disabled !important;
 }
 
-.ant-slider:hover .ant-slider-rail {
+.rc-slider:not(.rc-slider-disabled) .rc-slider-handle:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
+}
+
+.ant-slider:hover .ant-slider-rail,
+.rc-slider:hover .rc-slider-rail {
   background-color: @card-header-background;
 }
 
-.ant-slider-track {
+.ant-slider-track,
+.rc-slider-track {
   background-color: @primary-color;
 }
 
@@ -1756,31 +1968,39 @@ li.ant-time-picker-panel-select-option-selected {
   stroke: @color-green !important;
 }
 
-.ant-slider:hover .ant-slider-track {
+.ant-slider:hover .ant-slider-track,
+.rc-slider:hover .rc-slider-track {
   background-color: @primary-hover-color;
 }
 
-.ant-slider-handle {
+.ant-slider-handle,
+.rc-slider-handle {
   border-color: @primary-color;
   background-color: @card-background-color;
 }
 
-.ant-slider:hover .ant-slider-handle {
+.ant-slider:hover .ant-slider-handle,
+.rc-slider:hover .rc-slider-handle {
   border-color: @primary-hover-color;
 }
 
-.ant-slider-mark-text {
+.ant-slider-mark-text,
+.rc-slider-mark-text {
   color: @application-color;
 }
 
-.cp-hcs-z-position-slider .ant-slider-track,
-.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
-  background-color: @color-yellow;
+.cp-hcs-z-position-slider .rc-slider-track,
+.cp-hcs-z-position-slider.rc-slider:hover .rc-slider-track {
+  background-color: @card-header-background;
 }
 
-.cp-hcs-z-position-slider .ant-slider-handle,
-.cp-hcs-z-position-slider .ant-slider-dot-active,
-.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+.cp-hcs-z-position-slider .rc-slider-dot-active {
+  border-color: @card-header-background !important;
+}
+
+.cp-hcs-z-position-slider .rc-slider-handle,
+.cp-hcs-z-position-slider .rc-slider-dot-active,
+.cp-hcs-z-position-slider.rc-slider:hover .rc-slider-handle {
   border-color: @color-yellow;
 }
 
@@ -1837,6 +2057,18 @@ li.ant-time-picker-panel-select-option-selected {
 
 .cp-dark-background {
   background-color: @application-dark-background-color;
+}
+
+.cp-panel.cp-dark-background {
+  color: @application-tooltip-color;
+  background-color: @application-tooltip-background-color;
+  border-color: @application-tooltip-border-color;
+}
+
+.cp-panel.cp-dark-background.semi-transparent {
+  color: @application-tooltip-color;
+  background-color: fade(@application-tooltip-background-color, 85%);
+  border-color: @application-tooltip-border-color;
 }
 
 .cp-hcs-zoom-button {

@@ -27,6 +27,8 @@ const DASHBOARD_CONFIGURATION_ATTRIBUTE = 'ui-dashboard';
 const HOME_PAGE_ATTRIBUTE = 'ui-home-page';
 const LIBRARY_EXPANDED_ATTRIBUTE = 'ui-library-expanded';
 const SEARCH_PAGE_SECTIONS = 'ui-search-document-types';
+const LAUNCH_FORM_ATTRIBUTE = 'ui-launch-form';
+const RUN_LOGS_MAIN_TASK = 'ui-run-logs-main-task';
 
 const LIBRARY_EXPANDED_STORAGE_KEY = 'library_expanded';
 
@@ -36,7 +38,9 @@ function parseAttributes (data, ignore = {}) {
     pages: ignorePagesSettings = false,
     homePage: ignoreHomePageSettings = false,
     searchDocumentTypes: ignoreSearchDocumentTypes = false,
-    libraryExpanded: libraryExpandedSetting
+    libraryExpanded: libraryExpandedSetting,
+    launchForm: ignoreLaunchFormSetting = false,
+    runLogs: ignoreRunLogsSetting = false
   } = ignore;
   const ignoreLibraryExpandedSetting = libraryExpandedSetting !== undefined;
   let pages;
@@ -44,6 +48,8 @@ function parseAttributes (data, ignore = {}) {
   let homePage;
   let searchDocumentTypes;
   let libraryExpanded;
+  let launchForm;
+  let runLogsMainTask;
   if (!ignorePagesSettings && data.hasOwnProperty(UI_PAGES_ATTRIBUTE)) {
     pages = (data[UI_PAGES_ATTRIBUTE].value || '').split(',').map(o => o.trim());
   }
@@ -64,10 +70,26 @@ function parseAttributes (data, ignore = {}) {
   if (!ignoreSearchDocumentTypes && data.hasOwnProperty(SEARCH_PAGE_SECTIONS)) {
     searchDocumentTypes = (data[SEARCH_PAGE_SECTIONS].value || '').split(',').map(o => o.trim());
   }
+  if (!ignoreLaunchFormSetting && data.hasOwnProperty(LAUNCH_FORM_ATTRIBUTE)) {
+    launchForm = data[LAUNCH_FORM_ATTRIBUTE].value;
+  }
+  if (!ignoreRunLogsSetting && data.hasOwnProperty(RUN_LOGS_MAIN_TASK)) {
+    runLogsMainTask = (data[RUN_LOGS_MAIN_TASK].value || 'false')
+      .toString()
+      .toLowerCase() === 'true';
+  }
   if (pages && pages.length === 0) {
     pages = undefined;
   }
-  return {pages, dashboard, homePage, searchDocumentTypes, libraryExpanded};
+  return {
+    pages,
+    dashboard,
+    homePage,
+    searchDocumentTypes,
+    libraryExpanded,
+    launchForm,
+    runLogsMainTask
+  };
 }
 
 function fetchUserAttributes (userId) {
@@ -92,7 +114,9 @@ function joinAttributes (values, options) {
     dashboard,
     homePage,
     searchDocumentTypes,
-    libraryExpanded
+    libraryExpanded,
+    launchForm,
+    runLogsMainTask
   } = options || {};
   (values || [])
     .forEach((data) => {
@@ -101,7 +125,9 @@ function joinAttributes (values, options) {
         dashboard: parsedDashboard,
         homePage: parsedHomePage,
         searchDocumentTypes: parsedSearchDocumentTypes,
-        libraryExpanded: parsedLibraryExpanded
+        libraryExpanded: parsedLibraryExpanded,
+        launchForm: parsedLaunchForm,
+        runLogsMainTask: parsedRunLogsMainTask
       } = parseAttributes(
         data,
         options
@@ -128,6 +154,12 @@ function joinAttributes (values, options) {
       if (parsedLibraryExpanded !== undefined) {
         libraryExpanded = parsedLibraryExpanded;
       }
+      if (parsedLaunchForm && !launchForm) {
+        launchForm = parsedLaunchForm;
+      }
+      if (parsedRunLogsMainTask && runLogsMainTask === undefined) {
+        runLogsMainTask = parsedRunLogsMainTask;
+      }
     });
   if (pages && pages.length === 0) {
     pages = undefined;
@@ -137,7 +169,9 @@ function joinAttributes (values, options) {
     dashboard,
     homePage,
     searchDocumentTypes,
-    libraryExpanded
+    libraryExpanded,
+    launchForm,
+    runLogsMainTask
   };
 }
 
@@ -227,6 +261,8 @@ class UINavigation {
   @observable homePage;
   @observable searchDocumentTypes;
   @observable supportTemplate;
+  @observable launchForm;
+  @observable runLogsMainTask;
   @observable _libraryExpanded;
   @observable _loaded;
 
@@ -330,7 +366,16 @@ class UINavigation {
           }
           return Promise.resolve();
         })
-        .then(({pages, dashboard, homePage, searchDocumentTypes, libraryExpanded} = {}) => {
+        .then((opts = {}) => {
+          const {
+            pages,
+            dashboard,
+            homePage,
+            searchDocumentTypes,
+            libraryExpanded,
+            launchForm,
+            runLogsMainTask
+          } = opts;
           const {
             admin = false
           } = this.user.loaded ? (this.user.value || {}) : {};
@@ -338,6 +383,8 @@ class UINavigation {
           this.dashboard = dashboard;
           this.homePage = homePage;
           this.searchDocumentTypes = searchDocumentTypes;
+          this.launchForm = launchForm;
+          this.runLogsMainTask = runLogsMainTask;
           this.libraryExpanded = libraryExpanded;
           this.parseSupportTemplate();
           this._loaded = true;

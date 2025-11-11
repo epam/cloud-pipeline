@@ -11,5 +11,9 @@ spec:
     port: ${CP_DAV_INTERNAL_PORT}
     targetPort: ${CP_DAV_INTERNAL_PORT}
     name: cp-dav-port-http
+  - protocol: TCP
+    port: ${CP_DAV_EXTRA_INTERNAL_PORT}
+    targetPort: ${CP_DAV_EXTRA_INTERNAL_PORT}
+    name: cp-dav-extra-port-http
   selector:
     cloud-pipeline/cp-dav: "true"

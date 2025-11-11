@@ -20,13 +20,33 @@ import {PipelineRunCommitCheck} from '../../../../../models/pipelines/PipelineRu
  * @param {number|string} runId
  * @returns {Promise<{result:boolean}>} true if default check passed, false otherwise
  */
-export default async function commitCheck (runId) {
+export default async function commitCheck (runId, options, skipContainerCheck = false) {
   const checkRequest = new PipelineRunCommitCheck(runId);
   await checkRequest.fetch();
   if (checkRequest.loaded) {
+    const {enoughSpace = {}, containerSize = {}} = checkRequest.value || {};
+    const sizeCheck = `${containerSize.result || ''}`.toLowerCase() === 'ok' ||
+      `${containerSize.result || ''}`.toLowerCase() === 'warn';
+    const spaceCheck = `${enoughSpace.result || ''}`.toLowerCase() === 'ok' ||
+      `${enoughSpace.result || ''}`.toLowerCase() === 'warn';
     return {
-      result: `${checkRequest.value}`.toLowerCase() === 'true'
+      result: sizeCheck && spaceCheck,
+      message: [
+        !skipContainerCheck && containerSize.message ? {
+          type: sizeCheck ? 'warning' : 'error',
+          text: containerSize.message,
+          checkType: 'size'
+        } : null,
+        enoughSpace.message ? {
+          type: spaceCheck ? 'warning' : 'error',
+          text: enoughSpace.message,
+          checkType: 'space'
+        } : null
+      ].filter(Boolean)
     };
   }
-  return {result: true};
+  return {
+    result: true,
+    message: undefined
+  };
 }

@@ -69,6 +69,7 @@ export default class EmbeddedMiew extends React.Component {
       this.viewer = new Miew({
         container: this.container,
         load: this.state.pdb,
+        type: 'pdb',
         rep: {
           mode: 'CA',
           colorer: 'EL'

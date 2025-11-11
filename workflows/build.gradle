@@ -14,3 +14,7 @@ task buildGpuStat(type: Exec) {
         }
     }
 }
+
+task clean(type: Delete) {
+    delete("$project.rootDir/workflows/gpustat/dist/dist-folder")
+}

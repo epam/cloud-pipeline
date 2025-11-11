@@ -42,12 +42,13 @@ public class ElasticIndexService {
         throws ElasticClientException {
         try {
             if (!elasticsearchServiceClient.isIndexExists(indexName)) {
-                final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
-                                                             Charset.defaultCharset());
-                if (elasticsearchServiceClient.isIndexExists(indexName)) {
-                    log.debug("Index {} exists already!", indexName);
-                } else {
-                    elasticsearchServiceClient.createIndex(indexName, mappingsJson);
+                try (InputStream inputStream = openJsonMapping(settingsFilePath)) {
+                    final String mappingsJson = IOUtils.toString(inputStream, Charset.defaultCharset());
+                    if (elasticsearchServiceClient.isIndexExists(indexName)) {
+                        log.debug("Index {} exists already!", indexName);
+                    } else {
+                        elasticsearchServiceClient.createIndex(indexName, mappingsJson);
+                    }
                 }
             }
         } catch (IOException e) {

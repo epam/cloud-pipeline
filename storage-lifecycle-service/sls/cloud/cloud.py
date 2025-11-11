@@ -14,10 +14,11 @@
 
 
 class StorageOperations:
-    def prepare_bucket_if_needed(self, region, storage_container):
+    def prepare_bucket_if_needed(self, region, storage_container, object_size_for_transit=None):
         pass
 
-    def list_objects_by_prefix(self, region, storage_container, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,
+                               list_versions=False, convert_paths=True):
         pass
 
     def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):

@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import time
 import urllib3
 
 from .region import CloudRegion
-from .datastorage import DataStorage
-from .datastorage import DataStorageWithShareMount
+from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
+from .token import StaticToken
 
 # Date format expected by Pipeline API
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -83,9 +83,11 @@ class Tool:
         return json.dumps(fields, sort_keys=True, indent=4)
 
 class DataStorageRule:
-    def __init__(self, file_mask, move_to_sts):
+    def __init__(self, file_mask, move_to_sts, name=None, is_result=False):
+        self.name = name
         self.file_mask = file_mask
         self.move_to_sts = move_to_sts
+        self.is_result = is_result
 
     def match(self, path):
         return fnmatch.fnmatch(path, self.file_mask)
@@ -98,6 +100,13 @@ class DataStorageRule:
         return False
 
     @staticmethod
+    def match_which(rules, path):
+        for rule in rules:
+            if rule.move_to_sts and rule.match(path):
+                return rule
+        return None
+
+    @staticmethod
     def read_from_file(path):
         if not os.path.exists(path):
             return []
@@ -108,7 +117,9 @@ class DataStorageRule:
                 return []
             try:
                 for rule in json.loads(data):
-                    rules.append(DataStorageRule(rule['fileMask'], rule['moveToSts']))
+                    rule_name = rule["name"] if "name" in rule else None
+                    is_result = rule["isResult"] if "isResult" in rule else False
+                    rules.append(DataStorageRule(rule['fileMask'], rule['moveToSts'], rule_name, is_result))
             except ValueError:
                 return rules
         return rules
@@ -185,6 +196,7 @@ class PipelineAPI:
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    RUN_COUNT = 'run/count'
     TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
     DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
@@ -210,6 +222,7 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_STORAGE_ITEM_CONTENT_URL = '/datastorage/{id}/content?path={path}'
     LOAD_METADATA = "/metadata/load"
+    SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
@@ -254,22 +267,32 @@ class PipelineAPI:
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
     RUN_TAG = '/run/{id}/tag'
+    REPORT_USERS = "report/users"
+    LOG_GROUP = "log/group"
+    STORAGE_REQUESTS = "log/storage/requests"
+    BILLING_EXPORT = "billing/export"
+    DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
+    RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
+    RUN_RESULT_URL = '/run/{id}/result'
 
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
     MAX_PAGE_SIZE = 400
 
-    def __init__(self, api_url, log_dir, attempts=3, timeout=5, connection_timeout=10):
+    def __init__(self, api_url=None, log_dir=None, attempts=3, timeout=5, connection_timeout=10, token=None):
         urllib3.disable_warnings()
-        token = os.environ.get('API_TOKEN')
-        self.api_url = api_url
-        self.log_dir = log_dir
-        self.header = {'content-type': 'application/json',
-                       'Authorization': 'Bearer {}'.format(token)}
+        self.api_url = api_url or os.environ['API']
+        self.log_dir = log_dir or os.getenv('LOG_DIR', '/var/log')
         self.attempts = attempts
         self.timeout = timeout
         self.connection_timeout = connection_timeout
+        self.token = token or StaticToken()
+
+    @property
+    def header(self):
+        return {'content-type': 'application/json',
+                'Authorization': 'Bearer {}'.format(self.token.get())}
 
     def check_response(self, response, not_found_msg=None):
         if response.status_code != 200:
@@ -330,6 +353,9 @@ class PipelineAPI:
         preference = self.get_preference_efficiently(name) or {}
         return preference.get('value')
 
+    def load_current_user_efficiently(self):
+        return self._request('GET', 'whoami')
+
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
         count = 0
@@ -350,6 +376,30 @@ class PipelineAPI:
                 return response_data.get('payload')
             except APIError as e:
                 raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.timeout)
+        raise exceptions[-1]
+
+    def _download(self, http_method, endpoint, output_path, data=None):
+        # Make sure the output_path's directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        url = '{}/{}'.format(self.api_url, endpoint)
+        count = 0
+        exceptions = []
+        while count < self.attempts:
+            count += 1
+            try:
+                with requests.request(method=http_method, url=url, data=json.dumps(data),
+                                      headers=self.header, verify=False,
+                                      timeout=self.connection_timeout, stream=True) as r:
+                    with open(output_path, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=1024):
+                            f.write(chunk)
+                        return
             except Exception as e:
                 exceptions.append(e)
             time.sleep(self.timeout)
@@ -474,7 +524,7 @@ class PipelineAPI:
         return result.json()['payload']['podId']
 
     def load_child_pipelines(self, parent_id):
-        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent_id={}'.format(parent_id)}
+        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent-id={}'.format(parent_id)}
         result = requests.post(str(self.api_url) + self.FILTER_RUNS,
                                data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
@@ -694,6 +744,20 @@ class PipelineAPI:
             raise RuntimeError("Failed to load metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
 
+    def search_metadata(self, entity_key, entity_value, entity_class):
+        try:
+            suffix = self.SEARCH_METADATA.format(entity_key=entity_key,
+                                              entity_value=entity_value,
+                                              entity_class=entity_class)
+            result = self.execute_request(str(self.api_url) + suffix,
+                                          method="get")
+            if not result or len(result) == 0:
+                return []
+            return result
+        except Exception as e:
+            raise RuntimeError("Failed to search metadata for the given entity. "
+                               "Error message: {}".format(str(e.message)))
+
     def load_metadata_efficiently(self, entity_id, entity_class):
         all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
         return (all_metadata[0] if all_metadata else {}).get('data', {})
@@ -730,6 +794,14 @@ class PipelineAPI:
             raise RuntimeError("Failed to find metadata entities. "
                                "Error message: {}".format(str(e.message)))
 
+    def download_metadata_entities(self, output_path, folder_id, entity_class, entity_ids=None, file_format=None):
+        endpoint = 'metadataEntity/download?folderId={}&entityClass={}'.format(folder_id, entity_class)
+        if entity_ids:
+            endpoint += '&entityIds={}'.format(','.join(map(str, entity_ids)))
+        if file_format:
+            endpoint += '&fileFormat={}'.format(file_format)
+        self._download('GET', endpoint, output_path=output_path)
+
     def load_dts_registry(self):
         try:
             result = self.execute_request(str(self.api_url) + self.LOAD_DTS, method='get')
@@ -765,6 +837,18 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
                                "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+
+    def search_contextual_preferences(self, preference_name):
+        try:
+            data = {
+                "preferences": [ preference_name ]
+                }
+            result = self.execute_request(str(self.api_url) + 'contextual/preference', method='post',
+            data=json.dumps(data))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s. "
+                               "Error message: %s" % (preference_name, e.message))
 
     # "preference_level" accepts only "TOOL" value for now. Any other value will throw an error
     # "resource_id"=-1 is used when you don't need to consider the tool's setting. Only user and group
@@ -1049,6 +1133,17 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
 
+    def generate_user_token_efficiently(self, user_name=None, duration=None):
+        args = {}
+        if user_name:
+            args['name'] = user_name
+        if duration:
+            args['expiration'] = str(duration)
+        endpoint = '/user/token'
+        if args:
+            endpoint += '?' + '&'.join('{}={}'.format(key, value) for key, value in args.items())
+        return self._request('GET', endpoint) or {}
+
     def load_roles(self, load_users=False):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
@@ -1092,7 +1187,7 @@ class PipelineAPI:
                                           data=json.dumps(data))
             return [] if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to launch configuration %s. "
+            raise RuntimeError("Failed to launch configuration {}. "
                                "Error message: {}".format(str(data['id']), str(e.message)))
 
     def get_edge_external_url(self, region=None):
@@ -1360,9 +1455,12 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to delete tool \n {}".format(e))
 
-    def load_datastorage_items(self, storage_id):
+    def load_datastorage_items(self, storage_id, path=None):
         try:
-            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+            endpoint = self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id)
+            if path:
+                endpoint + "?path={}".format(path)
+            return self._request(endpoint=endpoint, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
 
@@ -1387,8 +1485,122 @@ class PipelineAPI:
             raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
                 entity_class, str(entity_id), str(e)))
 
-    def update_pipeline_run_tags(self, run_id, tags):
+    def update_pipeline_run_tags(self, run_id, tags, keep_existing_tags=False):
         try:
-            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
+            if 'tags' in tags:
+                tags = tags['tags']
+
+            if keep_existing_tags:
+                run = self.load_run(run_id)
+                current_tags = run.get('tags') or {}
+                tags.update(current_tags)
+
+            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data={ 'tags': tags })
         except Exception as e:
             raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+    def report_users(self, start, end, users):
+        try:
+            data = {'from': start, 'to': end, 'users': users, 'interval': 'HOURS'}
+            return self._request(endpoint=self.REPORT_USERS, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load users report \n {}".format(e))
+
+    def log_group(self, filter, group_by):
+        try:
+            data = {'filter': filter, 'groupBy': group_by}
+            return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load logs \n {}".format(e))
+
+    def load_storage_requests(self, body):
+        try:
+            return self._request(endpoint=self.STORAGE_REQUESTS, http_method="post", data=body)
+        except Exception as e:
+            raise RuntimeError("Failed to fetch storage requests data \n {}".format(e))
+
+    def filter_runs(self, start, end, user, filter, page, page_size):
+        try:
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end, "page": page, "pageSize": page_size}
+            if filter is not None:
+                for key, value in filter.items():
+                    data[key] = value
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            elements = result['elements'] if 'elements' in result else []
+            total_count = result['totalCount'] if 'totalCount' in result else 0
+            return elements, total_count
+        except Exception as e:
+            raise RuntimeError("Failed to load master runs \n {}".format(e))
+
+    def filter_runs_all(self, start, end, user, filter):
+        total_count = 0
+        page = 0
+        page_size = 100
+        result = []
+        while page == 0 or page * page_size < total_count:
+            page += 1
+            elements, total_count = self.filter_runs(start, end, user, filter, page, page_size)
+            result.extend(elements)
+        return result
+
+    def run_count(self, start, end, user, filter):
+        try:
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end}
+            if filter is not None:
+                for key, value in filter.items():
+                    data[key] = value
+            return self._request(endpoint=self.RUN_COUNT, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load runs count \n {}".format(e))
+
+    def billing_export(self, start, end, filters, types):
+        try:
+            url = '{}/{}'.format(self.api_url, self.BILLING_EXPORT)
+            data = {"types": types, "from": start, "to": end, "filters": filters, "discount": {"computes": 0, "storages": 0}}
+            response = requests.request(method="post", url=url, data=json.dumps(data),
+                                        headers=self.header, verify=False,
+                                        timeout=self.connection_timeout)
+            if response.status_code != 200:
+                raise HTTPError('API responded with http status %s.' % str(response.status_code))
+            return response.content
+        except Exception as e:
+            raise RuntimeError("Failed to load billing export \n {}".format(e))
+
+    def load_file_share_mount(self, mount_id):
+        try:
+            result = self._request(endpoint=self.DATA_STORAGE_MOUNT_LOAD.format(id=mount_id), http_method="get")
+            return {} if result is None else FileShareMount.from_json(result)
+        except Exception as e:
+            raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))
+
+
+    def log_pipeline_run_engine_task_events(self, run_id, events):
+        try:
+            return self._request(
+                endpoint=self.RUN_ENGINE_EVENTS_URL.format(id=str(run_id)),
+                http_method='post',
+                data=events
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to put engine task events for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def add_pipeline_run_results(self, run_id, results):
+        try:
+            return self._request(
+                endpoint=self.RUN_RESULT_URL.format(id=str(run_id)),
+                http_method='post',
+                data=results
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to add run results for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def get_pipeline_run_results(self, run_id):
+        try:
+            return self._request(
+                endpoint=self.RUN_RESULT_URL.format(id=str(run_id)),
+                http_method='get'
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load run results for run ID '{}', error: {}".format(str(run_id), str(e)))

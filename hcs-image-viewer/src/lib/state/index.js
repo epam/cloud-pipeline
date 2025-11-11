@@ -49,6 +49,12 @@ function useHCSImageState() {
   const setOverlayImages = useCallback((overlayImages = []) => {
     dispatch({ type: actions.setOverlayImages, overlayImages });
   }, [dispatch]);
+  const setAnnotations = useCallback((annotations = []) => {
+    dispatch({ type: actions.setAnnotations, annotations });
+  }, [dispatch]);
+  const setSelectedAnnotation = useCallback((annotation) => {
+    dispatch({ type: actions.setSelectedAnnotation, selectedAnnotation: annotation });
+  }, [dispatch]);
   const setImageViewportLoaded = useCallback((options) => {
     dispatch({ type: actions.setImageViewportLoaded, ...options });
     viewerDispatch({ type: viewerActions.setLoaded });
@@ -77,6 +83,15 @@ function useHCSImageState() {
   const setLockChannels = useCallback((lock) => {
     viewerDispatch({ type: viewerActions.setLockChannels, lock });
   }, [viewerDispatch]);
+  const set3D = useCallback((options = undefined) => {
+    let payload = {};
+    if (typeof options === 'boolean') {
+      payload = { use3D: options };
+    } else if (typeof options === 'object') {
+      payload = options;
+    }
+    viewerDispatch({ type: viewerActions.set3D, ...payload });
+  }, [viewerDispatch]);
   const callbacks = useMemo(() => ({
     setData,
     setImage,
@@ -91,6 +106,9 @@ function useHCSImageState() {
     setLockChannels,
     setMesh,
     setOverlayImages,
+    setAnnotations,
+    setSelectedAnnotation,
+    set3D,
   }), [
     setData,
     setImage,
@@ -105,6 +123,9 @@ function useHCSImageState() {
     setLockChannels,
     setMesh,
     setOverlayImages,
+    setAnnotations,
+    setSelectedAnnotation,
+    set3D,
   ]);
   return {
     callbacks,

@@ -31,7 +31,7 @@ import {
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import GitRepositoryControl from '../../special/git-repository-control';
-import {Alert, Button, Col, Icon, message, Row, Select, Table} from 'antd';
+import {Alert, Button, Col, Icon, message, Popover, Row, Select, Table} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
@@ -53,6 +53,15 @@ import UserName from '../../special/UserName';
 import HiddenObjects from '../../../utils/hidden-objects';
 import CloneForm from './forms/CloneForm';
 import styles from './Browser.css';
+import Markdown from '../../special/markdown';
+
+const LATEST_VERSION_PLACEHOLDER = {
+  id: 'latest',
+  key: 'latest',
+  name: 'latest',
+  commitId: 'latest',
+  type: ItemTypes.version
+};
 
 @connect({
   pipelinesLibrary,
@@ -91,7 +100,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     onReloadTree: PropTypes.func,
     selectedVersion: PropTypes.string,
     selectedConfiguration: PropTypes.string,
-    configurationSelectionMode: PropTypes.bool
+    configurationSelectionMode: PropTypes.bool,
+    allowSelectLatestVersion: PropTypes.bool
   };
 
   state = {
@@ -125,6 +135,59 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     return undefined;
   }
 
+  renderTreeItemText = (text, item) => (
+    <span
+      className={
+        classNames(
+          {
+            'cp-text-not-important': item.draft
+          }
+        )
+      }
+    >
+      {text}
+    </span>
+  );
+
+  renderTreeItemCollapsedText = (text, item) => {
+    const t = text || '';
+    if (t.length > 200) {
+      const collapsedText = t.slice(0, 200).concat('...');
+      return (
+        <Popover content={(
+          <div style={{maxWidth: '50vw', maxHeight: '50vh', overflow: 'auto'}}>
+            <Markdown md={t} style={{width: '100%', height: '100%', overflow: 'auto'}} />
+          </div>
+        )}>
+          <span
+            className={
+              classNames(
+                {
+                  'cp-text-not-important': item.draft
+                }
+              )
+            }
+          >
+            {collapsedText}
+          </span>
+        </Popover>
+      );
+    }
+    return (
+      <span
+        className={
+          classNames(
+            {
+              'cp-text-not-important': item.draft
+            }
+          )
+        }
+      >
+        {text}
+      </span>
+    );
+  };
+
   columns = [
     {
       key: 'type',
@@ -144,7 +207,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       dataIndex: 'description',
       key: 'description',
       className: `${styles.treeItemName} ${styles.treeItemNameWrap}`,
-      render: this.renderTreeItemText,
+      render: this.renderTreeItemCollapsedText,
       onCellClick: (item) => this.navigate(item)
     },
     {
@@ -152,6 +215,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: `${styles.treeItemName}`,
       render: (text, item) => {
+        if (item.id === LATEST_VERSION_PLACEHOLDER.id) {
+          return null;
+        }
         return this.renderTreeItemText(
           <span>
             Last updated: {
@@ -170,20 +236,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       onCellClick: (item) => this.navigate(item)
     }
   ];
-
-  renderTreeItemText = (text, item) => (
-    <span
-      className={
-        classNames(
-          {
-            'cp-text-not-important': item.draft
-          }
-        )
-      }
-    >
-      {text}
-    </span>
-  );
 
   listingColumns = [
     {
@@ -210,7 +262,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       dataIndex: 'description',
       key: 'description',
       className: styles.treeItemName,
-      render: this.renderTreeItemText,
+      render: this.renderTreeItemCollapsedText,
       onCellClick: (item) => this.navigate(item)
     },
     {
@@ -218,6 +270,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: styles.treeItemName,
       render: (text, item) => {
+        if (item.id === LATEST_VERSION_PLACEHOLDER.id) {
+          return null;
+        }
         return this.renderTreeItemText(
           <span>
             Last updated: {item.author && 'by '}
@@ -296,7 +351,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           const configurations = this.state.configurations[item.id].list;
           return (
             <Select
-              style={{width: '100%'}}
+              style={{width: '100%', minWidth: '70px'}}
               value={this.state.configurations[item.id].selected}
               onSelect={this.onSelectConfiguration(item)}>
               {
@@ -708,28 +763,31 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         </MenuItem>
       );
     }
-    return (
-      <Dropdown
-        placement="bottomRight"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={onClick}
-            style={{width: 100}}
-          >
-            {actions}
-          </Menu>
-        }
-        key="edit">
-        <Button
-          key="edit"
-          id="edit-pipeline-menu-button"
-          style={{lineHeight: 1}}
-          size="small">
-          <Icon type="setting" />
-        </Button>
-      </Dropdown>
-    );
+    if (actions.length > 0) {
+      return (
+        <Dropdown
+          placement="bottomRight"
+          overlay={
+            <Menu
+              selectedKeys={[]}
+              onClick={onClick}
+              style={{width: 100}}
+            >
+              {actions}
+            </Menu>
+          }
+          key="edit">
+          <Button
+            key="edit"
+            id="edit-pipeline-menu-button"
+            style={{lineHeight: 1}}
+            size="small">
+            <Icon type="setting" />
+          </Button>
+        </Dropdown>
+      );
+    }
+    return null;
   };
 
   render () {
@@ -755,6 +813,12 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           filter: this.props.hiddenObjectsTreeFilter()
         }
       );
+      if (this.props.allowSelectLatestVersion) {
+        this._versions = [
+          LATEST_VERSION_PLACEHOLDER,
+          ...this._versions
+        ];
+      }
       versionsContent = (
         <Table
           key={CONTENT_PANEL_KEY}
@@ -885,7 +949,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   }
 
   loadConfigurations = async () => {
-    const versions = this.props.versions.value.map(v => v);
+    let versions = this.props.versions.value.map(v => v);
+    if (this.props.allowSelectLatestVersion) {
+      versions = [
+        LATEST_VERSION_PLACEHOLDER,
+        ...versions
+      ];
+    }
     const configurations = {};
     for (let i = 0; i < versions.length; i++) {
       const version = versions[i];

@@ -15,6 +15,7 @@
  */
 
 import React, {Component} from 'react';
+import classNames from 'classnames';
 import {Table, Row, Col, Spin} from 'antd';
 import {observer} from 'mobx-react';
 import styles from './ClusterNode.css';
@@ -22,10 +23,9 @@ import displayDate from '../../utils/displayDate';
 
 @observer
 export default class ClusterNodeGeneralInfo extends Component {
-
   state = {dataLoaded: false};
 
-  generateAllocatableAndCapacityTable(node, isLoading) {
+  generateCapacityTable (node, isLoading) {
     const columns = [
       {
         dataIndex: 'key',
@@ -66,7 +66,7 @@ export default class ClusterNodeGeneralInfo extends Component {
     return this.generateTable({table, columns, key: 'key', showHeader: true, isLoading});
   }
 
-  generateAddressesTable(node, isLoading) {
+  generateAddressesTable (node, isLoading) {
     const columns = [
       {
         dataIndex: 'type',
@@ -91,7 +91,7 @@ export default class ClusterNodeGeneralInfo extends Component {
     });
   }
 
-  generateKeyValueTable(obj, title, isLoading) {
+  generateKeyValueTable (obj, title, isLoading) {
     const columns = [
       {
         dataIndex: 'key',
@@ -124,7 +124,10 @@ export default class ClusterNodeGeneralInfo extends Component {
       : undefined;
     return (
       <Table
-        className={styles.table}
+        className={classNames(
+          styles.table,
+          {[styles.cloudNodeTable]: this.props.isCloudNode}
+        )}
         style={{margin: '0 5px'}}
         columns={tableData.columns}
         dataSource={tableData.table}
@@ -144,7 +147,44 @@ export default class ClusterNodeGeneralInfo extends Component {
     }
   }
 
+  renderSystemInfoRow = () => {
+    const addressesTable = this.generateAddressesTable(
+      this.props.node.value,
+      this.props.node.pending
+    );
+    const labelsTable = this.generateKeyValueTable(
+      this.props.node.value.labels,
+      'Labels',
+      this.props.node.pending
+    );
+    const systemInfoTable = this.generateKeyValueTable(
+      this.props.node.value.systemInfo,
+      'System info',
+      this.props.node.pending
+    );
+    if (this.props.isCloudNode) {
+      return (
+        <div style={{display: 'flex', gap: 5}}>
+          {addressesTable}
+          {labelsTable}
+        </div>
+      );
+    }
+    return (
+      <Row key="system info">
+        <Col span={11}>
+          {systemInfoTable}
+        </Col>
+        <Col span={8}>
+          {addressesTable} <br />
+          {labelsTable}
+        </Col>
+      </Row>
+    );
+  }
+
   render () {
+    const {isCloudNode} = this.props;
     if (this.props.node.error) {
       return null;
     }
@@ -152,36 +192,29 @@ export default class ClusterNodeGeneralInfo extends Component {
       return (<Row type="flex" justify="center"><Spin /></Row>);
     } else {
       const node = this.props.node.value;
-
-      const addressesTable = this.generateAddressesTable(node, this.props.node.pending);
-      const labelsTable = this.generateKeyValueTable(node.labels, 'Labels', this.props.node.pending);
-      const allocatableAndCapacityTable = this.generateAllocatableAndCapacityTable(node, this.props.node.pending);
-      const systemInfoTable = this.generateKeyValueTable(node.systemInfo, 'System info', this.props.node.pending);
-
+      const allocatableAndCapacityTable = this.generateCapacityTable(
+        node,
+        this.props.node.pending
+      );
       return (
         <div style={{overflowY: 'auto'}}>
           <Row key="main info">
             <Col>
-              <span
-                className={styles.mainInfoPart}><b>Created:</b> {displayDate(node.creationTimestamp)}</span>
+              <span className={styles.mainInfoPart}>
+                <b>Created:</b> {displayDate(node.creationTimestamp)}
+              </span>
             </Col>
           </Row>
-          <br/>
-          <Row key="system info">
-            <Col span={11}>
-              {systemInfoTable}
-            </Col>
-            <Col span={8}>
-              {addressesTable} <br />
-              {labelsTable}
-            </Col>
-          </Row>
-          <br/>
-          <Row key="allocatable and capacity table">
-            <Col span={11}>
-              {allocatableAndCapacityTable}
-            </Col>
-          </Row>
+          <br />
+          {this.renderSystemInfoRow()}
+          <br />
+          {!isCloudNode ? (
+            <Row key="allocatable and capacity table">
+              <Col span={11}>
+                {allocatableAndCapacityTable}
+              </Col>
+            </Row>
+          ) : null}
         </div>
       );
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,23 +26,27 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.RoleManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
+import com.epam.pipeline.utils.CommonUtils;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -86,12 +90,6 @@ public class MetadataManager {
     private FolderManager folderManager;
 
     @Autowired
-    private UserManager userManager;
-
-    @Autowired
-    private RoleManager roleManager;
-
-    @Autowired
     private MetadataEntryMapper metadataEntryMapper;
 
     @Autowired
@@ -102,6 +100,9 @@ public class MetadataManager {
 
     @Autowired
     private AuthManager authManager;
+
+    @Autowired
+    private ToolManager toolManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -134,8 +135,9 @@ public class MetadataManager {
             LOGGER.debug("Could not find such metadata. A new one will be created.");
             metadataDao.registerMetadataItem(metadataToSave);
         } else {
-            existingMetadata.getData().putAll(metadataToSave.getData());
-            metadataDao.uploadMetadataItem(existingMetadata);
+            final MetadataEntry entryWithSecrets = loadMetadataWithSecrets(existingMetadata);
+            entryWithSecrets.getData().putAll(metadataToSave.getData());
+            metadataDao.uploadMetadataItem(entryWithSecrets);
         }
         return metadataDao.loadMetadataItem(entity);
     }
@@ -163,6 +165,13 @@ public class MetadataManager {
         return metadataDao.loadMetadataItems(entities);
     }
 
+    public List<MetadataEntry> listMetadataItemsByKey(final String key, final List<EntityVO> entities) {
+        if (CollectionUtils.isEmpty(entities)) {
+            return Collections.emptyList();
+        }
+        return metadataDao.loadMetadataItemsByKey(key, entities);
+    }
+
     public boolean hasMetadata(EntityVO entityVO) {
         return metadataDao.hasMetadata(entityVO);
     }
@@ -186,13 +195,14 @@ public class MetadataManager {
         EntityVO entity = metadataWithKeysToDelete.getEntity();
         checkEntityExistsAndCanBeModified(entity.getEntityId(), entity.getEntityClass());
 
-        MetadataEntry metadataEntry = listMetadataItem(entity, true);
-        Set<String> existingKeys = metadataEntry.getData().keySet();
+        MetadataEntry entryWithSecrets = loadMetadataWithSecrets(listMetadataItem(entity, true));
+        Set<String> existingKeys = entryWithSecrets.getData().keySet();
         Set<String> keysToDelete = metadataWithKeysToDelete.getData().keySet();
         if (!existingKeys.containsAll(keysToDelete)) {
             throw new IllegalArgumentException("Could not delete non existing key.");
         }
-        return metadataDao.deleteMetadataItemKeys(metadataEntry, keysToDelete);
+        metadataDao.deleteMetadataItemKeys(entryWithSecrets, keysToDelete);
+        return metadataDao.loadMetadataItem(entryWithSecrets.getEntity());
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -218,13 +228,7 @@ public class MetadataManager {
     }
 
     private Long loadEntityId(String identifier, AclClass entityClass) {
-        if (entityClass.equals(AclClass.ROLE)) {
-            return roleManager.loadRoleByNameOrId(identifier).getId();
-        } else if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            return userManager.loadUserByNameOrId(identifier).getId();
-        } else {
-            return entityManager.loadByNameOrId(entityClass, identifier).getId();
-        }
+        return entityManager.loadByNameOrId(entityClass, identifier).getId();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -349,6 +353,21 @@ public class MetadataManager {
         return keys;
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public Map<String, String> prepareCloudResourceTags(final PipelineRun run) {
+        try {
+            if (!CloudProvider.AWS.equals(run.getInstance().getCloudProvider())) {
+                return Collections.emptyMap();
+            }
+            final Map<String, String> implicitTags = resolveInstanceTagsFromPreference(run);
+            final Map<String, String> explicitTags = resolveInstanceTagsFromMetadata(run.getDockerImage());
+            return CommonUtils.mergeMaps(explicitTags, implicitTags);
+        } catch (Exception e) {
+            LOGGER.error("An error occurred during cloud resource tags preparation for run '{}'.", run.getId(), e);
+            return Collections.emptyMap();
+        }
+    }
+
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {
         String delimiter = MetadataParsingUtils.getDelimiterFromFileExtension(file.getOriginalFilename());
         try (InputStream content = file.getInputStream()) {
@@ -369,6 +388,12 @@ public class MetadataManager {
         return metadataEntry;
     }
 
+    private MetadataEntry loadMetadataWithSecrets(final MetadataEntry entry) {
+        final EntityVO entity = entry.getEntity();
+        final List<String> keys = new ArrayList<>(MapUtils.emptyIfNull(entry.getData()).keySet());
+        return metadataDao.loadMetadataItemWithSecrets(entity, keys);
+    }
+
     private void validateMetadata(MetadataVO metadataVO) {
         Assert.notNull(metadataVO.getEntity(), messageHelper.getMessage(
                 MessageConstants.ERROR_ENTITY_FOR_METADATA_NOT_SPECIFIED));
@@ -387,15 +412,7 @@ public class MetadataManager {
     }
 
     private Object loadEntity(final Long entityId, final AclClass entityClass) {
-        Object entity;
-        if (entityClass.equals(AclClass.ROLE)) {
-            entity = roleManager.loadRole(entityId);
-        } else if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            entity = userManager.loadUserById(entityId);
-        } else {
-            entity = entityManager.load(entityClass, entityId);
-        }
-        return entity;
+        return entityManager.load(entityClass, entityId);
     }
 
     private void checkEntityExists(final Object entity, final Long entityId, final AclClass entityClass) {
@@ -409,5 +426,42 @@ public class MetadataManager {
                 .map(Tool.class::cast)
                 .ifPresent(tool -> Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                         MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
+    }
+
+    private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage) {
+        final Set<String> instanceTagsKeys = PipelineStringUtils.parseCommaSeparatedSet(
+                preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS));
+        if (CollectionUtils.isEmpty(instanceTagsKeys)) {
+            return Collections.emptyMap();
+        }
+
+        final Tool tool = toolManager.loadByNameOrId(dockerImage);
+        final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
+
+        return Optional.ofNullable(toolMetadata)
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap)
+                .entrySet().stream()
+                .filter(entry -> instanceTagsKeys.contains(entry.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
+    }
+
+    private Map<String, String> resolveInstanceTagsFromPreference(final PipelineRun run) {
+        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
+                .entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, entry -> getInstanceTagValue(entry.getKey(), run)));
+    }
+
+    private String getInstanceTagValue(final CommonInstanceTagsType tagType, final PipelineRun run) {
+        switch (tagType) {
+            case tool:
+                return run.getDockerImage();
+            case run_id:
+                return run.getId().toString();
+            case owner:
+                return run.getOwner();
+            default:
+                throw new IllegalArgumentException(String.format("Failed to resolve instance tag type '%s'", tagType));
+        }
     }
 }

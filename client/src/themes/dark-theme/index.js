@@ -20,6 +20,7 @@ export default {
   identifier: 'dark-theme',
   name: 'Dark',
   extends: 'light-theme',
+  dark: true,
   predefined: true,
   configuration: {
     '@application-background-color': 'rgb(14, 17, 22)',
@@ -50,6 +51,8 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
+    '@color-grey-light': '#aaa',
+    '@color-aqua-accent': '@color-aqua-light',
     '@color-green-soft': '#008080',
     '@color-blue-soft': '#025979',
     '@spinner': '@application-color',
@@ -69,6 +72,7 @@ export default {
     '@input-search-icon-hovered-color': '@primary-hover-color',
     '@panel-background-color': 'rgb(23, 27, 33)',
     '@panel-border-color': 'rgb(41, 46, 54)',
+    '@panel-border-color-light': 'rgb(41, 46, 54)',
     '@card-background-color': '@panel-background-color',
     '@card-border-color': '@panel-border-color',
     '@card-hovered-shadow-color': '@card-border-color',
@@ -95,6 +99,8 @@ export default {
     '@gcp-icon-contrast': "@static_resource('icons/providers/gcp-light.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
+    '@local-icon': "@static_resource('icons/providers/local-light.svg')",
+    '@local-icon-contrast': "@static_resource('icons/providers/local-light.svg')",
     '@modal-mask-background': 'rgba(0, 0, 0, 0.6)',
     '@even-element-background': 'lighten(@card-background-color, 5%)',
     '@alert-success-background': 'fade(@color-success, 25%)',
@@ -138,6 +144,8 @@ export default {
     '@vs-color-change-applied-background': '@vs-color-change-background',
     '@application-console-background-color': '@card-background-color',
     '@application-console-color': '@application-color',
-    '@application-console-color-details': '@application-color-faded'
+    '@application-console-color-details': '@application-color-faded',
+    '@codemirror-selected-background-color': '#5c5769',
+    '@codemirror-focused-selected-background-color': '#5c5769'
   }
 };

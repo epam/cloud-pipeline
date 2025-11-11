@@ -15,42 +15,51 @@
  */
 
 import React from 'react';
-import {Row} from 'antd';
+import {Row, Checkbox} from 'antd';
 import classNames from 'classnames';
+import {isObservableArray} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import UserName from '../../../special/UserName';
 import UserAutoComplete from '../../../special/UserAutoComplete';
-import {
-  getFiltersState,
-  onFilterDropdownVisibilityChangedGenerator,
-  onFilterGenerator
-} from './state-utilities';
+import {multipleParametersFilterState} from './state-utilities';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
 
-function getColumnFilter (state, setState) {
-  const parameter = 'owners';
-  const onFilterDropdownVisibleChange = onFilterDropdownVisibilityChangedGenerator(
-    parameter,
-    state,
-    setState
-  );
-  const {
-    value,
-    visible: filterDropdownVisible,
-    onChange,
-    filtered
-  } = getFiltersState(parameter, state, setState);
-  const onFilter = onFilterGenerator(parameter, state, setState);
-  const clear = () => onFilter(undefined);
-  const onOk = () => onFilter(value);
-  const onChangeOwner = (newOwner) => {
-    if (newOwner) {
-      onChange([newOwner]);
-    } else {
-      onChange(undefined);
+function OwnersRolesFilterComponent (
+  {
+    preferences,
+    owners = [],
+    roles = [],
+    onChange = () => {},
+    onOk = () => {},
+    clear = () => {}
+  }
+) {
+  const rolesFilters = preferences.uiRunsOwnersFilter || {};
+  const selectedRolesSet = new Set(roles || []);
+  const rolesSetEntries = Object.entries(rolesFilters || {})
+    .map(([key, list]) => ({
+      key,
+      roles: parseRolesSet(list)
+    }))
+    .filter((entry) => entry.roles.length > 0)
+    .map((entry) => ({
+      ...entry,
+      checked: !entry.roles.some((role) => !selectedRolesSet.has(role))
+    }));
+  const onChangeRolesFilter = (entry) => (event) => {
+    if (!entry) {
+      return;
     }
+    let newRoles = [];
+    if (event.target.checked && !entry.checked) {
+      newRoles = [...(roles || []), ...entry.roles];
+    } else if (!event.target.checked && entry.checked) {
+      newRoles = (roles || []).filter((role) => !entry.roles.includes(role));
+    }
+    onChange(undefined, newRoles);
   };
-  const filterDropdown = (
+  return (
     <div
       className={
         classNames(
@@ -62,10 +71,27 @@ function getColumnFilter (state, setState) {
     >
       <UserAutoComplete
         placeholder="Owners"
-        value={value && value.length > 0 ? value[0] : undefined}
-        onChange={onChangeOwner}
+        value={owners && owners.length > 0 ? owners[0] : undefined}
+        onChange={(newOwner) => onChange([newOwner], undefined)}
         onPressEnter={onOk}
       />
+      <div className={styles.rolesFiltersContainer}>
+        {
+          rolesSetEntries.map((entry) => (
+            <Row
+              style={{margin: 5}}
+              key={entry.key}
+            >
+              <Checkbox
+                onChange={onChangeRolesFilter(entry)}
+                checked={entry.checked}
+              >
+                {entry.key}
+              </Checkbox>
+            </Row>
+          ))
+        }
+      </div>
       <Row
         type="flex"
         justify="space-between"
@@ -75,6 +101,62 @@ function getColumnFilter (state, setState) {
         <a onClick={clear}>Clear</a>
       </Row>
     </div>
+  );
+}
+
+const OwnersRolesFilter = inject('preferences')(observer(OwnersRolesFilterComponent));
+
+function parseRolesSet (value) {
+  if (!value) {
+    return [];
+  }
+  if (typeof value === 'string') {
+    return [value];
+  }
+  if (Array.isArray(value) || isObservableArray(value)) {
+    return value;
+  }
+  return [];
+}
+
+function getColumnFilter (state, setState) {
+  const ownersParameter = 'owners';
+  const rolesParameter = 'roles';
+  const {
+    onChange: onChangeOwnersAndRoles,
+    onFilter,
+    values = {},
+    visible: filterDropdownVisible,
+    filtered,
+    onDropdownVisibilityChanged: onFilterDropdownVisibleChange
+  } = multipleParametersFilterState(state, setState, ownersParameter, rolesParameter);
+  const {
+    [ownersParameter]: ownersValue = [],
+    [rolesParameter]: rolesValue = []
+  } = values;
+  const clear = () => onFilter(undefined, undefined);
+  const onOk = () => onFilter(ownersValue, rolesValue);
+  const onChange = (newOwners, newRoles) => {
+    if (newOwners && newOwners.length > 0) {
+      onChangeOwnersAndRoles(
+        newOwners.slice(),
+        undefined
+      );
+    } else {
+      onChangeOwnersAndRoles(
+        undefined,
+        newRoles && newRoles.length > 0 ? newRoles.slice() : undefined
+      );
+    }
+  };
+  const filterDropdown = (
+    <OwnersRolesFilter
+      onOk={onOk}
+      clear={clear}
+      onChange={onChange}
+      owners={ownersValue}
+      roles={rolesValue}
+    />
   );
   return {
     filterDropdown,

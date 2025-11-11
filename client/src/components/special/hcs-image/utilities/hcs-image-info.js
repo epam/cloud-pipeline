@@ -28,6 +28,7 @@ import {createObjectStorageWrapper} from '../../../../utils/object-storage';
  * @property {number} width
  * @property {number} height
  * @property {Object} timeSeriesDetails
+ * @property {Object} viewSettings
  */
 
 class HCSInfo {
@@ -42,7 +43,8 @@ class HCSInfo {
       sourceDirectory,
       width,
       height,
-      timeSeriesDetails = {}
+      timeSeriesDetails = {},
+      viewSettings = {}
     } = options;
     const sequences = Object.keys(timeSeriesDetails);
     if (sequences.length === 0) {
@@ -80,6 +82,20 @@ class HCSInfo {
      * @type {number}
      */
     this.height = Number.isNaN(Number(height)) ? 0 : Number(height);
+    /**
+     * View settings (enable/disable functionality)
+     * @type {Object}
+     */
+    this.viewSettings = {
+      video: `${viewSettings.video}` !== 'false',
+      analysis: `${viewSettings.analysis}` !== 'false',
+      plate: `${viewSettings['plate_layout']}` !== 'false',
+      well: `${viewSettings['well_layout']}` !== 'false',
+      timeseries: `${viewSettings['timeseries_layout']}` !== 'false',
+      originalImage: `${viewSettings['original_image']}` !== 'false',
+      zPlanesSliderMode: `${viewSettings['z_planes_slider_mode']}` === 'true',
+      volumetricRendering: `${viewSettings['3d_rendering']}` === 'true'
+    };
     /**
      * Sequences info
      * @type {HCSImageSequence[]}
@@ -167,7 +183,8 @@ class HCSInfo {
           sourceDir: sourceDirectory,
           plate_height: height,
           plate_width: width,
-          time_series_details: timeSeriesDetails = {}
+          time_series_details: timeSeriesDetails = {},
+          view_settings: viewSettings = {}
         } = json;
         resolve(
           new HCSInfo({
@@ -177,7 +194,8 @@ class HCSInfo {
             width,
             height,
             objectStorage,
-            timeSeriesDetails
+            timeSeriesDetails,
+            viewSettings
           })
         );
       } catch (e) {

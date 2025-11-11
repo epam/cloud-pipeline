@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -63,8 +64,14 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
         final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_FOLDER,
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
+            .sleep(2, SECONDS)
             .runPipeline()
-            .addOutputParameter("output", pathToFile)
+            .doNotMountStoragesSelect(true)
+            .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+            .clickAddOutputParameter()
+            .setName("output")
+            .setValue(pathToFile)
+            .close()
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);
     }

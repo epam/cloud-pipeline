@@ -41,12 +41,10 @@ import Dropdown from 'rc-dropdown';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
-import BooleanParameterInput from './BooleanParameterInput';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import CodeEditor from '../../../special/CodeEditor';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
-import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
 import {LimitMountsInput} from './LimitMountsInput';
 import RunName from '../../../runs/run-name';
 
@@ -54,9 +52,9 @@ import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunE
 import FolderProject from '../../../../models/folders/FolderProject';
 import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEntityFields';
 import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
+import configurationsRequest from '../../../../models/configuration/Configurations';
 
 import roleModel from '../../../../utils/roleModel';
-import SystemParametersBrowser from '../dialogs/SystemParametersBrowser';
 import localization from '../../../../utils/localization';
 
 import hints from './hints';
@@ -71,14 +69,13 @@ import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
   ConfigureClusterDialog,
-  getSkippedSystemParametersList,
-  getSystemParameterDisabledState,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
   kubeEnabled,
-  setClusterParameterValue,
-  getAutoScaledPriceTypeValue
+  getAutoScaledPriceTypeValue,
+  applyChildNodeInstanceParameters,
+  parseChildNodeInstanceConfiguration
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -107,7 +104,6 @@ import RunCapabilities, {
   getEnabledCapabilities,
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
-  isCustomCapability,
   RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
@@ -122,7 +118,8 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_CAP_RESCHEDULE_RUN
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import AllowedInstancesCountWarning from
@@ -135,7 +132,38 @@ import {
   readGPUScalingPreference
 } from './utilities/enable-gpu-scaling';
 import {mapObservableNotification} from '../dialogs/job-notifications/job-notification';
-import EnumerationParameter from './enumeration-parameter';
+import RescheduleRunControl, {
+  rescheduleRunParameterValue
+} from './utilities/reschedule-run-control';
+import {getSelectOptions} from '../../../special/instance-type-info';
+import {
+  correctLimitMountsParameterValue
+} from '../../../../utils/limit-mounts/get-limit-mounts-storages';
+import PipelineVersionPicker from './pipeline-version-picker';
+import {generateContinueRunParameters} from '../../../runs/actions/continue-run';
+import {
+  getFsConfigFromParameters,
+  getParametersFromFsConfig
+} from './utilities/configure-fs/utilities';
+import CustomTagsControl from './components/custom-tags/control';
+import UploadParametersButton from './components/upload-parameters-button';
+import ConfigurePlugins from '../../../plugins/configure';
+import {
+  filterVisibleTagsSync,
+  getUserTagsValidationResult,
+  getVisibleUserTags
+} from '../../../runs/run-tags/utilities';
+import Parameters from './parameters/parameters';
+import AddParameterButton from './parameters/add-parameter-button';
+import {getParameterKeyClassName} from './parameters/utilities';
+import ParametersPayloadSelector from './parameters/payload/selector';
+import ReservationParameters from './components/reservation-parameters';
+import {
+  buildLaunchParametersFromReservationParameters,
+  findReservationParameterConfig,
+  readReservationParameters
+} from './components/reservation-parameters/utilities';
+import Markdown from '../../../special/markdown';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -144,8 +172,6 @@ const RUN_CLUSTER_KEY = 'run cluster';
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
-
-const OTHER_PARAMETERS_GROUP = 'other';
 
 function getFormItemClassName (rootClass, key) {
   if (key) {
@@ -161,7 +187,8 @@ function getFormItemClassName (rootClass, key) {
   'dtsList',
   'preferences',
   'dockerRegistries',
-  'dataStorageAvailable'
+  'dataStorageAvailable',
+  'uiNavigation'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -196,18 +223,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.userName;
   };
 
-  friendlyUrlAvailable = () => {
-    if (!this.props.authenticatedUserInfo.loaded) {
-      return false;
-    }
-    const {
-      admin,
-      roles = []
-    } = this.props.authenticatedUserInfo.value;
-    return admin || roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
+  prettyUrlAvailable = () => {
+    return this.isAdmin || this.isAdvancedUser;
   };
 
   static propTypes = {
+    pending: PropTypes.bool,
     pipeline: PropTypes.shape(),
     pipelines: PropTypes.array,
     version: PropTypes.string,
@@ -224,6 +245,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     })),
     editConfigurationMode: PropTypes.bool,
     onConfigurationChanged: PropTypes.func,
+    onPipelineChanged: PropTypes.func,
     currentConfigurationName: PropTypes.string,
     currentConfigurationIsDefault: PropTypes.bool,
     onSetConfigurationAsDefault: PropTypes.func,
@@ -250,7 +272,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       configurationSnapshot: PropTypes.string
     }),
     onInitialized: PropTypes.func,
-    onModified: PropTypes.func
+    onModified: PropTypes.func,
+    continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
   };
 
   static defaultProps = {
@@ -259,6 +282,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    userTags: {},
+    userTagsValidation: [],
+    userTagsVisibleTags: [],
+    userTagsValidationPayload: undefined,
+    conditionalParameters: [],
     openedPanels: [PARAMETERS],
     isDts: this.isDts(),
     execEnvSelectValue: null,
@@ -269,11 +297,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     dockerImageBrowserVisible: false,
     pipeline: null,
     version: null,
+    pipelineChanged: false,
     pipelineConfiguration: null,
     launchCluster: false,
     autoScaledCluster: false,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
+    childNodeInstanceConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -281,9 +311,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
+    fsConfig: undefined,
     configureClusterDialogVisible: false,
     scheduleRules: null,
     bucketBrowserVisible: false,
+    bucketBrowserAllowUpload: false,
     bucketPath: null,
     bucketPathParameterKey: null,
     bucketPathParameterSection: null,
@@ -295,6 +327,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     estimatedPrice: {
       evaluated: false,
       pending: false,
+      isValid: false,
       pricePerHour: 0,
       maximumPrice: 0,
       averagePrice: 0,
@@ -312,7 +345,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     currentLaunchKey: null,
     showOnlyFolderInBucketBrowser: false,
     allowBucketSelectionInBucketBrowser: false,
-    systemParameterBrowserVisible: false,
     systemParameters: [],
     fireCloudMethodName: (this.props.fireCloudMethod &&
       this.props.fireCloudMethod.name) || null,
@@ -343,7 +375,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     userRunCapabilitiesPending: true,
     useResolvedParameters: false,
     runNameAlias: undefined,
-    isRawEditEnabled: false
+    isRawEditEnabled: false,
+    parameterType: undefined,
+    selectedParameter: undefined,
+    highlightedParameterSection: undefined,
+    reservationParameters: undefined
   };
 
   formItemLayout = {
@@ -396,6 +432,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   prevParameters = {};
+  sectionRefs = {};
+  parametersNavigationWrapperRef;
+  parametersNavigationRef;
+  parametersNavigationIsSticky = false;
+  checkRAF;
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -404,81 +445,113 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
   @observable _toolSettings;
+  @observable toolSettingsPending = false;
   @observable toolDefaultCmd;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
   @observable toolPlatform = null;
   @observable toolAllowSensitive = true;
 
+  @observable rescheduleRun = undefined;
+  @observable rescheduleRunInitialValue = undefined;
+
   @action
-  formFieldsChanged = async () => {
-    const {form, parameters} = this.props;
-    const formParameters = form.getFieldValue(PARAMETERS);
-    const formParametersCorrected = parameterUtilities.correctFormFieldValues(
-      formParameters,
-      this.state.isRawEditEnabled
-    );
-    if (formParametersCorrected) {
-      form.setFieldsValue({
-        [PARAMETERS]: formParameters
-      });
-    }
-    this.inputPaths = getInputPaths(
-      formParameters,
-      (parameters || {}).parameters
-    );
-    this.outputPaths = getOutputPaths(
-      formParameters,
-      (parameters || {}).parameters
-    );
-    const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
-    if (this.dockerImage !== currentDockerImage) {
-      if (currentDockerImage) {
-        await this.loadToolSettings(currentDockerImage);
-        const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
-        const regionId = this.correctCloudRegion(
-          currentValue ||
-          this.defaultCloudRegionId
+  formFieldsChanged = () => {
+    const token = this.__formFieldsChangedToken = {};
+    class FormFieldChangedAbortedError extends Error {}
+    const checkIfNotAborted = () => {
+      if (token !== this.__formFieldsChangedToken) {
+        throw new FormFieldChangedAbortedError();
+      }
+    };
+    clearTimeout(this.__formFieldsChangedTimeout);
+    this.__formFieldsChangedTimeout = setTimeout(async () => {
+      try {
+        checkIfNotAborted();
+        const {form} = this.props;
+        const {
+          parameters: formParameters,
+          initialParameters
+        } = this.getCurrentParametersPayload();
+        const formParametersPayload = parameterUtilities.parametersToPayloadParams(formParameters);
+        this.inputPaths = getInputPaths(formParametersPayload);
+        this.outputPaths = getOutputPaths(formParametersPayload);
+        const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
+        if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
+          if (currentDockerImage) {
+            await this.loadToolSettings(currentDockerImage);
+            checkIfNotAborted();
+            const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+            const regionId = this.correctCloudRegion(
+              currentValue ||
+              this.defaultCloudRegionId
+            );
+            this.props.form.setFieldsValue({
+              [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+            });
+          } else {
+            this.resetToolSettings();
+          }
+        }
+        this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
+        this.modified = checkModifiedState(
+          this.props,
+          this.state,
+          {
+            defaultCloudRegionId: this.defaultCloudRegionId,
+            execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
+            spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
+            cmdTemplateValue: this.cmdTemplateValue,
+            toolDefaultCmd: this.toolDefaultCmd,
+            formParameters,
+            initialParameters
+          }
         );
-        this.props.form.setFieldsValue({
-          [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
+        this.props.onModified && this.props.onModified(this.modified);
+        checkIfNotAborted();
+        const validateFields = async () => new Promise((resolve) => {
+          const onValidationChange = (formInvalid, values) => {
+            resolve({values, errors: formInvalid});
+          };
+          if (this.forceValidation) {
+            this.forceValidation = false;
+            this.props.form.validateFields({force: true}, onValidationChange);
+          } else {
+            this.props.form.validateFields(onValidationChange);
+          }
         });
-      } else {
-        this.resetToolSettings();
+        const {values} = await validateFields();
+        checkIfNotAborted();
+        const payload = values ? await this.generateLaunchPayload(values) : undefined;
+        await this.validateUserTags(payload);
+        checkIfNotAborted();
+        await this.rebuildLaunchCommand();
+        checkIfNotAborted();
+      } catch (error) {
+        if (error instanceof FormFieldChangedAbortedError) {
+          // noop
+        } else {
+          console.log(error);
+        }
       }
-    }
-    this.dockerImage = currentDockerImage || this.getDefaultValue('docker_image');
-    this.modified = checkModifiedState(
-      this.props,
-      this.state,
-      {
-        defaultCloudRegionId: this.defaultCloudRegionId,
-        execEnvSelectValue: this.getExecEnvSelectValue().execEnvSelectValue,
-        spotInitialValue: this.correctPriceTypeValue(this.getDefaultValue('is_spot')),
-        cmdTemplateValue: this.cmdTemplateValue,
-        toolDefaultCmd: this.toolDefaultCmd
-      }
-    );
-    this.props.onModified && this.props.onModified(this.modified);
-    this.rebuildLaunchCommand();
-    if (this.forceValidation) {
-      this.forceValidation = false;
-      this.props.form.validateFields(undefined, {force: true}, () => {});
-    } else {
-      this.props.form.validateFields();
-    }
+    }, 0);
   };
 
-  rebuildLaunchCommand = () => {
-    if (!this.props.detached && !this.props.editConfigurationMode) {
-      this.props.form.validateFields(async (err, values) => {
-        if (!err && this.validateFireCloudConnections()) {
-          this.launchCommandPayload = this.generateLaunchPayload(values);
-        } else {
-          this.launchCommandPayload = undefined;
-        }
-      });
-    }
+  rebuildLaunchCommand = async () => {
+    return new Promise((resolve) => {
+      if (!this.props.detached && !this.props.editConfigurationMode) {
+        this.props.form.validateFields(async (err, values) => {
+          if (!err && this.validateFireCloudConnections()) {
+            this.launchCommandPayload = await this.generateLaunchPayload(values);
+          } else {
+            this.launchCommandPayload = undefined;
+          }
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
   };
 
   showLaunchCommands = () => {
@@ -748,15 +821,187 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
+  get launchFormUserPreferences () {
+    const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
+    if (editConfigurationMode || isDetachedConfiguration) {
+      return undefined;
+    }
+    const {pipeline} = this.state;
+    const config = uiNavigation.launchForm || {};
+    if (pipeline) {
+      return config.pipelines;
+    }
+    return config.tools;
+  }
+
+  get executionEnvironmentSectionVisible () {
+    const {
+      'exec-visible': execVisible = true,
+      'execution-environment-visible': executionEnvironmentVisible = execVisible
+    } = this.launchFormUserPreferences || {};
+    return `${executionEnvironmentVisible}`.toLowerCase() === 'true';
+  }
+
+  get advancedSectionVisible () {
+    const {
+      'advanced-visible': advancedVisible = true
+    } = this.launchFormUserPreferences || {};
+    return `${advancedVisible}`.toLowerCase() === 'true';
+  }
+
+  get parametersSectionVisible () {
+    const {
+      'params-visible': paramsVisible = true,
+      'parameters-visible': parameterVisible = paramsVisible
+    } = this.launchFormUserPreferences || {};
+    return `${parameterVisible}`.toLowerCase() === 'true';
+  }
+
+  get estimatedPriceSectionVisible () {
+    const {
+      'estimates-visible': estimatesVisible = true,
+      'estimated-price-visible': estimatedPriceSectionVisible = estimatesVisible
+    } = this.launchFormUserPreferences || {};
+    return `${estimatedPriceSectionVisible}`.toLowerCase() === 'true';
+  }
+
+  get currentDetachedConfiguration () {
+    const {detachedConfigurations = []} = this.state;
+    const {currentConfigurationName} = this.props;
+    return detachedConfigurations.find((d) => d.name === currentConfigurationName);
+  }
+
+  getIsInstanceTypeWithReservation () {
+    const {
+      detached,
+      preferences
+    } = this.props;
+    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return detached
+      ? false
+      : Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+  }
+
+  getDefaultRootEntityId () {
+    const {currentDetachedConfiguration = {}} = this;
+    const {currentMetadataEntity = []} = this.state;
+    const {rootEntityId} = currentDetachedConfiguration;
+    if (rootEntityId) {
+      const entity = currentMetadataEntity.find(
+        entity => entity.metadataClass && `${entity.metadataClass.id}` === `${rootEntityId}`
+      );
+      if (entity) {
+        return `${rootEntityId}`;
+      }
+    }
+    return '';
+  }
+
+  expandErroredPanels = (errorKeys, scroll = true) => {
+    const {openedPanels} = this.state;
+    const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
+    const wrongFields = [];
+    const extractFields = (section) => {
+      if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
+        for (let key in errorKeys[section]) {
+          if (errorKeys[section].hasOwnProperty(key)) {
+            wrongFields.push(key.replace(/\./g, '_'));
+          }
+        }
+      } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
+        for (let key in errorKeys[section]) {
+          if (errorKeys[section].hasOwnProperty(key)) {
+            wrongFields.push(key);
+          }
+        }
+      }
+    };
+    for (let key in errorKeys) {
+      if (errorKeys.hasOwnProperty(key)) {
+        extractFields(key);
+        if (openedPanels.indexOf(getPanelKey(key)) === -1) {
+          openedPanels.push(getPanelKey(key));
+        }
+      }
+    }
+    this.setState({
+      openedPanels
+    }, () => {
+      if (wrongFields.length > 0 && scroll) {
+        const scrollToWrongField = () => {
+          const element = document.querySelector(`.${wrongFields[0]}`);
+          if (element) {
+            element.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }
+        };
+        const TIMEOUT_MS = 500;
+        setTimeout(scrollToWrongField, TIMEOUT_MS);
+      }
+    });
+  };
+
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFields(async (err, values) => {
+
+    const mergeErrors = (...errors) => {
+      const filtered = errors.filter(Boolean);
+      if (filtered.length === 0) {
+        return undefined;
+      }
+      if (filtered.length === 1) {
+        return filtered[0];
+      }
+      const [first, second, ...rest] = filtered;
+      const merged = [
+        ...new Set(Object.keys(first).concat(Object.keys(second)))
+      ].reduce((acc, cur) => ({
+        ...acc,
+        [cur]: {
+          ...(first[cur] || {}),
+          ...(second[cur] || {})
+        }
+      }), []);
+      return mergeErrors(merged, ...rest);
+    };
+
+    this.props.form.validateFields(async (errors, values) => {
+      const userTagsValid = await this.validateUserTags(await this.generateLaunchPayload(values));
+      const parametersValidationResult = await this.getParametersValidationResult(true);
+      const {
+        nonValidParameter
+      } = parametersValidationResult ?? {};
+      const err = mergeErrors(
+        errors,
+        userTagsValid ? undefined : {[ADVANCED]: {customTags: false}},
+        nonValidParameter ? {[nonValidParameter.system ? SYSTEM_PARAMETERS : PARAMETERS]: {
+          [getParameterKeyClassName(nonValidParameter)]: false
+        }} : undefined);
+      if (err) {
+        console.warn('Validation error');
+        console.log(err);
+        if (nonValidParameter) {
+          console.log('not valid parameter:');
+          console.log(nonValidParameter);
+        }
+      }
       if (!err && this.validateFireCloudConnections()) {
         let payload;
-        if (this.props.editConfigurationMode) {
-          payload = this.generateConfigurationPayload(values);
-        } else {
-          payload = this.generateLaunchPayload(values);
+        try {
+          if (this.props.editConfigurationMode) {
+            payload = await this.generateConfigurationPayload(values, {
+              skipReservationParameters: false,
+              applyAdditionalParameters: false
+            });
+          } else if (this.props.detached) {
+            // single payload
+            payload = await this.generateLaunchPayload(values);
+          } else {
+            // multiple payloads
+            payload = await this.generateLaunchPayloads(values);
+          }
+        } catch (e) {
+          message.error(e.message, 5);
+          return;
         }
         if (this.props.onLaunch) {
           const result = await this.props.onLaunch(
@@ -774,61 +1019,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         }
       } else {
-        const openedPanels = this.state.openedPanels;
-        const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
-        const wrongFields = [];
-        const extractFields = (section) => {
-          if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
-            for (let key in err[section]) {
-              if (err[section].hasOwnProperty(key)) {
-                wrongFields.push(key.replace(/\./g, '_'));
-              }
-            }
-          } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
-            for (let key in err[section].params) {
-              if (err[section].params.hasOwnProperty(key)) {
-                wrongFields.push(key.replace(/\./g, '_'));
-              }
-            }
-          }
-        };
-        for (let key in err) {
-          if (err.hasOwnProperty(key)) {
-            extractFields(key);
-            if (openedPanels.indexOf(getPanelKey(key)) === -1) {
-              openedPanels.push(getPanelKey(key));
-            }
-          }
-        }
-        this.setState({
-          openedPanels
-        }, () => {
-          if (wrongFields.length > 0) {
-            const scrollToWrongField = () => {
-              const element = document.querySelector(`.${wrongFields[0]}`);
-              const layout = document.querySelector(`.${styles.layout}`);
-              const scrollableParent = layout.parentElement.parentElement;
-              if (scrollableParent && element) {
-                // For detached configuration & pipeline configuration scrolling:
-                scrollableParent.scrollTo({left: 0, top: element.offsetTop});
-                if (scrollableParent.parentElement) {
-                  // For launch form scrolling:
-                  scrollableParent.parentElement.scrollTo({left: 0, top: element.offsetTop});
-                }
-              }
-            };
-            const TIMEOUT_MS = 500;
-            setTimeout(scrollToWrongField, TIMEOUT_MS);
-          }
-        });
+        this.expandErroredPanels(err);
       }
     });
   };
 
   run = ({key}, entitiesIds, metadataClass, expansionExpression, folderId) => {
-    this.props.form.validateFields((err, values) => {
+    this.props.form.validateFields(async (err, values) => {
       if (!err && this.validateFireCloudConnections()) {
-        const payload = this.generateConfigurationPayload(values);
+        const payload = await this.generateConfigurationPayload(values, {
+          skipReservationParameters: true
+        });
         switch (key) {
           case RUN_SELECTED_KEY:
             if (this.props.runConfiguration) {
@@ -903,11 +1104,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       },
       this.props.preferences
     );
+    const childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+      autoScaled: autoScaledCluster,
+      gpuScaling: !!gpuScalingConfiguration,
+      hybrid: hybridAutoScaledCluster,
+      parameters: (this.props.parameters || {}).parameters
+    });
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
+    const fsConfigValue = getFsConfigFromParameters(this.props.parameters.parameters);
     let runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     if (
       !this.props.editConfigurationMode
@@ -918,6 +1126,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       );
     }
     const isRawEditEnabled = this.props.parameters.raw;
+    const reservationParameters = readReservationParameters(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -932,12 +1141,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gpuScalingConfiguration,
+        childNodeInstanceConfiguration,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
         kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
+        fsConfig: fsConfigValue,
         runCapabilities,
+        reservationParameters,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -945,11 +1157,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
+        bucketBrowserAllowUpload: false,
         bucketPath: null,
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
           evaluated: false,
+          isValid: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -985,17 +1199,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         dockerImageBrowserVisible: false,
         pipeline: null,
         version: null,
+        pipelineChanged: false,
         pipelineConfiguration: null,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gpuScalingConfiguration,
+        childNodeInstanceConfiguration,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
         kubeEnabled: kubeEnabledValue,
         autoScaledPriceType: autoScaledPriceTypeValue,
+        fsConfig: fsConfigValue,
         runCapabilities,
+        reservationParameters,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
@@ -1003,11 +1221,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
+        bucketBrowserAllowUpload: false,
         bucketPath: null,
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
           evaluated: false,
+          isValid: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -1040,7 +1260,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   };
 
-  generateConfigurationPayload = (values) => {
+  generateConfigurationPayload = async (values, options = {}) => {
+    const {
+      skipReservationParameters = false,
+      applyAdditionalReservationParameters = true
+    } = options || {};
     let cmd = values[ADVANCED].cmdTemplate;
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
       cmd = this.toolDefaultCmd;
@@ -1048,9 +1272,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       cmd = 'sleep infinity';
     }
     const stopAfterIsIncorrect = (o) => o === null || o === undefined || o === '' || isNaN(o);
+    const {
+      parameters,
+      conditionalParameters
+    } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
+    const instanceType = values[EXEC_ENVIRONMENT].type;
     let payload = {
-      instance_size: values[EXEC_ENVIRONMENT].type,
+      instance_size: instanceType,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
+      friendly_url: prettyUrlGenerator.build(values[ADVANCED].friendly_url),
       timeout: +(values[ADVANCED].timeout || 0),
       stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
         ? undefined
@@ -1059,7 +1289,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
       docker_image: values[EXEC_ENVIRONMENT].dockerImage,
-      parameters: {},
+      parameters,
+      conditional_parameters: conditionalParameters,
       configuration: values.configuration,
       is_spot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -1084,143 +1315,109 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.coresNumber = +values[EXEC_ENVIRONMENT].coresNumber || null;
       payload.dtsId = +this.state.dtsId;
     }
-    const getBooleanValue = (value) => {
-      if (typeof value === 'boolean') {
-        return value;
-      } else if (value === undefined) {
-        return false;
-      } else {
-        return value === 'true';
-      }
-    };
     if (!this.isFireCloudSelected) {
-      if (values[PARAMETERS] && values[PARAMETERS].keys) {
-        for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
-          const key = values[PARAMETERS].keys[i];
-          if (
-            !values[PARAMETERS].hasOwnProperty('params') ||
-            !values[PARAMETERS].params.hasOwnProperty(key)
-          ) {
-            continue;
-          }
-          const parameter = values[PARAMETERS].params[key];
-          if (parameter && parameter.name) {
-            payload[PARAMETERS][parameter.name] = {
-              type: parameter.type,
-              value: (parameter.type || '').toLowerCase() === 'boolean'
-                ? getBooleanValue(parameter.value)
-                : (parameter.value || ''),
-              required: `${parameter.required || false}`.toLowerCase() === 'true',
-              description: parameter.description,
-              enum: parameter.initialEnumeration,
-              visible: parameter.visible,
-              validation: parameter.validation,
-              no_override: parameter.noOverride
-            };
-          }
-        }
-      }
       if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
-        payload[PARAMETERS][CP_CAP_LIMIT_MOUNTS] = {
+        payload.parameters[CP_CAP_LIMIT_MOUNTS] = {
           type: 'string',
           required: false,
           value: values[ADVANCED].limitMounts
         };
       }
-      if (values[SYSTEM_PARAMETERS] && values[SYSTEM_PARAMETERS].keys) {
-        for (let i = 0; i < values[SYSTEM_PARAMETERS].keys.length; i++) {
-          const key = values[SYSTEM_PARAMETERS].keys[i];
-          if (
-            !values[SYSTEM_PARAMETERS].hasOwnProperty('params') ||
-            !values[SYSTEM_PARAMETERS].params.hasOwnProperty(key)
-          ) {
-            continue;
-          }
-          const parameter = values[SYSTEM_PARAMETERS].params[key];
-          if (parameter && parameter.name) {
-            payload[PARAMETERS][parameter.name] = {
-              type: parameter.type,
-              value: (parameter.type || '').toLowerCase() === 'boolean'
-                ? getBooleanValue(parameter.value)
-                : (parameter.value || ''),
-              required: `${parameter.required || false}`.toLowerCase() === 'true',
-              description: parameter.description,
-              enum: parameter.initialEnumeration,
-              visible: parameter.visible,
-              validation: parameter.validation
-            };
-          }
-        }
-      }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
-        payload[PARAMETERS][CP_CAP_SGE] = {
+        payload.parameters[CP_CAP_AUTOSCALE] = {
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_AUTOSCALE] = {
-          type: 'boolean',
-          value: true
-        };
-        payload[PARAMETERS][CP_CAP_AUTOSCALE_WORKERS] = {
+        payload.parameters[CP_CAP_AUTOSCALE_WORKERS] = {
           type: 'int',
           value: +this.state.maxNodesCount
         };
         if (this.state.autoScaledPriceType) {
-          payload[PARAMETERS][CP_CAP_AUTOSCALE_PRICE_TYPE] = {
+          payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
             type: 'string',
             value: this.state.autoScaledPriceType
           };
         } else {
-          delete payload[PARAMETERS][CP_CAP_AUTOSCALE_PRICE_TYPE];
+          delete payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE];
         }
         if (this.state.hybridAutoScaledClusterEnabled) {
-          payload[PARAMETERS][CP_CAP_AUTOSCALE_HYBRID] = {
+          payload.parameters[CP_CAP_AUTOSCALE_HYBRID] = {
             type: 'boolean',
             value: true
           };
         }
         if (this.state.gpuScalingConfiguration) {
-          payload[PARAMETERS] = applyGPUScalingParameters(
+          payload.parameters = applyGPUScalingParameters(
             this.state.gpuScalingConfiguration,
-            payload[PARAMETERS]
+            payload.parameters
+          );
+        } else if (this.state.childNodeInstanceConfiguration) {
+          applyChildNodeInstanceParameters(
+            payload.parameters,
+            this.state.childNodeInstanceConfiguration,
+            this.state.hybridAutoScaledClusterEnabled
           );
         }
       }
       if (this.state.launchCluster && this.state.gridEngineEnabled) {
-        payload[PARAMETERS][CP_CAP_SGE] = {
+        payload.parameters[CP_CAP_SGE] = {
           type: 'boolean',
           value: true
         };
       }
       if (this.state.launchCluster && this.state.sparkEnabled) {
-        payload[PARAMETERS][CP_CAP_SPARK] = {
+        payload.parameters[CP_CAP_SPARK] = {
           type: 'boolean',
           value: true
         };
       }
       if (this.state.launchCluster && this.state.slurmEnabled) {
-        payload[PARAMETERS][CP_CAP_SLURM] = {
+        payload.parameters[CP_CAP_SLURM] = {
           type: 'boolean',
           value: true
         };
       }
       if (this.state.launchCluster && this.state.kubeEnabled) {
-        payload[PARAMETERS][CP_CAP_KUBE] = {
+        payload.parameters[CP_CAP_KUBE] = {
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_DIND_CONTAINER] = {
+        payload.parameters[CP_CAP_DIND_CONTAINER] = {
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_SYSTEMD_CONTAINER] = {
+        payload.parameters[CP_CAP_SYSTEMD_CONTAINER] = {
           type: 'boolean',
           value: true
         };
       }
+      if (this.rescheduleRun !== undefined) {
+        payload.parameters[CP_CAP_RESCHEDULE_RUN] = {
+          type: 'boolean',
+          value: this.rescheduleRun
+        };
+      }
     }
-    payload[PARAMETERS] = applyCapabilities(
-      payload[PARAMETERS],
+    payload.parameters = getParametersFromFsConfig(
+      this.state.fsConfig,
+      payload.parameters,
+      this.currentCloudRegionProvider
+    );
+    if (!skipReservationParameters) {
+      const {
+        parameters: appliedReservationParameters
+      } = await buildLaunchParametersFromReservationParameters(
+        this.state.reservationParameters,
+        instanceType,
+        payload.parameters,
+        {
+          applyAdditionalParameters: applyAdditionalReservationParameters
+        }
+      );
+      payload.parameters = appliedReservationParameters;
+    }
+    payload.parameters = applyCapabilities(
+      payload.parameters,
       this.state.runCapabilities,
       this.props.preferences,
       this.toolPlatform
@@ -1254,19 +1451,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.props.isDetachedConfiguration) {
       payload.rootEntityId = this.state.rootEntityId;
+      delete payload.friendly_url;
     }
     return payload;
   };
 
-  generateLaunchPayload = (values) => {
+  generateLaunchPayload = async (values, parametersPayloadId = undefined) => {
     let cmd = values[ADVANCED].cmdTemplate;
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
       cmd = this.toolDefaultCmd;
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
+    const instanceType = values[EXEC_ENVIRONMENT].type;
+    const tags = filterVisibleTagsSync(
+      this.state.userTags,
+      this.state.userTagsVisibleTags
+    );
     const payload = {
-      instanceType: values[EXEC_ENVIRONMENT].type,
+      instanceType,
       hddSize: +values[EXEC_ENVIRONMENT].disk,
       timeout: +(values[ADVANCED].timeout || 0),
       cmdTemplate: cmd,
@@ -1274,13 +1477,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
-      params: {},
+      tags,
+      params: parameterUtilities.parametersToPayloadParams(this.getParameters(parametersPayloadId)),
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
       prettyUrl: this.prettyUrlEnabled
-        ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
+        ? prettyUrlGenerator.build(values[ADVANCED].friendly_url)
         : undefined,
       notifications: (values[ADVANCED].notifications || []).slice()
     };
@@ -1306,30 +1510,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return value === 'true';
       }
     };
-    if (values[PARAMETERS] && values[PARAMETERS].keys) {
-      for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
-        const key = values[PARAMETERS].keys[i];
-        if (
-          !values[PARAMETERS].hasOwnProperty('params') ||
-          !values[PARAMETERS].params.hasOwnProperty(key)
-        ) {
-          continue;
-        }
-        const parameter = values[PARAMETERS].params[key];
-        if (parameter && parameter.name && parameter.value) {
-          payload.params[parameter.name] = {
-            type: parameter.type,
-            value: (parameter.type || '').toLowerCase() === 'boolean'
-              ? getBooleanValue(parameter.value)
-              : (parameter.value || ''),
-            required: `${parameter.required || false}`.toLowerCase() === 'true',
-            enum: parameter.initialEnumeration,
-            visible: parameter.visible,
-            validation: parameter.validation,
-            no_override: parameter.noOverride,
-            section: parameter.section
-          };
-        }
+    const conditionalParameters = (this.state.conditionalParameters || [])
+      .filter(p => !p.markAsDeleted);
+    if (conditionalParameters.length) {
+      for (let i = 0; i < conditionalParameters.length; i++) {
+        const parameter = conditionalParameters[i];
+        payload.params[parameter.name] = {
+          type: parameter.type,
+          value: (parameter.type || '').toLowerCase() === 'boolean'
+            ? getBooleanValue(parameter.value)
+            : (parameter.value || ''),
+          required: `${parameter.required || false}`.toLowerCase() === 'true',
+          enum: parameter.initialEnumeration,
+          visible: parameter.visible,
+          validation: parameter.validation,
+          no_override: parameter.noOverride,
+          section: parameter.section
+        };
       }
     }
     if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
@@ -1339,40 +1536,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: values[ADVANCED].limitMounts
       };
     }
-    if (values[SYSTEM_PARAMETERS] && values[SYSTEM_PARAMETERS].keys) {
-      for (let i = 0; i < values[SYSTEM_PARAMETERS].keys.length; i++) {
-        const key = values[SYSTEM_PARAMETERS].keys[i];
-        if (
-          !values[SYSTEM_PARAMETERS].hasOwnProperty('params') ||
-          !values[SYSTEM_PARAMETERS].params.hasOwnProperty(key)
-        ) {
-          continue;
-        }
-        const parameter = values[SYSTEM_PARAMETERS].params[key];
-        if (parameter && parameter.name && parameter.value) {
-          payload.params[parameter.name] = {
-            type: parameter.type,
-            value: (parameter.type || '').toLowerCase() === 'boolean'
-              ? getBooleanValue(parameter.value)
-              : (parameter.value || ''),
-            required: `${parameter.required || false}`.toLowerCase() === 'true',
-            description: parameter.description,
-            enum: parameter.initialEnumeration,
-            visible: parameter.visible,
-            validation: parameter.validation
-          };
-        }
-      }
-    }
-    if (this.state.launchCluster && this.state.autoScaledCluster) {
-      payload.params[CP_CAP_SGE] = {
-        type: 'boolean',
-        value: true
-      };
-      payload.params[CP_CAP_AUTOSCALE] = {
-        type: 'boolean',
-        value: true
-      };
+    const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
+    const launchAutoScaledHybridCluster = launchAutoScaledCluster &&
+      this.state.hybridAutoScaledClusterEnabled;
+    payload.params[CP_CAP_AUTOSCALE] = {
+      type: 'boolean',
+      value: launchAutoScaledCluster
+    };
+    payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
+      type: 'boolean',
+      value: launchAutoScaledHybridCluster
+    };
+    if (launchAutoScaledCluster) {
       payload.params[CP_CAP_AUTOSCALE_WORKERS] = {
         type: 'int',
         value: +this.state.maxNodesCount
@@ -1385,42 +1560,57 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       } else {
         delete payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE];
       }
-      if (this.state.hybridAutoScaledClusterEnabled) {
-        payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
-          type: 'boolean',
-          value: true
-        };
-      }
       if (this.state.gpuScalingConfiguration) {
         payload.params = applyGPUScalingParameters(
           this.state.gpuScalingConfiguration,
           payload.params
         );
+      } else if (this.state.childNodeInstanceConfiguration) {
+        applyChildNodeInstanceParameters(
+          payload.params,
+          this.state.childNodeInstanceConfiguration,
+          this.state.hybridAutoScaledClusterEnabled
+        );
       }
     }
+    payload.params[CP_CAP_SGE] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_SPARK] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_SLURM] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_KUBE] = {
+      type: 'boolean',
+      value: false
+    };
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
         type: 'boolean',
         value: true
       };
-    }
-    if (this.state.launchCluster && this.state.sparkEnabled) {
+    } else if (this.state.launchCluster && this.state.sparkEnabled) {
       payload.params[CP_CAP_SPARK] = {
         type: 'boolean',
         value: true
       };
-    }
-    if (this.state.launchCluster && this.state.slurmEnabled) {
+    } else if (this.state.launchCluster && this.state.slurmEnabled) {
       payload.params[CP_CAP_SLURM] = {
+        type: 'boolean',
+        value: true
+      };
+    } else if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.params[CP_CAP_KUBE] = {
         type: 'boolean',
         value: true
       };
     }
     if (this.state.launchCluster && this.state.kubeEnabled) {
-      payload.params[CP_CAP_KUBE] = {
-        type: 'boolean',
-        value: true
-      };
       payload.params[CP_CAP_DIND_CONTAINER] = {
         type: 'boolean',
         value: true
@@ -1430,12 +1620,36 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.rescheduleRun !== undefined) {
+      payload.params[CP_CAP_RESCHEDULE_RUN] = {
+        type: 'boolean',
+        value: !!this.rescheduleRun
+      };
+    }
+    payload.params = getParametersFromFsConfig(
+      this.state.fsConfig,
+      payload.params,
+      this.currentCloudRegionProvider
+    );
     payload.params = applyCapabilities(
       payload.params,
       this.state.runCapabilities,
       this.props.preferences,
       this.toolPlatform
     );
+    if (this.props.continueRun) {
+      payload.params = generateContinueRunParameters(this.props.continueRun, payload.params);
+    }
+    const {
+      parameters: appliedReservationParameters,
+      podAssignPolicy
+    } = await buildLaunchParametersFromReservationParameters(
+      this.state.reservationParameters,
+      instanceType,
+      payload.params
+    );
+    payload.params = appliedReservationParameters;
+    payload.podAssignPolicy = podAssignPolicy;
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -1443,6 +1657,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.scheduleRules = this.state.scheduleRules;
     }
     return payload;
+  };
+
+  generateLaunchPayloads = async (values) => {
+    const parametersPayloads = this.getParametersPayloads();
+    if (parametersPayloads.length === 0) {
+      const payload = this.getParametersPayloads() || {};
+      parametersPayloads.push({
+        ...payload,
+        enabled: true
+      });
+    }
+    const payloads = parametersPayloads.filter((p) => p.enabled);
+    return Promise.all(
+      payloads.map((p) => this.generateLaunchPayload(values, p.id))
+    );
   };
 
   getSectionFieldDecorator = (section) => (name, ...opts) => {
@@ -1529,6 +1758,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get instanceTypesMergedForRegions () {
+    return this.props.allowedInstanceTypes &&
+      this.props.allowedInstanceTypes.regionsMerged;
+  }
+
+  @computed
   get priceTypes () {
     let availableMasterNodeTypes = [true, false];
     if (this.state.launchCluster && this.props.preferences.loaded) {
@@ -1593,22 +1828,31 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       },
       this.props.preferences
     );
+    const childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+      autoScaled: autoScaledCluster,
+      gpuScaling: !!gpuScalingConfiguration,
+      hybrid: hybridAutoScaledCluster,
+      parameters: this.props.parameters.parameters
+    });
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
+    const fsConfigValue = getFsConfigFromParameters(this.props.parameters.parameters);
     const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
       hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
       kubeEnabled: kubeEnabledValue,
       autoScaledPriceType: autoScaledPriceTypeValue,
+      fsConfig: fsConfigValue,
       runCapabilities,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
@@ -1690,6 +1934,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             return cents / 100;
           };
           estimatedPriceState.evaluated = true;
+          estimatedPriceState.isValid = request.value.diskPricePerHour > 0 &&
+            request.value.computePricePerHour > 0;
           estimatedPriceState.averagePrice = adjustPrice(request.value.averageTimePrice);
           estimatedPriceState.maximumPrice = adjustPrice(request.value.maximumTimePrice);
           estimatedPriceState.minimumPrice = adjustPrice(request.value.minimumTimePrice);
@@ -1703,6 +1949,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   instanceTypeChanged = (newType) => {
     const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
     if (instanceType) {
+      try {
+        const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
+        const currentRegion = this.props.form.getFieldValue(formField);
+        const regionId = this.correctCloudRegion(
+          currentRegion ||
+          this.defaultCloudRegionId
+        );
+        const {
+          regionId: iRegionId,
+          regionIds: iRegionIds = [iRegionId]
+        } = instanceType;
+        const changed = iRegionIds.length > 0 &&
+          !iRegionIds.some((id) => Number(id) === Number(regionId));
+        if (changed) {
+          const switchTo = iRegionIds[0];
+          this.props.form.setFieldsValue({
+            [formField]: `${switchTo}`
+          });
+        }
+      } catch (e) {
+        console.warn(e);
+      }
       this.evaluateEstimatedPrice({type: instanceType.name});
     }
   };
@@ -1752,49 +2020,57 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </Spin>);
   };
   renderEstimatedPriceInfo = () => {
-    if (this.state.estimatedPrice.pending) {
+    const {
+      pricePerHour,
+      isValid,
+      averagePrice,
+      pending
+    } = this.state.estimatedPrice;
+    const isInstanceTypeWithReservation = this.getIsInstanceTypeWithReservation();
+    if (isInstanceTypeWithReservation || pending || !this.estimatedPriceSectionVisible) {
       return undefined;
     }
-    const className = classNames(
-      styles.price,
-      {'cp-text-not-important': this.state.estimatedPrice.pending}
-    );
-    if (this.state.estimatedPrice.averagePrice > 0) {
-      const info = (
-        <Popover
-          placement="bottom"
-          content={this.renderEstimatedPriceTable(this.multiplyValueBy)}
-          trigger="hover">
-          <Icon
-            className={styles.hint}
-            type="info-circle"
-          />
-        </Popover>
-      );
-      const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = (
+    let priceContent;
+    let infoContent;
+    if (!isValid) {
+      priceContent = <span> &mdash; </span>;
+      infoContent = 'Price cannot be estimated for the selected node type / disk configuration';
+    } else if (averagePrice > 0) {
+      priceContent = (
         <JobEstimatedPriceInfo>
           {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
         </JobEstimatedPriceInfo>
       );
-      return (
-        <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
-          {priceStr} {info}</span>
-        </span>
-      );
-    } else if (this.state.estimatedPrice.pricePerHour > 0) {
-      const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = (
+      infoContent = this.renderEstimatedPriceTable(this.multiplyValueBy);
+    } else if (pricePerHour > 0) {
+      priceContent = (
         <JobEstimatedPriceInfo>
           {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
         </JobEstimatedPriceInfo>
-      );
-      return (
-        <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
-          {priceStr}</span>
-        </span>
       );
     }
+    return (
+      <span>
+        Estimated price per hour:
+        <span className={classNames(
+          styles.price,
+          {'cp-text-not-important': pending}
+        )}>
+          {priceContent}
+        </span>
+        {infoContent ? (
+          <Popover
+            placement="bottom"
+            content={infoContent}
+            trigger="hover">
+            <Icon
+              className={styles.hint}
+              type="info-circle"
+            />
+          </Popover>
+        ) : null}
+      </span>
+    );
   };
   selectBucketPath = (path) => {
     const key = this.state.bucketPathParameterKey;
@@ -1820,341 +2096,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     nonSystem: 0
   };
 
-  buildDefaultParameters = (system = false) => {
-    const parameters = {
-      keys: [],
-      params: {}}
-    ;
-    const parameterIndexIdentifierKey = system ? 'system' : 'nonSystem';
-    const getBooleanValue = (value) => {
-      if (typeof value === 'boolean') {
-        return `${value}`;
-      } else if (value === undefined) {
-        return 'false';
-      } else {
-        return `${value === 'true'}`;
-      }
-    };
-    if (this.props.parameters.parameters) {
-      for (let key in this.props.parameters.parameters) {
-        if (this.props.parameters.parameters.hasOwnProperty(key)) {
-          if (
-            this.isSystemParameter({name: key}) !== system ||
-            isCustomCapability(key, this.props.preferences)
-          ) {
-            continue;
-          }
-          const parametersToSkip = [
-            CP_CAP_LIMIT_MOUNTS,
-            ...getSkippedSystemParametersList(this)
-          ].filter(Boolean);
-          if (parametersToSkip.includes(key)) {
-            continue;
-          }
-          this.parameterIndexIdentifier[parameterIndexIdentifierKey] =
-            this.parameterIndexIdentifier[parameterIndexIdentifierKey] + 1;
-          parameters.keys.push(
-            `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`
-          );
-          let value;
-          let resolvedValue;
-          let type = 'string';
-          let required = false;
-          let readOnly = false;
-          let noOverride = false;
-          let description;
-          let enumeration;
-          let initialEnumeration;
-          let visible;
-          let validation;
-          let section;
-          const parameter = this.props.parameters.parameters[key];
-          if (parameter.value !== undefined ||
-            parameter.type !== undefined ||
-            parameter.required !== undefined) {
-            let prevValue;
-            if (this.prevParameters && this.prevParameters.params) {
-              for (let paramKey in this.prevParameters.params) {
-                if (this.prevParameters.params[paramKey].name === key) {
-                  prevValue = this.prevParameters.params[paramKey].value;
-                }
-              }
-            }
-            value = prevValue && !parameter.value ? prevValue : parameter.value;
-            resolvedValue = parameter.resolvedValue;
-            type = parameter.type || 'string';
-            enumeration = parameter.enum;
-            description = parameter.description;
-            initialEnumeration = parameter.enum;
-            visible = parameter.visible;
-            validation = parameter.validation;
-            noOverride = `${parameter.no_override}` === 'true';
-            section = parameter.section || OTHER_PARAMETERS_GROUP;
-            enumeration = parameterUtilities.parseEnumeration({enumeration});
-            if (type.toLowerCase() === 'boolean') {
-              value = getBooleanValue(value);
-              resolvedValue = resolvedValue !== undefined
-                ? getBooleanValue(resolvedValue)
-                : resolvedValue;
-            }
-            required = parameter.required;
-            readOnly = this.props.isDetachedConfiguration &&
-              this.props.detached &&
-              !!value && noOverride;
-          } else {
-            value = parameter;
-          }
-          const paramKey = `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`;
-          parameters.params[paramKey] = {
-            name: key,
-            key: `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`,
-            type: type,
-            enumeration,
-            initialEnumeration,
-            visible,
-            validation,
-            description,
-            value,
-            resolvedValue,
-            hasResolvedValue: resolvedValue !== undefined && resolvedValue !== value,
-            required: required,
-            readOnly: readOnly,
-            system: system,
-            noOverride,
-            initial: true,
-            section: section
-          };
-        }
-      }
-    }
-    return parameters;
-  };
-
-  renderStringParameter = (
-    sectionName,
-    {key, value, required, readOnly, validator},
-    system,
-    visible
-  ) => {
-    const rules = [];
-    if (validator) {
-      rules.push({validator});
-    }
-    if (visible && (required || system)) {
-      rules.push({
-        required: true,
-        message: 'Required'
-      });
-    }
-    return (
-      <FormItem
-        className={styles.formItemRow}
-        required={visible && (required || system)}
-        hasFeedback>
-        {
-          this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
-            {
-              rules: rules,
-              initialValue: value,
-              onChange: () => { this.forceValidation = true; }
-            })(
-            this.props.isDetachedConfiguration ? (
-              <AutoCompleteForParameter
-                readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                placeholder={'Value'}
-                parameterKey={key}
-                currentMetadataEntity={this.state.currentMetadataEntity.slice()}
-                currentProjectMetadata={this.state.currentProjectMetadata}
-                rootEntityId={this.state.rootEntityId}
-                showWithButton
-              />
-            ) : (
-              <Input
-                disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                placeholder="Value"
-                className={styles.parameterValue}
-              />
-            )
-          )
-        }
-      </FormItem>
-    );
-  };
-
-  renderSelectionParameter = (
-    sectionName,
-    {key, value, required, readOnly, enumeration, description, validator},
-    system = false,
-    parameters
-  ) => {
-    const rules = [];
-    if (validator) {
-      rules.push({validator});
-    }
-    if (required || system) {
-      rules.push({
-        required: true,
-        message: 'Required'
-      });
-    }
-    return (
-      <FormItem
-        className={styles.formItemRow}
-        required={required || system}
-        hasFeedback>
-        {
-          this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
-            {
-              rules: rules,
-              initialValue: value,
-              onChange: () => { this.forceValidation = true; }
-            }
-          )(
-            <EnumerationParameter
-              disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
-              placeholder="Value"
-              className={styles.parameterValue}
-              parameters={parameters}
-              enumeration={enumeration}
-              rawEdit={this.state.isRawEditEnabled}
-            />
-          )
-        }
-      </FormItem>
-    );
-  };
-
-  renderBooleanParameter = (
-    sectionName,
-    {key, value, readOnly, validator}
-  ) => {
-    const rules = [];
-    if (validator) {
-      rules.push({validator});
-    }
-    return (
-      <FormItem className={styles.formItemRow}>
-        {
-          this.getSectionFieldDecorator(sectionName)(`params.${key}.value`,
-            {
-              initialValue: value,
-              rules,
-              onChange: () => { this.forceValidation = true; }
-            }
-          )(
-            <BooleanParameterInput
-              disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
-              className={styles.parameterValue} />
-          )
-        }
-      </FormItem>
-    );
-  };
-
   openBucketBrowser = (sectionName, key, value, type) => {
     this.setState({
       bucketBrowserVisible: true,
+      bucketBrowserAllowUpload: type !== 'output',
       bucketPath: value,
       bucketPathParameterKey: key,
       bucketPathParameterSection: sectionName,
       showOnlyFolderInBucketBrowser: type === 'output',
-      allowBucketSelectionInBucketBrowser: /^path$/i.test(type)
+      allowBucketSelectionInBucketBrowser: /^path$/i.test(type),
+      parameterType: type
     });
   };
 
   closeBucketBrowser = () => {
     this.setState({
       bucketBrowserVisible: false,
+      bucketBrowserAllowUpload: false,
       bucketPath: null,
       bucketPathParameterKey: null,
       bucketPathParameterSection: null,
       showOnlyFolderInBucketBrowser: false,
-      allowBucketSelectionInBucketBrowser: false
+      allowBucketSelectionInBucketBrowser: false,
+      parameterType: undefined
     });
-  };
-  renderPathParameter = (
-    sectionName,
-    {key, value, required, readOnly, validator},
-    type,
-    system,
-    visible
-  ) => {
-    let icon;
-    switch (type) {
-      case 'input': icon = 'download'; break;
-      case 'output': icon = 'upload'; break;
-      case 'common': icon = 'select'; break;
-      default: icon = 'folder'; break;
-    }
-    const rules = [];
-    if (validator) {
-      rules.push({validator});
-    }
-    if (visible && (required || system)) {
-      rules.push({
-        required: true,
-        message: 'Required'
-      });
-    }
-    rules.push({
-      validator: (rule, value, callback) => {
-        if (value && value.length) {
-          const parts = value
-            .split(',')
-            .map(f => f.trim())
-            .filter(f => f.toLowerCase().indexOf('nfs://') === 0);
-          if (parts.length) {
-            // eslint-disable-next-line
-            callback('NFS mounts are not supported');
-          }
-        }
-        callback();
-      }
-    });
-    return (
-      <FormItem
-        className={styles.formItemRow}
-        required={visible && (required || system)}
-        hasFeedback>
-        {
-          this.getSectionFieldDecorator(sectionName)(`params.${key}.value`, {
-            rules: rules,
-            initialValue: value,
-            onChange: () => { this.forceValidation = true; }
-          })(
-            this.props.isDetachedConfiguration ? (
-              <AutoCompleteForParameter
-                readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                placeholder={'Path'}
-                parameterKey={key}
-                currentMetadataEntity={this.state.currentMetadataEntity.slice()}
-                currentProjectMetadata={this.state.currentProjectMetadata}
-                rootEntityId={this.state.rootEntityId}
-                showWithButton={false}
-                buttonIcon={icon}
-                onButtonClick={(selectKey, selectValue) => {
-                  this.openBucketBrowser(sectionName, selectKey, selectValue, type);
-                }}
-              />
-            ) : (
-              <Input
-                disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                style={{width: '100%'}}
-                addonBefore={
-                  <div
-                    className={styles.pathType}
-                    onClick={() =>
-                      !(this.props.readOnly && !this.props.canExecute) &&
-                      this.openBucketBrowser(sectionName, key, value, type)}>
-                    <Icon type={icon} />
-                  </div>}
-                placeholder="Path"
-              />
-            )
-          )
-        }
-      </FormItem>
-    );
   };
 
   openPipelineBrowser = () => {
@@ -2253,57 +2218,59 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         });
       }
-    } else {
-      if (pipeline) {
-        const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
-        if (existedPipeline) {
-          this.addedParameters = {};
-          this.rebuildParameters = {
-            [PARAMETERS]: true,
-            [SYSTEM_PARAMETERS]: true
-          };
-          this.setState({
-            pipeline: existedPipeline,
-            version: pipeline.version,
-            pipelineConfiguration: pipeline.configuration,
-            fireCloudMethodName: null,
-            fireCloudMethodNamespace: null,
-            fireCloudMethodSnapshot: null,
-            fireCloudMethodConfiguration: null,
-            fireCloudMethodConfigurationSnapshot: null,
-            fireCloudInputs: {},
-            fireCloudOutputs: {},
-            fireCloudInputsErrors: {},
-            fireCloudOutputsErrors: {},
-            fireCloudDefaultInputs: [],
-            fireCloudDefaultOutputs: []
-          }, () => {
-            if (this.props.onSelectPipeline) {
-              this.props.onSelectPipeline({
-                pipeline: existedPipeline,
-                version: pipeline.version,
-                configuration: pipeline.configuration
-              }, () => {
+    } else if (pipeline) {
+      const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
+      if (existedPipeline) {
+        const hide = message.loading('Updating configuration...', 0);
+        this.setState({
+          pipeline: existedPipeline,
+          version: pipeline.version,
+          pipelineChanged: true,
+          pipelineConfiguration: pipeline.configuration,
+          fireCloudMethodName: null,
+          fireCloudMethodNamespace: null,
+          fireCloudMethodSnapshot: null,
+          fireCloudMethodConfiguration: null,
+          fireCloudMethodConfigurationSnapshot: null,
+          fireCloudInputs: {},
+          fireCloudOutputs: {},
+          fireCloudInputsErrors: {},
+          fireCloudOutputsErrors: {},
+          fireCloudDefaultInputs: [],
+          fireCloudDefaultOutputs: []
+        }, () => {
+          if (this.props.onSelectPipeline) {
+            this.props.onSelectPipeline({
+              pipeline: existedPipeline,
+              version: pipeline.version,
+              configuration: pipeline.configuration
+            }, (anError) => {
+              hide();
+              if (anError) {
+                message.error(anError, 5);
+              } else {
                 this.prevParameters = this.props.form.getFieldsValue().parameters;
                 this.reset(true);
                 this.evaluateEstimatedPrice({});
-              });
-            }
-          });
-        }
-      } else {
-        this.setState({
-          pipeline: null,
-          version: null,
-          configuration: null
-        }, () => {
-          if (this.props.onSelectPipeline) {
-            this.props.onSelectPipeline(null, () => {
-              this.reset(true);
+              }
             });
+          } else {
+            hide();
           }
         });
       }
+    } else {
+      this.setState({
+        pipeline: null,
+        version: null,
+        configuration: null
+      }, () => {
+        if (this.props.onSelectPipeline) {
+          this.props.onSelectPipeline(null, () => {
+            this.reset(true);
+          });
+        }
+      });
     }
     this.closePipelineBrowser();
     this.formFieldsChanged();
@@ -2335,12 +2302,36 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return undefined;
     }
     let inputValue;
-    if (this.state.pipeline) {
-      inputValue = this.state.pipeline.name;
-      if (this.state.version && !this.state.pipeline.unknown) {
-        let versionStr = `(${this.state.version})`;
-        if (this.state.pipelineConfiguration) {
-          versionStr = `(${this.state.version} - ${this.state.pipelineConfiguration})`;
+    const {
+      pipeline,
+      version,
+      pipelineConfiguration
+    } = this.state;
+    const isLatestVersion = !!pipeline && !!version && /^latest$/i.test(version);
+    const onRefreshClick = () => {
+      const {id} = pipeline || {};
+      if (id !== undefined && id !== null) {
+        const selectPipeline = () => this.selectPipeline(
+          {id, version, configuration: pipelineConfiguration}
+        );
+        Modal.confirm({
+          title: 'Are you sure you want to refresh configuration?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          content: 'Current parameters and values may be lost.',
+          onOk: selectPipeline,
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      }
+    };
+    if (pipeline) {
+      inputValue = pipeline.name;
+      if (version && !pipeline.unknown) {
+        let versionStr = `(${version})`;
+        if (pipelineConfiguration) {
+          versionStr = `(${version} - ${pipelineConfiguration})`;
         }
         inputValue = `${inputValue} ${versionStr}`;
       }
@@ -2376,7 +2367,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.openPipelineBrowser}>
               <Icon type="export" />
             </div>
-          } />
+          }
+          addonAfter={isLatestVersion ? (
+            <div className={styles.inputAddonButton} onClick={onRefreshClick}>
+              Refresh configuration
+            </div>
+          ) : undefined}
+        />
       </FormItem>
     );
   };
@@ -2559,135 +2556,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  removeParameter = (sectionName, key) => {
-    const parametersValues = this.getSectionValue(sectionName);
-    const index = parametersValues.keys.indexOf(key);
-    if (index >= 0) {
-      parametersValues.keys.splice(index, 1);
-      parametersValues.params[key] = undefined;
-    }
-    this.props.form.setFieldsValue({[sectionName]: parametersValues});
-  };
-
-  addedParameters = {};
-
-  addParameter = (sectionName, {type, name, required, defaultValue}, isSystemSection) => {
-    const parameterIndexIdentifierKey = isSystemSection ? 'system' : 'nonSystem';
-    this.parameterIndexIdentifier[parameterIndexIdentifierKey] =
-      this.parameterIndexIdentifier[parameterIndexIdentifierKey] + 1;
-    const parametersValues = this.getSectionValue(sectionName);
-    let newKeyIndex = `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`;
-    this.addedParameters[newKeyIndex] = {
-      type,
-      name,
-      required,
-      value: defaultValue,
-      section: !isSystemSection ? OTHER_PARAMETERS_GROUP : undefined
-    };
-    parametersValues.keys.push(newKeyIndex);
-    this.props.form.setFieldsValue({[sectionName]: parametersValues});
-  };
-
-  validateParameterName = (sectionName, key, isSystemParameter) => (rule, value, callback) => {
-    const parametersValues = this.getSectionValue(sectionName);
-    let error = false;
-    if (value && value.length > 0) {
-      const params = parametersValues.keys
-        .map(key => parametersValues.params[key])
-        .filter(p => !!p)
-        .reduce((obj, param) => {
-          obj[param.key] = param;
-          return obj;
-        }, {});
-      if (params[key]) {
-        for (let i = 0; i < parametersValues.keys.length; i++) {
-          if (parametersValues.keys[i] === key) {
-            continue;
-          }
-          if (params[parametersValues.keys[i]] && params[parametersValues.keys[i]].name === value) {
-            error = true;
-            break;
-          }
-        }
-      }
-    }
-    if (error) {
-      // eslint-disable-next-line
-      callback('No duplicates are allowed');
-    } else if (!isSystemParameter && this.isSystemParameterRestrictedByRole({name: value})) {
-      // eslint-disable-next-line
-      callback('This parameter is not allowed for use');
-    } else if (!isSystemParameter && this.isSystemParameter({name: value})) {
-      // eslint-disable-next-line
-      callback('Name is reserved for system parameter');
-    } else if (value &&
-      [
-        CP_CAP_LIMIT_MOUNTS,
-        ...getSkippedSystemParametersList()
-      ].indexOf(value.toUpperCase()) >= 0) {
-      // eslint-disable-next-line
-      callback('Name is reserved');
-    } else {
-      callback();
-    }
-  };
-
-  validatePositiveNumber = (rule, value, callback) => {
-    if (value && +value > 0 && Number.isInteger(+value) && `${value}` === `${+value}`) {
-      callback();
-    } else {
-      // eslint-disable-next-line
-      callback('Please enter positive number');
-    }
-  };
-
-  rebuildParameters = {
-    [PARAMETERS]: true,
-    [SYSTEM_PARAMETERS]: true
-  };
-
-  loadCurrentProject = async () => {
-    const folderProjectRequest =
-      new FolderProject(this.props.configurationId, 'CONFIGURATION');
-    await folderProjectRequest.fetch();
-    if (folderProjectRequest.error) {
-      message.error(folderProjectRequest.error, 5);
-    } else {
-      if (folderProjectRequest.value) {
-        const currentProjectId = folderProjectRequest.value.id;
-        const currentProjectMetadata = folderProjectRequest.value.data;
-        const metadataEntityFieldsRequest =
-          new MetadataEntityFields(currentProjectId);
-        await metadataEntityFieldsRequest.fetch();
-        if (metadataEntityFieldsRequest.error) {
-          message.error(metadataEntityFieldsRequest.error, 5);
-        } else {
-          const currentMetadataEntity = metadataEntityFieldsRequest.value || [];
-          const [currentConfiguration] =
-            this.props.configurations.filter(config =>
-              config.name === this.props.currentConfigurationName);
-          let rootEntityId = '';
-          if (currentConfiguration.rootEntityId) {
-            const entity = currentMetadataEntity.find(
-              entity => entity.metadataClass &&
-                `${entity.metadataClass.id}` === `${currentConfiguration.rootEntityId}`
-            );
-            if (entity) {
-              rootEntityId = `${currentConfiguration.rootEntityId}`;
-            }
-          }
-
-          this.setState({
-            currentMetadataEntity,
-            rootEntityId,
-            currentProjectMetadata,
-            currentProjectId
-          });
-        }
-      }
-    }
-  };
-
   isSystemParameter = (parameter) => {
     if (this.props.runDefaultParameters.loaded) {
       return (this.props.runDefaultParameters.value || [])
@@ -2695,6 +2563,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     return false;
   };
+
+  validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
+    let result = [];
+    let visibleTags = [];
+    if (
+      !this.props.detached &&
+      !this.props.isDetachedConfiguration &&
+      !this.props.editConfigurationMode
+    ) {
+      const {userTags} = this.state;
+      result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
+      visibleTags = await getVisibleUserTags(payload);
+    }
+    this.setState({
+      userTagsValidation: result,
+      userTagsVisibleTags: visibleTags,
+      userTagsValidationPayload: payload
+    }, () => {
+      resolve(!result || result.length === 0);
+    });
+  });
 
   @computed
   get authenticatedUserRolesNames () {
@@ -2716,6 +2605,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       admin
     } = this.props.authenticatedUserInfo.value;
     return admin;
+  }
+
+  @computed
+  get isAdvancedUser () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
   }
 
   isSystemParameterRestrictedByRole = (parameter) => {
@@ -2748,635 +2648,60 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({rootEntityId}, this.formFieldsChanged);
   };
 
-  openSystemParameterBrowser = () => {
-    this.setState({systemParameterBrowserVisible: true});
-  };
-
-  closeSystemParameterBrowser = () => {
-    this.setState({systemParameterBrowserVisible: false});
-  };
-
-  renderParameters = (isSystemParametersSection) => {
-    const sectionName = isSystemParametersSection ? SYSTEM_PARAMETERS : PARAMETERS;
-    if (
-      (!this.props.runDefaultParameters.loaded && this.props.runDefaultParameters.pending) ||
-      (!this.props.preferences.loaded && this.props.preferences.pending)
-    ) {
-      return null;
+  renderParameters = (system = false) => {
+    const parameters = this.getParameters();
+    const {isRawEditEnabled, pipeline} = this.state;
+    const {detached} = this.props;
+    const pipelineSelected = pipeline !== undefined && pipeline !== null;
+    let description;
+    if (!system) {
+      const {
+        config_description: configurationDescription
+      } = this.props.parameters || {};
+      description = configurationDescription;
     }
-    let parameters;
-    if (this.rebuildParameters[sectionName]) {
-      parameters = this.buildDefaultParameters(isSystemParametersSection);
-      this.rebuildParameters[sectionName] = false;
-    } else {
-      parameters = this.getSectionValue(sectionName) ||
-        this.buildDefaultParameters(isSystemParametersSection);
-    }
-
-    const keysFormItem = this.props.isDetachedConfiguration &&
-    this.props.selectedPipelineParametersIsLoading
-      ? null
-      : (
-        <FormItem
-          key="params_keys"
-          className={styles.hiddenItem}
-          required
-          hasFeedback>
-          {this.getSectionFieldDecorator(sectionName)('keys',
-            {
-              initialValue: parameters.keys
-            })(<Input disabled={this.props.readOnly && !this.props.canExecute} />)}
-        </FormItem>
-      );
-    const onSelect = ({key}) => {
-      this.addParameter(
-        sectionName,
-        {type: key, defaultValue: key === 'boolean' ? 'true' : undefined},
-        isSystemParametersSection
-      );
-    };
-
-    const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect} className={styles.parametersMenu}>
-        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
-        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
-        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
-        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
-        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
-        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
-      </Menu>
-    );
-
-    const addParameterButtonFn = () => {
-      if (isSystemParametersSection) {
-        const notToShowSystemParametersFn = (section, isSystem) => {
-          const sectionValue = this.getSectionValue(section) ||
-            this.buildDefaultParameters(isSystem);
-          return sectionValue && sectionValue.params && sectionValue.keys
-            ? sectionValue.keys
-              .map(key => sectionValue.params[key])
-              .filter(param => !!param).map(p => p.name)
-            : [];
-        };
-        return (
-          <Row
-            style={{marginTop: 20}}
-            key="add parameter"
-            type="flex"
-            justify="space-around">
-            <Button
-              disabled={
-                !this.state.isRawEditEnabled && (
-                  (this.props.readOnly && !this.props.canExecute) ||
-                  (!!this.state.pipeline && this.props.detached)
-                )
-              }
-              id="add-system-parameter-button"
-              onClick={this.openSystemParameterBrowser}>
-              Add system parameter
-            </Button>
-            <SystemParametersBrowser
-              visible={this.state.systemParameterBrowserVisible}
-              onCancel={this.closeSystemParameterBrowser}
-              onSave={(parameters) => {
-                // add selected parameters on ok
-                parameters.forEach((parameter) => {
-                  parameter.type = parameter.type.toLowerCase();
-                  this.addParameter(sectionName, parameter, isSystemParametersSection);
-                });
-                this.closeSystemParameterBrowser();
-              }}
-              notToShow={[
-                ...notToShowSystemParametersFn(PARAMETERS, false),
-                ...notToShowSystemParametersFn(SYSTEM_PARAMETERS, true),
-                CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)]
-              }
-            />
-          </Row>
-        );
-      } else {
-        return (
-          <Row
-            style={{marginTop: 20}}
-            key="add parameter"
-            type="flex"
-            justify="space-around">
-            <Button.Group>
-              <Button
-                disabled={
-                  !this.state.isRawEditEnabled && (
-                    (this.props.readOnly && !this.props.canExecute) ||
-                    (!!this.state.pipeline && this.props.detached)
-                  )
-                }
-                id="add-parameter-button"
-                onClick={
-                  () => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)
-                }>
-                Add parameter
-              </Button>
-              {
-                this.state.isRawEditEnabled || (
-                  !(this.props.readOnly && !this.props.canExecute) &&
-                  !(this.state.pipeline && this.props.detached))
-                  ? (
-                    <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
-                      <Button
-                        id="add-parameter-dropdown-button"
-                        style={{padding: '0px 8px'}}
-                      >
-                        <Icon type="down" />
-                      </Button>
-                    </Dropdown>
-                  ) : undefined
-              }
-            </Button.Group>
-          </Row>
-        );
-      }
-    };
-
-    const renderRootEntity = () => {
-      return this.state.currentMetadataEntity.length > 0 && (
-        <FormItem
-          key="root_entity_type_select"
-          className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}>
-          <Row
-            style={{marginTop: 10}}
-            key="root_entity_type_row"
-            align="middle"
-            type="flex">
-            <Col span={4} offset={isSystemParametersSection ? 1 : 2}>Root entity type:</Col>
-            <Col
-              key="root_entity_type"
-              span={isSystemParametersSection ? 16 : 15}>
-              <Select
-                allowClear
-                value={this.state.rootEntityId}
-                onChange={this.onChangeRootEntity}
-                placeholder="Select root entity type">
-                {this.state.currentMetadataEntity.map(entity => {
-                  return (
-                    <Select.Option key={entity.metadataClass.id}>
-                      {entity.metadataClass.name}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
-            </Col>
-          </Row>
-        </FormItem>
-      );
-    };
-
-    const renderUseResolvedParameters = () => {
-      const resolvedParameters = Object.values(parameters?.params || {})
-        .filter(parameter => parameter.hasResolvedValue);
-      if (!resolvedParameters.length) {
-        return null;
-      }
-      return (
-        <Row
-          type="flex"
-          style={{
-            marginBottom: '10px'
-          }}
-          key="use-resolved-parameters_row"
-        >
-          <Col
-            span={isSystemParametersSection ? 16 : 15}
-            offset={isSystemParametersSection ? 4 : 6}
-            style={{
-              textAlign: 'right'
-            }}
-          >
-            <Checkbox
-              checked={this.state.useResolvedParameters}
-              onChange={this.toggleResolvedParameters}
-              style={{
-                userSelect: 'none'
-              }}
-            >
-              Use resolved values
-            </Checkbox>
-          </Col>
-        </Row>
-      );
-    };
-
-    const renderCurrentParameters = (isSystem = false) => {
-      if (this.props.isDetachedConfiguration && this.props.selectedPipelineParametersIsLoading) {
-        return [];
-      } else {
-        const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
-        const renderParametersGroup = (keys, params) => keys.map(key => {
-          const parameter = (params ? params[key] : undefined) ||
-            this.addedParameters[key];
-          let name = parameter ? parameter.name : '';
-          let value = parameter ? parameter.value : '';
-          const resolvedValue = parameter ? parameter.resolvedValue : '';
-          const hasResolvedValue = parameter ? parameter.hasResolvedValue : false;
-          let type = parameter ? parameter.type : 'string';
-          let readOnly = parameter ? parameter.readOnly : false;
-          const restrictedSystemParameter = this.isSystemParameterRestrictedByRole(parameter);
-          const removeAllowed = !isSystemParametersSection ||
-            !restrictedSystemParameter;
-          if (parameter && parameter.initial) {
-            readOnly = readOnly || restrictedSystemParameter;
-          }
-          const noOverride = parameter ? parameter.noOverride : false;
-          const systemParameterValueIsBlocked = isSystemParametersSection &&
-            getSystemParameterDisabledState(this, name);
-          let required = parameter ? `${parameter.required}` === 'true' : false;
-          let enumeration = parameter ? parameter.enumeration : undefined;
-          const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
-          let description = parameter ? parameter.description : undefined;
-          let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
-          let visible = parameter ? parameter.visible : undefined;
-          let validation = parameter ? parameter.validation : undefined;
-          const validator = validation
-            ? (rule, value, callback) => {
-              const formParameters = this.getSectionValue(sectionName) ||
-                this.buildDefaultParameters(isSystemParametersSection);
-              const modifiedParameters = {
-                ...parameterUtilities.normalizeParameters(formParameters)
-              };
-              if (modifiedParameters.hasOwnProperty(name)) {
-                modifiedParameters[name].value = value;
-              }
-              callback(parameterUtilities.validate(parameter, modifiedParameters));
-            }
-            : undefined;
-          let parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
-          const systemParameter = this.getSystemParameter(parameter);
-          const parameterHint = systemParameter ? systemParameter.description : description;
-          const parameterHintFn = parameterHint
-            ? () => { return parameterHint; } : undefined;
-          let nameDisabled = (this.props.readOnly && !this.props.canExecute) ||
-            required || isSystemParametersSection ||
-            (!!this.state.pipeline && this.props.detached);
-          let readOnlyCorrectedValue = readOnly;
-          let requiredCorrectedValue = required;
-          if (this.state.isRawEditEnabled) {
-            nameDisabled = false;
-            parameterIsVisible = true;
-            readOnlyCorrectedValue = false;
-            requiredCorrectedValue = false;
-            visible = true;
-          }
-          let formItem;
-          switch (type.toLowerCase()) {
-            case 'path':
-            case 'output':
-            case 'input':
-            case 'common':
-              formItem = this.renderPathParameter(
-                sectionName,
-                {
-                  key,
-                  value,
-                  required: requiredCorrectedValue,
-                  readOnly: readOnlyCorrectedValue,
-                  description,
-                  validator
-                },
-                type,
-                isSystemParametersSection,
-                parameterIsVisible
-              );
-              break;
-            case 'boolean':
-              formItem = this.renderBooleanParameter(
-                sectionName,
-                {
-                  key,
-                  value,
-                  required: requiredCorrectedValue,
-                  readOnly: readOnlyCorrectedValue,
-                  description,
-                  validator
-                }
-              );
-              break;
-            default:
-              if (enumeration) {
-                formItem = this.renderSelectionParameter(
-                  sectionName,
-                  {
-                    key,
-                    value,
-                    required: requiredCorrectedValue,
-                    readOnly: readOnlyCorrectedValue,
-                    enumeration,
-                    description,
-                    validator
-                  },
-                  isSystemParametersSection,
-                  normalizedParameters
-                );
-              } else {
-                formItem = this.renderStringParameter(
-                  sectionName,
-                  {
-                    key,
-                    value,
-                    required: requiredCorrectedValue,
-                    readOnly: readOnlyCorrectedValue,
-                    description,
-                    validator
-                  },
-                  isSystemParametersSection,
-                  parameterIsVisible
-                );
-              }
-              break;
-          }
-          return (
-            <FormItem
-              key={key}
-              className={
-                getFormItemClassName(
-                  parameterIsVisible
-                    ? styles.formItemRow
-                    : `${styles.formItemRow} ${styles.hiddenItem}`,
-                  key
-                )
-              }
-              {...this.parameterItemLayout}
-              hasFeedback>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.readOnly`,
-                    {initialValue: readOnly}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.noOverride`,
-                    {initialValue: noOverride}
-                  )(<Input disabled />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.key`,
-                    {initialValue: key}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.type`,
-                    {initialValue: type}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.enumeration`,
-                    {initialValue: enumeration}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.initialEnumeration`,
-                    {initialValue: initialEnumeration}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.visible`,
-                    {initialValue: visible}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.validation`,
-                    {initialValue: validation}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.required`,
-                    {initialValue: `${required}`}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.resolvedValue`,
-                    {initialValue: resolvedValue}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.hasResolvedValue`,
-                    {initialValue: hasResolvedValue}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.description`,
-                    {initialValue: description}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <FormItem className={styles.hiddenItem}>
-                {
-                  this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.section`,
-                    {initialValue: section}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                }
-              </FormItem>
-              <Col
-                span={4}
-                className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}
-                offset={isSystemParametersSection ? 0 : 2}>
-                <FormItem
-                  className={styles.formItemRow}
-                  required={required && parameterIsVisible}>
-                  {this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.name`,
-                    {
-                      rules: [
-                        {
-                          required: parameterIsVisible,
-                          message: 'Required'
-                        },
-                        {
-                          pattern: /^[\da-zA-Z_]+$/,
-                          message: 'Name can contain only letters, digits and \'_\'.'
-                        },
-                        {
-                          validator: this.validateParameterName(
-                            sectionName,
-                            key,
-                            isSystemParametersSection
-                          )
-                        }],
-                      initialValue: name
-                    }
-                  )(
-                    <Input
-                      disabled={nameDisabled}
-                      placeholder="Name"
-                      className={
-                        classNames(
-                          'cp-parameter-name',
-                          {
-                            [styles.parameterName]: !isSystemParametersSection,
-                            [styles.systemParameterName]: isSystemParametersSection,
-                            disabled: nameDisabled,
-                            'cp-system-parameter-name-input': isSystemParametersSection
-                          }
-                        )
-                      } />
-                  )}
-                </FormItem>
-              </Col>
-              <Col
-                span={isSystemParametersSection ? 16 : 15}
-                className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}>
-                {formItem}
-              </Col>
-              <Col
-                span={3}
-                className={
-                  systemParameterValueIsBlocked
-                    ? styles.hiddenItem
-                    : styles.removeParameter
-                }>
-                {
-                  this.state.isRawEditEnabled || (
-                    !required &&
-                    !(this.props.readOnly && !this.props.canExecute) &&
-                    !(this.state.pipeline && this.props.detached) &&
-                    removeAllowed
-                  )
-                    ? (
-                      <Icon
-                        id="remove-parameter-button"
-                        className="dynamic-delete-button"
-                        type="minus-circle-o"
-                        onClick={() => this.removeParameter(sectionName, key)}
-                        style={{marginLeft: 15, width: 15}}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          marginLeft: 15,
-                          width: 15,
-                          display: 'inline-block'
-                        }}>{'\u00A0'}</div>
-                    )
-                }
-                {
-                  parameterHintFn &&
-                  hints.renderHint(
-                    this.localizedStringWithSpotDictionaryFn,
-                    parameterHintFn,
-                    null,
-                    {marginLeft: 15}
-                  )
-                }
-              </Col>
-            </FormItem>
-          );
-        }).filter(parameter => !!parameter);
-        const {keys, params} = parameters;
-        if (isSystem) {
-          return renderParametersGroup(keys, params);
-        } else {
-          const sectionNames = keys.reduce((result, key) => {
-            const parameter = (params && params[key]) || this.addedParameters[key];
-            const section = parameter
-              ? parameter.section
-              : OTHER_PARAMETERS_GROUP;
-            if (result.includes(section)) {
-              return result;
-            }
-            return [...result, section];
-          }, []);
-          const paramsPerSection = keys.reduce((result, key) => {
-            const parameter = (params && params[key]) || this.addedParameters[key];
-            const section = parameter
-              ? parameter.section
-              : OTHER_PARAMETERS_GROUP;
-            result[section] = {...result[section], [key]: {...parameter}};
-            return result;
-          }, {});
-          const sectionVisible = section => {
-            const keys = Object.keys(paramsPerSection[section]);
-            const params = paramsPerSection[section];
-            return keys.some(key => {
-              const parameter = (params ? params[key] : undefined) ||
-                this.addedParameters[key];
-              return parameterUtilities.isVisible(parameter, normalizedParameters);
-            });
-          };
-          const containsOtherGroup = sectionNames.includes(OTHER_PARAMETERS_GROUP);
-          const sortedKeys = sectionNames.filter(key => key !== OTHER_PARAMETERS_GROUP);
-          const sections = sortedKeys
-            .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
-          return sections.length > 1
-            ? sections.map(section => {
-              return (
-                <div key={section}>
-                  {
-                    this.renderSeparator(
-                      section.toUpperCase(),
-                      0,
-                      'section',
-                      Object.assign(
-                        {marginTop: 20, marginBottom: 20},
-                        sectionVisible(section) ? {} : {display: 'none'}
-                      )
-                    )}
-                  {
-                    renderParametersGroup(
-                      Object.keys(paramsPerSection[section]),
-                      paramsPerSection[section])
-                  }
-                </div>
-              );
-            })
-            : renderParametersGroup(keys, params);
-        }
-      }
-    };
-
-    const currentParameters = this.isFireCloudSelected
-      ? []
-      : renderCurrentParameters(isSystemParametersSection);
-
     return [
-      renderUseResolvedParameters(),
-      this.props.isDetachedConfiguration && !isSystemParametersSection && renderRootEntity(),
-      isSystemParametersSection && currentParameters.length > 0 &&
-      this.renderSeparator('System parameters', 0, 'header', {marginTop: 20, marginBottom: 10}),
-      !this.isFireCloudSelected ? keysFormItem : undefined,
-      ...currentParameters,
-      !this.isFireCloudSelected ? addParameterButtonFn() : undefined
+      <Parameters
+        key={`${system ? 'system' : 'default'}-parameters`}
+        disabled={this.props.readOnly && !this.props.canExecute}
+        parameters={parameters}
+        onChange={this.onParametersChange}
+        system={system}
+        rawEdit={isRawEditEnabled}
+        editConfiguration={this.props.editConfigurationMode}
+        currentCloudRegionId={this.currentCloudRegionId}
+        currentProjectId={this.state.currentProjectId}
+        currentProjectMetadata={this.state.currentProjectMetadata}
+        currentMetadataEntity={this.state.currentMetadataEntity}
+        rootEntityId={this.state.rootEntityId}
+        onChangeRootEntityId={this.onChangeRootEntity}
+        showRootEntityId={!system && this.props.isDetachedConfiguration}
+        metadataAutoComplete={this.props.isDetachedConfiguration}
+        navigationStyle={this.state.navigationStyle}
+        navigationRef={system ? undefined : (div) => {
+          this.parametersNavigationWrapperRef = div;
+        }}
+        detached={detached}
+        pipeline={pipelineSelected}
+        description={description ? (<Markdown md={description} />) : undefined}
+      />,
+      <div
+        key={`add-${system ? 'system' : 'default'}-parameter`}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 10
+        }}
+      >
+        <AddParameterButton
+          key={`add-${system ? 'system' : 'default'}-parameter`}
+          parameters={parameters}
+          onChange={this.onParametersChange}
+          system={system}
+          disabled={(this.props.readOnly && !this.props.canExecute) || (!!detached && !!pipeline)}
+        />
+      </div>
     ];
   };
 
@@ -3445,30 +2770,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get prettyUrlSSHMode () {
+    const {dockerRegistries} = this.props;
     if (!this.prettyUrlEnabled) {
       return false;
     }
-    const dockerImage = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
+    const image = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
       this.getDefaultValue('docker_image');
-    if (dockerImage && this.props.dockerRegistries.loaded) {
-      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
-      const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
-        .filter(r => r.path.toLowerCase() === registry);
-      if (imageRegistry) {
-        const [imageGroup] = (imageRegistry.groups || [])
-          .filter(g => g.name.toLowerCase() === group);
-        if (imageGroup) {
-          const [image] = toolAndVersion.split(':');
-          const [im] = (imageGroup.tools || [])
-            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return !(im && im.endpoints && (im.endpoints || []).length > 0);
-        }
-      }
-    }
-    return true;
+    return prettyUrlGenerator.isPrettyUrlSSHMode(image, dockerRegistries);
   }
 
-  checkFriendlyURL = (rule, value, callback) => {
+  checkPrettyURL = (rule, value, callback) => {
     const error = prettyUrlGenerator.validate(value, this.prettyUrlSSHMode);
     if (error) {
       callback(error);
@@ -3477,11 +2788,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
+    if (this.prettyUrlEnabled && this.prettyUrlAvailable()) {
       const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
-          className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
+          className={getFormItemClassName(styles.formItemRow, 'friendly_url')}
           {...this.leftFormItemLayout}
           label="Friendly URL"
           hasFeedback>
@@ -3490,14 +2801,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               className={styles.formItemRow}
               hasFeedback
             >
-              {this.getSectionFieldDecorator(ADVANCED)('prettyUrl',
+              {this.getSectionFieldDecorator(ADVANCED)('friendly_url',
                 {
                   rules: [
                     {
-                      validator: this.checkFriendlyURL
+                      validator: this.checkPrettyURL
                     }
                   ],
-                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('prettyUrl'))
+                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))
                 }
               )(
                 <Input
@@ -3559,10 +2870,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
-    const instanceTypeStr = (t) => ([
-      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, `,
-      `RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`
-    ]).join('');
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3596,36 +2903,49 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             onChange={this.instanceTypeChanged}
             filterOption={
               (input, option) =>
-                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                (option.props.searchValue || option.props.value)
+                  .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
-              this.instanceTypes
-                .map(t => t.instanceFamily)
-                .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                .map(instanceFamily => {
-                  return (
-                    <Select.OptGroup
-                      key={instanceFamily || 'Other'}
-                      label={instanceFamily || 'Other'} >
-                      {
-                        this.instanceTypes
-                          .filter(t => t.instanceFamily === instanceFamily)
-                          .map(t =>
-                            <Select.Option
-                              key={t.sku}
-                              value={t.name}
-                              title={instanceTypeStr(t)}
-                            >
-                              {instanceTypeStr(t)}
-                            </Select.Option>
-                          )
-                      }
-                    </Select.OptGroup>
-                  );
-                })
+              getSelectOptions(
+                this.instanceTypes,
+                {
+                  hyperThreadingDisabled: this.hyperThreadingDisabled,
+                  displayRegion: this.instanceTypesMergedForRegions,
+                  preferences: this.props.preferences,
+                  showReservationTag: !this.props.detached
+                }
+              )
             }
           </Select>
         )}
       </FormItem>
+    );
+  };
+
+  renderReservationParametersSelector = () => {
+    const {
+      detached
+    } = this.props;
+    if (detached) {
+      return null;
+    }
+    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+    const {
+      reservationParameters
+    } = this.state;
+    const onChange = (p) => {
+      this.setState({
+        reservationParameters: p
+      }, this.formFieldsChanged);
+    };
+    return (
+      <ReservationParameters
+        className={styles.reservationParameters}
+        instanceType={instanceType}
+        parameters={reservationParameters}
+        onChange={onChange}
+      />
     );
   };
 
@@ -3636,6 +2956,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.toolPlatform = null;
     this.toolAllowSensitive = true;
     this.toolDefaultCmd = undefined;
+    this.rescheduleRun = undefined;
+    this.rescheduleRunInitialValue = undefined;
     this.setState({
       useDefaultCmd: false
     });
@@ -3645,7 +2967,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   loadToolSettings = async (dockerImage) => {
     await this.props.dockerRegistries.fetchIfNeededOrWait();
-    if (this.props.dockerRegistries.loaded) {
+    if (this.props.dockerRegistries.loaded && !this.toolSettingsPending) {
       const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
       const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
         .filter(r => r.path.toLowerCase() === registry);
@@ -3659,6 +2981,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           if (im && im.id) {
             this.toolAllowSensitive = im.allowSensitive;
             this.toolPlatform = im.platform;
+            this.toolSettingsPending = true;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
 
@@ -3673,6 +2996,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.regionDisabledByToolSettings = false;
               this.toolCloudRegion = null;
+            }
+
+            if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
+              this._toolSettings.value[0] && this._toolSettings.value[0].settings &&
+              this._toolSettings.value[0].settings[0].configuration) {
+              const {
+                parameters: toolParameters
+              } = this._toolSettings.value[0].settings[0].configuration;
+              const rescheduleRun = rescheduleRunParameterValue(toolParameters);
+              this.rescheduleRun = rescheduleRun;
+              this.rescheduleRunInitialValue = rescheduleRun;
+            } else {
+              this.rescheduleRun = undefined;
+              this.rescheduleRunInitialValue = undefined;
             }
 
             const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
@@ -3695,6 +3032,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.toolDefaultCmd = undefined;
             }
+            this.toolSettingsPending = false;
           } else {
             this.toolAllowSensitive = true;
           }
@@ -3800,6 +3138,53 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  renderRescheduleRunControl = () => {
+    if (this.props.detached || this.props.editConfigurationMode) {
+      return undefined;
+    }
+    const {
+      rescheduleRun,
+      rescheduleRunInitialValue
+    } = this;
+    const onChange = (value) => {
+      this.rescheduleRun = value;
+      (this.formFieldsChanged)();
+    };
+    const disabled = rescheduleRunInitialValue !== undefined || (
+      this.regionDisabledByToolSettings ||
+      !!this.state.fireCloudMethodName ||
+      (this.props.readOnly && !this.props.canExecute) ||
+      (
+        this.props.allowedInstanceTypes &&
+        (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
+      ) ||
+      (!this._toolSettings || this._toolSettings.pending)
+    );
+    return (
+      <div
+        className={getFormItemClassName(styles.formItem, 'rescheduleRun')}
+      >
+        <div
+          className={styles.formItemLabelColumn}
+        >
+          {'\u00A0'}
+        </div>
+        <div
+          className={styles.formItemWrapperColumn}
+        >
+          <RescheduleRunControl
+            value={rescheduleRun}
+            disabled={disabled}
+            onChange={onChange}
+            checkbox
+          >
+            Allow reschedule to different region in case of insufficient capacity
+          </RescheduleRunControl>
+        </div>
+      </div>
+    );
+  };
+
   openConfigureClusterDialog = () => {
     this.setState({
       configureClusterDialogVisible: true
@@ -3813,19 +3198,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onChangeClusterConfiguration = (configuration) => {
-    setClusterParameterValue(this.props.form, SYSTEM_PARAMETERS, configuration);
     const {
       launchCluster,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
       kubeEnabled,
-      autoScaledPriceType
+      autoScaledPriceType,
+      fsConfig
     } = configuration;
     let {runCapabilities} = this.state;
     if (kubeEnabled) {
@@ -3840,6 +3226,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
@@ -3847,6 +3234,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       nodesCount,
       maxNodesCount,
       autoScaledPriceType,
+      fsConfig,
       runCapabilities
     }, () => {
       this.closeConfigureClusterDialog();
@@ -4095,6 +3483,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    const isInstanceTypeWithReservation = this.getIsInstanceTypeWithReservation();
     const initialValue = this.correctPriceTypeValue(this.getDefaultValue('is_spot'));
     return (
       <FormItem
@@ -4123,6 +3512,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Select
                   onSelect={(isSpot) => this.evaluateEstimatedPrice({isSpot})}
                   disabled={
+                    isInstanceTypeWithReservation ||
                     !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
                     this.props.defaultPriceTypeIsLoading
@@ -4158,7 +3548,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster,
         launchCluster
       } = this.state;
-      if (!isSpot && !autoScaledCluster && !launchCluster) {
+      if (
+        !isSpot &&
+        !autoScaledCluster &&
+        !launchCluster &&
+        (this.isAdmin || this.isAdvancedUser)
+      ) {
         const onChange = (e) => {
           this.setState({
             autoPause: e.target.checked
@@ -4304,11 +3699,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
         return null;
       };
-      const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
-      const defaultValue = (getDefaultValue() || '')
-        .split(',')
-        .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
-        .join(',') || null;
+      const defaultValue = correctLimitMountsParameterValue(
+        getDefaultValue() || '',
+        dataStorageAvailable.value || [],
+        {
+          cloudRegion: this.currentCloudRegion,
+          cloudRegions: this.awsRegions
+        }
+      );
       let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
       if (currentValue === undefined) {
         currentValue = defaultValue;
@@ -4368,6 +3766,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         !!this.state.fireCloudMethodName ||
                         (this.props.readOnly && !this.props.canExecute)
                       }
+                      cloudRegion={this.currentCloudRegion}
                     />
                   )}
                 </FormItem>
@@ -4415,6 +3814,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ) {
       return null;
     }
+
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
@@ -4435,6 +3835,39 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
           {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
         </Col>
+      </FormItem>
+    );
+  };
+
+  renderCustomTagsConfigurationItem = () => {
+    if (
+      this.props.detached ||
+      this.props.isDetachedConfiguration ||
+      this.props.editConfigurationMode
+    ) {
+      return null;
+    }
+    const {
+      userTags,
+      userTagsValidation = [],
+      userTagsVisibleTags = [],
+      userTagsValidationPayload
+    } = this.state;
+
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customTags')}
+        {...this.leftFormItemLayout}
+        label="Tags"
+      >
+        <CustomTagsControl
+          tags={userTags}
+          validation={userTagsValidation}
+          visibleTags={userTagsVisibleTags}
+          payload={userTagsValidationPayload}
+          onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
+          buttonText="Configure"
+        />
       </FormItem>
     );
   };
@@ -4467,6 +3900,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </Col>
     </FormItem>
   );
+
+  renderCustomUIItem = () => {
+    const {
+      detached,
+      editConfigurationMode,
+      pipeline = {},
+      version: pipelineVersion
+    } = this.props;
+    const {id: pipelineId} = pipeline;
+    if (detached || !editConfigurationMode || !pipelineId || !pipelineVersion) {
+      return null;
+    }
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'customUI')}
+        {...this.leftFormItemLayout}
+        label="Custom UI Pages"
+      >
+        <Col span={24}>
+          <ConfigurePlugins
+            pipelineId={pipelineId}
+            pipelineVersion={pipelineVersion}
+          />
+        </Col>
+      </FormItem>
+    );
+  };
 
   renderCmdTemplateFormItem = () => {
     const {isRawEditEnabled} = this.state;
@@ -4587,11 +4047,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   reset (keepPipeline) {
     const {resetFields} = this.props.form;
     resetFields();
-    this.addedParameters = {};
-    this.rebuildParameters = {
-      [PARAMETERS]: true,
-      [SYSTEM_PARAMETERS]: true
-    };
     if (this.codeEditor) {
       this.codeEditor.reset();
       this.cmdTemplateValue = undefined;
@@ -4599,31 +4054,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.resetState(keepPipeline);
   };
 
-  toggleResolvedParameters = () => {
-    const {parameters, form} = this.props;
-    this.setState(prevState => ({
-      useResolvedParameters: !prevState.useResolvedParameters
-    }), () => {
-      const {useResolvedParameters} = this.state;
-      const formItems = form.getFieldValue(PARAMETERS);
-      formItems.keys.forEach((key) => {
-        const formItem = formItems.params[key];
-        const parameter = parameters.parameters[formItem.name];
-        if (
-          parameter &&
-          parameter.value !== parameter.resolvedValue &&
-          parameter.resolvedValue !== undefined
-        ) {
-          formItem.value = useResolvedParameters
-            ? parameter.resolvedValue
-            : parameter.value;
-          form.setFieldsValue({
-            [PARAMETERS]: formItems
+  initializeParametersNavigationCheck = () => {
+    const padding = 20; // Should be equals to .parametersNavigation.sticky top
+    let sticky = false;
+    const check = () => {
+      if (this.parametersNavigationWrapperRef) {
+        const {top} = this.parametersNavigationWrapperRef
+          .getBoundingClientRect();
+        const s = top <= padding;
+        if (s !== sticky) {
+          sticky = s;
+          this.setState({
+            navigationStyle: s ? {position: 'fixed', top: padding} : undefined
           });
         }
-      });
-    });
-  };
+      }
+      this.checkRAF = requestAnimationFrame(check);
+    };
+    this.checkRAF = requestAnimationFrame(check);
+  }
 
   runNameAliasChange = (name) => {
     this.setState({runNameAlias: name});
@@ -4730,12 +4179,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
     }
     return (
-      <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
+      <Row
+        className={styles.panelHeader}
+        type="flex"
+        justify={key === PARAMETERS ? 'flex-start' : 'space-between'}
+        align="middle"
+      >
         <span className={styles.itemHeader}>
           <Icon type={icon} /> {title}
         </span>
         {
           this.getPanelShortDescription(key)
+        }
+        {
+          key === PARAMETERS && this.renderUploadParametersControls({marginLeft: 10})
+        }
+        {
+          key === PARAMETERS && this.renderParametersPayloadSelector({marginLeft: 10})
         }
         {
           key === PARAMETERS && this.renderRawEditCheckbox()
@@ -4745,7 +4205,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   getPanelShortDescription = (key) => {
-    if (this.state.openedPanels.indexOf(key) >= 0) {
+    if (this.state.openedPanels.indexOf(key) >= 0 || key === PARAMETERS) {
       return undefined;
     }
     const descriptions = [];
@@ -4821,17 +4281,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderSeparator = (text, marginInCols, key, style) => {
+  renderSeparator = (text, marginInCols, key, style, highlighted = false) => {
     return (
       <Row key={key} type="flex" style={style || {margin: 0}}>
         <Col span={marginInCols} />
         <Col span={24 - 2 * marginInCols}>
           <table style={{width: '100%'}}>
             <tbody>
-              <tr>
+              <tr className={classNames(styles.parameterSectionHeader, {
+                [styles.highlighted]: highlighted
+              })}>
                 <td style={{width: '50%'}}>
                   <div
-                    className="cp-divider horizontal"
+                    className={classNames('cp-divider horizontal', {
+                      'cp-primary': highlighted,
+                      'border': highlighted
+                    })}
                     style={{
                       width: 'unset',
                       margin: '0 5px'
@@ -4840,10 +4305,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     {'\u00A0'}
                   </div>
                 </td>
-                <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
+                <td style={{width: 1, whiteSpace: 'nowrap'}}>
+                  <b className={classNames({
+                    'cp-primary': highlighted
+                  })}>
+                    {text}
+                  </b>
+                </td>
                 <td style={{width: '50%'}}>
                   <div
-                    className="cp-divider horizontal"
+                    className={classNames('cp-divider horizontal', {
+                      'cp-primary': highlighted,
+                      'border': highlighted
+                    })}
                     style={{
                       width: 'unset',
                       margin: '0 5px'
@@ -5070,6 +4544,108 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  renderUploadParametersControls = (style = {}) => {
+    const {preferences} = this.props;
+    const preventDefault = (e) => {
+      e.stopPropagation();
+    };
+    const onUploaded = (files) => {
+      (async () => {
+        const hide = message.loading('Applying parameters', 0);
+        try {
+          const {
+            detached = false
+          } = this.props;
+          const {
+            pipeline
+          } = this.state;
+          const {
+            parameters: current,
+            initialParameters = []
+          } = this.getCurrentParametersPayload();
+          const paramsPayloads = await Promise.all(
+            files.map(async (file) => {
+              const parameters = await parameterUtilities.mergeParametersWithConfiguration(
+                file.parameters,
+                {
+                  parameters: current,
+                  detached,
+                  pipeline: pipeline !== undefined && pipeline !== null
+                }
+              );
+              return {
+                id: files.length === 1 ? 'default' : file.file,
+                parameters,
+                initialParameters
+              };
+            }));
+          await this.registerParametersPayloads(paramsPayloads);
+        } catch (error) {
+          message.error(
+            <div>Error applying parameters: {error.message}</div>,
+            5
+          );
+        } finally {
+          hide();
+        }
+      })();
+    };
+    if (!preferences.loaded) {
+      return null;
+    }
+    const {
+      // eslint-disable-next-line camelcase
+      upload_parameters = false,
+      uploadParameters = upload_parameters
+    } = preferences.uiLaunchParameters || {};
+    if (!uploadParameters) {
+      return null;
+    }
+    return (
+      <div
+        style={{display: 'inline-flex', alignItems: 'center', ...(style || {})}}
+        onClick={preventDefault}>
+        <UploadParametersButton
+          disabled={
+            this.getLoadingState('parameters').pending ||
+            (this.props.readOnly && !this.props.canExecute)
+          }
+          multiple={!this.props.editConfigurationMode && !this.props.detached}
+          onParametersUploaded={onUploaded}
+          asLink={false}>
+          Upload
+        </UploadParametersButton>
+      </div>
+    );
+  }
+
+  renderParametersPayloadSelector = (style = {}) => {
+    const preventDefault = (e) => {
+      e.stopPropagation();
+    };
+    const payloads = this.getParametersPayloads();
+    const current = this.getCurrentParametersPayload();
+    const onChange = (e) => this.setCurrentParametersPayload(e);
+    if (!payloads.some((p) => p.id !== 'default')) {
+      return null;
+    }
+    return (
+      <div
+        style={{display: 'inline-flex', alignItems: 'center', ...(style || {})}}
+        onClick={preventDefault}
+      >
+        <ParametersPayloadSelector
+          payloads={payloads}
+          onChange={this.updateParametersPayloads}
+          active={current ? current.id : undefined}
+          onChangeActive={onChange}
+          onReset={this.updateFromProps}
+          onRemovePayload={this.removeParametersPayload}
+        />
+      </div>
+    );
+  };
+
   renderRawEditCheckbox = () => {
     const handleChangeRawEdit = (e) => {
       if (e) {
@@ -5081,13 +4657,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         () => {
           this.forceValidation = true;
           (this.formFieldsChanged)();
+          this.onValidateParameters();
         }
       );
     };
     return (
       <div
         style={{
-          display: 'inline'
+          display: 'inline',
+          marginLeft: 'auto'
         }}
         onClick={handleChangeRawEdit}
       >
@@ -5121,11 +4699,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  onChangePipelineVersion = (version) => {
+    const {
+      pipeline,
+      onPipelineChanged
+    } = this.props;
+    if (onPipelineChanged && pipeline) {
+      this.props.onPipelineChanged(pipeline.id, version);
+    }
+  };
+
   render () {
     const renderSubmitButton = () => {
       if (this.props.editConfigurationMode) {
         return (
-          <td style={{textAlign: 'right'}} className={styles.actions}>
+          <div className={styles.actions}>
             <FormItem style={{margin: 0}}>
               {
                 this.renderRunButton()
@@ -5185,7 +4773,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   ) : undefined
               }
             </FormItem>
-          </td>
+          </div>
         );
       } else if (!this.props.pipeline || roleModel.executeAllowed(this.props.pipeline)) {
         const KEYS = {
@@ -5204,7 +4792,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </Menu>
         );
         return (
-          <td style={{textAlign: 'right'}}>
+          <div className={styles.actions}>
             <FormItem style={{margin: 0, marginRight: 10}}>
               {
                 !this.props.detached && !this.props.editConfigurationMode && (
@@ -5232,11 +4820,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 dropdown={!!this.props.runConfigurationId}
                 dropdownRenderer={dropdownRenderer}
                 dropdownId="launch-metadata"
+                loading={this.props.pending}
+                disabled={this.props.pending}
               >
                 Launch
               </SubmitButton>
             </FormItem>
-          </td>
+          </div>
         );
       }
       return undefined;
@@ -5245,12 +4835,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (this.props.editConfigurationMode) {
         const nameError =
           'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
-        return [
-          <td key="name" style={{width: 40, whiteSpace: 'nowrap'}}>
-            Name:
-          </td>,
-          <td key="input" style={{width: '30%'}}>
+        return (
+          <div
+            key="header"
+            className={styles.itemHeader}
+            style={{
+              display: 'flex',
+              flexWrap: 'nowrap',
+              alignItems: 'center',
+              lineHeight: '32px',
+              minWidth: 200,
+              marginRight: 5
+            }}
+          >
+            <div key="name" style={{whiteSpace: 'nowrap', marginRight: 5}}>
+              Name:
+            </div>
             <FormItem
+              key="input"
               className={styles.formItemRow}
               hasFeedback>
               {this.getSectionFieldDecorator('configuration')('name',
@@ -5271,29 +4873,87 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Input disabled={this.props.readOnly && !this.props.canExecute} />
               )}
             </FormItem>
-          </td>,
-          <td key="estimated price">
-            {this.renderEstimatedPriceInfo()}
-          </td>
-        ];
+          </div>
+        );
+      }
+
+      let pipelineName, pipelineVersion;
+      if (this.props.pipeline) {
+        pipelineName = this.props.pipeline.name;
       } else {
-        let configuration = [];
-        if (this.props.configurations.length > 0 && this.props.currentConfigurationName) {
-          const configurationChange = (configurationName) => {
-            if (this.props.onConfigurationChanged) {
-              this.props.onConfigurationChanged(configurationName);
+        const dockerImageParts = (
+          this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) || ''
+        ).split('/');
+        if (dockerImageParts.length > 0) {
+          pipelineName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
+          pipelineVersion = dockerImageParts[dockerImageParts.length - 1].split(':')[1];
+        } else {
+          pipelineName = this.localizedString('pipeline');
+        }
+      }
+
+      return (
+        <div
+          key="header"
+          className={styles.itemHeader}
+          style={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            lineHeight: '32px',
+            minWidth: 200,
+            marginRight: 5
+          }}
+        >
+          <Icon
+            type="play-circle-o"
+            className="cp-primary"
+          />
+          <span style={{whiteSpace: 'pre'}}>Launch </span>
+          <RunName
+            style={{fontWeight: 'bold'}}
+            alias={this.state.runNameAlias}
+            editable
+            onChange={this.runNameAliasChange}
+            ignoreOffset
+          >
+            <span
+              id="launch-form-pipeline-name"
+            >
+              {pipelineName}
+            </span>
+            {
+              pipelineVersion && (
+                <span
+                  id="launch-form-pipeline-version"
+                  style={{fontWeight: 'normal'}}
+                >
+                  :{pipelineVersion}
+                </span>
+              )
             }
-          };
-          configuration = [
-            <td
-              style={{
-                width: 1,
-                whiteSpace: 'nowrap',
-                paddingLeft: '3px'
-              }}
-              key="configuration title"
-              className={styles.itemHeader}>configuration: </td>,
-            <td key="configuration selector" style={{width: 200, paddingLeft: 5}}>
+          </RunName>
+        </div>
+      );
+    };
+    const titleConfigurationSection = (() => {
+      if (this.props.editConfigurationMode) {
+        return null;
+      }
+      let configuration;
+      if (this.props.configurations.length > 1 && this.props.currentConfigurationName) {
+        const configurationChange = (configurationName) => {
+          if (this.props.onConfigurationChanged) {
+            this.props.onConfigurationChanged(configurationName);
+          }
+        };
+        configuration = (
+          <div
+            key="configuration"
+            className={styles.itemHeaderConfigurationControl}
+          >
+            <span style={{marginRight: 5}}>Configuration:</span>
+            <div style={{width: 200}}>
               <Select
                 disabled={this.props.readOnly && !this.props.canExecute}
                 defaultValue={this.props.currentConfigurationName}
@@ -5304,7 +4964,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 onChange={configurationChange}
                 filterOption={
                   (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0} >
+                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
                 {
                   this.props.configurations.map(c => {
                     return (
@@ -5317,93 +4977,73 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   })
                 }
               </Select>
-            </td>
-          ];
-        }
-
-        let pipelineName, pipelineVersion;
-        if (this.props.pipeline) {
-          pipelineName = this.props.pipeline.name;
-          if (this.props.version) {
-            pipelineVersion = this.props.version;
-          }
-        } else {
-          const dockerImageParts = (
-            this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) || ''
-          ).split('/');
-          if (dockerImageParts.length > 0) {
-            pipelineName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
-            pipelineVersion = dockerImageParts[dockerImageParts.length - 1].split(':')[1];
-          } else {
-            pipelineName = this.localizedString('pipeline');
-          }
-        }
-
-        return [
-          <td key="header" className={styles.itemHeader} style={{width: 1, whiteSpace: 'nowrap'}}>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'nowrap',
-                alignItems: 'baseline',
-                lineHeight: '32px'
-              }}
-            >
-              <Icon
-                type="play-circle-o"
-                className="cp-primary"
-              />
-              <span style={{whiteSpace: 'pre'}}>Launch </span>
-              <RunName
-                style={{fontWeight: 'bold'}}
-                alias={this.state.runNameAlias}
-                editable
-                onChange={this.runNameAliasChange}
-                ignoreOffset
-              >
-                <span
-                  id="launch-form-pipeline-name"
-                >
-                  {pipelineName}
-                </span>
-                {
-                  pipelineVersion && (
-                    <span
-                      id="launch-form-pipeline-version"
-                      style={{fontWeight: 'normal'}}
-                    >
-                      :{pipelineVersion}
-                    </span>
-                  )
-                }
-              </RunName>
-              <span>.</span>
             </div>
-          </td>,
-          ...configuration,
-          <td
-            key="estimated price"
-            className={styles.itemHeader}
-            style={{width: 1, whiteSpace: 'nowrap'}}>
-            {this.renderEstimatedPriceInfo()}
-          </td>
-        ];
+          </div>
+        );
       }
-    };
+
+      let pipelineVersionPicker;
+      if (this.props.pipeline) {
+        if (!this.props.editConfigurationMode && !this.props.detached) {
+          pipelineVersionPicker = (
+            <div key="pipeline version" className={styles.itemHeaderConfigurationControl}>
+              <span style={{marginRight: 5}}>Version:</span>
+              <div style={{width: 200}}>
+                <PipelineVersionPicker
+                  pipelineId={this.props.pipeline.id}
+                  pipelineVersion={this.props.version}
+                  onPipelineVersionChange={this.onChangePipelineVersion}
+                  disabled={this.props.readOnly && !this.props.canExecute}
+                />
+              </div>
+            </div>
+          );
+        }
+      }
+
+      return [
+        pipelineVersionPicker,
+        configuration
+      ];
+    })();
+    const bucketTypes = ['AZ', 'S3', 'GS', 'DTS', 'NFS'];
+    if (this.state.parameterType === 'path' || this.state.parameterType === 'input') {
+      bucketTypes.push('AWS_OMICS_SEQ', 'AWS_OMICS_REF');
+    }
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
-          <table
-            style={{width: '100%'}}
-            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
-          >
-            <tbody>
-              <tr>
+          <div className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}>
+            <div
+              id="launch-pipeline-form-header-container"
+              style={{width: '100%', display: 'flex', alignItems: 'flex-start', margin: 5}}
+            >
+              <div
+                id="launch-pipeline-form-header"
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  display: 'inline-flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  marginRight: 5,
+                  padding: '1px 0'
+                }}
+              >
                 {renderFormTitle()}
-                {renderSubmitButton()}
-              </tr>
-            </tbody>
-          </table>
+                <div style={{display: 'inline-flex', lineHeight: '32px'}}>
+                  {titleConfigurationSection}
+                </div>
+              </div>
+              {renderSubmitButton()}
+            </div>
+            <div
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', margin: 5, flexWrap: 'wrap'
+              }}>
+              {this.renderEstimatedPriceInfo()}
+            </div>
+          </div>
           {this.renderAlerts()}
           {
             this.props.pipeline &&
@@ -5425,7 +5065,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-exec-environment-panel"
               key={EXEC_ENVIRONMENT}
-              className={styles.section}
+              className={
+                classNames(styles.section, {
+                  [styles.hidden]: !this.executionEnvironmentSectionVisible
+                })
+              }
               header={this.getPanelHeader(EXEC_ENVIRONMENT)}>
               <Row type="flex" justify="space-between">
                 <div
@@ -5441,6 +5085,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         hints.instanceTypeHint
                       )
                     }
+                    {this.renderReservationParametersSelector()}
                     {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
                     {!this.isWindowsPlatform &&
                     !this.state.fireCloudMethodName &&
@@ -5477,9 +5122,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       launchCluster={this.state.launchCluster}
                       cloudRegionProvider={this.currentCloudRegionProvider}
                       autoScaledPriceType={this.state.autoScaledPriceType}
+                      fsConfig={this.state.fsConfig}
                       autoScaledCluster={this.state.autoScaledCluster}
                       hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                       gpuScalingConfiguration={this.state.gpuScalingConfiguration}
+                      childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
                       gridEngineEnabled={this.state.gridEngineEnabled}
                       sparkEnabled={this.state.sparkEnabled}
                       slurmEnabled={this.state.slurmEnabled}
@@ -5498,6 +5145,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         this.regionDisabledByToolSettings
                           ? hints.awsRegionRestrictedByToolSettingsHint
                           : hints.awsRegionHint
+                      )
+                    }
+                    {
+                      this.renderFormItemRow(
+                        this.renderRescheduleRunControl
                       )
                     }
                     {this.renderFormItemRow(this.renderCoresFormItem)}
@@ -5528,8 +5180,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-advanced-panel"
               key={ADVANCED}
-              className={styles.section}
+              className={
+                classNames(styles.section, {[styles.hidden]: !this.advancedSectionVisible})
+              }
               header={this.getPanelHeader(ADVANCED)}>
+              {this.renderCustomTagsConfigurationItem()}
               {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}
@@ -5537,6 +5192,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderHostedAppConfigurationItem()}
               {this.renderJobNotificationsItem()}
               {this.renderTimeoutFormItem()}
+              {this.renderCustomUIItem()}
               {this.renderEndpointNameFormItem()}
               {this.renderStopAfterFormItem()}
               {this.renderLimitMountsFormItem()}
@@ -5546,7 +5202,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-parameters-panel"
               key={PARAMETERS}
-              className={styles.section}
+              className={
+                classNames(styles.section, {[styles.hidden]: !this.parametersSectionVisible})
+              }
               header={this.getPanelHeader(PARAMETERS)}
             >
               {this.renderParameters(false)}
@@ -5568,11 +5226,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           onSelect={this.selectBucketPath}
           onCancel={this.closeBucketBrowser}
           visible={this.state.bucketBrowserVisible}
+          uploadFilesAllowed={this.state.bucketBrowserAllowUpload}
           path={this.state.bucketPath}
           showOnlyFolder={this.state.showOnlyFolderInBucketBrowser}
           allowBucketSelection={this.state.allowBucketSelectionInBucketBrowser}
           checkWritePermissions={this.state.showOnlyFolderInBucketBrowser}
-          bucketTypes={['AZ', 'S3', 'GS', 'DTS', 'NFS']} />
+          bucketTypes={bucketTypes} />
         <PipelineBrowser
           multiple={false}
           onCancel={this.closePipelineBrowser}
@@ -5581,6 +5240,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           pipelineId={this.state.pipeline ? this.state.pipeline.id : undefined}
           version={this.state.version}
           pipelineConfiguration={this.state.pipelineConfiguration}
+          allowSelectLatestVersion={!!this.props.isDetachedConfiguration}
           fireCloudMethod={this.state.fireCloudMethodName}
           fireCloudNamespace={this.state.fireCloudMethodNamespace}
           fireCloudMethodSnapshot={this.state.fireCloudMethodSnapshot}
@@ -5642,6 +5302,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
+    // --------------------------
+    this.updateFromProps();
+    this.updateConfigurationsFromProps();
+    // --------------------------
     this.fetchUserRunCapabilities();
     this.reset(true);
     this.evaluateEstimatedPrice({});
@@ -5649,16 +5313,417 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.loadToolSettings(this.props.parameters.docker_image);
     }
     this.prepare();
-    if (this.props.isDetachedConfiguration) {
-      this.loadCurrentProject();
-      if (this.isFireCloudSelected) {
-        this.loadFireCloudConfigurations();
-      }
+    if (this.props.isDetachedConfiguration && this.isFireCloudSelected) {
+      this.loadFireCloudConfigurations();
     }
     this.props.onInitialized && this.props.onInitialized(this);
+    this.initializeParametersNavigationCheck();
   }
 
+  componentDidUpdateNew (prevProps, prevState) {
+    const {
+      parameters: prevParameters,
+      configurationId: prevConfigurationId,
+      currentConfigurationName: prevConfigurationName,
+      detached: prevDetached = false
+    } = prevProps;
+    const {
+      parameters,
+      configurationId,
+      currentConfigurationName,
+      detached = false
+    } = this.props;
+    const {
+      pipeline: prevPipeline = undefined
+    } = prevState;
+    const {
+      pipeline = undefined
+    } = this.state;
+    if (
+      parameters !== prevParameters ||
+      detached !== prevDetached ||
+      prevPipeline !== pipeline
+    ) {
+      this.updateFromProps();
+    }
+    if (configurationId !== prevConfigurationId) {
+      this.updateConfigurationsFromProps();
+    } else if (currentConfigurationName !== prevConfigurationName) {
+      this.updateRootEntityFromProps();
+    }
+  }
+
+  abortAll = () => {
+    this._loadingTokens = {};
+  };
+
+  abortLoading = (key) => {
+    this._loadingTokens = this._loadingTokens || {};
+    this._loadingTokens[key] = {};
+  }
+
+  createLoadingToken = (key) => {
+    this.abortLoading(key);
+    this._loadingTokens = this._loadingTokens || {};
+    this._loadingTokens[key] = {};
+    return this._loadingTokens[key];
+  };
+
+  getLoadingToken = (key) => {
+    return this._loadingTokens ? this._loadingTokens[key] : undefined;
+  };
+
+  getLoadingState = (key) => {
+    const {[`${key}Pending`]: pending = false, [`${key}Error`]: error = undefined} = this.state;
+    return {pending, error};
+  };
+
+  wrapLoading = (key, fn) => {
+    const token = this.createLoadingToken(key);
+    const commitState = async (s) => {
+      if (token === this.getLoadingToken(key)) {
+        return new Promise((resolve) => {
+          const state = (() => {
+            if (typeof s === 'function') {
+              return s(this.state);
+            }
+            return s;
+          })();
+          this.setState(state, () => resolve());
+        });
+      }
+      return Promise.resolve();
+    };
+    (async () => {
+      await commitState({
+        [`${key}Pending`]: true,
+        [`${key}Error`]: undefined
+      });
+      try {
+        await fn(commitState);
+        await commitState({
+          [`${key}Pending`]: false
+        });
+      } catch (error) {
+        await commitState({
+          [`${key}Pending`]: false,
+          [`${key}Error`]: error.message
+        });
+      }
+    })();
+  };
+
+  updateFromProps = () => {
+    const {
+      parameters: payload,
+      detached = false
+    } = this.props;
+    const {
+      pipeline
+    } = this.state;
+    this.wrapLoading('parameters', async (commitState) => {
+      let params = [];
+      try {
+        params = await parameterUtilities.readParametersFromConfiguration(
+          payload,
+          {
+            detached,
+            pipeline: pipeline !== undefined && pipeline !== null
+          }
+        );
+      } catch (error) {
+        console.log(`error initializing parameters: ${error.message}`);
+      }
+      await this.registerParametersPayloads(
+        [{parameters: params, id: 'default'}],
+        commitState
+      );
+    });
+  };
+
+  updateConfigurationsFromProps = () => {
+    const {
+      configurationId
+    } = this.props;
+    this.abortLoading('configurations');
+    this.wrapLoading('configurations', async (commitState) => {
+      if (configurationId) {
+        const req1 = configurationsRequest.getConfiguration(configurationId);
+        const folderProjectRequest = new FolderProject(configurationId, 'CONFIGURATION');
+        await Promise.all([req1.fetchIfNeededOrWait(), folderProjectRequest.fetch()]);
+        if (folderProjectRequest.error) {
+          message.error(folderProjectRequest.error, 5);
+        }
+        const {
+          id: currentProjectId,
+          data: currentProjectMetadata
+        } = folderProjectRequest.value || {};
+        const {
+          entries = []
+        } = req1.value || {};
+        let currentMetadataEntity = [];
+        if (currentProjectId) {
+          const metadataEntityFieldsRequest = new MetadataEntityFields(currentProjectId);
+          await metadataEntityFieldsRequest.fetch();
+          if (metadataEntityFieldsRequest.error) {
+            message.error(metadataEntityFieldsRequest.error, 5);
+          }
+          currentMetadataEntity = metadataEntityFieldsRequest.value || [];
+        }
+        commitState((cur) => ({
+          ...cur,
+          detachedConfigurations: entries,
+          currentProjectId,
+          currentProjectMetadata,
+          currentMetadataEntity
+        }));
+      } else {
+        commitState((cur) => ({
+          ...cur,
+          detachedConfigurations: [],
+          currentProjectId: undefined,
+          currentProjectMetadata: undefined,
+          currentMetadataEntity: []
+        }));
+      }
+      this.updateRootEntityFromProps();
+    });
+  };
+
+  updateRootEntityFromProps = () => {
+    const rootEntityId = this.getDefaultRootEntityId();
+    this.setState({
+      rootEntityId
+    });
+  };
+
+  getParameters = (payloadId = undefined) => {
+    const {parameters = []} = (payloadId ? this.getParametersPayloadById(payloadId) : undefined) ??
+    this.getCurrentParametersPayload();
+    return parameters;
+  }
+
+  getParametersValidationResult = async (navigateToInvalidPayload = false) => {
+    const payloads = this.getParametersPayloads().filter((p) => p.enabled);
+    const results = payloads.map((payload) => {
+      const {parameters = []} = payload;
+      const firstNonValidParameter = parameters.find((p) => !p.valid);
+      return {
+        id: payload.id,
+        valid: !firstNonValidParameter,
+        nonValidParameter: firstNonValidParameter
+      };
+    });
+    const firstInvalid = results.find((r) => !r.valid);
+    if (firstInvalid && navigateToInvalidPayload) {
+      await this.setCurrentParametersPayload(firstInvalid.id);
+    }
+    return firstInvalid;
+  };
+
+  onParametersChange = (newParameters) => {
+    const current = this.getCurrentParametersPayload();
+    const payload = {
+      ...current,
+      parameters: newParameters
+    };
+    const {parametersPayloads = []} = this.state;
+    const idx = parametersPayloads.findIndex(p => p.id === payload.id);
+    const updated = parametersPayloads.slice();
+    if (idx >= 0) {
+      updated.splice(idx, 1, {...payload});
+    } else {
+      updated.push(payload);
+    }
+    this.setState({
+      parametersPayloads: updated
+    }, () => {
+      this.onValidateParameters();
+      this.formFieldsChanged();
+    });
+  };
+
+  /**
+   * @typedef {Object} InitialParametersPayload
+   * @property {string} id
+   * @property {Parameter[]} parameters
+   */
+  /**
+   * @typedef {InitialParametersPayload} ParametersPayload
+   * @property {Parameter[]} initialParameters
+   * @property {boolean} enabled
+   */
+  /**
+   * @param {InitialParametersPayload[]} payloads
+   * @param {function} [commitState]
+   */
+  registerParametersPayloads = async (payloads, commitState = undefined) => {
+    commitState = commitState || ((st) => {
+      if (typeof st === 'function') {
+        this.setState(st(this.state));
+      } else {
+        this.setState(st);
+      }
+    });
+    if (payloads.length === 0) {
+      return;
+    }
+    const {id} = payloads[0];
+    await commitState((cur) => ({
+      ...cur,
+      parametersPayloads: payloads.map((payload) => {
+        const {
+          id,
+          parameters = [],
+          initialParameters = parameters.map((p) => ({...p}))
+        } = payload;
+        return {
+          id,
+          enabled: true,
+          parameters,
+          initialParameters
+        };
+      }),
+      currentParametersPayload: id
+    }));
+    this.onValidateParameters(commitState);
+    this.formFieldsChanged();
+  };
+
+  /**
+   * @returns {ParametersPayload}
+   */
+  getCurrentParametersPayload = () => {
+    const {currentParametersPayload, parametersPayloads = []} = this.state;
+    const d = {
+      id: currentParametersPayload ?? 'default',
+      parameters: [],
+      initialParameters: [],
+      enabled: true
+    };
+    return parametersPayloads.find((p) => p.id === currentParametersPayload) ??
+      parametersPayloads[0] ?? d;
+  };
+
+  getParametersPayloadById = (id) => {
+    const {parametersPayloads = []} = this.state;
+    return parametersPayloads.find((p) => p.id === id);
+  }
+
+  setCurrentParametersPayload = async (key) => new Promise((resolve) => {
+    this.setState({currentParametersPayload: key}, () => resolve());
+  });
+
+  updateParametersPayloads = (payloads) => {
+    const current = this.getParametersPayloads();
+    const result = current.slice();
+    let changed = false;
+    for (const payload of payloads) {
+      const idx = result.findIndex((p) => p.id === payload.id);
+      if (idx >= 0) {
+        changed = true;
+        result.splice(idx, 1, payload);
+      }
+    }
+    if (changed) {
+      this.setState({
+        parametersPayloads: result
+      }, () => {
+        this.onValidateParameters();
+      });
+    }
+  };
+
+  removeParametersPayload = (key) => {
+    const payloads = this.getParametersPayloads();
+    const current = this.getCurrentParametersPayload();
+    const result = payloads.filter((c) => c.id !== key);
+    if (result.length === 0) {
+      this.updateFromProps();
+    } else {
+      this.setState({
+        currentParametersPayload: current.id === key ? result[0].id : current.id,
+        parametersPayloads: result
+      }, () => {
+        this.onValidateParameters();
+      });
+    }
+  };
+
+  getParametersPayloads = () => {
+    const {parametersPayloads = []} = this.state;
+    return parametersPayloads;
+  }
+
+  /**
+   * @param {ParametersPayload} payload
+   */
+  updateParametersPayload = async (payload) => {
+    return new Promise((resolve) => {
+      const {parametersPayloads = []} = this.state;
+      const idx = parametersPayloads.findIndex(p => p.id === payload.id);
+      const updated = parametersPayloads.slice();
+      if (idx >= 0) {
+        updated.splice(idx, 1, {...payload});
+      } else {
+        updated.push(payload);
+      }
+      this.setState({
+        parametersPayloads: updated
+      }, () => resolve());
+    });
+  };
+
+  onValidateParameters = (commitState = undefined) => {
+    commitState = commitState || ((st) => {
+      if (typeof st === 'function') {
+        this.setState(st(this.state));
+      } else {
+        this.setState(st);
+      }
+    });
+    const {isRawEditEnabled} = this.state;
+    const payloads = this.getParametersPayloads();
+    /**
+     * @param {ParametersPayload} payload
+     */
+    const validationFn = (payload) => {
+      const {parameters} = payload;
+      const {changed, parameters: result} = parameterUtilities.validateParameters(
+        parameters,
+        isRawEditEnabled
+      );
+      return {
+        changed,
+        payload: {
+          ...payload,
+          parameters: result
+        }
+      };
+    };
+    const payloadsValidation = payloads.map(validationFn);
+    const changed = payloadsValidation
+      .filter((pv) => pv.changed)
+      .map((pv) => pv.payload);
+    if (changed.length > 0) {
+      const updated = payloads.slice();
+      for (const p of changed) {
+        const idx = updated.findIndex(c => c.id === p.id);
+        if (idx >= 0) {
+          updated.splice(idx, 1, p);
+        }
+      }
+      commitState((cur) => ({
+        ...cur,
+        parametersPayloads: updated
+      }));
+    }
+  };
+
   componentDidUpdate (prevProps, prevState) {
+    // ----------------------------------
+    this.componentDidUpdateNew(prevProps, prevState);
+    // ----------------------------------
     if (this.state.fireCloudMethodName &&
       this.state.execEnvSelectValue !== FIRE_CLOUD_ENVIRONMENT) {
       // eslint-disable-next-line
@@ -5682,11 +5747,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       prevProps.pipelineConfiguration !== this.props.pipelineConfiguration) {
       this.evaluateEstimatedPrice({});
       this.prepare();
-    }
-    if (prevProps.isDetachedConfiguration &&
-      (prevProps.configurationId !== this.props.configurationId ||
-        prevProps.currentConfigurationName !== this.props.currentConfigurationName)) {
-      this.loadCurrentProject();
     }
     if (this.props.isDetachedConfiguration && this.isFireCloudSelected &&
       this.fireCloudSelectionChanged(prevState)) {
@@ -5743,16 +5803,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
       this.setState({execEnvSelectValue, isDts, dtsId});
     }
-    if (nextProps.isDetachedConfiguration &&
-      !nextProps.selectedPipelineParametersIsLoading &&
-      this.props.selectedPipelineParametersIsLoading !==
-      nextProps.selectedPipelineParametersIsLoading
-    ) {
-      this.rebuildParameters = {
-        [PARAMETERS]: true,
-        [SYSTEM_PARAMETERS]: true
-      };
-    }
     if ((!this.props.fireCloudMethod && nextProps.fireCloudMethod) ||
       (nextProps.fireCloudMethod &&
         (this.props.fireCloudMethod.name !== nextProps.fireCloudMethod.name ||
@@ -5786,6 +5836,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       });
     }
   }
+
+  componentWillUnmount () {
+    cancelAnimationFrame(this.checkRAF);
+    this.__formFieldsChangedToken = {};
+    clearTimeout(this.__formFieldsChangedTimeout);
+    this.abortAll();
+  }
 }
 
 export default class extends React.Component {
@@ -5803,8 +5860,8 @@ export default class extends React.Component {
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields[cloudRegionKey]);
     } else if (fields &&
-      fields.exec &&
-      fields.exec.cloudRegionId &&
+      fields[EXEC_ENVIRONMENT] &&
+      fields[EXEC_ENVIRONMENT].cloudRegionId &&
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields.exec.cloudRegionId);
     }

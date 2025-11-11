@@ -50,7 +50,7 @@
 
 .notification-grid-row {
   display: grid;
-  grid: "status title body date readDate" 34px / 55px 1fr 1fr 135px 135px;
+  grid: "status title body date readDate actions" 34px / 55px 1fr 1fr 135px 135px 25px;
   padding: 3px 0;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -95,6 +95,10 @@
 
 .notification-read-date {
   grid-area: readDate;
+}
+
+.notification-actions {
+  grid-area: actions;
 }
 
 .empty-placeholder {

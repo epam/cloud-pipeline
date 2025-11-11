@@ -210,6 +210,59 @@ class EndpointAPI {
     }
     return response.text();
   };
+
+  /**
+   * @typedef {Object} PollingAPICallOptions
+   * @property {number} [pollingIntervalSeconds]
+   * @property {string} pollingURI
+   * @property {AbortSignal} abortSignal
+   */
+
+  /**
+   * @param {APICallOptions & PollingAPICallOptions} options
+   */
+  pollingApiCall = async (options) => {
+    const {
+      uuid
+    } = await this.apiCall(options);
+    if (!uuid) {
+      throw new APICallError({error: `task identifier is missing`});
+    }
+    const {
+      pollingIntervalSeconds = 5,
+      pollingURI,
+      abortSignal
+    } = options;
+    if (!pollingURI) {
+      throw new APICallError({error: 'Polling URI is not defined'});
+    }
+    const wait = () => new Promise((resolve) => setTimeout(resolve, pollingIntervalSeconds * 1000));
+    const poll = async () => {
+      if (abortSignal && abortSignal.aborted) {
+        throw new APICallError({error: `${uuid} task polling aborted`});
+      }
+      const result = await this.apiCall({
+        uri: pollingURI,
+        query: {uuid}
+      });
+      const {
+        state,
+        message
+      } = result;
+      if (/^running$/i.test(state)) {
+        await wait();
+        return poll();
+      }
+      if (/^failure$/i.test(state)) {
+        throw new APICallError({error: message || 'Error fetching data'});
+      }
+      if (/^success$/i.test(state)) {
+        return result;
+      }
+      throw new APICallError({error: `Unknown task status: "${state || '<not set>'}"`});
+    };
+    return poll();
+  };
 }
 
 export default EndpointAPI;

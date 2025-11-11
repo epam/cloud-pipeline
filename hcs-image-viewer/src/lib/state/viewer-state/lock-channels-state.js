@@ -22,14 +22,18 @@ export default function lockChannelsState(state, channelsInfo) {
     channels: currentChannels = EMPTY_ARRAY,
     colors: currentColors = EMPTY_ARRAY,
     domains: currentDomains = EMPTY_ARRAY,
+    domains3D: currentDomains3D = EMPTY_ARRAY,
     contrastLimits: currentContrastLimits = EMPTY_ARRAY,
+    contrastLimits3D: currentContrastLimits3D = EMPTY_ARRAY,
     channelsVisibility: currentChannelsVisibility = EMPTY_ARRAY,
   } = state || {};
   const {
     channels = EMPTY_ARRAY,
     colors = EMPTY_ARRAY,
     domains = EMPTY_ARRAY,
+    domains3D = EMPTY_ARRAY,
     contrastLimits = EMPTY_ARRAY,
+    contrastLimits3D = EMPTY_ARRAY,
     ...rest
   } = channelsInfo || {};
   if (!lockChannels || (Array.isArray(lockChannels) && lockChannels.length === 0)) {
@@ -38,8 +42,11 @@ export default function lockChannelsState(state, channelsInfo) {
       channels,
       colors,
       domains,
+      domains3D,
       contrastLimits,
+      contrastLimits3D,
       realDomains: domains.slice(),
+      realDomains3D: domains3D.slice(),
       channelsVisibility: channels.map(() => true),
     };
   }
@@ -83,6 +90,7 @@ export default function lockChannelsState(state, channelsInfo) {
     colors: lockedChannels.map((o) => o.color),
     domains: lockedChannels.map((o) => o.domain),
     realDomains: lockedChannels.map((o) => o.realDomain),
+    realDomains3D: lockedChannels.map((o) => o.realDomain3D),
     contrastLimits: lockedChannels.map((o) => o.contrastLimits),
     channelsVisibility: lockedChannels.map((o) => o.visibility),
   };

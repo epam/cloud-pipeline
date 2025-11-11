@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -107,10 +108,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRun(String runId) {
         final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
-        runStopButton.waitUntil(enabled, 5000).click();
+        runStopButton.waitUntil(enabled, 50000).click();
         sleep(3, SECONDS);
         if (!$(button("STOP")).isEnabled()) {
-            runStopButton.waitUntil(enabled, 5000).click();
+            runStopButton.waitUntil(enabled, 50000).click();
         }
         $(button("STOP")).click();
         return this;
@@ -124,8 +125,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public LogAO showLog(String runId) {
         sleep(1, SECONDS);
         show(runId);
-        sleep(3, SECONDS);
-        if (new LogAO().get(STATUS).exists()) {
+        if ($(byClassName("log__run-title")).$(withText("Run"))
+                .waitUntil(appears, DEFAULT_TIMEOUT).exists()) {
             return new LogAO();
         }
         show(runId);
@@ -227,7 +228,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public ElementsCollection allRuns() {
-        return $("tbody").shouldBe(visible).findAll("tr");
+        return $("tbody").shouldBe(visible).findAll("tr").filter(visible);
     }
 
     public RunsMenuAO ensureHasOwner(String owner) {
@@ -336,7 +337,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(withText("Currently viewing")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        $(withText("Currently viewing")).waitUntil(visible, DEFAULT_TIMEOUT);
         if ($(elementWithText(tagName("b"), "other available ")).isDisplayed()) {
             $(withText("Currently viewing")).click();
             $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
@@ -352,7 +353,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        $(byClassName("ant-modal-body")).shouldBe(visible);
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
         ensure(byClassName("ause-confirmation__title"),
                matchText(format("Do you want to pause%s", pipelineName)))
             .sleep(1, SECONDS)
@@ -430,17 +431,17 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return Collections.emptyMap();
     }
 
-    public RunsMenuAO filterBy(HeaderColumn header, String ip) {
+    public RunsMenuAO filterBy(HeaderColumn header, String group, String ip) {
         SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
         createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
         switch (header) {
             case PIPELINE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter pipelines", ip);
                 $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
                         .click();
                 break;
             case DOCKER_IMAGE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter docker images", group);
                 $(byXpath(format(".//span[.='%s']", ip))).parent()
                         .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
@@ -459,9 +460,9 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    private void inputFilterValue(String value) {
+    private void inputFilterValue(String placeholder, String value) {
         $(byClassName("un-table-columns__filter-popover-container"))
-                .$$("input").findBy(attribute("placeholder", "Filter"))
+                .$$("input").findBy(attribute("placeholder", placeholder))
                 .setValue(value);
     }
 

@@ -74,7 +74,7 @@ export function findStorageByIdentifier (identifier, storages = []) {
 
 /**
  * @param {StorageLinkInfoOptions} options
- * @returns {{path: string, storageId: number}}
+ * @returns {{storage: object, relativePath: string, folderPath: string, storageId: number}}
  */
 export function getStorageLinkInfo (options) {
   const {
@@ -91,13 +91,13 @@ export function getStorageLinkInfo (options) {
     storage = findStorageByPath(correctedPath, storages);
   }
   let relativePath = correctedPath || '';
-  if (storage && relativePath.startsWith((storage.pathMask || '').toLowerCase())) {
+  if (storage && relativePath.toLowerCase().startsWith((storage.pathMask || '').toLowerCase())) {
     relativePath = relativePath.slice((storage.pathMask || '').length);
   }
   if (relativePath.startsWith('/')) {
     relativePath = relativePath.slice(1);
   }
-  const objectPath = guessParentFolderForLocalPath(relativePath, isFolder);
+  const folderPath = guessParentFolderForLocalPath(relativePath, isFolder);
   let objectStorageId;
   if (storage) {
     objectStorageId = storage.id;
@@ -105,7 +105,9 @@ export function getStorageLinkInfo (options) {
     objectStorageId = Number(storageId);
   }
   return {
+    storage,
     storageId: objectStorageId,
-    path: objectPath
+    folderPath,
+    relativePath
   };
 }

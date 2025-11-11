@@ -1,0 +1,22 @@
+.mlflow-engine-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mlflow-engine-container .mlflow {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.mlflow-engine-container .centered {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

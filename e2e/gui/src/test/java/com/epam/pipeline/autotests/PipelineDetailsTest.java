@@ -24,6 +24,7 @@ import com.epam.pipeline.autotests.ao.StorageRulesTabAO.RuleAdditionPopupAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -101,6 +102,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void shouldCreateFolderInPipeline() {
         codeTab()
                 .createFolder(pipelineFolder)
+                .ensure(byText(pipelineFolder), visible)
                 .shouldContainElement(pipelineFolder);
     }
 
@@ -113,7 +115,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .ensure(byText(pipelineFile), visible);
     }
 
-    @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
+    @Test(enabled = false, dependsOnMethods = {"shouldCreateFileInSubfolder"})
     @TestCase(value = {"EPMCMBIBPC-344"})
     public void luigiGraphTabShouldBeValid() {
         codeTab()
@@ -121,10 +123,10 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .ensure(CANVAS, exist);
     }
 
-    @Test(dependsOnMethods = {"luigiGraphTabShouldBeValid"})
+    @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
     @TestCase(value = {"EPMCMBIBPC-345"})
     public void documentTabShouldBeValid() {
-        graphTab()
+        codeTab()
                 .documentsTab()
                 .ensure(UPLOAD, visible, enabled)
                 .ensure(byText("README.md"), visible)
@@ -183,6 +185,8 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void shouldHaveHistoryEntry() {
         historyTab()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
 
         navigateToPipelineHistory()

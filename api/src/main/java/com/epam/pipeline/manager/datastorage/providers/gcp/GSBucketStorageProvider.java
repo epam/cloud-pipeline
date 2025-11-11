@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -43,6 +44,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -105,18 +107,23 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
-                                       final Integer pageSize, String marker) {
+                                       final Integer pageSize, String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         return getHelper(dataStorage).listItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
     @Override
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         if (Objects.nonNull(restoredListing)) {
             throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
         }
-        return getItems(dataStorage, path, showVersion, pageSize, marker);
+        if (Objects.nonNull(permissionsContainer)) {
+            throw new UnsupportedOperationException("Path permissions are not supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
     }
 
     @Override
@@ -134,7 +141,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final GSBucketStorage dataStorage,
                                                                        final String path) {
-        return null;
+        return getHelper(dataStorage).generateUploadUrl(dataStorage, path);
     }
 
     @Override
@@ -272,7 +279,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public DataStorageItemType getItemType(final GSBucketStorage dataStorage,
                                            final String path,
                                            final String version) {
-        throw new UnsupportedOperationException();
+        return getHelper(dataStorage).getItemType(dataStorage, path, StringUtils.isNotBlank(version));
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {

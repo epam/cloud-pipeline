@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
@@ -27,7 +29,6 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -38,6 +39,10 @@ public class NavigationMenuAO {
         final By pipelinesPageSelector = byId("navigation-button-library");
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
+        SelenideElement expandButton = $(byId("expand-collapse-library-tree-button"));
+        if(expandButton.$x("./i").has(cssClass("anticon-right"))) {
+            expandButton.click();
+        }
         $(byXpath("//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))
                 .waitUntil(visible, 5000);
         return new PipelinesLibraryAO();
@@ -77,7 +82,7 @@ public class NavigationMenuAO {
 
     public GlobalSearchAO search() {
         sleep(2, SECONDS);
-        actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
+        Utils.sendKeysWithControl("F");
         sleep(1, SECONDS);
         $(byClassName("earch__search-container")).waitUntil(visible, 5000);
         return new GlobalSearchAO();

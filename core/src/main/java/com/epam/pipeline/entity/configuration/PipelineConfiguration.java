@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -74,6 +74,7 @@ public class PipelineConfiguration implements Cloneable {
     private static final String SHARED_WITH_ROLES = "share_with_roles";
     private static final String NOTIFICATIONS = "notifications";
     private static final String RAW_EDIT = "raw";
+    private static final String FRIENDLY_URL = "friendly_url";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -139,7 +140,7 @@ public class PipelineConfiguration implements Cloneable {
     @JsonIgnore
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
 
-    @JsonIgnore
+    @JsonProperty(value = FRIENDLY_URL)
     private String prettyUrl;
 
     @JsonIgnore
@@ -161,12 +162,18 @@ public class PipelineConfiguration implements Cloneable {
 
     private Map<String, String> kubeLabels;
 
-    private RunAssignPolicy podAssignPolicy;
+    private RunContainerSpec podAssignPolicy;
 
     private String kubeServiceAccount;
 
     @JsonProperty(value = RAW_EDIT)
     private Boolean rawEdit;
+
+    @JsonProperty(value = "conditional_parameters")
+    private Map<String, Object> conditionalParameters;
+
+    @JsonProperty(value = "config_description")
+    private String description;
 
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {

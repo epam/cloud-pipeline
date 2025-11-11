@@ -14,6 +14,11 @@
 
 FROM library/centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 # Setup httpd
 RUN yum update -y && \
     yum install -y  gettext \
@@ -94,6 +99,11 @@ COPY sync/nfs-watcher.sh ${SYNC_HOME}/
 # "nfs-roles-management" shall be copied to the docker build folder from "(repo-root)/scripts/nfs-roles-management"
 # E.g.: cp cp ../../../scripts/nfs-roles-management ./ -r && docker build ...
 COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management
+
+# Extras
+ENV EXTRA_HOME=/opt/dav-extra
+RUN pip install PyJWT==1.6.1 cryptography==2.6.1 flask==1.1.4 xxhash==2.0.2
+COPY extra ${EXTRA_HOME}
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh

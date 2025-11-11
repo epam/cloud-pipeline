@@ -31,6 +31,7 @@ import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
 import com.epam.pipeline.dao.datastorage.StorageQuotaTriggersDao;
+import com.epam.pipeline.dao.datastorage.permissions.StoragePathPermissionsDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
@@ -49,7 +50,9 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
+import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
+import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -68,8 +71,12 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
+import com.epam.pipeline.manager.access.AccessService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
@@ -82,8 +89,13 @@ import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
-import com.epam.pipeline.manager.user.ImpersonationManager;
+import com.epam.pipeline.mapper.cluster.KubernetesMapper;
+import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
+import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
+import com.epam.pipeline.mapper.git.GitHubMapper;
+import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
@@ -99,6 +111,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
+import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
@@ -425,6 +438,9 @@ public class AspectTestBeans {
     @MockBean
     protected BillingManager billingManager;
 
+    @MockBean
+    protected PipelineRunResultManager mockPipelineRunResultManager;
+
     @MockBean(name = "pipelineBillingDetailsLoader")
     protected EntityBillingDetailsLoader pipelineBillingDetailsLoader;
 
@@ -471,6 +487,12 @@ public class AspectTestBeans {
     protected BitbucketMapper bitbucketMapper;
 
     @MockBean
+    protected BitbucketCloudMapper bitbucketCloudMapper;
+
+    @MockBean
+    protected GitHubMapper gitHubMapper;
+
+    @MockBean
     protected DataStorageLifecycleManager storageLifecycleManager;
 
     @MockBean
@@ -480,5 +502,35 @@ public class AspectTestBeans {
     protected UserNotificationRepository userNotificationRepository;
 
     @MockBean
+    protected UserNotificationMapper userNotificationMapper;
+
+    @MockBean
     protected StorageEventCollector events;
+
+    @MockBean
+    protected CloudFacade cloudFacade;
+
+    @MockBean
+    protected KubernetesMapper kubernetesMapper;
+
+    @MockBean
+    protected ArchiveRunDao archiveRunDao;
+
+    @MockBean
+    protected EngineRunTaskDao engineRunTaskDao;
+
+    @MockBean
+    protected StoragePathPermissionsDao storagePathPermissionsDao;
+
+    @MockBean
+    protected AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    protected AccessService accessService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected AzureDevOpsMapper azureDevOpsMapper;
 }

@@ -123,14 +123,16 @@ class ToolScanResultModel:
     def __init__(self):
         self.vulnerabilities = []
         self.dependencies = []
+        self.cuda_available = False
 
     @classmethod
     def load(cls, json):
-        instance = ToolScanResultsModel()
+        instance = ToolScanResultModel()
         instance.vulnerabilities = [ToolVulnerabilityModel.load(vulnerability_json)
                                     for vulnerability_json in json.get('vulnerabilities', [])]
         instance.dependencies = [ToolDependencyModel.load(dependency_json)
                                  for dependency_json in json.get('dependencies', [])]
+        instance.cuda_available = json.get('cudaAvailable', False) or False
         return instance
 
 

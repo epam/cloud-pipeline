@@ -16,7 +16,9 @@ import logging
 
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, Instance
+from pipeline.hpc.autoscaler import GridEngineScaleUpHandler
+from pipeline.hpc.host import MemoryHostStorage
+from pipeline.hpc.instance.provider import Instance
 from utils import assert_first_argument_contained
 
 try:
@@ -33,10 +35,10 @@ RUN_ID = '12345'
 cmd_executor = Mock()
 grid_engine = Mock()
 api = Mock()
+launch_adapter = Mock()
 host_storage = MemoryHostStorage()
 instance_helper = Mock()
 parent_run_id = 'parent_run_id'
-default_hostfile = 'default_hostfile'
 instance_disk = 'instance_disk'
 instance_type = 'instance_type'
 instance_image = 'instance_image'
@@ -47,13 +49,13 @@ owner_param_name = 'owner_param_name'
 region_id = 1
 instance_cores = 4
 polling_timeout = 600
-instance = Instance(name='instance', price_type=price_type, cpu=4, memory=16, gpu=0)
+instance = Instance(name='instance', price_type=price_type, cpu=4, mem=16, gpu=0)
 queue_name = 'main.q'
 hostlist = '@allhosts'
 run_id_queue = Queue()
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
+                                            launch_adapter=launch_adapter,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
-                                            default_hostfile=default_hostfile,
                                             instance_disk=instance_disk, instance_image=instance_image,
                                             cmd_template=cmd_template, price_type=price_type,
                                             region_id=region_id, queue=queue_name, hostlist=hostlist,
@@ -65,8 +67,10 @@ def setup_function():
     not_initialized_run = {'initialized': False, 'podId': HOSTNAME}
     initialized_pod_run = {'initialized': False, 'podId': HOSTNAME, 'podIP': POD_IP}
     initialized_run = {'initialized': True, 'podId': HOSTNAME, 'podIP': POD_IP}
-    api.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
+    api.load_run_efficiently = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
     api.load_task = MagicMock(return_value=[{'status': 'SUCCESS'}])
+    api.token = Mock()
+    api.token.get = MagicMock(return_value='token')
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
     instance_helper.select_instance = MagicMock(return_value=
         Instance.from_cp_response({
@@ -89,8 +93,8 @@ def setup_function():
 def test_waiting_for_run_to_initialize():
     scale_up_handler.scale_up(instance, owner, run_id_queue)
 
-    api.load_run.assert_called()
-    assert api.load_run.call_count == 9
+    api.load_run_efficiently.assert_called()
+    assert api.load_run_efficiently.call_count == 9
 
 
 def test_enabling_worker_in_grid_engine():

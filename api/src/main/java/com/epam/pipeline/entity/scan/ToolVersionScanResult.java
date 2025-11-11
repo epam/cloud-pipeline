@@ -39,6 +39,7 @@ public class ToolVersionScanResult {
     private Long toolId;
     private String version;
     private ToolOSVersion toolOSVersion;
+    private boolean cudaAvailable;
     private ToolScanStatus status;
     private Date scanDate;
     private Date successScanDate;

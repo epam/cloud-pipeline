@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,8 +184,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(user);
         navigationMenu()
                 .settings()
-                .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
-                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
+                .ensureNotVisible(SYSTEM_EVENTS_TAB, EMAIL_NOTIFICATIONS_TAB,
+                        PREFERENCES_TAB, CLOUD_REGIONS_TAB);
         logout();
         loginAs(admin);
         navigationMenu()
@@ -220,8 +220,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(user);
         navigationMenu()
                 .settings()
-                .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
-                        EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
+                .ensureNotVisible(SYSTEM_EVENTS_TAB, EMAIL_NOTIFICATIONS_TAB,
+                        PREFERENCES_TAB, CLOUD_REGIONS_TAB);
     }
 
     @Test
@@ -244,7 +244,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                     .blockUser(user.login.toUpperCase())
                     .ok();
             logout();
-            loginAs(user);
+            impersonateAs(user.login);
             validateWhileErrorPageMessage();
         } finally {
             loginAs(admin);

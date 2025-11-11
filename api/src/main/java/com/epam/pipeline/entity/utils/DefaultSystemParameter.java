@@ -31,10 +31,12 @@ public class DefaultSystemParameter {
     private String description;
     private String defaultValue;
     private boolean passToWorkers;
+    private boolean prefix;
     private Set<String> roles;
 
     public DefaultSystemParameter() {
         this.type = PipeConfValueVO.DEFAULT_TYPE;
         this.passToWorkers = false;
+        this.prefix = false;
     }
 }

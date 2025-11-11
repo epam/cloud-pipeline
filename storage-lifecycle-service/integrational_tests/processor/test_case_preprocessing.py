@@ -73,7 +73,8 @@ def _parse_storage_cloud_state(storage_json):
             _file_json["key"],
             _file_json["creationDateShift"] if "creationDateShift" in _file_json else None,
             _file_json["storageClass"] if "storageClass" in _file_json else None,
-            _file_json["tags"] if "tags" in _file_json else {}
+            _file_json["tags"] if "tags" in _file_json else {},
+            _file_json["size"] if "size" in _file_json else 128 * 1024
         )
 
     if "storage" not in storage_json:

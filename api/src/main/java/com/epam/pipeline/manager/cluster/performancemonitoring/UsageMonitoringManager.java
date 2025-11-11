@@ -17,6 +17,11 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 
 import javax.annotation.Nullable;
@@ -37,7 +42,7 @@ public interface UsageMonitoringManager {
      * @return List of monitoring stats.
      */
     default List<MonitoringStats> getStatsForNode(String nodeName) {
-        return getStatsForNode(nodeName, null, null);
+        return getStatsForNode(nodeName, null, null, null);
     }
 
     /**
@@ -46,11 +51,31 @@ public interface UsageMonitoringManager {
      * @param nodeName Cluster node name.
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
+     * @param runId The run ID to filter particular pod (optional)
      * @return List of monitoring stats.
      */
     List<MonitoringStats> getStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
-                                          @Nullable LocalDateTime to);
+                                          @Nullable LocalDateTime to,
+                                          @Nullable Long runId);
+
+    /**
+     * Retrieves GPU monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param granularity the list of granularity levels to load GPU usages
+     * @param squashCharts if specified charts shall be squashed into one
+     * @param runId The run ID to filter particular pod (optional)
+     * @return GPU usage statistics.
+     */
+    GpuMonitoringStats getGpuStatsForNode(String nodeName,
+                                          @Nullable LocalDateTime from,
+                                          @Nullable LocalDateTime to,
+                                          List<GpuMetricsGranularity> granularity,
+                                          boolean squashCharts,
+                                          @Nullable Long runId);
 
     /**
      * Retrieves monitoring stats for node as input stream.
@@ -59,13 +84,15 @@ public interface UsageMonitoringManager {
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
      * @param interval period of stats collecting
+     * @param runId The run ID to filter particular pod (optional)
      * @return stream, containing required information in .csv format
      */
     InputStream getStatsForNodeAsInputStream(String nodeName,
                                              @Nullable LocalDateTime from,
                                              @Nullable LocalDateTime to,
                                              Duration interval,
-                                             MonitoringReportType type);
+                                             MonitoringReportType type,
+                                             @Nullable Long runId);
 
     /**
      * Retrieves number of bytes that available on a pod or node disk.
@@ -79,4 +106,9 @@ public interface UsageMonitoringManager {
                                String podId,
                                String dockerImage);
 
+    NetworkEventFilter getPlatformNetworkStatsFilters();
+
+    List<HistogramBin> getPlatformNetworkStats(HistogramType histogramType,
+                                               LocalDateTime from, LocalDateTime to,
+                                               Integer intervals, NetworkEventFilter filter);
 }

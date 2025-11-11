@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,12 +137,12 @@ public enum Primitive {
     PARAMETER_NAME,
     PARAMETER_PATH,
     PARAMETER_VALUE,
+    PARAMETER_ENABLED,
     REMOVE_PARAMETER,
     BUCKET_PANEL,
     FILES_PANEL,
     CROSS,
     CONFIGURATION,
-    ESTIMATE_PRICE,
     INSTANCE,
     EXEC_ENVIRONMENT,
     PARAMETERS,
@@ -323,6 +323,19 @@ public enum Primitive {
     REINDEX,
     CONDITION,
     SHOW_TIMINGS,
+    SELECTION_ACTIONS,
+    EDITOR,
+    PARAMETER_FIELD,
+    FILE_SYSTEM_TYPE,
+    DEPLOYMENT_TYPE,
+    THROUGHPUT,
+    IOPS,
+    VOLUME,
+    TOOL_VERSION,
+    PROFILE,
+    ADD_ROLE,
+    ADD_SCHEDULE,
+    CALL,
     ENABLE_SHARING,
     SHARE
 }

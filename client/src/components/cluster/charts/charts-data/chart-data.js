@@ -17,8 +17,9 @@
 import {action, computed, observable} from 'mobx';
 import moment from 'moment-timezone';
 import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
+import {alphabeticalSorter} from '../../../../utils/sorting';
 
-function makePromise (node, from, to) {
+function makePromise (node, from, to, runId) {
   return new Promise(async (resolve) => {
     const fromValue = from
       ? moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss')
@@ -26,7 +27,7 @@ function makePromise (node, from, to) {
     const toValue = to
       ? moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss')
       : undefined;
-    const request = new NodeUsage(node, fromValue, toValue);
+    const request = new NodeUsage(node, fromValue, toValue, runId);
     await request.fetchIfNeededOrWait();
     resolve({
       error: request.error,
@@ -42,7 +43,7 @@ function sortData (a, b) {
   return moment(startA).unix() - moment(startB).unix();
 }
 
-async function loadData (node, from, to, instanceFrom, instanceTo) {
+async function loadData (node, from, to, instanceFrom, instanceTo, runId) {
   const now = moment().unix();
   let toCorrected = to || now;
   let fromCorrected = from;
@@ -64,7 +65,12 @@ async function loadData (node, from, to, instanceFrom, instanceTo) {
     toCorrected = Math.min(instanceTo, toCorrected);
     fromCorrected = Math.min(instanceTo, fromCorrected);
   }
-  const {value = [], error, networkError} = await makePromise(node, fromCorrected, toCorrected);
+  const {value = [], error, networkError} = await makePromise(
+    node,
+    fromCorrected,
+    toCorrected,
+    runId
+  );
   if (error) {
     return {
       error,
@@ -98,6 +104,7 @@ class ChartData {
   @observable to;
   @observable rangeEndIsFixed = false;
 
+  @observable _refreshToken = 0;
   @observable ranges = {};
   listeners = [];
 
@@ -108,16 +115,22 @@ class ChartData {
     return this._pending;
   }
 
+  @computed
+  get refreshToken () {
+    return this._refreshToken;
+  }
+
   set pending (value) {
     this._pending = value;
   }
 
-  constructor (nodeName, instanceFrom, instanceTo) {
+  constructor (nodeName, instanceFrom, instanceTo, runId) {
     this.nodeName = nodeName;
     this.instanceFrom = instanceFrom;
     this.instanceTo = instanceTo;
     this.from = instanceFrom;
     this.to = instanceTo;
+    this.runId = runId;
     this.rangeEndIsFixed = !!instanceTo;
   }
 
@@ -139,19 +152,25 @@ class ChartData {
   loadData = () => {
     this.pending = true;
     return new Promise((resolve) => {
-      loadData(this.nodeName, this.from, this.to, this.instanceFrom, this.instanceTo)
-        .then(({error, networkError, from, to, value}) => {
-          if (from !== this.from || to !== this.to) {
-            return;
-          }
-          this.error = error;
-          this.networkError = error;
-          if (!error) {
-            this.processValues(value || []);
-          }
-          this.pending = false;
-        })
-        .then(() => resolve());
+      loadData(
+        this.nodeName,
+        this.from,
+        this.to,
+        this.instanceFrom,
+        this.instanceTo,
+        this.runId
+      ).then(({error, networkError, from, to, value}) => {
+        this._refreshToken += 1;
+        if (from !== this.from || to !== this.to) {
+          return;
+        }
+        this.error = error;
+        this.networkError = error;
+        if (!error) {
+          this.processValues(value || []);
+        }
+        this.pending = false;
+      }).then(() => resolve());
     });
   };
 
@@ -211,7 +230,7 @@ class ChartData {
       .map(g => g.group)
       .reduce((d, group) => ({[group]: makeEmptyData(), ...d}), {});
     const groups = Object.keys(data);
-    groups.sort();
+    groups.sort(alphabeticalSorter);
     const xPoints = [];
     for (let i = 0; i < responseData.length; i++) {
       const item = responseData[i];

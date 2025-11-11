@@ -264,6 +264,22 @@ export async function getVideoSettings (refresh = false) {
   };
 }
 
+export async function getHDScreenshotSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    api: mainAPI,
+    images
+  } = settings || {};
+  const {
+    api = mainAPI,
+    ...rest
+  } = images || {};
+  return {
+    ...rest,
+    api
+  };
+}
+
 export async function getBatchAnalysisSimilarCheckSettings (refresh = false) {
   const settings = await getAnalysisSettings(refresh);
   const {

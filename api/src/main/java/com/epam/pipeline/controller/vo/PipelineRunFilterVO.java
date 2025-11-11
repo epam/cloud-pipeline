@@ -34,6 +34,7 @@ import org.apache.commons.collections4.MapUtils;
 @Getter
 @Setter
 public class PipelineRunFilterVO implements AclSecuredFilter {
+    private List<Long> regionIds;
     private List<Long> pipelineIds;
     private List<String> versions;
     private List<TaskStatus> statuses;
@@ -42,15 +43,19 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private String partialParameters;
     private Long parentId;
     private List<String> owners;
+    private List<String> roles;
     private String ownershipFilter;
     private List<Long> entitiesIds;
     private List<Long> configurationIds;
     private List<Long> projectIds;
     private List<String> dockerImages;
     private String prettyUrl;
+    private List<String> instanceTypes;
 
     private boolean userModified = true;
     private boolean eagerGrouping = true;
+    private boolean masterRun = false;
+    private boolean workerRun = false;
     private Map<String, String> tags;
 
     //these filters are used for ACL filtering
@@ -76,12 +81,14 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     }
 
     private boolean areSimpleArgumentsEmpty() {
-        return CollectionUtils.isEmpty(pipelineIds) && CollectionUtils.isEmpty(versions)
+        return CollectionUtils.isEmpty(pipelineIds) && CollectionUtils.isEmpty(regionIds)
+                && CollectionUtils.isEmpty(versions)
                 && startDateFrom == null && endDateTo == null && partialParameters == null
-                && parentId == null && CollectionUtils.isEmpty(owners)
+                && parentId == null && CollectionUtils.isEmpty(owners) && CollectionUtils.isEmpty(roles)
                 && CollectionUtils.isEmpty(configurationIds) && CollectionUtils.isEmpty(entitiesIds)
                 && CollectionUtils.isEmpty(projectIds)
                 && MapUtils.isEmpty(tags)
+                && CollectionUtils.isEmpty(instanceTypes)
                 && prettyUrl == null;
     }
 

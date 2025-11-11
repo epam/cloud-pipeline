@@ -15,9 +15,7 @@
  */
 import {
   ADVANCED,
-  EXEC_ENVIRONMENT,
-  PARAMETERS,
-  SYSTEM_PARAMETERS
+  EXEC_ENVIRONMENT
 } from './launch-form-sections';
 import {
   autoScaledClusterEnabled,
@@ -38,6 +36,13 @@ import {
   isCustomCapability
 } from './run-capabilities';
 import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
+import {
+  fsConfigsAreEqual,
+  getFsConfigFromParameters
+} from './configure-fs/utilities';
+import {parametersModified} from "./parameter-utilities";
+import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
+import * as prettyUrlGenerator from './pretty-url';
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -54,11 +59,19 @@ function formItemInitialized (form, formName) {
   return values.hasOwnProperty(formName) || test(values, 0);
 }
 
-function modified (form, parameters, formName, parametersName, defaultValue) {
+function modified (
+  form,
+  parameters,
+  formName,
+  parametersName,
+  defaultValue,
+  formValueAccessor = (v) => v
+) {
   if (!formItemInitialized(form, formName)) {
     return false;
   }
-  return `${form.getFieldValue(formName) || defaultValue}` !==
+  const formValue = formValueAccessor(form.getFieldValue(formName));
+  return `${formValue || defaultValue}` !==
     `${parameters[parametersName] || defaultValue}`;
 }
 
@@ -128,6 +141,7 @@ function pipelineCheck (props, state) {
     fireCloudOutputsLength: Object.keys(state.fireCloudOutputs).length
   };
   return (
+    state.pipelineChanged ||
     initial.pipeline !== current.pipeline ||
     initial.version !== current.version ||
     initial.pipelineConfiguration !== current.pipelineConfiguration ||
@@ -201,13 +215,9 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
   return code !== parameters['cmd_template'];
 }
 
-function parametersCheck (form, parameters, state, preferences) {
-  if (!formItemInitialized(form, PARAMETERS) || !formItemInitialized(form, SYSTEM_PARAMETERS)) {
-    return false;
-  }
-  const formParams = form.getFieldValue(PARAMETERS);
-  const formSystemParams = form.getFieldValue(SYSTEM_PARAMETERS);
+function parametersCheck (formParameters, parameters, state, preferences) {
   const formValue = {};
+  const prettyNames = {};
   if (formParams && formParams.keys) {
     for (let i = 0; i < formParams.keys.length; i++) {
       const key = formParams.keys[i];
@@ -217,6 +227,7 @@ function parametersCheck (form, parameters, state, preferences) {
       const parameter = formParams.params[key];
       if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
         formValue[parameter.name] = parameter.value || '';
+        prettyNames[parameter.name] = parameter.pretty_name || '';
       }
     }
   } else {
@@ -233,17 +244,23 @@ function parametersCheck (form, parameters, state, preferences) {
       const parameter = formSystemParams.params[key];
       if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
         formValue[parameter.name] = parameter.value || '';
+        prettyNames[parameter.name] = parameter.pretty_name || '';
       }
     }
   }
-  const initialValue = Object.keys(parameters.parameters || {})
+  const initialData = Object.keys(parameters.parameters || {})
     .filter(key => [
       CP_CAP_LIMIT_MOUNTS,
       ...getSkippedSystemParametersList({state, props: {preferences}})
     ].indexOf(key) === -1)
     .filter(key => !isCustomCapability(key, preferences))
-    .map(key => ({key, value: parameters.parameters[key].value || ''}))
-    .reduce((r, c) => ({...r, [c.key]: c.value}), {});
+    .map(key => ({
+      key,
+      value: parameters.parameters[key].value || '',
+      prettyName: parameters.parameters[key].pretty_name || ''
+    }));
+  const initialValue = initialData.reduce((r, c) => ({...r, [c.key]: c.value}), {});
+  const initialPrettyName = initialData.reduce((r, c) => ({...r, [c.key]: c.prettyName}), {});
   const check = (source, test) => {
     const sourceEntries = Object.entries(source);
     for (let i = 0; i < sourceEntries.length; i++) {
@@ -256,7 +273,9 @@ function parametersCheck (form, parameters, state, preferences) {
   };
   return Object.keys(formValue).length !== Object.keys(initialValue).length ||
     check(formValue, initialValue) ||
-    check(initialValue, formValue);
+    check(initialValue, formValue) ||
+    check(initialPrettyName, prettyNames) ||
+    check(prettyNames, initialPrettyName);
 }
 
 function runCapabilitiesCheck (state, parameters, preferences) {
@@ -300,8 +319,19 @@ function rawEditCheck (parameters, state) {
 export default function (props, state, options) {
   const {form, parameters, preferences} = props;
   const {
-    defaultCloudRegionId
+    defaultCloudRegionId,
+    formParameters = {},
+    initialParameters = {}
   } = options;
+  const {parameters: configParams = {}} = parameters || {};
+  const initialFsConfig = getFsConfigFromParameters(configParams);
+  const initialReservationRequestParameters = readReservationParameters(configParams);
+  const reservationRequestParametersModified = reservationParametersDiffer(
+    initialReservationRequestParameters,
+    state.reservationParameters
+  );
+  const {fsConfig} = state;
+  const fsConfigModified = !fsConfigsAreEqual(fsConfig, initialFsConfig);
   // configuration name check
   return modified(form, props, 'configuration.name', 'currentConfigurationName') ||
     // pipeline check
@@ -316,6 +346,8 @@ export default function (props, state, options) {
     modified(form, parameters, `${EXEC_ENVIRONMENT}.disk`, 'instance_disk') ||
     // cluster state check
     clusterModified(parameters, state) ||
+    // cluster file system check
+    fsConfigModified ||
     // cloud region check
     modified(
       form,
@@ -330,8 +362,15 @@ export default function (props, state, options) {
     spotOnDemandCheck(form, options) ||
     // auto-pause check
     autoPauseCheck(form, state) ||
-    // pretty url check
-    modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
+    // friendly url check
+    modified(
+      form,
+      parameters,
+      `${ADVANCED}.friendly_url`,
+      'friendly_url',
+      undefined,
+      (v) => prettyUrlGenerator.build(v)
+    ) ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
     // stopAfter check
@@ -343,13 +382,15 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters, state, preferences) ||
+    parametersModified(formParameters, initialParameters) ||
     // check additional run capabilities
     runCapabilitiesCheck(state, parameters, preferences) ||
     // check root entity id
     checkRootEntityModified(props, state) ||
     // check notifications
     notificationsCheck(parameters, form) ||
+    // reservation parameters
+    reservationRequestParametersModified ||
     // raw mode
     rawEditCheck(parameters, state);
 }

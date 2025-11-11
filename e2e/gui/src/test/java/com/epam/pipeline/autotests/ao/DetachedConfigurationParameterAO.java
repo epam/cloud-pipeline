@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,38 +22,44 @@ import java.util.Map;
 
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byAttribute;
-import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static java.lang.String.format;
 
-public class DetachedConfigurationParameterAO implements AccessObject<DetachedConfigurationParameterAO>{
+public class DetachedConfigurationParameterAO
+        extends ParameterFieldAO
+        implements AccessObject<ParameterFieldAO>{
 
     private final Map<Primitive, SelenideElement> elements;
     private final Configuration configuration;
 
     public DetachedConfigurationParameterAO(Configuration configuration, int parameterIndex) {
+        super(parameterByIndex(parameterIndex));
+        final SelenideElement parameter = $(byClassName(format("launch-form-parameter-key-parameter_%s",
+                parameterIndex)));
         this.configuration = configuration;
 
         this.elements = initialiseElements(
-                entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(REMOVE_PARAMETER, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byAttribute("role", "combobox")).find("input"))
+                entry(PARAMETER_FIELD, parameter.$(byClassName("arameter-name-input__parameter-name"))),
+                entry(PARAMETER_NAME, parameter.$(byClassName("arameter-name-input__parameter-name-input"))),
+                entry(PARAMETER_VALUE, parameter.$(byClassName("ant-form-item-control")).$x(".//input")),
+                entry(REMOVE_PARAMETER, parameter.$(byClassName("dynamic-delete-button")))
         );
     }
 
     public DetachedConfigurationParameterAO setName(String name) {
-        setValue(PARAMETER_NAME, name).resetMouse();
-        return this;
+        if (get(PARAMETER_FIELD).exists()) {
+            get(PARAMETER_FIELD).click();
+        }
+        return (DetachedConfigurationParameterAO) setValue(get(PARAMETER_NAME), name);
     }
 
     public DetachedConfigurationParameterAO setValue(String value) {
-        setValue(PARAMETER_VALUE, value).resetMouse();
-        return this;
+        return (DetachedConfigurationParameterAO) setValue(this.valueInput, value);
     }
 
     public DetachedConfigurationParameterAO typeValue(String value) {
@@ -66,8 +72,17 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
         return this;
     }
 
+    public DetachedConfigurationParameterAO parameterNameIsEnable(boolean isEnable) {
+        if (isEnable) {
+            ensure(PARAMETER_FIELD, have(cssClass("arameter-name-input__editing-enabled")));
+        } else {
+            ensure(PARAMETER_FIELD, have(cssClass("arameter-name-input__editing-disabled")));
+        }
+        return this;
+    }
+
     public DetachedConfigurationParameterAO validateParameter(String name, String value) {
-        ensure(PARAMETER_NAME, Condition.have(value(name)));
+        ensure(PARAMETER_FIELD, Condition.have(text(name)));
         ensure(PARAMETER_VALUE, Condition.have(value(value)));
         return this;
     }

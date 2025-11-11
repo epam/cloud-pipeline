@@ -24,6 +24,8 @@ public final class MessageConstants {
     public static final String ERROR_PARENT_REQUIRED = "error.parent.required";
     public static final String ERROR_TOO_MANY_RESULTS = "error.too.many.results";
     public static final String ERROR_UNSUPPORTED_OPERATION = "error.unsupported.operation";
+    public static final String ERROR_MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER =
+            "error.mechanism.isnt.supported";
 
     //Pipeline errors
     public static final String ERROR_PIPELINE_NOT_FOUND = "error.pipeline.not.found";
@@ -138,6 +140,7 @@ public final class MessageConstants {
     public static final String ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT = "error.run.parameters.cloud.dependent";
     public static final String ERROR_RESTART_CLUSTER_FORBIDDEN = "error.restart.cluster.forbidden";
     public static final String ERROR_RESTART_WORKER_FORBIDDEN = "error.restart.worker.forbidden";
+    public static final String ERROR_RUN_IS_NOT_CONFIGURED_FOR_RESTART = "error.restart.is.not.configured";
     public static final String ERROR_RESTART_RUN_FAILURE = "error.restart.run.failure";
     public static final String INFO_RESTART_RUN_SUCCESS = "info.restart.run.success";
     public static final String ERROR_RUN_START_FAILURE = "error.run.start.failure";
@@ -148,6 +151,8 @@ public final class MessageConstants {
     public static final String ERROR_RUN_PIPELINES_NOT_FOUND = "error.run.pipelines.not.found";
     public static final String ERROR_RUN_PIPELINES_COMMIT_FAILED = "error.run.pipeline.commit.failed";
     public static final String ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED = "error.container.layers.count.failed";
+    public static final String ERROR_GET_CONTAINER_SIZE_FAILED = "error.container.size.failed";
+    public static final String ERROR_LIMIT_NETWORK_BANDWIDTH_FAILED = "error.limit.network.bandwidth.failed";
     public static final String ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND = "error.container.id.for.run.not.found";
     public static final String INFO_EXECUTE_COMMIT_RUN_PIPELINES = "info.execute.ssh.run.pipeline.command";
     public static final String ERROR_RUN_PIPELINES_PAUSE_FAILED = "error.run.pipeline.pause.failed";
@@ -181,9 +186,17 @@ public final class MessageConstants {
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
     public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
+    public static final String ERROR_RUN_AS_PIPELINES_NOT_ALLOWED = "error.run.as.pipelines.not.allowed";
+    public static final String ERROR_RUN_AS_PIPELINE_NOT_ALLOWED = "error.run.as.pipeline.not.allowed";
+    public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
+    public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
+    public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
+    public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_NUMERIC = "error.archive.run.metadata.not.numeric";
+    public static final String ERROR_MAX_PAGE_SIZE_EXCEEDED = "error.max.page.size.exceeded";
+    public static final String ERROR_ENGINE_RUN_TASK_SETTING_NOT_FOUND = "error.engine.run.task.setting.not.found";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -213,7 +226,11 @@ public final class MessageConstants {
     public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
     public static final String DEBUG_RUN_HAS_NOT_NODE_NAME = "debug.run.has.not.node.name";
     public static final String DEBUG_MEMORY_METRICS = "debug.memory.metrics.received";
-
+    public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY = "info.run.high.network.consumption.notify";
+    public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_ACTION = "info.run.high.network.consumption.action";
+    public static final String DEBUG_NETWORK_RUN_METRICS_RECEIVED = "debug.network.run.metrics.received";
+    public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING = "debug.run.not.network.consuming";
+    public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING_DISABLED = "debug.run.network.consuming.disabled";
 
     // Kubernetes messages
     public static final String ERROR_NODE_NOT_FOUND = "error.node.not.found";
@@ -365,6 +382,11 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED =
             "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
+    public static final String ERROR_DATASTORAGE_INTELLIGENT_TIERING_ARCHIVE_ACCESS =
+            "error.datastorage.intelligent.tiering.archive.access";
+    public static final String ERROR_DATASTORAGE_ARCHIVE_ACCESS =  "error.datastorage.archive.access";
+    public static final String ERROR_DATASTORAGE_PATH_PERMISSIONS_NOT_ALLOWED =
+            "error.datastorage.path.permissions.not.allowed";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";
@@ -379,9 +401,10 @@ public final class MessageConstants {
             "error.repository.folder.cannot.be.removed";
     public static final String ERROR_INVALID_PIPELINE_FILE_NAME = "error.pipeline.file.name.invalid";
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
-    public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
-    public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
+    public static final String ERROR_REPOSITORY_PATH_PARSE = "error.repository.path.parse";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
+    public static final String ERROR_REPOSITORY_CREATION_NOT_SUPPORTED = "error.repository.creation.not.supported";
+    public static final String ERROR_REPOSITORY_TOKEN_NOT_FOUND = "error.repository.token.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =
@@ -399,6 +422,8 @@ public final class MessageConstants {
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
+    public static final String ERROR_SCALING_LOCAL_CLUSTER = "cluster.local.scaling.error";
+    public static final String ERROR_DNS_LOCAL_CLUSTER = "cluster.local.dns.error";
 
     //CAdvicer
     public static final String DEBUG_SEND_CADVISOR_REQUEST = "cadvisor.send.request";
@@ -432,6 +457,8 @@ public final class MessageConstants {
     public static final String DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS = "user.storage.home.auto.exists";
     public static final String ERROR_SELF_IMPERSONATION_NOT_ALLOWED = "impersonation.self.not.allowed";
     public static final String ERROR_IMPERSONATION_EMPTY_USER = "impersonation.validation.empty.user";
+    public static final String INFO_DEFAULT_USER_DOCKER_GROUP_CREATE = "info.user.docker.group.create";
+    public static final String WARN_DEFAULT_USER_DOCKER_GROUP_CREATE = "warn.user.docker.group.create";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
@@ -658,6 +685,11 @@ public final class MessageConstants {
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
+    public static final String ERROR_GCP_CUSTOM_INSTANCE_CPU_LOWER_LIMIT = "error.gcp.custom.instance.cpu.lower.limit";
+    public static final String ERROR_GCP_CUSTOM_INSTANCE_FAMILY_NOT_SUPPORTED =
+            "error.gcp.custom.instance.family.not.supported";
+    public static final String ERROR_GCP_CUSTOM_INSTANCE_FAMILY_NOT_ALLOWED_WITH_GPU =
+            "error.gcp.custom.instance.family.not.allowed.with.gpu";
 
     //AWS
     public static final String ERROR_AWS_PROFILE_UNIQUENESS = "error.aws.profile.uniqueness";
@@ -807,6 +839,13 @@ public final class MessageConstants {
             "error.search.scrolling.parameter.doc.id.missing";
     public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING =
             "error.search.scrolling.parameter.doc.sort.fields.missing";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_NOT_FOUND = "error.search.template.export.not.found";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_FILE_NOT_FOUND =
+            "error.search.template.export.file.not.found";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_EMPTY =
+            "error.search.template.export.path.to.save.empty";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_WRONG_SCHEMA =
+            "error.search.template.export.path.to.save.wrong.schema";
 
     // Quota
     public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
@@ -854,6 +893,17 @@ public final class MessageConstants {
     // Static resource
     public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
     public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
+
+    // AWS Omics
+    public static final String AWS_OMICS_REFERENCE_STORE_CREATION_ADMIN_ONLY =
+            "error.aws.omics.reference.store.creation.admin.only";
+    public static final String AWS_OMICS_REFERENCE_STORE_ALREADY_EXISTS =
+            "error.aws.omics.reference.store.already.exists";
+    public static final String AWS_OMICS_STORE_DOESNT_SUPPORT_VERSIONING =
+            "error.aws.omics.doesnt.support.versioning";
+    public static final String AWS_OMICS_STORE_INCORRECT_FILE_PATH =
+            "error.aws.omics.store.incorrect.file.path";
+    public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
 
     private MessageConstants() {

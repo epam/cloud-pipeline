@@ -41,6 +41,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     private String loadUserByIdQuery;
     private String deleteUserQuery;
     private String findUsersByPrefixQuery;
+    private String findUsersByAttributeQuery;
     private String loadUserListQuery;
     private String deleteUserRolesQuery;
     private String userSequence;
@@ -124,6 +126,17 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         } else {
             return items.stream().filter(user -> user.getUserName()
                     .equalsIgnoreCase(name)).findAny().orElse(null);
+        }
+    }
+
+    public List<PipelineUser> findUsersByAttribute(final String key, final String value) {
+        final Collection<PipelineUser> items =
+                getJdbcTemplate().query(findUsersByAttributeQuery,
+                        UserParameters.getUserExtractor(), key.toLowerCase(), value.toLowerCase());
+        if (CollectionUtils.isEmpty(items)) {
+            return Collections.emptyList();
+        } else {
+            return new ArrayList<>(items);
         }
     }
 
@@ -267,7 +280,8 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         USER_BLOCK_DATE,
         LAST_LOGIN_DATE,
         EXTERNAL_BLOCK_DATE,
-        ONLINE;
+        ONLINE,
+        USER_OWNER;
 
         private static MapSqlParameterSource getParameterSource(Long userId, Long roleId) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -290,6 +304,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             params.addValue(USER_BLOCK_DATE.name(), user.getBlockDate());
             params.addValue(LAST_LOGIN_DATE.name(), user.getLastLoginDate());
             params.addValue(EXTERNAL_BLOCK_DATE.name(), user.getExternalBlockDate());
+            params.addValue(USER_OWNER.name(), user.getOwner());
             return params;
         }
 
@@ -374,6 +389,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             user.setBlockDate(DaoHelper.parseTimestamp(rs, USER_BLOCK_DATE.name()));
             user.setLastLoginDate(DaoHelper.parseTimestamp(rs, LAST_LOGIN_DATE.name()));
             user.setExternalBlockDate(DaoHelper.parseTimestamp(rs, EXTERNAL_BLOCK_DATE.name()));
+            user.setOwner(rs.getString(USER_OWNER.name()));
 
             long defaultStorageId = rs.getLong(USER_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
@@ -465,6 +481,11 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setFindUsersByPrefixQuery(String findUsersByPrefixQuery) {
         this.findUsersByPrefixQuery = findUsersByPrefixQuery;
+    }
+
+    @Required
+    public void setFindUsersByAttributeQuery(String findUsersByAttributeQuery) {
+        this.findUsersByAttributeQuery = findUsersByAttributeQuery;
     }
 
     @Required

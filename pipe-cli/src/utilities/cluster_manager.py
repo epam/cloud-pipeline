@@ -34,6 +34,19 @@ class ClusterManager(object):
         return ClusterManager.get_instance_type(core_type, instance_types_list, ncores)
 
     @classmethod
+    def is_gpu_instance(cls, instance_type):
+        if not instance_type:
+            return False
+        instance_types_list = Cluster.list_instance_types()
+        if len(instance_types_list) == 0:
+            return False
+        for available_type in instance_types_list:
+            if available_type.name == instance_type:
+                return int(available_type.gpu) > 0
+        return False
+
+
+    @classmethod
     def get_core_type(cls, core_type=None):
         if core_type:
             return ClusterManager.parse_core_type(core_type)

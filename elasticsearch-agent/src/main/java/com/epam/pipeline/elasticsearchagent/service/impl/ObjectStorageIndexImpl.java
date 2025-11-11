@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearchagent.exception.ElasticClientException;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -32,10 +34,12 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreStatus;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
@@ -85,6 +89,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
     private final ObjectStorageFileManager fileManager;
+    private final LockService lockService;
     private final String indexPrefix;
     private final String indexMappingFile;
     private final int bulkInsertSize;
@@ -95,6 +100,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final SearchDocumentType documentType;
     private final String tagDelimiter;
     private final boolean includeVersions;
+    private final String storageExcludeKey;
+    private final String storageExcludeValue;
 
     private Set<Long> storageIds;
     private Set<Long> skipStorageIds;
@@ -105,15 +112,27 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started {} files synchronization", getStorageType());
         fileMapper.updateSearchMasks(cloudPipelineAPIClient, log);
+        final Set<Long> excludeStorageIds = loadExcludedStorageIds();
         final List<AbstractDataStorage> allStorages = cloudPipelineAPIClient.loadAllDataStorages();
         allStorages
                 .stream()
+                .filter(dataStorage -> CollectionUtils.isEmpty(excludeStorageIds)
+                        || !excludeStorageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> CollectionUtils.isEmpty(skipStorageIds)
                         || !skipStorageIds.contains(dataStorage.getId()))
-                .filter(dataStorage -> CollectionUtils.isEmpty(storageIds) || storageIds.contains(dataStorage.getId()))
+                .filter(dataStorage -> CollectionUtils.isEmpty(storageIds)
+                        || storageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
                 .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
                 .forEach(this::indexStorage);
+    }
+
+    private Set<Long> loadExcludedStorageIds() {
+        return ListUtils.emptyIfNull(cloudPipelineAPIClient.searchEntriesByMetadata(AclClass.DATA_STORAGE,
+                        storageExcludeKey, storageExcludeValue))
+                .stream()
+                .map(EntityVO::getEntityId)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -128,8 +147,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         final String alias = indexPrefix + String.format("-%d", dataStorage.getId());
         final String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
-            final String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
-            elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
+            final String currentIndexName = initIndex(alias, indexName, dataStorage.getId());
             final Supplier<TemporaryCredentials> credentialsSupplier = () -> getTemporaryCredentials(dataStorage);
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
@@ -149,17 +167,48 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                         ).forEach(requestContainer::add);
             }
 
-            elasticsearchServiceClient.createIndexAlias(indexName, alias);
-            if (StringUtils.isNotBlank(currentIndexName)) {
-                elasticsearchServiceClient.deleteIndex(currentIndexName);
-            }
+            finalizeIndex(alias, indexName, currentIndexName, dataStorage.getId());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            deleteIndex(indexName, dataStorage.getId());
+        }
+    }
+
+    private void deleteIndex(final String indexName, final Long storageId) {
+        lockService.runWithLock(storageId, () -> {
             if (elasticsearchServiceClient.isIndexExists(indexName))  {
                 elasticsearchServiceClient.deleteIndex(indexName);
             }
-        }
+        });
     }
+
+    private void finalizeIndex(final String alias,
+                               final String indexName,
+                               final String currentIndexName,
+                               final Long storageId) {
+        lockService.runWithLock(storageId, () -> {
+            elasticsearchServiceClient.createIndexAlias(indexName, alias);
+                if (StringUtils.isNotBlank(currentIndexName)) {
+                    elasticsearchServiceClient.deleteIndex(currentIndexName);
+                }
+            }
+        );
+    }
+
+    private String initIndex(final String alias,
+                             final String indexName,
+                             final Long storageId) {
+        final String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
+        lockService.runWithLock(storageId, () -> {
+            try {
+                elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
+            } catch (ElasticClientException e) {
+                throw new IllegalArgumentException(e);
+            }
+        });
+        return currentIndexName;
+    }
+
 
     private List<DataStorageFile> countRestored(final List<StorageRestoreAction> actions, final DataStorageFile file) {
         final List<DataStorageFile> filesWithRespectToRestoreStatus = new ArrayList<>();
@@ -277,7 +326,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                                             final String indexName,
                                             final String region,
                                             final String content) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE)
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath())
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer, getDocumentType(), tagDelimiter, content));
     }

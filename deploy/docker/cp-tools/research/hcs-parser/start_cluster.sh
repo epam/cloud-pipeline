@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-qmod -d "main.q@$HOSTNAME"
-python2 "$HCS_TOOLS_HOME/scripts/process_hcs_files_cluster.py" > $ANALYSIS_DIR/hcs-parser-master-$RUN_ID.log 2>&1
+if command -v qmod >/dev/null 2>&1; then
+ qmod -d "main.q@$HOSTNAME"
+fi
+python2 "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files_cluster.py" > $ANALYSIS_DIR/hcs-parser-master-$RUN_ID.log 2>&1
 pipe storage cp "$ANALYSIS_DIR/hcs-parser-master-$RUN_ID.log" "$HCS_PARSING_LOGS_OUTPUT/$RUN_ID/"

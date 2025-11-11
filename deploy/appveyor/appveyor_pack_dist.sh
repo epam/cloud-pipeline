@@ -14,6 +14,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
+
+# pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
+function download_gradle_dependencies() {
+    ./gradlew clean buildDependents -Pfast -x test --no-daemon
+
+    if [ "$?" != 0 ]; then
+        echo "Problem with resolving gradle dependencies..."
+        return 1
+    fi
+}
+
+function get_pipe_binaries() {
+  _suffix="$1"
+  _OSX_CLI_TAR_NAME="pipe-osx-full${_suffix}.$APPVEYOR_BUILD_NUMBER.tar.gz"
+  _OSX_CLI_PATH=$(mktemp -d)
+  aws s3 cp s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
+  tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
+
+  mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx* ${API_STATIC_PATH}/
+  mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
+}
+
+source ~/venv2.7/bin/activate
+pip install PyYAML==3.12
+pip install mkdocs==1.0.4
+
+_BUILD_EXIT_CODE=1
+try_count=0
+while [ $_BUILD_EXIT_CODE != 0 ] && [ $try_count -lt "$CLOUD_PIPELINE_BUILD_RETRY_TIMES" ]; do
+  echo "Try to to pre-load deps Cloud Pipeline distribution, try $try_count ..."
+  download_gradle_dependencies
+  _BUILD_EXIT_CODE=$?
+  if [ $_BUILD_EXIT_CODE != 0 ]; then
+      echo "Failed to pre-load deps for Cloud Pipeline distribution ..."
+  else
+    echo "Successfully pre-load deps for Cloud Pipeline."
+  fi
+	try_count=$(( $try_count + 1 ))
+done
+
 set -e
 
 API_STATIC_PATH=api/src/main/resources/static
@@ -21,13 +62,8 @@ rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 mkdir -p ${API_STATIC_PATH}
 
-_OSX_CLI_TAR_NAME=pipe-osx-full.$APPVEYOR_BUILD_NUMBER.tar.gz
-_OSX_CLI_PATH=$(mktemp -d)
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
-tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
-
-mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx ${API_STATIC_PATH}/pipe-osx
-mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
+get_pipe_binaries
+get_pipe_binaries "-arm"
 
 _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
 mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
@@ -39,6 +75,11 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
                     -Pfast \
                     --no-daemon
 
+deactivate
+
+source ~/venv3.8/bin/activate
+pip install awscli
+
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 
@@ -48,3 +89,5 @@ if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${APPVEYOR_REPO_BRANCH}/
     fi
 fi
+
+deactivate

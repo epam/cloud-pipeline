@@ -17,14 +17,14 @@
 package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.entity.user.StorageContainer;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class DataStorageValidator {
 
-    private final DataStorageManager storageManager;
+    @Autowired
+    private DataStorageManager storageManager;
 
     public void validate(StorageContainer container) {
         validate(container.getDefaultStorageId());

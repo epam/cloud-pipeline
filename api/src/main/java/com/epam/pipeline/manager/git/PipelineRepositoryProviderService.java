@@ -50,9 +50,7 @@ public class PipelineRepositoryProviderService {
         if (Objects.isNull(repositoryType)) {
             return providers.get(RepositoryType.GITLAB);
         }
-        final GitClientService provider = RepositoryType.GITHUB.equals(repositoryType)
-                ? providers.get(RepositoryType.GITLAB)
-                : providers.get(repositoryType);
+        final GitClientService provider = providers.get(repositoryType);
         if (provider == null) {
             throw new IllegalArgumentException(String.format("Repository provider '%s' not supported", repositoryType));
         }
@@ -83,13 +81,15 @@ public class PipelineRepositoryProviderService {
     }
 
     public byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
-                                  final String path, final String revision, final String token) {
-        return getProvider(repositoryType).getFileContents(repository, path, revision, token);
+                                  final String path, final String revision, final String token,
+                                  final boolean isDraft) {
+        return getProvider(repositoryType).getFileContents(repository, path, revision, token, isDraft);
     }
 
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String version,
-                                           final int byteLimit) {
-        return getProvider(pipeline.getRepositoryType()).getTruncatedFileContents(pipeline, path, version, byteLimit);
+                                           final int byteLimit, final boolean isDraft) {
+        return getProvider(pipeline.getRepositoryType())
+                .getTruncatedFileContents(pipeline, path, version, byteLimit, isDraft);
     }
 
     public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
@@ -131,8 +131,10 @@ public class PipelineRepositoryProviderService {
     }
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
-                                                          final String version,  final boolean recursive) {
-        return getProvider(pipeline.getRepositoryType()).getRepositoryContents(pipeline, path, version, recursive);
+                                                          final String version,  final boolean recursive,
+                                                          final boolean isDraft) {
+        return getProvider(pipeline.getRepositoryType())
+                .getRepositoryContents(pipeline, path, version, recursive, isDraft);
     }
 
     public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,

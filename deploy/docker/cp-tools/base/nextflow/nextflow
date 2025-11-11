@@ -14,7 +14,74 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+export JAVA_HOME=/usr/lib/jvm/jre-17
 
+function generate_params_file() {
+    all_cp_params_json=""
+    all_cp_params=$(printenv | sed 's;=.*;;' | grep _PARAM_TYPE)
+    for cp_param in $all_cp_params; do
+        [[ "$cp_param" =~ CP_* ]]  && continue
+        cp_param_clean=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
+        cp_param_type="${!cp_param}"
+        if [ "$cp_param_type" == "boolean" ]; then
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": ${!cp_param_clean}"
+        else
+            # Escaping special characters for JSON
+            _value=${!cp_param_clean}
+            _value=${_value//\\/\\\\}
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${_value}\""
+        fi
+    done
+    all_cp_params_json="{ $(echo "$all_cp_params_json" | sed 's/,//') }"
+    echo "$all_cp_params_json" | jq -r > "$CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+    echo "[INFO] Parameters are written into $CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+    echo "[INFO] Parameters JSON:"
+    cat "$CP_NF_AUTOGENERATE_PARAMETERS_PATH"
+    echo
+}
+
+function generate_extra_nf_config_option() {
+    all_extra_options_names=$(printenv | sed 's;=.*;;' | grep '^CP_NF_EXTRA_OPTION_')
+    for extra_option_name in $all_extra_options_names; do
+        [[ "$extra_option_name" == *_PARAM_TYPE ]]  && continue
+        echo "[INFO] Added extra option to ${NEXTFLOW_CONFIG} from ${extra_option_name}: ${!extra_option_name}"
+        echo "${!extra_option_name}" >> $NEXTFLOW_CONFIG
+    done
+}
+
+CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
+CP_NF_CACHEDIR="${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}"
+CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
+CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
+CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
+CP_NF_AUTOGENERATE_PARAMETERS_PATH="${CP_NF_AUTOGENERATE_PARAMETERS_PATH:-$SCRIPTS_DIR/cp_params.json}"
+
+export NXF_WORK="$CP_NF_WORKDIR"
+export NXF_CACHE_DIR="$CP_NF_CACHEDIR"
+export NXF_IGNORE_RESUME_HISTORY="${NXF_IGNORE_RESUME_HISTORY:-true}"
+export NXF_LOG_FILE="${NXF_LOG_FILE:-nextflow.log}"
+export NXF_UUID="$CP_NXF_UUID"
+
+# Parameters validation
+if [ -z "$CP_NXF_UUID" ]; then
+    echo "[ERROR] CP_NXF_UUID variable is not set. Cannot continue run $CP_CONTINUE_RUN"
+    exit 1
+fi
+#
+
+mkdir -p "$NXF_WORK"
+
+_IS_RUN_COMMAND=
+for param in "$@"; do
+   if [ "$param" == "run" ]; then
+      _IS_RUN_COMMAND="1"
+      break
+   fi
+done
+
+_ARGS=("$@")
+
+# Executor parameters
 NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
 rm -f "$NEXTFLOW_CONFIG"
@@ -37,8 +104,69 @@ if [ "$CP_CAP_SGE" == "true" ]; then
     echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
 fi
 
-if [ -f "$NEXTFLOW_CONFIG" ]; then
-    NEXTFLOW_CONFIG_ARG="-c $NEXTFLOW_CONFIG"
+generate_extra_nf_config_option
+#
+
+# NF Handler parameters
+if [ "$_IS_RUN_COMMAND" == "1" ]; then
+    if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
+        echo "Running Nextflow with -with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event option"
+        _ARGS+=('-with-weblog')
+        _ARGS+=("http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event")
+        if [ -n "$CP_NF_WORKDIR" ]; then
+            echo "trace.enabled = true" >> $NEXTFLOW_CONFIG
+            echo "trace.raw = true" >> $NEXTFLOW_CONFIG
+            echo "trace.file = '${CP_NF_TRACE_FILE}'" >> $NEXTFLOW_CONFIG
+            echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes'" >> $NEXTFLOW_CONFIG
+        fi
+    fi
+
+    if [ "$CP_NF_AUTOGENERATE_PARAMETERS" == "true" ]; then
+        generate_params_file
+        _ARGS+=("-params-file" "$CP_NF_AUTOGENERATE_PARAMETERS_PATH")
+    fi
 fi
 
-$NXF_HOME/nextflow $NEXTFLOW_CONFIG_ARG "$@"
+if [ -f "$NEXTFLOW_CONFIG" ]; then
+    echo "[INFO] Global nextflow config ($NEXTFLOW_CONFIG):"
+    cat "$NEXTFLOW_CONFIG"
+    echo
+    _ARGS+=('-c')
+    _ARGS+=("$NEXTFLOW_CONFIG")
+fi
+#
+
+# Resume parameters
+_ARGS+=('-name')
+_ARGS+=($HOSTNAME)
+if [ -n "$CP_CONTINUE_RUN" ]; then
+    num_re='^[0-9]+$'
+    if ! [[ $CP_CONTINUE_RUN =~ $num_re ]] ; then
+      echo "[ERROR] CP_CONTINUE_RUN variable (value: $CP_CONTINUE_RUN) is not a run id, exiting"
+      exit 1
+    fi
+    
+    _ARGS+=('-resume')
+    _ARGS+=("$CP_NXF_UUID")
+fi
+#
+
+# Execute
+# - Print NFX_* environment
+echo "[INFO] NXF Environment variables:"
+printenv | grep '^NXF_'
+echo
+# - Print nextflow command
+echo "[INFO] Nextflow command:"
+_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}""
+echo "$_nf_cmd"
+echo
+eval "$_nf_cmd"
+_result_code="$?"
+
+if [ "$_IS_RUN_COMMAND" == "1" ]; then
+    /opt/nf-weblog-handler/nf-weblog-handler.sh --wait-runtime-data -tf "$CP_NF_TRACE_FILE"
+fi
+
+exit $_result_code
+

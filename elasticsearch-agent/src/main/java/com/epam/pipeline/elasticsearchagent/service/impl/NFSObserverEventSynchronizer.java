@@ -56,7 +56,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -84,6 +83,7 @@ import java.util.stream.Stream;
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "sync.nfs-file.observer.sync.disable", matchIfMissing = true, havingValue = "false")
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private static final String BACKSLASH = "/";
@@ -375,23 +375,30 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                                  final Path mountFolder,
                                                  final Map<String, SearchHit> searchHitMap,
                                                  final NFSObserverEvent event) {
-        Assert.isTrue(mountFolder.toFile().exists(),
-                      String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...", mountFolder));
-        log.debug("Processing event: [{}, {}, {}]",
-                  event.getEventType().name(), event.getStorage(), event.getFilePath());
-        final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
-        final boolean fileExists = absoluteFilePath.toFile().exists();
-        log.debug("Checking file existence at {}: {}", absoluteFilePath, fileExists);
-        if (fileExists) {
-            log.debug("Creating storage file update request");
-            return convertToStorageFile(absoluteFilePath, mountFolder);
-        } else {
-            Optional.ofNullable(searchHitMap.get(event.getFilePath()))
-                .map(hit -> {
-                    log.debug("Creating storage file removal request");
-                    return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId());
-                })
-                .ifPresent(requestContainer::add);
+        try {
+            Assert.isTrue(mountFolder.toFile().exists(),
+                    String.format("Mount folder [%s] doesn't exist - stop chunk synchronization...", mountFolder));
+            log.debug("Processing event: [{}, {}, {}]",
+                    event.getEventType().name(), event.getStorage(), event.getFilePath());
+            final Path absoluteFilePath = mountFolder.resolve(event.getFilePath());
+            final boolean fileExists = absoluteFilePath.toFile().exists();
+            log.debug("Checking file existence at {}: {}", absoluteFilePath, fileExists);
+            if (fileExists) {
+                log.debug("Creating storage file update request");
+                return convertToStorageFile(absoluteFilePath, mountFolder);
+            } else {
+                Optional.ofNullable(searchHitMap.get(event.getFilePath()))
+                        .map(hit -> {
+                            log.debug("Creating storage file removal request");
+                            return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId());
+                        })
+                        .ifPresent(requestContainer::add);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Failed to process event [{}, {}, {}]",
+                    event.getEventType().name(), event.getStorage(), event.getFilePath());
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -515,9 +522,11 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                                                               file.getPath(),
                                                                               readingCredentialsSupplier)) {
             return IOUtils.readLines(inputStream, StandardCharsets.UTF_8).stream()
+                .filter(StringUtils::isNotBlank)
                 .map(this::mapStringToEvent)
                 .collect(Collectors.toList());
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
             return new ArrayList<>();
         }
     }

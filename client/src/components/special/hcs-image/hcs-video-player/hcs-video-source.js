@@ -21,34 +21,9 @@ import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvai
 import {createObjectStorageWrapper} from '../../../../utils/object-storage';
 import getBrowserDependentConfiguration from '../../../../utils/browserDependentStyle';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
+import channelsAreEqual from '../utilities/channels-are-equal';
 
 const DEFAULT_DELAY_MS = 500;
-
-function channelsAreEqual (channelsSet1, channelsSet2) {
-  const channels1 = Object.keys(channelsSet1 || {}).sort();
-  const channels2 = Object.keys(channelsSet2 || {}).sort();
-  if (channels1.length !== channels2.length) {
-    return false;
-  }
-  for (let c = 0; c < channels1.length; c++) {
-    const channelName1 = channels1[c];
-    const channelName2 = channels2[c];
-    const channel1 = channelsSet1[channelName1];
-    const channel2 = channelsSet2[channelName2];
-    if (
-      channelName1 !== channelName2 ||
-      channel1.length !== channel2.length
-    ) {
-      return false;
-    }
-    for (let i = 0; i < channel1.length; i++) {
-      if (channel1[i] !== channel2[i]) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
 
 const DEFAULT_VIDEO_TYPE = 'mp4';
 

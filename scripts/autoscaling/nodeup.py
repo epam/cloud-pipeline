@@ -39,10 +39,14 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
     parser.add_argument("--kube_node_token", type=str, required=True)
+    parser.add_argument("--kube_cluster_name", type=str, required=False)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--cloud", type=str, default=None)
     parser.add_argument("--dedicated", type=bool, required=False)
+    parser.add_argument("--docker_data_root", type=str, default='/ebs/docker')
+    parser.add_argument("--docker_storage_driver", type=str, default='')
+    parser.add_argument("--skip_system_images_load", type=str, default='')
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
@@ -63,10 +67,14 @@ def main():
     kubeadm_token = args.kubeadm_token
     kubeadm_cert_hash = args.kubeadm_cert_hash
     kube_node_token = args.kube_node_token
+    kube_cluster_name = args.kube_cluster_name
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     cloud = args.cloud
     pre_pull_images = args.image
+    docker_data_root = args.docker_data_root
+    docker_storage_driver = args.docker_storage_driver
+    skip_system_images_load = args.skip_system_images_load
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get('pool_id')
     is_dedicated = args.dedicated if args.dedicated else False
@@ -93,17 +101,21 @@ def main():
                    '- IsSpot: {}\n'
                    '- BidPrice: {}\n'
                    '- Repeat attempts: {}\n'
-                   '- Repeat timeout: {}\n-'.format(cloud,
-                                              region_id,
-                                              run_id,
-                                              ins_type,
-                                              ins_hdd,
-                                              ins_img,
-                                              ins_platform,
-                                              str(is_spot),
-                                              str(bid_price),
-                                              str(num_rep),
-                                              str(time_rep)))
+                   '- Repeat timeout: {}\n-'
+                   '- Docker data root: {}\n-'
+                   '- Docker storage driver: {}\n-'.format(cloud,
+                                                            region_id,
+                                                            run_id,
+                                                            ins_type,
+                                                            ins_hdd,
+                                                            ins_img,
+                                                            ins_platform,
+                                                            str(is_spot),
+                                                            str(bid_price),
+                                                            str(num_rep),
+                                                            str(time_rep),
+                                                            docker_data_root,
+                                                            docker_storage_driver))
 
     kube_provider = kubeprovider.KubeProvider()
 
@@ -122,12 +134,16 @@ def main():
 
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
+        if kube_cluster_name:
+            utils.pipe_log('kube_cluster_name is specified ({kube_cluster_name}) but ignored in this version of nodeup'.format(kube_cluster_name=kube_cluster_name))
+
         if not ins_id:
             ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id,
                                                          pool_id, kms_encyr_key_id, num_rep, time_rep, kube_ip,
                                                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                          global_distribution_url,
-                                                         pre_pull_images, is_dedicated)
+                                                         pre_pull_images, is_dedicated, docker_data_root, docker_storage_driver,
+                                                         skip_system_images_load)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

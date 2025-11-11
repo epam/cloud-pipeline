@@ -46,6 +46,7 @@ public class InstanceOfferDaoTest extends AbstractJdbcTest {
     private static final Date PUBLISH_DATE = new Date();
     private static final int CPU = 2;
     private static final float MEMORY = 8;
+    private static final int BATCH_SIZE = 10_000;
 
     @Autowired
     private InstanceOfferDao instanceOfferDao;
@@ -66,7 +67,7 @@ public class InstanceOfferDaoTest extends AbstractJdbcTest {
         instanceOffers.add(offer(region.getId(), INSTANCE_TYPE));
         instanceOffers.add(offer(anotherRegion.getId(), INSTANCE_TYPE));
         instanceOffers.add(offer(anotherRegion.getId(), ANOTHER_INSTANCE_TYPE));
-        instanceOfferDao.insertInstanceOffers(instanceOffers);
+        instanceOfferDao.insertInstanceOffers(instanceOffers, BATCH_SIZE);
     }
 
     private AbstractCloudRegion createRegion(final String name) {

@@ -15,6 +15,7 @@
 import collections
 import datetime
 import logging
+import os
 import socket
 from abc import abstractmethod, ABCMeta
 from contextlib import closing
@@ -33,6 +34,7 @@ class DataAccessType:
     READ = 'READ'
     WRITE = 'WRITE'
     DELETE = 'DELETE'
+    MOUNT = 'MOUNT'
 
 
 class DataAccessEvent:
@@ -270,6 +272,7 @@ class CloudPipelineAuditConsumer(AuditConsumer):
         self._log_hostname = socket.gethostname()
         self._log_type = 'audit'
         self._log_severity = 'INFO'
+        self._log_run_id = self._get_run_id()
 
     def consume(self, entries):
         with closing(self._ids()) as ids:
@@ -303,7 +306,7 @@ class CloudPipelineAuditConsumer(AuditConsumer):
                 'serviceName': self._log_service,
                 'type': self._log_type,
                 'user': self._log_user,
-                'message': entry.type + ' ' + entry.path,
+                'message': self._log_run_id + entry.type + ' ' + entry.path,
                 'severity': self._log_severity,
                 'storageId': self._get_storage_id(entry.storage)
             }
@@ -318,6 +321,12 @@ class CloudPipelineAuditConsumer(AuditConsumer):
 
     def flush(self):
         pass
+
+    def _get_run_id(self):
+        run_id = os.getenv('RUN_ID')
+        if not run_id:
+            return ''
+        return '[run_id #%s] ' % run_id
 
 
 class AuditDaemon:
@@ -347,14 +356,14 @@ class AuditDaemon:
                 logging.warning('Interrupted.')
                 raise
             except Exception:
-                logging.error('Audit entries processing step has failed.', exc_info=True)
+                logging.warning('Audit entries processing step has failed.', exc_info=True)
         try:
             self._consumer.flush()
         except KeyboardInterrupt:
             logging.warning('Interrupted.')
             raise
         except Exception:
-            logging.error('Audit entries final flushing step has failed.', exc_info=True)
+            logging.warning('Audit entries final flushing step has failed.', exc_info=True)
         logging.info('Finished audit daemon.')
 
 

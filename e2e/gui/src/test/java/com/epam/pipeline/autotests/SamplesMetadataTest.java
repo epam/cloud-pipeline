@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Selectors.withText;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -24,12 +22,14 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
 import static com.codeborne.selenide.Condition.*;
@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.epam.pipeline.autotests.ao.Configuration.*;
 import static com.epam.pipeline.autotests.ao.Configuration.name;
 import static com.epam.pipeline.autotests.ao.Configuration.title;
@@ -52,6 +53,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -151,6 +153,12 @@ public class SamplesMetadataTest
 
     private List<String> selectedSampleName = new ArrayList<>();
 
+    @BeforeMethod
+    public void refreshPage() {
+        refresh();
+        sleep(5, SECONDS);
+    }
+
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
         open(C.ROOT_ADDRESS);
@@ -191,7 +199,6 @@ public class SamplesMetadataTest
     @Test
     @TestCase({"EPMCMBIBPC-1411"})
     public void createProjectFolder() {
-        refresh();
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
@@ -398,22 +405,24 @@ public class SamplesMetadataTest
                     return Utils.readResourceFully(configJson)
                             .replace("{{docker_image}}", dockerImage)
                             .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                            .replace("{{is_spot}}", String.valueOf(isSpot));
+                            .replace("\"{{is_spot}}\"", String.valueOf(isSpot));
                 })
                 .deleteExtraBrackets(110)
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)
                 .click(button("OK"))
+                .sleep(10, SECONDS)
                 .uploadFile(getFile(launchScript))
                 .ensure(byText(launchScript), visible);
-        sleep(20, SECONDS);
         refresh();
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
-                                .ensure(withText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(save())
                                 .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))
@@ -487,9 +496,9 @@ public class SamplesMetadataTest
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(parametersTab)
-                                .selectValue(rootEntityType(), rootEntityTypeSample)
+                                .selectRootEntityTypeValue(rootEntityTypeSample)
                                 .ensure(rootEntityType(), text(rootEntityTypeSample))
-                                .selectValue(rootEntityType(), rootEntityTypeSampleSet)
+                                .selectRootEntityTypeValue(rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
                                 .click(save())
                                 .ensure(save(), disabled)
@@ -506,7 +515,8 @@ public class SamplesMetadataTest
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
-                        profile.selectValue(rootEntityType(), rootEntityTypeSample)
+                        profile
+                                .selectRootEntityTypeValue(rootEntityTypeSample)
                                 .addToParameter(fastqR1, "this.")
                                 .ensure(
                                         templatesList(),
@@ -605,7 +615,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTab(parametersTab)
-                                .selectValue(rootEntityType(), rootEntityTypeSampleSet)
+                                .selectRootEntityTypeValue(rootEntityTypeSampleSet)
                                 .setParameter(fastqR1, "this.")
                                 .ensure(
                                         templatesList(),
@@ -647,7 +657,10 @@ public class SamplesMetadataTest
                                                 byText(sampleNameAutocomplete))
                                 )
                                 .click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
-                                .click(save())
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE)
+                                .ensureDisable(SAVE)
                 );
     }
 
@@ -662,7 +675,6 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .ensure(byText(project), visible)
-                .cd(project)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
                 .ensure(MetadataSelection.folders, text(metadataFolder))

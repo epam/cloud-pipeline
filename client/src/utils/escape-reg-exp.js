@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-const ESCAPE_CHARACTERS = ['.', '-', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
+const ESCAPE_CHARACTERS = ['.', '-', '+', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
 
 export {ESCAPE_CHARACTERS};
 export default function escapeRegExp (string, characters = ESCAPE_CHARACTERS) {

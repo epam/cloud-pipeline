@@ -1,0 +1,17 @@
+.launch-parameter-input {
+
+}
+
+.launch-parameter-path-input-addon {
+  padding: 5px;
+  cursor: pointer;
+}
+
+.metadata-auto-complete {
+  padding: 4px 7px;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1;
+  text-align: center;
+  border: 1px solid transparent;
+}

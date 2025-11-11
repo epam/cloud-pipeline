@@ -1,4 +1,4 @@
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,10 @@ class StorageModel(object):
         self.path = None
         self.share_mount_id = None
         self.mount_source = None
+        self.owner = None
         self.users = {}
         self.tools_to_mount = []
+        self.sensitive = False
 
     @classmethod
     def load(cls, json):
@@ -41,6 +43,7 @@ class StorageModel(object):
         instance.name = entity_json['name']
         instance.mask = entity_json['mask']
         instance.type = entity_json['type']
+        instance.sensitive = entity_json.get('sensitive', False)
         instance.share_mount_id = entity_json.get('fileShareMountId')
         instance.path = entity_json.get('pathMask')
         for tool_json in entity_json.get('toolsToMount', []):
@@ -48,6 +51,7 @@ class StorageModel(object):
             if tool:
                 instance.tools_to_mount.append(tool)
         entity_owner = entity_json.get('owner', '')
+        instance.owner = entity_owner
         if entity_owner.strip().lower() != 'unauthorized':
             user = UserModel()
             user.username = entity_owner
@@ -58,6 +62,9 @@ class StorageModel(object):
             sid_name = sid_json.get('name')
             sid_principal = sid_json.get('principal')
             if not sid_name or not sid_principal or not sid_mask:
+                continue
+            # Owner shall be already added and we shall not override permissions
+            if sid_name.strip().lower() == entity_owner.strip().lower():
                 continue
             user = UserModel()
             user.username = sid_name

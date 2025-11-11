@@ -1,0 +1,172 @@
+#!/bin/bash
+
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+unset KUBERNETES_SERVICE_HOST
+unset KUBERNETES_SERVICE_PORT
+
+function is_jq_null() {
+    _VAL="$1"
+    if [ -z "$_VAL" ] || [ "$_VAL" == "null" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+KUBE_MASTER_SETUP_TASK="KubeMasterSetup"
+
+CP_CAP_KUBE_EXTERNAL_API_ENDPOINT_NAME="${CP_CAP_KUBE_API_ENDPOINT_NAME:-"Kubernetes-API"}"
+CP_CAP_KUBE_EXTERNAL_USER_NAME="${CP_CAP_KUBE_EXTERNAL_USER_NAME:-"cp-admin"}"
+CP_CAP_KUBE_EXTERNAL_USER_NS="${CP_CAP_KUBE_EXTERNAL_USER_NS:-"kube-system"}"
+CP_CAP_KUBE_EXTERNAL_USER_ROLE="${CP_CAP_KUBE_EXTERNAL_USER_ROLE:-"cluster-admin"}"
+CP_CAP_KUBE_EXTERNAL_USER_SECRET="${CP_CAP_KUBE_EXTERNAL_USER_SECRET:-"${CP_CAP_KUBE_EXTERNAL_USER_NAME}-secret"}"
+CP_CAP_KUBE_EXTERNAL_CONFIG_NAME="${CP_CAP_KUBE_EXTERNAL_CONFIG_NAME:-"config-external"}"
+
+# Wait 20 min for the endpoint
+_kube_endpoint_wait_retries="${CP_CAP_KUBE_EXTERNAL_API_ENDPOINT_WAIT_RETRIES:-120}"
+_kube_endpoint_wait_current=0
+while true; do
+    sleep 10
+    _kube_endpoint_wait_current=$(($_kube_endpoint_wait_current+1))
+    if (( $_kube_endpoint_wait_current > $_kube_endpoint_wait_retries )); then
+        pipe_log_info "No external access is available as no endpoints are available in $CLOUD_REGION region during ${_kube_endpoint_wait_retries}*5s" "$KUBE_MASTER_SETUP_TASK"
+        exit 1
+ 
+    fi
+
+    _run_info_endpoints_json=$(curl -sk "${API}run/${RUN_ID}" -H "Authorization: Bearer $API_TOKEN" | jq -r ".payload.serviceUrl.\"$CLOUD_REGION\"")
+    if is_jq_null "$_run_info_endpoints_json"; then
+        continue
+    fi
+
+    _kube_endpoint_url=$(echo "$_run_info_endpoints_json" | jq -r ".[] | select(.name==\"$CP_CAP_KUBE_EXTERNAL_API_ENDPOINT_NAME\").url")
+    if ! is_jq_null "$_kube_endpoint_url"; then
+       break
+    fi
+done
+
+pipe_log_info "Will configure external access:\n \
+External URL: ${_kube_endpoint_url}\n \
+User name: ${CP_CAP_KUBE_EXTERNAL_USER_NAME}\n \
+User NS: ${CP_CAP_KUBE_EXTERNAL_USER_NS}\n \
+User role: ${CP_CAP_KUBE_EXTERNAL_USER_ROLE}\n \
+User secret: ${CP_CAP_KUBE_EXTERNAL_USER_SECRET}" "$KUBE_MASTER_SETUP_TASK"
+
+#############################################################
+# Create user token
+#############################################################
+kubectl create serviceaccount "$CP_CAP_KUBE_EXTERNAL_USER_NAME" -n "${CP_CAP_KUBE_EXTERNAL_USER_NS}"
+if [ $? -eq 0 ]; then
+    pipe_log_info "User $CP_CAP_KUBE_EXTERNAL_USER_NAME created" "$KUBE_MASTER_SETUP_TASK"
+else
+    pipe_log_warn "Cannot create $CP_CAP_KUBE_EXTERNAL_USER_NAME user, external access will not be avaialble" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+kubectl create clusterrolebinding "${CP_CAP_KUBE_EXTERNAL_USER_NAME}" \
+                --clusterrole="${CP_CAP_KUBE_EXTERNAL_USER_ROLE}" \
+                --serviceaccount="${CP_CAP_KUBE_EXTERNAL_USER_NS}:${CP_CAP_KUBE_EXTERNAL_USER_NAME}"
+if [ $? -eq 0 ]; then
+    pipe_log_info "Role binding to $CP_CAP_KUBE_EXTERNAL_USER_ROLE created" "$KUBE_MASTER_SETUP_TASK"
+else
+    pipe_log_warn "Cannot create role binding to $CP_CAP_KUBE_EXTERNAL_USER_ROLE, external access will not be avaialble" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+kubectl apply -n "${CP_CAP_KUBE_EXTERNAL_USER_NS}" -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${CP_CAP_KUBE_EXTERNAL_USER_SECRET}
+  annotations:
+    kubernetes.io/service-account.name: ${CP_CAP_KUBE_EXTERNAL_USER_NAME}
+type: kubernetes.io/service-account-token
+EOF
+if [ $? -eq 0 ]; then
+    pipe_log_info "Secret token $CP_CAP_KUBE_EXTERNAL_USER_SECRET created" "$KUBE_MASTER_SETUP_TASK"
+else
+    pipe_log_warn "Cannot create secret token $CP_CAP_KUBE_EXTERNAL_USER_SECRET, external access will not be avaialble" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+_user_secret_value=$(kubectl get "secret/${CP_CAP_KUBE_EXTERNAL_USER_SECRET}" -o yaml -n "${CP_CAP_KUBE_EXTERNAL_USER_NS}" -o json \
+                        | jq -r '.data.token')
+if [ $? -eq 0 ] && [ "$_user_secret_value" ]; then
+    pipe_log_info "Token has been retrieved" "$KUBE_MASTER_SETUP_TASK"
+else
+    pipe_log_warn "Cannot retrive token, external access will not be avaialble" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+_user_secret_value=$(echo "$_user_secret_value" | base64 -d)
+
+#############################################################
+# Prepare endpoint certificate
+#############################################################
+if [ "$CP_CAP_KUBE_EXTERNAL_CA_PEM" ]; then
+    curl -sk "$CP_CAP_KUBE_EXTERNAL_CA_PEM" > /tmp/kube.pem
+    if [ $? -eq 0 ]; then
+        pipe_log_info "Got CA certificate from $CP_CAP_KUBE_EXTERNAL_CA_PEM" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_warn "Cannot get CA certificate from $CP_CAP_KUBE_EXTERNAL_CA_PEM, external access will not be avaialble" "$KUBE_MASTER_SETUP_TASK"
+        exit 1
+    fi
+else
+    pipe_log_info "CP_CAP_KUBE_EXTERNAL_CA_PEM is not set, will use platform default certificate" "$KUBE_MASTER_SETUP_TASK"
+
+    curl -sk "${API}dockerRegistry/1/cert" -H "Authorization: Bearer $API_TOKEN" > /tmp/kube.pem
+    if [ $? -eq 0 ]; then
+        pipe_log_info "Got platform default CA certificate" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_warn "Cannot get platform default CA certificate, external access will not be avaialble" "$KUBE_MASTER_SETUP_TASK"
+        exit 1
+    fi
+fi
+
+_ca_cert_b64=$(cat /tmp/kube.pem | base64 -w 0)
+rm -f /tmp/kube.pem
+
+#############################################################
+# Write kube config for external usage
+#############################################################
+mkdir -p ~/.kube
+cat > "/root/.kube/$CP_CAP_KUBE_EXTERNAL_CONFIG_NAME"<<EOF
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: $_ca_cert_b64
+    server: $_kube_endpoint_url
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: $CP_CAP_KUBE_EXTERNAL_USER_NAME
+  name: ${CP_CAP_KUBE_EXTERNAL_USER_NAME}@kubernetes
+current-context: ${CP_CAP_KUBE_EXTERNAL_USER_NAME}@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: $CP_CAP_KUBE_EXTERNAL_USER_NAME
+  user:
+    token: $_user_secret_value
+EOF
+
+if [ "$OWNER" ]; then
+    mkdir -p /home/$OWNER/.kube
+    \cp "/root/.kube/$CP_CAP_KUBE_EXTERNAL_CONFIG_NAME" "/home/$OWNER/.kube/$CP_CAP_KUBE_EXTERNAL_CONFIG_NAME"
+fi
+
+pipe_log_info "External config written to /root/.kube/$CP_CAP_KUBE_EXTERNAL_CONFIG_NAME" "$KUBE_MASTER_SETUP_TASK"

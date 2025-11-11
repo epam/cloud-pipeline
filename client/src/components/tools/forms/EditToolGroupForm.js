@@ -16,14 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import {Button, Modal, Form, Input, Row, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../roleModel/PermissionsForm';
 import roleModel from '../../../utils/roleModel';
 
 @Form.create()
+@inject('preferences')
 @roleModel.authenticationInfo
+@observer
 export default class EditToolGroupForm extends React.Component {
-
   static propTypes = {
     toolGroup: PropTypes.shape({
       id: PropTypes.oneOfType([
@@ -55,6 +58,17 @@ export default class EditToolGroupForm extends React.Component {
     }
   };
 
+  @computed
+  get permissionsRestrictions () {
+    const {
+      preferences
+    } = this.props;
+    if (preferences.loaded) {
+      return preferences.uiPersonalToolsPermissionsRestrictions;
+    }
+    return [];
+  }
+
   handleSubmit = (e) => {
     e.preventDefault();
     this.props.form.validateFieldsAndScroll((err, values) => {
@@ -66,6 +80,7 @@ export default class EditToolGroupForm extends React.Component {
 
   validateGroupName = (value, callback) => {
     if (value && value.indexOf('___') >= 0) {
+      // eslint-disable-next-line standard/no-callback-literal
       callback('You cannot use more than two underscores subsequently');
     } else {
       callback();
@@ -85,9 +100,7 @@ export default class EditToolGroupForm extends React.Component {
           {getFieldDecorator('id',
             {
               initialValue: `${this.props.toolGroup ? this.props.toolGroup.id : ''}`
-            })(
-            <Input disabled={true} />
-          )}
+            })(<Input disabled />)}
         </Form.Item>
       ));
     }
@@ -105,6 +118,7 @@ export default class EditToolGroupForm extends React.Component {
               },
               {
                 pattern: /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/,
+                // eslint-disable-next-line max-len
                 message: 'Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'
               },
               {
@@ -143,13 +157,43 @@ export default class EditToolGroupForm extends React.Component {
     this.setState({activeTab: key});
   };
 
+  isAdvancedUser = () => {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        roles = []
+      } = authenticatedUserInfo.value;
+      return roles.some(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  };
+
   render () {
-    const disableWritePermission = this.props.toolGroup &&
-      this.props.toolGroup.privateGroup &&
-      roleModel.isOwner(this.props.toolGroup) &&
-      this.props.authenticatedUserInfo.loaded &&
-      this.props.authenticatedUserInfo.value &&
-      !this.props.authenticatedUserInfo.value.admin;
+    const {
+      toolGroup,
+      authenticatedUserInfo
+    } = this.props;
+    const isPersonal = toolGroup &&
+      toolGroup.privateGroup &&
+      roleModel.isOwner(this.props.toolGroup);
+    const isAdmin = authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.value &&
+      authenticatedUserInfo.value.admin;
+    const isAdvancedUser = this.isAdvancedUser();
+    const restrictions = isPersonal && !isAdmin && !isAdvancedUser
+      ? this.permissionsRestrictions
+      : [];
+    const readOnlyRoles = restrictions.filter((r) => r.readonly).map((r) => r.role);
+    const defaultMask = restrictions.map((rule) => ({
+      role: rule.role,
+      mask: rule.defaultMask
+    }));
+    const enabledMask = restrictions.map((rule) => ({
+      role: rule.role,
+      mask: rule.enabledMask
+    }));
     const isNewToolGroup = this.props.toolGroup === undefined || this.props.toolGroup === null;
     const {resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
@@ -181,7 +225,7 @@ export default class EditToolGroupForm extends React.Component {
             : 'Edit group'
         }
         onCancel={this.props.onCancel}
-        footer={modalFooter}>
+        footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
           <Form className="edit-tool-group-form">
             <Tabs
@@ -192,33 +236,19 @@ export default class EditToolGroupForm extends React.Component {
                 {this.renderForm()}
               </Tabs.TabPane>
               {
-                this.props.toolGroup && this.props.toolGroup.id && roleModel.isOwner(this.props.toolGroup) &&
-                <Tabs.TabPane key="permissions" tab="Permissions">
-                  <PermissionsForm
-                    objectIdentifier={this.props.toolGroup.id}
-                    objectType="TOOL_GROUP"
-                    defaultMask={
-                      roleModel.buildPermissionsMask(
-                        0,
-                        0,
-                        0,
-                        disableWritePermission,
-                        0,
-                        0
-                      )
-                    }
-                    enabledMask={
-                      roleModel.buildPermissionsMask(
-                        1,
-                        1,
-                        !disableWritePermission,
-                        !disableWritePermission,
-                        1,
-                        1
-                      )
-                    }
-                  />
-                </Tabs.TabPane>
+                this.props.toolGroup &&
+                this.props.toolGroup.id &&
+                roleModel.isOwner(this.props.toolGroup) && (
+                  <Tabs.TabPane key="permissions" tab="Permissions">
+                    <PermissionsForm
+                      objectIdentifier={this.props.toolGroup.id}
+                      objectType="TOOL_GROUP"
+                      defaultMask={defaultMask}
+                      enabledMask={enabledMask}
+                      readOnlyRoles={readOnlyRoles}
+                    />
+                  </Tabs.TabPane>
+                )
               }
             </Tabs>
           </Form>

@@ -25,6 +25,7 @@ import fetchToolDefaultParameters from './fetch-tool-default-parameters';
 import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
+import {defaultSorter} from '../../../../../utils/sorting';
 
 export {RUN_CAPABILITIES};
 
@@ -61,9 +62,10 @@ const PLATFORM_SPECIFIC_CAPABILITIES = {
 };
 
 const CAPABILITIES_OS_FILTERS = {
-  [RUN_CAPABILITIES.systemD]: ['centos*'],
+  [RUN_CAPABILITIES.systemD]: ['centos*', 'rocky*'],
   [RUN_CAPABILITIES.dcv]: [
     'centos 7*',
+    'rocky*',
     'ubuntu 18.04',
     'ubuntu 20.04'
   ]
@@ -548,6 +550,7 @@ class RunCapabilities extends React.Component {
         className={className}
       >
         <Dropdown
+          disabled={disabled}
           overlay={(
             <div>
               <Menu
@@ -560,7 +563,7 @@ class RunCapabilities extends React.Component {
               </Menu>
             </div>
           )}
-          trigger={['click']}
+          trigger={[disabled ? undefined : 'click']}
         >
           <div
             tabIndex={0}
@@ -918,7 +921,7 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
     );
   const sorted = array => [
     ...(
-      new Set((array || []).sort().filter(o => wellKnownCapabilities.includes(o)))
+      new Set((array || []).sort(defaultSorter).filter(o => wellKnownCapabilities.includes(o)))
     )
   ];
   const sorted1 = sorted(capabilities1 || []);

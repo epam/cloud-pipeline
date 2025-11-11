@@ -23,13 +23,13 @@ export function getQuotaType (request) {
     };
   }
   const {
-    group,
+    billingGroup,
     user
   } = request.filters;
-  if (group && group.length === 1) {
+  if (billingGroup && billingGroup.length === 1) {
     return {
       type: QuotaTypes.billingCenter,
-      subject: group[0]
+      subject: billingGroup[0]
     };
   }
   if (user && user.length === 1) {
@@ -38,7 +38,7 @@ export function getQuotaType (request) {
       subject: user[0]
     };
   }
-  if ((user && user.length > 1) || (group && group.length > 1)) {
+  if ((user && user.length > 1) || (billingGroup && billingGroup.length > 1)) {
     return {type: undefined};
   }
   return {

@@ -60,6 +60,10 @@ function VivViewer(props) {
     mesh,
     onCellClick,
     overlayImages,
+    annotations,
+    selectedAnnotation,
+    onEditAnnotation,
+    onSelectAnnotation,
   } = props;
   const detailViewState = viewStatesProp?.find((v) => v.id === DETAIL_VIEW_ID);
   const baseViewState = useMemo(
@@ -91,7 +95,11 @@ function VivViewer(props) {
     onCellHover: onCellHovered,
     hoveredCell,
     onCellClick,
+    onEditAnnotation,
     overlayImages,
+    annotations,
+    selectedAnnotation,
+    onSelectAnnotation,
   });
   const layerConfig = {
     loader,

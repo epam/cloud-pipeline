@@ -81,7 +81,7 @@ public class ContextualNotificationRegistrationManager {
                 .map(list -> list.stream()
                         .filter(StringUtils::isNotBlank)
                         .distinct()
-                        .map(userManager::loadUserByNameOrId)
+                        .map(userManager::loadByNameOrId)
                         .map(PipelineUser::getId)
                         .collect(Collectors.toCollection(ArrayList<Long>::new)))
                 .orElseGet(ArrayList::new);
@@ -91,7 +91,7 @@ public class ContextualNotificationRegistrationManager {
 
     private Long getOwnerId(final PipelineRun run) {
         return Optional.of(run.getOwner())
-                .map(userManager::loadUserByNameOrId)
+                .map(userManager::loadByNameOrId)
                 .map(PipelineUser::getId)
                 .orElseThrow(() -> new UnsupportedOperationException(messageHelper.getMessage(
                         MessageConstants.ERROR_USER_NOT_AUTHORIZED)));

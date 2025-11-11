@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.metadata;
 
 import com.amazonaws.util.StringInputStream;
+import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
@@ -25,7 +26,6 @@ import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
-import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_SET;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
@@ -89,6 +90,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
     private static final String KEY = "key";
     private static final String PROJECT_ID = "projectId";
     private static final String ENTITY_CLASS = "entityClass";
+    private static final String ENTITY_IDS = "entityIds";
     private static final String FILE_FORMAT = "fileFormat";
 
     private final MetadataClass metadataClass = MetadataCreatorUtils.getMetadataClass();
@@ -417,15 +419,17 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldDownloadEntityAsFile() throws Exception {
         final InputStream inputStream = new StringInputStream(TEST_STRING);
-        doReturn(inputStream).when(mockMetadataEntityApiService).getMetadataEntityFile(ID, TEST_STRING, TEST_STRING);
+        doReturn(inputStream).when(mockMetadataEntityApiService)
+                .getMetadataEntityFile(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING);
 
         final MvcResult mvcResult = performRequest(get(METADATA_ENTITY_DOWNLOAD_URL)
                         .params(multiValueMapOf(FOLDER_ID, ID,
                                                 ENTITY_CLASS, TEST_STRING,
+                                                ENTITY_IDS, String.valueOf(ID),
                                                 FILE_FORMAT, TEST_STRING)),
                                                 MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
-        verify(mockMetadataEntityApiService).getMetadataEntityFile(ID, TEST_STRING, TEST_STRING);
+        verify(mockMetadataEntityApiService).getMetadataEntityFile(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING);
         assertFileResponse(mvcResult, TEST_STRING, TEST_STRING.getBytes());
     }
 

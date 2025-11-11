@@ -31,6 +31,8 @@ import colors, {
   textColor
 } from './charts/utils/colors';
 import styles from './hot-cluster-usage.css';
+import PoolsHardwareChart from './charts/pools-hardware-chart';
+import {HARDWARE_MAPPING} from './charts/utils/hardware-chart-utils';
 
 @inject('themes')
 @inject((stores, params) => {
@@ -77,6 +79,92 @@ class HotClusterUsage extends React.Component {
         .filter(Boolean);
     }
     return colors;
+  }
+
+  @computed
+  get pendingBarColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-background-color'];
+    }
+    return getColor(1);
+  }
+
+  @computed
+  get totalBarColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@color-pink'];
+    }
+    return getColor(2);
+  }
+
+  @computed
+  get runsColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@primary-color'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
+  get cpuColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@color-green'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
+  get ramColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@color-blue-dimmed'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
+  }
+
+  @computed
+  get gpuColors () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return {
+        active: themes.currentThemeConfiguration['@color-violet'],
+        pending: this.pendingBarColor,
+        total: this.totalBarColor
+      };
+    }
+    return {
+      active: getColor(0),
+      pending: this.pendingBarColor,
+      total: this.totalBarColor
+    };
   }
 
   @computed
@@ -152,7 +240,8 @@ class HotClusterUsage extends React.Component {
         state.pools = state.data.map(item => ({
           ...(item.pool || {}),
           id: Number(item.poolId),
-          name: item.poolName
+          name: item.poolName,
+          resourceSharingPool: item.resourceSharingPool || false
         }));
         if (!state.data || !state.pools.find(o => o.id === currentPoolId)) {
           state.currentPoolId = (state.pools[0] || {}).id;
@@ -219,6 +308,10 @@ class HotClusterUsage extends React.Component {
       error,
       pending
     } = this.state;
+    const currentPoolData = (data || [])
+      .find(({poolId}) => poolId === currentPoolId);
+    const {poolName, resourceSharingPool = false} = currentPoolData || {};
+    const onlyResourceSharingPools = !(data || []).some((p) => !p.resourceSharingPool);
     return (
       <div>
         <ControlRow
@@ -241,35 +334,136 @@ class HotClusterUsage extends React.Component {
         {
           data && (
             <div className={styles.chartsContainer}>
-              <OverallPoolChart
-                rawData={data}
-                onClick={this.onCurrentPoolChange}
-                currentPoolId={currentPoolId}
-                title="All hot node pools usage, %"
-                units="%"
-                colors={this.colors}
-                onToggleDataset={this.toggleHiddenPools}
-                hiddenDatasets={hiddenPools}
-                backgroundColor={this.backgroundColor}
-                lineColor={this.lineColor}
-                textColor={this.textColor}
-                period={period}
-                periodType={periodType}
-              />
-              <PoolChart
-                rawData={data}
-                currentPoolId={currentPoolId}
-                onCurrentPoolChange={this.onCurrentPoolChange}
-                pools={pools}
-                displayEmptyTitleRow
-                units=" active nodes"
-                colorOptions={this.clusterChartColors}
-                backgroundColor={this.backgroundColor}
-                lineColor={this.lineColor}
-                textColor={this.textColor}
-                period={period}
-                periodType={periodType}
-              />
+              {!onlyResourceSharingPools && (
+                <OverallPoolChart
+                  rawData={data}
+                  onClick={this.onCurrentPoolChange}
+                  currentPoolId={currentPoolId}
+                  title="All hot node pools usage, %"
+                  units="%"
+                  colors={this.colors}
+                  onToggleDataset={this.toggleHiddenPools}
+                  hiddenDatasets={hiddenPools}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  textColor={this.textColor}
+                  period={period}
+                  periodType={periodType}
+                  containerStyle={{width: 'calc(50% - 3px)'}}
+                />
+              )}
+              {!onlyResourceSharingPools && (
+                <PoolChart
+                  rawData={data}
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  displayEmptyTitleRow
+                  units=" active nodes"
+                  colorOptions={this.clusterChartColors}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  textColor={this.textColor}
+                  period={period}
+                  periodType={periodType}
+                  containerStyle={{width: 'calc(50% - 3px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.runs,
+                    HARDWARE_MAPPING.runsPending
+                  ]}
+                  title={
+                    !onlyResourceSharingPools && poolName
+                      ? `${poolName} - jobs status`
+                      : 'Jobs status'
+                  }
+                  units=""
+                  colors={this.runsColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.gpu,
+                    HARDWARE_MAPPING.gpuPending,
+                    HARDWARE_MAPPING.gpuLimit
+                  ]}
+                  title={`${poolName} - GPU status`}
+                  units=""
+                  colors={this.gpuColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.cpu,
+                    HARDWARE_MAPPING.cpuPending,
+                    HARDWARE_MAPPING.cpuLimit
+                  ]}
+                  title={`${poolName} - CPU status`}
+                  units=""
+                  colors={this.cpuColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
+              {resourceSharingPool && (
+                <PoolsHardwareChart
+                  currentPoolId={currentPoolId}
+                  onCurrentPoolChange={this.onCurrentPoolChange}
+                  pools={pools}
+                  showPoolSelector={onlyResourceSharingPools}
+                  rawData={currentPoolData}
+                  mappings={[
+                    HARDWARE_MAPPING.ram,
+                    HARDWARE_MAPPING.ramPending,
+                    HARDWARE_MAPPING.ramLimit
+                  ]}
+                  title={`${poolName} - memory status`}
+                  units="GiB"
+                  colors={this.ramColors}
+                  textColor={this.textColor}
+                  backgroundColor={this.backgroundColor}
+                  lineColor={this.lineColor}
+                  period={period}
+                  periodType={periodType}
+                  style={{width: 'calc(100% - 6px)'}}
+                />
+              )}
             </div>
           )
         }

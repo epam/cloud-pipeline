@@ -219,7 +219,14 @@ ReactDOM.render(
 
 const PAGE_SIZE = 5;
 
-async function fetchActiveRuns (dockerImages) {
+async function fetchActiveRuns (dockerImages = []) {
+  if (!dockerImages.length) {
+    return {
+      runs: [],
+      total: 0,
+      error: null
+    };
+  }
   const request = new PipelineRunSingleFilter({
     page: 1,
     pageSize: PAGE_SIZE,

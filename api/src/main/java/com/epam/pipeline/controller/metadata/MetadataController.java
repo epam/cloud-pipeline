@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -102,6 +103,20 @@ public class MetadataController extends AbstractRestController {
             })
     public Result<List<MetadataEntry>> loadMetadataItems(@RequestBody List<EntityVO> entities) {
         return Result.success(metadataApiService.listMetadataItems(entities));
+    }
+
+    @RequestMapping(value = "/metadata/{key}/load", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns a list of metadata with only specific key, for entities specified by id and class.",
+            notes = "Returns a list of metadata with only specific key, for entities  specified by id and class.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<MetadataEntry>> loadMetadataItems(@PathVariable(value = "key") final String key,
+                                                         @RequestBody final List<EntityVO> entities) {
+        return Result.success(metadataApiService.listMetadataItemsByKey(key, entities));
     }
 
     @RequestMapping(value = "/metadata/keys", method = RequestMethod.GET)

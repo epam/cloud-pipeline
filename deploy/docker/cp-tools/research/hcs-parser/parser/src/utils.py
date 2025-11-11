@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import errno
+import json
 import os
 import datetime
+import time
 import tempfile
 import time
 import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
+
+from .hcs_entity import HcsRootType
 
 
 def get_int_run_param(env_var_name, default_value):
@@ -60,6 +65,25 @@ class HcsFileLogger:
         log_run_info('[{}] {}'.format(self.file_path, message), status)
 
 
+class HcsOSUtils:
+
+    @staticmethod
+    def mkdir(path):
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                return False
+        return True
+
+    @staticmethod
+    def write_dict_to_file(file_path, dictionary):
+        HcsOSUtils.mkdir(os.path.dirname(file_path))
+        with open(file_path, 'w') as output_file:
+            output_file.write(json.dumps(dictionary, indent=4))
+
 class HcsParsingUtils:
 
     @staticmethod
@@ -88,29 +112,34 @@ class HcsParsingUtils:
         return plate
 
     @staticmethod
-    def build_preview_file_path(hcs_root_folder_path, with_id=False):
-        file_name = HcsParsingUtils.build_preview_file_name(hcs_root_folder_path)
+    def build_preview_file_path(hcs_root_path, hcs_root_type, with_id=False):
+        file_name = HcsParsingUtils.build_preview_file_name(hcs_root_path)
         if with_id:
-            file_name = file_name + '.' + hcs_root_folder_path.split('/')[-1]
+            if hcs_root_type == HcsRootType.CZI:
+                file_name = file_name + '.' + hcs_root_path.split('/')[-2]
+            else:
+                file_name = file_name + '.' + hcs_root_path.split('/')[-1]
         preview_file_basename = HcsParsingUtils.replace_special_chars(file_name) + '.hcs'
         parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
             if HCS_PROCESSING_OUTPUT_FOLDER is not None \
-            else os.path.dirname(hcs_root_folder_path)
+            else os.path.dirname(hcs_root_path)
         return os.path.join(parent_folder, preview_file_basename)
 
     @staticmethod
     def build_preview_file_name(hcs_root_folder_path):
-        index_file_abs_path = os.path.join(HcsParsingUtils.get_file_without_extension(hcs_root_folder_path),
-                                           HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
-        hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
-        hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         file_name = HcsParsingUtils.get_file_without_extension(hcs_root_folder_path)
-        name_xml_element = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix) \
-            .find(hcs_schema_prefix + 'Name')
-        if name_xml_element is not None:
-            file_pretty_name = name_xml_element.text
-            if file_pretty_name is not None:
-                file_name = file_pretty_name
+        index_file_abs_path = os.path.join(file_name, HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+        if os.path.exists(index_file_abs_path):
+            hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
+            hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
+            name_xml_element = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix) \
+                .find(hcs_schema_prefix + 'Name')
+            if name_xml_element is not None:
+                file_pretty_name = name_xml_element.text
+                if file_pretty_name is not None:
+                    file_name = file_pretty_name
+        else:
+            file_name = os.path.basename(file_name)
         return file_name
 
     @staticmethod

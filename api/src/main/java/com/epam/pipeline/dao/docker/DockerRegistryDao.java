@@ -30,6 +30,8 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.ToolOSVersion;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -113,20 +115,20 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
     public List<DockerRegistry> listAllDockerRegistriesWithCerts() {
         return new ArrayList<>(
                 getJdbcTemplate().query(loadDockerRegistriesWithCertsQuery,
-                        RepositoryProperty.getDockerRegistryFullExtractor())
+                        RepositoryProperty.getDockerRegistryFullExtractor(false))
         );
     }
 
     public List<DockerRegistry> loadAllRegistriesContent() {
         return new ArrayList<>(
                 getJdbcTemplate().query(loadDockerRegistriesWithContentQuery,
-                        RepositoryProperty.getDockerRegistryFullExtractor())
+                        RepositoryProperty.getDockerRegistryFullExtractor(true))
         );
     }
 
     public DockerRegistry loadDockerRegistryTree(Long id) {
-        Collection<DockerRegistry> repositories = getJdbcTemplate()
-                .query(loadDockerRegistryWithContentQuery, RepositoryProperty.getDockerRegistryFullExtractor(), id);
+        Collection<DockerRegistry> repositories = getJdbcTemplate().query(
+                loadDockerRegistryWithContentQuery, RepositoryProperty.getDockerRegistryFullExtractor(false), id);
         return repositories.isEmpty() ? null : repositories.iterator().next();
     }
 
@@ -160,7 +162,9 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         GROUP_ID,
         GROUP_NAME,
         GROUP_DESCRIPTION,
-        GROUP_OWNER;
+        GROUP_OWNER,
+        TOOL_OS_NAME,
+        TOOL_OS_VERSION;
 
         static MapSqlParameterSource getParameters(DockerRegistry repository) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -207,7 +211,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         }
 
         //TODO: rewrite to load only docker registries, leave tools and groups for manager layers
-        static ResultSetExtractor<Collection<DockerRegistry>> getDockerRegistryFullExtractor() {
+        static ResultSetExtractor<Collection<DockerRegistry>> getDockerRegistryFullExtractor(final boolean isLoadOs) {
             return rs -> {
                 Map<Long, DockerRegistry> registries = new HashMap<>();
                 Map<Long, ToolGroup> groups = new HashMap<>();
@@ -234,6 +238,9 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
                         if (!rs.wasNull()) {
                             Tool tool = new Tool();
                             initTool(rs, registryId, registry, toolId, tool);
+                            if (isLoadOs) {
+                                initToolOsVersion(rs, tool);
+                            }
                             tool.setOwner(rs.getString(TOOL_OWNER.name()));
                             group.getTools().add(tool);
                         }
@@ -280,6 +287,14 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             }
 
             tool.setDefaultCommand(rs.getString(TOOL_DEFAULT_COMMAND.name()));
+        }
+
+        private static void initToolOsVersion(final ResultSet rs, final Tool tool) throws SQLException {
+            final String osName = rs.getString(TOOL_OS_NAME.name());
+            final String osVersion = rs.getString(TOOL_OS_VERSION.name());
+            if (StringUtils.isNotBlank(osName) || StringUtils.isNotBlank(osVersion)) {
+                tool.setToolOSVersion(ToolOSVersion.builder().distribution(osName).version(osVersion).build());
+            }
         }
 
         private static DockerRegistry initDockerRegistry(ResultSet rs, Long registryId)

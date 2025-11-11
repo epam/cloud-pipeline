@@ -16,36 +16,22 @@
 
 package com.epam.pipeline.manager.cloud.aws;
 
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGenerator<S3bucketDataStorage> {
+public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredentialsGenerator<S3bucketDataStorage> {
 
     private static final String GET_OBJECT_ACTION = "s3:GetObject";
     private static final String GET_OBJECT_ACL_ACTION = "s3:GetObjectAcl";
@@ -64,18 +50,15 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
     private static final String DELETE_OBJECT_VERSION_TAGGING_ACTION = "s3:DeleteObjectVersionTagging";
     private static final String PUT_OBJECT_VERSION_TAGGING_ACTION = "s3:PutObjectVersionTagging";
     private static final String GET_OBJECT_VERSION_TAGGING_ACTION = "s3:GetObjectVersionTagging";
-    private static final String KMS_DECRYPT_ACTION = "kms:Decrypt";
-    private static final String KMS_ENCRYPT_ACTION = "kms:Encrypt";
-    private static final String KMS_REENCRYPT_ACTION = "kms:ReEncrypt*";
-    private static final String KMS_GENERATE_DATA_KEY_ACTION = "kms:GenerateDataKey*";
-    private static final String KMS_DESCRIBE_KEY_ACTION = "kms:DescribeKey";
+    private static final String S3_CONDITION_PREFIX = "s3:prefix";
     private static final String ARN_AWS_S3_PREFIX = "arn:aws:s3:::";
-    private static final String ACTION = "Action";
-    private static final String RESOURCE = "Resource";
+    private static final String ALL_PATHS = "/*";
 
-    private final CloudRegionManager cloudRegionManager;
-    private final PreferenceManager preferenceManager;
-    private final MessageHelper messageHelper;
+    public S3TemporaryCredentialsGenerator(final CloudRegionManager cloudRegionManager,
+                                           final PreferenceManager preferenceManager,
+                                           final MessageHelper messageHelper) {
+        super(cloudRegionManager, preferenceManager, messageHelper);
+    }
 
     @Override
     public DataStorageType getStorageType() {
@@ -83,48 +66,7 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
     }
 
     @Override
-    public TemporaryCredentials generate(final List<DataStorageAction> actions,
-                                         final List<S3bucketDataStorage> storages) {
-        final Integer duration = preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
-        final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions = storages.stream()
-                .map(storage -> new ImmutablePair<>(storage, cloudRegionManager.getAwsRegion(storage)))
-                .collect(Collectors.toList());
-
-        final String role = buildRole(storagesWithRegions);
-        final String profile = buildProfile(storagesWithRegions);
-        final String policy = createPolicyWithPermissions(actions, buildKmsArns(storagesWithRegions));
-        final String regionCode = buildRegion(storagesWithRegions);
-
-        return AWSUtils.generate(duration, policy, role, profile, regionCode);
-    }
-
-    @Override
-    public AwsRegion getRegion(final S3bucketDataStorage dataStorage) {
-        return cloudRegionManager.getAwsRegion(dataStorage);
-    }
-
-    private String createPolicyWithPermissions(final List<DataStorageAction> actions, final List<String> kmsArns) {
-        final ObjectNode resultPolicy = JsonNodeFactory.instance.objectNode();
-        resultPolicy.put("Version", "2012-10-17");
-        final ArrayNode statements = resultPolicy.putArray("Statement");
-        ListUtils.emptyIfNull(kmsArns)
-                .forEach(kmsArn -> addKmsActionToStatement(kmsArn, statements));
-        ListUtils.emptyIfNull(actions)
-                .forEach(action -> addActionsToStatement(action, statements));
-        return resultPolicy.toString();
-    }
-
-    private void addActionsToStatement(final DataStorageAction action, final ArrayNode statements) {
-        if (action.isList() || action.isRead() || action.isWrite()) {
-            addListingPermissions(action, statements);
-        }
-        if (action.isRead() || action.isWrite()) {
-            addActionToStatement(action, statements);
-        }
-    }
-
-    private void addListingPermissions(final DataStorageAction action, final ArrayNode statements) {
+    void addListingPermissions(final DataStorageAction action, final ArrayNode statements) {
         final ObjectNode statement = getStatement();
         final ArrayNode actions = statement.putArray(ACTION);
         actions.add(LIST_OBJECTS_ACTION);
@@ -133,10 +75,17 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
         resource.add(buildS3Arn(action, true));
+
+        if (StringUtils.isNotBlank(action.getItemPath())) {
+            // listing shall be restricted by specified path
+            statement.set(CONDITION, buildPathConditionNode(action));
+        }
+
         statements.add(statement);
     }
 
-    private void addActionToStatement(final DataStorageAction action, final ArrayNode statements) {
+    @Override
+    void addActionToStatement(final DataStorageAction action, final ArrayNode statements) {
         final ObjectNode statement = getStatement();
         final ArrayNode actions = statement.putArray(ACTION);
         if (action.isRead()) {
@@ -167,69 +116,34 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
         statements.add(statement);
     }
 
-    private ObjectNode getStatement() {
-        final ObjectNode statement = JsonNodeFactory.instance.objectNode();
-        statement.put("Effect", "Allow");
-        return statement;
-    }
-
     private String buildS3Arn(final DataStorageAction action, final boolean list) {
-        return list ? ARN_AWS_S3_PREFIX + ProviderUtils.withoutTrailingDelimiter(action.getBucketName())
-                : ARN_AWS_S3_PREFIX + ProviderUtils.withoutTrailingDelimiter(action.getPath()) + "/*";
+        return ARN_AWS_S3_PREFIX + (
+                list ? ProviderUtils.withoutTrailingDelimiter(action.getBucketName()) : buildPathForS3Arn(action));
     }
 
-    private void addKmsActionToStatement(final String kmsArn, final ArrayNode statements) {
-        final ObjectNode statement = getStatement();
-        final ArrayNode actions = statement.putArray(ACTION);
-        actions.add(KMS_DECRYPT_ACTION);
-        actions.add(KMS_ENCRYPT_ACTION);
-        actions.add(KMS_REENCRYPT_ACTION);
-        actions.add(KMS_GENERATE_DATA_KEY_ACTION);
-        actions.add(KMS_DESCRIBE_KEY_ACTION);
-        statement.put(RESOURCE, kmsArn);
-        statements.add(statement);
-    }
-
-    private List<String> buildKmsArns(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
-        return storagesWithRegions.stream()
-                .map(pair -> AWSUtils.getKeyArnValue(pair.getLeft(), pair.getRight()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    private String buildRole(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
-        final List<String> roles = storagesWithRegions.stream()
-                .map(pair -> AWSUtils.getRoleValue(pair.getLeft(), pair.getRight()))
-                .distinct()
-                .collect(Collectors.toList());
-        Assert.state(roles.size() == 1,
-                messageHelper.getMessage(MessageConstants.ERROR_AWS_S3_ROLE_UNIQUENESS));
-        return roles.get(0);
-    }
-
-    private String buildProfile(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
-        final List<String> profiles = storagesWithRegions.stream()
-                .map(Pair::getRight)
-                .map(AwsRegion::getProfile)
-                .distinct()
-                .collect(Collectors.toList());
-        Assert.state(profiles.size() == 1,
-                messageHelper.getMessage(MessageConstants.ERROR_AWS_PROFILE_UNIQUENESS));
-        return profiles.get(0);
-    }
-
-    private String buildRegion(final List<Pair<S3bucketDataStorage, AwsRegion>> storagesWithRegions) {
-        if (CollectionUtils.isEmpty(storagesWithRegions)) {
-            return null;
+    private String buildPathForS3Arn(final DataStorageAction action) {
+        final String rootPath = ProviderUtils.withoutTrailingDelimiter(action.getPath());
+        if (StringUtils.isBlank(action.getItemPath())) {
+            return rootPath + ALL_PATHS;
         }
-        final Pair<S3bucketDataStorage, AwsRegion> firstStorageWithRegion = storagesWithRegions.get(0);
-        final boolean sameRegion = storagesWithRegions.stream()
-                .allMatch(storageWithRegion -> assertRegion(firstStorageWithRegion, storageWithRegion));
-        return sameRegion ? firstStorageWithRegion.getRight().getRegionCode() : null;
+        final String itemPath = rootPath + ProviderUtils.withLeadingDelimiter(action.getItemPath());
+        return DataStorageItemType.File.equals(action.getItemType())
+                ? itemPath
+                : ProviderUtils.withoutTrailingDelimiter(itemPath) + ALL_PATHS;
     }
 
-    private boolean assertRegion(final Pair<S3bucketDataStorage, AwsRegion> expected,
-                                 final Pair<S3bucketDataStorage, AwsRegion> actual) {
-        return Objects.equals(expected.getRight().getId(), actual.getRight().getId());
+    private ObjectNode buildPathConditionNode(final DataStorageAction action) {
+        final String itemPath = ProviderUtils.withoutLeadingDelimiter(action.getItemPath());
+        final String prefix = DataStorageItemType.File.equals(action.getItemType())
+                ? itemPath
+                : ProviderUtils.withoutTrailingDelimiter(itemPath) + ALL_PATHS;
+
+        final ObjectNode stringLike = JsonNodeFactory.instance.objectNode();
+        stringLike.put(S3_CONDITION_PREFIX, prefix);
+
+        final ObjectNode condition = JsonNodeFactory.instance.objectNode();
+        condition.set(STRING_LIKE, stringLike);
+
+        return condition;
     }
 }

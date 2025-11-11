@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,22 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.ROOT_ADDRESS;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 
 public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navigation {
 
@@ -54,6 +56,11 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     private final String tempAlias = "epmcmbi-nfs-test-temp-alias-" + Utils.randomSuffix();
     private final String NfsMountNameSpaces = "nfs mount name with spaces";
     private final String folderNameWithSpaces = "epmcmbi test folder with spaces" + Utils.randomSuffix();
+
+    @BeforeMethod
+    public void reopenApplication() {
+        open(ROOT_ADDRESS);
+    }
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -125,6 +132,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .createFolder(folder)
+                .validateElementIsPresent(folder)
                 .uploadFile(file)
                 .cd(folder)
                 .createFolder(subfolder)
@@ -152,8 +160,8 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     public void createFolderInDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
                 .selectStorage(storage)
-                .createFolder(folder)
-                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
+                .createFolderWithError(folder,
+                        String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
         clickCancelButtonIfItIsDisplayed();
         refresh();
     }
@@ -167,6 +175,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .delete()
                 .validateElementNotPresent(folder)
                 .createFolder(folder)
+                .validateElementIsPresent(folder)
                 .cd(folder)
                 .createFolder(subfolder);
     }
@@ -271,8 +280,10 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .uploadFile(newFile2)
                 .selectPage()
                 .validateAllFilesAreSelected()
+                .ensureVisible(SELECTION_ACTIONS)
+                .click(SELECTION_ACTIONS)
                 .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
-                .ensure(SELECT_ALL, not(visible));
+                .ensure(SELECT_ALL, disabled);
     }
 
     @Test(priority = 14)

@@ -64,6 +64,8 @@ public final class UserCreatorUtils {
             new TypeReference<Result<List<CustomControl>>>() {};
     public static final TypeReference<Result<List<GroupStatus>>> GROUP_STATUS_LIST_INSTANCE_TYPE =
             new TypeReference<Result<List<GroupStatus>>>() {};
+    public static final String ADMIN = "ADMIN";
+    public static final String ROLE_OWNER = "ROLE_OWNER";
 
     private UserCreatorUtils() {
 
@@ -73,6 +75,7 @@ public final class UserCreatorUtils {
         final PipelineUser pipelineUser = new PipelineUser();
         pipelineUser.setId(id);
         pipelineUser.setUserName(name);
+        pipelineUser.setOwner(ADMIN);
         return pipelineUser;
     }
 
@@ -93,6 +96,7 @@ public final class UserCreatorUtils {
         pipelineUser.setRoles(Collections.singletonList(getRole()));
         pipelineUser.setGroups(TEST_STRING_LIST);
         pipelineUser.setAttributes(TEST_STRING_MAP);
+        pipelineUser.setOwner(ADMIN);
         return pipelineUser;
     }
 
@@ -128,6 +132,12 @@ public final class UserCreatorUtils {
 
     public static Role getRole(final String name) {
         return getRole(name, null);
+    }
+
+    public static Role getRole(final String name, final Long id, final String owner) {
+        final Role role = getRole(name, id);
+        role.setOwner(owner);
+        return role;
     }
 
     public static Role getRole(final String name, final Long id) {

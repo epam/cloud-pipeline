@@ -26,4 +26,5 @@ export default {
   setLensEnabled: 'set-lens-enabled',
   setGlobalPosition: 'set-global-position',
   setLockChannels: 'set-lock-channels',
+  set3D: 'set-3D',
 };

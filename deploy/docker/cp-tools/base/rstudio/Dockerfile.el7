@@ -15,11 +15,28 @@
 ARG BASE_IMAGE=library/centos:7.7.1908
 FROM ${BASE_IMAGE}
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/http:/https:/g' /etc/yum.repos.d/CentOS-*.repo && \
+    echo 'sslverify=0' >> /etc/yum.conf
+
 RUN yum install -y \
-            centos-release-scl \
-            epel-release
+            centos-release-scl
+
+RUN sed -i 's/^# baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/http:/https:/g' /etc/yum.repos.d/CentOS-SCLo*.repo
+
+RUN curl -sk "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/centos/7/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo
+
 RUN yum install -y \
             cmake \
+            git \
             devtoolset-7 \
             java-1.8.0-openjdk-devel \
             libcurl-openssl-devel \
@@ -42,18 +59,6 @@ RUN wget -q $R_PACKAGE_URL -O rpackage.rpm && \
         ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
         ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
 
-RUN wget -q https://github.com/libgit2/libgit2/archive/v0.28.1.tar.gz && \
-         tar xzf v0.28.1.tar.gz && \
-         cd libgit2-0.28.1/ && \
-         cmake . && \
-         make && make install && cd .. && \
-         ldconfig && \
-         pip install 'pygit2==0.28.1'
-RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.5.2 && \
-        unzip 0.5.2 && \
-        cd gitfs-0.5.2 && \
-        python setup.py install && cd .. && \
-        mkdir -p /var/lib/gitfs
 SHELL [ "/usr/bin/scl", "enable", "devtoolset-7"]
 RUN R -e "install.packages(c('sparklyr', 'tidyverse', 'magrittr'), repos='http://cran.rstudio.com/')"
 

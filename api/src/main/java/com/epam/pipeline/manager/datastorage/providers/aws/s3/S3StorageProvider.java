@@ -27,6 +27,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -46,6 +47,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
@@ -200,15 +202,17 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
-            Boolean showVersion, Integer pageSize, String marker) {
-        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
+    public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null, permissionsContainer);
     }
 
     @Override
     public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing,
+                                       final StorageFolderListPermissionsContainer permissionsContainer) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         final Set<String> activeLinkingMasks = resolveFolderPathListingMasks(dataStorage, path);
         return getS3Helper(dataStorage)
@@ -216,7 +220,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                         ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
                         ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
                         Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null),
-                        restoredListing);
+                        restoredListing, permissionsContainer);
     }
 
     @Override
@@ -233,16 +237,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
+        return getS3HelperForSignedUrl(dataStorage, version, false).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
+        return getS3HelperForSignedUrl(dataStorage, null, true).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
     }
 
@@ -447,7 +449,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (StringUtils.isNotBlank(region.getIamRole())) {
             return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, region.getIamRole());
         }
-        return new RegionAwareS3Helper(s3Events, messageHelper, region);
+        return new RegionAwareS3Helper(s3Events, messageHelper, region, getAwsCredentials(region));
     }
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
@@ -464,6 +466,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
+    }
+
+    private AwsRegionCredentials getAwsCredentials(final AwsRegion region) {
+        return cloudRegionManager.loadCredentials(region);
+    }
+
+    private S3Helper getS3HelperForSignedUrl(final S3bucketDataStorage dataStorage,
+                                             final String version,
+                                             final boolean write) {
+        final AwsRegion awsRegion = getAwsRegion(dataStorage);
+        if (StringUtils.isBlank(awsRegion.getS3Endpoint())) {
+            final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, write);
+            return getS3Helper(credentials, awsRegion);
+        }
+        return getS3Helper(dataStorage);
     }
 
     private TemporaryCredentials getStsCredentials(final S3bucketDataStorage dataStorage,

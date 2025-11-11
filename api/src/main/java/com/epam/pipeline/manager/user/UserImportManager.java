@@ -88,7 +88,7 @@ public class UserImportManager {
             return null;
         }
         if (Objects.isNull(loadedUser)) {
-            final PipelineUser user = userManager.createUser(userName, Collections.emptyList(), Collections.emptyList(),
+            final PipelineUser user = userManager.create(userName, Collections.emptyList(), Collections.emptyList(),
                     pipelineUser.getAttributes(), null);
             events.info(messageHelper.getMessage(MessageConstants.EVENT_USER_CREATED, userName));
             return user;
@@ -106,7 +106,7 @@ public class UserImportManager {
             events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_CREATION_NOT_ALLOWED, role.getName()));
             return null;
         }
-        final Role createdRole = roleManager.createRole(role.getName(), role.isPredefined(), role.isUserDefault(),
+        final Role createdRole = roleManager.create(role.getName(), role.isPredefined(), role.isUserDefault(),
                 role.getDefaultStorageId());
         events.info(messageHelper.getMessage(MessageConstants.EVENT_ROLE_CREATED, role.getName()));
         return createdRole;

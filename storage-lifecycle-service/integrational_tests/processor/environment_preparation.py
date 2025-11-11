@@ -66,7 +66,7 @@ class AWSStorageTestCasePreparator(StorageTestCasePreparator):
             CreateBucketConfiguration={'LocationConstraint': self.aws_region})
         for file in storage.files:
             self.aws_s3_client.put_object(
-                Body=file_utils.generate_object_content(128*1024),
+                Body=file_utils.generate_object_content(file.size),
                 Bucket=storage.storage,
                 Key=file.path
             )

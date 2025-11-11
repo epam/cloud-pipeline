@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-dav
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-dav: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-dav: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-dav: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-dav
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:dav-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /var/log/dav
+              subPath: dav/logs
+              name: cp-system
+            - name: cp-region-creds
+              mountPath: "/root/.cloud/regioncreds"
+              readOnly: true
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 600
+            periodSeconds: 300
+            failureThreshold: 4
+          readinessProbe:
+            httpGet:
+              path: /${CP_DAV_URL_PATH}
+              port: ${CP_DAV_INTERNAL_PORT}
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-region-creds
+          secret:
+            secretName: cp-region-creds-secret
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

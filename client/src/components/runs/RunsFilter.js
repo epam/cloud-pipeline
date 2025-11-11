@@ -227,10 +227,14 @@ class RunsFilter extends React.Component {
         autocomplete.hovered = index;
         this.setState({autocomplete});
       };
+      const highlightedKey = isNaN(this.state.autocomplete.hovered)
+        ? undefined
+        : `${this.state.autocomplete.hovered}`;
       return (
         <Menu
           onClick={onClick}
           className={classNames(styles.autocompleteMenu, 'cp-runs-autocomplete-menu')}
+          selectedKeys={[highlightedKey]}
         >
           {this.state.autocomplete.filter.map((f, index) => {
             let fieldDescription;
@@ -432,7 +436,8 @@ class RunsFilter extends React.Component {
                     onEdit={this.onEdit}
                     onEnter={this.onEnter}
                     onUpKeyPressed={this.onAutocompleteUp}
-                    onDownKeyPressed={this.onAutocompleteDown} />
+                    onDownKeyPressed={this.onAutocompleteDown}
+                  />
                   {this.renderAutocomplete()}
                 </td>
                 {this.renderSavedFilters()}

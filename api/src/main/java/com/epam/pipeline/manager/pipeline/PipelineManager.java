@@ -22,6 +22,7 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -30,8 +31,8 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineType;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -39,12 +40,15 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.utils.GitUtils;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +70,7 @@ import java.util.stream.Collectors;
 @AclSync
 public class PipelineManager implements SecuredEntityManager {
 
+    public static final String FROM_URLS_ONLY_PATTERN = "%s repository creation supported from urls only";
     @Value("${templates.default.template}")
     private String defaultTemplate;
 
@@ -102,6 +107,9 @@ public class PipelineManager implements SecuredEntityManager {
     @Autowired
     private PipelineRepositoryService pipelineRepositoryService;
 
+    @Autowired
+    private PreferenceManager preferenceManager;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
 
     public Pipeline create(final PipelineVO pipelineVO) throws GitClientException {
@@ -114,8 +122,8 @@ public class PipelineManager implements SecuredEntityManager {
             pipelineVO.setRepositoryType(RepositoryType.GITLAB);
         }
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
-            Assert.isTrue(RepositoryType.BITBUCKET != pipelineVO.getRepositoryType(),
-                    "Bitbucket repository creation supported from urls only");
+            Assert.isTrue(RepositoryType.GITLAB.equals(pipelineVO.getRepositoryType()),
+                    String.format(FROM_URLS_ONLY_PATTERN, pipelineVO.getRepositoryType()));
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
             final GitProject project = createGitRepository(pipelineVO);
@@ -129,6 +137,9 @@ public class PipelineManager implements SecuredEntityManager {
             checkRepositoryVO.setBranch(pipelineVO.getBranch());
             checkRepositoryVO = check(checkRepositoryVO);
             if (!checkRepositoryVO.isRepositoryExists()) {
+                Assert.state(!RepositoryType.AZURE_DEVOPS.equals(pipelineVO.getRepositoryType()),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_CREATION_NOT_SUPPORTED,
+                                pipelineVO.getRepositoryType().name()));
                 GitProject project = pipelineRepositoryService.createGitRepositoryWithRepoUrl(pipelineVO);
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {
@@ -186,6 +197,7 @@ public class PipelineManager implements SecuredEntityManager {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVOName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVOName));
         Pipeline dbPipeline = load(pipelineVO.getId());
+        String previousName = dbPipeline.getName();
         final String currentProjectPath = dbPipeline.getRepository();
         final String currentProjectName = GitUtils.convertPipeNameToProject(dbPipeline.getName());
         final String newProjectName = GitUtils.convertPipeNameToProject(pipelineVOName);
@@ -208,10 +220,10 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setDocsPath(pipelineVO.getDocsPath());
         dbPipeline.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         pipelineDao.updatePipeline(dbPipeline);
-
-        updatePipelineNameForRuns(pipelineVO, pipelineVOName);
-
-        if (projectNameUpdated) {
+        if (!previousName.equals(pipelineVOName)) {
+            updatePipelineNameForRuns(pipelineVO.getId(), pipelineVOName);
+        }
+        if (projectNameUpdated && preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_RENAME_REPO)) {
             pipelineRepositoryService.updateRepositoryName(dbPipeline, currentProjectPath, newProjectName);
         }
         return dbPipeline;
@@ -281,6 +293,20 @@ public class PipelineManager implements SecuredEntityManager {
 
     public List<Pipeline> loadAllPipelines(boolean loadVersions) {
         List<Pipeline> result = pipelineDao.loadAllPipelines();
+        if (loadVersions) {
+            result.forEach(this::setCurrentVersion);
+        }
+        return result;
+    }
+
+    public List<PipelineWithMetadata> loadAllPipelines(final boolean loadVersions, final boolean loadMetadata,
+                                                       final EntityFilterVO filter) {
+        final List<PipelineWithMetadata> result =
+                Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags()) || loadMetadata
+                ? pipelineDao.loadPipelinesWithMetadata(loadMetadata, filter)
+                : pipelineDao.loadAllPipelines().stream()
+                        .map(pipeline -> (PipelineWithMetadata) pipeline)
+                        .collect(Collectors.toList());
         if (loadVersions) {
             result.forEach(this::setCurrentVersion);
         }
@@ -369,28 +395,37 @@ public class PipelineManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
         final Pipeline loadedPipeline = load(id);
+        final boolean isGitlabPipeline = RepositoryType.GITLAB.equals(loadedPipeline.getRepositoryType());
 
         final String sourceProjectName = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final String uuid = PasswordGenerator.generateRandomString(20);
-        final String newPipelineName = buildCopyProjectName(sourceProjectName, uuid, newName);
-        final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
-        final String newRepository =
-                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
-        final String newRepositorySsh =
-                GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
+        final String newPipelineName = buildCopyProjectName(sourceProjectName, uuid, newName,
+                isGitlabPipeline);
         final Long sourcePipelineId = loadedPipeline.getId();
 
-        loadedPipeline.setRepository(newRepository);
-        loadedPipeline.setRepositorySsh(newRepositorySsh);
         loadedPipeline.setName(newPipelineName);
         loadedPipeline.setParentFolderId(parentFolderId);
         setFolderIfPresent(loadedPipeline);
         loadedPipeline.setOwner(securityManager.getAuthorizedUser());
-        loadedPipeline.setRepositoryType(null);
         loadedPipeline.setLocked(false);
+
+        final String newProjectName = GitUtils.convertPipeNameToProject(newPipelineName);
+        if (isGitlabPipeline) {
+            final String newRepository =
+                    GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepository(), newProjectName);
+            final String newRepositorySsh =
+                    GitUtils.replaceGitProjectNameInUrl(loadedPipeline.getRepositorySsh(), newProjectName);
+
+            loadedPipeline.setRepository(newRepository);
+            loadedPipeline.setRepositorySsh(newRepositorySsh);
+        }
+
         final Pipeline newPipeline = crudManager.savePipeline(loadedPipeline);
         copyStorageRules(sourcePipelineId, newPipeline.getId());
-        gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+
+        if (isGitlabPipeline) {
+            gitManager.copyRepository(sourceProjectName, newProjectName, uuid);
+        }
         return newPipeline;
     }
 
@@ -416,10 +451,12 @@ public class PipelineManager implements SecuredEntityManager {
     }
 
     private String buildCopyProjectName(final String sourceProjectName, final String uuid,
-                                        final String newProjectName) {
+                                        final String newProjectName, final boolean isGitlabPipeline) {
         if (StringUtils.isNotBlank(newProjectName)) {
-            Assert.isTrue(!gitManager.checkProjectExists(newProjectName),
-                    messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, newProjectName));
+            if (isGitlabPipeline) {
+                Assert.isTrue(!gitManager.checkProjectExists(newProjectName),
+                        messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, newProjectName));
+            }
             return newProjectName;
         }
         return String.format("%s_copy%s", sourceProjectName, uuid);
@@ -434,32 +471,12 @@ public class PipelineManager implements SecuredEntityManager {
         });
     }
 
-    private void updatePipelineNameForRuns(final PipelineVO pipelineVO, final String pipelineVOName) {
-        final List<PipelineRun> runsToUpdate = ListUtils.emptyIfNull(
-                pipelineRunDao.loadAllRunsForPipeline(pipelineVO.getId())).stream()
-                .map(run -> updatePipelineNameForRun(pipelineVOName, run))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        pipelineRunDao.updateRuns(runsToUpdate);
-    }
-
-    private PipelineRun updatePipelineNameForRun(final String pipelineName, final PipelineRun run) {
-        if (Objects.equals(run.getPipelineName(), pipelineName)) {
-            return null;
-        }
-        run.setPipelineName(pipelineName);
-        return run;
+    private void updatePipelineNameForRuns(final Long pipelineId, final String pipelineVOName) {
+        pipelineRunDao.updatePipelineNameForRuns(pipelineVOName, pipelineId);
     }
 
     private void resetPipelineIdForRuns(final Long id) {
-        pipelineRunDao.updateRuns(ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(id)).stream()
-                .map(this::resetPipelineIdForRun)
-                .collect(Collectors.toSet()));
-    }
-
-    private PipelineRun resetPipelineIdForRun(final PipelineRun run) {
-        run.setPipelineId(null);
-        return run;
+        pipelineRunDao.clearPipelineIdForRuns(id);
     }
 
     private void checkBranchExists(final PipelineVO pipelineVO) {

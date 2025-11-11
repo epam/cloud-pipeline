@@ -93,4 +93,4 @@ webdav.dev.config
 
 certs/
 
-package-lock.json
+dist-cli

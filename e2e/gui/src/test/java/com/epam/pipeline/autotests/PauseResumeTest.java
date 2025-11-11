@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.getParameterValueLink;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -67,6 +67,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String priceType = ON_DEMAND;
     private final String pauseTask = "PausePipelineRun";
+    private final String testInstanceDisk = "50";
 
     private String endpoint;
     private String defaultClusterDockerExtraMulti;
@@ -109,11 +110,15 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
+                .setDisk(testInstanceDisk)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell.execute(
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
+                                                .execute(
                                                 String.format("echo '%s' > %s", testFileContent, testFileName)))
                                 )
                                 .waitForPauseButton()
@@ -177,7 +182,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                             log
                                     .waitForPauseButton()
                                     .clickOnPauseButton()
-                                    .validateException("This operation may fail due to 'Out of disk' error")
+                                    .validateException("Free disk space is not enough")
                                     .click(button(CANCEL.name()))
                                     .shouldHaveStatus(LogAO.Status.WORKING)
                     );
@@ -198,6 +203,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
+                .setDisk(testInstanceDisk)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .activeRuns()
                 .waitUntilPauseButtonAppear(getLastRunId())
@@ -244,7 +251,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .pause(nameWithoutGroup(tool))
                                 .assertPausingFinishedSuccessfully()
                                 .ensure(taskWithName(pauseTask), visible)
-                                .click(taskWithName(pauseTask))
+                                .clickTaskWithName(pauseTask)
                                 .waitForLog("Docker service was successfully stopped")
                                 .ensure(log(), matchText("Temporary container was successfully committed"))
                                 .ensure(log(), matchText("Docker container logs were successfully retrieved."))
@@ -267,6 +274,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         endpoint = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .show(getLastRunId())
                 .waitForInitializeNode(getLastRunId())

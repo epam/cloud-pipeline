@@ -30,7 +30,8 @@
                         attributes,
                         default_storage_id,
                         registration_date,
-                        first_login_date)
+                        first_login_date,
+                        owner)
                     VALUES (
                         :USER_ID,
                         :USER_NAME,
@@ -38,7 +39,8 @@
                         to_jsonb(:ATTRIBUTES::jsonb),
                         :USER_DEFAULT_STORAGE_ID,
                         :REGISTRATION_DATE,
-                        :FIRST_LOGIN_DATE)
+                        :FIRST_LOGIN_DATE,
+                        :USER_OWNER)
                 ]]>
             </value>
         </property>
@@ -54,7 +56,8 @@
                         block_date = :USER_BLOCK_DATE,
                         first_login_date = :FIRST_LOGIN_DATE,
                         last_login_date = :LAST_LOGIN_DATE,
-                        external_block_date = :EXTERNAL_BLOCK_DATE
+                        external_block_date = :EXTERNAL_BLOCK_DATE,
+                        owner = :USER_OWNER
                     WHERE
                         id = :USER_ID
                 ]]>
@@ -76,12 +79,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -104,12 +109,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner,
                       CASE
                         WHEN EXISTS (
                           SELECT 1 FROM pipeline.spring_session s
@@ -139,12 +146,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -176,12 +185,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
                       r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner,
                       ds.path as user_default_storage_path
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
@@ -206,12 +217,14 @@
                         u.first_login_date,
                         u.last_login_date,
                         u.external_block_date,
+                        u.owner as user_owner,
                         r.id as role_id,
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
                         r.default_storage_id as role_default_storage_id,
-                        r.default_profile_id as role_default_profile_id
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
                     FROM pipeline.user u
                         LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                         LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -221,6 +234,42 @@
                             SELECT 1
                             FROM jsonb_each_text(u.attributes) AS e(key, value)
                             WHERE LOWER(e.value) LIKE :PREFIX
+                        )
+                ]]>
+            </value>
+        </property>
+        <property name="findUsersByAttributeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        u.id as user_id,
+                        u.name as user_name,
+                        u.groups as user_groups,
+                        u.attributes as attributes,
+                        u.default_storage_id as user_default_storage_id,
+                        u.default_profile_id as user_default_profile_id,
+                        u.blocked as user_blocked,
+                        u.block_date as user_block_date,
+                        u.registration_date,
+                        u.first_login_date,
+                        u.last_login_date,
+                        u.external_block_date,
+                        u.owner as user_owner,
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id,
+                        r.default_profile_id as role_default_profile_id,
+                        r.owner as role_owner
+                    FROM pipeline.user u
+                        LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
+                        LEFT JOIN pipeline.role r ON ur.role_id = r.id
+                    WHERE
+                        EXISTS(
+                            SELECT 1
+                            FROM jsonb_each_text(u.attributes) AS e(key, value)
+                            WHERE LOWER(e.key) = LOWER(?) AND LOWER(e.value) = LOWER(?)
                         )
                 ]]>
             </value>
@@ -241,12 +290,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -270,12 +321,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -299,12 +352,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -328,12 +383,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                         LEFT JOIN pipeline.user_roles ur
                             ON u.id = ur.user_id
@@ -360,12 +417,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -389,12 +448,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -418,12 +479,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id
@@ -477,12 +540,14 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
                       r.user_default as role_user_default,
                       r.default_storage_id as role_default_storage_id,
-                      r.default_profile_id as role_default_profile_id
+                      r.default_profile_id as role_default_profile_id,
+                      r.owner as role_owner
                     FROM pipeline.user u
                       LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
                       LEFT JOIN pipeline.role r ON ur.role_id = r.id

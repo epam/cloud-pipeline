@@ -93,6 +93,11 @@ class CloudPipelineThemes {
     return undefined;
   }
 
+  @computed
+  get currentThemeObject () {
+    return this.themes.find(o => o.identifier === this.currentTheme);
+  }
+
   constructor () {
     this.listeners = [];
     (this.initialize)();
@@ -125,10 +130,12 @@ class CloudPipelineThemes {
         const prev = () => {
           shiftTheme(-1);
         };
-        if (e.key === ']') {
-          next();
-        } else if (e.key === '[') {
-          prev();
+        if (!/^input$/i.test(e.target.tagName)) {
+          if (e.key === ']') {
+            next();
+          } else if (e.key === '[') {
+            prev();
+          }
         }
       });
     }

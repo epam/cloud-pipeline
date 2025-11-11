@@ -21,7 +21,7 @@ import LinuxIcon from './linux-icon';
 import CentosIcon from './centos-icon';
 import UbuntuIcon from './ubuntu-icon';
 
-function PlatformIcon ({className, platform, style}) {
+function PlatformIcon ({className, platform, style, renderPlaceholder}) {
   if (/^windows$/i.test(platform)) {
     return (<WindowsIcon className={className} style={style} />);
   }
@@ -34,13 +34,16 @@ function PlatformIcon ({className, platform, style}) {
   if (/^ubuntu/i.test(platform)) {
     return (<UbuntuIcon className={className} style={style} />);
   }
-  return null;
+  return renderPlaceholder && typeof renderPlaceholder === 'function'
+    ? renderPlaceholder()
+    : null;
 }
 
 PlatformIcon.propTypes = {
   className: PropTypes.string,
   platform: PropTypes.string,
-  style: PropTypes.object
+  style: PropTypes.object,
+  renderPlaceholder: PropTypes.func
 };
 
 export default PlatformIcon;

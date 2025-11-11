@@ -16,6 +16,9 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
+import com.epam.pipeline.acl.plugin.PluginAssignmentService;
+import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -25,6 +28,7 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunResultDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
@@ -40,9 +44,11 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
@@ -62,6 +68,8 @@ import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
+import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -85,6 +93,7 @@ import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.log.storage.StorageRequestManager;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
@@ -97,7 +106,9 @@ import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
+import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.EngineRunTaskService;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.FolderTemplateManager;
@@ -110,6 +121,8 @@ import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -147,6 +160,7 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -185,6 +199,9 @@ public class AclTestBeans {
     protected AuthManager mockAuthManager;
 
     @MockBean
+    protected JwtTokenGenerator tokenGenerator;
+
+    @MockBean
     protected EntityManager mockEntityManager;
 
     @MockBean
@@ -216,6 +233,10 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunManager mockPipelineRunManager;
+
+    @MockBean
+    protected PipelineRunResultManager mockPipelineRunResultManager;
+
 
     @MockBean
     protected InstanceOfferManager mockInstanceOfferManager;
@@ -378,6 +399,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+    protected PipelineRunResultDao mockPipelineRunResultDao;
 
     @MockBean
     protected RestartRunDao mockRestartRunDao;
@@ -581,6 +605,39 @@ public class AclTestBeans {
 
     @MockBean
     protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    protected StorageRequestManager storageRequestManager;
+
+    @MockBean
+    protected InstanceOfferScheduler instanceOfferScheduler;
+
+    @MockBean
+    protected PodsManager podsManager;
+
+    @MockBean
+    protected ArchiveRunService archiveRunService;
+
+    @MockBean
+    protected AWSOmicsStoreManager omicsStoreManager;
+
+    @MockBean
+    protected PipelineRunRuntimeDataManager pipelineRunRuntimeDataManager;
+
+    @MockBean
+    protected EngineRunTaskService engineRunTaskService;
+
+    @MockBean
+    protected StoragePathPermissionsService storagePathPermissionsService;
+
+    @MockBean
+    protected PluginService pluginService;
+
+    @MockBean
+    protected PluginAssignmentService assignmentService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

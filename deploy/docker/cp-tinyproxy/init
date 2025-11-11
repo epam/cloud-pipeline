@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mkdir -p /opt/tinyproxy/logs
+CP_TP_HTTP_PROXY_ENABLED="${CP_TP_HTTP_PROXY_ENABLED:-true}"
+CP_TP_STREAM_PROXY_ENABLED="${CP_TP_STREAM_PROXY_ENABLED:-true}"
+
+CP_TP_NODE_NAME="${MY_NODE_NAME:-$(hostname)}"
+CP_TP_LOGS_DIR="/opt/tinyproxy/logs/$CP_TP_NODE_NAME"
+CP_TP_LOGS_FILE="$CP_TP_LOGS_DIR/tinyproxy.log"
+
+mkdir -p "$CP_TP_LOGS_DIR"
 mkdir -p /var/run/tinyproxy
 
 ########################
@@ -28,10 +35,6 @@ CP_TP_TIMEOUT="${CP_TP_TIMEOUT:-60}"
 CP_TP_LOG_LEVEL="${CP_TP_LOG_LEVEL:-Error}"
 
 CP_TP_MAX_CLIENTS="${CP_TP_MAX_CLIENTS:-100}"
-CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-5}"
-CP_TP_MAX_SPARE_SERVERS="${CP_TP_MAX_SPARE_SERVERS:-10}"
-CP_TP_START_SERVERS="${CP_TP_START_SERVERS:-10}"
-CP_TP_MAX_REQ_PER_CHILD="${CP_TP_MAX_REQ_PER_CHILD:-0}"
 
 cat > "$CP_TP_CONFIG_PATH" <<EOF
 User root
@@ -42,17 +45,13 @@ Listen 0.0.0.0
 BindSame yes
 Timeout $CP_TP_TIMEOUT
 
-DefaultErrorFile "/opt/tinyproxy/logs/default.html"
+DefaultErrorFile "$CP_TP_LOGS_DIR/default.html"
 StatFile "/opt/tinyproxy/stats.json"
-Logfile "/opt/tinyproxy/logs/tinyproxy.log"
+Logfile "$CP_TP_LOGS_FILE"
 LogLevel $CP_TP_LOG_LEVEL
 PidFile "/var/run/tinyproxy/tinyproxy.pid"
 
 MaxClients $CP_TP_MAX_CLIENTS
-MinSpareServers $CP_TP_MIN_SPARE_SERVERS
-MaxSpareServers $CP_TP_MAX_SPARE_SERVERS
-StartServers $CP_TP_START_SERVERS
-MaxRequestsPerChild $CP_TP_MAX_REQ_PER_CHILD
 
 Allow $CP_TP_ALLOWED_CIDR
 
@@ -63,8 +62,42 @@ if [ "$CP_TP_ALLOWED_PORTS" ]; then
     echo "ConnectPort $CP_TP_ALLOWED_PORTS" >> "$CP_TP_CONFIG_PATH"
 fi
 
+# destination1+type1+upstream1,destination2+type2+upstream2
+# E.g.:
+#   s3.amazonaws.com+none+none,ec2.amazonaws.com+http+proxy1.epam.com,none+http+proxy2.epam.com
+# Will produce:
+#   Upstream none s3.amazonaws.com
+#   Upstream http proxy1.epam.com ec2.amazonaws.com
+#   Upstream http proxy2.epam.com
 if [ "$CP_TP_UPSTREAM" ]; then
-    echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
+    if [[ $CP_TP_UPSTREAM == *"+"* ]]; then
+        echo "Upstream is a complex list: $CP_TP_UPSTREAM"
+        IFS=',' read -ra _upstream_configs_list <<< "$CP_TP_UPSTREAM"
+        for _uc in "${_upstream_configs_list[@]}"; do
+            IFS='+' read -ra _upstream_config <<< "$_uc"
+
+            _uc_destination="${_upstream_config[0]}"
+            if [ "$_uc_destination" == "none" ]; then
+                _uc_destination=""
+            else
+                _uc_destination="\"$_uc_destination\""
+            fi
+
+            _uc_type="${_upstream_config[1]}"
+
+            _uc_upstream="${_upstream_config[2]}"
+            if [ "$_uc_upstream" == "none" ]; then
+                _uc_upstream=""
+            fi
+
+            _uc_value="Upstream $_uc_type $_uc_upstream $_uc_destination"
+            echo "- Writing upstream entry: $_uc_value"
+            echo "$_uc_value" >> "$CP_TP_CONFIG_PATH"
+        done
+    else
+        echo "Upstream is a scalar value: $CP_TP_UPSTREAM"
+        echo "Upstream http $CP_TP_UPSTREAM" >> "$CP_TP_CONFIG_PATH"
+    fi
 fi
 
 if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
@@ -93,7 +126,12 @@ if [ "$CP_TP_RESTRICTED_DESTINATION" ]; then
     fi
 fi
 
-tinyproxy -c "$CP_TP_CONFIG_PATH"
+if [ "$CP_TP_HTTP_PROXY_ENABLED" == "true" ]; then
+    echo "Starting tinyproxy"
+    tinyproxy -c "$CP_TP_CONFIG_PATH"
+else
+    echo "CP_TP_HTTP_PROXY_ENABLED is set to $CP_TP_HTTP_PROXY_ENABLED, tinyproxy is disabled"
+fi
 
 #################################
 # Nginx (TCP/UDP forward) config
@@ -178,13 +216,14 @@ if [ "$CP_TP_NGINX_ACCESS_LOG" == "true" ]; then
     CP_TP_NGINX_ACCESS_LOG_DISABLED=""
 fi
 
-CP_TP_NGINX_LOG_DIR="${CP_TP_NGINX_LOG_DIR:-/opt/tinyproxy/logs/stream}"
+CP_TP_NGINX_LOG_DIR="${CP_TP_NGINX_LOG_DIR:-$CP_TP_LOGS_DIR/stream}"
 mkdir -p "$CP_TP_NGINX_LOG_DIR"
 
 export CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE="${CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE:-/var/log/smtp-auth-srv.log}"
 mkdir -p $(dirname $CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE)
 
 export CP_TP_NGINX_SMTP_AUTH_SRV_PORT="${CP_TP_NGINX_SMTP_AUTH_SRV_PORT:-8000}"
+export CP_TP_NGINX_WORKER_CONNECTIONS="${CP_TP_NGINX_WORKER_CONNECTIONS:-1024}"
 
 if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ] || [ "$CP_TP_SMTP_DEST" ]; then
 
@@ -198,7 +237,7 @@ pid /run/nginx.pid;
 include /usr/share/nginx/modules/*.conf;
 
 events {
-    worker_connections 1024;
+    worker_connections $CP_TP_NGINX_WORKER_CONNECTIONS;
 }
 
 mail {
@@ -235,7 +274,7 @@ fi
 if [ "$CP_TP_SMTP_DEST" ]; then
     nginx_add_proxy_entry "$CP_TP_SMTP_DEST" "smtp"
     # Start nginx smtp auth server: http://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html
-    nohup /opt/miniconda/envs/auth-srv/bin/python /opt/smtp/smtp-auth-srv.py &> "$CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE" &
+    nohup $MAMBA_ROOT_PREFIX/envs/auth-srv/bin/python /opt/smtp/smtp-auth-srv.py &> "$CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE" &
     # Run Filebeat
     envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
     nohup filebeat &
@@ -246,8 +285,27 @@ echo " }" >> "$CP_TP_NGINX_CONFIG"
 
 echo "Done adding nginx tcp/udp forward entries"
 
-nginx
+if [ "$CP_TP_STREAM_PROXY_ENABLED" == "true" ]; then
+    echo "Starting nginx stream proxy"
+    nginx
+else
+    echo "CP_TP_STREAM_PROXY_ENABLED is set to $CP_TP_STREAM_PROXY_ENABLED, nginx stream proxy is disabled"
+fi
 
+fi
+
+if [ "$CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED" == "true" ]; then
+    echo "Starting network-event-scrapper"
+    export CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR=${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR:-/var/log/cp-network-event-scrapper}
+    mkdir -p "${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_DIR}"
+    export CP_TP_HOSTNAME="${CP_TP_NODE_NAME}"
+    export CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE="${CP_TP_NETWORK_EVENT_SCRAPPER_LOG_SOURCE_FILE:-${CP_TP_LOGS_FILE}}"
+    if [ -z "${CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST}" ]; then
+        export CP_TP_NETWORK_EVENT_SCRAPPER_ELASTICSEARCH_HOST="http://${CP_HEAPSTER_ELK_INTERNAL_HOST}:${CP_HEAPSTER_ELK_INTERNAL_PORT}"
+    fi
+    nohup python3 /opt/network-event-scrapper/app.py &
+else
+    echo "CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED is set to $CP_TP_NETWORK_EVENT_SCRAPPER_ENABLED, network-event-scrapper is disabled"
 fi
 
 # Just wait on

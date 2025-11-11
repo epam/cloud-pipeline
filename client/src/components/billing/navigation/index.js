@@ -35,9 +35,9 @@ class BillingNavigation extends React.Component {
       ? (...opts) => navigation(...configurationRest, ...opts)
       : undefined
   );
-  static resourcesNavigation = (filters, {group, key}) => {
-    if (filters && group) {
-      if (/^storage$/i.test(group)) {
+  static resourcesNavigation = (filters, {group: resourceGroup, key}) => {
+    if (filters && resourceGroup) {
+      if (/^storage$/i.test(resourceGroup)) {
         if (key && /^file$/i.test(key)) {
           filters.reportNavigation(ReportsRouting.storages.file.name);
         } else if (key && /^object$/i.test(key)) {
@@ -45,7 +45,7 @@ class BillingNavigation extends React.Component {
         } else {
           filters.reportNavigation(ReportsRouting.storages.name);
         }
-      } else if (/^compute instances$/i.test(group)) {
+      } else if (/^compute instances$/i.test(resourceGroup)) {
         if (key && /^cpu$/i.test(key)) {
           filters.reportNavigation(ReportsRouting.instances.cpu.name);
         } else if (key && /^gpu$/i.test(key)) {
@@ -68,7 +68,7 @@ class BillingNavigation extends React.Component {
     if (filters) {
       filters.reportNavigation(
         ReportsRouting.general.name,
-        {id: key, type: RunnerTypes.group}
+        {id: key, type: RunnerTypes.billingGroup}
       );
     }
   };

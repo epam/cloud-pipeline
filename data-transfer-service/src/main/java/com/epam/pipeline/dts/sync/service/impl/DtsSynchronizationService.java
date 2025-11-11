@@ -53,11 +53,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
@@ -81,6 +81,7 @@ public class DtsSynchronizationService {
     private final String defaultCronExpression;
     private final String syncToken;
     private final CloudPipelineAPIClient apiClient;
+    private final IlluminaValidator illuminaValidator;
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
@@ -92,16 +93,18 @@ public class DtsSynchronizationService {
                                      final PreferenceService preferenceService,
                                      final ShutdownService shutdownService,
                                      final DtsRuleExpanderService dtsRuleExpander,
-                                     final CloudPipelineAPIClient apiClient) {
+                                     final CloudPipelineAPIClient apiClient,
+                                     final IlluminaValidator illuminaValidator) {
         this.apiClient = apiClient;
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
         this.taskRepository = taskRepository;
         this.transferService = autonomousTransferService;
         this.shutdownService = shutdownService;
         this.preferenceService = preferenceService;
-        this.activeSyncRules = new ConcurrentHashMap<>();
-        this.activeTransferTasks = new ConcurrentHashMap<>();
+        this.activeSyncRules = Collections.synchronizedMap(new LinkedHashMap<>());
+        this.activeTransferTasks = Collections.synchronizedMap(new LinkedHashMap<>());
         this.dtsRuleExpander = dtsRuleExpander;
+        this.illuminaValidator = illuminaValidator;
         this.syncToken = syncToken;
         this.defaultCronExpression = Optional.of(defaultCronExpression)
             .filter(CronSequenceGenerator::isValidExpression)
@@ -141,7 +144,7 @@ public class DtsSynchronizationService {
     private AutonomousSyncRule mapToRuleWithoutCron(final AutonomousSyncRule rule) {
         return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null,
                 rule.getDeleteSource(), ListUtils.emptyIfNull(rule.getTransferTriggers()),
-                rule.getCheckSyncToken());
+                rule.getCheckSyncToken(), rule.getCheckIllumina());
     }
 
     private AutonomousSyncCronDetails mapRuleToCronDetails(final AutonomousSyncRule newRule) {
@@ -211,16 +214,24 @@ public class DtsSynchronizationService {
         return Optional.of(entry.getKey())
             .map(AutonomousSyncRule::getSource)
             .map(Paths::get)
-            .filter(Files::exists)
+            .filter(path -> {
+                final boolean exists = Files.exists(path);
+                log.info("Starting source `{}` synchronization. Checking if it exists: {}",
+                        path, exists);
+                return exists;
+            })
             .isPresent();
     }
 
     private boolean shouldBeTriggered(final Date now,
                                       final Map.Entry<AutonomousSyncRule, AutonomousSyncCronDetails> entry) {
         final AutonomousSyncRule rule = entry.getKey();
+        log.info("Checking if transfer should be triggered from `{}` to `{}`", rule.getSource(), rule.getDestination());
         final AutonomousSyncCronDetails cronDetails = entry.getValue();
         final Date lastExecution = cronDetails.getLastExecution();
-        final boolean shouldBeTriggered = cronDetails.getGenerator().next(lastExecution).before(now);
+        final Date next = cronDetails.getGenerator().next(lastExecution);
+        log.info("Transfer was last triggered {}, next trigger {}", lastExecution, next);
+        final boolean shouldBeTriggered = next.before(now);
         if (shouldBeTriggered) {
             log.info("Transfer from `{}` to `{}` should be triggered [cron: `{}`, lastExecution:`{}`]",
                      rule.getSource(), rule.getDestination(),
@@ -254,6 +265,9 @@ public class DtsSynchronizationService {
                             rule.getSource(), rule.getDestination());
                     return null;
                 }
+                if (!runAdditionalChecks(rule)) {
+                    return null;
+                }
                 return trySubmitTransferTask(buildTransferSource(rule), transferDestination,
                         rule.getDeleteSource());
             })
@@ -265,6 +279,13 @@ public class DtsSynchronizationService {
             .orElse(null);
     }
 
+    private boolean runAdditionalChecks(final AutonomousSyncRule key) {
+        if (Boolean.TRUE.equals(key.getCheckIllumina())) {
+            return illuminaValidator.validateIlluminaFolder(key.getSource());
+        }
+        return true;
+    }
+
     private TransferTask trySubmitTransferTask(final StorageItem transferSource,
                                                final StorageItem transferDestination,
                                                final Boolean deleteTransferSource) {
@@ -272,7 +293,10 @@ public class DtsSynchronizationService {
             transferDestination.setCredentials(getPipeCredentialsAsString());
             return transferService.runTransferTask(transferSource, transferDestination,
                     Collections.emptyList(),
-                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()));
+                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()),
+                    preferenceService.isLogEnabled(),
+                    preferenceService.getPipeCmd(),
+                    preferenceService.getPipeCmdSuffix());
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {

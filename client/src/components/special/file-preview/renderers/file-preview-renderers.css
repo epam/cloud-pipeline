@@ -1,0 +1,16 @@
+.file-preview-renderer {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.file-preview-tabular-renderer {
+  min-height: 200px;
+}
+
+.file-preview-miew-renderer,
+.file-preview-html-renderer {
+  /* modal height minus preview-header minus body paddings */
+  height: calc(85vh - 100px);
+  overflow: hidden;
+}

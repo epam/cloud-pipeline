@@ -417,8 +417,24 @@ public class ToolApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldDenyForceScanTool() {
+    @WithMockUser
+    public void shouldForceScanToolForOwner() {
+        initAclEntity(tool);
+        doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
+        mockAuthUser(ANOTHER_SIMPLE_USER);
+
+        toolApiService.forceScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true);
+
+        verify(mockToolScanScheduler).forceScheduleScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyForceScanToolWhenPermissionIsNotGranted() {
+        initAclEntity(tool);
+        doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
+        mockAuthUser(SIMPLE_USER);
+
         assertThrows(AccessDeniedException.class,
             () -> toolApiService.forceScanTool(TEST_STRING, TEST_STRING, TEST_STRING, true));
     }

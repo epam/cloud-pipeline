@@ -211,6 +211,7 @@ function makeCurrentOrderSort (array) {
 export default class Metadata extends React.Component {
   static propTypes = {
     onSelectItems: PropTypes.func,
+    onNavigate: PropTypes.func,
     initialSelection: PropTypes.array,
     hideUploadMetadataBtn: PropTypes.bool,
     readOnly: PropTypes.bool
@@ -588,7 +589,7 @@ export default class Metadata extends React.Component {
       loading: false,
       currentMetadata,
       currentMetadataConditions: conditions
-    });
+    }, () => this.updateInitialSelection());
   };
 
   sortSelectedItems = () => {
@@ -1854,8 +1855,11 @@ export default class Metadata extends React.Component {
           this.state.metadata &&
           <MetadataPanel
             key={METADATA_PANEL_KEY}
-            readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
-              this.props.folderId !== undefined)}
+            readOnly={
+              this.props.readOnly ||
+              !(roleModel.writeAllowed(this.props.folder.value) &&
+              this.props.folderId !== undefined)
+            }
             readOnlyKeys={['ID', 'createdDate']}
             columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
@@ -2622,6 +2626,7 @@ export default class Metadata extends React.Component {
               icon="appstore-o"
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}
+              onNavigate={this.props.onNavigate}
             />
           </div>
           <Input.Search
@@ -2770,7 +2775,16 @@ export default class Metadata extends React.Component {
   }
 
   updateInitialSelection = () => {
-    this.setState({selectedItems: (this.props.initialSelection || []).slice()});
+    this.setState({
+      selectedItems: (this.props.initialSelection || [])
+        .map(item => {
+          if (typeof item === 'object') {
+            return item;
+          }
+          return (this.state.currentMetadata || [])
+            .find(entry => entry.rowKey.value === item);
+        }).filter(Boolean)
+    });
   };
 
   onFolderChanged = (folderChanged = true) => {

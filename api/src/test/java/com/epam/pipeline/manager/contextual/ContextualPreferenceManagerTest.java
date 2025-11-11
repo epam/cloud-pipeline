@@ -248,20 +248,11 @@ public class ContextualPreferenceManagerTest {
     }
 
     @Test
-    public void searchShouldFailIfPreferenceLevelIsNotTool() {
-        Arrays.stream(ContextualPreferenceLevel.values())
-                .filter(level -> level != ContextualPreferenceLevel.TOOL)
-                .forEach(level ->
-                        assertThrows(IllegalArgumentException.class,
-                            () -> manager.search(NAMES, new ContextualPreferenceExternalResource(level, TOOL_ID))));
-    }
-
-    @Test
     public void searchShouldSearchPreferenceWithResourceConstructedFromTheRequestedResourceIfItIsSpecified() {
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, toolResource);
         when(contextualPreferenceHandler.search(eq(NAMES), any())).thenReturn(Optional.of(preference));
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
-        when(userManager.loadUserById(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
+        when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
 
         final ContextualPreference searchedPreference = manager.search(NAMES, toolResource);
 
@@ -274,7 +265,7 @@ public class ContextualPreferenceManagerTest {
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE);
         when(contextualPreferenceHandler.search(eq(NAMES), any())).thenReturn(Optional.of(preference));
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
-        when(userManager.loadUserById(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
+        when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
 
         final ContextualPreference searchedPreference = manager.search(NAMES, null);
 
@@ -289,7 +280,7 @@ public class ContextualPreferenceManagerTest {
         when(contextualPreferenceHandler.search(eq(NAMES), any()))
                 .thenReturn(Optional.of(preference));
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
-        when(userManager.loadUserById(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
+        when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
 
         final ContextualPreference searchedPreference = manager.search(NAMES, toolResource);
 
@@ -305,7 +296,7 @@ public class ContextualPreferenceManagerTest {
         when(contextualPreferenceHandler.search(eq(NAMES), any()))
                 .thenReturn(Optional.of(preference));
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ID);
-        when(userManager.loadUserByName(eq(USER_WITHOUT_ID.getUserName()))).thenReturn(USER);
+        when(userManager.loadByNameOrId(eq(USER_WITHOUT_ID.getUserName()))).thenReturn(USER);
 
         final ContextualPreference searchedPreference = manager.search(NAMES, toolResource);
 
@@ -335,7 +326,7 @@ public class ContextualPreferenceManagerTest {
         when(contextualPreferenceHandler.search(eq(NAMES), any()))
                 .thenReturn(Optional.of(preference));
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
-        when(userManager.loadUserById(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
+        when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
 
         final ContextualPreference searchedPreference = manager.search(NAMES, toolResource);
 
@@ -351,7 +342,7 @@ public class ContextualPreferenceManagerTest {
         when(contextualPreferenceHandler.search(eq(NAMES), any()))
                 .thenReturn(Optional.of(preference));
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
-        when(userManager.loadUserById(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER_WITHOUT_ROLES);
+        when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER_WITHOUT_ROLES);
 
         final ContextualPreference searchedPreference = manager.search(NAMES, toolResource);
 

@@ -17,9 +17,12 @@
 package com.epam.pipeline.client.pipeline;
 
 import com.epam.pipeline.entity.app.ApplicationInfo;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -40,6 +43,7 @@ import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.notification.NotificationMessage;
@@ -86,6 +90,7 @@ import retrofit2.http.Query;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface CloudPipelineAPI {
 
@@ -283,13 +288,21 @@ public interface CloudPipelineAPI {
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 
     @GET("run/activity")
-    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
+    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to,
+                                                          @Query("archive") boolean archive);
 
     @GET("run/pools/{id}")
     Call<Result<List<PipelineRun>>> loadRunsByPool(@Path(ID) Long poolId);
 
     @GET("cluster/instance/loadAll")
     Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);
+
+    @GET("cluster/instance/loadAll")
+    Call<Result<List<InstanceType>>> loadAllInstanceTypes();
+
+    @GET("cluster/instance/allowed")
+    Call<Result<AllowedInstanceAndPriceTypes>> loadAllowedInstanceAndPriceTypesForRegion(
+            @Query(REGION_ID) Long regionId);
 
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
@@ -335,4 +348,16 @@ public interface CloudPipelineAPI {
     Call<Result<LustreFS>> getLustre(@Query("mountName") String mountName,
                                      @Query("regionId") Long regionId);
 
+    @POST("log/group")
+    Call<Result<Map<String, Long>>> getSystemLogsGrouped(@Body LogRequest logRequest);
+
+    @POST("runs/archive")
+    Call<Result<Boolean>> archiveRuns();
+
+    @POST("cluster/pods/filter")
+    Call<Result<List<PodInstance>>> filterPods(@Body Map<String, String> monitoredLabels);
+
+    @POST("cluster/node/filter")
+    Call<Result<List<NodeInstance>>> filterNodes(@Body FilterNodesVO filter,
+                                                 @Query("machineType") MachineType machineType);
 }

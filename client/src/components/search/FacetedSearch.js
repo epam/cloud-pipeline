@@ -24,7 +24,6 @@ import {
   Input,
   Dropdown,
   Menu,
-  message,
   Tabs
 } from 'antd';
 import classNames from 'classnames';
@@ -58,12 +57,13 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
-import downloadStorageItems from '../special/download-storage-items';
+import handleDownloadItems from '../special/download-storage-items';
 import getNotDownloadableStorages from './utilities/get-downloadable-storages';
 import {
   getDocumentDisplayName,
   getStorageFileDisplayNameTemplates
 } from './utilities/get-storage-file-display-name-templates';
+import getUserSearchColumnsOrder from './utilities/get-user-search-columns-order';
 import roleModel from '../../utils/roleModel';
 
 function getDomainKey (domain) {
@@ -103,6 +103,7 @@ class FacetedSearch extends React.Component {
     facets: [],
     domain: undefined,
     createOtherDomain: false,
+    disableCounts: false,
     otherDomainName: 'Other',
     error: undefined,
     facetsCount: {},
@@ -175,7 +176,8 @@ class FacetedSearch extends React.Component {
     const {
       facetsLoaded,
       facetsCount,
-      initialFacetsCount = {}
+      initialFacetsCount = {},
+      disableCounts
     } = this.state;
     if (!facetsLoaded || !facetsCount) {
       return {name: DocumentTypeFilterName, values: []};
@@ -191,15 +193,15 @@ class FacetedSearch extends React.Component {
           name: key,
           count: filter[key] || 0
         }))
-        .sort((a, b) => b.count - a.count)
-        .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
+        .sort((a, b) => disableCounts ? 0 : b.count - a.count)
+        .filter(v => disableCounts || (FacetedSearch.HIDE_VALUE_IF_EMPTY
           ? v.count > 0
           : (
             initialFacetsCount.hasOwnProperty(DocumentTypeFilterName) &&
             initialFacetsCount[DocumentTypeFilterName].hasOwnProperty(v.name) &&
             Number(initialFacetsCount[DocumentTypeFilterName][v.name]) > 0
           )
-        )
+        ))
     };
   };
 
@@ -208,30 +210,34 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       facets,
       facetsCount,
-      initialFacetsCount = {}
+      initialFacetsCount = {},
+      disableCounts
     } = this.state;
     if (!facetsLoaded || !facetsCount) {
       return [];
     }
     return facets
-      .filter(d => FacetedSearch.HIDE_VALUE_IF_EMPTY
+      .filter(d => disableCounts || (FacetedSearch.HIDE_VALUE_IF_EMPTY
         ? initialFacetsCount.hasOwnProperty(d.name)
         : facetsCount.hasOwnProperty(d.name)
-      )
+      ))
       .map(d => ({
         name: d.name,
         domain: d.domain,
         values: d.values
-          .map(v => ({name: v, count: facetsCount[d.name][v] || 0}))
-          .sort((a, b) => b.count - a.count)
-          .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
+          .map(v => ({
+            name: v,
+            count: (facetsCount[d.name] ? facetsCount[d.name][v] : undefined) || 0
+          }))
+          .sort((a, b) => disableCounts ? a.name.localeCompare(b.name) : b.count - a.count)
+          .filter(v => disableCounts || (FacetedSearch.HIDE_VALUE_IF_EMPTY
             ? v.count > 0
             : (
               initialFacetsCount[d.name] &&
               initialFacetsCount[d.name].hasOwnProperty(v.name) &&
               Number(initialFacetsCount[d.name][v.name]) > 0
             )
-          )
+          ))
       }));
   }
 
@@ -272,20 +278,60 @@ class FacetedSearch extends React.Component {
       .filter(key => !excludedKeys.includes(key));
   }
 
+  get facetsColumns () {
+    return this.filters
+      .filter(f => f.values.length > 0 && f.name !== DocumentTypeFilterName)
+      .map(f => ({
+        key: f.name,
+        name: f.name
+      }));
+  }
+
+  @computed
+  get searchColumnsOrder () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    if (preferences.loaded && authenticatedUserInfo.loaded) {
+      return getUserSearchColumnsOrder(preferences, authenticatedUserInfo);
+    }
+    return [];
+  }
+
   get extraColumns () {
     const {extraColumnsConfiguration: extra} = this.state;
-    const extraColumns = this.filters
-      .filter(f => f.values.length > 0 && f.name !== DocumentTypeFilterName)
-      .map(f => f.name);
-    const extraColumnsConfiguration = extraColumns.map(key => ({key, name: key}));
-    if (extra && extra.length) {
-      extra.forEach(column => {
-        if (!extraColumnsConfiguration.find(c => c.key === column.key)) {
-          extraColumnsConfiguration.push(column);
-        }
-      });
-    }
-    return extraColumnsConfiguration;
+    return extra || [];
+  }
+
+  get additionalColumns () {
+    const {extraColumns = []} = this;
+    const additionalColumns = this.facetsColumns.slice();
+    extraColumns.forEach(column => {
+      if (!additionalColumns.find(c => c.key === column.key)) {
+        additionalColumns.push(column);
+      }
+    });
+    return additionalColumns;
+  }
+
+  get metadataFields () {
+    const {
+      storageFileDisplayNameTemplates = [],
+      facets = []
+    } = this.state;
+    const additionalTags = [...new Set(
+      storageFileDisplayNameTemplates.reduce((result, current) => ([
+        ...result,
+        ...current.tags
+      ]), []))];
+    return [...new Set(this.allColumns
+      .slice()
+      .map((column) => column.key)
+      .concat(facets.map((facet) => facet.name))
+      .concat([this.nameTag, this.downloadFileTag, ...additionalTags].filter(Boolean))
+      .filter((column) => !DocumentColumns.some((documentColumn) => documentColumn.key === column))
+    )];
   }
 
   get documentTypes () {
@@ -306,7 +352,11 @@ class FacetedSearch extends React.Component {
 
   get allColumns () {
     const documentTypes = this.documentTypes;
-    const all = getDefaultColumns(this.extraColumns);
+    const all = getDefaultColumns({
+      facetsColumns: this.facetsColumns,
+      extraColumns: this.extraColumns,
+      searchColumnsOrder: this.searchColumnsOrder
+    });
     if (!documentTypes || !documentTypes.length) {
       return all;
     } else {
@@ -487,7 +537,8 @@ class FacetedSearch extends React.Component {
             pageSize,
             searchToken: currentSearchToken,
             facetsToken: currentFacetsToken,
-            storageFileDisplayNameTemplates = []
+            storageFileDisplayNameTemplates = [],
+            disableCounts
           } = this.state;
           if (facets.length === 0) {
             // eslint-disable-next-line
@@ -517,11 +568,6 @@ class FacetedSearch extends React.Component {
           if (currentSearchToken === searchToken) {
             return;
           }
-          const additionalTags = [...new Set(
-            storageFileDisplayNameTemplates.reduce((result, current) => ([
-              ...result,
-              ...current.tags
-            ]), []))];
           this.setState({searchToken}, () => {
             this.updateCurrentRouting();
             if (this.abortController && abortPendingRequests) {
@@ -538,13 +584,11 @@ class FacetedSearch extends React.Component {
                 facetsCount: currentFacetsCount,
                 facetsToken: currentFacetsToken,
                 stores: this.props,
-                metadataFields: facets
-                  .map(f => f.name)
-                  .filter(facet => facet !== DocumentTypeFilterName)
-                  .concat([this.nameTag, this.downloadFileTag, ...additionalTags].filter(Boolean))
+                metadataFields: this.metadataFields
               },
               scrollingParameters: continuousOptions,
-              abortSignal: this.abortSignal
+              abortSignal: this.abortSignal,
+              skipFacets: disableCounts
             })
               .then(result => {
                 if (result && result.aborted) {
@@ -608,7 +652,7 @@ class FacetedSearch extends React.Component {
                     : undefined
                 }));
                 if (actualFacetsToken !== facetsToken) {
-                  state.facetsCount = facetsCount;
+                  state.facetsCount = facetsCount || {};
                   state.facetsToken = facetsToken;
                 }
                 if (actualSearchToken === searchToken) {
@@ -647,6 +691,7 @@ class FacetedSearch extends React.Component {
         if (systemDictionaries.loaded && configuration) {
           const {
             createOtherDomain = false,
+            disableCounts = false,
             otherDomainName = 'Other',
             dictionaries = []
           } = configuration || {};
@@ -679,7 +724,8 @@ class FacetedSearch extends React.Component {
               : {},
             '*',
             sortingOrder,
-            abortSignal
+            abortSignal,
+            disableCounts
           )
             .then((result) => {
               const {
@@ -691,6 +737,7 @@ class FacetedSearch extends React.Component {
               }
               this.setState({
                 createOtherDomain,
+                disableCounts,
                 otherDomainName,
                 extraColumnsConfiguration,
                 initialFacetsCount: facetsCount,
@@ -848,6 +895,7 @@ class FacetedSearch extends React.Component {
         }}
         sorting={sortingOrder}
         facets={facets}
+        selectedItems={this.state.selectedItems}
       />
     );
   };
@@ -966,7 +1014,7 @@ class FacetedSearch extends React.Component {
         <SearchResults
           className={classNames(styles.panel, styles.searchResults)}
           documents={documents}
-          extraColumns={this.extraColumns}
+          extraColumns={this.additionalColumns}
           onChangeSortingOrder={this.changeSortingOrder}
           sortingOrder={sortingOrder}
           disabled={pending}
@@ -995,28 +1043,7 @@ class FacetedSearch extends React.Component {
 
   handleDownloadItems = async (items = []) => {
     const {preferences} = this.props;
-    const hide = message.loading('Downloading...', 0);
-    try {
-      await preferences.fetchIfNeededOrWait();
-      const {maximum} = preferences.facetedFilterDownload;
-      if (maximum && maximum < items.length) {
-        message.info(
-          (
-            <span>
-              {/* eslint-disable-next-line max-len */}
-              It is allowed to download up to <b>{maximum}</b> file{maximum === 1 ? '' : 's'} at a time.
-            </span>
-          ),
-          5
-        );
-      } else {
-        await downloadStorageItems(items);
-      }
-    } catch (error) {
-      message.error(error.message, 5);
-    } finally {
-      hide();
-    }
+    await handleDownloadItems(preferences, items);
   };
 
   handleDomainSelection = (key) => this.setState({domain: parseDomainKey(key)});
@@ -1032,6 +1059,7 @@ class FacetedSearch extends React.Component {
       advancedSearchMode,
       domain,
       createOtherDomain,
+      disableCounts,
       otherDomainName
     } = this.state;
     const filterFacetByDomain = (facet) => {
@@ -1099,7 +1127,7 @@ class FacetedSearch extends React.Component {
             }
             items={selectedItems}
             onClearSelection={this.clearSelection}
-            extraColumns={this.extraColumns}
+            extraColumns={this.additionalColumns}
             onDownload={this.handleDownloadItems}
             dataStorageSharingEnabled={this.dataStorageSharingEnabled}
             notDownloadableStorages={this.state.notDownloadableStorages}
@@ -1111,6 +1139,7 @@ class FacetedSearch extends React.Component {
                 selection={(activeFilters || {})[DocumentTypeFilterName]}
                 onChange={this.onChangeFilter(DocumentTypeFilterName)}
                 onClearFilters={this.onClearFilters}
+                showCounts={!disableCounts}
               />
             )
           }
@@ -1208,7 +1237,8 @@ class FacetedSearch extends React.Component {
                           selection={(activeFilters || {})[filter.name]}
                           onChange={this.onChangeFilter(filter.name)}
                           preferences={this.getFilterPreferences(filter.name)}
-                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
+                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY || disableCounts}
+                          showCounts={!disableCounts}
                         />
                       ))
                   }

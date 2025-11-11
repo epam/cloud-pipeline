@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -47,6 +49,7 @@ import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static java.util.stream.Collectors.toList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -110,6 +113,19 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     public SearchResultItemPreviewAO getSearchResultItemPreviewAO(final By searchItem) {
         hover(searchItem);
         return new SearchResultItemPreviewAO(this);
+    }
+
+    public GlobalSearchAO waitUntilSearchCompleted() {
+        sleep(2, SECONDS);
+        get(SEARCH_RESULT).$(byClassName("anticon-loading")).waitUntil(not(exist), C.DEFAULT_TIMEOUT);
+        return this;
+    }
+
+    @Override
+    public GlobalSearchAO enter() {
+        actions().sendKeys(Keys.ENTER).perform();
+        waitUntilSearchCompleted();
+        return this;
     }
 
     public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItem(

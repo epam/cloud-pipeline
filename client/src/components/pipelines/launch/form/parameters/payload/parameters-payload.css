@@ -1,0 +1,56 @@
+.parameters-payload-selector-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.parameters-payload-selector-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow: auto;
+  min-width: 300px;
+}
+
+.parameters-payload-selector-content .parameters-payloads {
+  flex: 1;
+  overflow: auto;
+}
+
+.parameters-payloads .parameters-payload {
+  margin: 3px 0;
+  padding: 3px 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.parameters-payload-name,
+.parameters-payload-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.parameters-payload-name {
+  padding-right: 5px;
+}
+
+.parameters-payload > .parameters-payload-name:hover .parameters-payload-name-part {
+  text-decoration: underline;
+}
+
+.parameters-payload-invalid-icon {
+  margin-left: 10px;
+}
+
+.actions {
+  margin-top: 10px;
+  padding: 5px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.actions > *:not(:last-child) {
+  margin-right: 10px;
+}

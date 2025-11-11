@@ -17,6 +17,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
@@ -44,7 +45,9 @@ public class ObjectStorageIndexTest {
 
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
-    public static final int BULK_SIZE = 1000;
+    private static final int BULK_SIZE = 1000;
+    private static final String EXCLUDE_KEY = "key";
+    private static final String EXCLUDE_VALUE = "value";
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage(
             1L, "storage", "storage", new StoragePolicy(), null
@@ -62,6 +65,8 @@ public class ObjectStorageIndexTest {
     private ElasticsearchServiceClient elasticsearchServiceClient;
     @Mock
     private ElasticIndexService elasticIndexService;
+    @Mock
+    private LockService lockService;
     
     private ObjectStorageIndexImpl objectStorageIndex;
 
@@ -73,13 +78,15 @@ public class ObjectStorageIndexTest {
                 elasticsearchServiceClient,
                 elasticIndexService,
                 fileManager,
+                lockService,
                 TEST_NAME,
                 TEST_NAME,
                 BULK_SIZE,
                 BULK_SIZE,
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
-                ";", false)
+                ";", false,
+                EXCLUDE_KEY, EXCLUDE_VALUE)
         );
     }
 

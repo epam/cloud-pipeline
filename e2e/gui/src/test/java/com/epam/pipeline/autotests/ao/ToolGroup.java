@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     public ToolGroup searchToolByName(final String toolName) {
         StringSelection stringSelection = new StringSelection(toolName);
         Toolkit.getDefaultToolkit().getSystemClipboard()
-                .setContents(stringSelection, null);
+               .setContents(stringSelection, null);
         SelenideElement element = get(SEARCH);
         element.click();
         element.clear();

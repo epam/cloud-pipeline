@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static java.lang.String.format;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 
@@ -79,7 +80,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default SelenideElement get(Primitive primitive) {
         return Optional.ofNullable(elements().get(primitive))
                 .orElseThrow(() ->
-                        new NoSuchElementException(String.format(
+                        new NoSuchElementException(format(
                                 "Primitive %s is not defined in %s.", primitive, this.getClass().getSimpleName())));
     }
 
@@ -197,6 +198,11 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE ensure(final SelenideElement element, final Condition... conditions) {
+        element.should(conditions);
+        return (ELEMENT_TYPE) this;
+    }
+
     /**
      * Retrieves non-empty collections of the elements by the given qualifier
      * and apply given conditions for each one of them.
@@ -293,7 +299,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE refresh() {
-        Selenide.refresh();
+        getWebDriver().navigate().refresh();
         return (ELEMENT_TYPE) this;
     }
 
@@ -396,7 +402,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         while (element.has(condition)) {
             times += 1;
             if (times > threshold) {
-                throw new RuntimeException(String.format(
+                throw new RuntimeException(format(
                         "%s matches the condition %s over than %d times.", element, condition, threshold
                 ));
             }
@@ -448,13 +454,13 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         final WebDriver driver = WebDriverRunner.getWebDriver();
         final ELEMENT_TYPE itself = (ELEMENT_TYPE) this;
         final String mainWindow = driver.getWindowHandle();
-        final String duplicatingTab = String.format("window.open('%s', '_blank')", driver.getCurrentUrl());
+        final String duplicatingTab = format("window.open('%s', '_blank')", driver.getCurrentUrl());
         final Set<String> oldWindowHandles = new HashSet<>(driver.getWindowHandles());
         Selenide.executeJavaScript(duplicatingTab);
         final String openedWindow = driver.getWindowHandles().stream()
                                           .filter(handle -> !oldWindowHandles.contains(handle))
                                           .findFirst()
-                                          .orElseThrow(() -> new NoSuchWindowException(String.format(
+                                          .orElseThrow(() -> new NoSuchWindowException(format(
                                               "No new window opened {%s}.", Arrays.toString(oldWindowHandles.toArray())
                                           )));
         driver.switchTo().window(openedWindow);
@@ -507,7 +513,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
      * @return The origin access object.
      */
     default ELEMENT_TYPE selectValue(final Primitive combobox, final By optionQualifier) {
-        get(combobox).shouldBe(visible).click();
+        get(combobox).shouldBe(visible, enabled).click();
         $(visible(byClassName("ant-select-dropdown"))).find(optionQualifier).shouldBe(visible).click();
         return (ELEMENT_TYPE) this;
     }

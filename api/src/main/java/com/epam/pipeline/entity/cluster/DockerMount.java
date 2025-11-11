@@ -25,4 +25,5 @@ public class DockerMount {
     private final String name;
     private final String hostPath;
     private final String mountPath;
+    private final boolean readOnly;
 }

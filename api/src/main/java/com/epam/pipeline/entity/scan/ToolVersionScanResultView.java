@@ -34,6 +34,7 @@ public class ToolVersionScanResultView {
     private Long toolId;
     private String version;
     private ToolOSVersionView toolOSVersion;
+    private boolean cudaAvailable;
     private ToolScanStatus status;
     private Date scanDate;
     private Date successScanDate;
@@ -46,12 +47,13 @@ public class ToolVersionScanResultView {
     private Integer layersCount;
     private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount;
 
-    public static ToolVersionScanResultView from(final ToolVersionScanResult scanResult, final boolean isOSAllowed) {
+    public static ToolVersionScanResultView from(final ToolVersionScanResult scanResult,
+                                                 final ToolOSVersionExecutionPermit executionPermit) {
         return Optional.ofNullable(scanResult).map(scan ->
             ToolVersionScanResultView.builder()
                     .toolId(scan.getToolId())
                     .version(scan.getVersion())
-                    .toolOSVersion(ToolOSVersionView.from(scan.getToolOSVersion(), isOSAllowed))
+                    .toolOSVersion(ToolOSVersionView.from(scan.getToolOSVersion(), executionPermit))
                     .status(scan.getStatus())
                     .scanDate(scan.getScanDate())
                     .successScanDate(scan.getSuccessScanDate())
@@ -63,6 +65,7 @@ public class ToolVersionScanResultView {
                     .vulnerabilitiesCount(scan.getVulnerabilitiesCount())
                     .defaultCmd(scan.getDefaultCmd())
                     .layersCount(scan.getLayersCount())
+                    .cudaAvailable(scan.isCudaAvailable())
                     .build()
         ).orElse(null);
     }

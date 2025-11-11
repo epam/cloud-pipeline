@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-billing-srv
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-billing-srv: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: cp-billing-srv
+      namespace: default
+      labels:
+        cloud-pipeline/cp-billing-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-billing-srv: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-billing-srv
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:billing-srv-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - name: cp-system
+              mountPath: /opt/billing/logs
+              subPath: billing/logs
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

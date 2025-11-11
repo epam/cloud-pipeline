@@ -22,7 +22,12 @@ import {Link} from 'react-router';
 import {Icon} from 'antd';
 import classNames from 'classnames';
 import EditableField from './EditableField';
-import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
+import {
+  findPath,
+  generateTreeData,
+  generateUrl,
+  ItemTypes
+} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
 import styles from './Breadcrumbs.css';
 import HiddenObjects from '../../utils/hidden-objects';
@@ -91,10 +96,15 @@ export default class Breadcrumbs extends React.Component {
         return [];
       }
       if (!this.inlineMetadataEntities) {
-        items.push({
+        const metadataFolder = {
           name: 'Metadata',
-          id: `${ItemTypes.metadataFolder}_${this.props.id}/metadata`,
-          url: `/folder/${this.props.id}/metadata`
+          type: ItemTypes.metadataFolder,
+          id: `${this.props.id}/metadata`,
+          parentId: this.props.id
+        };
+        items.push({
+          ...metadataFolder,
+          url: () => generateUrl(metadataFolder)
         });
       }
       items.push({

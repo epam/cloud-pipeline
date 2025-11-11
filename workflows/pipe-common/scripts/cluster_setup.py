@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from pipeline import Logger, TaskStatus, PipelineAPI, StatusEntry
+from pipeline.common.noverify_kubernetes import NoVerify_Kube_Client
 import argparse
 import os
 import subprocess
@@ -20,7 +21,6 @@ import time
 
 try:
     from pykube.config import KubeConfig
-    from pykube.http import HTTPClient
     from pykube.http import HTTPError
     from pykube.objects import Pod
     from pykube.objects import Event
@@ -54,7 +54,7 @@ class PodModel:
 class Kubernetes:
 
     def __init__(self):
-        self.__kube_api = HTTPClient(KubeConfig.from_service_account())
+        self.__kube_api = NoVerify_Kube_Client.get_client(KubeConfig.from_service_account())
         self.__kube_api.session.verify = False
 
     def get_pod(self, run_id):

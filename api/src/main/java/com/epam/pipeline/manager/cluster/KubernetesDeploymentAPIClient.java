@@ -30,7 +30,7 @@ public class KubernetesDeploymentAPIClient {
 
     private final KubernetesDeploymentAPI kubernetesDeploymentAPI;
 
-    public KubernetesDeploymentAPIClient(final @Value("${kube.deployment.api.url.prefix:apis/extensions/v1beta1}")
+    public KubernetesDeploymentAPIClient(final @Value("${kube.deployment.api.url.prefix:apis/apps/v1}")
                                              String deploymentOperationsUrlPrefix) {
         this.kubernetesDeploymentAPI = buildRetrofitClient(deploymentOperationsUrlPrefix);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.xpath;
 
 public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO> {
     private final ClosableAO parentAO;
@@ -63,17 +65,23 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewUser(String userName) {
+        if (getTabTable().should(exist).$(byText(userName)).exists()) {
+            return this;
+        }
         UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
                 .typeInField(userName);
-        $(visible(byText("Select user"))).click();
-        return userAdditionPopupAO
-            .ok();
+        $$(byXpath(".//li[contains(@class, 'ant-select-dropdown-menu-item')]"))
+                .filter(exactText(userName)).first().click();
+        return userAdditionPopupAO.ok();
     }
 
     public PermissionTabAO validateDeleteButtonIsDisplayedOppositeTo(String name) {
-        $$(byClassName("ant-table-tbody")).find(text(name))
-                .find(tagName("button"))
-                .find(tagName("i"))
+        $(byClassName("ant-modal-body"))
+                .$$(byClassName("ant-table-tbody")).get(0)
+                .$$(xpath(".//tr"))
+                .filter(exactText(name)).first()
+                .$(xpath(".//button"))
+                .$(xpath(".//i"))
                 .shouldHave(cssClass("anticon-delete"))
                 .shouldBe(visible);
         return this;
@@ -82,7 +90,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     private void clickOnInfoTabIfItIsVisible() {
         sleep(1, SECONDS);
         SelenideElement infoTab = $$(byText("Info")).findBy(visible);
-        if(infoTab.is(visible)) {
+        if (infoTab.is(visible)) {
             infoTab.click();
         }
     }
@@ -103,6 +111,9 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewGroup(String usersGroup) {
+        if (getTabTable().$(byText(usersGroup)).exists()) {
+            return this;
+        }
         return clickAddNewGroup()
                 .typeInField(usersGroup)
                 .selectGroup(usersGroup)
@@ -116,9 +127,11 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO delete(String usersGroup) {
-        $$(byClassName("ant-table-tbody"))
-                .find(text(usersGroup))
-                .find(tagName("button"))
+        $(byClassName("ant-modal-body"))
+                .$$(byClassName("ant-table-tbody")).get(0)
+                .$$(xpath(".//tr"))
+                .filter(exactText(usersGroup)).first()
+                .$(xpath(".//button"))
                 .click();
         return this;
     }
@@ -130,6 +143,10 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
     @Override
     public void closeAll() {
+        final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+        if (applyButton.isEnabled()) {
+            applyButton.click();
+        }
         clickOnInfoTabIfItIsVisible();
         parentAO.closeAll();
     }
@@ -188,6 +205,19 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
             return this;
         }
 
+        public UserPermissionsTableAO set(Privilege privilege, boolean isAllowed) {
+            privilege.setToAllow(isAllowed);
+            return this;
+        }
+
+        public UserPermissionsTableAO savePermissions() {
+            final SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+            if (applyButton.isEnabled()) {
+                applyButton.click();
+            }
+            return this;
+        }
+
         @Override
         public void closeAll() {
             parentAO.closeAll();
@@ -202,6 +232,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         @Override
         public UserAdditionPopupAO typeInField(String value) {
+            context().$(className("ant-select-selection__placeholder")).click();
             context().find(tagName("input")).shouldBe(visible).setValue(value);
             return this;
         }

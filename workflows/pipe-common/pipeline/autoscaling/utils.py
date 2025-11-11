@@ -22,6 +22,7 @@ import jwt
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
+SPOT_INSTANCE_TYPE = "gcp.spot.instance.type"
 NODEUP_TASK = "InitializeNode"
 MIN_SWAP_DEVICE_SIZE = 5
 
@@ -104,6 +105,19 @@ def pipe_log_warn(message):
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
 
+def get_contextual_preference(preference_name):
+    pipe_api = PipelineAPI(api_url, None)
+    try:
+        preference = pipe_api.search_contextual_preferences(preference_name)
+        if 'value' in preference:
+             return preference['value']
+        else:
+            return None
+    except:
+        pipe_log('An error occurred while getting contextual preference {}, empty value is going to be used'.format(preference_name))
+        return None
+
+
 def get_autoscale_preference(preference_name):
     pipe_api = PipelineAPI(api_url, None)
     try:
@@ -113,7 +127,7 @@ def get_autoscale_preference(preference_name):
         else:
             return None
     except:
-        pipe_log('An error occured while getting preference {}, empty value is going to be used'.format(preference_name))
+        pipe_log('An error occurred while getting preference {}, empty value is going to be used'.format(preference_name))
         return None
 
 def load_cloud_config():
@@ -298,7 +312,8 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                         global_distribution_url, swap_size, pre_pull_images=[]):
+                         global_distribution_url, swap_size, pre_pull_images=[], docker_data_root='/ebs/docker',
+                         docker_storage_driver='', skip_system_images_load=''):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -325,7 +340,12 @@ def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                                            .replace('@API_TOKEN@', api_token) \
                                            .replace('@API_USER@', api_user) \
                                            .replace('@FS_TYPE@', fs_type) \
-                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url)
+                                           .replace('@DOCKER_DATA_ROOT@', docker_data_root) \
+                                           .replace('@DOCKER_STORAGE_DRIVER@', docker_storage_driver) \
+                                           .replace('@SKIP_SYSTEM_IMAGES_LOAD@', skip_system_images_load) \
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
+                                           .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
+                                           .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():

@@ -16,9 +16,11 @@
 package com.epam.pipeline.controller.vo.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
 
+import java.util.Map;
 import java.util.Set;
 
 
@@ -42,4 +44,5 @@ public class NodePoolVO {
     private Double scaleUpThreshold;
     private Double scaleDownThreshold;
     private Integer scaleStep;
+    private Map<String, PoolLabel> kubeLabels;
 }

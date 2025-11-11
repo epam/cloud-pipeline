@@ -21,6 +21,8 @@ import storagesRequest from '../models/dataStorage/DataStorageAvailable';
 import DataStorageRequest from '../models/dataStorage/DataStoragePage';
 import DataStorageItemUpdateContent from '../models/dataStorage/DataStorageItemUpdateContent';
 import auditStorageAccessManager from './audit-storage-access';
+import {base64toString} from './base64';
+import escapeRegExp from './escape-reg-exp';
 
 const parser = new DOMParser();
 
@@ -87,7 +89,6 @@ class ObjectStorage {
     this.path = path;
     this.pathMask = pathMask;
     this.delimiter = delimiter;
-    this.s3Storage = undefined;
     this.permissions = permissions;
     this.mountPoint = mountPoint;
     if (/^nfs$/i.test(type)) {
@@ -102,48 +103,50 @@ class ObjectStorage {
   }
 
   get initialized () {
-    if (this.id && this.type && this.path && /^s3$/i.test(this.type)) {
-      return !!this.s3Storage;
-    }
+    // Previously we had the s3Storage instance initialization check here;
+    // We'll leave this method for backward compatibility.
     return true;
   }
 
-  async initialize (permissions = {}) {
+  async initialize () {
+    // Previously we had the s3Storage object initialization logic here.
+    // We'll leave this method for backward compatibility.
+  }
+
+  async generateFileUrl (file) {
     if (this.id && this.type && this.path && /^s3$/i.test(this.type)) {
-      this.s3Storage = new S3Storage({
+      const s3Storage = new S3Storage({
         id: this.id,
         type: this.type,
         path: this.path,
         region: this.region,
-        ...permissions
+        ...this.permissions
       });
-      await this.s3Storage.updateCredentials();
-    }
-  }
-
-  async generateFileUrl (file) {
-    if (!this.s3Storage) {
-      await this.initialize(this.permissions);
-    }
-    if (this.s3Storage) {
-      await this.s3Storage.refreshCredentialsIfNeeded();
-      return this.s3Storage.getSignedUrl(file);
+      await s3Storage.updateCredentials();
+      return s3Storage.getSignedUrl(file);
     }
     const request = new GenerateDownloadUrl(this.id, file);
     await request.fetch();
     if (request.error) {
       throw new Error(request.error);
     }
-    return atob((request.value || {}).url);
+    return (request.value || {}).url;
   }
 
   async getFileContent (file, options = {}) {
     const {
       json = false
     } = options;
-    if (this.s3Storage) {
-      await this.s3Storage.refreshCredentialsIfNeeded();
-      const url = this.s3Storage.getSignedUrl(file);
+    if (this.id && this.type && this.path && /^s3$/i.test(this.type)) {
+      const s3Storage = new S3Storage({
+        id: this.id,
+        type: this.type,
+        path: this.path,
+        region: this.region,
+        ...this.permissions
+      });
+      await s3Storage.updateCredentials();
+      const url = s3Storage.getSignedUrl(file);
       auditStorageAccessManager.reportReadAccess({
         storageId: this.id,
         path: file,
@@ -157,7 +160,7 @@ class ObjectStorage {
     if (request.error) {
       throw new Error(request.error);
     }
-    return atob((request.value || {}).content);
+    return base64toString((request.value || {}).content);
   }
 
   async getFolderContents (folder) {
@@ -213,6 +216,12 @@ class ObjectStorage {
         return e[1];
       }
     }
+    if (this.localRoot) {
+      const e = (new RegExp(`^${escapeRegExp(this.localRoot)}/(.+)$`, 'i')).exec(path);
+      if (e && e.length) {
+        return e[1];
+      }
+    }
     return path;
   };
 
@@ -253,7 +262,14 @@ function findStorageByPathFn (storagePath) {
   return function predicate (storage) {
     const storageMask = new RegExp(`^${storage.pathMask}(/|$)`, 'i');
     const storagePathMask = new RegExp(`^${storage.path}(/|$)`, 'i');
-    return storageMask.test(storagePath) || storagePathMask.test(storagePath);
+    const {
+      name,
+      mountPoint = `/cloud-data/${name}`
+    } = storage;
+    const cloudDataMask = new RegExp(`^${escapeRegExp(mountPoint)}(/|$)`, 'i');
+    return storageMask.test(storagePath) ||
+      storagePathMask.test(storagePath) ||
+      cloudDataMask.test(storagePath);
   };
 }
 

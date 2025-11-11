@@ -72,7 +72,8 @@ class AWSCloudTestCaseStorageResultGatherer:
                     result.with_file(
                         TestCaseFile(
                             obj["Key"], None, None,
-                            {tag["Key"]: tag["Value"] for tag in get_tags_response["TagSet"]}
+                            {tag["Key"]: tag["Value"] for tag in get_tags_response["TagSet"]},
+                            obj["Size"]
                         )
                     )
         return result

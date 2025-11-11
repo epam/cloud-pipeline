@@ -172,8 +172,10 @@ export default class PipelineConfiguration extends React.Component {
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
-      const [configuration] = this.props.configurations.value
-        .filter(c => c.default);
+      const configs = this.props.configurations.value || [];
+      const configuration = configs.find(c => c.default) ||
+        configs.find(c => /^default$/i.test(c.name)) ||
+        configs[0];
       if (configuration) {
         return configuration.name;
       }
@@ -361,13 +363,15 @@ export default class PipelineConfiguration extends React.Component {
   };
 
   onSaveConfiguration = (opts) => {
+    const {configuration: cfg, ...configurationPayload} = opts;
+    const {name: configurationName} = cfg || {};
     if (this.selectedConfigurationName &&
       this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
       if (this.props.configurations.value
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
-          c.name === opts.configuration.name).length > 0) {
-        message.error(`Configuration ${opts.configuration.name} already exists`, 5);
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+          c.name === configurationName).length > 0) {
+        message.error(`Configuration ${configurationName} already exists`, 5);
         return false;
       }
       const [configuration] = this.props.configurations.value
@@ -377,8 +381,8 @@ export default class PipelineConfiguration extends React.Component {
         this.setState({
           pending: true
         }, async () => {
-          if (this.selectedConfigurationName !== opts.configuration.name) {
-            const renameRequest = new PipelineConfigurationRename(this.props.pipelineId, this.selectedConfigurationName, opts.configuration.name);
+          if (this.selectedConfigurationName !== configurationName) {
+            const renameRequest = new PipelineConfigurationRename(this.props.pipelineId, this.selectedConfigurationName, configurationName);
             await renameRequest.send({});
             if (renameRequest.error) {
               message.error(renameRequest.error);
@@ -388,20 +392,18 @@ export default class PipelineConfiguration extends React.Component {
               return;
             }
           }
+          const currentConfigurationPayload = {...(configuration.configuration || {})};
           const request = new PipelineConfigurationUpdate(this.props.pipelineId);
-          const mainFile = configuration.configuration.main_file;
-          const mainClass = configuration.configuration.main_class;
-          const language = configuration.configuration.language;
           const payload = {
-            name: opts.configuration.name,
+            name: configurationName,
             default: configuration.default,
             description: configuration.description,
-            configuration: opts
+            configuration: {
+              ...currentConfigurationPayload,
+              ...configurationPayload
+            }
           };
-          payload.configuration.configuration = undefined;
-          payload.configuration.main_file = mainFile;
-          payload.configuration.main_class = mainClass;
-          payload.configuration.language = language;
+          console.log(payload);
           await request.send(payload);
           if (request.error) {
             hide();
@@ -540,5 +542,4 @@ export default class PipelineConfiguration extends React.Component {
       </div>
     );
   }
-
 }

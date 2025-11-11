@@ -39,7 +39,8 @@
                         max_size,
                         scale_up_threshold,
                         scale_down_threshold,
-                        scale_step
+                        scale_step,
+                        kube_labels
                         )
                     VALUES (
                         :POOL_CREATED_DATE,
@@ -58,7 +59,8 @@
                         :POOL_MAX_SIZE,
                         :POOL_UP_THRESHOLD,
                         :POOL_DOWN_THRESHOLD,
-                        :POOL_SCALE_STEP)
+                        :POOL_SCALE_STEP,
+                        :POOL_KUBE_LABELS)
                 ]]>
             </value>
         </constructor-arg>
@@ -76,7 +78,8 @@
                         max_size = :POOL_MAX_SIZE,
                         scale_up_threshold = :POOL_UP_THRESHOLD,
                         scale_down_threshold = :POOL_DOWN_THRESHOLD,
-                        scale_step = :POOL_SCALE_STEP
+                        scale_step = :POOL_SCALE_STEP,
+                        kube_labels = :POOL_KUBE_LABELS
                     WHERE
                         id = :POOL_ID
                 ]]>
@@ -114,6 +117,7 @@
                         n.scale_up_threshold as POOL_UP_THRESHOLD,
                         n.scale_down_threshold as POOL_DOWN_THRESHOLD,
                         n.scale_step as POOL_SCALE_STEP,
+                        n.kube_labels as POOL_KUBE_LABELS,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
                         e.from_day_of_week,
@@ -152,6 +156,7 @@
                         n.scale_down_threshold as POOL_DOWN_THRESHOLD,
                         n.scale_step as POOL_SCALE_STEP,
                         n.schedule_id as SCHEDULE_ID,
+                        n.kube_labels as POOL_KUBE_LABELS,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
                         e.from_day_of_week,

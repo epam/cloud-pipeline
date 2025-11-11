@@ -207,6 +207,9 @@ export default `
 @THEME .cp-divider.inline {
   background: @panel-border-color;
 }
+@THEME .cp-divider.light {
+  border-color: @panel-border-color-light;
+}
 @THEME .cp-primary {
   color: @primary-color;
 }
@@ -251,6 +254,78 @@ export default `
   color: @color-sensitive;
   border: 1px solid currentColor;
 }
+@THEME .cp-grey {
+  color: @color-grey;
+}
+@THEME .cp-grey.border {
+  border-color: @color-grey;
+}
+@THEME .cp-grey-light {
+  color: @color-grey-light;
+}
+@THEME .cp-grey-light.border {
+  border-color: @color-grey-light;
+}
+@THEME .cp-grey-semi-transparent {
+  color: @color-grey-semi-transparent;
+}
+@THEME .cp-grey-semi-transparent.border {
+  border-color: @color-grey-semi-transparent;
+}
+@THEME .cp-violet {
+  color: @color-violet;
+}
+@THEME .cp-violet.border {
+  border-color: @color-violet;
+}
+@THEME .cp-pink {
+  color: @color-violet;
+}
+@THEME .cp-pink.border {
+  border-color: @color-violet;
+}
+@THEME .cp-pink-light {
+  color: @color-pink-light;
+}
+@THEME .cp-pink-light.border {
+  border-color: @color-pink-light;
+}
+@THEME .cp-pink-dusty {
+  color: @color-pink-dusty;
+}
+@THEME .cp-pink-dusty.border {
+  border-color: @color-pink-dusty;
+}
+@THEME .cp-aqua {
+  color: @color-aqua;
+}
+@THEME .cp-aqua.border {
+  border-color: @color-aqua;
+}
+@THEME .cp-aqua-accent {
+  color: @color-aqua-accent;
+}
+@THEME .cp-aqua-accent.border {
+  border-color: @color-aqua-accent;
+}
+@THEME .cp-aqua-light {
+  color: @color-aqua-light;
+}
+@THEME .cp-aqua-light.border {
+  border-color: @color-aqua-light;
+}
+@THEME .cp-blue-soft {
+  color: @color-blue-soft;
+}
+@THEME .cp-blue-soft.border {
+  border-color: @color-blue-soft;
+}
+@THEME .cp-blue-dimmed {
+  color: @color-blue-dimmed;
+}
+@THEME .cp-blue-dimmed.border {
+  border-color: @color-blue-dimmed;
+}
 @THEME .cp-tag {
   background-color: transparent;
   border: 1px solid @card-border-color;
@@ -260,7 +335,8 @@ export default `
   border: 1px solid @application-color;
 }
 @THEME .cp-tag.filled,
-@THEME .cp-tag.link:hover {
+@THEME .cp-tag.link:hover,
+@THEME .cp-tag.hovered {
   background-color: @application-color;
   border: 1px solid @application-color;
   color: @application-background-color;
@@ -269,7 +345,8 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .cp-tag.filled.disabled,
-@THEME .cp-tag.link.disabled:hover {
+@THEME .cp-tag.link.disabled:hover,
+@THEME .cp-tag.disabled.hovered {
   background-color: @application-color-disabled;
   border: 1px solid @application-color-disabled;
 }
@@ -278,7 +355,8 @@ export default `
   color: @color-yellow;
 }
 @THEME .cp-tag.warning.filled,
-@THEME .cp-tag.warning.link:hover {
+@THEME .cp-tag.warning.link:hover,
+@THEME .cp-tag.warning.hovered {
   background-color: @color-yellow;
   border-color: @color-yellow;
   color: @primary-text-color;
@@ -288,7 +366,8 @@ export default `
   color: @color-red;
 }
 @THEME .cp-tag.critical.filled,
-@THEME .cp-tag.critical.link:hover {
+@THEME .cp-tag.critical.link:hover,
+@THEME .cp-tag.critical.hovered {
   background-color: @color-red;
   border-color: @color-red;
   color: @primary-text-color;
@@ -298,7 +377,8 @@ export default `
   color: @color-green;
 }
 @THEME .cp-tag.success.filled,
-@THEME .cp-tag.success.link:hover {
+@THEME .cp-tag.success.link:hover,
+@THEME .cp-tag.success.hovered {
   background-color: @color-green;
   border-color: @color-green;
   color: @primary-text-color;
@@ -311,9 +391,77 @@ export default `
 @THEME .cp-tag.primary.filled,
 @THEME .cp-tag.cp-primary.filled,
 @THEME .cp-tag.primary.link:hover,
-@THEME .cp-tag.cp-primary.link:hover {
+@THEME .cp-tag.primary.hovered,
+@THEME .cp-tag.cp-primary.link:hover,
+@THEME .cp-tag.cp-primary.hovered {
   background-color: @primary-color;
   border-color: @primary-color;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.violet {
+  border-color: currentColor;
+  color: @color-violet;
+}
+@THEME .cp-tag.violet.filled,
+@THEME .cp-tag.violet.link:hover,
+@THEME .cp-tag.violet.hovered {
+  background-color: @color-violet;
+  border-color: @color-violet;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.blue-soft {
+  border-color: currentColor;
+  color: @color-blue-soft;
+}
+@THEME .cp-tag.blue-soft.filled,
+@THEME .cp-tag.blue-soft.link:hover,
+@THEME .cp-tag.blue-soft.hovered {
+  background-color: @color-blue-soft;
+  border-color: @color-blue-soft;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.blue-dimmed {
+  border-color: currentColor;
+  color: @color-blue-dimmed;
+}
+@THEME .cp-tag.blue-dimmed.filled,
+@THEME .cp-tag.blue-dimmed.link:hover,
+@THEME .cp-tag.blue-dimmed.hovered {
+  background-color: @color-blue-dimmed;
+  border-color: @color-blue-dimmed;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.aqua {
+  border-color: currentColor;
+  color: @color-aqua;
+}
+@THEME .cp-tag.aqua.filled,
+@THEME .cp-tag.aqua.link:hover,
+@THEME .cp-tag.aqua.hovered {
+  background-color: @color-aqua;
+  border-color: @color-aqua;
+  color: @primary-text-color;
+}
+@THEME .cp-tag.aqua-light {
+  border-color: currentColor;
+  color: @color-aqua-light;
+}
+@THEME .cp-tag.aqua-light.filled,
+@THEME .cp-tag.aqua-light.link:hover,
+@THEME .cp-tag.aqua-light.hovered {
+  background-color: @color-aqua-light;
+  border-color: @color-aqua-light;
+  color: @application-color;
+}
+@THEME .cp-tag.aqua-accent {
+  border-color: currentColor;
+  color: @color-aqua-accent;
+}
+@THEME .cp-tag.aqua-accent.filled,
+@THEME .cp-tag.aqua-accent.link:hover,
+@THEME .cp-tag.aqua-accent.hovered {
+  background-color: @color-aqua-accent;
+  border-color: @color-aqua-accent;
   color: @primary-text-color;
 }
 @THEME .cp-versioned-storage {
@@ -479,8 +627,16 @@ export default `
 }
 @THEME .ant-form-item-control.has-error .ant-select-selection,
 @THEME .ant-form-item-control.has-error .ant-input,
-@THEME .ant-form-item-control.has-error .CodeMirror-wrap {
+@THEME .ant-form-item-control.has-error .CodeMirror-wrap,
+@THEME .has-error .CodeMirror-wrap {
   border-color: @color-red;
+}
+@THEME .launch-form-pipeline-name-form-item .ant-form-item-control,
+@THEME .launch-form-pipeline-name-form-item .ant-form-item-title {
+  line-height: 24px;
+}
+@THEME .cp-background-not-important {
+  background-color: @color-grey-semi-transparent;
 }
 @THEME .cp-text-not-important {
   color: @application-color-faded;
@@ -1513,27 +1669,42 @@ export default `
 @THEME .ant-form-item-required::before {
   color: @color-red;
 }
-@THEME .ant-slider-rail {
+@THEME .ant-slider-rail,
+@THEME .rc-slider-rail {
   background-color: @card-header-background;
 }
 @THEME .ant-progress-circle-trail {
   stroke: @card-header-background;
 }
-@THEME .ant-slider-disabled .ant-slider-track {
+@THEME .ant-slider-disabled .ant-slider-track,
+@THEME .rc-slider-disabled .rc-slider-track {
   background-color: @application-color-disabled !important;
 }
-@THEME .ant-slider-dot {
+@THEME .ant-slider-dot,
+@THEME .rc-slider-dot {
   border-color: @card-header-background;
   background-color: @card-background-color;
 }
+@THEME .rc-slider-dot-active {
+  border-color: @primary-color;
+  background-color: @card-background-color;
+}
 @THEME .ant-slider-disabled .ant-slider-handle,
-@THEME .ant-slider-disabled .ant-slider-dot {
+@THEME .ant-slider-disabled .ant-slider-dot,
+@THEME .rc-slider-disabled .rc-slider-handle,
+@THEME .rc-slider-disabled .rc-slider-dot {
   border-color: @application-color-disabled !important;
 }
-@THEME .ant-slider:hover .ant-slider-rail {
+@THEME .rc-slider:not(.rc-slider-disabled) .rc-slider-handle:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
+}
+@THEME .ant-slider:hover .ant-slider-rail,
+@THEME .rc-slider:hover .rc-slider-rail {
   background-color: @card-header-background;
 }
-@THEME .ant-slider-track {
+@THEME .ant-slider-track,
+@THEME .rc-slider-track {
   background-color: @primary-color;
 }
 @THEME .ant-progress-circle-path {
@@ -1542,26 +1713,33 @@ export default `
 @THEME .ant-progress-status-success .ant-progress-circle-path {
   stroke: @color-green !important;
 }
-@THEME .ant-slider:hover .ant-slider-track {
+@THEME .ant-slider:hover .ant-slider-track,
+@THEME .rc-slider:hover .rc-slider-track {
   background-color: @primary-hover-color;
 }
-@THEME .ant-slider-handle {
+@THEME .ant-slider-handle,
+@THEME .rc-slider-handle {
   border-color: @primary-color;
   background-color: @card-background-color;
 }
-@THEME .ant-slider:hover .ant-slider-handle {
+@THEME .ant-slider:hover .ant-slider-handle,
+@THEME .rc-slider:hover .rc-slider-handle {
   border-color: @primary-hover-color;
 }
-@THEME .ant-slider-mark-text {
+@THEME .ant-slider-mark-text,
+@THEME .rc-slider-mark-text {
   color: @application-color;
 }
-@THEME .cp-hcs-z-position-slider .ant-slider-track,
-@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
-  background-color: @color-yellow;
+@THEME .cp-hcs-z-position-slider .rc-slider-track,
+@THEME .cp-hcs-z-position-slider.rc-slider:hover .rc-slider-track {
+  background-color: @card-header-background;
 }
-@THEME .cp-hcs-z-position-slider .ant-slider-handle,
-@THEME .cp-hcs-z-position-slider .ant-slider-dot-active,
-@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+@THEME .cp-hcs-z-position-slider .rc-slider-dot-active {
+  border-color: @card-header-background !important;
+}
+@THEME .cp-hcs-z-position-slider .rc-slider-handle,
+@THEME .cp-hcs-z-position-slider .rc-slider-dot-active,
+@THEME .cp-hcs-z-position-slider.rc-slider:hover .rc-slider-handle {
   border-color: @color-yellow;
 }
 @THEME .cp-notification {
@@ -1607,6 +1785,16 @@ export default `
 }
 @THEME .cp-dark-background {
   background-color: @application-dark-background-color;
+}
+@THEME .cp-panel.cp-dark-background {
+  color: @application-tooltip-color;
+  background-color: @application-tooltip-background-color;
+  border-color: @application-tooltip-border-color;
+}
+@THEME .cp-panel.cp-dark-background.semi-transparent {
+  color: @application-tooltip-color;
+  background-color: fade(@application-tooltip-background-color, 85%);
+  border-color: @application-tooltip-border-color;
 }
 @THEME .cp-hcs-zoom-button {
   cursor: pointer;
@@ -1822,6 +2010,13 @@ export default `
 @THEME .ant-tooltip-inner .provider.aws {
   background-image: @aws-icon-contrast;
 }
+@THEME .provider.local {
+  background-image: @local-icon;
+  background-color: transparent;
+}
+@THEME .ant-tooltip-inner .provider.local {
+  background-image: @local-icon-contrast;
+}
 @THEME .ant-tooltip-inner .provider.gcp {
   background-image: @gcp-icon-contrast;
 }
@@ -2034,13 +2229,17 @@ export default `
   color: @primary-text-color;
   outline: none;
 }
-@THEME .cp-runs-advanced-filter-input {
+@THEME .cp-runs-advanced-filter-input .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @input-border;
 }
-@THEME .cp-runs-advanced-filter-input-error {
+@THEME .cp-runs-advanced-filter-input-error .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @color-red;
+}
+@THEME .cp-runs-advanced-filter-input-error .CodeMirror-line span,
+@THEME .cp-runs-advanced-filter-input .CodeMirror-line span {
+  color: @application-color !important;
 }
 @THEME .cp-run-instance-tag {
   background-color: @card-header-background;
@@ -2056,6 +2255,9 @@ export default `
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:active,
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:focus,
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:visited {
+  color: @application-color-tooltip;
+}
+@THEME .tooltip-text {
   color: @application-color-tooltip;
 }
 @THEME .cp-wdl-task[data-type=VisualStep] rect,
@@ -2154,6 +2356,33 @@ export default `
   background-color: @panel-background-color;
   border: 1px solid @panel-border-color;
   color: @application-color;
+}
+@THEME .cp-run-engine-tasks-group.active,
+@THEME .cp-run-engine-tasks-group:hover,
+@THEME .cp-run-engine-task.active,
+@THEME .cp-run-engine-task:hover,
+@THEME .cp-run-engine-task-cell.active,
+@THEME .cp-run-engine-task-cell:hover {
+  background-color: @color-grey-semi-transparent;
+}
+@THEME .cp-run-details-tabs .ant-menu-item {
+  padding: 0 5px;
+  margin: 0 5px;
+}
+@THEME .cp-run-details-tabs .ant-menu-item:first-child {
+  margin-left: 0;
+}
+@THEME .cp-run-details-tabs .ant-menu-item:last-child {
+  margin-right: 0;
+}
+@THEME .cp-run-engine-task-modal .ant-modal-content {
+  background-color: @application-background-color;
+}
+@THEME .cp-run-engine-task-modal .ant-modal-body {
+  padding: 5px;
+}
+@THEME .cp-run-engine-task-status-bar {
+  background-color: @color-grey-semi-transparent;
 }
 
 @THEME .cp-billing-menu {
@@ -2860,11 +3089,11 @@ export default `
 @THEME .cp-nat-route-port-control {
   border-bottom: 1px solid @table-border-color;
 }
-@THEME .cp-user-status-online {
+@THEME .cp-status-online {
   fill: @color-green;
   stroke: @color-green;
 }
-@THEME .cp-user-status-offline {
+@THEME .cp-status-offline {
   stroke: @color-grey;
   fill: transparent;
 }
@@ -3049,6 +3278,12 @@ export default `
 }
 @THEME .CodeMirror-linenumber {
   color: @application-color-faded;
+}
+@THEME .CodeMirror-selected {
+  background-color: @codemirror-selected-background-color;
+}
+@THEME .CodeMirror-focused .CodeMirror-selected {
+  background-color: @codemirror-focused-selected-background-color;
 }
 @THEME .cm-s-default .cm-header {
   color: @color-blue;
@@ -3306,6 +3541,87 @@ export default `
 @THEME .cell-profiler-job.selected {
   background-color: @table-element-selected-background-color;
   color: @table-element-selected-color;
+}
+
+@THEME .cp-wdl-visualizer .visual-element .visual-element-body {
+  fill: fade(@primary-color, 0.1);
+  stroke: @primary-color;
+  stroke-width: 1;
+}
+@THEME .cp-wdl-visualizer .visual-element.visual-scatter .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+@THEME .cp-wdl-visualizer .visual-element.visual-conditional .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 10 10;
+}
+@THEME .cp-wdl-visualizer .visual-element.selected .visual-element-body {
+  fill: fade(@primary-color, 0.2);
+  stroke: @primary-active-color;
+  stroke-width: 2;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter {
+  stroke: @panel-background-color;
+  fill: @primary-color;
+  stroke-width: 1;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid {
+  stroke: @panel-background-color;
+  fill: @color-error;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @color-error;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=true] {
+  fill: @color-error;
+  stroke: @panel-background-color;
+}
+@THEME .cp-wdl-visualizer .visual-element.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.selected.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.visual-scatter.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.visual-conditional.invalid .visual-element-body {
+  stroke: @color-error;
+}
+@THEME .cp-wdl-visualizer #workflow-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer #default-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer .visual-connection .visual-connection-line {
+  stroke: fade(@primary-color, 0.5);
+}
+@THEME .cp-wdl-visualizer .visual-parameter-label tspan[parameter-name=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-name=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-alias=true] {
+  fill: @application-color;
+}
+@THEME .cp-wdl-visualizer .visual-parameter-label tspan[parameter-type=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-type=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-as=true] {
+  fill: @application-color-faded;
+}
+@THEME .cp-wdl-visualizer .joint-tools-layer .joint-tools .joint-link-tool-remove circle {
+  fill: @color-error;
+}
+@THEME .cp-wdl-visualizer .joint-highlight-stroke {
+  stroke: @primary-color;
+}
+@THEME .ant-collapse.wdl-properties-collapse .ant-collapse-content {
+  padding: 0;
+}
+@THEME .ant-collapse.wdl-properties-collapse .ant-collapse-content > .ant-collapse-content-box {
+  padding: 2px;
 }
 
 `;

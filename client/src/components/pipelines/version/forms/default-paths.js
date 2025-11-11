@@ -19,7 +19,8 @@ import {RepositoryTypes} from '../../../special/git-repository-control';
 const defaultValues = {
   [RepositoryTypes.GitLab]: {src: 'src/', docs: 'docs/'},
   [RepositoryTypes.GitHub]: {src: 'src/', docs: 'docs/'},
-  [RepositoryTypes.BitBucket]: {src: '/', docs: ''}
+  [RepositoryTypes.BitBucket]: {src: '/', docs: ''},
+  [RepositoryTypes.ButBucketCloud]: {src: '/', docs: ''}
 };
 
 function getPipelineDefaultPaths (preferences) {
@@ -27,7 +28,8 @@ function getPipelineDefaultPaths (preferences) {
   [
     RepositoryTypes.GitHub,
     RepositoryTypes.GitLab,
-    RepositoryTypes.BitBucket
+    RepositoryTypes.BitBucket,
+    RepositoryTypes.ButBucketCloud
   ].forEach((aType) => {
     const srcPreference = `${aType.toLowerCase()}.default.src.directory`;
     const docsPreference = `${aType.toLowerCase()}.default.doc.directory`;

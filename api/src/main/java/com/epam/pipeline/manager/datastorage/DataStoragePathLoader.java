@@ -54,11 +54,24 @@ public class DataStoragePathLoader {
                         messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, pathOrId)));
     }
 
+    public  Optional<AbstractDataStorage> findDataStorage(final String pathOrId) {
+        return CommonUtils.first(
+            () -> loadById(pathOrId),
+            () -> loadByNameOrPath(pathOrId),
+            () -> loadByPrefixes(pathOrId),
+            () -> loadByRoot(pathOrId));
+    }
+
     private Optional<AbstractDataStorage> loadById(final String id) {
         if (NumberUtils.isDigits(id)) {
             return Optional.ofNullable(dataStorageDao.loadDataStorage(Long.parseLong(id)));
         }
         return Optional.empty();
+    }
+
+    private Optional<AbstractDataStorage> loadByRoot(final String path) {
+        final String root = path.split(ProviderUtils.DELIMITER)[0];
+        return Optional.ofNullable(dataStorageDao.loadDataStorageByNameOrPath(root, root));
     }
 
     private Optional<AbstractDataStorage> loadByNameOrPath(final String path) {

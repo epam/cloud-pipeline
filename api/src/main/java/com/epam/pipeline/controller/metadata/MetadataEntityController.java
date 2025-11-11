@@ -303,10 +303,11 @@ public class MetadataEntityController extends AbstractRestController {
     public void downloadEntityAsFile(
             @RequestParam final Long folderId,
             @RequestParam final String entityClass,
+            @RequestParam(required = false) final List<Long> entityIds,
             @RequestParam(required = false, defaultValue = "tsv") final String fileFormat,
             final HttpServletResponse response) throws IOException {
         final InputStream inputStream =
-                metadataEntityApiService.getMetadataEntityFile(folderId, entityClass, fileFormat);
+                metadataEntityApiService.getMetadataEntityFile(folderId, entityClass, entityIds, fileFormat);
         writeStreamToResponse(response, inputStream, String.format("%s.%s", entityClass, fileFormat));
     }
 

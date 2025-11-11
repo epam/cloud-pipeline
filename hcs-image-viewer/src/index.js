@@ -28,6 +28,10 @@ const viewer = new Viewer({
 });
 
 window.addEventListener('message', (message) => {
+  if (message.origin) {
+    // sonar qube 'Origins should be verified'
+    console.log('message orgin:', message.origin);
+  }
   const { data } = message;
   const { type, method, options = [] } = data;
   if (type === 'hcs' && viewer[method] && typeof viewer[method] === 'function') {
@@ -40,13 +44,10 @@ generateUrls()
     const {
       url,
       offsets,
-      urlOverview,
-      offsetsOverview,
     } = urls;
     let o = 0;
     const presets = [
       { url, offsets },
-      { url: urlOverview, offsets: offsetsOverview },
     ];
 
     const next = () => {

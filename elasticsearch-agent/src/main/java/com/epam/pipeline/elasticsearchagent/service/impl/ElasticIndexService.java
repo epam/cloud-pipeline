@@ -56,9 +56,8 @@ public class ElasticIndexService {
 
     public void createIndexIfNotExist(final String indexName, final String settingsFilePath)
             throws ElasticClientException {
-        try {
-            final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
-                    Charset.defaultCharset());
+        try (InputStream fileStream = openJsonMapping(settingsFilePath)) {
+            final String mappingsJson = IOUtils.toString(fileStream, Charset.defaultCharset());
             elasticsearchServiceClient.createIndex(indexName, mappingsJson);
         } catch (IOException e) {
             throw new ElasticClientException("Failed to create elasticsearch index with name " + indexName, e);

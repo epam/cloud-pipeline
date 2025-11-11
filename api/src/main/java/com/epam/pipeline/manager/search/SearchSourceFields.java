@@ -27,20 +27,20 @@ import java.util.stream.Stream;
 @Getter
 @RequiredArgsConstructor
 public enum SearchSourceFields {
-    ID("id"),
-    PARENT_ID("parentId"),
-    NAME("name"),
-    DESCRIPTION("description"),
-    OWNER("ownerUserName"),
-    PATH("path"),
-    CLOUD_PATH("cloud_path"),
-    MOUNT_PATH("mount_path"),
-    TEXT("text"),
-    START_DATE("startDate"),
-    END_DATE("endDate"),
-    IMAGE("image"),
-    SIZE("size"),
-    LAST_MODIFIED("lastModified");
+    ID("id", null),
+    PARENT_ID("parentId", null),
+    NAME("name",  "Name"),
+    DESCRIPTION("description", "Description"),
+    OWNER("ownerUserName", "Owner"),
+    PATH("path", "Path"),
+    CLOUD_PATH("cloud_path", "Cloud path"),
+    MOUNT_PATH("mount_path", "Mount path"),
+    TEXT("text", null),
+    START_DATE("startDate", "Started"),
+    END_DATE("endDate", "Finished"),
+    IMAGE("image", null),
+    SIZE("size", "Size"),
+    LAST_MODIFIED("lastModified", "Changed");
 
     public static final Set<String> ADDITIONAL_FIELDS = setOf(
             PATH, CLOUD_PATH, MOUNT_PATH, TEXT, START_DATE,
@@ -56,5 +56,5 @@ public enum SearchSourceFields {
     }
 
     private final String fieldName;
-
+    private final String prettyName;
 }

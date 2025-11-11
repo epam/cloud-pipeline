@@ -60,8 +60,10 @@ import static org.mockito.Mockito.reset;
 public class PipelineApiServiceTest extends AbstractAclTest {
 
     private final Pipeline pipeline = PipelineCreatorUtils.getPipeline(ANOTHER_SIMPLE_USER);
+    private final Pipeline versionedStorage = PipelineCreatorUtils.getVersionedStorage(ANOTHER_SIMPLE_USER);
     private final Pipeline anotherPipeline = PipelineCreatorUtils.getPipeline(ID_2, ANOTHER_SIMPLE_USER, ID_2);
     private final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO(ID);
+    private final PipelineVO versionedStorageVO = PipelineCreatorUtils.getVersionedStorageVO(ID);
     private final Folder folder = FolderCreatorUtils.getFolder(ID, ANOTHER_SIMPLE_USER);
     private final CheckRepositoryVO checkRepositoryVO = PipelineCreatorUtils.getCheckRepositoryVO();
     private final PipelinesWithPermissionsVO pipelinesWithPermissions =
@@ -97,12 +99,31 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldCreateVersionedStorageForAdmin() throws GitClientException {
+        doReturn(pipeline).when(mockPipelineManager).create(versionedStorageVO);
+
+        assertThat(pipelineApiService.create(versionedStorageVO)).isEqualTo(pipeline);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_MANAGER_ROLE)
     public void shouldCreatePipelineWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
 
         assertThat(pipelineApiService.create(pipelineVO)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldCreateVersionedStorageWhenPermissionIsGranted() throws GitClientException {
+        initAclEntity(folder, AclPermission.WRITE);
+        doReturn(pipeline).when(mockPipelineManager).create(versionedStorageVO);
+        mockSecurityContext();
+
+        assertThat(pipelineApiService.create(versionedStorageVO)).isEqualTo(pipeline);
     }
 
     @Test
@@ -111,8 +132,20 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         initAclEntity(folder, AclPermission.WRITE);
         final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO(null);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldDenyCreateVersionedStorageWhenParentIdIsNull() throws GitClientException {
+        initAclEntity(folder, AclPermission.WRITE);
+        final PipelineVO versionedStorageVO = PipelineCreatorUtils.getVersionedStorageVO(null);
+        doReturn(pipeline).when(mockPipelineManager).create(versionedStorageVO);
+        mockSecurityContext();
+
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(versionedStorageVO));
     }
 
     @Test
@@ -120,8 +153,19 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     public void shouldDenyCreatePipelineWithoutPipelineManagerRole() throws GitClientException {
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyCreateVersionedStorageWithoutManagerRole() throws GitClientException {
+        initAclEntity(folder, AclPermission.WRITE);
+        doReturn(pipeline).when(mockPipelineManager).create(versionedStorageVO);
+        mockSecurityContext();
+
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(versionedStorageVO));
     }
 
     @Test
@@ -129,8 +173,19 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     public void shouldDenyCreatePipelineWhenPermissionForParentFolderIsNotGranted() throws GitClientException {
         initAclEntity(folder);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldDenyCreateVersionedStorageWhenPermissionForParentFolderIsNotGranted() throws GitClientException {
+        initAclEntity(folder);
+        doReturn(pipeline).when(mockPipelineManager).create(versionedStorageVO);
+        mockSecurityContext();
+
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(versionedStorageVO));
     }
 
     @Test
@@ -375,8 +430,19 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     public void shouldDeletePipelineWhenPermissionIsGranted() {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
+        mockSecurityContext();
 
         assertThat(pipelineApiService.delete(ID, true)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldDeleteVersionedStorageWhenPermissionIsGranted() {
+        initAclEntity(versionedStorage, AclPermission.WRITE);
+        doReturn(versionedStorage).when(mockPipelineManager).delete(ID, true);
+        mockSecurityContext();
+
+        assertThat(pipelineApiService.delete(ID, true)).isEqualTo(versionedStorage);
     }
 
     @Test
@@ -384,6 +450,17 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeletePipelineWhenPermissionIsNotGranted() {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
+        mockSecurityContext();
+
+        assertThrows(AccessDeniedException.class, () -> pipelineApiService.delete(ID, true));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldDenyDeleteVersionedStorageWhenPermissionIsNotGranted() {
+        initAclEntity(versionedStorage);
+        doReturn(versionedStorage).when(mockPipelineManager).delete(ID, true);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> pipelineApiService.delete(ID, true));
     }
@@ -393,6 +470,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeletePipelineForUserRole() {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> pipelineApiService.delete(ID, true));
     }
@@ -676,8 +754,20 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline, AclPermission.READ);
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
 
         assertThat(pipelineApiService.copyPipeline(ID, ID, TEST_STRING)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldCopyVersionedStorageWhenPermissionIsGranted() {
+        initAclEntity(versionedStorage, AclPermission.READ);
+        initAclEntity(folder, AclPermission.WRITE);
+        doReturn(versionedStorage).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
+
+        assertThat(pipelineApiService.copyPipeline(ID, ID, TEST_STRING)).isEqualTo(versionedStorage);
     }
 
     @Test
@@ -686,6 +776,18 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline);
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
+
+        assertThrows(AccessDeniedException.class, () -> pipelineApiService.copyPipeline(ID, ID, TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldDenyCopyVersionedStorageWhenPipelinePermissionIsNotGranted() {
+        initAclEntity(versionedStorage);
+        initAclEntity(folder, AclPermission.WRITE);
+        doReturn(versionedStorage).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> pipelineApiService.copyPipeline(ID, ID, TEST_STRING));
     }
@@ -696,6 +798,18 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline, AclPermission.READ);
         initAclEntity(folder);
         doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
+
+        assertThrows(AccessDeniedException.class, () -> pipelineApiService.copyPipeline(ID, ID, TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
+    public void shouldDenyCopyVersionedStorageWhenFolderPermissionIsNotGranted() {
+        initAclEntity(versionedStorage, AclPermission.READ);
+        initAclEntity(folder);
+        doReturn(versionedStorage).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> pipelineApiService.copyPipeline(ID, ID, TEST_STRING));
     }
@@ -706,6 +820,7 @@ public class PipelineApiServiceTest extends AbstractAclTest {
         initAclEntity(pipeline, AclPermission.READ);
         initAclEntity(folder, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> pipelineApiService.copyPipeline(ID, ID, TEST_STRING));
     }

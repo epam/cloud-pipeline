@@ -135,6 +135,21 @@ const AUTOSCALE_PRICE_TYPE = (
     </Row>
   </div>
 );
+const CHILD_NODE_INSTANCE = (
+  <div>
+    <Row>
+      You can specify instance type to be used for autoscaled workers.
+    </Row>
+  </div>
+);
+const CHILD_NODE_INSTANCE_FAMILY = (
+  <div>
+    <Row>
+      You can specify instance family for autoscaled workers and
+      the exact size will be selected automatically.
+    </Row>
+  </div>
+);
 const GPU_SCALING_TOOLTIP = (
   <div>
     <Row>
@@ -142,11 +157,6 @@ const GPU_SCALING_TOOLTIP = (
     </Row>
     <Row>
       <code>cpu.q</code> for CPU-only tasks and <code>gpu.q</code> for CUDA tasks
-    </Row>
-    <Row>If enabled, you can specify instance types to be used for the autoscaled workers.</Row>
-    <Row>
-      If selected together with <b>Enable Hybrid cluster</b>
-      it is possible to specify instance family and the exact size is selected automatically.
     </Row>
   </div>
 );
@@ -164,7 +174,12 @@ export const LaunchClusterTooltip = {
     defaultNodesCount: 'default nodes count',
     hybridAutoScaledCluster: 'hybrid',
     autoScalePriceType: 'auto scale price type',
-    gpuScaling: 'gpu scaling'
+    childNodeInstance: 'child node instance',
+    childNodeInstanceFamily: 'child node instance family',
+    gpuScaling: 'gpu scaling',
+    enableGridEngine: 'enable grid engine',
+    enableSlurm: 'enable slurm',
+    enableKube: 'enable kube'
   }
 };
 
@@ -186,6 +201,8 @@ const tooltips = {
   [LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster]:
     HYBRID_AUTOSCALED_CLUSTER_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.autoScalePriceType]: AUTOSCALE_PRICE_TYPE,
+  [LaunchClusterTooltip.autoScaledCluster.childNodeInstance]: CHILD_NODE_INSTANCE,
+  [LaunchClusterTooltip.autoScaledCluster.childNodeInstanceFamily]: CHILD_NODE_INSTANCE_FAMILY,
   [LaunchClusterTooltip.autoScaledCluster.gpuScaling]: GPU_SCALING_TOOLTIP
 };
 

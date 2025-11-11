@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -36,7 +37,6 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.valueContains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -62,7 +63,7 @@ public class ToolsTest
     private final String defaultRegistryId = C.DEFAULT_REGISTRY_IP;
     private final String testingTool = C.TESTING_TOOL_NAME;
     private final String dockerImage = String.format("%s/%s", defaultRegistryId, testingTool);
-    private final String personalGroup = "personal";
+    private final String personalGroup = "Personal";
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String command = "echo \"Hi, I'm nginx!\"";
     private final String disk = "23";
@@ -436,9 +437,10 @@ public class ToolsTest
                 )
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
-                .ensure(VERSION, text("latest"))
-                .ensure(ESTIMATED_PRICE, not(visible))
-                .ensure(INFORMATION_ICON, not(visible))
+                .ensure(TOOL_VERSION, text("latest"))
+                .checkEstimatedPriceValue("-")
+                .ensure(INFORMATION_ICON, visible)
+                .checkEstimatedPriceTooltip("Price cannot be estimated for the selected node type / disk configuration")
                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                 .ensure(IMAGE, valueContains(image))
                 .ensure(DEFAULT_COMMAND, empty)
@@ -473,16 +475,16 @@ public class ToolsTest
                 .ensure(DISK, not(empty))
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(testingTool)))
-                .ensure(VERSION, text("latest"))
+                .ensure(TOOL_VERSION, text("latest"))
                 .ensure(ESTIMATED_PRICE, visible)
                 .ensure(INFORMATION_ICON, visible)
                 .expandTab(ADVANCED_PANEL)
-                .setPriceType(ON_DEMAND)
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .hover(INFORMATION_ICON)
                 .ensure(PRICE_TABLE, visible)
                 .expandTab(PARAMETERS_PANEL)
                 .clickAddStringParameter()
-                .ensureVisible(PARAMETER_NAME, PARAMETER_VALUE, REMOVE_PARAMETER);
+                .ensureAll(exist, PARAMETER_NAME, PARAMETER_VALUE, REMOVE_PARAMETER);
     }
 
     private By message(final String text) {

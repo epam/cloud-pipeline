@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import {alphabeticalSorter} from '../../../../../../utils/sorting';
+
 export default function filtersAreEqual (a, b) {
   if (!a && !b) {
     return true;
@@ -33,13 +35,15 @@ export default function filtersAreEqual (a, b) {
     dateFrom: bDateFrom,
     dateTo: bDateTo
   } = b;
-  const aUsersSorted = [...(new Set(aUsers))].sort();
-  const bUsersSorted = [...(new Set(bUsers))].sort();
+  const aUsersSorted = [...(new Set(aUsers))].sort(alphabeticalSorter);
+  const bUsersSorted = [...(new Set(bUsers))].sort(alphabeticalSorter);
   if (aUsersSorted.length !== bUsersSorted.length) {
     return false;
   }
-  const aExtensionsSorted = [...(new Set(aExtensions))].sort();
-  const bExtensionsSorted = [...(new Set(bExtensions))].sort();
+  const aExtensionsSorted = [...(new Set(aExtensions))]
+    .sort(alphabeticalSorter);
+  const bExtensionsSorted = [...(new Set(bExtensions))]
+    .sort(alphabeticalSorter);
   if (aExtensionsSorted.length !== bExtensionsSorted.length) {
     return false;
   }

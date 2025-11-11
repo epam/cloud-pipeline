@@ -28,6 +28,9 @@ import Channels from '../../../special/hcs-image/hcs-image-controls/channels';
 import ColorMap from '../../../special/hcs-image/hcs-image-controls/color-map';
 import LoadingView from '../../../special/LoadingView';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
+import {getImagesAnnotationsForFilePath} from '../../../../utils/images-annotations';
+import OMETiffAnnotations from './ome-tiff-annotations';
+import OMETiffAnnotationsRenderer from './ome-tiff-annotations/renderer';
 import styles from './ome-tiff-renderer.css';
 
 @observer
@@ -44,6 +47,10 @@ class OmeTiffRenderer extends React.Component {
 
   @observable hcsViewerState = new ViewerState();
   @observable hcsSourceState = new SourceState();
+  /**
+   * @type {ImagesAnnotations}
+   */
+  @observable imagesAnnotations;
 
   hcsImageViewer;
 
@@ -58,6 +65,13 @@ class OmeTiffRenderer extends React.Component {
       prevProps.offsetsJsonPath !== this.props.offsetsJsonPath
     ) {
       this.fetchURLs();
+    }
+  }
+
+  componentWillUnmount () {
+    if (this.imagesAnnotations) {
+      this.imagesAnnotations.detachFromViewer();
+      this.imagesAnnotations.destroy();
     }
   }
 
@@ -84,6 +98,9 @@ class OmeTiffRenderer extends React.Component {
     } else {
       this.hcsViewerState.detachFromViewer();
       this.hcsSourceState.detachFromViewer();
+      if (this.imagesAnnotations) {
+        this.imagesAnnotations.detachFromViewer();
+      }
       this.hcsImageViewer = undefined;
     }
   };
@@ -119,6 +136,8 @@ class OmeTiffRenderer extends React.Component {
           if (!storage) {
             throw new Error('Unknown storage identifier');
           }
+          this.imagesAnnotations = getImagesAnnotationsForFilePath(storageId, omeTiffPath);
+          await this.imagesAnnotations.fetch();
           state.url = await storage.generateFileUrl(omeTiffPath);
           state.offsets = offsetsJsonPath
             ? (await storage.generateFileUrl(offsetsJsonPath))
@@ -132,11 +151,15 @@ class OmeTiffRenderer extends React.Component {
           } : undefined].filter(Boolean));
         } catch (error) {
           state.error = error.message;
+          console.warn(error.message);
         } finally {
           commit();
         }
       });
     } else {
+      this.imagesAnnotations.detachFromViewer();
+      this.imagesAnnotations.destroy();
+      this.imagesAnnotations = undefined;
       this.setState({
         pending: false,
         error: undefined,
@@ -151,8 +174,18 @@ class OmeTiffRenderer extends React.Component {
       url,
       offsets
     } = this.state;
-    if (this.hcsImageViewer && url && offsets) {
-      this.hcsImageViewer.setData(url, offsets);
+    if (
+      this.hcsImageViewer &&
+      url &&
+      offsets
+    ) {
+      this.hcsImageViewer
+        .setData(url, offsets)
+        .then(() => {
+          if (this.imagesAnnotations) {
+            this.imagesAnnotations.attachToViewer(this.hcsImageViewer);
+          }
+        });
     }
   };
 
@@ -297,6 +330,7 @@ class OmeTiffRenderer extends React.Component {
                 <Channels
                   allowLockChannels={false}
                 />
+                <OMETiffAnnotations />
               </div>
             </div>
           )
@@ -317,7 +351,11 @@ class OmeTiffRenderer extends React.Component {
       (this.hcsViewerState && this.hcsViewerState.pending) ||
       (this.hcsSourceState && this.hcsSourceState.pending);
     return (
-      <Provider hcsViewerState={this.hcsViewerState}>
+      <Provider
+        hcsViewerState={this.hcsViewerState}
+        hcsSourceState={this.hcsSourceState}
+        annotations={this.imagesAnnotations}
+      >
         <div
           className={
             classNames(
@@ -341,6 +379,7 @@ class OmeTiffRenderer extends React.Component {
           {
             loading && (<LoadingView />)
           }
+          <OMETiffAnnotationsRenderer />
           {this.renderAttributes()}
           {this.renderControls()}
         </div>

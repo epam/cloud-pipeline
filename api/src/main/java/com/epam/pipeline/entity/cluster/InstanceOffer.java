@@ -48,6 +48,7 @@ public class InstanceOffer {
     private String memoryUnit;
     private String instanceFamily;
     private int gpu;
+    private GpuDevice gpuDevice;
     private Long regionId;
     private CloudProvider cloudProvider;
 }

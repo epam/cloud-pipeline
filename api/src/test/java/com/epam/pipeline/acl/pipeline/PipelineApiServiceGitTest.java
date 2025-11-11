@@ -124,6 +124,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldAddHookToPipelineRepositoryWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(gitRepositoryEntry).when(mockGitManager).addHookToPipelineRepository(ID);
+        mockSecurityContext();
 
         assertThat(pipelineApiService.addHookToPipelineRepository(ID)).isEqualTo(gitRepositoryEntry);
     }
@@ -133,6 +134,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyAddHookToPipelineRepositoryWhenPermissionIsNotGranted() throws GitClientException {
         initAclEntity(pipeline);
         doReturn(gitRepositoryEntry).when(mockGitManager).addHookToPipelineRepository(ID);
+        mockSecurityContext();
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.addHookToPipelineRepository(ID));
     }
@@ -142,6 +144,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyAddHookToPipelineRepositoryForUserRole() throws GitClientException {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(gitRepositoryEntry).when(mockGitManager).addHookToPipelineRepository(ID);
+        mockSecurityContext();
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.addHookToPipelineRepository(ID));
     }

@@ -23,6 +23,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.elasticsearchagent.service.impl.S3FileManager;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.apache.commons.lang3.StringUtils;
@@ -57,6 +58,10 @@ public class S3FileSyncConfiguration {
     private String storageIds;
     @Value("${sync.s3-file.storage.skip.ids:}")
     private String skipStorageIds;
+    @Value("${sync.s3-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+    @Value("${sync.s3-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
@@ -69,14 +74,16 @@ public class S3FileSyncConfiguration {
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
-            final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
+            final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager,
+            final LockService lockService) {
         final ObjectStorageIndexImpl service = new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                s3FileManager, indexPrefix + indexName,
+                s3FileManager, lockService, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.S3,
                 SearchDocumentType.S3_FILE,
                 tagDelimiter,
-                includeVersions);
+                includeVersions,
+                storageExcludeKey, storageExcludeValue);
         if (StringUtils.isNotBlank(storageIds)) {
             service.setStorageIds(parseIds(storageIds));
         }

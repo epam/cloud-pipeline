@@ -43,7 +43,7 @@ public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoR
                     .replace("{{instance_type}}", C.DEFAULT_INSTANCE));
     }
 
-    @Test
+    @Test(dependsOnMethods = "preparePipeline")
     @TestCase("EPMCMBIBPC-367")
     public void validateParameters() {
         new PipelineCodeTabAO(getPipelineName())

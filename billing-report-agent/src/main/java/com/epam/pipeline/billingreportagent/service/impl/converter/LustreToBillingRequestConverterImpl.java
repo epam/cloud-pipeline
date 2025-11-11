@@ -77,6 +77,6 @@ public class LustreToBillingRequestConverterImpl extends StorageToBillingRequest
         if (StringUtils.isNotBlank(type) && type.startsWith("PERSISTENT") && Objects.nonNull(throughput)) {
             return throughput.equals(price.getThroughput());
         }
-        return throughput.equals(0);
+        return price.getThroughput() == null || price.getThroughput().equals(0);
     }
 }

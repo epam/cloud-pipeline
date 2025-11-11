@@ -66,6 +66,7 @@ public abstract class AbstractAclTest {
     protected static final String CONFIGURATION_MANAGER_ROLE = "CONFIGURATION_MANAGER";
     protected static final String ENTITIES_MANAGER_ROLE = "ENTITIES_MANAGER";
     protected static final String PIPELINE_MANAGER_ROLE = "PIPELINE_MANAGER";
+    protected static final String VERSIONED_STORAGE_MANAGER = "VERSIONED_STORAGE_MANAGER";
     protected static final String OWNER_USER = "OWNER";
     protected static final String GENERAL_USER_ROLE = "USER";
     protected static final String USER_READER_ROLE = "USER_READER";
@@ -143,6 +144,32 @@ public abstract class AbstractAclTest {
         doReturn(acl).when(aclService).readAclById(eq(objectIdentity), anyList());
         doReturn(acl).when(aclService).getAcl(eq(entity));
         doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity));
+        doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity), eq(true));
+        doReturn(acl).when(aclService).createAcl(eq(entity));
+        doReturn(acl).when(aclService).updateAcl(acl);
+        doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());
+        doReturn(entity).when(mockEntityManager).load(entity.getAclClass(), entity.getId());
+        doReturn(Optional.empty()).when(mockQuotaService).findActiveActionForUser(any(), any(), any());
+        return acl;
+    }
+
+    protected AclImpl initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions,
+                                    Acl parentAcl) {
+        ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(entity);
+        AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
+                grantingStrategy, parentAcl, null, true, new PrincipalSid(entity.getOwner()));
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            IntStream
+                    .range(0, permissions.size())
+                    .forEach(i -> {
+                        AbstractGrantPermission permission = permissions.get(i);
+                        acl.insertAce(i, permissionFactory.buildFromMask(permission.mask), permission.toSid(), true);
+                    });
+        }
+        doReturn(acl).when(aclService).readAclById(eq(objectIdentity), anyList());
+        doReturn(acl).when(aclService).getAcl(eq(entity));
+        doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity));
+        doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity), eq(true));
         doReturn(acl).when(aclService).createAcl(eq(entity));
         doReturn(acl).when(aclService).updateAcl(acl);
         doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());

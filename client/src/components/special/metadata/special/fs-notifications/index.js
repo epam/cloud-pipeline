@@ -29,6 +29,7 @@ import {observer} from 'mobx-react';
 import UsersRolesSelect from '../../../users-roles-select';
 import roleModel from '../../../../../utils/roleModel';
 import styles from './fs-notifications.css';
+import {alphabeticalSorter, defaultSorter} from '../../../../../utils/sorting';
 
 const VALUE_TITLE = 'Volume threshold';
 
@@ -64,15 +65,21 @@ function getNotificationPresentation (notification) {
     value = 0,
     actions = []
   } = notification;
-  return `${value}${type}:${actions.sort().join(',')}`;
+  return `${value}${type}:${actions.sort(defaultSorter).join(',')}`;
 }
 
 function notificationsEqual (a, b) {
   if (!a && !b) {
     return true;
   }
-  const aPresentations = (a || []).map(getNotificationPresentation).sort().join('|');
-  const bPresentations = (b || []).map(getNotificationPresentation).sort().join('|');
+  const aPresentations = (a || [])
+    .map(getNotificationPresentation)
+    .sort(defaultSorter)
+    .join('|');
+  const bPresentations = (b || [])
+    .map(getNotificationPresentation)
+    .sort(defaultSorter)
+    .join('|');
   return aPresentations === bPresentations;
 }
 
@@ -80,10 +87,22 @@ function recipientsEqual (a, b) {
   if (!a && !b) {
     return true;
   }
-  const aUsers = [...(new Set((a || []).filter(o => o.principal).map(o => o.name)))].sort();
-  const bUsers = [...(new Set((b || []).filter(o => o.principal).map(o => o.name)))].sort();
-  const aRoles = [...(new Set((a || []).filter(o => !o.principal).map(o => o.name)))].sort();
-  const bRoles = [...(new Set((b || []).filter(o => !o.principal).map(o => o.name)))].sort();
+  const aUsers = [...(new Set((a || [])
+    .filter(o => o.principal)
+    .map(o => o.name)
+  ))].sort(alphabeticalSorter);
+  const bUsers = [...(new Set((b || [])
+    .filter(o => o.principal)
+    .map(o => o.name)
+  ))].sort(alphabeticalSorter);
+  const aRoles = [...(new Set((a || [])
+    .filter(o => !o.principal)
+    .map(o => o.name)
+  ))].sort(alphabeticalSorter);
+  const bRoles = [...(new Set((b || [])
+    .filter(o => !o.principal)
+    .map(o => o.name)
+  ))].sort(alphabeticalSorter);
   if (aUsers.length !== bUsers.length || aRoles.length !== bRoles.length) {
     return false;
   }

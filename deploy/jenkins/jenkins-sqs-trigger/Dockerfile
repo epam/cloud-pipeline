@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM rockylinux:8.7
 
 RUN yum install -y wget \
                    curl \
-                   python \
-                   git && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
-RUN pip install awscli
+                   git \
+                   bzip2 \
+                   zip \
+                   unzip
+
+RUN mkdir -p /opt/local/mamba && \
+    cd /opt/local/mamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    export PATH=$PATH:/opt/local/mamba/bin && \
+    export MAMBA_ROOT_PREFIX=/opt/local/mamba && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -n py3 && \
+    micromamba activate py3 && \
+    micromamba install -y python==3.10 && \
+    pip install awscli
+
+ENV AWSCLI_BIN=/opt/local/mamba/envs/py3/bin/aws
+
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 

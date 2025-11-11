@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import logging
-
 from datetime import datetime
+
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import GridEngineScaleDownHandler, GridEngineJob, GridEngineJobState, ComputeResource
+from pipeline.hpc.autoscaler import GridEngineScaleDownHandler
+from pipeline.hpc.engine.gridengine import GridEngineJob, GridEngineJobState
+from pipeline.hpc.resource import ComputeResource
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -28,11 +30,11 @@ RUN_ID = '12345'
 
 cmd_executor = Mock()
 grid_engine = Mock()
-default_hostfile = 'default_hostfile'
+api = Mock()
 instance_cores = 4
 common_utils = Mock()
-scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                default_hostfile=default_hostfile, common_utils=common_utils)
+scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
+                                                common_utils=common_utils)
 
 
 def setup_function():
@@ -41,6 +43,7 @@ def setup_function():
     grid_engine.disable_host = MagicMock()
     grid_engine.delete_host = MagicMock()
     cmd_executor.execute = MagicMock()
+    api.stop_run = MagicMock()
     grid_engine.get_host_resource = MagicMock(return_value=ComputeResource(instance_cores))
 
 
@@ -64,6 +67,7 @@ def test_not_scaling_down_if_host_has_running_jobs():
     grid_engine.disable_host.assert_called()
     grid_engine.enable_host.assert_called()
     grid_engine.delete_host.assert_not_called()
+    api.stop_run.assert_not_called()
     assert_first_argument_not_contained(cmd_executor.execute, HOSTNAME)
 
 
@@ -90,10 +94,33 @@ def test_scaling_down_if_host_has_no_running_jobs():
     assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
 
 
+def test_scaling_down_if_host_has_completed_jobs():
+    submit_datetime = datetime(2018, 12, 29, 11, 00, 00)
+    jobs = [
+        GridEngineJob(
+            id='1',
+            root_id=1,
+            name='name1',
+            user='user',
+            state=GridEngineJobState.COMPLETED,
+            datetime=submit_datetime,
+            hosts=[ANOTHER_HOSTNAME]
+        )
+    ]
+    grid_engine.get_jobs = MagicMock(return_value=jobs)
+
+    assert scale_down_handler.scale_down(HOSTNAME)
+
+    grid_engine.disable_host.assert_called()
+    grid_engine.enable_host.assert_not_called()
+    grid_engine.delete_host.assert_called()
+    assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
+
+
 def test_scaling_down_stops_pipeline():
     scale_down_handler.scale_down(HOSTNAME)
 
-    assert_first_argument_contained(cmd_executor.execute, 'pipe stop')
+    api.stop_run.assert_called()
 
 
 def test_scaling_down_updates_hosts():

@@ -86,6 +86,7 @@ function injection (stores, props) {
   const {
     user: userQ,
     group: groupQ,
+    'billing-group': billingGroupQ,
     period = Period.month,
     range,
     region: regionQ,
@@ -97,11 +98,15 @@ function injection (stores, props) {
     ? parseStorageAggregate(aggregateQ)
     : undefined;
   const periodInfo = getPeriod(period, range);
-  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const adGroup = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const billingGroup = billingGroupQ
+    ? billingGroupQ.split(RUNNER_SEPARATOR)
+    : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const filtersWithoutOrder = {
-    group,
+    billingGroup,
+    adGroup,
     user,
     type,
     cloudRegionId,
@@ -170,7 +175,8 @@ function injection (stores, props) {
 
   return {
     user,
-    group,
+    billingGroup,
+    adGroup,
     type,
     summary,
     storages,
@@ -445,7 +451,8 @@ class StorageReports extends React.Component {
       storagesTable,
       summary,
       user,
-      group,
+      billingGroup,
+      adGroup,
       type,
       filters = {},
       storageType,
@@ -471,7 +478,6 @@ class StorageReports extends React.Component {
       : undefined;
     const showTableDetails = /^object$/i.test(type);
     const selectedIndex = tiersData.aggregates.indexOf(storageAggregate);
-    console.log(tiersData);
     return (
       <Discounts.Consumer>
         {
@@ -480,7 +486,8 @@ class StorageReports extends React.Component {
               exportConfiguration={{
                 types: ['STORAGE'],
                 user,
-                group,
+                billingGroup,
+                adGroup,
                 period,
                 range,
                 filters: {

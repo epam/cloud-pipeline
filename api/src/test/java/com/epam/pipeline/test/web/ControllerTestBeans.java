@@ -16,16 +16,23 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
+import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
+import com.epam.pipeline.acl.datastorage.permissions.StoragePathPermissionsApiService;
 import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.pipeline.issue.GitlabIssueApiService;
+import com.epam.pipeline.acl.plugin.PluginAssignmentService;
+import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.report.ReportApiService;
@@ -53,6 +60,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
@@ -68,6 +76,7 @@ import com.epam.pipeline.manager.ldap.LdapApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -211,6 +220,9 @@ public class ControllerTestBeans {
     protected SearchManager searchManager;
 
     @MockBean
+    protected SearchExportManager searchExportManager;
+
+    @MockBean
     protected RoleApiService roleApiService;
 
     @MockBean
@@ -278,4 +290,28 @@ public class ControllerTestBeans {
 
     @MockBean
     protected GitlabIssueApiService gitlabIssueApiService;
+
+    @MockBean
+    protected StorageRequestApiService storageRequestApiService;
+
+    @MockBean
+    protected InstanceOfferApiService instanceOfferApiService;
+
+    @MockBean
+    protected AWSOmicsStoreApiService awsOmicsStoreApiService;
+
+    @MockBean
+    protected StoragePathPermissionsApiService storagePathPermissionsApiService;
+
+    @MockBean
+    protected PluginService pluginService;
+
+    @MockBean
+    protected PluginAssignmentService pluginAssignmentService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
 }

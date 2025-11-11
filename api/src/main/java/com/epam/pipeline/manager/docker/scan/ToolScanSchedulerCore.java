@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.exception.PipelineException;
@@ -105,6 +106,8 @@ class ToolScanSchedulerCore {
         try {
             List<String> versions = toolManager.loadTags(tool.getId());
             for (String version : versions) {
+                final Optional<ToolVersionScanResult> existingScan = toolManager.loadToolVersionScan(
+                        tool.getId(), version);
                 try {
                     ToolVersionScanResult result = toolScanManager.scanTool(tool, version, false);
                     toolManager.updateToolVulnerabilities(result.getVulnerabilities(), tool.getId(), version);
@@ -112,13 +115,15 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
                             version, result.getToolOSVersion(),
                             result.getLastLayerRef(), result.getDigest(), result.getVulnerabilitiesCount(),
-                            result.getDefaultCmd(), result.getLayersCount());
+                            result.getDefaultCmd(), result.getLayersCount(), result.isCudaAvailable());
                     updateToolVersion(tool, version, registry, dockerClient);
                 } catch (ToolScanExternalServiceException e) {
                     log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
                             tool.getImage(), version), e);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null, new HashMap<>(), null, null);
+                            version, existingScan.map(ToolVersionScanResult::getToolOSVersion).orElse(null),
+                            null, null, new HashMap<>(), null, null,
+                            existingScan.map(ToolVersionScanResult::isCudaAvailable).orElse(false));
                 }
             }
         } catch (Exception e) {
@@ -159,8 +164,15 @@ class ToolScanSchedulerCore {
             final Integer layersCount = toolVersionScanResult
                     .map(ToolVersionScanResult::getLayersCount)
                     .orElse(null);
+            final ToolOSVersion osVersion = toolVersionScanResult
+                    .map(ToolVersionScanResult::getToolOSVersion)
+                    .orElse(null);
+            final boolean isCudaAvailable = toolVersionScanResult
+                    .map(ToolVersionScanResult::isCudaAvailable)
+                    .orElse(false);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
-                    version, layerRef, digest, vulnerabilitiesCount, defaultCmd, layersCount);
+                    version, osVersion, layerRef, digest, vulnerabilitiesCount,
+                    defaultCmd, layersCount, isCudaAvailable);
             return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
                 log.info(messageHelper.getMessage(
                         MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
@@ -170,14 +182,17 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolVulnerabilities(scanResult.getVulnerabilities(), tool.getId(),
                             version);
                     toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
+                    final ToolScanStatus effectiveScanStatus = scanResult.getStatus() != null
+                            ? scanResult.getStatus() : ToolScanStatus.COMPLETED;
+                    toolManager.updateToolVersionScanStatus(tool.getId(), effectiveScanStatus,
                             scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
                             scanResult.getLastLayerRef(), scanResult.getDigest(), scanResult.getVulnerabilitiesCount(),
-                            scanResult.getDefaultCmd(), scanResult.getLayersCount());
+                            scanResult.getDefaultCmd(), scanResult.getLayersCount(), scanResult.isCudaAvailable());
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null, new HashMap<>(), null, null);
+                            version, osVersion, null, null, new HashMap<>(),
+                            null, null, isCudaAvailable);
                     log.error(messageHelper.getMessage(
                             MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     throw new PipelineException(e);

@@ -14,6 +14,13 @@
  *  limitations under the License.
  */
 
+export function safeRandom () {
+  const crypto = window.crypto || window.msCrypto;
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 2 ** 32;
+}
+
 export default function attachAnimation(config) {
   const {
     animate = false,
@@ -31,14 +38,14 @@ export default function attachAnimation(config) {
     const rainDrop = document.createElement('div');
     rainDrop.classList.add('rain-drop');
     rainDrop.style.position = 'absolute';
-    const x = Math.round(Math.random() * 100);
-    const size = Math.random();
+    const x = Math.round(safeRandom() * 100);
+    const size = safeRandom();
     const height = 10 + Math.round(size * 10);
     const speedPxPerSec = (1.0 + (0.5 - size)) * defaultSpeedPxPerSecond;
     rainDrop.style.left = `${Math.round(x)}%`;
     rainDrop.style.animationDuration = `${Math.round(windowHeight / (speedPxPerSec / 1000))}ms`;
     rainDrop.style.height = `${height}px`;
-    const timeout = Math.round(Math.random() * 5000);
+    const timeout = Math.round(safeRandom() * 5000);
     setTimeout(() => container.appendChild(rainDrop), timeout);
   }
 }

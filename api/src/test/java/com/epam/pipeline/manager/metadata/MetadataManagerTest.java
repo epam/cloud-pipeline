@@ -17,16 +17,19 @@
 package com.epam.pipeline.manager.metadata;
 
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.extractAttributesContent;
+import static org.mockito.Matchers.eq;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
+import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.MetadataReadingException;
+import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -60,7 +63,10 @@ public class MetadataManagerTest extends AbstractSpringTest {
     private CategoricalAttributeManager categoricalAttributeManager;
 
     @MockBean
-    private UserManager userManager;
+    private EntityManager entityManager;
+
+    @MockBean
+    protected UserManager userManager;
 
     private Map<String, PipeConfValue> expectedData = new HashMap<>();
     private EntityVO entityVO = new EntityVO(1L, AclClass.PIPELINE);
@@ -71,6 +77,7 @@ public class MetadataManagerTest extends AbstractSpringTest {
     private static final String VALUE_1 = "Test User";
     private static final String VALUE_2 = "Leukocyte";
     private static final String TYPE = "string";
+    private static final String SECRET_TYPE = "secret";
     private static final String TSV_HEADER = "Key\tValue\tType";
     private static final String CSV_HEADER = "Key,Value,Type";
     private static final String TSV_FILE_NAME = "test_file.tsv";
@@ -144,8 +151,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
             SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
             String.format("[\"%s\"]", SENSITIVE_KEY))));
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
-        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
-
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
         final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();
         data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
@@ -171,8 +178,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
     @Transactional
     public void syncWithCategoricalAttributesWithoutSensitiveKeys() {
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
-        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
-
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
         final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();
         data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
@@ -195,7 +202,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void testThatEntityCouldBeSearchedByClassAndKeyOnly() {
-        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
 
         final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();
@@ -214,6 +222,38 @@ public class MetadataManagerTest extends AbstractSpringTest {
                 AclClass.PIPELINE_USER, KEY_1, null);
 
         Assert.assertFalse(result.isEmpty());
+    }
+
+    @Test
+    @Transactional
+    public void testThatSecretMetadataWillBeHidedDuringSearch() {
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(SECRET_TYPE, VALUE_1));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+
+        // We can find entities by specific secret metadata key
+        List<EntityVO> searchResult = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, null);
+        Assert.assertFalse(searchResult.isEmpty());
+
+        // And we can list specific secret metadata by key
+        List<MetadataEntry> loadResultByKey = metadataManager
+                .listMetadataItemsByKey(KEY_1, Collections.singletonList(entityVO));
+        Assert.assertFalse(loadResultByKey.isEmpty());
+        Assert.assertFalse(loadResultByKey.get(0).getData().isEmpty());
+
+        // But we can't see the value of the secret when list all metadata for the entity
+        List<MetadataEntry> loadResult = metadataManager.listMetadataItems(Collections.singletonList(entityVO));
+        Assert.assertFalse(loadResult.isEmpty());
+        Assert.assertFalse(loadResult.get(0).getData().isEmpty());
+        Assert.assertEquals(MetadataDao.SECRET_MASK_VALUE, loadResult.get(0).getData().get(KEY_1).getValue());
     }
 
     @Test(expected = MetadataReadingException.class)

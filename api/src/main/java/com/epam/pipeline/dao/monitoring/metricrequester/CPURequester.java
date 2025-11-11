@@ -64,7 +64,7 @@ public class CPURequester extends AbstractMetricRequester {
                         .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_NODE_NAME))
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
-                                .subAggregation(average(AVG_AGGREGATION + USAGE_RATE, USAGE_RATE))));
+                                .subAggregation(average(USAGE_RATE, USAGE_RATE))));
     }
 
     @Override
@@ -74,15 +74,15 @@ public class CPURequester extends AbstractMetricRequester {
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
+                                              final Duration interval, final String podName) {
 
         return request(from, to,
-                statsQuery(nodeName, NODE, from, to)
+                statsQuery(nodeName, NODE, from, to, null)
                         .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
-                                .subAggregation(average(AVG_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
-                                .subAggregation(max(MAX_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
-                                .subAggregation(average(AVG_AGGREGATION + CPU_CAPACITY, NODE_CAPACITY))));
+                                .subAggregation(average(CPU_UTILIZATION, NODE_UTILIZATION))
+                                .subAggregation(max(CPU_UTILIZATION, NODE_UTILIZATION))
+                                .subAggregation(average(CPU_CAPACITY, NODE_CAPACITY))));
     }
 
     @Override

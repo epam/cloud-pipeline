@@ -67,6 +67,8 @@ import CurrentUserAttributes, {
 import CloudPipelineThemes from '../../themes';
 import ApplicationInfo from '../../models/utils/application-info';
 import SystemJobs from '../../utils/system-jobs';
+import uiLaunchParametersConfiguration from '../../utils/ui-launch-parameters-configuration';
+import {gcpSpotInstanceType} from '../../models/utils/gcp-spot-instance-type';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -170,7 +172,9 @@ const Root = () =>
       vsActions,
       themes,
       applicationInfo,
-      systemJobs
+      systemJobs,
+      uiLaunchParametersConfiguration,
+      gcpSpotInstanceType
     }}>
     <AppRouter />
   </Provider>;

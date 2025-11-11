@@ -94,6 +94,17 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         return new ConfirmationPopupAO<>(this);
     }
 
+    public MetadataSectionAO deleteKeys(final  String... keys) {
+        Arrays.stream(keys)
+                .forEach(key -> {
+                        if($(byId(format(keyElementId, key))).is(exist)) {
+                            deleteKey(key)
+                            .ensureTitleIs(format("Do you want to delete key \"%s\"?", key))
+                            .ok();}
+                });
+        return this;
+    }
+
     public ConfirmationPopupAO<MetadataSectionAO> deleteAllKeys() {
         click(REMOVE_ALL_KEYS);
         return new ConfirmationPopupAO<>(this);
@@ -118,6 +129,19 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     public MetadataSectionAO assertKeysAreNotPresent(final String... keys) {
         Arrays.stream(keys)
                 .forEach(this::assertKeyNotPresent);
+        return this;
+    }
+
+    public MetadataSectionAO assertKeyIsDisabled(final String key) {
+        $(byId(format("key-column-%s", key)))
+                .parent()
+                .has(cssClass("read-only"));
+        return this;
+    }
+
+    public MetadataSectionAO assertKeysAreDisabled(final String... keys) {
+        Arrays.stream(keys)
+                .forEach(this::assertKeyIsDisabled);
         return this;
     }
 

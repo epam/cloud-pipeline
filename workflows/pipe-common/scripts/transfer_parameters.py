@@ -30,12 +30,13 @@ import multiprocessing
 import string
 import random
 import shutil
+import json
 import socket
 
 LOCALIZATION_TASK_NAME = 'InputData'
 VALUE_DELIMITERS = [',', ' ', ';']
 HTTP_FTP_SCHEMES = ['http://', 'ftp://', 'https://', 'ftps://']
-CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://', 'gs://']
+CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://', 'gs://', 'omics://']
 TRANSFER_ATTEMPTS = 3
 
 
@@ -64,6 +65,19 @@ class File:
         self.filename = filename
         self.size = size
 
+class PipelineRunResult:
+
+    def __init__(self, runId, name, fileMask):
+        self.runId = runId
+        self.name = name
+        self.fileMask = fileMask
+        self.items = []
+
+    def add_item(self, path):
+        self.items.append(path)
+
+    def to_dict(self):
+        return vars(self)
 
 class TransferChunk:
 
@@ -186,8 +200,17 @@ class PathType(object):
 
 class ParameterType(object):
     INPUT_PARAMETER = 'input'
+    METADATA_PARAMETER = 'metadata'
     COMMON_PARAMETER = 'common'
     OUTPUT_PARAMETER = 'output'
+
+
+class RunParameter:
+
+    def __init__(self, name, value, type):
+        self.name = name
+        self.value = value
+        self.type = type
 
 
 class LocalizedPath:
@@ -211,6 +234,16 @@ class RemoteLocation:
         self.delimiter = delimiter
 
 
+class MetadataLocation:
+
+    def __init__(self, param, folder_id, entity_class, entity_ids, local_path):
+        self.param = param
+        self.folder_id = folder_id
+        self.entity_class = entity_class
+        self.entity_ids = entity_ids.split(',')
+        self.local_path = local_path
+
+
 def split(list, n):
     """Yield successive n-sized chunks from lst."""
     for i in xrange(0, len(list), n):
@@ -230,7 +263,8 @@ def transfer_async(chunk, with_file_list=True):
     else:
         file_list_path = None
     bucket = S3Bucket()
-    cmd = bucket.build_pipe_cp_command(chunk.source, chunk.destination, file_list=file_list_path, include=chunk.rules)
+    rule_patterns = [rule.file_mask for rule in chunk.rules]
+    cmd = bucket.build_pipe_cp_command(chunk.source, chunk.destination, file_list=file_list_path, include=rule_patterns)
     if chunk.hostname != 'localhost':
         cmd = '(ssh %s API=$API API_TOKEN=$API_TOKEN RUN_ID=$RUN_ID "%s") & _CHUNK_PID=$! && wait $_CHUNK_PID' % \
               (chunk.hostname, cmd)
@@ -263,15 +297,32 @@ class InputDataTask:
         self.is_upload = upload
         self.env_suffix = env_suffix
         self.extra_args = os.getenv('CP_TRANSFER_PIPE_INPUT_ARGS') if self.is_upload else os.getenv('CP_TRANSFER_PIPE_OUTPUT_ARGS')
+        self.run_id = os.getenv('RUN_ID', None)
+
 
     def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
         try:
+            Logger.info('Processing metadata parameters...', task_name=self.task_name)
+            metadata_locations = list(self.find_metadata_locations({ParameterType.METADATA_PARAMETER}))
+            if not metadata_locations:
+                Logger.info('No metadata sources found', task_name=self.task_name)
+            else:
+                if self.is_upload:
+                    for location in metadata_locations:
+                        Logger.info('Downloading metadata entities for folder {} #{} {}...'.format(
+                                    location.entity_class, location.folder_id, location.entity_ids), task_name=self.task_name)
+                        self.api.download_metadata_entities(output_path=location.local_path,
+                                                            folder_id=location.folder_id,
+                                                            entity_class=location.entity_class,
+                                                            entity_ids=location.entity_ids,
+                                                            file_format='csv')
+            Logger.info('Processing remote parameters...', task_name=self.task_name)
             dts_registry = self.fetch_dts_registry()
             parameter_types = {ParameterType.INPUT_PARAMETER, ParameterType.COMMON_PARAMETER} if self.is_upload else \
                 {ParameterType.OUTPUT_PARAMETER}
-            remote_locations = self.find_remote_locations(dts_registry, parameter_types)
-            if len(remote_locations) == 0:
+            remote_locations = list(self.find_remote_locations(dts_registry, parameter_types))
+            if not remote_locations:
                 Logger.info('No remote sources found', task_name=self.task_name)
             else:
                 dts_locations = [path for location in remote_locations
@@ -279,25 +330,44 @@ class InputDataTask:
                 if self.is_upload:
                     self.transfer_dts(dts_locations, dts_registry)
                     self.localize_data(remote_locations)
-                    if self.report_file:
-                        with open(self.report_file, 'w') as report:
-                            for location in remote_locations:
-                                env_name = location.env_name
-                                original_value = location.original_value
-                                localized_value = location.delimiter.join(
-                                    [os.path.join(path.local_path, path.suffix) if path.suffix else path.local_path 
-                                    for path in location.paths]
-                                )
-                                report.write('export {}="{}"\n'.format(env_name, localized_value))
-                                report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
                 else:
-                    rule_patterns = DataStorageRule.read_from_file(self.rules)
-                    rules = []
-                    for rule in rule_patterns:
+                    sts_rules = []
+                    for rule in DataStorageRule.read_from_file(self.rules):
                         if rule.move_to_sts:
-                            rules.append(rule.file_mask)
-                    self.localize_data(remote_locations, rules=rules)
-                    self.transfer_dts(dts_locations, dts_registry, rules=rules)
+                            sts_rules.append(rule)
+                    self.localize_data(remote_locations, rules=sts_rules)
+                    self.transfer_dts(dts_locations, dts_registry, rules=sts_rules)
+            if self.is_upload and self.report_file:
+                Logger.info('Writing report file {}...'.format(self.report_file), task_name=self.task_name)
+                with open(self.report_file, 'w') as report:
+                    for location in metadata_locations:
+                        report.write('export {}="{}"\n'.format(location.param.name, location.local_path))
+                        report.write('export {}="{}"\n'.format(location.param.name + '_ORIGINAL', location.param.value))
+                    for location in remote_locations:
+                        env_name = location.env_name
+                        original_value = location.original_value
+                        localized_value = location.delimiter.join(
+                            [os.path.join(path.local_path, path.suffix) if path.suffix else path.local_path
+                             for path in location.paths]
+                        )
+
+                        not_localized_value_part = None
+                        original_parts = map(str.strip, re.split(location.delimiter, location.original_value))
+                        localized_original_parts = [path.path for path in location.paths]
+                        for original_part in original_parts:
+                            if original_part not in localized_original_parts:
+                                not_localized_value_part = original_part if not not_localized_value_part \
+                                    else location.delimiter.join([not_localized_value_part, original_part])
+
+                        if not_localized_value_part:
+                            Logger.info('Adding values from original variable that were not localized {}...'.format(
+                                not_localized_value_part), task_name=self.task_name)
+                            localized_value = location.delimiter.join([localized_value, not_localized_value_part])
+                            Logger.info('Resulted value for param "{}" is: "{}"...'.format(
+                                env_name, localized_value), task_name=self.task_name)
+
+                        report.write('export {}="{}"\n'.format(env_name, localized_value))
+                        report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
             Logger.success('Finished localization of remote data', task_name=self.task_name)
         except BaseException as e:
             Logger.fail('Localization of remote data failed due to exception: %s' % e.message, task_name=self.task_name)
@@ -315,41 +385,59 @@ class InputDataTask:
                 result[prefix] = registry['url']
         return result
 
-    def find_remote_locations(self, dts_registry, parameter_types):
-        remote_locations = []
-        for env in os.environ:
-            param_type_name = env + self.env_suffix
-            if os.environ[env] and param_type_name in os.environ:
-                param_type = os.environ[param_type_name]
-                if param_type in parameter_types:
-                    value = os.environ[env].strip()
-                    resolved_value = replace_all_system_variables_in_path(value)
-                    Logger.info('Found remote parameter %s (%s) with type %s' % (resolved_value, value, param_type),
-                                task_name=self.task_name)
-                    original_paths = [resolved_value]
-                    delimiter = ''
-                    for supported_delimiter in VALUE_DELIMITERS:
-                        if resolved_value.find(supported_delimiter) != -1:
-                            original_paths = re.split(supported_delimiter, resolved_value)
-                            delimiter = supported_delimiter
-                            break
-                    # Strip spaces, which may arise if the parameter was splitted by comma
-                    # e.g. "s3://bucket1/f1, s3://bucket2/f2" will be splitted into
-                    # "s3://bucket1/f1"
-                    # " s3://bucket2/f2"
-                    original_paths = map(str.strip, original_paths)
-                    paths = []
-                    for path in original_paths:
-                        if self.match_dts_path(path, dts_registry):
-                            paths.append(self.build_dts_path(path, dts_registry, param_type))
-                        elif self.match_cloud_path(path):
-                            paths.append(self.build_cloud_path(path, param_type))
-                        elif self.match_ftp_or_http_path(path):
-                            paths.append(self.build_ftp_or_http_path(path, param_type))
-                    if len(paths) != 0:
-                        remote_locations.append(RemoteLocation(env, resolved_value, param_type, paths, delimiter))
+    def find_remote_locations(self, dts_registry, param_types):
+        for param in self.find_params(param_types):
+            resolved_value = replace_all_system_variables_in_path(param.value)
+            Logger.info('Found remote parameter %s (%s) with type %s' % (resolved_value, param.value, param.type),
+                        task_name=self.task_name)
+            original_paths = [resolved_value]
+            delimiter = ''
+            for supported_delimiter in VALUE_DELIMITERS:
+                if resolved_value.find(supported_delimiter) != -1:
+                    original_paths = re.split(supported_delimiter, resolved_value)
+                    delimiter = supported_delimiter
+                    break
+            # Strip spaces, which may arise if the parameter was splitted by comma
+            # e.g. "s3://bucket1/f1, s3://bucket2/f2" will be splitted into
+            # "s3://bucket1/f1"
+            # " s3://bucket2/f2"
+            original_paths = map(str.strip, original_paths)
+            paths = []
+            for path in original_paths:
+                if self.match_dts_path(path, dts_registry):
+                    paths.append(self.build_dts_path(path, dts_registry, param.type))
+                elif self.match_cloud_path(path):
+                    paths.append(self.build_cloud_path(path, param.type))
+                elif self.match_ftp_or_http_path(path):
+                    paths.append(self.build_ftp_or_http_path(path, param.type))
+            if paths:
+                yield RemoteLocation(param.name, resolved_value, param.type, paths, delimiter)
 
-        return remote_locations
+    def find_metadata_locations(self, param_types):
+        for param in self.find_params(param_types):
+            Logger.info('Found metadata parameter %s=%s' % (param.name, param.value), task_name=self.task_name)
+            try:
+                folder_id, entity_class, entity_ids = param.value.split(':', 2)
+            except Exception:
+                Logger.warn('Metadata parameter value is malformed. The following format is expected: '
+                            '<folder id>:<class name>:<id1,id2,...>')
+                continue
+            yield MetadataLocation(param=param, folder_id=folder_id, entity_class=entity_class, entity_ids=entity_ids,
+                                   local_path=os.path.join(self.input_dir, param.name + '.metadata.csv'))
+
+    def find_params(self, param_types=None):
+        param_types = param_types or ()
+        for param_name in os.environ:
+            param_type = os.getenv(param_name + self.env_suffix)
+            if not param_type:
+                continue
+            if param_type not in param_types:
+                continue
+            param_value = os.getenv(param_name)
+            if not param_value:
+                continue
+            param_value = param_value.strip()
+            yield RunParameter(name=param_name, value=param_value, type=param_type)
 
     @staticmethod
     def match_ftp_or_http_path(path):
@@ -413,11 +501,73 @@ class InputDataTask:
             remote = urlparse.urlparse(path)
             relative_path = path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
             local_dir = self.get_local_dir(input_type)
-            local_path = self.join_paths(local_dir, relative_path)
+
+            omics_parsed_path = re.search('^(omics://(.*/(\\d+/(?:reference|readSet)))/(\\d+/(source|source1|source2|index)))$', path)
+            if omics_parsed_path:
+                local_path = self.calculate_omics_file_local_path(local_dir, omics_parsed_path)
+            else:
+                local_path = self.join_paths(local_dir, relative_path)
+
         Logger.info('Found %s %s path %s. It will be localized to %s.' % (path_type.lower(), input_type, path,
                                                                           local_path),
                     task_name=self.task_name)
         return LocalizedPath(path, path, local_path, path_type, suffix=path_suffix)
+
+    def calculate_omics_file_local_path(self, local_dir, omics_parsed_path):
+
+        def __get_file_name_suffix(omics_file_name, omics_resource_type):
+            if omics_resource_type == "FASTQ":
+                return "_R1" if omics_file_name == "source1" else "_R2"
+            else:
+                return ""
+
+        def __get_file_ext(omics_file_name, omics_resource_type):
+            if omics_resource_type == "FASTQ":
+                return "fastq.gz"
+            elif omics_resource_type == "BAM" or omics_resource_type == "UBAM":
+                if omics_file_name == "index":
+                    return "bam.bai"
+                else:
+                    return "bam"
+            elif omics_resource_type == "CRAM":
+                if omics_file_name == "index":
+                    return "cram.crai"
+                else:
+                    return "cram"
+            elif omics_resource_type == "REFERENCE":
+                if omics_file_name == "index":
+                    return "fa.fai"
+                else:
+                    return "fa"
+            else:
+                raise ValueError(
+                    "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)
+                )
+
+        path = omics_parsed_path.group(1)
+        storage_path = omics_parsed_path.group(2)
+        storage_postfix = omics_parsed_path.group(3)
+        omics_file_storage_relative_path = omics_parsed_path.group(4)
+        local_relative_path = "{}/{}".format(storage_postfix, omics_file_storage_relative_path)
+        source_file_name = omics_parsed_path.group(5)
+        storage = self.api.find_datastorage(storage_path)
+        try:
+            listing = self.api.load_datastorage_items(storage.id, path=omics_file_storage_relative_path)
+            if listing and len(listing) > 0:
+                source_file = listing[0]
+                local_file_name = "{}/{}{}.{}".format(
+                    local_relative_path.replace("/{}".format(source_file_name), ''),
+                    source_file["labels"]["fileName"],
+                    __get_file_name_suffix(source_file_name, source_file["labels"]["fileType"]),
+                    __get_file_ext(source_file_name, source_file["labels"]["fileType"])
+                )
+                local_path = self.join_paths(local_dir, local_file_name)
+            else:
+                raise ValueError("Can't list datastorage in path: {}".format(path))
+        except Exception as e:
+            Logger.warn(e)
+            local_path = self.join_paths(local_dir, local_relative_path)
+        return local_path
 
     def get_local_dir(self, type):
         return self.input_dir if type == ParameterType.INPUT_PARAMETER else self.common_dir
@@ -427,7 +577,8 @@ class InputDataTask:
         trimmed_suffix = suffix[1:] if suffix.startswith('/') else suffix
         return trimmed_prefix + trimmed_suffix
 
-    def transfer_dts(self, dts_locations, dts_registry, rules=None):
+    def transfer_dts(self, dts_locations, dts_registry, rules=[]):
+        rule_patterns = [rule.file_mask for rule in rules]
         grouped_paths = {}
         for path in dts_locations:
             if path.prefix not in grouped_paths:
@@ -439,7 +590,7 @@ class InputDataTask:
             dts_url = dts_registry[prefix]
             Logger.info('Uploading {} paths using DTS service {}'.format(len(paths), dts_url),  self.task_name)
             dts_client = DataTransferServiceClient(dts_url, self.token, self.api_url, self.token, 10)
-            dts_client.transfer_data([self.create_dts_path(path, rules) for path in paths], self.task_name)
+            dts_client.transfer_data([self.create_dts_path(path, rule_patterns) for path in paths], self.task_name)
 
     def create_dts_path(self, path, rules):
         return LocalToS3(path.path, path.cloud_path, rules) if self.is_upload \
@@ -459,6 +610,43 @@ class InputDataTask:
                     files.append((source, destination))
         if files:
             self.perform_cluster_file_transfer(files, cluster, rules=rules)
+
+        should_collect_run_results = self.run_id is not None
+        if should_collect_run_results and rules:
+            self.publish_run_results(rules, remote_locations)
+
+    def publish_run_results(self, rules, locations):
+
+        def add_result_if_matches(file, destination, run_result_rules, run_results):
+            matched = DataStorageRule.match_which(run_result_rules, file)
+            if matched:
+                run_result = run_results.get(matched.name)
+                if not run_result:
+                    run_result = PipelineRunResult(self.run_id, matched.name, matched.file_mask)
+                    run_results[matched.name] = run_result
+                run_result.add_item(destination)
+                return True
+            return False
+
+        run_result_rules = [rule for rule in rules if rule.is_result]
+        result_file_count = 0
+        run_results = {}
+        for location in locations:
+            for path in location.paths:
+                source, destination = self.get_local_paths(path, self.is_upload)
+                if self.is_file(source):
+                    if add_result_if_matches(source, destination, run_result_rules, run_results):
+                        result_file_count = result_file_count + 1
+                else:
+                    for file in self.fetch_source_files(source):
+                        filename = file.filename
+                        if add_result_if_matches(filename, os.path.join(destination, filename),
+                                                      run_result_rules, run_results):
+                            result_file_count = result_file_count + 1
+
+        Logger.info('Matched {} files for {} run result rules'.format(result_file_count, len(run_results)), task_name=self.task_name)
+        self.api.add_pipeline_run_results(self.run_id, [run_results[k].to_dict() for k in run_results.keys()])
+
 
     def perform_local_transfer(self, source, destination):
         Logger.info('Uploading files from {} to {} using local pipe'.format(source, destination), self.task_name)
@@ -552,7 +740,10 @@ class InputDataTask:
             for root, d_names, f_names in os.walk(source):
                 for f in f_names:
                     path = os.path.join(root, f)
-                    files.append(File(os.path.relpath(path, start=source), os.path.getsize(path)))
+                    if os.path.exists(path):
+                        files.append(File(os.path.relpath(path, start=source), os.path.getsize(path)))
+                    else:
+                        Logger.warn('File {} does not exist or a broken symlink'.format(path), self.task_name)
         return sorted(files, key=lambda x: x.size, reverse=True)
 
     def get_path_without_folder(self, source, path):

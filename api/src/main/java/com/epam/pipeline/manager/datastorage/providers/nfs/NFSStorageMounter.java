@@ -10,11 +10,13 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +26,9 @@ import org.springframework.util.Assert;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
@@ -36,6 +40,7 @@ public class NFSStorageMounter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageMounter.class);
     private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
+    private static final String CHOWN_CMD_PATTERN = "sudo chown %d:%d %s";
     /**
      * -l is for "lazy" unmounting: Detach the filesystem from the filesystem hierarchy now, and cleanup all references
      * to the filesystem as soon as it is not busy anymore
@@ -66,8 +71,7 @@ public class NFSStorageMounter {
     public synchronized File mount(final NFSDataStorage dataStorage) {
         try {
             final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-            final File mntDir = getStorageMountRoot(dataStorage, fileShareMount);
-            final File rootMount = getShareRootMount(fileShareMount);
+            final File rootMount = getShareRootMount(dataStorage, fileShareMount);
             if (!rootMount.exists()) {
                 Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
@@ -77,10 +81,16 @@ public class NFSStorageMounter {
                 final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
                         regionManager.loadCredentials(cloudRegion) : null;
 
-                final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
-                        dataStorage.getMountOptions(), protocol);
+                final String defaultMountOptions = StringUtils.isNotBlank(dataStorage.getMountOptions()) ?
+                        dataStorage.getMountOptions() : fileShareMount.getMountOptions();
 
-                final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
+                final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
+                        defaultMountOptions, protocol);
+
+                final String rootNfsPath = formatNfsPath(
+                        dataStorage.isMountExactPath() ? dataStorage.getPath() : fileShareMount.getMountRoot(),
+                        protocol
+                );
 
                 final String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
                         rootNfsPath, rootMount.getAbsolutePath());
@@ -95,8 +105,7 @@ public class NFSStorageMounter {
                             dataStorage.getPath()), e);
                 }
             }
-            String storageName = getStorageName(dataStorage.getPath());
-            return new File(mntDir, storageName);
+            return getStorageMountPath(dataStorage, fileShareMount);
         } catch (IOException e) {
             throw new DataStorageException(messageHelper.getMessage(
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT, dataStorage.getName(),
@@ -104,11 +113,13 @@ public class NFSStorageMounter {
         }
     }
 
-    public synchronized void unmountNFSIfEmpty(AbstractDataStorage storage) {
+    public synchronized void unmountNFSIfEmpty(NFSDataStorage storage) {
         final FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
-        final File rootMount = getShareRootMount(fileShareMount);
-        final List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
-                storage.getFileShareMountId());
+        final File rootMount = getShareRootMount(storage, fileShareMount);
+        // if mount exact path, storage will be mounted to the unique dir
+        final List<AbstractDataStorage> remaining = storage.isMountExactPath()
+                ? Collections.singletonList(storage)
+                : dataStorageDao.loadDataStoragesByFileShareMountID(storage.getFileShareMountId());
         LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
                 .collect(Collectors.joining(";")) + " related with current file share mount");
 
@@ -123,14 +134,40 @@ public class NFSStorageMounter {
         }
     }
 
-    private File getStorageMountRoot(final NFSDataStorage dataStorage, final FileShareMount fileShareMount) {
-        final String storageMountPath = normalizeMountPath(fileShareMount.getMountType(),
-                getNfsRootPath(dataStorage.getPath()));
-        return Paths.get(rootMountPoint, storageMountPath).toFile();
+    public void chown(final File file, final PipelineUser user, final Integer seed, final Integer groupUID) {
+        final Long userUID = user.getId() + seed;
+        final Long resolvedGroupUID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(userUID);
+        final String path = file.getAbsoluteFile().getPath();
+        final String cmd = String.format(CHOWN_CMD_PATTERN, userUID, resolvedGroupUID, path);
+        try {
+            cmdExecutor.executeCommand(cmd);
+        } catch (CmdExecutionException e) {
+            LOGGER.error("Failed to change owner for path {}:", path);
+            LOGGER.error(e.getMessage(), e);
+        }
     }
 
-    private File getShareRootMount(final FileShareMount fileShareMount) {
-        final String shareMountPath = normalizeMountPath(fileShareMount.getMountType(), fileShareMount.getMountRoot());
+    private File getStorageMountPath(final NFSDataStorage storage, final FileShareMount fileShareMount) {
+        if (storage.isMountExactPath()) {
+            final String flatStorageMountPAth =
+                    normalizeMountPath(fileShareMount.getMountType(), storage.getPath(), true);
+            return Paths.get(rootMountPoint, flatStorageMountPAth).toFile();
+        } else {
+            final String storageMountPath = normalizeMountPath(fileShareMount.getMountType(),
+                    getNfsRootPath(storage.getPath()));
+            return Paths.get(rootMountPoint, storageMountPath, getStorageName(storage.getPath())).toFile();
+        }
+    }
+
+    private File getShareRootMount(final NFSDataStorage storage, final FileShareMount fileShareMount) {
+        final String shareMountPath;
+        if (storage.isMountExactPath()) {
+            shareMountPath = normalizeMountPath(
+                    fileShareMount.getMountType(), storage.getPath(), true);
+        } else {
+            shareMountPath = normalizeMountPath(
+                    fileShareMount.getMountType(), fileShareMount.getMountRoot());
+        }
         return Paths.get(rootMountPoint, shareMountPath).toFile();
     }
 

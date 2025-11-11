@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.git;
 
-import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
@@ -62,6 +61,7 @@ import com.epam.pipeline.utils.GitUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +103,6 @@ public class GitManager {
     private static final String BASE64_ENCODING = "base64";
     public static final String EXCLUDE_MARK = ":!";
 
-    private static final long DEFAULT_TOKEN_DURATION = 1L;
     private static final String EMPTY = "";
     private static final String COMMA = ",";
     private static final String ANY_SUB_PATH = "*";
@@ -163,7 +162,7 @@ public class GitManager {
                                                       final boolean rootClient) {
         Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
-        boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
+        boolean externalHost = StringUtils.isNotBlank(providedToken);
         String token = externalHost ? providedToken :
                 preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
@@ -182,16 +181,19 @@ public class GitManager {
 
     public GitCredentials getGitCredentials(Long id, boolean useEnvVars, boolean issueToken) {
         Pipeline pipeline = pipelineManager.load(id);
+        final Long defaultTokenDuration = preferenceManager.getPreference(
+                SystemPreferences.GIT_DEFAULT_TOKEN_DURATION_DAYS);
         try {
             return pipelineRepositoryService
-                    .getPipelineCloneCredentials(pipeline, useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+                    .getPipelineCloneCredentials(pipeline, useEnvVars, issueToken, defaultTokenDuration);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
     }
 
     public GitCredentials getGitlabCredentials(Long duration) {
-        Long expiration = Optional.ofNullable(duration).orElse(DEFAULT_TOKEN_DURATION);
+        Long expiration = Optional.ofNullable(duration)
+                .orElse(preferenceManager.getPreference(SystemPreferences.GIT_DEFAULT_TOKEN_DURATION_DAYS));
         try {
             return getDefaultGitlabClient()
                     .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
@@ -228,11 +230,12 @@ public class GitManager {
                                                        boolean recursive)
             throws GitClientException {
         List<GitRepositoryEntry> entries;
-        if (StringUtils.isNullOrEmpty(path)) {
+        if (StringUtils.isBlank(path)) {
             final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
             entries = pipelineRepositoryService.getRepositoryContents(
                     pipeline, findRepoSrcPath(pipeline), version, recursive);
-            if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
+            if (RepositoryType.GITLAB.equals(pipeline.getRepositoryType()) &&
+                    appendConfigurationFileIfNeeded) {
                 final GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version,
                         pipeline.getConfigurationPath());
                 if (configurationEntry != null) {
@@ -310,7 +313,7 @@ public class GitManager {
         Arrays.stream(sourcePath.split(PATH_DELIMITER)).forEach(pathPart ->
             Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
-        if (StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
+        if (StringUtils.isBlank(sourceItemVO.getPreviousPath())) {
             return pipelineRepositoryService.updateFile(pipeline,
                     sourcePath,
                     sourceItemVO.getContents(),
@@ -386,9 +389,12 @@ public class GitManager {
             throws GitClientException {
         checkRevision(pipeline, version);
         final String configPath = getConfigFilePath(pipeline.getConfigurationPath());
-        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, getRevisionName(version), configPath);
+        Assert.isTrue(pipelineRepositoryService.fileExists(pipeline, configPath),
+                String.format("Configuration file %s is missing.", configPath));
+        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, version, configPath);
         String config = new String(configBytes, Charset.defaultCharset());
-        Assert.notNull(config, "Config.json is empty.");
+        Assert.isTrue(StringUtils.isNotBlank(config),
+                String.format("Configuration file %s is empty.", configPath));
         return config;
     }
 
@@ -657,8 +663,11 @@ public class GitManager {
             }
         }
         if (!authManager.isAdmin()) {
-            final String authorizedUser = authManager.getCurrentUser().getUserName();
-            labels.add(String.format(ON_BEHALF_OF, authorizedUser));
+            switch (preferenceManager.getPreference(SystemPreferences.GITLAB_ISSUE_VISIBILITY)) {
+                case OWNER: labels.add(String.format(ON_BEHALF_OF, authManager.getCurrentUser().getUserName()));
+                case ALL:
+                default:
+            }
         }
         return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, notLabels, page, pageSize,
                 filter.getSearch(), preferenceManager.getPreference(SystemPreferences.GITLAB_SERVER_FILTERING));
@@ -677,7 +686,7 @@ public class GitManager {
 
     private String getProjectForIssues() {
         final String project = preferenceManager.getPreference(SystemPreferences.GITLAB_ISSUE_PROJECT);
-        Assert.isTrue(!StringUtils.isNullOrEmpty(project),
+        Assert.isTrue(StringUtils.isNotBlank(project),
                 messageHelper.getMessage(MessageConstants.ERROR_ISSUE_PROJECT_NOT_SET));
         return project;
     }
@@ -690,7 +699,7 @@ public class GitManager {
         return Arrays.stream(Optional.ofNullable(
                         preferenceManager.getPreference(SystemPreferences.VERSION_STORAGE_IGNORED_FILES)
                 ).orElse(EMPTY).split(COMMA))
-                .filter(p -> !StringUtils.isNullOrEmpty(p))
+                .filter(StringUtils::isNotBlank)
                 .map(String::trim)
                 .map(p -> {
                     if (!p.startsWith(ROOT_PATH)) {
@@ -732,7 +741,7 @@ public class GitManager {
 
     private Pipeline loadPipelineAndCheckRevision(final Long id, final String revision) {
         final Pipeline pipeline = pipelineManager.load(id);
-        if (!StringUtils.isNullOrEmpty(revision)) {
+        if (StringUtils.isNotBlank(revision)) {
             checkRevision(pipeline, revision);
         }
         return pipeline;
@@ -837,7 +846,7 @@ public class GitManager {
     }
 
     private String getConfigFilePath(final String configPath) {
-        return StringUtils.isNullOrEmpty(configPath) ? CONFIG_FILE_NAME : configPath;
+        return StringUtils.isNotBlank(configPath) ? configPath : CONFIG_FILE_NAME;
     }
 
     private String getGitlabRepositoryPath(final Pipeline pipeline) {

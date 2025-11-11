@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ToolDescription;
+import com.epam.pipeline.entity.docker.ToolImageDockerfile;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -115,18 +116,24 @@ public class ToolApiService {
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)
+    public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
+        return toolManager.loadDockerFile(id, tag, from);
+    }
+
+    @PreAuthorize(AclExpressions.TOOL_READ)
     public String getImageDefaultCommand(final Long id, final String tag) {
         return toolManager.loadToolDefaultCommand(id, tag);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void forceScanTool(String registry, String image, String version, final Boolean rescan) {
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR +
+            "@grantPermissionManager.toolPermission(#registry, #image, 'OWNER')")
+    public void forceScanTool(final String registry, final String image, final String version, final Boolean rescan) {
         toolScanScheduler.forceScheduleScanTool(registry, image, version, rescan);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void clearToolScan(final String registry, final String tool, final String version) {
-        toolManager.clearToolScan(registry, tool, version);
+    public void clearToolScan(final String registry, final String image, final String version) {
+        toolManager.clearToolScan(registry, image, version);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY +

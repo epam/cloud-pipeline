@@ -1,0 +1,292 @@
+{
+    "aac": {
+        "headers": {
+            "Content-Type": "audio/aac"
+        }
+    },
+    "abw": {
+        "headers": {
+            "Content-Type": "application/x-abiword"
+        }
+    },
+    "arc": {
+        "headers": {
+            "Content-Type": "application/octet-stream"
+        }
+    },
+    "avi": {
+        "headers": {
+            "Content-Type": "video/x-msvideo"
+        }
+    },
+    "azw": {
+        "headers": {
+            "Content-Type": "application/vnd.amazon.ebook"
+        }
+    },
+    "bin": {
+        "headers": {
+            "Content-Type": "application/octet-stream"
+        }
+    },
+    "bz": {
+        "headers": {
+            "Content-Type": "application/x-bzip"
+        }
+    },
+    "bz2": {
+        "headers": {
+            "Content-Type": "application/x-bzip2"
+        }
+    },
+    "csh": {
+        "headers": {
+            "Content-Type": "application/x-csh"
+        }
+    },
+    "css": {
+        "headers": {
+            "Content-Type": "text/css"
+        }
+    },
+    "csv": {
+        "headers": {
+            "Content-Type": "text/csv"
+        }
+    },
+    "doc": {
+        "headers": {
+            "Content-Type": "application/msword"
+        }
+    },
+    "epub": {
+        "headers": {
+            "Content-Type": "application/epub+zip"
+        }
+    },
+    "gif": {
+        "headers": {
+            "Content-Type": "image/gif"
+        }
+    },
+    "htm": {
+        "headers": {
+            "Content-Type": "text/html"
+        }
+    },
+    "html": {
+        "headers": {
+            "Content-Type": "text/html"
+        }
+    },
+    "ico": {
+        "headers": {
+            "Content-Type": "image/x-icon"
+        }
+    },
+    "ics": {
+        "headers": {
+            "Content-Type": "text/calendar"
+        }
+    },
+    "jar": {
+        "headers": {
+            "Content-Type": "application/java-archive"
+        }
+    },
+    "jpeg": {
+        "headers": {
+            "Content-Type": "image/jpeg"
+        }
+    },
+    "jpg": {
+        "headers": {
+            "Content-Type": "image/jpeg"
+        }
+    },
+    "js": {
+        "headers": {
+            "Content-Type": "application/javascript"
+        }
+    },
+    "json": {
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    },
+    "mid": {
+        "headers": {
+            "Content-Type": "audio/midi"
+        }
+    },
+    "midi": {
+        "headers": {
+            "Content-Type": "audio/midi"
+        }
+    },
+    "mpeg": {
+        "headers": {
+            "Content-Type": "video/mpeg"
+        }
+    },
+    "mpkg": {
+        "headers": {
+            "Content-Type": "application/vnd.apple.installer+xml"
+        }
+    },
+    "odp": {
+        "headers": {
+            "Content-Type": "application/vnd.oasis.opendocument.presentation"
+        }
+    },
+    "ods": {
+        "headers": {
+            "Content-Type": "application/vnd.oasis.opendocument.spreadsheet"
+        }
+    },
+    "odt": {
+        "headers": {
+            "Content-Type": "application/vnd.oasis.opendocument.text"
+        }
+    },
+    "oga": {
+        "headers": {
+            "Content-Type": "audio/ogg"
+        }
+    },
+    "ogv": {
+        "headers": {
+            "Content-Type": "video/ogg"
+        }
+    },
+    "ogx": {
+        "headers": {
+            "Content-Type": "application/ogg"
+        }
+    },
+    "pdf": {
+        "headers": {
+            "Content-Type": "application/pdf"
+        }
+    },
+    "ppt": {
+        "headers": {
+            "Content-Type": "application/vnd.ms-powerpoint"
+        }
+    },
+    "rar": {
+        "headers": {
+            "Content-Type": "application/x-rar-compressed"
+        }
+    },
+    "rtf": {
+        "headers": {
+            "Content-Type": "application/rtf"
+        }
+    },
+    "sh": {
+        "headers": {
+            "Content-Type": "application/x-sh"
+        }
+    },
+    "svg": {
+        "headers": {
+            "Content-Type": "image/svg+xml"
+        }
+    },
+    "swf": {
+        "headers": {
+            "Content-Type": "application/x-shockwave-flash"
+        }
+    },
+    "tar": {
+        "headers": {
+            "Content-Type": "application/x-tar"
+        }
+    },
+    "tif": {
+        "headers": {
+            "Content-Type": "image/tiff"
+        }
+    },
+    "tiff": {
+        "headers": {
+            "Content-Type": "image/tiff"
+        }
+    },
+    "ttf": {
+        "headers": {
+            "Content-Type": "font/ttf"
+        }
+    },
+    "vsd": {
+        "headers": {
+            "Content-Type": "application/vnd.visio"
+        }
+    },
+    "wav": {
+        "headers": {
+            "Content-Type": "audio/x-wav"
+        }
+    },
+    "weba": {
+        "headers": {
+            "Content-Type": "audio/webm"
+        }
+    },
+    "webm": {
+        "headers": {
+            "Content-Type": "video/webm"
+        }
+    },
+    "webp": {
+        "headers": {
+            "Content-Type": "image/webp"
+        }
+    },
+    "woff": {
+        "headers": {
+            "Content-Type": "font/woff"
+        }
+    },
+    "woff2": {
+        "headers": {
+            "Content-Type": "font/woff2"
+        }
+    },
+    "xhtml": {
+        "headers": {
+            "Content-Type": "application/xhtml+xml"
+        }
+    },
+    "xls": {
+        "headers": {
+            "Content-Type": "application/vnd.ms-excel"
+        }
+    },
+    "xml": {
+        "headers": {
+            "Content-Type": "application/xml"
+        }
+    },
+    "xul": {
+        "headers": {
+            "Content-Type": "application/vnd.mozilla.xul+xml"
+        }
+    },
+    "zip": {
+        "headers": {
+            "Content-Type": "application/zip"
+        }
+    },
+    "3gp": {
+        "headers": {
+            "Content-Type": "video/3gpp"
+        }
+    },
+    "3g2": {
+        "headers": {
+            "Content-Type": "video/3gpp2"
+        }
+    }
+}

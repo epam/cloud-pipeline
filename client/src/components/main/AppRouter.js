@@ -39,12 +39,13 @@ import PipelineStorageRules from '../pipelines/version/storageRules/PipelineStor
 import LaunchPipeline from '../pipelines/launch/LaunchPipeline';
 import ClusterRoot from '../cluster';
 import Cluster from '../cluster/Cluster';
+import CoreNodes from '../cluster/core-nodes';
 import HotCluster from '../cluster/hot-node-pool';
 import HotClusterUsage from '../cluster/hot-node-pool/hot-cluster-usage';
 import ClusterNode from '../cluster/ClusterNode';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
-import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
+import ClusterNodeMonitor from '../cluster/cluster-node-monitor';
 import Tool from '../tools/Tool';
 import Tools from '../tools/Tools';
 import SettingsForm from '../settings';
@@ -66,7 +67,7 @@ import Billing, {
 } from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
 import VSIPreviewPage from '../applications/vsi-preview';
-import Log from '../runs/logs/Log';
+import LogsRedirect from '../runs/logs/logs-redirect';
 import App from './App';
 import ToolVersion from '../tools/tool-version';
 import ToolScanningInfo from '../tools/tool-version/scanning-info';
@@ -80,6 +81,7 @@ import NotificationBrowser from './notification/NotificationBrowser';
 import TicketsBrowser from '../special/tickets/tickets-list';
 import TicketPage from '../special/tickets/ticket';
 import NewTicketPage from '../special/tickets/new-ticket-page';
+import CloudNodes from '../cluster/cloud-nodes';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -132,6 +134,8 @@ function AppRouterComponent ({history, uiNavigation}) {
         </Route>
         <Route path="/cluster" component={ClusterRoot}>
           <IndexRoute component={Cluster} />
+          <Route path="core-nodes" component={CoreNodes} />
+          <Route path="cloud-nodes" component={CloudNodes} />
           <Route path="hot" component={HotCluster} />
           <Route path="usage" component={HotClusterUsage} />
         </Route>
@@ -144,8 +148,7 @@ function AppRouterComponent ({history, uiNavigation}) {
         <Route path="/runs/filter" component={RunsFilter} />
         <Redirect from="/runs" to="runs/active" />
         <Route path="/runs/:status" component={AllRuns} />
-        <Redirect from="/run/:runId" to="/run/:runId/plain" />
-        <Route path="/run/:runId/:mode(/:taskName)" component={Log} />
+        <Route path="/run/:runId(/:mode)(/:taskName)" component={LogsRedirect} />
         <Redirect from="/tool/:id" to="/tool/:id/description" />
         <Route path="/tool/:id/:section" component={Tool} />
         <Redirect from="/tool/:id/info/:version" to="/tool/:id/info/:version/scaninfo" />
@@ -201,12 +204,12 @@ function AppRouterComponent ({history, uiNavigation}) {
         <Route path="/dashboard" component={HomePageLoader} />
         <Route path="/:id" component={PipelinesLibrary}>
           <IndexRoute component={PipelineBrowser} />
-          <Redirect from=":version" to=":version/documents" />
           <Route path=":version" component={PipelineDetails}>
             <Route path="history" component={PipelineHistory} />
             <Route path="code" component={PipelineCode} />
             <Route path="configuration(/:configuration)" component={PipelineConfiguration} />
             <Route path="graph" component={PipelineGraph} />
+            <Route path="workflow" component={PipelineGraph} />
             <Route path="documents" component={PipelineDocuments} />
             <Route path="storage" component={PipelineStorageRules} />
           </Route>

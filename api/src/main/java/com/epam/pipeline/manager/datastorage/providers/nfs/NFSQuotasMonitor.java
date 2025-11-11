@@ -77,6 +77,7 @@ import java.util.stream.Collectors;
 public class NFSQuotasMonitor {
 
     private static final int GB_TO_BYTES = 1024 * 1024 * 1024;
+    private static final double GB_TO_GIB = 0.93;
     private static final int PERCENTS_MULTIPLIER = 100;
     private static final String NFS_STORAGE_TIER = "STANDARD";
     private static final StorageUsage.StorageUsageStats EMPTY_USAGE = new StorageUsage.StorageUsageStats(
@@ -335,8 +336,9 @@ public class NFSQuotasMonitor {
         switch (shareType) {
             case LUSTRE:
                 return lustreManager.findLustreFS(shareMount)
-                    .map(LustreFS::getCapacityGb)
-                    .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize) * GB_TO_BYTES)
+                    .map(fs -> fs.getCapacityGb() * GB_TO_GIB)
+                    .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize.intValue())
+                            * GB_TO_BYTES)
                     .map(limit -> storageUsage.getUsage()
                             .getOrDefault(NFS_STORAGE_TIER, EMPTY_USAGE).getEffectiveSize() > limit)
                     .orElse(false);

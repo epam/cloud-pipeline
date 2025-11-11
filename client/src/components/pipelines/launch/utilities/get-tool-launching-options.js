@@ -132,11 +132,11 @@ export default function getToolLaunchingOptions (
           const isSpotValue = parameterIsNotEmpty(versionSettingValue('is_spot'))
             ? versionSettingValue('is_spot')
             : preferences.useSpot;
-          const allowedInstanceTypesRequest = new AllowedInstanceTypes(
-            tool.id,
-            cloudRegionIdValue,
-            isSpotValue
-          );
+          const allowedInstanceTypesRequest = new AllowedInstanceTypes({
+            toolId: tool.id,
+            regionId: cloudRegionIdValue,
+            spot: isSpotValue
+          });
           allowedInstanceTypesRequest
             .fetch()
             .then(() => {

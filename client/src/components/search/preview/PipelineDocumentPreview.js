@@ -29,6 +29,7 @@ import {PreviewIcons} from './previewIcons';
 import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import Markdown from '../../special/markdown';
+import {base64toString} from '../../../utils/base64';
 
 const previewLoad = (params) => {
   if (params.item && params.item.parentId && params.item.pipelineVersion && params.item.path) {
@@ -77,7 +78,7 @@ export default class PipelineDocumentPreview extends React.Component {
         };
       }
       const preview = this.props.preview.response
-        ? atob(this.props.preview.response)
+        ? base64toString(this.props.preview.response)
         : '';
       const noContent = !preview;
       const extension = this.props.preview.path?.split('.').pop().toLowerCase();

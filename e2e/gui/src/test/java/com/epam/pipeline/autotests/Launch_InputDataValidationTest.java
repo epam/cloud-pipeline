@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation {
@@ -48,7 +51,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
     private final String commonFile2 = "common2.txt";
     private final String commonFile3 = "common3.txt";
     private final String commonFile4 = "common4.txt";
-    private final String inFile = "in.txt";
+    private final String inFile = "infile.txt";
     private final String nonCopiedFile = "nonCopied.txt";
     private final String fileText = "editable file text " + Utils.randomSuffix();
     private final String outputPath = String.format("%s://%s/%s", PREFIX, storage, outFolder);
@@ -116,11 +119,13 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .selectValue(INSTANCE_TYPE, DEFAULT_INSTANCE)
                 .launch(this)
                 .sleep(1, SECONDS)
                 .showLog(getRunId())
                 .waitForCompletion()
-                .click(taskWithName("Task1"))
+                .clickTaskWithName("Task1")
                 .ensure(logMessage("Running shell pipeline"), visible)
                 .ensure(STATUS, SUCCESS.reached);
         runsMenu()

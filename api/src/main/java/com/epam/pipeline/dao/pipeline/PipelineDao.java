@@ -21,16 +21,20 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.dao.MetadataTagsUtils;
+import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
+import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import org.apache.commons.lang3.StringUtils;
@@ -63,6 +67,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
     private String loadAllPipelinesWithParentsQuery;
     private String loadPipelinesCountQuery;
     private String loadPipelineWithParentsQuery;
+    private String loadPipelinesFiltersQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Long createPipelineId() {
@@ -83,6 +88,14 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
     public List<Pipeline> loadAllPipelines() {
         return getNamedParameterJdbcTemplate().query(loadAllPipelinesQuery,
                 PipelineParameters.getRowMapper());
+    }
+
+    public List<PipelineWithMetadata> loadPipelinesWithMetadata(final boolean loadMetadata,
+                                                                final EntityFilterVO filter) {
+        final String query = MetadataTagsUtils.buildTagsFilterWhereClause(filter,
+                MetadataTagsUtils.buildWithMetadataQuery(loadPipelinesFiltersQuery, loadMetadata));
+        return getNamedParameterJdbcTemplate()
+                .query(query, PipelineParameters.getRowMapperWithMetadata(loadMetadata));
     }
 
     public Pipeline loadPipeline(Long id) {
@@ -159,7 +172,8 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         CONFIG,
         VISIBILITY,
         CODE_PATH,
-        DOCS_PATH;
+        DOCS_PATH,
+        DATA;
 
         static MapSqlParameterSource getParameters(Pipeline pipeline) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -194,10 +208,18 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
 
         static RowMapper<Pipeline> getRowMapper() {
             return (rs, rowNum) -> {
-                Pipeline pipeline = basicInitPipeline(rs);
-                Long folderId = rs.getLong(FOLDER_ID.name());
-                if (!rs.wasNull()) {
-                    pipeline.setParentFolderId(folderId);
+                final Pipeline pipeline = new Pipeline();
+                initPipeline(rs, pipeline);
+                return pipeline;
+            };
+        }
+
+        static RowMapper<PipelineWithMetadata> getRowMapperWithMetadata(final boolean loadMetadata) {
+            return (rs, rowNum) -> {
+                final PipelineWithMetadata pipeline = new PipelineWithMetadata();
+                initPipeline(rs, pipeline);
+                if (loadMetadata) {
+                    pipeline.setData(MetadataDao.MetadataParameters.parseData(rs.getString(DATA.name())));
                 }
                 return pipeline;
             };
@@ -225,8 +247,16 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             }
         }
 
-        private static Pipeline basicInitPipeline(ResultSet rs) throws SQLException {
-            Pipeline pipeline = new Pipeline();
+        private static void initPipeline(final ResultSet rs, final Pipeline pipeline) throws SQLException {
+            basicInitPipeline(rs, pipeline);
+            final Long folderId = rs.getLong(FOLDER_ID.name());
+            if (!rs.wasNull()) {
+                pipeline.setParentFolderId(folderId);
+                pipeline.setParent(new Folder(folderId));
+            }
+        }
+
+        private static Pipeline basicInitPipeline(final ResultSet rs, final Pipeline pipeline) throws SQLException {
             pipeline.setId(rs.getLong(PIPELINE_ID.name()));
             pipeline.setName(rs.getString(PIPELINE_NAME.name()));
             pipeline.setDescription(rs.getString(DESCRIPTION.name()));
@@ -244,6 +274,11 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setCodePath(rs.getString(CODE_PATH.name()));
             pipeline.setDocsPath(rs.getString(DOCS_PATH.name()));
             return pipeline;
+        }
+
+        private static Pipeline basicInitPipeline(ResultSet rs) throws SQLException {
+            Pipeline pipeline = new Pipeline();
+            return basicInitPipeline(rs, pipeline);
         }
 
         private static RunVisibilityPolicy getRunVisibility(final String rawVisibility) {
@@ -314,5 +349,10 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadPipelineWithParentsQuery(String loadPipelineWithParentsQuery) {
         this.loadPipelineWithParentsQuery = loadPipelineWithParentsQuery;
+    }
+
+    @Required
+    public void setLoadPipelinesFiltersQuery(final String loadPipelinesFiltersQuery) {
+        this.loadPipelinesFiltersQuery = loadPipelinesFiltersQuery;
     }
 }

@@ -52,6 +52,7 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     private static final String KEY = "KEY";
     private static final String VALUE = "VALUE";
     private static final String LIST_PARAMETER = "list";
+    public static final String SECRET_MASK_VALUE = "***";
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
     private Pattern entitiesValuePattern = Pattern.compile("@ENTITIES@");
@@ -124,6 +125,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         return items.isEmpty() ? null : items.get(0);
     }
 
+    public MetadataEntry loadMetadataItemWithSecrets(final EntityVO entity,
+                                                     final List<String> keys) {
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
+                MetadataParameters.getParameters(entity),
+                MetadataParameters.getRowMapper(keys));
+        return items.isEmpty() ? null : items.get(0);
+    }
+
     public boolean hasMetadata(EntityVO entity) {
         List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(loadMetadataItemQuery,
                 MetadataParameters.getParameters(entity), 
@@ -136,6 +145,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                 convertEntitiesToString(loadMetadataItemsQuery, entities),
                 MetadataParameters.getParametersWithArrays(entities),
                 MetadataParameters.getRowMapper());
+        return items.isEmpty() ? null : items;
+    }
+
+    public List<MetadataEntry> loadMetadataItemsByKey(final String key, final List<EntityVO> entities) {
+        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
+                convertEntitiesToString(loadMetadataItemsQuery, entities),
+                MetadataParameters.getParametersWithArrays(entities),
+                MetadataParameters.getRowMapper(Collections.singletonList(key)));
         return items.isEmpty() ? null : items;
     }
 
@@ -291,6 +308,8 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         IDS,
         CLASSES;
 
+        public static final String SECRET_METADATA_TYPE = "secret";
+
         static MapSqlParameterSource getParameters(EntityVO entityVO) {
             MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(ENTITY_ID.name(), entityVO.getEntityId());
@@ -323,10 +342,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         }
 
         static RowMapper<MetadataEntry> getRowMapper() {
+            return getRowMapper(Collections.emptyList());
+        }
+
+        static RowMapper<MetadataEntry> getRowMapper(final List<String> keyToRetrieve) {
             return (rs, rowNum) -> {
                 Long metadataEntityId = rs.getLong(ENTITY_ID.name());
                 String metadataEntityClass = rs.getString(ENTITY_CLASS.name());
-                return initMetadataItem(rs, metadataEntityId, metadataEntityClass);
+                return initMetadataItem(rs, metadataEntityId, metadataEntityClass, keyToRetrieve);
             };
         }
 
@@ -367,16 +390,44 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
-        private static MetadataEntry initMetadataItem(ResultSet rs, Long metadataItemId, String metadataEntityClass)
+        private static MetadataEntry initMetadataItem(final ResultSet rs, final Long metadataItemId,
+                                                      final String metadataEntityClass,
+                                                      final List<String> keysToRetrieve)
                 throws SQLException {
             MetadataEntry metadataEntry = new MetadataEntry();
             metadataEntry.setEntity(new EntityVO(metadataItemId, AclClass.valueOf(metadataEntityClass)));
-            metadataEntry.setData(parseData(rs.getString(DATA.name())));
+            metadataEntry.setData(parseData(rs.getString(DATA.name()), keysToRetrieve));
             return metadataEntry;
         }
 
-        public static Map<String, PipeConfValue> parseData(String data) {
-            return JsonMapper.parseData(data, new TypeReference<Map<String, PipeConfValue>>() {});
+        public static Map<String, PipeConfValue> parseData(final String data) {
+            return parseData(data, Collections.emptyList());
+        }
+
+        public static Map<String, PipeConfValue> parseData(final String data, final List<String> keysToRetrieve) {
+            final Map<String, PipeConfValue> parsedData = JsonMapper.parseData(
+                    data, new TypeReference<Map<String, PipeConfValue>>() {});
+
+            if (CollectionUtils.isEmpty(parsedData)) {
+                return parsedData;
+            }
+
+            if (CollectionUtils.isEmpty(keysToRetrieve)) {
+                return parsedData.entrySet().stream()
+                        .map(metadataEntry -> {
+                            if (SECRET_METADATA_TYPE.equalsIgnoreCase(metadataEntry.getValue().getType())) {
+                                return Pair.of(metadataEntry.getKey(),
+                                        new PipeConfValue(SECRET_METADATA_TYPE, SECRET_MASK_VALUE));
+                            } else {
+                                return Pair.of(metadataEntry.getKey(), metadataEntry.getValue());
+                            }
+                        })
+                        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+            } else {
+                return parsedData.entrySet().stream()
+                        .filter(metadataEntry -> keysToRetrieve.contains(metadataEntry.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            }
         }
     }
 }

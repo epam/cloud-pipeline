@@ -53,6 +53,7 @@ public class DataStorageVO {
     private List<String> allowedCidrs;
     private Long regionId;
     private Long fileShareMountId;
+    private boolean mountExactPath;
     private boolean sensitive;
     private List<ToolFingerprint> toolsToMount;
     private Boolean mountDisabled;
@@ -64,4 +65,5 @@ public class DataStorageVO {
 
     private Long sourceStorageId;
     private Set<String> linkingMasks;
+    private Boolean pathPermissionsEnabled;
 }

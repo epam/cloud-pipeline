@@ -65,5 +65,8 @@ class MockedNotificationRESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_regions(self):
         return self.cp_source.load_regions()
 
+    def load_entity_metadata(self, entity_id, entity_class):
+        return self.cp_source.load_entity_metadata(entity_id, entity_class)
+
     def _load_default_lifecycle_rule_notification(self):
         return self.cp_source._load_default_lifecycle_rule_notification()

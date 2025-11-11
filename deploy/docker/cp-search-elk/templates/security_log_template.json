@@ -143,7 +143,12 @@
           }
         },
         "storage_id": {
-          "type": "keyword"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         }
       }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -57,6 +58,7 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.exception.cluster.NodeNotFoundException;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -78,7 +80,9 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.security.acl.AclUtils;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.security.acl.SidType;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -124,6 +128,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.entity.user.DefaultRoles.ROLE_CLUSTER_READER;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -256,7 +261,7 @@ public class GrantPermissionManager {
         Assert.isTrue(!entity.isLocked(),
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         Permission permission = permissionFactory.buildFromMask(grantVO.getMask());
         String sidName = grantVO.getUserName().toUpperCase();
         Sid sid = aclService.createOrGetSid(sidName, grantVO.getPrincipal());
@@ -306,7 +311,7 @@ public class GrantPermissionManager {
         Assert.isTrue(!entity.isLocked(),
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         Sid sid = aclService.getSid(user.toUpperCase(), isPrincipal);
         int sidEntryIndex = findSidEntry(acl, sid);
         if (sidEntryIndex != -1) {
@@ -327,7 +332,7 @@ public class GrantPermissionManager {
         Assert.isTrue(!entity.isLocked(),
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         LOGGER.info("Deleting all permissions. Entity: class={} id={}", aclClass, id);
         acl = deleteAllAces(acl);
         aclService.putInCache(acl);
@@ -344,7 +349,7 @@ public class GrantPermissionManager {
         clearWriteExecutePermissions(entity);
         Permission noWriteExecutePermission = permissionFactory
                 .buildFromMask(AclPermission.NO_WRITE.getMask() | AclPermission.NO_EXECUTE.getMask());
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         GrantedAuthoritySid userRoleSid = new GrantedAuthoritySid(DefaultRoles.ROLE_USER.getName());
         List<AccessControlEntry> aces = acl.getEntries();
         Permission mergedPermission = noWriteExecutePermission;
@@ -369,7 +374,7 @@ public class GrantPermissionManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void unlockEntity(AbstractSecuredEntity entity) {
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         GrantedAuthoritySid userRoleSid = new GrantedAuthoritySid(DefaultRoles.ROLE_USER.getName());
         int entryIndex = findSidEntry(acl, userRoleSid);
         if (entryIndex == -1) {
@@ -450,7 +455,17 @@ public class GrantPermissionManager {
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
         AbstractSecuredEntity entity = entityManager.load(aclClass, id);
+        if (entity instanceof AbstractDataStorage && isStorageAdmin()) {
+            return true;
+        }
         return permissionsHelper.isOwner(entity);
+    }
+
+    public boolean isOwnerOrAdmin(AbstractSecuredEntity entity) {
+        if (entity instanceof AbstractDataStorage && isStorageAdmin()) {
+            return true;
+        }
+        return isOwnerOrAdmin(entity.getOwner());
     }
 
     public boolean isOwnerOrAdmin(String owner) {
@@ -461,7 +476,18 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
+    public boolean isAdmin() {
+        return isAdmin(getSids());
+    }
+
+    public boolean isStorageAdmin() {
+        return isStorageAdmin(getSids());
+    }
+
     public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
+        if (isStorageAdmin(getSids())) {
+            return true;
+        }
         if (forbiddenByStorageStatus(storage, permissionName)) {
             return false;
         }
@@ -475,7 +501,7 @@ public class GrantPermissionManager {
     public boolean listedStoragePermissions(List<DataStorageAction> actions) {
         for (DataStorageAction action : actions) {
             AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, action.getId());
-            if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
+            if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage)) {
                 return false;
             }
             if (action.isRead() && (!permissionsHelper.isAllowed(READ, storage)
@@ -602,6 +628,10 @@ public class GrantPermissionManager {
     }
 
     public boolean nodePermission(NodeInstance node, String permissionName) {
+        // read-only access for all KUBE nodes for ROLE_CLUSTER_READER role
+        if (isClusterReader(permissionName, node.getMachineType())) {
+            return true;
+        }
         // not labeled nodes are available only for admins
         if (node.getPipelineRun() == null) {
             return false;
@@ -613,8 +643,29 @@ public class GrantPermissionManager {
         return allowed;
     }
 
+    public boolean nodeUsagePermission(String nodeName, String permissionName) {
+        try {
+            final NodeInstance nodeInstance = nodesManager.getNode(nodeName);
+            // not labeled nodes are available only for admins
+            if (nodeInstance.getPipelineRun() == null) {
+                return false;
+            }
+            return runPermissionManager.runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
+        } catch (NodeNotFoundException e) {
+            if (permissionName.equals(READ)) {
+                LOGGER.debug("Failed to find node {}, still allowing usage read access.", nodeName);
+                return true;
+            }
+            return false;
+        }
+    }
+
     public boolean nodePermission(String nodeName, String permissionName) {
         NodeInstance nodeInstance = nodesManager.getNode(nodeName);
+        // read-only access for all KUBE nodes for ROLE_CLUSTER_READER role
+        if (isClusterReader(permissionName, nodeInstance.getMachineType())) {
+            return true;
+        }
         // not labeled nodes are available only for admins
         if (nodeInstance.getPipelineRun() == null) {
             return false;
@@ -622,7 +673,24 @@ public class GrantPermissionManager {
         return runPermissionManager.runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
     }
 
-    public boolean nodeStopPermission(String nodeName, String permissionName) {
+    public boolean nodePermission(final String nodeName, final MachineType machineType, final String permissionName) {
+        if (!MachineType.KUBE.equals(machineType)) {
+            // cloud nodes are available only for admins
+            return false;
+        }
+        // read-only access for all KUBE nodes for ROLE_CLUSTER_READER role
+        if (isClusterReader(permissionName)) {
+            return true;
+        }
+        return nodePermission(nodeName, permissionName);
+    }
+
+    public boolean nodeStopPermission(final String nodeName, final MachineType machineType,
+                                      final String permissionName) {
+        if (!MachineType.KUBE.equals(machineType)) {
+            // cloud nodes are available only for admins
+            return false;
+        }
         NodeInstance nodeInstance = nodesManager.getNode(nodeName);
         // not labeled nodes are available only for admins
         if (nodeInstance.getPipelineRun() == null) {
@@ -837,9 +905,17 @@ public class GrantPermissionManager {
         return sidRetrievalStrategy.getSids(authentication);
     }
 
-    private boolean isAdmin(List<Sid> sids) {
-        GrantedAuthoritySid admin = new GrantedAuthoritySid(DefaultRoles.ROLE_ADMIN.getName());
-        return sids.stream().anyMatch(sid -> sid.equals(admin));
+    private boolean isAdmin(final List<Sid> sids) {
+        return hasRole(sids, DefaultRoles.ROLE_ADMIN);
+    }
+
+    private boolean isStorageAdmin(final List<Sid> sids) {
+        return hasRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
+    }
+
+    private boolean hasRole(final List<Sid> sids, final DefaultRoles role) {
+        final GrantedAuthoritySid sid = new GrantedAuthoritySid(role.getName());
+        return sids.stream().anyMatch(s -> s.equals(sid));
     }
 
     private void validateParameters(PermissionGrantVO grantVO) {
@@ -854,32 +930,36 @@ public class GrantPermissionManager {
         permissionsService.validateMask(grantVO.getMask());
     }
 
-
-    private int collectPermissions(int mask, Acl acl, List<Sid> sids,
-            List<AclPermission> permissionToCollect, boolean includeInherited) {
+    /**
+     * This method will calculate permission mask for given ACL, permissions to check and SIDs, in the following way:
+     * For each permission from permissionToCollect it will check if provided SIDs have such permissions, and will
+     * respect the following order:
+     *  PRINCIPAL SIDs (users) -> GROUP SIDs -> ROLE SIDs
+     *  Inside each type of the SID deny mask has more power over allow mask.
+     *  Such approach allows to use comprehensive permission models and fine tune permissions gradually.
+     *
+     * @param mask - initial mask, 0 for first call, could be not 0 in recursive call
+     * @param acl  - ACL of the object for which we would like to check permissions
+     * @param sids - grouped by {@link SidType} SIDs of the user
+     * @param permissionToCollect - list of permission that we check against user for this ACL
+     * @param includeInherited - if true, we will be doing recursive call to the parent of the entity
+     * */
+    private int collectPermissions(final int mask, final Acl acl, final Map<SidType, List<Sid>> sids,
+                                   final List<AclPermission> permissionToCollect, final boolean includeInherited) {
         if (permissionsService.allPermissionsSet(mask, permissionToCollect)) {
             return mask;
         }
         int currentMask = mask;
         final List<AccessControlEntry> aces = acl.getEntries();
-        for (Sid sid : sids) {
-            // Attempt to find exact match for this permission mask and SID
-            for (AccessControlEntry ace : aces) {
-                if (ace.getSid().equals(sid)) {
-                    Permission permission = ace.getPermission();
-                    for (AclPermission p : permissionToCollect) {
-                        if (!permissionsService.isPermissionSet(currentMask, p)) {
-                            //try to set granting mask
-                            currentMask = currentMask | (permission.getMask() & p.getMask());
-                            if (!permissionsService.isPermissionSet(currentMask, p)) {
-                                //try to set denying mask
-                                currentMask =
-                                        currentMask | (permission.getMask() & p.getDenyPermission()
-                                                .getMask());
-                            }
-                        }
-                    }
-                }
+        for (AclPermission p : permissionToCollect) {
+            if (!permissionsService.isPermissionSet(currentMask, p)) {
+                currentMask = extendMaskBasedOnSidsPermissions(p, aces, sids.get(SidType.PRINCIPAL), currentMask);
+            }
+            if (!permissionsService.isPermissionSet(currentMask, p)) {
+                currentMask = extendMaskBasedOnSidsPermissions(p, aces, sids.get(SidType.GROUP), currentMask);
+            }
+            if (!permissionsService.isPermissionSet(currentMask, p)) {
+                currentMask = extendMaskBasedOnSidsPermissions(p, aces, sids.get(SidType.ROLE), currentMask);
             }
         }
         if (permissionsService.allPermissionsSet(currentMask, permissionToCollect)) {
@@ -893,6 +973,29 @@ public class GrantPermissionManager {
         } else {
             return currentMask;
         }
+    }
+
+    private static int extendMaskBasedOnSidsPermissions(final AclPermission p, final List<AccessControlEntry> aces,
+                                                        final List<Sid> sids, int currentMask) {
+        boolean deny = false;
+        boolean allow = false;
+        for (Sid sid : sids) {
+            // Attempt to find exact match for this permission mask and SID
+            for (AccessControlEntry ace : aces) {
+                if (ace.getSid().equals(sid)) {
+                    Permission permission = ace.getPermission();
+                    //try to set granting mask
+                    allow = allow || (permission.getMask() & p.getMask()) != 0;
+                    deny = deny || (permission.getMask() & p.getDenyPermission().getMask()) != 0;
+                }
+            }
+        }
+        if (deny) {
+            currentMask = currentMask | p.getDenyPermission().getMask();
+        } else if (allow) {
+            currentMask = currentMask | p.getMask();
+        }
+        return currentMask;
     }
 
     private AclSecuredEntry convertAclToEntryForUser(AbstractSecuredEntity entity, MutableAcl acl,
@@ -924,10 +1027,16 @@ public class GrantPermissionManager {
         return entry;
     }
 
-    private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
-                                       boolean includeInherited, List<Sid> sids,
-                                       Optional<AppliedQuota> activeQuota) {
+    private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge, boolean includeInherited,
+                                       List<Sid> sids, Optional<AppliedQuota> activeQuota) {
+        final Map<SidType, List<Sid>> sidsByType = AclUtils.groupSidsByType(sids);
+        final Integer fullMask = merge ?
+                AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
+                AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
         if (entity instanceof  AbstractDataStorage) {
+            if (isStorageAdmin(sidsByType.get(SidType.ROLE))) {
+                return fullMask;
+            }
             boolean readAllowed = permissionsHelper.isAllowed(AclPermission.READ_NAME, entity);
             if (entity instanceof NFSDataStorage) {
                 final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
@@ -944,9 +1053,7 @@ public class GrantPermissionManager {
         //case for Runs and Nodes, that are not registered as ACL entities
         //check ownership
         if (child == null && permissionsHelper.isOwner(entity)) {
-            return merge ?
-                    AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
-                    AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
+            return fullMask;
         }
         if (child == null && entity.getParent() == null) {
             LOGGER.debug("Object is not registered in ACL {} {}", entity.getAclClass(), entity.getId());
@@ -954,13 +1061,11 @@ public class GrantPermissionManager {
         }
         //get parent
         Acl acl = child == null ? aclService.getAcl(entity.getParent()) : child;
-        if (sids.stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
-            return merge ?
-                    AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
-                    AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
+        if (sidsByType.get(SidType.PRINCIPAL).stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
+            return fullMask;
         }
         List<AclPermission> basicPermissions = permissionsService.getBasicPermissions();
-        int extendedMask = collectPermissions(0, acl, sids, basicPermissions, includeInherited);
+        int extendedMask = collectPermissions(0, acl, sidsByType, basicPermissions, includeInherited);
         return merge ? permissionsService.mergeMask(extendedMask, basicPermissions) : extendedMask;
     }
 
@@ -1231,6 +1336,26 @@ public class GrantPermissionManager {
         }
         return quotaService.findActiveActionForUser(pipelineUser,
                     QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
+    }
+
+    private boolean isClusterReader(final String permissionName) {
+        if (!AclPermission.READ_NAME.equals(permissionName)) {
+            return false;
+        }
+        final PipelineUser currentUser = authManager.getCurrentUser();
+        if (Objects.isNull(currentUser)) {
+            return false;
+        }
+        return ListUtils.emptyIfNull(currentUser.getRoles()).stream()
+                .anyMatch(role -> ROLE_CLUSTER_READER.name().equals(role.getName()));
+    }
+
+    private boolean isClusterReader(final String permissionName, final MachineType machineType) {
+        if (!MachineType.KUBE.equals(machineType)) {
+            // cloud nodes are available only for admins
+            return false;
+        }
+        return isClusterReader(permissionName);
     }
 
     @Data

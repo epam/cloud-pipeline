@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.cluster;
 
 import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.ContainerState;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import lombok.Getter;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -33,11 +35,14 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class ContainerInstance {
+    private static final String RUNNING = "Running";
 
     private String name;
     private Map<String, String> requests;
     private Map<String, String> limits;
     private ContainerInstanceStatus status;
+    private Integer restartCount;
+    private ContainerInstanceStatus lastRestartStatus;
 
     public ContainerInstance() {
         this.requests = new HashMap<>();
@@ -62,6 +67,8 @@ public class ContainerInstance {
             if (optStatus.isPresent()) {
                 ContainerStatus status = optStatus.get();
                 this.status = new ContainerInstanceStatus(status.getState());
+                this.restartCount = status.getRestartCount();
+                this.lastRestartStatus = convertLastRestartStatus(status.getLastState());
             }
         }
     }
@@ -79,5 +86,17 @@ public class ContainerInstance {
             return containers.stream().map(c -> new ContainerInstance(c, statuses)).collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    private static ContainerInstanceStatus convertLastRestartStatus(final ContainerState lastState) {
+        if (Objects.isNull(lastState)) {
+            return null;
+        }
+        final ContainerInstanceStatus lastRestartStatus = new ContainerInstanceStatus(lastState);
+        return "Unknown".equals(lastRestartStatus.getStatus()) ? null : lastRestartStatus;
+    }
+
+    public boolean isRunning() {
+        return Objects.nonNull(status) && RUNNING.equals(status.getStatus());
     }
 }

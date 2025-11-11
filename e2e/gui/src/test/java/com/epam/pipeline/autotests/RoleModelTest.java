@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,13 @@ import java.util.List;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Privilege.*;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.*;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -315,6 +316,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .waitUntilLaunchButtonAppear()
                 .launch(this);
 
@@ -431,6 +433,7 @@ public class RoleModelTest
                 .shouldContainInCode(newFileContent)
                 .close()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .waitUntilLaunchButtonAppear()
                 .launch(this);
 
@@ -476,7 +479,9 @@ public class RoleModelTest
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
                 .ensureNotVisible(CREATE_FOLDER, UPLOAD)
-                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -504,7 +509,9 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 19)
@@ -578,7 +585,7 @@ public class RoleModelTest
         logout();
         loginAs(user)
                 .clusterNodes()
-                .assertNodesTableIsEmpty();
+                .validateThereIsNoNode(getLastRunId());
     }
 
     @Test(priority = 22, enabled = false)
@@ -761,6 +768,7 @@ public class RoleModelTest
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
                                 .deleteIfPresent(userGroup)
+                                .sleep(2, SECONDS)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );

@@ -30,7 +30,8 @@ public class AutonomousAsyncDataUploaderProviderManager implements DataUploaderP
 
     @Async("autonomousTransferExecutor")
     @Override
-    public void transferData(final TransferTask transferTask) {
-        syncDataUploaderProviderManager.transferData(transferTask);
+    public void transferData(final TransferTask transferTask, final boolean logEnabled,
+                             final String pipeCmd, final String pipeCmdSuffix) {
+        syncDataUploaderProviderManager.transferData(transferTask, logEnabled, pipeCmd, pipeCmdSuffix);
     }
 }

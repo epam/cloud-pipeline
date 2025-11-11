@@ -14,6 +14,7 @@ actions:
       wait_for_completion: True
       skip_repo_fs_check: False
       disable_action: False
+      continue_if_exception: False
     filters:
       - filtertype: pattern
         kind: prefix
@@ -31,6 +32,8 @@ actions:
     options:
       repository: log_backup_repo
       disable_action: False
+      continue_if_exception: True
+      ignore_empty_list: True
     filters:
       - filtertype: pattern
         kind: prefix
@@ -41,3 +44,20 @@ actions:
         direction: older
         unit: days
         unit_count: ${CP_SECURITY_LOGS_ELASTIC_BACKUP_DAYS}
+  3:
+    action: delete_indices
+    description: "Delete indices that are older then CP_SECURITY_LOGS_ROLLOVER_DAYS"
+    options:
+      timeout_override: 300
+      continue_if_exception: True
+      ignore_empty_list: True
+      allow_ilm_indices: True
+    filters:
+      - filtertype: pattern
+        kind: prefix
+        value: ${CP_SECURITY_LOGS_ELASTIC_PREFIX}
+      - filtertype: age
+        source: creation_date
+        direction: older
+        unit: days
+        unit_count: ${CP_SECURITY_LOGS_ROLLOVER_DAYS}

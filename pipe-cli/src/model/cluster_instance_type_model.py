@@ -17,6 +17,7 @@ class ClusterInstanceTypeModel(object):
         self.name = None
         self.vcpu = None
         self.memory = None
+        self.gpu = None
 
     @classmethod
     def load(cls, json):
@@ -28,3 +29,4 @@ class ClusterInstanceTypeModel(object):
         self.name = json['name']
         self.vcpu = json['vcpu']
         self.memory = json['memory']
+        self.gpu = json.get('gpu', 0)

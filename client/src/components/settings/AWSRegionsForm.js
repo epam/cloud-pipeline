@@ -56,6 +56,13 @@ import ProviderForm from './cloud-provider';
 import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
 import RunShiftPolicy, {runShiftPoliciesEqual} from './cloud-regions/run-shift-policy';
+import RegionIdSelector from './region-id-selector';
+import CloudRegionContextualSetting, {
+  fetchContextualSettingValue,
+  updateContextualSettingValue,
+  launchCommonMountsSetting
+} from './cloud-regions/contextual-setting';
+import {defaultSorter} from '../../utils/sorting';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -166,6 +173,9 @@ export default class AWSRegionsForm extends React.Component {
             ...r,
             corsRules: preProcessJSON(r.corsRules),
             policy: preProcessJSON(r.policy),
+            clusterStateRegionProperties: parseSLSProperties(
+              r.clusterStateRegionProperties
+            ),
             storageLifecycleServiceProperties: parseSLSProperties(
               r.storageLifecycleServiceProperties
             )
@@ -200,7 +210,7 @@ export default class AWSRegionsForm extends React.Component {
     if (this.awsRegionIds.loaded) {
       return (this.awsRegionIds.value || [])
         .map(r => r)
-        .sort();
+        .sort(defaultSorter);
     }
     return [];
   }
@@ -331,7 +341,7 @@ export default class AWSRegionsForm extends React.Component {
     this.awsRegionForm = form;
   };
 
-  onSaveRegion = async (region) => {
+  onSaveRegion = async (region, settings = []) => {
     const fileShareMounts = region.fileShareMounts;
     region.fileShareMounts = undefined;
     region.customInstanceTypes = fromJSON(region.customInstanceTypes, []);
@@ -347,11 +357,23 @@ export default class AWSRegionsForm extends React.Component {
         this.currentRegion.fileShareMounts,
         fileShareMounts
       );
+      await this.saveContextualSettings(this.state.currentRegionId, settings);
       hide();
       await this.props.awsRegions.fetch();
       if (this.awsRegionForm) {
         this.awsRegionForm.rebuild();
       }
+    }
+  };
+
+  saveContextualSettings = async (regionId, settings) => {
+    if (settings.length > 0) {
+      await Promise.all(settings.map((setting) => updateContextualSettingValue(
+        setting.setting,
+        setting.value,
+        setting.type || 'STRING',
+        regionId
+      )));
     }
   };
 
@@ -441,7 +463,7 @@ export default class AWSRegionsForm extends React.Component {
     }
   };
 
-  onCreateRegion = async (region) => {
+  onCreateRegion = async (region, settings = []) => {
     region.id = undefined;
     region.provider = this.state.newRegion;
     const fileShareMounts = region.fileShareMounts;
@@ -460,6 +482,7 @@ export default class AWSRegionsForm extends React.Component {
         await this.awsRegionForm.submitPermissions(id);
       }
       await this.updateMounts(id, [], fileShareMounts);
+      await this.saveContextualSettings(id, settings);
       hide();
       await this.props.awsRegions.fetch();
       this.props.availableCloudRegions.invalidateCache(provider);
@@ -700,10 +723,15 @@ class AWSRegionForm extends React.Component {
     pending: PropTypes.bool
   };
 
+  contextualSettingsFetchToken = {};
+
   state = {
     findUserVisible: false,
     findGroupVisible: false,
-    groupSearchString: null
+    groupSearchString: null,
+    contextualSettingInitialValue: {},
+    contextualSettingValue: {},
+    contextualSettingValid: {}
   };
 
   cloudRegionFileShareMountsComponent;
@@ -750,18 +778,23 @@ class AWSRegionForm extends React.Component {
       'sshKeyName',
       'iamRole',
       'tempCredentialsRole',
+      'omicsServiceRole',
+      'omicsEcrUrl',
       {
         key: 'backupDuration',
         visible: form => form.getFieldValue('versioningEnabled'),
         required: form => form.getFieldValue('versioningEnabled')
       },
       'versioningEnabled',
+      'clusterInclude',
+      'clusterStateRegionProperties',
       'fileShareMounts',
       'mountStorageRule',
       'mountFileStorageRule',
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
+      'dnsHostedZone',
       'globalDistributionUrl',
       'runShiftPolicy'
     ],
@@ -787,6 +820,7 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
+      'dnsHostedZone',
       'globalDistributionUrl',
       'runShiftPolicy'
     ],
@@ -807,6 +841,7 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
+      'dnsHostedZone',
       'policy',
       {
         key: 'backupDuration',
@@ -816,10 +851,27 @@ class AWSRegionForm extends React.Component {
       'versioningEnabled',
       'globalDistributionUrl',
       'runShiftPolicy'
+    ],
+    LOCAL: [
+      'regionId',
+      'name',
+      'default',
+      'runShiftPolicy',
+      'customInstanceTypes',
+      'user',
+      'password'
     ]
   };
 
+  cloudRegionContextualSettings = {
+    AWS: [launchCommonMountsSetting],
+    GCP: [launchCommonMountsSetting],
+    AZURE: [launchCommonMountsSetting],
+    LOCAL: [launchCommonMountsSetting]
+  };
+
   @observable _modified = false;
+  @observable _contextualSettingValid = true;
 
   @observable permissions = null;
 
@@ -879,7 +931,8 @@ class AWSRegionForm extends React.Component {
   getFieldClassName = (field, defaultClassName) => {
     const classNames = defaultClassName ? [defaultClassName] : [];
     if (this.provider) {
-      const [cloudRegionField] = this.cloudRegionFields[this.provider].filter(f => {
+      const fields = this.cloudRegionFields[this.provider] || [];
+      const [cloudRegionField] = fields.filter(f => {
         return (typeof f === 'string' && f === field) ||
           (typeof f === 'object' && f.hasOwnProperty('key') && f.key === field);
       });
@@ -895,7 +948,8 @@ class AWSRegionForm extends React.Component {
 
   providerSupportsField = (field) => {
     if (this.provider) {
-      const [cloudRegionField] = this.cloudRegionFields[this.provider].filter(f => {
+      const fields = this.cloudRegionFields[this.provider] || [];
+      const [cloudRegionField] = fields.filter(f => {
         return (typeof f === 'string' && f === field) ||
           (typeof f === 'object' && f.hasOwnProperty('key') && f.key === field);
       });
@@ -909,6 +963,18 @@ class AWSRegionForm extends React.Component {
     return false;
   };
 
+  getProviderContextualSettingConfiguration = (setting) => {
+    if (this.provider) {
+      const settings = this.cloudRegionContextualSettings[this.provider] || [];
+      return settings.find((s) => s.setting === setting);
+    }
+    return undefined;
+  };
+
+  providerSupportsContextualSetting = (setting) => {
+    return !!this.getProviderContextualSettingConfiguration(setting);
+  };
+
   onFormFieldChanged = () => {
     if (!this.props.region || !this.props.form) {
       this._modified = false;
@@ -916,7 +982,8 @@ class AWSRegionForm extends React.Component {
     }
     const check = (field, fn) => {
       if (this.provider) {
-        const [cloudRegionField] = this.cloudRegionFields[this.provider].filter(f => {
+        const fields = this.cloudRegionFields[this.provider] || [];
+        const [cloudRegionField] = fields.filter(f => {
           return (typeof f === 'string' && f === field) ||
             (typeof f === 'object' && f.hasOwnProperty('key') && f.key === field);
         });
@@ -965,7 +1032,32 @@ class AWSRegionForm extends React.Component {
       this.props.region.runShiftPolicy,
       this.props.form.getFieldValue('runShiftPolicy')
     );
-    this._modified = check('regionId', checkStringValue) ||
+    const isContextualSettingChanged = (setting) => {
+      if (this.provider && this.providerSupportsContextualSetting(setting)) {
+        const {contextualSettingInitialValue, contextualSettingValue} = this.state;
+        const initial = contextualSettingInitialValue
+          ? contextualSettingInitialValue[setting]
+          : undefined;
+        const current = contextualSettingValue
+          ? contextualSettingValue[setting]
+          : undefined;
+        return (initial || '') !== (current || '');
+      }
+      return false;
+    };
+    const contextualSettingsChanged = () => {
+      if (this.provider) {
+        const allSettings = this.cloudRegionContextualSettings[this.provider] || [];
+        for (let i = 0; i < allSettings.length; i += 1) {
+          if (isContextualSettingChanged(allSettings[i].setting)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    this._modified = contextualSettingsChanged() ||
+      check('regionId', checkStringValue) ||
       check('name', checkStringValue) ||
       check('globalDistributionUrl', checkStringValue) ||
       check('default', checkBOOLValue) ||
@@ -981,6 +1073,8 @@ class AWSRegionForm extends React.Component {
       check('storageLifecycleServiceProperties', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
+      check('user', checkStringValue) ||
+      check('password', checkStringValue) ||
       check('resourceGroup', checkStringValue) ||
       check('subscription', checkStringValue) ||
       check('authFile', checkStringValue) ||
@@ -989,8 +1083,12 @@ class AWSRegionForm extends React.Component {
       check('azurePolicy', checkIPRangeValue) ||
       check('iamRole', checkStringValue) ||
       check('tempCredentialsRole', checkStringValue) ||
+      check('omicsServiceRole', checkStringValue) ||
+      check('omicsEcrUrl', checkStringValue) ||
       check('backupDuration', checkIntegerValue) ||
       check('versioningEnabled', checkBOOLValue) ||
+      check('clusterInclude', checkBOOLValue) ||
+      check('clusterStateRegionProperties', checkStringValue) ||
       check('sshPublicKeyPath', checkStringValue) ||
       check('meterRegionName', checkStringValue) ||
       check('azureApiUrl', checkStringValue) ||
@@ -1014,6 +1112,11 @@ class AWSRegionForm extends React.Component {
   @computed
   get modified () {
     return this._modified || this.permissionsModified;
+  }
+
+  @computed
+  get contextualSettingsValid () {
+    return this._contextualSettingValid;
   }
 
   isRemovingPermission = (sid) => {
@@ -1124,6 +1227,9 @@ class AWSRegionForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
+    if (!this._contextualSettingValid) {
+      return;
+    }
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
         message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
@@ -1136,10 +1242,36 @@ class AWSRegionForm extends React.Component {
         values.storageLifecycleServiceProperties = buildSLSProperties(
           values.storageLifecycleServiceProperties
         );
+        values.clusterStateRegionProperties = buildSLSProperties(
+          values.clusterStateRegionProperties
+        );
+        const {
+          contextualSettingValue,
+          contextualSettingInitialValue
+        } = this.state;
+        const settings = [...new Set([
+          ...Object.keys(contextualSettingValue),
+          ...Object.keys(contextualSettingInitialValue)
+        ])];
+        const contextualSettings = settings
+          .map((setting) => {
+            const config = this.getProviderContextualSettingConfiguration(setting);
+            return {
+              setting,
+              value: contextualSettingValue
+                ? contextualSettingValue[setting]
+                : undefined,
+              initial: contextualSettingInitialValue
+                ? contextualSettingInitialValue[setting]
+                : undefined,
+              type: config ? config.type : undefined
+            };
+          })
+          .filter((o) => (o.value || '') !== (o.initial || ''));
         if (this.props.isNew) {
-          this.props.onCreate && await this.props.onCreate(values);
+          this.props.onCreate && await this.props.onCreate(values, contextualSettings);
         } else {
-          this.props.onSubmit && await this.props.onSubmit(values);
+          this.props.onSubmit && await this.props.onSubmit(values, contextualSettings);
           await this.submitPermissions();
         }
       }
@@ -1161,11 +1293,16 @@ class AWSRegionForm extends React.Component {
   };
 
   corsRulesEditor;
+  clusterStateRegionPropertiesEditor;
   policyEditor;
   customInstanceTypesEditor;
 
   initializeCorsRulesEditor = (editor) => {
     this.corsRulesEditor = editor;
+  };
+
+  initializeClusterStateRegionPropertiesEditor = (editor) => {
+    this.clusterStateRegionPropertiesEditor = editor;
   };
 
   initializePolicyEditor = (editor) => {
@@ -1486,15 +1623,64 @@ class AWSRegionForm extends React.Component {
     );
   };
 
+  onContextualSettingsChanged = () => {
+    const {
+      contextualSettingValid
+    } = this.state;
+    this._contextualSettingValid = !Object.values(contextualSettingValid || {}).some((v) => !v);
+    this.onFormFieldChanged();
+  };
+
+  onChangeContextualSetting = (setting, value, valid) => {
+    const {contextualSettingValue, contextualSettingValid} = this.state;
+    this.setState({
+      contextualSettingValue: {
+        ...(contextualSettingValue || {}),
+        [setting]: value
+      },
+      contextualSettingValid: {
+        ...(contextualSettingValid || {}),
+        [setting]: valid
+      }
+    }, this.onContextualSettingsChanged);
+  };
+
+  renderContextualSetting = (setting) => {
+    const config = this.getProviderContextualSettingConfiguration(setting);
+    if (config) {
+      const {contextualSettingValue} = this.state;
+      return (
+        <CloudRegionContextualSetting
+          disabled={this.props.pending}
+          regionId={this.props.region.id}
+          setting={setting}
+          value={contextualSettingValue ? (contextualSettingValue[setting] || '') : ''}
+          onChange={this.onChangeContextualSetting}
+          title={config.title ? `${config.title}:` : `${setting}:`}
+          type={config.type}
+          {...this.formItemLayout}
+        />
+      );
+    }
+    return null;
+  };
+
   render () {
     if (!this.props.region) {
       return null;
     }
+    const {id: internalRegionId} = this.props.region;
     const {resetFields, getFieldDecorator} = this.props.form;
     const revertForm = () => {
       if (this.permissionsModified) {
         this.revertPermissions();
       }
+      this.setState({
+        contextualSettingValue: {
+          ...this.state.contextualSettingInitialValue
+        },
+        contextualSettingValid: {}
+      });
       resetFields();
     };
     const onCancel = () => {
@@ -1527,32 +1713,13 @@ class AWSRegionForm extends React.Component {
                 initialValue: this.props.region.regionId,
                 rules: [{required: true, message: 'Region id is required'}]
               })(
-                <Select
-                  size="small"
-                  showSearch
-                  allowClear={false}
-                  placeholder="Region ID"
-                  optionFilterProp="children"
-                  style={{marginTop: 4}}
-                  filterOption={
-                    (input, option) =>
-                      option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                  disabled={!this.props.isNew || this.props.pending}>
-                  {
-                    (this.props.regionIds || []).map(r => {
-                      return (
-                        <Select.Option key={r} value={r} title={r}>
-                          <AWSRegionTag
-                            showProvider={false}
-                            provider={this.provider}
-                            regionUID={r}
-                            style={{marginRight: 5}}
-                          />{r}
-                        </Select.Option>
-                      );
-                    })
-                  }
-                </Select>
+                <RegionIdSelector
+                  style={{width: '100%'}}
+                  regions={(this.props.regionIds || [])}
+                  provider={this.provider}
+                  disabled={!this.props.isNew || this.props.pending}
+                  internalId={this.props.isNew ? undefined : internalRegionId}
+                />
               )}
             </Form.Item>
             <Form.Item
@@ -1595,6 +1762,37 @@ class AWSRegionForm extends React.Component {
                 </Checkbox>
               )}
             </Form.Item>
+            <Form.Item
+              label="User"
+              required={this.props.isNew && this.providerSupportsField('user')}
+              className={this.getFieldClassName('user')}
+              {...this.formItemLayout}>
+              {getFieldDecorator('user', {
+                initialValue: this.props.region.user,
+                rules: [{
+                  required: this.props.isNew && this.providerSupportsField('user'),
+                  message: 'User is required'
+                }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Password"
+              required={this.props.isNew && this.providerSupportsField('password')}
+              className={this.getFieldClassName('password')}
+              {...this.formItemLayout}>
+              {getFieldDecorator('password', {
+                initialValue: undefined,
+                rules: [{required: this.props.isNew && this.providerSupportsField('password'), message: 'Password is required'}]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
             <AWSRegionForm.Section
               title="Mount rules:"
               layout={this.formItemLayout}
@@ -1617,6 +1815,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
@@ -1639,6 +1838,7 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
@@ -1661,14 +1861,19 @@ class AWSRegionForm extends React.Component {
                   >
                     <Select.Option value="NONE">None</Select.Option>
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="REGION">Same region</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
                 )}
               </Form.Item>
             </AWSRegionForm.Section>
+            {
+              this.renderContextualSetting(launchCommonMountsSetting.setting)
+            }
             <AWSRegionForm.Section
               title="DNS hosted zone:"
               layout={this.formItemLayout}
+              className={this.getFieldClassName('dnsHostedZone')}
             >
               <Form.Item
                 className={classNames(
@@ -1921,6 +2126,32 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
+              label="AWS HealthOmics Service role"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('omicsServiceRole', 'edit-region-omicsServiceRole-container')}
+            >
+              {getFieldDecorator('omicsServiceRole', {
+                initialValue: this.props.region.omicsServiceRole
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="AWS HealthOmics ECR Url"
+              {...this.formItemLayout}
+              className={this.getFieldClassName('omicsEcrUrl', 'edit-region-omicsEcrUrl-container')}
+            >
+              {getFieldDecorator('omicsEcrUrl', {
+                initialValue: this.props.region.omicsEcrUrl
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
               className={this.getFieldClassName('versioningEnabled', 'edit-region-versioningEnabled-container')}
               {...this.defaultCheckBoxFormItemLayout}>
               {getFieldDecorator('versioningEnabled', {
@@ -2134,6 +2365,45 @@ class AWSRegionForm extends React.Component {
                   disabled={this.props.pending} />
               )}
             </Form.Item>
+            <Form.Item
+              className={this.getFieldClassName(
+                'clusterInclude',
+                'edit-region-clusterInclude-container'
+              )}
+              {...this.defaultCheckBoxFormItemLayout}>
+              {getFieldDecorator('clusterInclude', {
+                valuePropName: 'checked',
+                initialValue: this.props.region.clusterInclude
+              })(
+                <Checkbox>
+                  Show standalone nodes in Cluster State
+                </Checkbox>
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Standalone nodes filter"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'clusterStateRegionProperties',
+                  'edit-clusterStateRegionProperties-container'
+                )
+              }
+            >
+              {getFieldDecorator('clusterStateRegionProperties', {
+                initialValue: this.props.region.clusterStateRegionProperties,
+                rules: [{
+                  validator: this.jsonValidation
+                }]
+              })(
+                <CodeEditorFormItem
+                  ref={this.initializeClusterStateRegionPropertiesEditor}
+                  editorClassName={styles.codeEditor}
+                  editorLanguage="application/json"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
             <Row type="flex">
               <Col
                 xs={this.formItemLayout.labelCol.xs.span}
@@ -2165,7 +2435,7 @@ class AWSRegionForm extends React.Component {
               onClick={onCancel}>Cancel</Button>
             <Button
               id="edit-region-form-create-button"
-              disabled={!this.modified}
+              disabled={!this.modified || !this.contextualSettingsValid}
               type="primary"
               size="small"
               onClick={this.handleSubmit}>Create</Button>
@@ -2203,7 +2473,7 @@ class AWSRegionForm extends React.Component {
               onClick={() => revertForm()}>Revert</Button>
             <Button
               id="edit-region-form-ok-button"
-              disabled={!this.modified}
+              disabled={!this.modified || !this.contextualSettingsValid}
               type="primary"
               size="small"
               onClick={this.handleSubmit}>Save</Button>
@@ -2229,6 +2499,53 @@ class AWSRegionForm extends React.Component {
     }
   }
 
+  rebuildContextualSettings = async () => {
+    this.contextualSettingsFetchToken = {};
+    const token = this.contextualSettingsFetchToken;
+    const commitChanges = (state) => {
+      if (token === this.contextualSettingsFetchToken) {
+        this.setState(state, this.onContextualSettingsChanged);
+      }
+    };
+    const {provider} = this;
+    const {region} = this.props;
+    if (provider && region) {
+      const settings = this.cloudRegionContextualSettings[provider] || [];
+      if (region.isNew) {
+        commitChanges({
+          contextualSettingInitialValue: {},
+          contextualSettingValue: {},
+          contextualSettingValid: {}
+        });
+      } else {
+        const fetchSettingValue = (setting) => fetchContextualSettingValue(
+          setting.setting,
+          region.id
+        );
+        const settingsValues = await Promise.all(settings.map(fetchSettingValue));
+        const value = settings.reduce((result, setting, idx) => ({
+          ...result,
+          [setting.setting]: settingsValues[idx]
+        }), {});
+        commitChanges({
+          contextualSettingInitialValue: {
+            ...value
+          },
+          contextualSettingValue: {
+            ...value
+          },
+          contextualSettingValid: {}
+        });
+      }
+    } else {
+      commitChanges({
+        contextualSettingInitialValue: {},
+        contextualSettingValue: {},
+        contextualSettingValid: {}
+      });
+    }
+  };
+
   rebuild = () => {
     this.props.form.resetFields();
     if (this.corsRulesEditor) {
@@ -2242,6 +2559,7 @@ class AWSRegionForm extends React.Component {
     }
     this.onFormFieldChanged();
     this.fetchPermissions();
+    this.rebuildContextualSettings();
   };
 
   componentDidMount () {

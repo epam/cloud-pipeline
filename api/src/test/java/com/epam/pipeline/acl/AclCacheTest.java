@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,8 +78,8 @@ public class AclCacheTest extends AbstractManagerTest {
     @Before
     public void setUp() {
         folder = folderManager.create(TestUtils.createFolder(TEST_FOLDER1, TEST_OWNER));
-        role = roleManager.createRole(TEST_ROLE, false, false, null);
-        user = userManager.createUser("TEST_USER", Collections.emptyList(),
+        role = roleManager.create(TEST_ROLE, false, false, null);
+        user = userManager.create("TEST_USER", Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyMap(), null);
 
         AclTestDao.AclSid userSid = new AclTestDao.AclSid(true, TEST_OWNER);
@@ -109,14 +109,14 @@ public class AclCacheTest extends AbstractManagerTest {
                 permissions.getPermissions().stream().anyMatch(acl ->
                         acl.getSid().getName().equals(user.getUserName())));
 
-        roleManager.deleteRole(role.getId());
+        roleManager.delete(role.getId());
         AclSecuredEntry permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         assertEquals(1, permissionsAfter.getPermissions().size());
         assertTrue(user.getUserName(),
                 permissionsAfter.getPermissions().stream().allMatch(acl ->
                         acl.getSid().getName().equals(user.getUserName())));
 
-        userManager.deleteUser(user.getId());
+        userManager.delete(user.getId());
         permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         assertTrue(permissionsAfter.getPermissions().isEmpty());
     }
@@ -130,7 +130,7 @@ public class AclCacheTest extends AbstractManagerTest {
         final List<AclPermissionEntry> permissionEntries = permissions.getPermissions();
         assertEquals(1, permissionEntries.size());
         assertEquals(role.getName(), permissions.getPermissions().get(0).getSid().getName());
-        roleManager.deleteRole(role.getId());
+        roleManager.delete(role.getId());
         final AclSecuredEntry permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         assertTrue(CollectionUtils.isEmpty(permissionsAfter.getPermissions()));
     }

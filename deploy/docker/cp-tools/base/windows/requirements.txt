@@ -1,2 +1,3 @@
 Flask==2.0.1
 PyJWT==1.6.1
+Werkzeug==2.0.1

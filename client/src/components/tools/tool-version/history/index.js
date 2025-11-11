@@ -16,13 +16,14 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Alert} from 'antd';
+import {Alert, Button, Input, Modal} from 'antd';
 import classNames from 'classnames';
 import LoadToolHistory from '../../../../models/tools/LoadToolHistory';
 import LoadingView from '../../../special/LoadingView';
 import displaySize from '../../../../utils/displaySize';
 import styles from './history.css';
 import BashCode from '../../../special/bash-code';
+import GenerateDockerfile from '../../../../models/tools/GenerateDockerfile';
 
 @inject((stores, {params}) => {
   return {
@@ -34,12 +35,82 @@ import BashCode from '../../../special/bash-code';
 @observer
 export default class History extends React.Component {
   state = {
-    selectedLayer: 0
+    selectedLayer: 0,
+    generateDockerfileModalVisible: false,
+    dockerFileFrom: ''
   };
 
   onSelectLayer = (index) => {
     this.setState({selectedLayer: index});
   };
+
+  openGenerateDockerfileModal = () => {
+    this.setState({generateDockerfileModalVisible: true, dockerFileFrom: ''});
+  };
+
+  closeGenerateDockerfileModal = () => {
+    this.setState({generateDockerfileModalVisible: false});
+  };
+
+  onChangeDockerfileFrom = (event) => {
+    this.setState({dockerFileFrom: event.target.value});
+  };
+
+  onGenerateDockerfile = () => {
+    const {dockerFileFrom} = this.state;
+    const {toolId, version} = this.props;
+    const url = GenerateDockerfile.url(toolId, version, dockerFileFrom);
+    window.open(url, '_blank');
+    window.focus();
+    this.closeGenerateDockerfileModal();
+  }
+
+  renderGenerateDockerfileModal = () => {
+    const {
+      generateDockerfileModalVisible,
+      dockerFileFrom
+    } = this.state;
+    return (
+      <Modal
+        visible={generateDockerfileModalVisible}
+        onCancel={this.closeGenerateDockerfileModal}
+        title="Dockerfile"
+        footer={(
+          <div className={styles.generateDockerfileFooter}>
+            <Button onClick={this.closeGenerateDockerfileModal}>
+              CANCEL
+            </Button>
+            <Button
+              type="primary"
+              disabled={!dockerFileFrom || dockerFileFrom.trim().length === 0}
+              onClick={this.onGenerateDockerfile}
+            >
+              GENERATE
+            </Button>
+          </div>
+        )}
+      >
+        <div>
+          <Alert
+            type="info"
+            message={(
+              <div style={{textAlign: 'justify'}}>
+                Please specify a docker image name, which is going to be used as a base layer to generate a Dockerfile. This name will be used in the "FROM" instruction.
+              </div>
+            )}
+          />
+        </div>
+        <div className={styles.generateDockerfileRow}>
+          <span className={styles.generateDockerfileTitle}>From:</span>
+          <Input
+            className={styles.generateDockerfileInput}
+            value={dockerFileFrom}
+            onChange={this.onChangeDockerfileFrom}
+          />
+        </div>
+      </Modal>
+    );
+  }
 
   render () {
     if (!this.props.history.loaded && this.props.history.pending) {
@@ -50,36 +121,45 @@ export default class History extends React.Component {
     }
     const selectedLayer = (this.props.history.value || [])[this.state.selectedLayer];
     return (
-      <div style={{display: 'flex', flexDirection: 'row', height: '100%'}}>
-        <div style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
-          {
-            (this.props.history.value || []).map((layer, index) => (
-              <div
-                className={
-                  classNames(
-                    styles.layer,
-                    'cp-settings-sidebar-element',
-                    {'cp-table-element-selected': this.state.selectedLayer === index}
-                  )
-                }
-                onClick={() => this.onSelectLayer(index)}
-              >
-                <span className={styles.index}>{index + 1}.</span>
-                <code className={styles.command}>{layer.command}</code>
-                <span className={styles.size}>{displaySize(layer.size)}</span>
-              </div>
-            ))
-          }
+      <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+        <div style={{marginBottom: 5}}>
+          <Button type="primary" onClick={this.openGenerateDockerfileModal}>
+            Generate Dockerfile
+          </Button>
+          {this.renderGenerateDockerfileModal()}
         </div>
-        <div style={{flex: 1, padding: 5}}>
-          {
-            selectedLayer && (
-              <BashCode
-                className={styles.code}
-                code={(selectedLayer.command || '').trim()}
-              />
-            )
-          }
+        <div style={{display: 'flex', flexDirection: 'row', flex: 1}}>
+          <div style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
+            {
+              (this.props.history.value || []).map((layer, index) => (
+                <div
+                  key={`layer-${index}`}
+                  className={
+                    classNames(
+                      styles.layer,
+                      'cp-settings-sidebar-element',
+                      {'cp-table-element-selected': this.state.selectedLayer === index}
+                    )
+                  }
+                  onClick={() => this.onSelectLayer(index)}
+                >
+                  <span className={styles.index}>{index + 1}.</span>
+                  <code className={styles.command}>{layer.command}</code>
+                  <span className={styles.size}>{displaySize(layer.size)}</span>
+                </div>
+              ))
+            }
+          </div>
+          <div style={{flex: 1, paddingLeft: 5}}>
+            {
+              selectedLayer && (
+                <BashCode
+                  className={styles.code}
+                  code={(selectedLayer.command || '').trim()}
+                />
+              )
+            }
+          </div>
         </div>
       </div>
     );

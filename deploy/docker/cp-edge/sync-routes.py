@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import time
 import urllib3
 
 CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
+CP_EDGE_ENDPOINT_TAG_NAME = 'CP_EDGE_ENDPOINT_TAG_NAME'
 
 try:
         from pykube.config import KubeConfig
@@ -52,7 +53,15 @@ EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
+EDGE_COOKIE_NO_REPLACE = 'CP_EDGE_COOKIE_NO_REPLACE'
+EDGE_JWT_NO_AUTH = 'CP_EDGE_JWT_NO_AUTH'
+EDGE_PASS_BEARER = 'CP_EDGE_PASS_BEARER'
+# This can be used to add any extra option to the bearer cookie generated
+# e.g. Secure;SameSite=None;Partitioned;
+# Which allows external services to use the cookie (used for SSO integration with EDGE)
+EDGE_BEARER_COOKIE_EXTRA = os.getenv('CP_EDGE_BEARER_COOKIE_EXTRA', '')
 EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
+EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
@@ -408,8 +417,8 @@ def construct_additional_endpoints_from_run_parameters(run_details):
                         "endpoint": e.get(e_id + "_PORT"),
                         "friendly_name": e.get(e_id + "_NAME", "pipeline-" + str(run_details['id']) + "-" + e.get(e_id + "_PORT")),
                         "endpoint_additional": e.get(e_id + "_ADDITIONAL", ""),
-                        "ssl_backend": e.get(e_id + "_SSL_BACKEND", "false"),
-                        "endpoint_same_tab": e.get(e_id + "_SAME_TAB", "false")
+                        "ssl_backend": e.get(e_id + "_SSL_BACKEND", False),
+                        "endpoint_same_tab": e.get(e_id + "_SAME_TAB", False)
                 } for e_id, e in custom_endpoint_param_groups.items()
         ]
 
@@ -537,9 +546,18 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
         run_info = run_cache['pipelineRun']
         if run_info:
                 if run_info.get("status") != 'RUNNING':
-                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
+                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not be proxied'.format(pod_run_id))
                         return {}
-
+                if 'pipelineRunParameters' in run_info:
+                        edge_endpoint_tag_name = [rp for rp in run_info["pipelineRunParameters"]
+                                                if 'name' in rp and rp["name"] == CP_EDGE_ENDPOINT_TAG_NAME]
+                        if edge_endpoint_tag_name and len(edge_endpoint_tag_name) > 0:
+                                run_info_tags = run_info.get("tags")
+                                if not (run_info_tags and "value" in edge_endpoint_tag_name[0] and run_info_tags.get(edge_endpoint_tag_name[0]["value"])):
+                                        do_log('Pipeline with id {} and run tag {} has not yet been initialized. '
+                                        'Service urls will not be proxied'
+                                        .format(pod_run_id, edge_endpoint_tag_name[0]["value"]))
+                                        return {}
                 pod_owner = run_info["owner"]
                 docker_image = run_info["dockerImage"]
                 runs_sids = run_info.get("runSids")
@@ -573,7 +591,12 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
-                                endpoint = json.loads(endpoints_data[i])
+                                endpoint = None
+                                try:
+                                        endpoint = json.loads(endpoints_data[i])
+                                except Exception as endpoint_parse_exception:
+                                        do_log('Parsing endpoint #{} failed:\n{}'.format(str(i), str(endpoint_parse_exception)))
+                                        continue
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")
@@ -590,7 +613,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 edge_location = edge_location_id
                                         else:
                                                 pretty_url_path = pretty_url["path"]
-                                                if endpoints_count == 1:
+                                                if endpoints_count == 1 or (str(is_default_endpoint).lower() == "true" and EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT):
                                                         edge_location = pretty_url_path
                                                 else:
                                                         pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
@@ -623,6 +646,27 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         else:
                                                 edge_target = edge_target + "/"
 
+                                        if EDGE_COOKIE_NO_REPLACE in additional:
+                                                additional = additional.replace(EDGE_COOKIE_NO_REPLACE, "")
+                                                edge_cookie_location = "/"
+                                        else:
+                                                edge_cookie_location = None
+
+                                        #######################################################
+                                        # These parameters will be passed to the respective lua auth script
+                                        # Only applied for the non-sensitive jobs
+                                        edge_jwt_auth = True
+                                        if EDGE_JWT_NO_AUTH in additional:
+                                                additional = additional.replace(EDGE_JWT_NO_AUTH, "")
+                                                edge_jwt_auth = False
+
+                                        edge_pass_bearer = False
+                                        if EDGE_PASS_BEARER in additional:
+                                                additional = additional.replace(EDGE_PASS_BEARER, "")
+                                                edge_pass_bearer = True
+
+                                        #######################################################
+
                                         is_external_app = False
                                         if EDGE_EXTERNAL_APP in additional:
                                                 additional = additional.replace(EDGE_EXTERNAL_APP, "")
@@ -654,7 +698,10 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 "sensitive": sensitive,
                                                 "create_dns_record": create_dns_record,
                                                 "cloudRegionId": cloud_region_id,
-                                                "external_app": is_external_app
+                                                "external_app": is_external_app,
+                                                "cookie_location": edge_cookie_location,
+                                                "edge_jwt_auth": edge_jwt_auth,
+                                                "edge_pass_bearer": edge_pass_bearer
                                         }
                 else:
                         do_log('No endpoints required for the tool {}'.format(docker_image))
@@ -671,9 +718,9 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 # --- svc-port-N
 # --- svc-path-N
 
-def load_pods_for_runs_with_endpoints():
+def load_pods_for_runs_with_endpoints(run_pod_selector_key, run_pod_selector_value):
         pods_with_endpoints = []
-        all_pipeline_pods = Pod.objects(kube_api).filter(selector={'type': 'pipeline'})\
+        all_pipeline_pods = Pod.objects(kube_api).filter(selector={run_pod_selector_key: run_pod_selector_value})\
                                                  .filter(field_selector={"status.phase": "Running"})
         for pod in all_pipeline_pods.response['items']:
                 labels = pod['metadata']['labels']
@@ -726,6 +773,16 @@ def create_dns_record(service_spec, edge_region_id, edge_region_name):
 
 
 def create_service_dns_record(service_spec, route, edge_region_id, edge_region_name):
+        if skip_custom_dns:
+                do_log('Skipping custom DNS record creation for domain {}'.format(dns_domain))
+                dns_custom_record = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec["edge_location"],
+                                                                  region_name=edge_region_name)
+                dns_record_domain = dns_custom_record + '.' + dns_domain
+                do_log('Setting expected DNS as {}'.format(dns_record_domain))
+
+                service_spec["custom_domain"] = dns_record_domain
+                service_spec["edge_location"] = None
+                return route
         try:
                 do_log('Creating DNS record for {}'.format(route))
                 create_dns_record(service_spec, edge_region_id, edge_region_name)
@@ -750,7 +807,11 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
-                .replace('{additional}', service_spec["additional"])
+                .replace('{additional}', service_spec["additional"]) \
+                .replace('{edge_jwt_auth}', str(service_spec["edge_jwt_auth"])) \
+                .replace('{edge_pass_bearer}', str(service_spec["edge_pass_bearer"])) \
+                .replace('{bearer_cookie_extra}', EDGE_BEARER_COOKIE_EXTRA) \
+                .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location)
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:
                 for sensitive_route in sensitive_routes:
@@ -766,7 +827,8 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{additional}', service_spec["additional"])
+                                .replace('{additional}', service_spec["additional"]) \
+                                .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location + sensitive_route['route'])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
         path_to_route = os.path.join(nginx_sites_path, service_spec.get('edge_location_path') + '.conf')
         if service_spec["sensitive"]:
@@ -901,6 +963,12 @@ def get_affected_routes(involved_routes, all_routes):
         return set(route for route in all_routes if get_pod(route) in involved_pods)
 
 
+def is_true(value):
+        if not value:
+                return False
+        return value.lower() == 'true'
+
+
 do_log('============ Started iteration ============')
 
 if api_domain_name:
@@ -911,8 +979,14 @@ else:
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
+run_pod_selector_key = os.getenv('CP_EDGE_RUN_POD_SELECTOR_KEY', "type")
+run_pod_selector_value = os.getenv('CP_EDGE_RUN_POD_SELECTOR_VALUE', "pipeline")
+
 edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_PREF, 'default.edge.region')
 edge_region_id = os.getenv('CP_EDGE_REGION_ID') or find_preference(API_GET_PREF, 'default.edge.region.id')
+
+skip_custom_dns = is_true(os.getenv('CP_EDGE_SKIP_CUSTOM_DNS') or find_preference(API_GET_PREF, 'edge.skip.custom.dns'))
+dns_domain = os.getenv('CP_EDGE_CUSTOM_DOMAIN') or find_preference(API_GET_PREF, 'edge.custom.domain')
 
 # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
 # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't
@@ -957,7 +1031,7 @@ if not edge_service_port:
 do_log('EDGE: {}:{} ({} #{})'.format(edge_service_external_ip, edge_service_port,
                                      edge_region_name, edge_region_id or 'undefined'))
 
-pods_with_endpoints = load_pods_for_runs_with_endpoints()
+pods_with_endpoints = load_pods_for_runs_with_endpoints(run_pod_selector_key, run_pod_selector_value)
 runs_with_endpoints = get_active_runs(pods_with_endpoints)
 
 services_list = {}

@@ -49,6 +49,13 @@ export default class SessionStorageWrapper {
     router.push(SessionStorageWrapper.getRunsLink(status));
   }
 
+  static navigateToRun (router, runId) {
+    if (!router || !router.push) {
+      return;
+    }
+    router.push(SessionStorageWrapper.getRunLink(runId));
+  }
+
   static getActiveRunsLink () {
     return SessionStorageWrapper.getRunsLink('active');
   }
@@ -60,5 +67,9 @@ export default class SessionStorageWrapper {
     } else {
       return `/runs/${status}?all`;
     }
+  }
+
+  static getRunLink (runId) {
+    return `/runs/${runId}`;
   }
 }

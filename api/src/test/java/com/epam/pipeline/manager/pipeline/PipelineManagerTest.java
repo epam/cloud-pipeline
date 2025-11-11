@@ -26,11 +26,14 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineType;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Assert;
 import org.junit.Before;
@@ -41,13 +44,14 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -91,6 +95,9 @@ public class PipelineManagerTest {
 
     @Mock
     private PipelineRunDao pipelineRunDao;
+
+    @Mock
+    private PreferenceManager preferenceManager;
 
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
@@ -245,6 +252,7 @@ public class PipelineManagerTest {
         pipelineVO.setRepository(REPOSITORY_HTTPS);
         pipelineVO.setRepositoryToken(REPOSITORY_TOKEN);
         pipelineVO.setRepositorySsh(REPOSITORY_SSH);
+        pipelineVO.setRepositoryType(RepositoryType.GITLAB);
 
         when(gitManager.copyRepository(any(), any(), any())).thenReturn(null);
         when(metadataManager.hasMetadata(any())).thenReturn(true);
@@ -267,6 +275,33 @@ public class PipelineManagerTest {
     }
 
     @Test
+    public void shouldNotCopyRepositoryWhenForNonGitPipelines() {
+        final String sourceRepositoryName = "repository-clone";
+        final String newName = sourceRepositoryName + "_copy";
+
+        final Pipeline pipeline = new Pipeline();
+        pipeline.setId(ID);
+        pipeline.setName(sourceRepositoryName);
+        pipeline.setRepository(REPOSITORY_HTTPS);
+        pipeline.setRepositoryToken(REPOSITORY_TOKEN);
+        pipeline.setRepositorySsh(REPOSITORY_SSH);
+        pipeline.setRepositoryType(RepositoryType.GITHUB);
+
+        when(pipelineDao.loadPipeline(ID)).thenReturn(pipeline);
+        when(crudManager.savePipeline(any())).thenReturn(pipeline);
+
+        final Pipeline copiedPipeline = pipelineManager.copyPipeline(ID, null, newName);
+
+        assertThat(copiedPipeline.getName(), is(newName));
+        assertThat(copiedPipeline.getRepository(), is(REPOSITORY_HTTPS));
+        assertThat(copiedPipeline.getRepositoryToken(), is(REPOSITORY_TOKEN));
+        assertThat(copiedPipeline.getRepositorySsh(), is(REPOSITORY_SSH));
+        assertThat(copiedPipeline.getRepositoryType(), is(RepositoryType.GITHUB));
+
+        verify(gitManager, never()).copyRepository(anyString(), anyString(), anyString());
+    }
+
+    @Test
     public void shouldUpdatePipelineNameForPipelineRuns() {
         final PipelineVO pipelineVO = new PipelineVO();
         pipelineVO.setId(ID);
@@ -275,6 +310,7 @@ public class PipelineManagerTest {
         final PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setPipelineName(REPOSITORY_NAME);
         doReturn(Collections.singletonList(pipelineRun)).when(pipelineRunDao).loadAllRunsForPipeline(any());
+        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.GIT_REPOSITORY_RENAME_REPO);
 
         final Pipeline pipeline = new Pipeline();
         pipeline.setName(REPOSITORY_NAME);
@@ -285,11 +321,7 @@ public class PipelineManagerTest {
 
         pipelineManager.update(pipelineVO);
 
-        final ArgumentCaptor<List<PipelineRun>> runsCaptor = ArgumentCaptor.forClass((Class) List.class);
-        verify(pipelineRunDao).updateRuns(runsCaptor.capture());
-        assertThat(runsCaptor.getValue().size(), is(1));
-        assertThat(runsCaptor.getValue().get(0).getPipelineName(), is(NEW_REPOSITORY_NAME));
-        verify(pipelineRunDao).loadAllRunsForPipeline(ID);
+        verify(pipelineRunDao).updatePipelineNameForRuns(eq(NEW_REPOSITORY_NAME), eq(ID));
     }
 
     private DataStorageRule buildStorageRule(final Long pipelineId, final String mask) {

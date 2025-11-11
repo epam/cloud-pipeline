@@ -68,7 +68,6 @@ export default class BaseBillingRequest extends RemotePost {
       pagination: paginationOptions,
       loadCostDetails = false
     } = options;
-
     let pagination;
     if (
       !!paginationOptions &&
@@ -120,8 +119,11 @@ export default class BaseBillingRequest extends RemotePost {
     if (this.filters && this.filters.user) {
       this.body.filters.owner = asArray(this.filters.user);
     }
-    if (this.filters && this.filters.group) {
-      this.body.filters.billing_center = asArray(this.filters.group);
+    if (this.filters && this.filters.billingGroup) {
+      this.body.filters.billing_center = asArray(this.filters.billingGroup);
+    }
+    if (this.filters && this.filters.adGroup) {
+      this.body.filters.groups = asArray(this.filters.adGroup);
     }
     if (this.filters && this.filters.cloudRegionId) {
       this.body.filters.cloudRegionId = this.filters.cloudRegionId.slice();
@@ -259,6 +261,7 @@ export default class BaseBillingRequest extends RemotePost {
       storage_type: storageType = [],
       compute_type: computeType = [],
       owner = [],
+      groups = [],
       billing_center: billingCenter = [],
       cloudRegionId = []
     } = filters;
@@ -287,6 +290,7 @@ export default class BaseBillingRequest extends RemotePost {
       asArrayKey(storageType),
       asArrayKey(owner),
       asArrayKey(billingCenter),
+      asArrayKey(groups),
       asArrayKey(cloudRegionId),
       aggregate,
       metric,

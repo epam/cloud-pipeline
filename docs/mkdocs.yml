@@ -5,8 +5,6 @@ theme:
 docs_dir: 'md/'
 extra_css:
   - 'css/extra.css'
-extra_javascript:
-  - 'css/extra.js'
 nav:
 - Introduction: 'index.md'
 - Release notes:
@@ -40,6 +38,8 @@ nav:
     - 6.1.1. Building WDL Pipeline with graphical PipelineBuilder: 'manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md'
     - 6.2. Launch a Pipeline: 'manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md'
     - 6.3. Delete and unregister Pipeline: 'manual/06_Manage_Pipeline/6.3._Delete_a_pipeline.md'
+    - 6.4. Work with AWS HealthOmics Workflow: 'manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow.md'
+    - 6.5. Pipeline configuration: 'manual/06_Manage_Pipeline/6.5._Pipeline_configuration.md'
   - 7. Manage Detached configuration:
     - 7.0. Overview: 'manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration.md'
     - 7.1. Create and customize Detached configuration: 'manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md'
@@ -60,9 +60,13 @@ nav:
     - 8.10. Storage lifecycle: 'manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md'
     - 8.11. Sensitive storages: 'manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md'
     - 8.12. Cloud Data application: 'manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md'
+    - 8.13. Versioned storages: 'manual/08_Manage_Data_Storage/8.13._Versioned_storages.md'
+    - 8.14. Omics storages: 'manual/08_Manage_Data_Storage/8.14._Omics_storages.md'
   - 9. Manage cluster nodes:
     - 9.0. Cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
     - 9.1. Hot node pools: 'manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md'
+    - 9.2. Core services monitoring: 'manual/09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring.md'
+    - 9.3. Cloud nodes: 'manual/09_Manage_Cluster_nodes/9.3._Cloud_nodes.md'
   - 10. Manage Tools:
     - 10.0. Overview: 'manual/10_Manage_Tools/10._Manage_Tools.md'
     - 10.1. Add and edit a Docker registry: 'manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry.md'
@@ -80,6 +84,7 @@ nav:
     - 11.2. Auto-commit Docker images: 'manual/11_Manage_Runs/11.2._Auto-commit_Docker_image.md'
     - 11.3. Sharing with other users: 'manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md'
     - 11.4. Automatic labels and actions for the runs: 'manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md'
+    - 11.5. Archive completed runs: 'manual/11_Manage_Runs/11.5._Archive_runs.md'
   - 12. Manage settings:
     - 12.0. Overview: 'manual/12_Manage_Settings/12._Manage_Settings.md'
     - 12.1. Add a new system event: 'manual/12_Manage_Settings/12.1._Add_a_new_system_event.md'
@@ -135,11 +140,16 @@ nav:
   - JavaScript example: 'api/API_tutorials/JavaScript_example.md'
 - Cloud Pipeline Installation:
   - Prerequisites:
-    - General requirements: 'installation/prerequisites/common.md'
-    - AWS: 'installation/prerequisites/aws.md'
-    - Azure: 'installation/prerequisites/azure.md'
-    - GCP: 'installation/prerequisites/gcp.md'
+    - General requirements: 'installation/self-hosted/prerequisites/common.md'
+    - AWS: 'installation/self-hosted/prerequisites/aws.md'
+    - Azure: 'installation/self-hosted/prerequisites/azure.md'
+    - GCP: 'installation/self-hosted/prerequisites/gcp.md'
+  - Deployment:
+    - Cloud native:
+      - AWS:
+        - Terraform: 'installation/native/aws/terraform/README.md'
+        - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
   - Management:
-    - Environments sync: 'installation/management/environments_sync.md'
-  - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
-  - Support Windows runs: 'installation/support_windows_runs.md'
+    - Environments sync: 'operation/environments_sync/environments_sync.md'
+  - Change Kubernetes certificates: 'operation/change_kube_certificates.md'
+  - Support Windows runs: 'operation/support_windows_runs.md'

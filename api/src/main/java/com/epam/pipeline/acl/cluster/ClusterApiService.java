@@ -20,21 +20,32 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.NodeResources;
+import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
+import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +53,9 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+import static com.epam.pipeline.security.acl.AclExpressions.CLOUD_NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
@@ -55,21 +69,22 @@ public class ClusterApiService {
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
     private final EdgeServiceManager edgeServiceManager;
+    private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
-    public List<NodeInstance> getNodes() {
-        return nodesManager.getNodes();
+    public List<NodeInstance> getNodes(final MachineType machineType) {
+        return nodesManager.getNodes(machineType);
     }
 
     @PostFilter(NODE_READ_FILTER)
-    public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO) {
-        return nodesManager.filterNodes(filterNodesVO);
+    public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
+        return nodesManager.filterNodes(filterNodesVO, machineType);
     }
 
-    @PreAuthorize(NODE_READ)
+    @PreAuthorize(CLOUD_NODE_READ)
     @AclMask
-    public NodeInstance getNode(final String name) {
-        return nodesManager.getNode(name);
+    public NodeInstance getNode(final String name, final MachineType machineType, final Long regionId) {
+        return nodesManager.getKubeOrCloudNode(name, machineType, regionId);
     }
 
     @PreAuthorize(NODE_READ)
@@ -85,19 +100,33 @@ public class ClusterApiService {
 
     @PreAuthorize(NODE_STOP)
     @AclMask
-    public NodeInstance terminateNode(final String name) {
-        return nodesManager.terminateNode(name);
+    public NodeInstance terminateNode(final String name, final MachineType machineType, final Long regionId) {
+        return nodesManager.terminateKubeOrCloudNode(name, machineType, regionId);
     }
 
-    @PreAuthorize(NODE_READ)
-    public List<MonitoringStats> getStatsForNode(final String name, final LocalDateTime from, final LocalDateTime to) {
-        return usageMonitoringManager.getStatsForNode(name, from, to);
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<MonitoringStats> getStatsForNode(final String name,
+                                                 final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final Long runId) {
+        return usageMonitoringManager.getStatsForNode(name, from, to, runId);
     }
 
-    @PreAuthorize(NODE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public GpuMonitoringStats getGpuStatsForNode(final String name,
+                                                 final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final List<GpuMetricsGranularity> granularity,
+                                                 final boolean squashCharts,
+                                                 final Long runId) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final MonitoringReportType type) {
-        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
+                                              final Duration interval, final MonitoringReportType type,
+                                              final Long runId) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type, runId);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
@@ -124,5 +153,46 @@ public class ClusterApiService {
 
     public String buildEdgeExternalUrl(final String region) {
         return edgeServiceManager.buildEdgeExternalUrl(region);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PodInstance> getCorePods() {
+        return podsManager.getCorePods();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PodInstance> getPodsByLabels(final Map<String, String> labels) {
+        return podsManager.getPodsByLabels(labels);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public PodDescription getPodDescription(final String podId, final boolean detailed) {
+        return podsManager.describePod(podId, detailed);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
+        return podsManager.getContainerLogs(podId, containerId, limit);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public NetworkEventFilter getPlatformNetworkEventFilter() {
+        return usageMonitoringManager.getPlatformNetworkStatsFilters();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<HistogramBin> filterPlatformNetworkEvents(final HistogramType histogramType,
+                                                          final LocalDateTime from, final LocalDateTime to,
+                                                          final Integer intervals,
+                                                          final NetworkEventFilter filter) {
+        return usageMonitoringManager.getPlatformNetworkStats(histogramType, from, to, intervals, filter);
+    }
+
+    public InstanceType loadInstanceType(final String instanceType) {
+        return instanceOfferManager.loadInstanceType(instanceType);
+    }
+
+    public List<NodeResources> loadNodeAvailableResource(final Map<String, String> labels) {
+        return nodesManager.loadNodeAvailableResources(labels);
     }
 }

@@ -17,6 +17,8 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
@@ -38,7 +40,7 @@ public abstract class AbstractDataStorageFactory {
     public abstract AbstractDataStorage convertToDataStorage(
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
-            List<String> allowedCidrs, Long regionId, Long fileShareMountId,
+            List<String> allowedCidrs, Long regionId, Long fileShareMountId, boolean mountExactPath,
             String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus,
             Set<String> masks, Long sourceStorageId);
 
@@ -47,15 +49,16 @@ public abstract class AbstractDataStorageFactory {
         AbstractDataStorage storage =
                 convertToDataStorage(vo.getId(), vo.getName(), vo.getPath(), type, vo.getStoragePolicy(),
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
-                        vo.getRegionId(), vo.getFileShareMountId(),
+                        vo.getRegionId(), vo.getFileShareMountId(), vo.isMountExactPath(),
                         vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
                         NFSStorageMountStatus.ACTIVE.name(), vo.getLinkingMasks(), vo.getSourceStorageId());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
         storage.setSensitive(vo.isSensitive());
-        storage.setMountDisabled(BooleanUtils.isTrue(vo.getMountDisabled()));
+        storage.setMountDisabled(storage.isMountDisabled() || BooleanUtils.isTrue(vo.getMountDisabled()));
         storage.setToolsToMount(vo.getToolsToMount());
+        storage.setPathPermissionsEnabled(BooleanUtils.isTrue(vo.getPathPermissionsEnabled()));
         return storage;
     }
 
@@ -77,6 +80,7 @@ public abstract class AbstractDataStorageFactory {
                                                         final StoragePolicy policy, final String mountOptions,
                                                         final String mountPoint, final List<String> allowedCidrs,
                                                         final Long regionId, final Long fileShareMountId,
+                                                        final boolean mountExactPath,
                                                         final String kmsKey, final String tempRole,
                                                         final boolean useAssumedCreds,
                                                         final String mountStatus,
@@ -97,6 +101,7 @@ public abstract class AbstractDataStorageFactory {
                     NFSDataStorage storage = new NFSDataStorage(id, name, path, policy, mountPoint);
                     storage.setMountOptions(mountOptions);
                     storage.setFileShareMountId(fileShareMountId);
+                    storage.setMountExactPath(mountExactPath);
                     storage.setMountStatus(NFSStorageMountStatus.fromName(mountStatus));
                     resultStorage = storage;
                     break;
@@ -111,6 +116,24 @@ public abstract class AbstractDataStorageFactory {
                             mountPoint);
                     gsBucketStorage.setRegionId(regionId);
                     resultStorage = gsBucketStorage;
+                    break;
+                case AWS_OMICS_REF:
+                    final AWSOmicsReferenceDataStorage omicsRefStore = new AWSOmicsReferenceDataStorage(id, name, path);
+                    omicsRefStore.setKmsKeyArn(kmsKey);
+                    omicsRefStore.setRegionId(regionId);
+                    omicsRefStore.setTempCredentialsRole(tempRole);
+                    omicsRefStore.setMountDisabled(true);
+                    omicsRefStore.setUseAssumedCredentials(useAssumedCreds);
+                    resultStorage = omicsRefStore;
+                    break;
+                case AWS_OMICS_SEQ:
+                    final AWSOmicsSequenceDataStorage omicsSeqStore = new AWSOmicsSequenceDataStorage(id, name, path);
+                    omicsSeqStore.setKmsKeyArn(kmsKey);
+                    omicsSeqStore.setRegionId(regionId);
+                    omicsSeqStore.setTempCredentialsRole(tempRole);
+                    omicsSeqStore.setMountDisabled(true);
+                    omicsSeqStore.setUseAssumedCredentials(useAssumedCreds);
+                    resultStorage = omicsSeqStore;
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported data storage type: " + type);

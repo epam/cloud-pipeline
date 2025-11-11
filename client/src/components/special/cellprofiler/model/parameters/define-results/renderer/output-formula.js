@@ -24,6 +24,7 @@ import {
   ObjectPropertyName
 } from '../object-properties';
 import {getObjectPropertyFunction, PropertyFunctionNames} from '../property-functions';
+import {alphabeticalSorter} from '../../../../../../../utils/sorting';
 import styles from './define-results.css';
 
 function split (expression) {
@@ -250,7 +251,7 @@ function OutputFormula (props) {
     });
   };
   const {error} = parseFormula(value);
-  const sortedVariables = Object.keys(variables || {}).sort();
+  const sortedVariables = Object.keys(variables || {}).sort(alphabeticalSorter);
   const properties = getVariableOptions(pipeline);
   const getProperty = value => properties.find(o => getVariableOptionValue(o) === value);
   const onChangeFormulaVariable = (variable) => (property) => {

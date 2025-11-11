@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -31,7 +31,7 @@ import static java.time.format.DateTimeFormatter.ofPattern;
 
 public class PlatformUsageTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
-    static final String showOnlineUsers = "Show online users";
+    static final String showOnlineUsers = "Online";
     static final String ROLE_USER_READER = "ROLE_USER_READER";
 
     @BeforeClass

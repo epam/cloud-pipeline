@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -34,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -89,6 +91,11 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorages();
     }
 
+    @StorageAclRead
+    public List<AbstractDataStorage> getDataStorages(final EntityFilterVO filter) {
+        return dataStorageManager.getDataStorages(filter);
+    }
+
     @StorageAclReadAndWrite
     public List<AbstractDataStorage> getWritableStorages() {
         return dataStorageManager.getDataStorages();
@@ -135,12 +142,28 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
     }
 
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing filterDataStorageItems(final Long id, final String path, final boolean showVersion,
+                                                     final boolean showArchived,
+                                                     final DataStorageListingFilter filter) {
+        return dataStorageManager.filterDataStorageItems(id, path, showVersion, showArchived, filter);
+    }
+
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
             + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
     public DataStorageListing getDataStorageItemsOwner(final Long id, final String path,
                                                        final Boolean showVersion, final Integer pageSize,
                                                        final String marker, final boolean showArchived) {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing filterDataStorageItemsOwner(final Long id, final String path, final boolean showVersion,
+                                                          final boolean showArchived,
+                                                          final DataStorageListingFilter filter) {
+        return dataStorageManager.filterDataStorageItems(id, path, showVersion, showArchived, filter);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
@@ -218,7 +241,8 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "
-            + "(#dataStorageVO.parentFolderId != null AND hasRole('STORAGE_MANAGER') AND "
+            + "(#dataStorageVO.parentFolderId != null AND " +
+            "(hasRole('STORAGE_MANAGER') OR hasRole('STORAGE_ADMIN')) AND "
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final boolean proceedOnCloud,
@@ -226,19 +250,18 @@ public class DataStorageApiService {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
+    @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE)
     @AclMask
-    public AbstractDataStorage update(DataStorageVO dataStorageVO) {
-        return dataStorageManager.update(dataStorageVO);
+    public AbstractDataStorage update(DataStorageVO storage) {
+        return dataStorageManager.update(storage);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
-    public AbstractDataStorage updatePolicy(DataStorageVO dataStorageVO) {
-        return dataStorageManager.updatePolicy(dataStorageVO);
+    @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE)
+    public AbstractDataStorage updatePolicy(DataStorageVO storage) {
+        return dataStorageManager.updatePolicy(storage);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('STORAGE_MANAGER') AND "
-            + "@storagePermissionManager.storagePermissionById(#id, 'OWNER'))")
+    @PreAuthorize(AclExpressions.STORAGE_ID_MGMT_DELETE)
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         return dataStorageManager.delete(id, proceedOnCloud);
     }
@@ -277,7 +300,7 @@ public class DataStorageApiService {
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_CREDENTIALS_REQUEST)));
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_WRITE)
     public Map<String, String> updateDataStorageObjectTags(Long id, String path, Map<String, String> tags,
                                                            String version, Boolean rewrite) {
         return dataStorageManager.updateDataStorageObjectTags(id, path, tags, version, rewrite);
@@ -293,7 +316,7 @@ public class DataStorageApiService {
         return dataStorageManager.loadDataStorageObjectTags(id, path, version);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_WRITE)
     public Map<String, String> deleteDataStorageObjectTags(Long id, String path, String version, Set<String> tags) {
         return dataStorageManager.deleteDataStorageObjectTags(id, path, version, tags);
     }

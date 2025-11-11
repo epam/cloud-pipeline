@@ -19,14 +19,21 @@ import PropTypes from 'prop-types';
 import {Select} from 'antd';
 
 const sshThemesList = {
-  default: 'Default (dark)',
-  light: 'Light'
+  'default': 'Default (dark)',
+  'light': 'Light',
+  'dracula': 'Dracula',
+  'solarized-dark': 'Solarized dark',
+  'solarized-light': 'Solarized light',
+  'gruvbox-dark': 'Gruvbox dark',
+  'nord': 'Nord',
+  'one-dark': 'One dark',
+  'monokai': 'Monokai'
 };
 
 function SshThemeSelect ({
   metadata,
   onChange,
-  disabled,
+  readOnly,
   style,
   size = 'small'
 }) {
@@ -34,7 +41,10 @@ function SshThemeSelect ({
   const handleChange = newValue => {
     onChange && onChange(newValue);
   };
-  const correctedValue = /^light$/i.test(value) ? 'light' : 'default';
+  let correctedValue = (value || '').toLowerCase();
+  if (!sshThemesList[value]) {
+    correctedValue = 'default';
+  }
   return (
     <div
       style={
@@ -55,7 +65,7 @@ function SshThemeSelect ({
         onChange={handleChange}
         value={correctedValue}
         size={size}
-        disabled={disabled}
+        disabled={readOnly}
         style={{flex: 1, marginLeft: 5}}
       >
         {Object.entries(sshThemesList).map(([theme, text]) => (
@@ -76,7 +86,7 @@ SshThemeSelect.metadataKey = 'ui.ssh.theme';
 SshThemeSelect.propTypes = {
   metadata: PropTypes.object,
   onChange: PropTypes.func,
-  disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
   style: PropTypes.object,
   size: PropTypes.oneOf(['small', 'large', 'default'])
 };

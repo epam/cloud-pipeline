@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,11 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.nodeLabel;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
@@ -78,6 +79,8 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .editFile(configuration -> addInstanceImageToConfig(configuration, testAmi))
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
         final Set<String> logMess =
                 runsMenu()
@@ -85,7 +88,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .instanceParameters(instance ->
                         instance.ensure(NODE_IMAGE, text(testAmi)))
                 .waitForCompletion()
-                .click(taskWithName("InitializeNode"))
+                .clickTaskWithName("InitializeNode")
                 .ensure(STATUS, SUCCESS.reached)
                 .logMessages()
                 .collect(toSet());
@@ -102,14 +105,17 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline2)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
                         instance.ensureNotVisible(NODE_IMAGE));
         String nodeName =
                 clusterMenu()
-                .waitForTheNode(pipeline1, runID1517_1)
-                .getNodeName(runID1517_1);
+                        .sortByDecrease(DATE)
+                        .waitForTheNode(pipeline1, runID1517_1)
+                        .getNodeName(runID1517_1);
         clusterMenu()
                 .waitForTheNode(pipeline2, getLastRunId())
                 .click(nodeLabel(format("RUN ID %s", getLastRunId())), LogAO::new)
@@ -117,9 +123,12 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline1)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId());
         assertEquals(clusterMenu()
+                .sortByDecrease(DATE)
                 .waitForTheNode(getLastRunId())
                 .getNodeName(getLastRunId()), nodeName);
     }

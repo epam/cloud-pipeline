@@ -15,8 +15,10 @@
  */
 
 import Remote from '../basic/Remote';
-import {computed} from 'mobx';
+import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
+import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
+import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -101,6 +103,19 @@ class PreferencesLoad extends Remote {
   @computed
   get searchEnabled () {
     return !!this.getPreferenceValue('search.elastic.host');
+  }
+
+  @computed
+  get searchExportTemplates () {
+    const value = this.getPreferenceValue('search.export.template.mapping');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "search.export.template.mapping:', e);
+      }
+    }
+    return undefined;
   }
 
   @computed
@@ -213,6 +228,34 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get searchColumnsOrder () {
+    const value = this.getPreferenceValue('ui.search.columns.order');
+    if (value && typeof value === 'string') {
+      const tryParseAsJSON = () => {
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          console.warn('Error parsing "search.columns.order" preference:', e);
+        }
+        return undefined;
+      };
+      const tryParseAsString = () => {
+        try {
+          return value
+            .split(/[,\s;]/)
+            .map((item) => item.trim())
+            .filter((item) => item.length);
+        } catch (e) {
+          console.warn('Error parsing "search.columns.order" preference:', e);
+        }
+        return undefined;
+      };
+      return tryParseAsJSON() || tryParseAsString() || [];
+    }
+    return [];
   }
 
   @computed
@@ -361,7 +404,7 @@ class PreferencesLoad extends Remote {
             return undefined;
           }
           const {
-            capabilities = {}
+            capabilities: childCapabilities = {}
           } = entry;
           return {
             value: `CP_CAP_CUSTOM_${key}`,
@@ -373,8 +416,8 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(capabilities)
-              .map(c => mapCapability(c, entry)),
+            capabilities: Object.entries(childCapabilities)
+              .map(mapCapability),
             multiple: Boolean(entry?.multiple)
           };
         };
@@ -404,6 +447,16 @@ class PreferencesLoad extends Remote {
   @computed
   get storageSizeRequestDisclaimer () {
     return this.getPreferenceValue('ui.storage.refresh.request');
+  }
+
+  @computed
+  get storageSortingPageSize () {
+    const defaultLimit = 1000;
+    const value = this.getPreferenceValue('storage.listing.filter.items.limit');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return defaultLimit;
   }
 
   @computed
@@ -493,6 +546,18 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get launchToolSizeLimits () {
+    const value = this.getPreferenceValue('launch.tool.size.limits');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.tool.size.limits" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
   get toolPredefinedKubeLabels () {
     const value = this.getPreferenceValue('ui.tool.kube.labels');
     if (value) {
@@ -503,6 +568,16 @@ class PreferencesLoad extends Remote {
       }
     }
     return [];
+  }
+
+  get toolOSWarningText () {
+    return this.getPreferenceValue('ui.tools.os.with.warning');
+  }
+
+  @computed
+  get allowCommitToOtherPersonalGroups () {
+    const value = this.getPreferenceValue('commit.allow.other.personal.group');
+    return (value || '').toLowerCase() !== 'false';
   }
 
   @computed
@@ -718,9 +793,78 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiRunsOwnersFilter () {
+    const value = this.getPreferenceValue('ui.runs.owners.filter');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.owners.filter" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get uiRunsClusterDetailsShowActiveOnly () {
     const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
     return (value || '').toLowerCase() !== 'false';
+  }
+
+  @computed
+  get uiRunsTags () {
+    const value = this.getPreferenceValue('ui.runs.tags');
+    if (value) {
+      try {
+        const result = JSON.parse(value);
+        if (!Array.isArray(result)) {
+          throw new Error(`array expected, got ${typeof result}`);
+        }
+        return result.map((o) => {
+          const {
+            // eslint-disable-next-line camelcase
+            user_tag = false,
+            userTag = user_tag,
+            ...rest
+          } = o;
+          return {
+            ...rest,
+            userTag: `${userTag}`.toLowerCase() === 'true'
+          };
+        });
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.tags" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get uiRunsUserTags () {
+    return this.uiRunsTags.filter((tag) => tag.userTag);
+  }
+
+  @computed
+  get uiToolsFilters () {
+    const value = this.getPreferenceValue('ui.tools.filters');
+    if (value) {
+      try {
+        const {
+          groups = [],
+          ...rest
+        } = JSON.parse(value);
+        return {
+          ...rest,
+          groups: groups.map((aGroup) => ({
+            ...aGroup,
+            name: aGroup.name || aGroup.title || aGroup.id
+          }))
+        };
+      } catch (e) {
+        console.warn('Error parsing "ui.tools.filters" preference:', e.message);
+      }
+    }
+    return {};
   }
 
   @computed
@@ -740,6 +884,213 @@ class PreferencesLoad extends Remote {
   @computed
   get systemJobsScriptsLocation () {
     return this.getPreferenceValue('system.jobs.scripts.location') || 'src/system-jobs';
+  }
+
+  @computed
+  get systemLdapUserBlockMonitorGracePeriodDays () {
+    const value = this.getPreferenceValue('system.ldap.user.block.monitor.grace.period.days');
+    if (
+      value !== undefined &&
+      value !== null &&
+      !Number.isNaN(Number(value))
+    ) {
+      return Number(value);
+    }
+    return 7;
+  }
+
+  /**
+   * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
+   */
+  @computed
+  get uiPersonalToolsPermissionsRestrictions () {
+    const value = this.getPreferenceValue('ui.personal.tools.permissions.restrictions');
+    const defaultValue = [{
+      role: 'ALL',
+      disable: 'WRITE'
+    }];
+    let restrictions = defaultValue;
+    if (value && value.length) {
+      try {
+        restrictions = JSON.parse(value);
+        if (!Array.isArray(restrictions) && !isObservableArray(restrictions)) {
+          restrictions = defaultValue;
+          throw new Error('wrong format (should be array)');
+        }
+      } catch (e) {
+        // eslint-disable-next-line max-len
+        console.warn('Error parsing "ui.personal.tools.permissions.restrictions" preference:', e.message);
+      }
+    }
+    return parsePermissionsRestrictionsConfig(restrictions);
+  }
+
+  /**
+   * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
+   */
+  @computed
+  get uiStoragesPermissionsRestrictions () {
+    const value = this.getPreferenceValue('ui.storages.permissions.restrictions');
+    const defaultValue = [];
+    let restrictions = defaultValue;
+    if (value && value.length) {
+      try {
+        restrictions = JSON.parse(value);
+        if (!Array.isArray(restrictions) && !isObservableArray(restrictions)) {
+          restrictions = defaultValue;
+          throw new Error('wrong format (should be array)');
+        }
+      } catch (e) {
+        // eslint-disable-next-line max-len
+        console.warn('Error parsing "ui.storages.permissions.restrictions" preference:', e.message);
+      }
+    }
+    return parsePermissionsRestrictionsConfig(restrictions);
+  }
+
+  @computed
+  get uiPersonalToolsLaunchWarningEnabled () {
+    const value = this.getPreferenceValue('ui.personal.tools.launch.warning.enabled');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get uiCWLToolGroups () {
+    const value = this.getPreferenceValue('ui.cwl.tool.groups');
+    return (value || 'library')
+      .split(/[\s,;]/)
+      .filter((group) => group.length > 0);
+  }
+
+  @computed
+  get storageTagRestrictedAccess () {
+    const value = this.getPreferenceValue('storage.tag.restricted.access');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get uiUploadChunkCount () {
+    const value = this.getPreferenceValue('ui.upload.chunk.count');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get uiUploadChunkSizeMB () {
+    const value = this.getPreferenceValue('ui.upload.chunk.size.mb');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get uiContinueRunConfirmation () {
+    return this.getPreferenceValue('ui.continue.run.confirmation');
+  }
+
+  @computed
+  get storageManagementRestrictedAccess () {
+    const value = this.getPreferenceValue('storage.management.restricted.access');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get systemRunFilterMaxPageSize () {
+    const value = this.getPreferenceValue('system.run.filter.max.page.size');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 500;
+  }
+
+  @computed
+  get uiQuickSearchDisabled () {
+    const value = this.getPreferenceValue('ui.quick.search.disabled');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get uiStandaloneNodesAllowTerminate () {
+    const value = this.getPreferenceValue('ui.standalone.nodes.allow.terminate');
+    return !value || `${value}`.toLowerCase() !== 'false';
+  }
+
+  @computed
+  get uiClusterMonitoringAdminsAllowRange () {
+    const value = this.getPreferenceValue('ui.cluster.monitoring.admins.allow.range');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
+  @computed
+  get uiLaunchParameters () {
+    const value = this.getPreferenceValue('ui.launch.parameters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.launch.parameters" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get uiRunActions () {
+    const value = this.getPreferenceValue('ui.run.actions');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          const result = {};
+          for (const [key, value] of Object.entries(cfg)) {
+            result[key] = parseRunActionCriteria(key, value);
+          }
+          return result;
+        }
+        throw Error(`unsupported ui.run.actions format. expected object, got ${typeof cfg}`);
+      } catch (e) {
+        console.warn('Error parsing "ui.run.actions" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get uiMlflowSettings () {
+    const value = this.getPreferenceValue('ui.mlflow.settings');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.mlflow.settings" preference:', e.message);
+      }
+    }
+    return undefined;
+  }
+
+  @computed
+  get launchReservationParameters () {
+    const value = this.getPreferenceValue('launch.reservation.parameters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.reservation.parameters" preference:', e.message);
+      }
+    }
+    return undefined;
+  }
+
+  @computed
+  get launchJWTTokenExpirationUserLimit () {
+    const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 0;
   }
 
   toolScanningEnabledForRegistry (registry) {

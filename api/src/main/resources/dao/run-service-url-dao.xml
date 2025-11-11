@@ -88,7 +88,7 @@
             <value>
                 <!--updateServiceUrlQuery-->
                 <![CDATA[
-                    UPDATE pipeline.pipeline_run_service_url SET
+                    UPDATE pipeline.pipeline_run_service_url s SET
                         pipeline_run_id = :PIPELINE_RUN_ID,
                         region = :REGION,
                         SERVICE_URL = :SERVICE_URL
@@ -114,6 +114,16 @@
                    DELETE FROM
                        pipeline.pipeline_run_service_url s
                    WHERE s.id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteServiceUrlByRunIdsQuery-->
+                <![CDATA[
+                   DELETE FROM
+                       pipeline.pipeline_run_service_url s
+                   WHERE s.pipeline_run_id IN (:list)
                 ]]>
             </value>
         </constructor-arg>

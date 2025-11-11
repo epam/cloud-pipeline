@@ -31,6 +31,7 @@ export default {
   imageTimePosition: 0,
   imageZPosition: 0,
   mesh: undefined,
+  use3D: false,
 
   error: undefined,
   pending: false,

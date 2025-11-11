@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Alert, Button, Dropdown, Icon, message} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
@@ -43,8 +44,13 @@ class SystemJobs extends React.Component {
     job: undefined,
     launchingJobs: [],
     refreshToken: 0,
-    launchParameters: undefined
+    launchParameters: undefined,
+    jobContentPending: false,
+    selectedJobId: undefined
   }
+
+  @observable
+  jobScriptParameters = {};
 
   componentDidMount () {
     const {
@@ -68,6 +74,24 @@ class SystemJobs extends React.Component {
       return [];
     }
     return jobs;
+  }
+
+  @computed
+  get currentJobParameters () {
+    const {selectedJobId} = this.state;
+    return Object
+      .entries(this.jobScriptParameters[selectedJobId] || {})
+      .map(([parameter, info]) => ({
+        ...info,
+        parameter,
+        required: `${info.required}`.toLowerCase() === 'true'
+      }));
+  }
+
+  @computed
+  get currentJobHasRequiredParameters () {
+    return this.currentJobParameters
+      .some(parameter => parameter.required);
   }
 
   openJobLog = (job, run) => {
@@ -122,10 +146,37 @@ class SystemJobs extends React.Component {
     this.launchJob(job, parameters);
   };
 
+  setSelectedJobId = (jobId) => {
+    this.setState({selectedJobId: jobId}, () => this.fetchScriptFile(jobId));
+  };
+
+  fetchScriptFile = (jobId) => {
+    const currentJob = this.jobs.find(job => job.identifier === jobId);
+    if (currentJob) {
+      if (this.jobScriptParameters[currentJob.path]) {
+        return;
+      }
+      const {systemJobs} = this.props;
+      this.setState({scriptContentPending: true}, async () => {
+        try {
+          this.jobScriptParameters[jobId] = await systemJobs.fetchJobParameters(currentJob);
+        } catch (error) {
+          message.error(error.message, 5);
+        } finally {
+          this.setState({scriptContentPending: false});
+        }
+      });
+    }
+  };
+
   /**
    * @param {SystemJob} job
    */
   renderSystemJob = (job) => {
+    const {scriptContentPending} = this.state;
+    if (scriptContentPending) {
+      return <LoadingView />;
+    }
     const {router} = this.props;
     const openRunDetails = (run, event) => {
       if (event) {
@@ -185,19 +236,20 @@ class SystemJobs extends React.Component {
               REFRESH
             </Button>
             {
-              isLaunching && (
+              isLaunching || this.currentJobHasRequiredParameters ? (
                 <Button
-                  disabled
                   type="primary"
                   size="small"
+                  disabled={isLaunching}
                   className={styles.systemJobActionButton}
+                  onClick={!isLaunching
+                    ? () => this.openLaunchParametersModal(job)
+                    : undefined
+                  }
                 >
                   LAUNCH
                 </Button>
-              )
-            }
-            {
-              !isLaunching && (
+              ) : (
                 <Dropdown.Button
                   type="primary"
                   size="small"
@@ -316,6 +368,7 @@ class SystemJobs extends React.Component {
         sections={sections}
         showSectionsSearch
         sectionsSearchPlaceholder="Filter jobs"
+        onSectionChange={this.setSelectedJobId}
       >
         <SystemJobLog
           visible={!!job}
@@ -329,6 +382,7 @@ class SystemJobs extends React.Component {
           job={launchParameters}
           onLaunch={this.launchWithParameters}
           onCancel={this.closeLaunchParametersModal}
+          parametersFromScript={this.currentJobParameters}
         />
       </SubSettings>
     );

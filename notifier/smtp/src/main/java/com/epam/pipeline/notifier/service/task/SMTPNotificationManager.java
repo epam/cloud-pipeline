@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -45,13 +46,11 @@ import java.util.stream.Collectors;
  * {@link NotificationMessage#getCopyUserIds()}
  */
 @Component
+@ConditionalOnProperty(name = "notification.enable.smtp", havingValue = "true")
 public class SMTPNotificationManager implements NotificationManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SMTPNotificationManager.class);
     public static final String MESSAGE_TAG = "message";
-
-    @Value(value = "${notification.enable.smtp}")
-    private boolean isEnabled;
 
     @Value(value = "${email.notification.retry.count:3}")
     private int notifyRetryCount;
@@ -100,9 +99,6 @@ public class SMTPNotificationManager implements NotificationManager {
      */
     @Override
     public void notifySubscribers(NotificationMessage message) {
-        if (!isEnabled) {
-            return;
-        }
         for (int i = 0; i < notifyRetryCount; i++) {
             try {
                 Optional<Email> email = buildEmail(message);

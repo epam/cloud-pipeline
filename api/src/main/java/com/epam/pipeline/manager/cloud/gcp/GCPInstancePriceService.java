@@ -66,15 +66,40 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
             final Map<String, GCPResourceMapping> mappings = loadResourceMappings();
             final List<GCPResourceRequest> requests = requests(objects, mappings);
             final Set<GCPResourcePrice> prices = priceLoader.load(region, requests);
+            final Map<String, Integer> gpuCoresMapping = getGpuCoresMapping();
             return objects.stream()
-                    .flatMap(object -> Arrays.stream(GCPBilling.values())
-                            .map(billing -> object.toInstanceOffer(billing,
-                                    getPrice(object, billing, prices, region.getRegionCode()), region.getId())))
+                    .flatMap(object -> toOffers(region, object, prices))
+                    .map(offer -> withGpus(offer, gpuCoresMapping))
                     .collect(Collectors.toList());
         } catch (GCPInstancePriceException e) {
             log.error("Failed to get instance types and prices from GCP.", e);
             return Collections.emptyList();
         }
+    }
+
+    private Stream<InstanceOffer> toOffers(final GCPRegion region, final AbstractGCPObject object,
+                                           final Set<GCPResourcePrice> prices) {
+        return Arrays.stream(GCPBilling.values()).map(billing -> toOffer(region, object, prices, billing));
+    }
+
+    private InstanceOffer toOffer(final GCPRegion region, final AbstractGCPObject object,
+                                  final Set<GCPResourcePrice> prices,
+                                  final GCPBilling billing) {
+        final double price = getPrice(object, billing, prices, region.getRegionCode());
+        return object.toInstanceOffer(billing, price, region.getId());
+    }
+
+    private InstanceOffer withGpus(final InstanceOffer offer, final Map<String, Integer> gpuCoresMapping) {
+        Optional.ofNullable(offer.getGpuDevice())
+                .map(gpu -> gpu.toBuilder().cores(gpuCoresMapping.get(gpu.getManufacturerAndName())).build())
+                .ifPresent(offer::setGpuDevice);
+        return offer;
+    }
+
+    private Map<String, Integer> getGpuCoresMapping() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_GPU_CORES_MAPPING)
+                .map(preferenceManager::getPreference)
+                .orElseGet(Collections::emptyMap);
     }
 
     private List<AbstractGCPObject> availableObjects(final GCPRegion region) {

@@ -13,6 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+import * as HCSConstants from './constants';
 
 function parseCoordinates (key) {
   const e = /^([\d]+)_([\d]+)$/.exec(key);
@@ -64,8 +65,20 @@ function getWellCoordinateString (coordinate, dimension) {
  * @property {string|number} width
  * @property {string|number} height
  * @property {string|number} [round_radius]
+ * @property {string} [path]
+ * @property {string} [offsets_path]
+ * @property {string} [overview_path]
+ * @property {string} [overview_offsets_path]
  * @property {Object} [to_ome_wells_mapping]
  */
+
+function generateOffsetsPath (dataPath) {
+  const r = /(.+)\.ome\.tiff$/i.exec(dataPath);
+  if (r && r.length > 1) {
+    return `${r[1]}.offsets.json`;
+  }
+  return undefined;
+}
 
 function buildDefaultCoordinates (images = {}) {
   return Object.keys(images || {})
@@ -183,20 +196,42 @@ function buildImages (options = {}) {
 class HCSImageWell {
   /**
    * @param {WellOptions} options
-   * @param {{width: number, height: number}} plate
+   * @param {HCSImageSequence} sequence
    */
-  constructor (options = {}, plate) {
+  constructor (options = {}, sequence) {
+    const {
+      directory,
+      plateWidth = 10,
+      plateHeight = 10,
+      objectStorage
+    } = sequence || {};
     const {
       x,
       y,
       round_radius: roundRadius,
       well_overview: wellImageId,
-      tags
+      tags,
+      path = HCSConstants.OME_TIFF_FILE_NAME,
+      offsets_path: offsetsPath = generateOffsetsPath(
+        path
+      ),
+      overview_path: overviewPath = HCSConstants.OVERVIEW_OME_TIFF_FILE_NAME,
+      overview_offsets_path: overviewOffsetsPath = generateOffsetsPath(
+        overviewPath
+      )
     } = options;
-    const {
-      width: plateWidth = 10,
-      height: plateHeight = 10
-    } = plate || {};
+    this.omeTiffFileName = [directory, path]
+      .filter(Boolean)
+      .join(objectStorage.delimiter || '/');
+    this.offsetsJsonFileName = [directory, offsetsPath]
+      .filter(Boolean)
+      .join(objectStorage.delimiter || '/');
+    this.overviewOmeTiffFileName = [directory, overviewPath]
+      .filter(Boolean)
+      .join(objectStorage.delimiter || '/');
+    this.overviewOffsetsJsonFileName = [directory, overviewOffsetsPath]
+      .filter(Boolean)
+      .join(objectStorage.delimiter || '/');
     const formatter = Math.max(plateWidth, plateHeight);
     const idx = getWellCoordinateString(x, formatter);
     const idy = getWellCoordinateString(y, formatter);
@@ -248,19 +283,65 @@ class HCSImageWell {
      */
     this.wellImageId = wellImageId;
     this.tags = tags || {};
+    /**
+     * @type {HCSImageSequence}
+     */
+    this.sequence = sequence;
   }
 
   destroy () {
     this.images = undefined;
+    this.sequence = undefined;
   }
+
+  fetchMetadata = () => {
+    if (!this.metadataPromise) {
+      this.metadataPromise = new Promise((resolve) => {
+        Promise.resolve()
+          .then(() => this.sequence.hcsImageMetadataCache.getMetadata(this))
+          .then(metadataArray => {
+            const {images = []} = this;
+            images.forEach(image => {
+              const {id} = image;
+              const metadata = metadataArray.find(o => o.ID === id);
+              if (metadata && metadata.Name) {
+                const {
+                  field: fieldID,
+                  well: wellID
+                } = getImageInfoFromName(metadata.Name);
+                image.wellID = wellID;
+                image.fieldID = fieldID;
+              }
+              if (metadata && metadata.Pixels) {
+                image.width = metadata.Pixels.SizeX;
+                image.height = metadata.Pixels.SizeY;
+                image.depth = metadata.Pixels.SizeZ || 1;
+                image.physicalSize = metadata.Pixels.PhysicalSizeX || 1;
+                image.unit = metadata.Pixels.PhysicalSizeXUnit || 'px';
+                image.physicalDepthSize = metadata.Pixels.PhysicalSizeZ || 1;
+                image.depthUnit = metadata.Pixels.PhysicalSizeZUnit || '';
+              }
+              if (metadata && metadata.Pixels && metadata.Pixels.Channels) {
+                image.channels = metadata.Pixels.Channels.map(o => o.Name);
+              }
+            });
+            resolve();
+          })
+          .catch(() => {
+            resolve();
+          });
+      });
+    }
+    return this.metadataPromise;
+  };
 
   /**
    * Parses wells_map.json content
    * @param {Object} wellsFileContentsJSON
-   * @param {{width: number, height: number}} [plate]
+   * @param {HCSImageSequence} sequence
    * @return {HCSImageWell[]}
    */
-  static parseWellsInfo (wellsFileContentsJSON, plate) {
+  static parseWellsInfo (wellsFileContentsJSON, sequence) {
     return Object.keys(wellsFileContentsJSON || {})
       .map(key => ({
         key,
@@ -269,7 +350,7 @@ class HCSImageWell {
       .filter(o => o.parsed)
       .map(({key, parsed}) => new HCSImageWell(
         {...parsed, ...wellsFileContentsJSON[key]},
-        plate
+        sequence
       ));
   }
 }

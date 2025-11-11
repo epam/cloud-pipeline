@@ -42,7 +42,7 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
         folder_restored = False
         is_file = not path.endswith(PATH_SEPARATOR)
         for item in items:
-            if not item.is_dir and item.storage_class != 'STANDARD':
+            if not item.is_dir and item.storage_class != 'STANDARD' and item.storage_class != 'INTELLIGENT_TIERING':
                 path = self._normalize_path(path)
                 if restored_paths is None:
                     restored_paths = self._get_restored_paths(path, is_file)
@@ -113,7 +113,7 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
         items = self._inner.ls(path, depth=1)
         if not items:
             return None
-        files = [item for item in items if not item.is_dir and item.storage_class and item.storage_class != 'STANDARD']
+        files = [item for item in items if not item.is_dir and item.storage_class and item.storage_class != 'STANDARD' and item.storage_class != 'INTELLIGENT_TIERING']
         if not files or len(files) != 1:
             return None
         return files[0]

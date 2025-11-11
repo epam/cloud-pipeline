@@ -15,14 +15,17 @@
 
 package com.epam.pipeline.mapper.cluster.pool;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Mapper(componentModel = "spring")
@@ -49,5 +52,9 @@ public interface NodePoolMapper {
     default void fillSchedule(final NodePool entity, final @MappingTarget NodePoolVO vo) {
         Optional.ofNullable(entity.getSchedule())
                 .ifPresent(schedule -> vo.setScheduleId(schedule.getId()));
+    }
+
+    static Map<String, Object> map(final NodePool pool, final JsonMapper mapper) {
+        return mapper.convertValue(pool, new TypeReference<Map<String, Object>>() {});
     }
 }

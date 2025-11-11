@@ -19,6 +19,7 @@
 export default {
   identifier: 'light-theme',
   name: 'Light',
+  dark: false,
   extends: undefined,
   predefined: true,
   configuration: {
@@ -53,7 +54,9 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
+    '@color-grey-light': '#aaa',
     '@color-grey-semi-transparent': 'fadeout(@color-grey, 90%)',
+    '@color-aqua-accent': '@color-aqua',
     '@color-green-soft': '#7dccc0',
     '@color-blue-soft': '#4db4d9',
     '@spinner': '@primary-color',
@@ -73,6 +76,7 @@ export default {
     '@input-search-icon-hovered-color': '@primary-hover-color',
     '@panel-background-color': 'white',
     '@panel-border-color': '#ccc',
+    '@panel-border-color-light': '#eee',
     '@card-background-color': 'white',
     '@card-border-color': '#ddd',
     '@card-hovered-shadow-color': 'rgba(0, 0, 0, 0.2)',
@@ -100,6 +104,8 @@ export default {
     '@gcp-icon-contrast': "@static_resource('icons/providers/gcp-light.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
+    '@local-icon': "@static_resource('icons/providers/local.svg')",
+    '@local-icon-contrast': "@static_resource('icons/providers/local-ligh.svg')",
     '@eu-region-icon': "@static_resource('icons/regions/eu.svg')",
     '@us-region-icon': "@static_resource('icons/regions/us.svg')",
     '@sa-region-icon': "@static_resource('icons/regions/sa.svg')",
@@ -164,6 +170,11 @@ export default {
     '@vs-color-change-applied-background': '@vs-color-change-background',
     '@application-console-background-color': '#222222',
     '@application-console-color': '#ececec',
-    '@application-console-color-details': '#aaaaaa'
+    '@application-console-color-details': '#aaaaaa',
+    '@application-tooltip-background-color': '#222222',
+    '@application-tooltip-border-color': '#333333',
+    '@application-tooltip-color': '#ececec',
+    '@codemirror-selected-background-color': '#d9d9d9',
+    '@codemirror-focused-selected-background-color': '#d7d4f0'
   }
 };

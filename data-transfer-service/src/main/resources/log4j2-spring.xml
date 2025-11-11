@@ -52,6 +52,31 @@
             </Policies>
         </RollingFile>
 
+       <RollingFile name="Pipe-Appender" fileName="${dts.logs}/pipe.log"
+                      filePattern="${dts.logs}/pipe-%d{yyyyMMdd}.log">
+            <MarkerFilter marker="PIPE"/>
+            <PatternLayout>
+                <pattern>
+                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>
+            </PatternLayout>
+            <Filters>
+                <ThresholdFilter level="DEBUG" onMatch="ACCEPT" />
+            </Filters>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${dts.logs}" maxDepth="1">
+                    <IfFileName glob="pipe-*.log">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="10"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+       </RollingFile>
+
         <!--Spring appender-->
         <RollingFile  name="Spring-Appender" fileName="${dts.logs}/spring.log"
                       filePattern="${dts.logs}/spring-%d{yyyyMMdd}.log">
@@ -86,9 +111,13 @@
             <AppenderRef ref="DTS-Appender"/>
             <AppenderRef ref="Console-Appender"/>
         </Logger>
+        <Logger name="com.epam.pipeline.cmd" level="debug" additivity="false">
+            <AppenderRef ref="Pipe-Appender"/>
+        </Logger>
         <Root>
             <AppenderRef ref="Console-Appender"/>
             <AppenderRef ref="DTS-Appender"/>
+            <AppenderRef ref="Pipe-Appender"/>
             <AppenderRef ref="Spring-Appender"/>
         </Root>
     </Loggers>

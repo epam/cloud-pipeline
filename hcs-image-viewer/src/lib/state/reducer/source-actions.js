@@ -25,6 +25,8 @@ export function setSourceInitializing(state) {
     sourcePending: true,
     imagePending: false,
     overlayImages: [],
+    annotations: [],
+    selectedAnnotation: undefined,
   };
 }
 
@@ -46,6 +48,8 @@ export function setSourceError(state, action) {
     sourcePending: false,
     sourceCallback: undefined,
     overlayImages: [],
+    annotations: [],
+    selectedAnnotation: undefined,
   };
 }
 
@@ -70,6 +74,8 @@ export function setSource(state, action) {
     sourcePending: false,
     sourceCallback: undefined,
     overlayImages: [],
+    annotations: [],
+    selectedAnnotation: undefined,
   };
 }
 
@@ -83,6 +89,8 @@ export function setImage(state, action) {
     imageZPosition = 0,
     mesh,
     overlayImages = [],
+    annotations = [],
+    selectedAnnotation = undefined,
   } = action;
   const { metadata = [], imageIndex: currentImageIndex } = state;
   let metadataItem;
@@ -97,6 +105,10 @@ export function setImage(state, action) {
     const regExp = new RegExp(`^\\s*well\\s+${well}\\s*,\\s*field\\s+${field}\\s*$`, 'i');
     metadataItem = metadata.find((o) => regExp.test(o.Name || o.name));
   }
+  if (!metadataItem && metadata.length === 1) {
+    // eslint-disable-next-line prefer-destructuring
+    metadataItem = metadata[0];
+  }
   if (metadataItem) {
     const imageIndex = metadata.indexOf(metadataItem);
     return {
@@ -107,6 +119,8 @@ export function setImage(state, action) {
       imageZPosition,
       mesh,
       overlayImages,
+      annotations,
+      selectedAnnotation,
     };
   }
   return state;
@@ -120,6 +134,22 @@ export function setMesh(state, action) {
 export function setOverlayImages(state, action) {
   const { overlayImages = [] } = action;
   return { ...state, overlayImages };
+}
+
+export function setAnnotations(state, action) {
+  const { annotations = [] } = action;
+  const { selectedAnnotation } = state;
+  const selected = annotations.find((annotation) => annotation.identifier === selectedAnnotation);
+  return {
+    ...state,
+    annotations,
+    selectedAnnotation: selected ? selected.identifier : undefined,
+  };
+}
+
+export function setSelectedAnnotation(state, action) {
+  const { selectedAnnotation } = action;
+  return { ...state, selectedAnnotation };
 }
 
 export function setImageViewportLoaded(state) {
