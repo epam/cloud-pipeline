@@ -371,7 +371,7 @@ if [ "$CP_NF_WEBLOG_HANDLER_CHECK" == 1 ]; then
 fi
 
 if [ "$CP_NF_WEBLOG_HANDLER_CLEANUP" == 1 ]; then
-    echo "Cleanup Nextflow engine tasks for run ${RUN_ID} from cp-api-server ..."
+    echo "Cleanup Nextflow engine tasks in Nextflow run view for run ${RUN_ID} ..."
     call_api "DELETE" "$API/run/${RUN_ID}/engine/tasks" "$API_TOKEN"
     if [ $? -ne 0 ]; then
         pipe_log_error "[ERROR] Cannot cleanup nextflow engine tasks for run ${RUN_ID}" "$SYNC_RUN_RUNTIME_DATA_TASK"

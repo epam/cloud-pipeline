@@ -687,8 +687,8 @@ public class PipelineRunController extends AbstractRestController {
 
     @DeleteMapping("/run/{runId}/engine/tasks")
     @ApiOperation(
-            value = "Consumes engine task events for run",
-            notes = "Consumes engine task events for run",
+            value = "Deletes engine task events for run",
+            notes = "Deletes engine task events for run",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result resetRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId) {
