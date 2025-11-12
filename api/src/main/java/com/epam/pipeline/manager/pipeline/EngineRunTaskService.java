@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +58,12 @@ public class EngineRunTaskService {
                         .map(this::validateEvent)
                         .collect(Collectors.toList()))
                 .size();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void resetTasks(final Long runId) {
+        runCRUDService.loadRunById(runId);
+        engineRunTaskDao.deleteByRunIdIn(Collections.singletonList(runId), false);
     }
 
     public Map<String, EngineRunTaskGroupStatsEntity> loadTasksStats(final Long runId, final EngineType engineType) {

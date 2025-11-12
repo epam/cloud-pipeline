@@ -68,6 +68,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -682,6 +683,17 @@ public class PipelineRunController extends AbstractRestController {
     public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
                                                       @RequestBody final List<EngineRunTask> tasks) {
         return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
+    }
+
+    @DeleteMapping("/run/{runId}/engine/tasks")
+    @ApiOperation(
+            value = "Consumes engine task events for run",
+            notes = "Consumes engine task events for run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result resetRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId) {
+        runApiService.resetRunEngineTaskEvents(runId);
+        return Result.success();
     }
 
     @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")

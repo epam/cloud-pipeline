@@ -74,10 +74,14 @@ fi
 mkdir -p "$NXF_WORK"
 
 _IS_RUN_COMMAND=
+_CLEAN_UP_NEXTFLOW_ENGINE_TASKS=${CP_NF_CLEANUP_ENGINE_TASKS_ON_RUN}
 for param in "$@"; do
    if [ "$param" == "run" ]; then
       _IS_RUN_COMMAND="1"
-      break
+   fi
+
+   if [ "$param" == "--history-cleanup" ] || [ "$param" == "-hc" ]; then
+       _CLEAN_UP_NEXTFLOW_ENGINE_TASKS="1"
    fi
 done
 
@@ -112,6 +116,10 @@ generate_extra_nf_config_option
 # NF Handler parameters
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
     if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
+        if [ "$_CLEAN_UP_NEXTFLOW_ENGINE_TASKS" == "1" ]; then
+            echo "[INFO] Cleanup for nextflow engine view configured by -hc/--history-cleanup or CP_NF_CLEANUP_ENGINE_TASKS_ON_RUN env, proceeding ..."
+            /opt/nf-weblog-handler/nf-weblog-handler.sh --cleanup
+        fi
         echo "Running Nextflow with the weblog feature enabled at http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event"
         echo "weblog.enabled = true" >> $NEXTFLOW_CONFIG
         echo "weblog.url = 'http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event'" >> $NEXTFLOW_CONFIG
