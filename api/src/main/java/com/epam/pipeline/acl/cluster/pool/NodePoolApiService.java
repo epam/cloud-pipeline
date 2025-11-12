@@ -46,22 +46,22 @@ public class NodePoolApiService {
         return nodeManager.load(poolId);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodePool createOrUpdate(final NodePoolVO vo) {
         return nodeManager.createOrUpdate(vo);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodePool delete(final Long poolId) {
         return nodeManager.delete(poolId);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public List<NodePoolUsage> saveUsage(final List<NodePoolUsage> records) {
         return nodePoolUsageService.save(records);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public Boolean deleteUsage(final LocalDate date) {
         return nodePoolUsageService.deleteExpired(date);
     }

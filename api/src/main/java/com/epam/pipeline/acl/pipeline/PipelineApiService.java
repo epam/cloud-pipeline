@@ -68,13 +68,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
-import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_COPY;
-import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_CREATE;
-import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_MANAGE;
-import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_READ;
-import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_WRITE;
-import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_VO_WRITE;
+import static com.epam.pipeline.security.acl.AclExpressions.*;
 
 @Service
 public class PipelineApiService {
@@ -127,20 +121,20 @@ public class PipelineApiService {
         return pipelineManager.updateToken(pipeline);
     }
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<Pipeline> loadAllPipelines(boolean loadVersions) {
         return pipelineManager.loadAllPipelines(loadVersions);
     }
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<PipelineWithMetadata> filterPipelines(final boolean loadVersions, final boolean loadMetadata,
                                                       final EntityFilterVO filter) {
         return pipelineManager.loadAllPipelines(loadVersions, loadMetadata, filter);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + PIPELINE_ADMIN_ONLY)
     public PipelinesWithPermissionsVO loadAllPipelinesWithPermissions(Integer pageNum, Integer pageSize) {
         return permissionManager.loadAllPipelinesWithPermissions(pageNum, pageSize);
     }
@@ -151,13 +145,13 @@ public class PipelineApiService {
         return pipelineManager.load(id, true);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(returnObject, 'READ')")
     @AclMask
     public Pipeline loadPipelineByIdOrName(String identifier) {
         return pipelineManager.loadByNameOrId(identifier);
     }
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<Pipeline> loadAllPipelinesWithoutVersion() {
         return pipelineManager.loadAllPipelines(false);
@@ -278,8 +272,9 @@ public class PipelineApiService {
                 .fillTemplateForPipelineVersion(id, pipelineVersion, templatePath, generateFileVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#registerPipelineVersionVO.pipelineId, "
-            + "'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') " +
+            "OR hasPermission(#registerPipelineVersionVO.pipelineId, " +
+            "'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE')")
     public Revision registerPipelineVersion(final RegisterPipelineVersionVO registerPipelineVersionVO)
             throws GitClientException {
         return versionManager.registerPipelineVersion(registerPipelineVersionVO);
@@ -304,7 +299,7 @@ public class PipelineApiService {
         return documentGenerationPropertyManager.loadProperty(name, id);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR "
             + "hasPermission(#property.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE')")
     public DocumentGenerationProperty saveProperty(DocumentGenerationProperty property) {
         return documentGenerationPropertyManager.saveProperty(property);
@@ -315,7 +310,7 @@ public class PipelineApiService {
         return documentGenerationPropertyManager.deleteProperty(name, id);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR hasPermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(returnObject, 'READ')")
     @AclMask
     public Pipeline loadPipelineByRepoUrl(String url) {
         return pipelineManager.loadByRepoUrl(url);

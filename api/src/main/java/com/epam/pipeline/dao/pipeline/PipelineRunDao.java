@@ -23,7 +23,7 @@ import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -873,7 +873,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    private void buildAclFiltersClause(final AclSecuredFilter filter, final MapSqlParameterSource params,
+    private void buildAclFiltersClause(final AclSecuredRunFilter filter, final MapSqlParameterSource params,
                                        final StringBuilder whereBuilder) {
         params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
         if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {

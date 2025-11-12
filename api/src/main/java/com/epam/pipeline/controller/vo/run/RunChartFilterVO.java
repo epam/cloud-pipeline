@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.controller.vo.run;
 
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
@@ -26,7 +26,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
-public class RunChartFilterVO implements AclSecuredFilter {
+public class RunChartFilterVO implements AclSecuredRunFilter {
     private List<String> owners;
     private List<String> dockerImages;
     private List<String> instanceTypes;

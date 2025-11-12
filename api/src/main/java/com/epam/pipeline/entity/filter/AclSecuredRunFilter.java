@@ -19,7 +19,7 @@ package com.epam.pipeline.entity.filter;
 import java.util.List;
 
 
-public interface AclSecuredFilter {
+public interface AclSecuredRunFilter {
     void setAllowedPipelines(List<Long> pipelineIds);
     List<Long> getAllowedPipelines();
 

@@ -33,7 +33,8 @@ public class RunConfigurationApiService {
     @Autowired
     private RunConfigurationManager runConfigurationManager;
 
-    @PreAuthorize("hasRole('ADMIN') OR (#configuration.parentId != null AND hasRole('CONFIGURATION_MANAGER') AND "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') " +
+            "OR (#configuration.parentId != null AND hasRole('CONFIGURATION_MANAGER') AND "
             + "hasPermission(#configuration.parentId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE') AND "
             + "@grantPermissionManager.hasPermissionToConfiguration(#configuration.entries, 'EXECUTE'))")
     @AclMask
@@ -41,27 +42,28 @@ public class RunConfigurationApiService {
         return runConfigurationManager.create(configuration);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR "
             + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'WRITE')")
     @AclMask
     public RunConfiguration update(RunConfigurationVO configuration) {
         return runConfigurationManager.update(configuration);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('CONFIGURATION_MANAGER') AND hasPermission(#id, "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') " +
+            "OR (hasRole('CONFIGURATION_MANAGER') AND hasPermission(#id, "
             + "'com.epam.pipeline.entity.configuration.RunConfiguration', 'WRITE'))")
     public RunConfiguration delete(Long id) {
         return runConfigurationManager.delete(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#id, "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(#id, "
             + "'com.epam.pipeline.entity.configuration.RunConfiguration', 'READ')")
     @AclMask
     public RunConfiguration load(Long id) {
         return runConfigurationManager.load(id);
     }
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR hasRole('PIPELINE_ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<RunConfiguration> loadAll() {
         return runConfigurationManager.loadAll();
