@@ -455,14 +455,14 @@ public class GrantPermissionManager {
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
         AbstractSecuredEntity entity = entityManager.load(aclClass, id);
-        if (entity instanceof AbstractDataStorage && isStorageAdmin()) {
+        if (permissionsHelper.isScopedAdmin(entity)) {
             return true;
         }
         return permissionsHelper.isOwner(entity);
     }
 
     public boolean isOwnerOrAdmin(AbstractSecuredEntity entity) {
-        if (entity instanceof AbstractDataStorage && isStorageAdmin()) {
+        if (permissionsHelper.isScopedAdmin(entity)) {
             return true;
         }
         return isOwnerOrAdmin(entity.getOwner());
@@ -480,12 +480,8 @@ public class GrantPermissionManager {
         return isAdmin(getSids());
     }
 
-    public boolean isStorageAdmin() {
-        return isStorageAdmin(getSids());
-    }
-
     public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
-        if (isStorageAdmin(getSids())) {
+        if (permissionsHelper.isScopedAdmin(storage, getSids())) {
             return true;
         }
         if (forbiddenByStorageStatus(storage, permissionName)) {
@@ -909,10 +905,6 @@ public class GrantPermissionManager {
         return hasRole(sids, DefaultRoles.ROLE_ADMIN);
     }
 
-    private boolean isStorageAdmin(final List<Sid> sids) {
-        return hasRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
-    }
-
     private boolean hasRole(final List<Sid> sids, final DefaultRoles role) {
         final GrantedAuthoritySid sid = new GrantedAuthoritySid(role.getName());
         return sids.stream().anyMatch(s -> s.equals(sid));
@@ -1033,10 +1025,10 @@ public class GrantPermissionManager {
         final Integer fullMask = merge ?
                 AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                 AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
+        if (permissionsHelper.isScopedAdmin(entity, sidsByType.get(SidType.ROLE))) {
+            return fullMask;
+        }
         if (entity instanceof  AbstractDataStorage) {
-            if (isStorageAdmin(sidsByType.get(SidType.ROLE))) {
-                return fullMask;
-            }
             boolean readAllowed = permissionsHelper.isAllowed(AclPermission.READ_NAME, entity);
             if (entity instanceof NFSDataStorage) {
                 final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();

@@ -26,5 +26,5 @@ import java.lang.annotation.Target;
 @Inherited
 @Retention(RUNTIME)
 @Target(ElementType.METHOD)
-public @interface AclFilter {
+public @interface AclRunFilter {
 }

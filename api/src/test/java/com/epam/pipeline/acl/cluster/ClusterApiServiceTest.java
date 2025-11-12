@@ -137,6 +137,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnEmptyNodeInstanceListWhenPermissionIsNotGranted() {
         initAclEntity(anotherNodeInstance);
         doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).getNodes(MachineType.KUBE);
+        mockSecurityContext();
 
         assertThat(clusterApiService.getNodes(MachineType.KUBE)).isEmpty();
     }
@@ -179,6 +180,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     public void shouldReturnEmptyFilteredNodeInstanceListWhenPermissionIsNotGranted() {
         initAclEntity(anotherNodeInstance);
         doReturn(mutableListOf(nodeInstance)).when(mockNodesManager).filterNodes(filterNodesVO, MachineType.KUBE);
+        mockSecurityContext();
 
         assertThat(clusterApiService.filterNodes(filterNodesVO, MachineType.KUBE)).isEmpty();
     }
@@ -233,6 +235,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance);
         doReturn(nodeInstance).when(mockNodesManager).getNode(nodeInstance.getName());
         mockRun(pipelineRun);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService
                 .getNode(nodeInstance.getName(), MachineType.KUBE, null));
@@ -267,6 +270,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance);
         mockRun(pipelineRun);
         mockNode(nodeInstance);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> clusterApiService.getNode(nodeInstance.getName(), filterPodsRequest));
@@ -304,6 +308,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         initAclEntity(nodeInstance);
         mockNode(nodeInstance);
         mockRun(pipelineRun);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> clusterApiService.terminateNode(nodeInstance.getName(), MachineType.KUBE, null));
@@ -467,6 +472,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
         mockRun(pipelineRun);
         mockNode(nodeInstance);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.getNodeId()));
     }

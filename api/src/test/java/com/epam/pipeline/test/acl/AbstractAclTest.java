@@ -63,6 +63,10 @@ import static org.mockito.Mockito.doReturn;
 public abstract class AbstractAclTest {
 
     protected static final String ADMIN_ROLE = "ADMIN";
+    protected static final String PIPELINE_ADMIN_ROLE = "PIPELINE_ADMIN";
+    protected static final String TOOL_ADMIN_ROLE = "TOOL_ADMIN";
+    protected static final String RUN_ADMIN_ROLE = "RUN_ADMIN";
+    protected static final String USER_ADMIN_ROLE = "USER_ADMIN";
     protected static final String CONFIGURATION_MANAGER_ROLE = "CONFIGURATION_MANAGER";
     protected static final String ENTITIES_MANAGER_ROLE = "ENTITIES_MANAGER";
     protected static final String PIPELINE_MANAGER_ROLE = "PIPELINE_MANAGER";

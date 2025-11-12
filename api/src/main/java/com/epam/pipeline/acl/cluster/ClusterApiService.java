@@ -59,6 +59,8 @@ import static com.epam.pipeline.security.acl.AclExpressions.CLOUD_NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
+import static com.epam.pipeline.security.acl.AclExpressions.OR;
+import static com.epam.pipeline.security.acl.AclExpressions.RUN_ADMIN_ONLY;
 
 @Service
 @RequiredArgsConstructor
@@ -104,7 +106,7 @@ public class ClusterApiService {
         return nodesManager.terminateKubeOrCloudNode(name, machineType, regionId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to,
@@ -112,7 +114,7 @@ public class ClusterApiService {
         return usageMonitoringManager.getStatsForNode(name, from, to, runId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public GpuMonitoringStats getGpuStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to,
@@ -122,7 +124,7 @@ public class ClusterApiService {
         return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval, final MonitoringReportType type,
                                               final Long runId) {
@@ -160,27 +162,27 @@ public class ClusterApiService {
         return podsManager.getCorePods();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<PodInstance> getPodsByLabels(final Map<String, String> labels) {
         return podsManager.getPodsByLabels(labels);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public PodDescription getPodDescription(final String podId, final boolean detailed) {
         return podsManager.describePod(podId, detailed);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
         return podsManager.getContainerLogs(podId, containerId, limit);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public NetworkEventFilter getPlatformNetworkEventFilter() {
         return usageMonitoringManager.getPlatformNetworkStatsFilters();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<HistogramBin> filterPlatformNetworkEvents(final HistogramType histogramType,
                                                           final LocalDateTime from, final LocalDateTime to,
                                                           final Integer intervals,
