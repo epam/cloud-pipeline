@@ -83,14 +83,14 @@ public class ClusterApiService {
         return nodesManager.terminateKubeOrCloudNode(name, machineType, regionId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to) {
         return usageMonitoringManager.getStatsForNode(name, from, to);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public GpuMonitoringStats getGpuStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to,
@@ -99,7 +99,7 @@ public class ClusterApiService {
         return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval, final MonitoringReportType type) {
         return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
@@ -136,22 +136,22 @@ public class ClusterApiService {
         return podsManager.getCorePods();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public PodDescription getPodDescription(final String podId, final boolean detailed) {
         return podsManager.describePod(podId, detailed);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
         return podsManager.getContainerLogs(podId, containerId, limit);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public NetworkEventFilter getPlatformNetworkEventFilter() {
         return usageMonitoringManager.getPlatformNetworkStatsFilters();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<HistogramBin> filterPlatformNetworkEvents(final HistogramType histogramType,
                                                           final LocalDateTime from, final LocalDateTime to,
                                                           final Integer intervals,

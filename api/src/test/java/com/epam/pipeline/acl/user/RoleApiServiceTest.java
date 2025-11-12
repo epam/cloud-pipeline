@@ -64,6 +64,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadRolesWithUsersForUserAdmin() {
+        doReturn(roleList).when(mockRoleManager).loadAllRoles(true);
+
+        assertThat(roleApiService.loadRolesWithUsers()).isEqualTo(roleList);
+    }
+
+    @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadRolesWithUsersForUserReader() {
         doReturn(roleList).when(mockRoleManager).loadAllRoles(true);
@@ -87,6 +95,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadRoleForAdmin() {
+        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
+
+        assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadRoleForUserAdmin() {
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
         assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
@@ -131,6 +147,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldCreateRoleForUserAdmin() {
+        doReturn(role).when(mockRoleManager).create(TEST_STRING, false, true, ID);
+
+        assertThat(roleApiService.createRole(TEST_STRING, true, ID)).isEqualTo(role);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyCreateRoleForNotAdmin() {
         doReturn(role).when(mockRoleManager).create(TEST_STRING, false, true, ID);
@@ -141,6 +165,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateRoleForAdmin() {
+        doReturn(role).when(mockRoleManager).update(ID, roleVO);
+
+        assertThat(roleApiService.updateRole(ID, roleVO)).isEqualTo(role);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpdateRoleForUserAdmin() {
         doReturn(role).when(mockRoleManager).update(ID, roleVO);
 
         assertThat(roleApiService.updateRole(ID, roleVO)).isEqualTo(role);
@@ -173,6 +205,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDeleteRoleForUserAdmin() {
+        doReturn(role).when(mockRoleManager).delete(ID);
+
+        assertThat(roleApiService.deleteRole(ID)).isEqualTo(role);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyDeleteRoleForNotAdmin() {
         doReturn(role).when(mockRoleManager).delete(ID);
@@ -189,6 +229,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldAssignRoleForUserAdmin() {
+        doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
+
+        assertThat(roleApiService.assignRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyAssignRoleForNotAdmin() {
         doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
@@ -199,6 +247,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldRemoveRoleForAdmin() {
+        doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
+
+        assertThat(roleApiService.removeRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldRemoveRoleForUserAdmin() {
         doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
 
         assertThat(roleApiService.removeRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);

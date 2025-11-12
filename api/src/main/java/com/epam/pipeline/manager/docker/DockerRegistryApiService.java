@@ -35,18 +35,18 @@ public class DockerRegistryApiService {
     @Autowired
     private DockerRegistryManager registryManager;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN')")
     public DockerRegistry create(DockerRegistryVO dockerRegistryVO) {
         return registryManager.create(dockerRegistryVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#dockerRegistry, 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR hasPermission(#dockerRegistry, 'WRITE')")
     @AclTree
     public DockerRegistry updateDockerRegistry(DockerRegistry dockerRegistry) {
         return registryManager.updateDockerRegistry(dockerRegistry);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN')")
     @AclTree
     public DockerRegistry updateDockerRegistryCredentials(DockerRegistryVO dockerRegistry) {
         return registryManager.updateDockerRegistryCredentials(dockerRegistry);
@@ -67,13 +67,13 @@ public class DockerRegistryApiService {
         return registryManager.load(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR "
             + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'WRITE')")
     public DockerRegistry delete(Long id, boolean force) {
         return registryManager.delete(id, force);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN')")
     public List<Tool> notifyDockerRegistryEvents(String registry, DockerRegistryEventEnvelope events) {
         return registryManager.notifyDockerRegistryEvents(registry, events);
     }
@@ -83,12 +83,12 @@ public class DockerRegistryApiService {
         return registryManager.issueTokenForDockerRegistry(userName, token, dockerRegistryHost, scope);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @dockerPermissionManager.hasDockerReadPermission(#id)")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR @dockerPermissionManager.hasDockerReadPermission(#id)")
     public byte[] getCertificateContent(Long id) {
         return registryManager.getCertificateContent(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR "
             + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'READ')")
     public byte[] getConfigScript(Long id) {
         return registryManager.getConfigScript(id);
