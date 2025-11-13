@@ -34,7 +34,7 @@ import AdaptedLink from '../../special/AdaptedLink';
 import EditPipelineForm from './forms/EditPipelineForm';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
-import GitRepositoryControl from '../../special/git-repository-control';
+import GitRepositoryControl, {RepositoryTypes} from '../../special/git-repository-control';
 import styles from './PipelineDetails.css';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
@@ -184,6 +184,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           storage
         ].filter(Boolean);
     }
+  }
+
+  @computed
+  get readOnly () {
+    const {pipeline} = this.props;
+    return pipeline?.value?.repositoryType === RepositoryTypes.AzureDevOps;
   }
 
   componentDidMount () {
@@ -452,7 +458,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
     const {router: {location}} = this.props;
     const activeTab = this.activeTabPath;
-
     return (
       <div
         className={styles.fullHeightContainer}>
@@ -530,7 +535,10 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           {
             React.Children.map(
               this.props.children,
-              (child) => React.cloneElement(child, {onReloadTree: this.props.onReloadTree})
+              (child) => React.cloneElement(child, {
+                onReloadTree: this.props.onReloadTree,
+                readOnly: this.readOnly
+              })
             )
           }
         </div>
@@ -540,7 +548,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           onDelete={this.deletePipeline}
           visible={this.state.isModalVisible}
           pending={this.state.updating || this.state.deleting}
-          pipeline={this.props.pipeline.value} />
+          pipeline={this.props.pipeline.value}
+          readOnly={this.readOnly}
+        />
       </div>
     );
   }

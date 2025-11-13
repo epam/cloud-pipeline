@@ -73,7 +73,7 @@ export default class PipelineStorageRules extends React.Component {
       key: 'actions',
       title: '',
       render: (rule) => {
-        if (roleModel.writeAllowed(this.props.pipeline.value)) {
+        if (!this.props.readOnly && roleModel.writeAllowed(this.props.pipeline.value)) {
           return (
             <span>
               <a className="cp-danger" onClick={() => this.deleteRuleDialog(rule)}>Delete</a>
@@ -129,7 +129,11 @@ export default class PipelineStorageRules extends React.Component {
       roleModel.writeAllowed(this.props.pipeline.value)
         ? (
           <Row type="flex" justify="end" style={{paddingRight: 5}}>
-            <Button type="primary" onClick={this.openCreateRuleDialog}>Add new rule</Button>
+            <Button
+              type="primary"
+              onClick={this.openCreateRuleDialog}
+              disabled={this.props.readOnly}
+            >Add new rule</Button>
           </Row>
         )
         : false
