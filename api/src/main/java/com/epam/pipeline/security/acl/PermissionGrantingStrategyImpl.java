@@ -16,11 +16,19 @@
 
 package com.epam.pipeline.security.acl;
 
+import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.PermissionsService;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +37,18 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.AccessControlEntry;
 import org.springframework.security.acls.model.Acl;
 import org.springframework.security.acls.model.NotFoundException;
+import org.springframework.security.acls.model.ObjectIdentity;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -51,6 +62,16 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
                     AzureBlobStorage.class.getName(),
                     NFSDataStorage.class.getName())
     );
+    private static final Set<String> PIPELINE_CLASSES = new HashSet<>(
+            Arrays.asList(Pipeline.class.getName(), RunConfiguration.class.getName()));
+
+    private static final Set<String> TOOL_CLASSES = new HashSet<>(
+            Arrays.asList(Tool.class.getName(), ToolGroup.class.getName(), DockerRegistry.class.getName()));
+
+    private static final Set<String> USER_CLASSES = new HashSet<>(
+            Arrays.asList(PipelineUser.class.getName(), Role.class.getName()));
+
+    private static final Set<String> RUN_CLASSES = Collections.singleton(PipelineRun.class.getName());
 
     @Autowired
     private PermissionsService permissionsService;
@@ -104,10 +125,7 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             return true;
         }
 
-        //Storage special case
-        if (STORAGE_CLASSES.contains(acl.getObjectIdentity().getType()) &&
-                sidsByType.get(SidType.ROLE).stream().anyMatch(sid ->
-                        sid.equals(new GrantedAuthoritySid(DefaultRoles.ROLE_STORAGE_ADMIN.getName())))) {
+        if (isScopedAdmin(acl, sidsByType.get(SidType.ROLE))) {
             return true;
         }
 
@@ -134,6 +152,10 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             throw new NotFoundException(
                     "Unable to locate a matching ACE for passed permissions and SIDs");
         }
+    }
+
+    private static boolean hasRole(List<Sid> roleSids, DefaultRoles role) {
+        return roleSids.contains(new GrantedAuthoritySid(role.getName()));
     }
 
     private GrantResult calculateGrantingResultForSidGroup(Permission p, List<Sid> sids, List<AccessControlEntry> aces,
@@ -178,6 +200,28 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             }
         }
         return GRANT_RESULT_NOT_FOUND;
+    }
+
+    private boolean isScopedAdmin(final Acl acl, final List<Sid> roleSids) {
+        final String objectType = Optional.ofNullable(acl).map(Acl::getObjectIdentity)
+                .map(ObjectIdentity::getType).orElse(null);
+
+        if (objectType == null) {
+            return false;
+        }
+
+        if (STORAGE_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_STORAGE_ADMIN);
+        } else if (PIPELINE_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_PIPELINE_ADMIN);
+        } else if (TOOL_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_TOOL_ADMIN);
+        } else if (USER_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_USER_ADMIN);
+        } else if (RUN_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_RUN_ADMIN);
+        }
+        return false;
     }
 
     @Getter
