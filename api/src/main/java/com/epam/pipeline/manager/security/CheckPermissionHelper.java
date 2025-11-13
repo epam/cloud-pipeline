@@ -38,6 +38,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -196,6 +197,9 @@ public class CheckPermissionHelper {
 
     public List<Sid> getSids() {
         final Authentication authentication = authManager.getAuthentication();
+        if (authentication == null) {
+            return Collections.emptyList();
+        }
         return sidRetrievalStrategy.getSids(authentication);
     }
 
