@@ -17,7 +17,6 @@ package com.epam.pipeline.security.acl;
 
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.redis.AllowAllAuthStrategy;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -27,9 +26,30 @@ import org.springframework.security.acls.model.NotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class PermissionGrantingStrategyImplTest {
 
-    public static final String FOLDER_ENTITY_TYPE = "Folder";
+    public static final String FOLDER_ENTITY_TYPE = "com.epam.pipeline.entity.pipeline.Folder";
+    public static final String PIPELINE_ENTITY_TYPE = "com.epam.pipeline.entity.pipeline.Pipeline";
+    public static final String RUN_CONFIGURATION_ENTITY_TYPE =
+            "com.epam.pipeline.entity.configuration.RunConfiguration";
+
+    public static final String PIPELINE_RUN_ENTITY_TYPE = "com.epam.pipeline.entity.pipeline.PipelineRun";
+
+    public static final String S3_STORAGE_ENTITY_TYPE = "com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage";
+    public static final String GS_STORAGE_ENTITY_TYPE = "com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage";
+    public static final String AZ_STORAGE_ENTITY_TYPE = "com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage";
+    public static final String NFS_STORAGE_ENTITY_TYPE = "com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage";
+
+    public static final String USER_ENTITY_TYPE = "com.epam.pipeline.entity.user.PipelineUser";
+    public static final String ROLE_ENTITY_TYPE = "com.epam.pipeline.entity.user.Role";
+
+    public static final String TOOL_ENTITY_TYPE = "com.epam.pipeline.entity.pipeline.Tool";
+    public static final String TOOL_GROUP_ENTITY_TYPE = "com.epam.pipeline.entity.pipeline.ToolGroup";
+    public static final String REGISTRY_ENTITY_TYPE = "com.epam.pipeline.entity.pipeline.DockerRegistry";
+
     public static final long IDENTIFIER = 1L;
     public static final long IDENTIFIER_2 = 2L;
 
@@ -37,6 +57,11 @@ public class PermissionGrantingStrategyImplTest {
     PrincipalSid user2Sid;
     GrantedAuthoritySid groupSid;
     GrantedAuthoritySid roleUserSid;
+    GrantedAuthoritySid scopedRunAdminSid;
+    GrantedAuthoritySid scopedStorageAdminSid;
+    GrantedAuthoritySid scopedToolAdminSid;
+    GrantedAuthoritySid scopedPipelineAdminSid;
+    GrantedAuthoritySid scopedUserAdminSid;
 
     PermissionGrantingStrategyImpl permissionGrantingStrategy;
 
@@ -46,6 +71,12 @@ public class PermissionGrantingStrategyImplTest {
         user2Sid = new PrincipalSid("USER2");
         groupSid = new GrantedAuthoritySid("GROUP");
         roleUserSid = new GrantedAuthoritySid("ROLE_USER");
+        scopedRunAdminSid = new GrantedAuthoritySid("ROLE_RUN_ADMIN");
+        scopedStorageAdminSid = new GrantedAuthoritySid("ROLE_STORAGE_ADMIN");
+        scopedToolAdminSid = new GrantedAuthoritySid("ROLE_TOOL_ADMIN");
+        scopedPipelineAdminSid = new GrantedAuthoritySid("ROLE_PIPELINE_ADMIN");
+        scopedUserAdminSid = new GrantedAuthoritySid("ROLE_USER_ADMIN");
+
         permissionGrantingStrategy = new PermissionGrantingStrategyImpl(
                 Mockito.mock(AuditLogger.class), new PermissionsService()
         );
@@ -58,7 +89,7 @@ public class PermissionGrantingStrategyImplTest {
                 null, true, userSid);
         folder.insertAce(0, AclPermission.READ, userSid, true);
 
-        Assert.assertTrue(
+        assertTrue(
             permissionGrantingStrategy.isGranted(
                     folder, Collections.singletonList(AclPermission.READ),
                     Collections.singletonList(userSid), false
@@ -73,7 +104,7 @@ public class PermissionGrantingStrategyImplTest {
                 null, true, userSid);
         folder.insertAce(0, AclPermission.READ, userSid, true);
 
-        Assert.assertTrue(
+        assertTrue(
             permissionGrantingStrategy.isGranted(
                 folder, Collections.singletonList(AclPermission.READ),
                 Collections.singletonList(userSid), false
@@ -100,7 +131,7 @@ public class PermissionGrantingStrategyImplTest {
                 null, true, userSid);
         folder.insertAce(0, AclPermission.READ, groupSid, true);
 
-        Assert.assertTrue(
+        assertTrue(
                 permissionGrantingStrategy.isGranted(
                         folder, Collections.singletonList(AclPermission.READ),
                         Arrays.asList(user2Sid, groupSid), false
@@ -116,7 +147,7 @@ public class PermissionGrantingStrategyImplTest {
         folder.insertAce(0, AclPermission.READ, user2Sid, true);
         folder.insertAce(0, AclPermission.NO_READ, groupSid, false);
 
-        Assert.assertTrue(
+        assertTrue(
                 permissionGrantingStrategy.isGranted(
                         folder, Collections.singletonList(AclPermission.READ),
                         Arrays.asList(user2Sid, groupSid), false
@@ -132,7 +163,7 @@ public class PermissionGrantingStrategyImplTest {
         folder.insertAce(0, AclPermission.READ, groupSid, true);
         folder.insertAce(0, AclPermission.NO_READ, user2Sid, false);
 
-        Assert.assertFalse(
+        assertFalse(
                 permissionGrantingStrategy.isGranted(
                         folder, Collections.singletonList(AclPermission.READ),
                         Arrays.asList(user2Sid, groupSid), false
@@ -148,7 +179,7 @@ public class PermissionGrantingStrategyImplTest {
         folder.insertAce(0, AclPermission.READ, roleUserSid, true);
         folder.insertAce(0, AclPermission.NO_READ, groupSid, false);
 
-        Assert.assertFalse(
+        assertFalse(
                 permissionGrantingStrategy.isGranted(
                         folder, Collections.singletonList(AclPermission.READ),
                         Arrays.asList(user2Sid, groupSid, roleUserSid), false
@@ -167,7 +198,7 @@ public class PermissionGrantingStrategyImplTest {
         folder.insertAce(0, AclPermission.NO_READ, user2Sid, false);
         folder2.insertAce(0, AclPermission.READ, user2Sid, true);
 
-        Assert.assertTrue(
+        assertTrue(
                 permissionGrantingStrategy.isGranted(
                         folder2, Collections.singletonList(AclPermission.READ),
                         Collections.singletonList(user2Sid), false
@@ -186,10 +217,157 @@ public class PermissionGrantingStrategyImplTest {
         folder.insertAce(0, AclPermission.READ, user2Sid, true);
         folder2.insertAce(0, AclPermission.NO_READ, user2Sid, false);
 
-        Assert.assertFalse(
+        assertFalse(
                 permissionGrantingStrategy.isGranted(
                         folder2, Collections.singletonList(AclPermission.READ),
                         Collections.singletonList(user2Sid), false
+                )
+        );
+    }
+
+    @Test
+    public void permissionShouldBeGrantedForPipelineIfUserHasPipelineAdmin() {
+        AclImpl pipeline = new AclImpl(new ObjectIdentityImpl(PIPELINE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        pipeline, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedPipelineAdminSid), false
+                )
+        );
+
+        AclImpl configuration = new AclImpl(new ObjectIdentityImpl(RUN_CONFIGURATION_ENTITY_TYPE, IDENTIFIER),
+                IDENTIFIER, new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        configuration, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedPipelineAdminSid), false
+                )
+        );
+    }
+
+    @Test
+    public void permissionShouldBeGrantedForUserOrGroupIfUserHasUserAdmin() {
+        AclImpl user = new AclImpl(new ObjectIdentityImpl(USER_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        user, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedUserAdminSid), false
+                )
+        );
+
+        AclImpl role = new AclImpl(new ObjectIdentityImpl(ROLE_ENTITY_TYPE, IDENTIFIER),
+                IDENTIFIER, new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        role, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedUserAdminSid), false
+                )
+        );
+    }
+
+    @Test
+    public void permissionShouldBeGrantedForDatastorageIfUserHasStorageAdmin() {
+        AclImpl s3Storage = new AclImpl(new ObjectIdentityImpl(S3_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        s3Storage, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedStorageAdminSid), false
+                )
+        );
+
+        AclImpl gsStorage = new AclImpl(new ObjectIdentityImpl(GS_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        gsStorage, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedStorageAdminSid), false
+                )
+        );
+
+        AclImpl azStorage = new AclImpl(new ObjectIdentityImpl(AZ_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        azStorage, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedStorageAdminSid), false
+                )
+        );
+
+        AclImpl nfsStorage = new AclImpl(new ObjectIdentityImpl(NFS_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        nfsStorage, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedStorageAdminSid), false
+                )
+        );
+    }
+
+    @Test
+    public void permissionShouldBeGrantedForPipelineRunIfUserHasPipelineRunAdmin() {
+        AclImpl pipelineRun = new AclImpl(new ObjectIdentityImpl(PIPELINE_RUN_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        pipelineRun, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedRunAdminSid), false
+                )
+        );
+    }
+
+    @Test
+    public void permissionShouldBeGrantedForToolEntitiesIfUserHasToolAdmin() {
+        AclImpl tool = new AclImpl(new ObjectIdentityImpl(TOOL_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        tool, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedToolAdminSid), false
+                )
+        );
+
+        AclImpl toolGroup = new AclImpl(new ObjectIdentityImpl(TOOL_GROUP_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        toolGroup, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedToolAdminSid), false
+                )
+        );
+
+        AclImpl registry = new AclImpl(new ObjectIdentityImpl(REGISTRY_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        registry, Collections.singletonList(AclPermission.OWNER),
+                        Arrays.asList(user2Sid, scopedToolAdminSid), false
                 )
         );
     }
