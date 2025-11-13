@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
@@ -140,6 +141,28 @@ public class CheckPermissionHelper {
         } else if (entity instanceof Tool || entity instanceof ToolGroup || entity instanceof DockerRegistry) {
             return hasAnyRole(sids, DefaultRoles.ROLE_TOOL_ADMIN);
         } else if (entity instanceof PipelineUser || entity instanceof Role) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_USER_ADMIN);
+        }
+        return false;
+    }
+
+    public boolean isScopedAdmin(final AclClass aclClass) {
+        return isScopedAdmin(aclClass, getSids());
+    }
+
+    public boolean isScopedAdmin(final AclClass aclClass, final List<Sid> sids) {
+        if (aclClass == null) {
+            return false;
+        }
+
+        if (aclClass == AclClass.DATA_STORAGE) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
+        } else if (aclClass == AclClass.PIPELINE || aclClass == AclClass.CONFIGURATION) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_ADMIN);
+        } else if (aclClass == AclClass.TOOL || aclClass == AclClass.TOOL_GROUP ||
+                aclClass == AclClass.DOCKER_REGISTRY) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_TOOL_ADMIN);
+        } else if (aclClass == AclClass.PIPELINE_USER || aclClass == AclClass.ROLE) {
             return hasAnyRole(sids, DefaultRoles.ROLE_USER_ADMIN);
         }
         return false;
