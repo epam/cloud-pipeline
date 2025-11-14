@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,110 @@
  */
 
 .charts-container {
+  --min-table-width: 400px;
+  --chart-height: 450px;
+  display: grid;
+  gap: 15px;
+}
+
+.charts-container.no-sharing,
+.charts-container {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(1, var(--chart-height));
+  grid-template-areas:
+    "total pool"
+}
+
+.charts-container.with-sharing {
+  grid-template-columns: minmax(var(--min-table-width), 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(var(--min-table-width), 1fr);
+  grid-template-rows: repeat(5, var(--chart-height));
+  grid-template-areas:
+    "total total pool pool"
+    "table jobs jobs jobs"
+    "gpu gpu gpu gpu"
+    "cpu cpu cpu cpu"
+    "ram ram ram ram";
+}
+
+.charts-container.only-sharing {
+  grid-template-columns: minmax(var(--min-table-width), 1fr) minmax(0, 2fr);
+  grid-template-rows: repeat(4, var(--chart-height));
+  grid-template-areas:
+    "table jobs"
+    "gpu gpu"
+    "cpu cpu"
+    "ram ram";
+}
+
+.pool-table-area {
+  grid-area: table;
+}
+
+.overall-pool-chart-area {
+  grid-area: total;
+}
+
+.pool-chart-area {
+  grid-area: pool;
+}
+
+.jobs-area {
+  grid-area: jobs;
+}
+
+.gpu-area {
+  grid-area: gpu;
+}
+
+.cpu-area {
+  grid-area: cpu;
+}
+
+.ram-area {
+  grid-area: ram;
+}
+
+.statistics-table-container {
+  position: relative;
+  width: 100%;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.statistics-table {
+  width: 100%;
+  height: fit-content;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+  font-size: smaller;
+  margin-top: 42px;
+  position: inherit;
+}
+
+.statistics-table thead tr {
+  border-bottom: 1px solid;
+}
+
+.statistics-table th {
+  padding: 5px;
+  font-weight: 600;
+}
+
+.statistics-table tbody tr {
+  border-bottom: 1px solid;
+}
+
+.statistics-table td {
+  padding: 5px;
+}
+
+.statistics-table td:first-child {
+  font-weight: 600;
+}
+
+.statistics-table-container .export-button {
+  margin-left: auto;
+  padding: 0 3px;
 }

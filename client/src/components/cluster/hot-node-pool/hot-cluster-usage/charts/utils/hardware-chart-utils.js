@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-import {getColor} from './colors';
-
-function bytesToGiB (bytes) {
+export function bytesToGiB (bytes) {
   return bytes && !Number.isNaN(Number(bytes)) ? Number(bytes) / (2 ** 30) : 0;
 }
 
