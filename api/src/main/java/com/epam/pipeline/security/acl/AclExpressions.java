@@ -30,6 +30,12 @@ public final class AclExpressions {
 
     public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
 
+    public static final String SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE =
+            "@contextualPreferencePermissionManager.hasScopedAdminPermission(#preference)";
+
+    public static final String SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE_RESOURCE =
+            "@contextualPreferencePermissionManager.hasScopedAdminPermission(#resource)";
+
     public static final String USER_READ_FILTER =
             ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(filterObject, 'READ')";
     public static final String USER_READ_PERMISSION =
