@@ -133,7 +133,8 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
             sortBuilder.append(" ORDER BY ")
                     .append(sorts.stream()
                             .map(this::buildDbSorting)
-                            .collect(Collectors.joining(", ")));
+                            .collect(Collectors.joining(", ")))
+                    .append(" NULLS LAST");
         }
         return SORT_PATTERN.matcher(query).replaceFirst(sortBuilder.toString());
     }

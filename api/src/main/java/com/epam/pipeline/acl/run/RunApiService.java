@@ -430,6 +430,11 @@ public class RunApiService {
         return engineRunTaskService.upsertTasks(runId, tasks);
     }
 
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public void resetRunEngineTaskEvents(final Long runId) {
+        engineRunTaskService.resetTasks(runId);
+    }
+
     @PreAuthorize(RUN_ID_READ)
     public Map<String, EngineRunTaskGroupStatsEntity> loadEngineRunTasksStats(final Long runId,
                                                                               final EngineType engineType) {

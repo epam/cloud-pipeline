@@ -25,18 +25,19 @@ function check_api_response_status {
 
 function call_api {
     local api_endpoint="$1"
-    local jwt_token="$2"
-    local payload="$3"
-    local is_file="$4"
+    local api_endpoint_method="$2"
+    local jwt_token="$3"
+    local payload="$4"
+    local is_file="$5"
 
     local response=""
     if [ "$is_file" ]; then
-        response=$(curl -X POST -k -s -H "Authorization: Bearer $jwt_token" -F "file=@$payload" "${api_endpoint}")
+        response=$(curl -X "${api_endpoint_method}" -k -s -H "Authorization: Bearer $jwt_token" -F "file=@$payload" "${api_endpoint}")
     else
         if [ "$payload" ]; then
-            response=$(curl -X POST -k -s -H 'Content-Type: application/json' -H "Authorization: Bearer $jwt_token" -d "$payload" "${api_endpoint}")
+            response=$(curl -X "${api_endpoint_method}" -k -s -H 'Content-Type: application/json' -H "Authorization: Bearer $jwt_token" -d "$payload" "${api_endpoint}")
         else
-            response=$(curl -X GET -k -s -H "Authorization: Bearer $jwt_token" "${api_endpoint}")
+            response=$(curl -X "${api_endpoint_method}" -k -s -H "Authorization: Bearer $jwt_token" "${api_endpoint}")
         fi
     fi
     echo "$response"
@@ -61,6 +62,10 @@ function parse_options {
         ;;
         --check|check)
         export CP_NF_WEBLOG_HANDLER_CHECK=1
+        shift # past argument
+        ;;
+       --cleanup|cleanup)
+        export CP_NF_WEBLOG_HANDLER_CLEANUP=1
         shift # past argument
         ;;
         -f|--force)
@@ -127,7 +132,7 @@ function enable_nf_runtime_data_sync() {
     fi
 
     pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
-    run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "$API_TOKEN")
+    run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "GET" "$API_TOKEN")
     if [ $? -ne 0 ]; then
         pipe_log_error "[ERROR] Cannot retrieve 'launch.run.sync.runtime.data' preference, synchronization of nextflow runtime data will not be configured." "$SYNC_RUN_RUNTIME_DATA_TASK"
     fi
@@ -224,8 +229,8 @@ if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ] && [ "$CP_NF_WEBLOG_HANDLER_STOP" == 1
     exit 14
 fi
 
-if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ] && [ -z "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" ] && [ -z "$CP_NF_WAIT_RUNTIME_DATA_SYNC" ]; then
-    echo "[ERROR] One of the options: --start/--stop/--check/--enable-runtime-data/--wait-runtime-data should be provided."
+if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CLEANUP" ] && [ -z "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" ] && [ -z "$CP_NF_WAIT_RUNTIME_DATA_SYNC" ]; then
+    echo "[ERROR] One of the options: --start/--stop/--check/--cleanup/--enable-runtime-data/--wait-runtime-data should be provided."
     exit 14
 fi
 
@@ -364,4 +369,13 @@ if [ "$CP_NF_WEBLOG_HANDLER_CHECK" == 1 ]; then
         exit 14
     fi
 fi
+
+if [ "$CP_NF_WEBLOG_HANDLER_CLEANUP" == 1 ]; then
+    echo "Cleanup Nextflow engine tasks in Nextflow run view for run ${RUN_ID} ..."
+    call_api "DELETE" "$API/run/${RUN_ID}/engine/tasks" "$API_TOKEN"
+    if [ $? -ne 0 ]; then
+        pipe_log_error "[ERROR] Cannot cleanup nextflow engine tasks for run ${RUN_ID}" "$SYNC_RUN_RUNTIME_DATA_TASK"
+    fi
+fi
+
 
