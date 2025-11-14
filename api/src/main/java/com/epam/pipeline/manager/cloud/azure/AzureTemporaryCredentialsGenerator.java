@@ -22,10 +22,6 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.sas.BlobContainerSasPermission;
-import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
-import com.azure.storage.common.sas.SasProtocol;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureBlobStorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureStorageHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -53,6 +49,11 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
     }
 
     @Override
+    public AzureRegion getRegion(final AzureBlobStorage dataStorage) {
+        return cloudRegionManager.getAzureRegion(dataStorage);
+    }
+
+    @Override
     public TemporaryCredentials generate(final List<DataStorageAction> actions, final List<AzureBlobStorage> storages) {
         Assert.isTrue(storages.size() == 1, "Multiple regions are not supported for AZURE provider");
         return generate(actions, storages.get(0));
@@ -60,21 +61,11 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
 
     private TemporaryCredentials generate(final List<DataStorageAction> actions, final AzureBlobStorage dataStorage) {
         final AzureStorageHelper helper = storageProvider.getAzureStorageHelper(dataStorage);
-        final AzureRegion region = cloudRegionManager.getAzureRegion(dataStorage);
-        final BlobContainerClient blobContainerClient = helper.getBlobContainerClient(dataStorage);
         final Integer duration =
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
         final OffsetDateTime expiryTime = OffsetDateTime.now().plusSeconds(duration);
-        final DataStorageAction dataStorageAction = actions.get(0);
-        Assert.isTrue(actions.size() == 1, "Multiple actions is not supported for AZURE provider");
-
-        final BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiryTime,
-                buildPermissions(dataStorageAction))
-                .setProtocol(SasProtocol.HTTPS_ONLY)
-                .setContentType("container");
-        helper.addIPRangeToSASValue(values);
-
-        final String sasToken = blobContainerClient.generateSas(values);
+        final AzureRegion region = cloudRegionManager.getAzureRegion(dataStorage);
+        final String sasToken = helper.generateSASToken(dataStorage, actions, expiryTime);
         return TemporaryCredentials.builder()
                 .region(region.getRegionCode())
                 .accessKey(region.getStorageAccount())
@@ -82,21 +73,5 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
                 .expirationTime(TemporaryCredentialsGenerator
                         .expirationTimeWithUTC(new Date(expiryTime.toInstant().toEpochMilli())))
                 .build();
-    }
-
-    @Override
-    public AzureRegion getRegion(final AzureBlobStorage dataStorage) {
-        return cloudRegionManager.getAzureRegion(dataStorage);
-    }
-
-    private BlobContainerSasPermission buildPermissions(final DataStorageAction dataStorageAction) {
-        final BlobContainerSasPermission permission = new BlobContainerSasPermission();
-        permission.setListPermission(true);
-        permission.setReadPermission(dataStorageAction.isRead());
-        if (dataStorageAction.isWrite()) {
-            permission.setWritePermission(true);
-            permission.setDeletePermission(true);
-        }
-        return permission;
     }
 }

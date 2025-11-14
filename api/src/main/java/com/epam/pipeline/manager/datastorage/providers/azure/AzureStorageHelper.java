@@ -28,6 +28,7 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.DownloadRetryOptions;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.models.UserDelegationKey;
+import com.azure.storage.common.sas.SasProtocol;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
@@ -453,6 +454,28 @@ public class AzureStorageHelper {
         return getBlobServiceClient(region, credentials).getBlobContainerClient(storage.getPath());
     }
 
+    public String generateSASToken(final AzureBlobStorage dataStorage,
+                                   final List<DataStorageAction> actions,
+                                   final OffsetDateTime expiryTime) {
+        final BlobContainerClient blobContainerClient = getBlobContainerClient(dataStorage);
+        final DataStorageAction dataStorageAction = actions.get(0);
+        Assert.isTrue(actions.size() == 1, "Multiple actions is not supported for AZURE provider");
+
+        final BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiryTime,
+                buildPermissions(dataStorageAction))
+                .setProtocol(SasProtocol.HTTPS_ONLY)
+                .setContentType("container");
+        addIPRangeToSASValue(values);
+        try {
+            final UserDelegationKey userDelegationKey =
+                    getBlobServiceClient(region, credentials).getUserDelegationKey(OffsetDateTime.now(), expiryTime);
+            return blobContainerClient
+                    .generateUserDelegationSas(values, userDelegationKey);
+        } catch (BlobStorageException e) {
+            return blobContainerClient.generateSas(values);
+        }
+    }
+
     private void deleteItem(final BlobContainerClient containerClient,
                             final AzureBlobStorage dataStorage, final String path) {
         if (path.endsWith(ProviderUtils.DELIMITER)) {
@@ -505,6 +528,7 @@ public class AzureStorageHelper {
             return blobContainerClient.getBlobClient(blobName).generateSas(sasSignatureValues);
         }
     }
+
     private Optional<DataStorageFile> findFile(final BlobContainerClient containerClient, final String path) {
         final String fullPath = ProviderUtils.withoutLeadingDelimiter(path);
         final PagedIterable<BlobItem> blobItems = getBlobItemsRecursively(containerClient, fullPath);
@@ -700,5 +724,16 @@ public class AzureStorageHelper {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_BLOB_COPY_FAILED, sourcePath, destinationPath), e);
         }
+    }
+
+    private BlobContainerSasPermission buildPermissions(final DataStorageAction dataStorageAction) {
+        final BlobContainerSasPermission permission = new BlobContainerSasPermission();
+        permission.setListPermission(true);
+        permission.setReadPermission(dataStorageAction.isRead());
+        if (dataStorageAction.isWrite()) {
+            permission.setWritePermission(true);
+            permission.setDeletePermission(true);
+        }
+        return permission;
     }
 }
