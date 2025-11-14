@@ -74,7 +74,7 @@ export default class ResourseSharingPoolTable extends React.Component {
       .filter(record => record.periodStart)
       .map(record => {
         const date = periodType === Period.month
-          ? displayDate(record.periodStart, 'MM/DD/YYYY')
+          ? displayDate(record.periodStart, 'YYYY-MM-DD')
           : record.measureTime;
         const gpuUsage = record.activeGPUCount || 0;
         const gpuCapacity = record.totalGPUCount || 0;
