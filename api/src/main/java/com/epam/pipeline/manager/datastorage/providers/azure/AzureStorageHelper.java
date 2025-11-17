@@ -28,6 +28,7 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.DownloadRetryOptions;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.models.UserDelegationKey;
+import com.azure.storage.common.sas.SasProtocol;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
@@ -95,6 +96,8 @@ public class AzureStorageHelper {
     private static final Duration AZURE_STORAGE_TIMEOUT = Duration.ofSeconds(30);
     private static final byte[] EMPTY_CONTENT = new byte[0];
     private static final String STORAGE_CLASS = "StorageClass";
+    private static final String FAILED_TO_GET_STORAGE_CREDENTIALS = "Failed to get Azure Datastorage credentials. " +
+            "Storage account key or Managed Identity Client ID should be provided.";
     private final AzureRegion region;
     private final AzureRegionCredentials credentials;
     private final MessageHelper messageHelper;
@@ -384,21 +387,9 @@ public class AzureStorageHelper {
                                                                   final String path,
                                                                   final String permission,
                                                                   final Duration duration) {
-        final String sasToken = generateSASToken(dataStorage, path, permission, expirationOf(duration));
+        final BlobServiceClient serviceClient = getBlobServiceClient(region, credentials);
+        final String sasToken = generateSASToken(serviceClient, dataStorage, path, permission, expirationOf(duration));
         return generateResponseObject(dataStorage, path, sasToken);
-    }
-
-    public void addIPRangeToSASValue(final BlobServiceSasSignatureValues values) {
-        final AzurePolicy policy = region.getAzurePolicy();
-        if (policy != null &&
-                (StringUtils.isNotBlank(policy.getIpMin()) || StringUtils.isNotBlank(policy.getIpMax()))) {
-            if (StringUtils.isNotBlank(policy.getIpMin()) && StringUtils.isNotBlank(policy.getIpMax())) {
-                values.setSasIpRange(new SasIpRange().setIpMin(policy.getIpMin()).setIpMax(policy.getIpMax()));
-                return;
-            }
-            final String ipValue = Optional.ofNullable(policy.getIpMin()).orElse(policy.getIpMax());
-            values.setSasIpRange(new SasIpRange().setIpMin(ipValue).setIpMax(ipValue));
-        }
     }
 
     public void deleteItem(final AzureBlobStorage dataStorage, final String path) {
@@ -445,12 +436,40 @@ public class AzureStorageHelper {
                     .httpLogOptions(httpLogOptions)
                     .buildClient();
         } else {
-            throw new AuthenticationException("Failed to authenticate to Azure.");
+            throw new AuthenticationException(FAILED_TO_GET_STORAGE_CREDENTIALS);
         }
     }
 
     public BlobContainerClient getBlobContainerClient(final AzureBlobStorage storage) {
         return getBlobServiceClient(region, credentials).getBlobContainerClient(storage.getPath());
+    }
+
+    public String generateSASToken(final AzureBlobStorage dataStorage,
+                                   final List<DataStorageAction> actions,
+                                   final OffsetDateTime expiryTime) {
+        final BlobServiceClient serviceClient = getBlobServiceClient(region, credentials);
+        final BlobContainerClient blobContainerClient = getBlobContainerClient(dataStorage);
+        final DataStorageAction dataStorageAction = actions.get(0);
+        Assert.isTrue(actions.size() == 1, "Multiple actions is not supported for AZURE provider");
+        final BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime,
+                buildPermissions(dataStorageAction))
+                .setProtocol(SasProtocol.HTTPS_ONLY)
+                .setContentType("container");
+        addIPRangeToSASValue(sasSignatureValues);
+        return getContainerSASToken(serviceClient, blobContainerClient, expiryTime, sasSignatureValues);
+    }
+
+    private void addIPRangeToSASValue(final BlobServiceSasSignatureValues values) {
+        final AzurePolicy policy = region.getAzurePolicy();
+        if (policy != null &&
+                (StringUtils.isNotBlank(policy.getIpMin()) || StringUtils.isNotBlank(policy.getIpMax()))) {
+            if (StringUtils.isNotBlank(policy.getIpMin()) && StringUtils.isNotBlank(policy.getIpMax())) {
+                values.setSasIpRange(new SasIpRange().setIpMin(policy.getIpMin()).setIpMax(policy.getIpMax()));
+                return;
+            }
+            final String ipValue = Optional.ofNullable(policy.getIpMin()).orElse(policy.getIpMax());
+            values.setSasIpRange(new SasIpRange().setIpMin(ipValue).setIpMax(ipValue));
+        }
     }
 
     private void deleteItem(final BlobContainerClient containerClient,
@@ -462,49 +481,66 @@ public class AzureStorageHelper {
         }
     }
 
-    private String generateSASToken(final AzureBlobStorage dataStorage,
+    private String generateSASToken(final BlobServiceClient serviceClient,
+                                    final AzureBlobStorage dataStorage,
                                     final String path,
                                     final String permission,
                                     final OffsetDateTime expiryTime) {
-        final BlobContainerClient blobContainerClient = getBlobContainerClient(dataStorage);
+        final BlobContainerClient blobContainerClient = serviceClient.getBlobContainerClient(dataStorage.getPath());
         return StringUtils.isBlank(path) || path.endsWith(ProviderUtils.DELIMITER)
-                ? generateSASToken(blobContainerClient, permission, expiryTime)
-                : generateSASToken(blobContainerClient, path, permission, expiryTime);
+                ? generateSASToken(serviceClient, blobContainerClient, permission, expiryTime)
+                : generateSASToken(serviceClient, blobContainerClient, path, permission, expiryTime);
     }
 
-    private String generateSASToken(final BlobContainerClient blobContainerClient,
+    private String generateSASToken(final BlobServiceClient serviceClient,
+                                    final BlobContainerClient blobContainerClient,
                                     final String permission,
                                     final OffsetDateTime expiryTime) {
         final BlobContainerSasPermission blobContainerSasPermission = BlobContainerSasPermission.parse(permission);
         final BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime,
                 blobContainerSasPermission)
                 .setStartTime(OffsetDateTime.now());
-        try {
-            final UserDelegationKey userDelegationKey =
-                    getBlobServiceClient(region, credentials).getUserDelegationKey(OffsetDateTime.now(), expiryTime);
-            return blobContainerClient
-                    .generateUserDelegationSas(sasSignatureValues, userDelegationKey);
-        } catch (BlobStorageException e) {
+        return getContainerSASToken(serviceClient, blobContainerClient, expiryTime, sasSignatureValues);
+    }
+
+    private String getContainerSASToken(final BlobServiceClient serviceClient,
+                                        final BlobContainerClient blobContainerClient,
+                                        final OffsetDateTime expiryTime,
+                                        final BlobServiceSasSignatureValues sasSignatureValues) {
+        if (StringUtils.isNotBlank(region.getManagedIdentity())) {
+            final UserDelegationKey userDelegationKey = getUserDelegationKey(serviceClient, expiryTime);
+            return blobContainerClient.generateUserDelegationSas(sasSignatureValues, userDelegationKey);
+        } else if (StringUtils.isNotBlank(credentials.getStorageAccountKey())) {
             return blobContainerClient.generateSas(sasSignatureValues);
+        } else {
+            throw new AuthenticationException(FAILED_TO_GET_STORAGE_CREDENTIALS);
         }
     }
 
-    private String generateSASToken(final BlobContainerClient blobContainerClient,
+    private String generateSASToken(final BlobServiceClient serviceClient,
+                                    final BlobContainerClient blobContainerClient,
                                     final String blobName,
                                     final String permission,
                                     final OffsetDateTime expiryTime) {
         final BlobSasPermission blobSasPermission = BlobSasPermission.parse(permission);
         final BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime,
                 blobSasPermission).setStartTime(OffsetDateTime.now());
-        try {
-            final UserDelegationKey userDelegationKey =
-                    getBlobServiceClient(region, credentials).getUserDelegationKey(OffsetDateTime.now(), expiryTime);
+        if (StringUtils.isNotBlank(region.getManagedIdentity())) {
+            final UserDelegationKey userDelegationKey = getUserDelegationKey(serviceClient, expiryTime);
             return blobContainerClient.getBlobClient(blobName)
                     .generateUserDelegationSas(sasSignatureValues, userDelegationKey);
-        } catch (BlobStorageException ex) {
+        } else if (StringUtils.isNotBlank(credentials.getStorageAccountKey())) {
             return blobContainerClient.getBlobClient(blobName).generateSas(sasSignatureValues);
+        } else {
+            throw new AuthenticationException(FAILED_TO_GET_STORAGE_CREDENTIALS);
         }
     }
+
+    private UserDelegationKey getUserDelegationKey(final BlobServiceClient serviceClient,
+                                                   final OffsetDateTime expiryTime) {
+        return serviceClient.getUserDelegationKey(OffsetDateTime.now(), expiryTime);
+    }
+
     private Optional<DataStorageFile> findFile(final BlobContainerClient containerClient, final String path) {
         final String fullPath = ProviderUtils.withoutLeadingDelimiter(path);
         final PagedIterable<BlobItem> blobItems = getBlobItemsRecursively(containerClient, fullPath);
@@ -700,5 +736,16 @@ public class AzureStorageHelper {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_BLOB_COPY_FAILED, sourcePath, destinationPath), e);
         }
+    }
+
+    private BlobContainerSasPermission buildPermissions(final DataStorageAction dataStorageAction) {
+        final BlobContainerSasPermission permission = new BlobContainerSasPermission();
+        permission.setListPermission(true);
+        permission.setReadPermission(dataStorageAction.isRead());
+        if (dataStorageAction.isWrite()) {
+            permission.setWritePermission(true);
+            permission.setDeletePermission(true);
+        }
+        return permission;
     }
 }
