@@ -224,7 +224,7 @@ class NextflowEventHandler(object):
             "event": "trace_file_record",
             "trace": {
                 "task_id": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("task_id", -1))),
-                "native_id": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("native_id", -1))),
+                "native_id": parse.get_array_element_or_default(task_fields, header.get("native_id", -1)),
                 "status": parse.get_array_element_or_default(task_fields, header.get("status", -1)),
                 "hash": parse.get_array_element_or_default(task_fields, header.get("hash", -1)),
                 "name": parse.get_array_element_or_default(task_fields, header.get("name", -1)),
