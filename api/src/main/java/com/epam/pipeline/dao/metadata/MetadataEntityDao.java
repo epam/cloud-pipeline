@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.entity.metadata.Facet;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
@@ -32,6 +33,8 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -54,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -63,10 +67,15 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
     private Pattern wherePattern = Pattern.compile("@WHERE_CLAUSE@");
+    private Pattern fieldsPattern = Pattern.compile("@FIELDS_CLAUSE@");
+    private Pattern groupingsPattern = Pattern.compile("@GROUPINGS_CLAUSE@");
     private Pattern orderPattern = Pattern.compile("@ORDER_CLAUSE@");
     private Pattern searchPattern = Pattern.compile("@QUERY@");
     private static final String AND = " AND ";
     private static final String OR = " OR ";
+    private static final String UNION_ALL = " UNION ALL ";
+    private static final String FACET_GROUPING_QUERY_TEMPLATE = "SELECT '%s' AS metadata_field, %s AS metadata_value," +
+            " COUNT(*) AS count FROM base GROUP BY %s";
     private static final int BATCH_SIZE = 1000;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -86,6 +95,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private String deleteMetadataEntityItemQuery;
     private String recursiveFilterQuery;
     private String baseFilterQuery;
+    private String baseFacetQuery;
     private String searchClauseQuery;
     private String externalIdClauseQuery;
     private String recursiveFilterCountQuery;
@@ -240,6 +250,18 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return getNamedParameterJdbcTemplate().query(query, params, MetadataEntityParameters.getRowMapper());
     }
 
+    public Map<String, Facet> groupFacets(MetadataFilter filter) {
+        if (CollectionUtils.isEmpty(filter.getFacets())) {
+            return Collections.emptyMap();
+        }
+        MapSqlParameterSource params = MetadataEntityParameters
+                .getClassFolderParameters(filter.getMetadataClass(), filter.getFolderId());
+        String query = buildFacetQuery(filter);
+        List<Triple<String, String, Integer>> queryResult = getNamedParameterJdbcTemplate()
+                .query(query, params, MetadataEntityParameters.getFacetRowMapper());
+        return facetGroupsMapper(queryResult);
+    }
+
     public Integer countEntities(MetadataFilter filter) {
         MapSqlParameterSource params = MetadataEntityParameters
                 .getClassFolderParameters(filter.getMetadataClass(), filter.getFolderId());
@@ -300,6 +322,58 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         baseQuery = orderPattern.matcher(baseQuery).replaceFirst(makerOrderClause(filter));
         return daoHelper.escapeUnderscoreParam(baseQuery);
     }
+
+    private String buildFacetQuery(MetadataFilter filter) {
+        String baseQuery = baseFacetQuery;
+        baseQuery = wherePattern.matcher(baseQuery).replaceFirst(makeWhereClause(filter));
+        baseQuery = fieldsPattern.matcher(baseQuery).replaceFirst(makeFieldsClause(filter));
+        baseQuery = groupingsPattern.matcher(baseQuery).replaceFirst(makeGroupingsClause(filter));
+        return daoHelper.escapeUnderscoreParam(baseQuery);
+    }
+
+    private String makeGroupingsClause(MetadataFilter filter) {
+        StringJoiner clauseJoiner = new StringJoiner(UNION_ALL);
+        filter.getFacets().forEach(
+            facet -> {
+                if (facet.isPredefined()) {
+                    throw new IllegalArgumentException("Predefined facets are not supported: " + facet.getField());
+                }
+                clauseJoiner.add(
+                    format(FACET_GROUPING_QUERY_TEMPLATE, facet.getField(), facet.getField(), facet.getField()));
+            }
+        );
+        return clauseJoiner.toString();
+    }
+
+    private String makeFieldsClause(MetadataFilter filter) {
+        StringJoiner clauseJoiner = new StringJoiner(",");
+        filter.getFacets().forEach(
+            facet -> {
+                if (facet.isPredefined()) {
+                    throw new IllegalArgumentException("Predefined facets are not supported: " + facet.getField());
+                }
+                clauseJoiner.add(format("e.data #>> '{%s,value}' as %s", facet.getField(), facet.getField()));
+            }
+        );
+        return clauseJoiner.toString();
+    }
+
+    private Map<String, Facet> facetGroupsMapper(List<Triple<String, String, Integer>> groupingResults) {
+        return groupingResults.stream()
+            .collect(Collectors.groupingBy(Triple::getLeft, Collectors.collectingAndThen(
+                Collectors.groupingBy(Triple::getMiddle, Collectors.summingInt(Triple::getRight)),
+                    innerMap -> {
+                        int emptyCount = 0;
+                        if (innerMap.containsKey(StringUtils.EMPTY)) {
+                            emptyCount = innerMap.remove(StringUtils.EMPTY);
+                        }
+                        return Facet.builder().counts(innerMap).empty(emptyCount).build();
+                    }
+                )
+            )
+        );
+    }
+
 
     private static String convertDataToJsonStringForQuery(Map<String, PipeConfValue> data) {
         return JsonMapper.convertDataToJsonStringForQuery(data);
@@ -524,6 +598,16 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
+        static RowMapper<Triple<String, String, Integer>> getFacetRowMapper() {
+            return (rs, rowNum) -> {
+                String metadataField = rs.getString("metadata_field");
+                String metadataValue = rs.getString("metadata_value");
+                metadataValue = StringUtils.isEmpty(metadataValue) ? StringUtils.EMPTY : metadataValue;
+                Integer count = rs.getInt("count");
+                return new ImmutableTriple<>(metadataField, metadataValue, count);
+            };
+        }
+
         static ResultSetExtractor<Collection<MetadataEntity>> getMetadataEntityWithFolderTreeExtractor() {
             return DaoHelper.getFolderTreeExtractor(ENTITY_ID.name(), FOLDER_ID.name(), PARENT_FOLDER_ID.name(),
                     MetadataEntityParameters::getMetadataEntity, MetadataEntityParameters::fillFolders);
@@ -631,6 +715,11 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setBaseFilterQuery(String baseFilterQuery) {
         this.baseFilterQuery = baseFilterQuery;
+    }
+
+    @Required
+    public void setBaseFacetQuery(String baseFacetQuery) {
+        this.baseFacetQuery = baseFacetQuery;
     }
 
     @Required

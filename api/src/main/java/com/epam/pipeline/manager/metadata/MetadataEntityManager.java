@@ -19,10 +19,12 @@ package com.epam.pipeline.manager.metadata;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.PagedResultWithFacets;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.dao.metadata.MetadataClassDao;
 import com.epam.pipeline.dao.metadata.MetadataEntityDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.metadata.Facet;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
@@ -39,6 +41,7 @@ import com.epam.pipeline.manager.metadata.parser.MetadataParsingResult;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -310,8 +313,12 @@ public class MetadataEntityManager implements SecuredEntityManager {
                 .filter(param -> param.getType() != null && param.getType().equals(EntityTypeField.PATH_TYPE))
                 .collect(Collectors.toList());
         pathAnalyzer.analyzePaths(paths);
-        return new PagedResult<>(result, metadataEntityDao.countEntities(filter));
+        Map<String, Facet> facets = metadataEntityDao.groupFacets(filter);
+        int entityCount = metadataEntityDao.countEntities(filter);
 
+        return MapUtils.isEmpty(facets)
+                ? new PagedResult<>(result, entityCount)
+                : new PagedResultWithFacets<>(result, entityCount, facets);
     }
 
     public List<MetadataField> getMetadataKeys(Long folderId, String className) {
