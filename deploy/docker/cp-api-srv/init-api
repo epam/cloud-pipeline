@@ -327,7 +327,7 @@ sleep 5
 
 # Run Filebeat
 CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-standard}"
-if [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
+if [ "${CP_SEARCH_ELK_TYPE}" == "oss" ]; then
     envsubst < /opt/filebeat-oss/filebeat-template.yml > /opt/filebeat-oss/filebeat.yml
     nohup /opt/filebeat-oss/filebeat -c /opt/filebeat-oss/filebeat.yml &
 else
