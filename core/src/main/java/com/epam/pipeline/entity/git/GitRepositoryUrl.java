@@ -32,6 +32,7 @@ public final class GitRepositoryUrl {
     private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
     private static final String PATH_PART_PATTERN = "[-_A-Za-z0-9]++";
+    private static final String AZURE_DEVOPS_PATH_PATTERN = "[^/]+";
     private static final Pattern GIT_REPOSITORY_URL_PATTERN = Pattern.compile(
         "^(?<protocol>" + PROTOCOL_PATTERN + "://)"      // Any url supposed to start with protocol
             + "(?:"                                     // Open optional non-capturing group for authentication
@@ -60,14 +61,14 @@ public final class GitRepositoryUrl {
     private static final Pattern AZURE_DEVOPS_REPOSITORY_URL_PATTERN = Pattern.compile(
             "^(?<protocol>" + PROTOCOL_PATTERN + "://)"   // Any url supposed to start with protocol
                     + "(?:"                                 // Open optional non-capturing group for authentication
-                    + "(?<username>" + PATH_PART_PATTERN + ")"  // Organization; would not be used
+                    + "(?<username>" + AZURE_DEVOPS_PATH_PATTERN + ")"  // Organization; would not be used
                     + "(?::(?<password>" + PASS_PATTERN + "))?"  // Optional token
                     + "@"                                    // that group should end with @ symbol
                     + ")?"                               // Close optional non-capturing group for authentication
                     + "(?<host>" + HOST_PATTERN + ")/"    // Host with optional port
-                    + "(?<namespace>" + PATH_PART_PATTERN + ")/"
-                    + "(?<project>" + PATH_PART_PATTERN + ")/_git/"
-                    + "(?<repository>" + PATH_PART_PATTERN + ")$"
+                    + "(?<namespace>" + AZURE_DEVOPS_PATH_PATTERN + ")/"
+                    + "(?<project>" + AZURE_DEVOPS_PATH_PATTERN + ")/_git/"
+                    + "(?<repository>" + AZURE_DEVOPS_PATH_PATTERN + ")$"
     );
 
     private final String protocol;
