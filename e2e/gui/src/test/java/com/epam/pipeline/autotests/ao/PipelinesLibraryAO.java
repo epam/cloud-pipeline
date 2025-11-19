@@ -364,11 +364,11 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO createPipeline(Template template, String pipelineName) {
-        return template.createPipeline(pipelineName);
+        return template.createPipeline(pipelineName).validatePopupClosed();
     }
 
     public PipelinesLibraryAO createPipeline(String pipelineName) {
-        return Template.DEFAULT.createPipeline(pipelineName);
+        return Template.DEFAULT.createPipeline(pipelineName).validatePopupClosed();
     }
 
     public PipelinesLibraryAO removePipeline(String pipelineName) {
