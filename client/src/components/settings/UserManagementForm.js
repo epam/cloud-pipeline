@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,20 +45,40 @@ function UserManagementForm (
     authenticatedUserInfo.value.admin;
   const isReader = roleModel.userHasRole(
     authenticatedUserInfo.loaded ? authenticatedUserInfo.value : undefined,
-    'ROLE_USER_READER'
+    roleModel.ROLES.ROLE_USER_READER
   );
-  if (!isAdmin && !isReader && usersWithActivity.pending && !usersWithActivity.loaded) {
+  const isUserAdmin = roleModel.userHasRole(
+    authenticatedUserInfo.loaded ? authenticatedUserInfo.value : undefined,
+    roleModel.ROLES.ROLE_USER_ADMIN
+  );
+  if (
+    !isAdmin &&
+    !isReader &&
+    !isUserAdmin &&
+    usersWithActivity.pending &&
+    !usersWithActivity.loaded
+  ) {
     return null;
   }
   const users = usersWithActivity.loaded ? usersWithActivity.value : [];
-  const userHasReadPermissions = (users || []).some((user) => roleModel.readAllowed(user));
-  if (!isReader && !isAdmin && !userHasReadPermissions) {
+  const userHasReadPermissions = (users || [])
+    .some((user) => roleModel.readAllowed(user));
+  const rolesList = roles.loaded ? roles.value : [];
+  const groupsHasSharedPermissions = (rolesList || [])
+    .some(r => roleModel.readAllowed(r));
+  if (
+    !isReader &&
+    !isAdmin &&
+    !isUserAdmin &&
+    !userHasReadPermissions &&
+    !groupsHasSharedPermissions
+  ) {
     return (
       <Alert type="error" message="Access is denied" />
     );
   }
   const sections = [
-    (isReader || isAdmin || userHasReadPermissions) ? {
+    (isReader || isAdmin || isUserAdmin || userHasReadPermissions) ? {
       key: 'users',
       title: 'Users',
       default: true,
@@ -66,21 +86,21 @@ function UserManagementForm (
         <UsersManagement />
       )
     } : false,
-    (isReader || isAdmin) ? {
+    (isReader || isAdmin || isUserAdmin || groupsHasSharedPermissions) ? {
       key: 'groups',
       title: 'Groups',
       render: () => (
         <GroupsManagement />
       )
     } : false,
-    (isReader || isAdmin) ? {
+    (isReader || isAdmin || isUserAdmin) ? {
       key: 'roles',
       title: 'Roles',
       render: () => (
         <GroupsManagement predefined />
       )
     } : false,
-    (isReader || isAdmin) ? {
+    (isReader || isAdmin || isUserAdmin) ? {
       key: 'report',
       title: 'Usage report',
       render: () => (

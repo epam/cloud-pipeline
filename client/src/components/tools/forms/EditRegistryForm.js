@@ -291,11 +291,17 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
               </Form>
             </Tabs.TabPane>
             {
-              this.props.registry && roleModel.isOwner(this.props.registry) &&
+              this.props.registry &&
+              (roleModel.isOwner(this.props.registry) || roleModel.isManager.toolAdmin(this)) &&
               <Tabs.TabPane key="permissions" tab="Permissions">
                 <PermissionsForm
                   objectIdentifier={this.props.registry.id}
-                  objectType="DOCKER_REGISTRY" />
+                  objectType="DOCKER_REGISTRY"
+                  editOwnerAvailable={
+                    roleModel.isOwner(this.props.registry) ||
+                    roleModel.isManager.toolAdmin(this)
+                  }
+                />
               </Tabs.TabPane>
             }
           </Tabs>
