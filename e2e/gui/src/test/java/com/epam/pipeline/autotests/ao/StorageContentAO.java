@@ -83,7 +83,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
             entry(GENERATE_URL, context().find(byClassName("selection-action-generate-url"))),
             entry(ACTIONS, context().find(byId("presentation-actions"))),
-            entry(SELECTION_ACTIONS, context().find(byId("selection-actions")))
+            entry(SELECTION_ACTIONS, context().find(byId("selection-actions"))),
             entry(HIDE_METADATA, context().find(byId("hide-metadata-button"))),
             entry(SHARE, context().find(byId("share-storage-button")))
     );
@@ -565,7 +565,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             this.index = index;
             elements().putAll(initialiseElements(
                     entry(RELOAD, context().find(buttonByIconClass("anticon-reload"))),
-                    entry(DOWNLOAD, context().find(".anticon-download")),
+                    entry(DOWNLOAD, context().find(".anticon-download").parent()),
                     entry(EDIT, context().find(editButton())),
                     entry(DELETE, context().find(deleteButton()))
             ));

@@ -316,7 +316,7 @@ public class Utils {
     public static File createTempFileWithNameAndSize(String name) {
         File uploadedFile = Paths.get(C.DOWNLOAD_FOLDER).resolve(name).toFile();
         try {
-            FileWriter fileWriter = new FileWriter(uploadedFile.getName(), true);
+            FileWriter fileWriter = new FileWriter(uploadedFile.getPath(), true);
             BufferedWriter bw = new BufferedWriter(fileWriter);
             bw.write("String to change size");
             bw.close();

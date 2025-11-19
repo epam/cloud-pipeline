@@ -94,7 +94,7 @@ public class SystemManagementAO extends SettingsPageAO {
             List<String> typeFilters = getMultiSelectFilterValues("Type");
             String messageFilter = getMessageFilter();
             while (containerLogs().stream().filter(r ->
-                    r.has(matchText(message)) && r.has(text(type))).count() == 0
+                    r.has(text(message)) && r.has(text(type))).count() == 0
                     && attempt < maxAttempts) {
                 sleep(3, SECONDS);
                 refresh();
@@ -106,7 +106,7 @@ public class SystemManagementAO extends SettingsPageAO {
                 filterByMessage(messageFilter);
             }
             return containerLogs().stream()
-                .filter(r -> r.has(matchText(message)) && r.has(text(type)))
+                .filter(r -> r.has(text(message)) && r.has(text(type)))
                 .findFirst()
                 .orElseThrow(() -> {
                     String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());

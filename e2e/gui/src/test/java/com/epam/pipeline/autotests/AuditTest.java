@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,12 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
+import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_SYSTEM_ACCESS;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.ao.SystemManagementAO.SystemLogsAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -32,6 +35,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -65,6 +69,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private String inner_file2 = "inner_file2";
     private String inner_file3 = "inner_file3";
     private String inner_file4 = "inner_file4";
+    private final File newFile = Utils.createTempFileWithNameAndSize(format("file2%s", Utils.randomSuffix()));
     private String pathStorage1 = "";
     private String pathStorage2 = "";
     private String pathStorage3 = "";
@@ -72,6 +77,8 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private String pathStorage5 = "";
     private String pathStorage6 = "";
     private String pathStorage7 = "";
+
+    private String runID = "";
 
     @BeforeClass(alwaysRun = true)
     public void createPreferences() {
@@ -84,52 +91,52 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 FolderPermission.allow(WRITE, testFolder),
                 FolderPermission.allow(EXECUTE, testFolder)
         );
-//        library()
-//                .cd(testFolder)
-//                .createStorage(storage1);
-//        pathStorage1 = addStorageContent(storage1);
-//        pathStorage2 = library()
-//                .cd(testFolder)
-//                .createStorage(storage2)
-//                .selectStorage(storage2)
-//                .getStoragePath();
-//        library()
-//                .cd(testFolder)
-//                .createStorage(storage4);
-//        pathStorage4 = addStorageContent(storage4)
-//                .replace("s3", "cp");//
-//        pathStorage5 = library()
-//                .cd(testFolder)
-//                .createStorage(storage5)
-//                .selectStorage(storage5)
-//                .getStoragePath()
-//                .replace("s3", "cp");
-//        Stream.of(storage4, storage5)
-//                .forEach(stor -> library()
-//                        .selectStorage(stor)
-//                        .showMetadata()
-//                        .click(FILE_SYSTEM_ACCESS));
-//        logoutIfNeeded();
-//        loginAs(user);
-//        tools()
-//                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-//                .expandTab(ADVANCED_PANEL)
-//                .selectDataStoragesToLimitMounts()
-//                .clearSelection()
-//                .searchStorage(storage1)
-//                .selectStorage(storage1)
-//                .searchStorage(storage2)
-//                .selectStorage(storage2)
-//                .searchStorage(storage4)
-//                .selectStorage(storage4)
-//                .searchStorage(storage5)
-//                .selectStorage(storage5)
-//                .ok()
-//                .launch(this);
+        library()
+                .cd(testFolder)
+                .createStorage(storage1);
+        pathStorage1 = addStorageContent(storage1);
+        pathStorage2 = library()
+                .cd(testFolder)
+                .createStorage(storage2)
+                .selectStorage(storage2)
+                .getStoragePath();
+        library()
+                .cd(testFolder)
+                .createStorage(storage4);
+        pathStorage4 = addStorageContent(storage4);
+        pathStorage5 = library()
+                .cd(testFolder)
+                .createStorage(storage5)
+                .selectStorage(storage5)
+                .getStoragePath();
+        Stream.of(storage4, storage5)
+                .forEach(stor -> library()
+                        .selectStorage(stor)
+                        .showMetadata()
+                        .click(FILE_SYSTEM_ACCESS));
+        logoutIfNeeded();
+        loginAs(user);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storage1)
+                .selectStorage(storage1)
+                .searchStorage(storage2)
+                .selectStorage(storage2)
+                .searchStorage(storage4)
+                .selectStorage(storage4)
+                .searchStorage(storage5)
+                .selectStorage(storage5)
+                .ok()
+                .launch(this);
+        runID = getLastRunId();
     }
 
     @AfterClass(alwaysRun = true)
     public void resetPreferences() {
+        open(C.ROOT_ADDRESS);
         library()
                 .removeNotEmptyFolder(testFolder);
     }
@@ -148,12 +155,12 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("pipe storage rm %s/%s -y", pathStorage1, file1)
         };
         String [] expected_logs = {
-                format("READ %s/%s", pathStorage1, file1),
-                format("WRITE %s/%s", pathStorage2, file1),
-                format("READ %s/%s", pathStorage1, file2),
-                format("WRITE %s/%s", pathStorage2, file2),
-                format("DELETE %s/%s", pathStorage1, file2),
-                format("DELETE %s/%s", pathStorage1, file1)
+                format("[run_id #%s] READ %s/%s", runID, pathStorage1, file1),
+                format("[run_id #%s] WRITE %s/%s", runID, pathStorage2, file1),
+                format("[run_id #%s] READ %s/%s", runID, pathStorage1, file2),
+                format("[run_id #%s] WRITE %s/%s", runID, pathStorage2, file2),
+                format("[run_id #%s] DELETE %s/%s", runID, pathStorage1, file2),
+                format("[run_id #%s] DELETE %s/%s", runID, pathStorage1, file1)
         };
         logoutIfNeeded();
         loginAs(user);
@@ -172,18 +179,18 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("pipe storage rm -r %s/%s -y", pathStorage1, folder1)
         };
         String [] expected_logs = {
-                format("READ %s/%s/%s", pathStorage1, folder1, inner_file1),
-                format("WRITE %s/%s/%s", pathStorage2, folder1, inner_file1),
-                format("READ %s/%s/%s", pathStorage1, folder1, inner_file2),
-                format("WRITE %s/%s/%s", pathStorage2, folder1, inner_file2),
-                format("READ %s/%s/%s", pathStorage1, folder2, inner_file3),
-                format("WRITE %s/%s/%s", pathStorage2, folder2, inner_file3),
-                format("DELETE %s/%s/%s", pathStorage1, folder2, inner_file3),
-                format("READ %s/%s/%s", pathStorage1, folder2, inner_file4),
-                format("WRITE %s/%s/%s", pathStorage2, folder2, inner_file4),
-                format("DELETE %s/%s/%s", pathStorage1, folder2, inner_file4),
-                format("DELETE %s/%s/%s", pathStorage1, folder1, inner_file1),
-                format("DELETE %s/%s/%s", pathStorage1, folder1, inner_file2)
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage1, folder1, inner_file1),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage2, folder1, inner_file1),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage1, folder1, inner_file2),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage2, folder1, inner_file2),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage1, folder2, inner_file3),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage2, folder2, inner_file3),
+                format("[run_id #%s] DELETE %s/%s/%s", runID, pathStorage1, folder2, inner_file3),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage1, folder2, inner_file4),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage2, folder2, inner_file4),
+                format("[run_id #%s] DELETE %s/%s/%s", runID, pathStorage1, folder2, inner_file4),
+                format("[run_id #%s] DELETE %s/%s/%s", runID, pathStorage1, folder1, inner_file1),
+                format("[run_id #%s] DELETE %s/%s/%s", runID, pathStorage1, folder1, inner_file2)
         };
         logoutIfNeeded();
         loginAs(user);
@@ -203,18 +210,18 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("rm -f cloud-data/%s/%s", storage2, file2)
         };
         String [] expected_logs = {
-                format("WRITE %s/%s", pathStorage2, file3),
-                format("READ %s/%s/%s", pathStorage2, folder1, inner_file1),
-                format("WRITE %s/%s/%s", pathStorage1, folder1, inner_file1),
-                format("READ %s/%s/%s", pathStorage2, folder1, inner_file2),
-                format("WRITE %s/%s/%s", pathStorage1, folder1, inner_file2),
-                format("READ %s/%s/%s", pathStorage2, folder2, inner_file3),
-                format("WRITE %s/%s/%s", pathStorage1, folder2, inner_file3),
-                format("DELETE %s/%s/%s", pathStorage2, folder2, inner_file3),
-                format("READ %s/%s/%s", pathStorage2, folder2, inner_file4),
-                format("WRITE %s/%s/%s", pathStorage1, folder2, inner_file4),
-                format("DELETE %s/%s/%s", pathStorage2, folder2, inner_file4),
-                format("DELETE %s/%s", pathStorage2, file2)
+                format("[run_id #%s] WRITE %s/%s", runID, pathStorage2, file3),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage2, folder1, inner_file1),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage1, folder1, inner_file1),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage2, folder1, inner_file2),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage1, folder1, inner_file2),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage2, folder2, inner_file3),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage1, folder2, inner_file3),
+                format("[run_id #%s] DELETE %s/%s/%s", runID, pathStorage2, folder2, inner_file3),
+                format("[run_id #%s] READ %s/%s/%s", runID, pathStorage2, folder2, inner_file4),
+                format("[run_id #%s] WRITE %s/%s/%s", runID, pathStorage1, folder2, inner_file4),
+                format("[run_id #%s] DELETE %s/%s/%s", runID, pathStorage2, folder2, inner_file4),
+                format("[run_id #%s] DELETE %s/%s", runID, pathStorage2, file2)
         };
         logoutIfNeeded();
         loginAs(user);
@@ -227,14 +234,15 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     @Test
     @TestCase(value = {"3059_3"})
     public void uiDataAccessAudit() {
-        final File newFile = Utils.createTempFile("file2");
         String file2_new = newFile.getName();
         logoutIfNeeded();
-        loginAs(user);
+        loginAs(admin);
         library()
                 .cd(testFolder)
                 .createStorage(storage3);
         pathStorage3 = addStorageContent(storage3);
+        logoutIfNeeded();
+        loginAs(user);
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage3, file1),
                 format("WRITE %s/%s", pathStorage3, file2_new),
@@ -318,9 +326,19 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     @Test
     @TestCase(value = {"3059_5"})
     public void auditOfSharingStorageDataAccess() {
+        logoutIfNeeded();
+        loginAs(admin);
+        library()
+                .cd(testFolder)
+                .createSharingStorage(storage6);
+        pathStorage6 = addStorageContent(storage6);
+        String sharedStorageLink = library()
+                .cd(testFolder)
+                .selectStorage(storage6)
+                .getSharedStorageLink();
         String [] expected_logs = {
-                format("WRITE %s/%s", pathStorage4, file3),
-                format("READ %s/%s", pathStorage4, file1),
+                format("WRITE %s/%s", pathStorage6, file2),
+                format("READ %s/%s", pathStorage6, file1),
                 format("WRITE %s/%s", pathStorage5, file1),
                 format("READ %s/%s", pathStorage4, file2),
                 format("MOVE %s/%s %s/%s", pathStorage4, file2, pathStorage5, file2),
@@ -334,23 +352,30 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file2),
                 format("DELETE %s/%s", pathStorage4, folder1)
         };
-        logoutIfNeeded();
-        loginAs(admin);
-        library()
-                .cd(testFolder)
-                .createSharingStorage(storage6);
-        pathStorage6 = addStorageContent(storage6);
-        String sharedStorageLink = library()
-                .cd(testFolder)
-                .selectStorage(storage6)
-                .getSharedStorageLink();
-        logout();
-        loginAs(user);
-        sleep(120, SECONDS);
-        open(sharedStorageLink);
+        sleep(3, SECONDS);
+        openSharingStorage(sharedStorageLink);
+
+        new StorageContentAO()
+                .uploadFileWithoutValidation(newFile)
+                .refresh()
+                .selectFile(format("%s (latest)", file1))
+                .download();
+        open(C.ROOT_ADDRESS);
         logoutIfNeeded();
         loginAs(admin);
         checkAuditLog(expected_logs);
+    }
+
+    private void openSharingStorage(String sharedStorageLink) {
+        open(sharedStorageLink);
+        if($(By.id("details-button")).exists()) {
+            $(By.id("details-button")).click();
+            $(By.id("proceed-link")).click();
+        }
+        new AuthenticationPageAO()
+                .login(user.login)
+                .password(user.password)
+                .signIn();
     }
 
     private void executeCommands(String [] commands) {
@@ -373,8 +398,8 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .switchToSystemManagement()
                 .switchToSystemLogs()
                 .setIncludeServiceAccountEventsOption()
-                .filterByUser(user.login)
-                .filterByType("audit");
+                .filterByField("User", user.login)
+                .filterByField("Type", "audit");
         for (String mess : logs) {
             systemLogsAO.validateRow(mess, user.login, "audit");
         }
@@ -383,10 +408,10 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private String addStorageContent(String storage) {
         return library()
                 .selectStorage(storage)
-                .createFileWithContent(file1, "file1 content")
-                .createFileWithContent(file2, "file2 content")
                 .createFolder(folder1)
                 .createFolder(folder2)
+                .createFileWithContent(file1, "file1 content")
+                .createFileWithContent(file2, "file2 content")
                 .cd(folder1)
                 .createFileWithContent(inner_file1, "inner_file1 content")
                 .createFileWithContent(inner_file2, "inner_file2 content")
