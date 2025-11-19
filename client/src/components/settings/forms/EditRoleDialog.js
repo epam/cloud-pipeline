@@ -107,6 +107,19 @@ class EditRoleDialog extends React.Component {
     }
   }
 
+  @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
+  };
+
   get defaultStorageId () {
     const {defaultStorageId} = this.state;
     if (defaultStorageId) {
@@ -723,7 +736,8 @@ class EditRoleDialog extends React.Component {
         footer={
           <Row type="flex" justify="space-between">
             <Button
-              disabled={readOnly}
+              disabled={readOnly ||
+                !(this.isAdmin || this.isUsersAdmin)}
               id="edit-user-form-block-unblock"
               type="danger"
               onClick={this.operationWrapper(this.blockUnblockClicked)}>
@@ -902,7 +916,11 @@ class EditRoleDialog extends React.Component {
               <InstanceTypesManagementForm
                 className={styles.instanceTypesManagementForm}
                 key="instance types management form"
-                disabled={this.state.operationInProgress || readOnly}
+                disabled={
+                  (!this.isAdmin && !this.isUsersAdmin) ||
+                  this.state.operationInProgress ||
+                  readOnly
+                }
                 resourceId={this.props.roleId}
                 level="ROLE"
                 onInitialized={this.onInstanceTypesFormInitialized}
@@ -922,7 +940,8 @@ class EditRoleDialog extends React.Component {
                   disabled={
                     this.state.operationInProgress ||
                     readOnly ||
-                    pending
+                    pending ||
+                    !(this.isAdmin || this.isUsersAdmin)
                   }
                   value={this.state.profiles.map(o => `${o}`)}
                   style={{width: '100%'}}
@@ -963,7 +982,8 @@ class EditRoleDialog extends React.Component {
                     this.state.operationInProgress ||
                     readOnly ||
                     this.state.profiles.length === 0 ||
-                    pending
+                    pending ||
+                    !(this.isAdmin || this.isUsersAdmin)
                   }
                   value={this.defaultProfileId}
                   style={{width: '100%'}}

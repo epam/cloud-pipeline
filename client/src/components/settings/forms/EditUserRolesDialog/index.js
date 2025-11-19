@@ -144,6 +144,10 @@ export default class EditUserRolesDialog extends React.Component {
     return admin;
   }
 
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
+  }
+
   onInstanceTypesFormInitialized = (form) => {
     this.instanceTypesForm = form;
   };
@@ -280,7 +284,7 @@ export default class EditUserRolesDialog extends React.Component {
               size="small"
               type="danger"
               onClick={() => this.removeRole(role.id)}
-              disabled={this.state.operationInProgress || !this.isAdmin}
+              disabled={this.state.operationInProgress || !(this.isAdmin || this.isUsersAdmin)}
             >
               <Icon type="delete" />
             </Button>
@@ -391,7 +395,7 @@ export default class EditUserRolesDialog extends React.Component {
     if (defaultStorageId && dataStorages.loaded) {
       const dataStorage = (dataStorages.value || []).find(d => d.id === +defaultStorageId);
       if (!dataStorage) {
-        return this.isAdmin ? undefined : `Access is denied`;
+        return this.isAdmin || this.isUsersAdmin ? undefined : `Access is denied`;
       }
       return `${defaultStorageId}`;
     }
@@ -405,7 +409,7 @@ export default class EditUserRolesDialog extends React.Component {
       const profile = (cloudCredentialProfiles.value || [])
         .find(d => d.id === +defaultProfileId);
       if (!profile) {
-        return this.isAdmin ? undefined : `Access is denied`;
+        return this.isAdmin || this.isUsersAdmin ? undefined : `Access is denied`;
       }
       return `${defaultProfileId}`;
     }
@@ -433,7 +437,7 @@ export default class EditUserRolesDialog extends React.Component {
 
   @computed
   get restrictedMetadataKeys () {
-    if (this.isAdmin) {
+    if (this.isAdmin || this.isUsersAdmin) {
       return [];
     }
     const {preferences} = this.props;
@@ -824,7 +828,7 @@ export default class EditUserRolesDialog extends React.Component {
           );
         });
     }
-    if (!this.isAdmin) {
+    if (!this.isAdmin && !this.isUsersAdmin) {
       return 'not specified';
     }
     return 'configure';
@@ -882,7 +886,7 @@ export default class EditUserRolesDialog extends React.Component {
     const {
       user
     } = this.props;
-    const readOnly = !this.isAdmin;
+    const readOnly = !this.isAdmin && !this.isUsersAdmin;
     const metadataReadOnly = readOnly && !roleModel.writeAllowed(user);
     const {metadata} = this.state;
     const credentialProfilesPending = this.props.credentialProfiles
@@ -1197,7 +1201,7 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   renderFooter = () => {
-    const readOnly = !this.isAdmin;
+    const readOnly = !this.isAdmin && !this.isUsersAdmin;
     const {activeTab} = this.state;
     let blocked = false;
     if (this.props.userInfo.loaded) {
@@ -1293,7 +1297,7 @@ export default class EditUserRolesDialog extends React.Component {
           key="user"
         />
         {
-          this.isAdmin && (
+          (this.isAdmin || this.isUsersAdmin) && (
             <Tabs.TabPane
               tab="STATISTICS"
               key="user-statistics"
@@ -1301,7 +1305,7 @@ export default class EditUserRolesDialog extends React.Component {
           )
         }
         {
-          this.isAdmin && (
+          (this.isAdmin || this.isUsersAdmin) && (
             <Tabs.TabPane
               tab="PERMISSIONS"
               key="permissions"

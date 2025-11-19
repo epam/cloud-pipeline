@@ -2181,6 +2181,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             defaultMask={defaultMask}
             enabledMask={enabledMask}
             readOnlyRoles={readOnlyRoles}
+            editOwnerAvailable={
+              roleModel.isManager.toolAdmin(this)
+            }
           />
         </Modal>
       </Card>

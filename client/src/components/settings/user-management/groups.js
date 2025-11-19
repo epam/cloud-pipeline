@@ -81,7 +81,11 @@ export default class GroupsManagement extends React.Component {
   };
 
   get isReader () {
-    return roleModel.hasRole('ROLE_USER_READER')(this);
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
+  };
+
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
   };
 
   handleGroupsTableChange = (pagination, filter, sorter) => {
@@ -115,13 +119,15 @@ export default class GroupsManagement extends React.Component {
 
   get filteredRoles () {
     const {groupsSearchText} = this.state;
-    return this.roles
-      .filter(r => !groupsSearchText ||
-        !groupsSearchText.length ||
-        r.displayName
-          .toLowerCase()
-          .includes(groupsSearchText.toLowerCase())
-      );
+    return this.roles.filter(r => {
+      const hasPermissions = this.isAdmin ||
+        this.isUsersAdmin ||
+        this.isReader ||
+        roleModel.readAllowed(r);
+      return hasPermissions && r.displayName
+        .toLowerCase()
+        .includes((groupsSearchText || '').toLowerCase());
+    });
   }
 
   reload = () => {
@@ -205,7 +211,7 @@ export default class GroupsManagement extends React.Component {
           );
         }
       },
-      this.isAdmin
+      this.isAdmin || this.isUsersAdmin
         ? {
           key: 'actions',
           render: (role) => {
@@ -215,7 +221,7 @@ export default class GroupsManagement extends React.Component {
                   <Icon type="edit" />
                 </Button>
                 {
-                  !predefined && (
+                  (this.isAdmin || this.isUsersAdmin) && !predefined && (
                     <Button
                       size="small"
                       type="danger"
@@ -269,7 +275,11 @@ export default class GroupsManagement extends React.Component {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return null;
     }
-    if (!this.isReader && !this.isAdmin) {
+    if (
+      !this.isReader &&
+      !this.isAdmin &&
+      !this.isUsersAdmin
+    ) {
       return (
         <Alert type="error" message="Access is denied" />
       );
@@ -287,7 +297,7 @@ export default class GroupsManagement extends React.Component {
               onChange={this.onGroupSearchChanged} />
           </div>
           {
-            this.isAdmin && !predefined && (
+            (this.isAdmin || this.isUsersAdmin) && !predefined && (
               <div style={{paddingLeft: 10}}>
                 <Button
                   type="primary"
@@ -304,7 +314,12 @@ export default class GroupsManagement extends React.Component {
           visible={!!this.state.editableGroup}
           onClose={this.closeEditGroupDialog}
           role={this.state.editableGroup}
-          readOnly={!this.isAdmin}
+          readOnly={
+            !this.isAdmin &&
+            !this.isUsersAdmin &&
+            !roleModel.writeAllowed(this.state.editableGroup)
+          }
+          predefined={predefined}
         />
         <CreateGroupDialog
           visible={this.state.createGroupDialogVisible}

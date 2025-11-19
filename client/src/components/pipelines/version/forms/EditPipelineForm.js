@@ -513,8 +513,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     }
     const isManager = isVersionedStorage
       ? roleModel.isManager.versionedStorage(this)
-      : roleModel.isManager.pipeline(this);
-    const deleteAllowed = !isNewPipeline &&
+      : (roleModel.isManager.pipeline(this) || roleModel.isManager.pipelineAdmin(this));
+    const deleteAllowed =
+      !isNewPipeline &&
       !!this.props.onDelete &&
       roleModel.writeAllowed(this.props.pipeline) &&
       isManager;
@@ -648,13 +649,18 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
                         name: (<b>{image}</b>)
                       }))
                     }
-                    subObjectsPermissionsErrorTitle={(
+                    subObjectsPermissionsErrorTitle={
                       <span>
-                        Users shall have Read and Execute permissions for the docker images,
-                        used in a current {this.localizedString(objectName)}.
-                        Please review and fix permissions issues below:
+                        Users shall have Read and Execute permissions for the
+                        docker images, used in a current{' '}
+                        {this.localizedString(objectName)}.Please review and
+                        fix permissions issues below:
                       </span>
-                    )}
+                    }
+                    editOwnerAvailable={
+                      roleModel.isOwner(this.props.pipeline) ||
+                      roleModel.isManager.pipelineAdmin(this)
+                    }
                   />
                 </Tabs.TabPane>
               }
