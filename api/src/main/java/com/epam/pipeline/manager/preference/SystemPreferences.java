@@ -792,6 +792,9 @@ public class SystemPreferences {
             new EnumPreference<>("launch.run.emergency.termination.action",
                     PipelineRunEmergencyTermAction.DISABLED, LAUNCH_GROUP);
 
+    public static final BooleanPreference LAUNCH_DOCKER_PREFLIGHT_CHECKS = new BooleanPreference(
+            "launch.docker.preflight.checks", true, LAUNCH_GROUP, pass, true);
+
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
      * from run container.
