@@ -184,14 +184,26 @@ nohup bash /etc/maintenance/crontab.sh &> /dev/null &
 MAINTENANCE_CRON_PID="$!"
 
 # Run Filebeat instances
-nohup filebeat \
-      -path.data /var/lib/filebeat/security-log \
-      -path.logs /var/log/filebeat/security-log \
-      -c filebeat-security-log.yml &
-nohup filebeat \
-      -path.data /var/lib/filebeat/audit-dav \
-      -path.logs /var/log/filebeat/audit-dav \
-      -c filebeat-audit-dav.yml &
+CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-standard}"
+if [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
+  nohup /opt/filebeat-oss/filebeat \
+        -path.data /var/lib/filebeat/security-log \
+        -path.logs /var/log/filebeat/security-log \
+        -c /opt/filebeat-oss/filebeat-security-log.yml &
+  nohup /opt/filebeat-oss/ \
+        -path.data /var/lib/filebeat/audit-dav \
+        -path.logs /var/log/filebeat/audit-dav \
+        -c /opt/filebeat-oss/filebeat-audit-dav.yml &
+else
+  nohup filebeat \
+        -path.data /var/lib/filebeat/security-log \
+        -path.logs /var/log/filebeat/security-log \
+        -c filebeat-security-log.yml &
+  nohup filebeat \
+        -path.data /var/lib/filebeat/audit-dav \
+        -path.logs /var/log/filebeat/audit-dav \
+        -c filebeat-audit-dav.yml &
+fi
 
 # Prepare the static assets
 for static_file in /etc/nginx/static/*; do
