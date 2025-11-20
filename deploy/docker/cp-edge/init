@@ -184,8 +184,8 @@ nohup bash /etc/maintenance/crontab.sh &> /dev/null &
 MAINTENANCE_CRON_PID="$!"
 
 # Run Filebeat instances
-CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-standard}"
-if [ "${CP_SEARCH_ELK_TYPE}" == "oss" ]; then
+CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-elasticsearch}"
+if [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
   nohup /opt/filebeat-oss/filebeat \
         -path.data /var/lib/filebeat/security-log \
         -path.logs /var/log/filebeat/security-log \

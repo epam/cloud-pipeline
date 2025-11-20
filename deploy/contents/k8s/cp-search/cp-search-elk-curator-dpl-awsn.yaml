@@ -13,45 +13,48 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-search-elk: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-search-elk: "true"
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
-      serviceAccountName: cp-main-service
       containers:
         - name: cp-search-elk
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-curator-$CP_VERSION
           securityContext:
             privileged: true
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           command: ["bash"]
           args: ["-c", "/init.sh"]
-          env:
-          - name: ES_JAVA_OPTS
-            value: "-Xmx4g -Xms4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
           envFrom:
           - configMapRef:
               name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 5
+            periodSeconds: 10
           volumeMounts:
-            - mountPath: /usr/share/elasticsearch/data
-              subPath: search-elk/data
-              name: cp-system
+            - mountPath: /var/log/curator
+              name: search-elk-curator-log
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 9200
-              scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 10
       volumes:
-        - name: cp-system
-          persistentVolumeClaim:
-            claimName: cp-system-pvc
+        - name: search-elk-curator-log
+          hostPath:
+            path: /opt/search-elk/log/curator
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials

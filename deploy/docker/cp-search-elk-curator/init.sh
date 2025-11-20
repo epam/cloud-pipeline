@@ -28,7 +28,11 @@ function envsubst_inplace() {
 msg "Waiting for ElasticSearch..."
 CP_SEARCH_ELK_ADDRESS="${CP_SEARCH_ELK_INTERNAL_SCHEME}://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"
 CP_SEARCH_ELK_INIT_ATTEMPTS="${CP_SEARCH_ELK_INIT_ATTEMPTS:-60}"
-CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-standard}"
+CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-elasticsearch}"
+export CP_SEARCH_ELK_ELASTIC_USE_SSL=False
+if [ "$CP_SEARCH_ELK_INTERNAL_SCHEME" == "https" ]; then
+  export CP_SEARCH_ELK_ELASTIC_USE_SSL=True
+fi
 not_initialized=true
 try_count=0
 while [ $not_initialized ] && [ $try_count -lt $CP_SEARCH_ELK_INIT_ATTEMPTS ]; do
@@ -41,10 +45,7 @@ while [ $not_initialized ] && [ $try_count -lt $CP_SEARCH_ELK_INIT_ATTEMPTS ]; d
     else
       msg "READY ($_elk_health_status)."
     fi
-    # increment attempts only if java is not running
-    if [ ! "$(ps -A | grep 'java')" ]; then
-      try_count=$(( $try_count + 1 ))
-    fi
+    try_count=$(( $try_count + 1 ))
     sleep 10
 done
 
@@ -58,17 +59,34 @@ msg "Proceeding with ElasticSearch additional configuration..."
 export CP_SECURITY_LOGS_ELASTIC_PREFIX="${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}"
 export CP_SECURITY_LOGS_ROLLOVER_DAYS="${CP_SECURITY_LOGS_ROLLOVER_DAYS:-31}"
 
-for _policy_path in /etc/search-elk/policies/${CP_SEARCH_ELK_TYPE}/*.json; do
-  _policy_name="$(basename "$_policy_path" .json)"
-  envsubst_inplace "$_policy_path"
-  curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ilm/policy/$_policy_name" -d "@$_policy_path"
-done
+if [ "${CP_SEARCH_ELK_TYPE}" == "elasticsearch" ]; then
+    for _policy_path in /etc/search-elk/policies/${CP_SEARCH_ELK_TYPE}/*.json; do
+      _policy_name="$(basename "$_policy_path" .json)"
+      envsubst_inplace "$_policy_path"
+      curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ilm/policy/$_policy_name" -d "@$_policy_path"
+    done
+elif [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
+    for _policy_path in /etc/search-elk/policies/${CP_SEARCH_ELK_TYPE}/*.json; do
+      _policy_name="$(basename "$_policy_path" .json)"
+      envsubst_inplace "$_policy_path"
+      curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_plugins/_ism/policies/$_policy_name" -d "@$_policy_path"
+    done
+fi
 
-for _template_path in /etc/search-elk/templates/${CP_SEARCH_ELK_TYPE}/*.json; do
-  _template_name="$(basename "$_template_path" .json)"
-  envsubst_inplace "$_template_path"
-  curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_template/$_template_name" -d "@$_template_path"
-done
+if [ "${CP_SEARCH_ELK_TYPE}" == "elasticsearch" ]; then
+    for _template_path in /etc/search-elk/templates/${CP_SEARCH_ELK_TYPE}/*.json; do
+      _template_name="$(basename "$_template_path" .json)"
+      envsubst_inplace "$_template_path"
+      curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_template/$_template_name" -d "@$_template_path"
+    done
+elif [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
+    for _template_path in /etc/search-elk/templates/${CP_SEARCH_ELK_TYPE}/*.json; do
+      _template_name="$(basename "$_template_path" .json)"
+      envsubst_inplace "$_template_path"
+      curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
+    done
+fi
+
 
 INDEX="{
   \"aliases\": {
@@ -90,33 +108,41 @@ for _pipeline_path in /etc/search-elk/pipelines/*.json; do
   curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ingest/pipeline/$_pipeline_name" -d "@$_pipeline_path"
 done
 
-if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
-    LOG_BACKUP_REPO="{
-      \"type\": \"s3\",
-      \"settings\": {
-        \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
-        \"base_path\": \"log_backup_repo\"
-      }
-    }"
-elif [ "$CP_CLOUD_PLATFORM" == 'gcp' ]; then
-    LOG_BACKUP_REPO="{
-      \"type\": \"gcs\",
-      \"settings\": {
-        \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
-        \"base_path\": \"log_backup_repo\"
-      }
-    }"
-elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
-   LOG_BACKUP_REPO="{
-      \"type\": \"azure\",
-      \"settings\": {
-        \"container\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
-        \"base_path\": \"log_backup_repo\"
-      }
-    }"
+_ELK_SNAPSHOT_REPO_NAME="log_backup_repo"
+if [ "$CP_SEARCH_ELK_DEPLOYMENT_TYPE" == "provided" ]; then
+    python3 /opt/aws-s3-backup-repo-registration.py --es_host "$CP_SEARCH_ELK_ADDRESS" \
+                                                    --region "$CP_CLOUD_REGION_ID" \
+                                                    --backup_bucket "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" \
+                                                    --backup_role_arn "$CP_SEARCH_ELK_BACKUP_SERVICE_ROLE_ARN" \
+                                                    --snapshot_repo ${_ELK_SNAPSHOT_REPO_NAME}
+else
+  if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
+      LOG_BACKUP_REPO="{
+        \"type\": \"s3\",
+        \"settings\": {
+          \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
+          \"base_path\": \"${_ELK_SNAPSHOT_REPO_NAME}\"
+        }
+      }"
+  elif [ "$CP_CLOUD_PLATFORM" == 'gcp' ]; then
+      LOG_BACKUP_REPO="{
+        \"type\": \"gcs\",
+        \"settings\": {
+          \"bucket\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
+          \"base_path\": \"${_ELK_SNAPSHOT_REPO_NAME}\"
+        }
+      }"
+  elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
+     LOG_BACKUP_REPO="{
+        \"type\": \"azure\",
+        \"settings\": {
+          \"container\": \"${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}\",
+          \"base_path\": \"${_ELK_SNAPSHOT_REPO_NAME}\"
+        }
+      }"
+  fi
+  curl -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/_snapshot/${_ELK_SNAPSHOT_REPO_NAME} -d "$LOG_BACKUP_REPO"
 fi
-
-curl -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/_snapshot/log_backup_repo -d "$LOG_BACKUP_REPO"
 
 if [ ! -d /var/log/curator ]; then
   mkdir -p /var/log/curator

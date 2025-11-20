@@ -15,10 +15,13 @@
 
 FROM rockylinux:8
 
+RUN yum install wget curl cronie gettext python3 procps -q -y
+
 RUN wget https://packages.elastic.co/curator/5/centos/7/Packages/elasticsearch-curator-5.8.1-1.x86_64.rpm && \
     rpm -vi elasticsearch-curator-5.8.1-1.x86_64.rpm && \
     rm elasticsearch-curator-5.8.1-1.x86_64.rpm && mkdir /root/.curator
-RUN yum install cronie gettext -q -y
+
+RUN python3 -m pip install requests-aws4auth boto3
 
 COPY curator-template.yml /root/.curator/
 COPY curator-actions-template.yml /root/.curator/
@@ -29,6 +32,12 @@ RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/
 COPY pipelines /etc/search-elk/pipelines
 COPY templates /etc/search-elk/templates
 COPY policies /etc/search-elk/policies
+
+ADD liveness.sh /liveness.sh
+RUN chmod +x /liveness.sh
+
+ADD aws-s3-backup-repo-registration.py /opt/aws-s3-backup-repo-registration.py
+RUN chmod +x /opt/aws-s3-backup-repo-registration.py
 
 COPY init.sh /
 RUN chmod +x /init.sh

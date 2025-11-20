@@ -135,7 +135,11 @@ CP_PREF_SECURITY_TOOLS_POLICY_MAX_CRITICAL_VULNERABILITIES=50
 CP_CLAIR_VERSION=v4
 
 # cp-search-elk
-CP_SEARCH_ELK_TYPE=standard
+## Possible values: elasticsearch, opensearch
+CP_SEARCH_ELK_TYPE=elasticsearch
+## Possible values: deployed, provided
+CP_SEARCH_ELK_DEPLOYMENT_TYPE=deployed
+CP_SEARCH_ELK_BACKUP_SERVICE_ROLE_ARN=
 CP_SEARCH_ELK_INTERNAL_SCHEME=http
 CP_SEARCH_ELK_INTERNAL_HOST=cp-search-elk.default.svc.cluster.local
 CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT=30091
