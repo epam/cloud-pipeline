@@ -267,6 +267,7 @@ public class UserManager implements SecuredEntityManager {
     public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
         final PipelineUser currentUser = getCurrentUser();
         final Collection<PipelineUser> pipelineUsers = currentUser.isAdmin()
+                || UserUtils.hasRole(currentUser, DefaultRoles.ROLE_USER_ADMIN)
                 ? userDao.loadUsersWithActivityStatus()
                 : loadAllUsers();
         if (loadQuotas) {
