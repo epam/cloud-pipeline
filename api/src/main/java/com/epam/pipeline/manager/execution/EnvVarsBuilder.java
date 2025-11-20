@@ -97,6 +97,7 @@ public final class EnvVarsBuilder {
                 .entrySet()
                 .stream()
                 .filter(e -> StringUtils.isNotBlank(e.getKey()))
+                .filter(e -> Objects.nonNull(e.getValue()))
                 .filter(e -> SystemParams.SECURED_PREFIXES.stream().noneMatch(prefix -> e.getKey().startsWith(prefix)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2)));
 
