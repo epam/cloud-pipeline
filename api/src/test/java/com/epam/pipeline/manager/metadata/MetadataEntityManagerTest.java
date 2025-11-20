@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.metadata;
 
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.PagedResultWithFacets;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
@@ -245,6 +247,22 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
                 null);
         final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
         assertEquals(1, loadedSamples.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testFilterMetaDataReturnsFacetsResult() {
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(),
+                ENTITY_NAME,
+                EXTERNAL_ID3,
+                DATA));
+
+        final MetadataFilter filter = getMetadataFilter(TEST_STRING, Collections.singletonList("TEST_VALUE"), null);
+        filter.setFacets(Collections.singletonList(new MetadataFilter.FacetRequest(TEST_STRING, false)));
+        final PagedResult<List<MetadataEntity>> loadedSamples = entityManager.filterMetadata(filter);
+
+        assertTrue(loadedSamples instanceof PagedResultWithFacets);
     }
 
     private MetadataFilter getMetadataFilter(final String key, final List<String> value,
