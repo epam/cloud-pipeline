@@ -549,7 +549,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           visible={this.state.isModalVisible}
           pending={this.state.updating || this.state.deleting}
           pipeline={this.props.pipeline.value}
-          readOnly={this.readOnly}
         />
       </div>
     );

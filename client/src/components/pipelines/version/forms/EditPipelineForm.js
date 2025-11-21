@@ -91,14 +91,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     marginBottom: 5
   };
 
-  get isReadOnly () {
-    const {readOnly} = this.props;
-    if (readOnly) {
-      return true;
-    }
-    return this.props.pipeline ? this.props.pipeline.locked : false;
-  }
-
   /**
    * @returns {{docs: string, src: string}}
    */
@@ -203,8 +195,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       : undefined;
     const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
     const objectName = isVersionedStorage ? 'Versioned storage' : 'Pipeline';
-    const readOnly =
-      this.isReadOnly || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline));
+    const readOnly = !!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline);
     const {getFieldDecorator} = this.props.form;
     const descriptionLabel = isVersionedStorage
       ? `Description:`
@@ -672,6 +663,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   };
 
   render () {
+    const isReadOnly = this.props.pipeline ? this.props.pipeline.locked : false;
     const isNewPipeline = !this.props.pipeline;
     const pipelineType = this.props.pipeline
       ? this.props.pipeline.pipelineType
@@ -724,10 +716,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
                 roleModel.readAllowed(this.props.pipeline) && (
                 <Tabs.TabPane key="permissions" tab="Permissions">
                   <PermissionsForm
-                    readonly={
-                      this.isReadOnly ||
-                        !roleModel.writeAllowed(this.props.pipeline)
-                    }
+                    readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
                     objectIdentifier={this.props.pipeline.id}
                     objectType="pipeline"
                     subObjectsPermissionsMaskToCheck={roleModel.buildPermissionsMask(
