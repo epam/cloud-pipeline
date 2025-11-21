@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.epam.pipeline'
+version = ''
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Elasticsearch
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
+    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
+    implementation project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
+
+    // Logging
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
+    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
+    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
+    implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
+
+    // Apache Commons
+    implementation group: "commons-io", name: "commons-io", version: apacheCommonsIOVersion
+    implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
+    implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
+
+    //Lombok
+    implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+}
+
+test {
+    useJUnitPlatform()
+}
