@@ -742,6 +742,10 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
                         fix permissions issues below:
                       </span>
                     }
+                    editOwnerAvailable={
+                      roleModel.isOwner(this.props.pipeline) ||
+                      roleModel.isManager.pipelineAdmin(this)
+                    }
                   />
                 </Tabs.TabPane>
               )}
