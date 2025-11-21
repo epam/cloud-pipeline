@@ -353,7 +353,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
-        $$(byClassName("browser__name-cell")).findBy(text(filename)).click();
+        $$(byClassName("browser__name-cell")).findBy(text(filename)).$x("./span/span").click();
         $(buttonByIconClass("anticon-arrows-alt")).waitUntil(exist, DEFAULT_TIMEOUT);
         return new MetadataSectionAO(this);
     }
