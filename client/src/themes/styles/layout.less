@@ -49,10 +49,17 @@ a.cp-text:visited {
   color: @application-color;
 }
 
-a:hover,
-a:focus,
-.cp-link:hover,
-.cp-link:focus {
+a.cp-disabled,
+a.cp-disabled:active,
+.cp-link.cp-disabled {
+  cursor: not-allowed;
+  color: @application-color-disabled;
+}
+
+a:not(.cp-disabled):hover,
+a:not(.cp-disabled):focus,
+.cp-link:not(.cp-disabled):hover,
+.cp-link:not(.cp-disabled):focus {
   color: @primary-hover-color;
 }
 
