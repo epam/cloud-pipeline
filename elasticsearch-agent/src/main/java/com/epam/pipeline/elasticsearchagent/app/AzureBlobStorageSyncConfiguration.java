@@ -16,10 +16,10 @@
 
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
@@ -45,8 +45,8 @@ public class AzureBlobStorageSyncConfiguration {
     private String commonIndexPrefix;
 
     @Bean
-    public DataStorageMapper azStorageMapper() {
-        return new DataStorageMapper(SearchDocumentType.AZ_BLOB_STORAGE);
+    public DataStorageMapper azStorageMapper(final ElasticsearchServiceClient client) {
+        return new DataStorageMapper(SearchDocumentType.AZ_BLOB_STORAGE, client);
     }
 
     @Bean
@@ -66,10 +66,11 @@ public class AzureBlobStorageSyncConfiguration {
             final @Qualifier("azStorageMapper") DataStorageMapper azStorageMapper,
             final @Qualifier("azStorageLoader") DataStorageLoader azStorageLoader,
             final @Qualifier("azEventProcessor") DataStorageIndexCleaner indexCleaner,
-            final @Value("${sync.az-blob-storage.index.name}") String indexName) {
+            final @Value("${sync.az-blob-storage.index.name}") String indexName,
+            final ElasticsearchServiceClient client) {
         return new EventToRequestConverterImpl<>(
                 commonIndexPrefix, indexName, azStorageLoader, azStorageMapper,
-                Collections.singletonList(indexCleaner));
+                Collections.singletonList(indexCleaner), client.getVersion());
     }
 
     @Bean

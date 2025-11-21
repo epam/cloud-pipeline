@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
@@ -22,10 +25,6 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-
-import java.io.IOException;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -33,10 +32,11 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class DataStorageMapper implements EntityMapper<DataStorageDoc> {
 
     private final SearchDocumentType documentType;
+    private final ElasticsearchServiceClient client;
 
     @Override
     public XContentBuilder map(final EntityContainer<DataStorageDoc> doc) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             AbstractDataStorage storage = doc.getEntity().getStorage();
             jsonBuilder
                     .startObject()
@@ -67,7 +67,7 @@ public class DataStorageMapper implements EntityMapper<DataStorageDoc> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
         }
     }

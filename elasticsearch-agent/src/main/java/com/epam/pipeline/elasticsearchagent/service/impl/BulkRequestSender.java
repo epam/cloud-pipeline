@@ -15,18 +15,16 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.BulkResponse;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticActionRequest;
-import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticBulkResponse;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
@@ -59,7 +57,7 @@ public class BulkRequestSender {
 
     public void indexDocuments(final String indexName,
                                final PipelineEvent.ObjectType objectType,
-                               final List<ElasticActionRequest> documentRequests,
+                               final List<DocWriteRequest> documentRequests,
                                final LocalDateTime syncStart) {
         indexDocuments(indexName, objectType, documentRequests, syncStart, currentBulkSize);
 
@@ -67,7 +65,7 @@ public class BulkRequestSender {
 
     public void indexDocuments(final String indexName,
                                final PipelineEvent.ObjectType objectType,
-                               final List<ElasticActionRequest> documentRequests,
+                               final List<DocWriteRequest> documentRequests,
                                final LocalDateTime syncStart,
                                final int bulkSize) {
         indexDocuments(indexName, Collections.singletonList(objectType), documentRequests, syncStart, bulkSize);
@@ -76,7 +74,7 @@ public class BulkRequestSender {
 
     public void indexDocuments(final String indexName,
                                final List<PipelineEvent.ObjectType> objectTypes,
-                               final List<ElasticActionRequest> documentRequests,
+                               final List<DocWriteRequest> documentRequests,
                                final LocalDateTime syncStart) {
         indexDocuments(indexName, objectTypes, documentRequests, syncStart, currentBulkSize);
 
@@ -85,7 +83,7 @@ public class BulkRequestSender {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void indexDocuments(final String indexName,
                                final List<PipelineEvent.ObjectType> objectTypes,
-                               final List<ElasticActionRequest> documentRequests,
+                               final List<DocWriteRequest> documentRequests,
                                final LocalDateTime syncStart,
                                final int bulkSize) {
         final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
@@ -100,16 +98,16 @@ public class BulkRequestSender {
     }
 
     private void indexChunk(final String indexName,
-                            final List<ElasticActionRequest> documentRequests,
+                            final List<DocWriteRequest> documentRequests,
                             final List<PipelineEvent.ObjectType> objectTypes,
                             final LocalDateTime syncStart) {
-        final List<ElasticActionRequest> docs = ListUtils.emptyIfNull(documentRequests).stream().filter(Objects::nonNull)
+        final List<DocWriteRequest> docs = ListUtils.emptyIfNull(documentRequests).stream().filter(Objects::nonNull)
                 .collect(Collectors.toList());
         if (docs.isEmpty()) {
             return;
         }
         log.debug("Inserting {} documents for {}", docs.size(), objectTypes);
-        final ElasticBulkResponse response = elasticsearchClient.sendRequests(indexName, docs);
+        final BulkResponse response = elasticsearchClient.sendRequests(indexName, docs);
 
         if (ObjectUtils.isEmpty(response)) {
             log.error("Elasticsearch documents for {} were not created.", objectTypes);

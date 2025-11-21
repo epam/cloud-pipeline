@@ -15,25 +15,28 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.folder;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
+@RequiredArgsConstructor
 public class FolderMapper implements EntityMapper<Folder> {
+
+    private final ElasticsearchServiceClient client;
 
     @Override
     public XContentBuilder map(final EntityContainer<Folder> container) {
         Folder folder = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             jsonBuilder
                     .startObject()
                     .field(DOC_TYPE_FIELD, SearchDocumentType.FOLDER.name())
@@ -49,7 +52,7 @@ public class FolderMapper implements EntityMapper<Folder> {
             jsonBuilder.endObject();
 
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline folder: ", e);
         }
     }

@@ -15,8 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
@@ -40,7 +41,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -83,9 +83,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticIndexService elasticIndexService;
     private final NFSStorageMounter nfsMounter;
     private final String tagDelimiter;
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
+    private final StorageFileMapper fileMapper;
     protected final Map<Long, AbstractCloudRegion> cloudRegions;
-
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                            @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
@@ -109,6 +108,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.elasticIndexService = elasticIndexService;
         this.nfsMounter = nfsMounter;
         this.tagDelimiter = tagDelimiter;
+        this.fileMapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
         this.cloudRegions = ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllRegions()).stream()
                 .map(r -> ImmutablePair.of(r.getId(), r))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
@@ -306,7 +306,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                                               final String content) {
         // TODO maybe we can use file path as _id instead of generating it
         //  on ES side to perform both create and update using this method
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE)
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE, elasticsearchServiceClient.getVersion())
                 .source(fileMapper.fileToDocument(file, dataStorage, regionCode, permissionsContainer,
                         SearchDocumentType.NFS_FILE, tagDelimiter, content));
     }

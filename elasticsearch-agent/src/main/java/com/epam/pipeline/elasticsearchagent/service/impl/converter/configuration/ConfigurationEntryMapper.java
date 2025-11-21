@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
@@ -28,8 +31,6 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -41,6 +42,8 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 @RequiredArgsConstructor
 public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntryDoc> {
 
+    private final ElasticsearchServiceClient client;
+
     @Override
     public XContentBuilder map(final EntityContainer<ConfigurationEntryDoc> container) {
         return getContentBuilder(container);
@@ -48,7 +51,7 @@ public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntry
 
     private XContentBuilder getContentBuilder(final EntityContainer<ConfigurationEntryDoc> container) {
         RunConfiguration configuration = container.getEntity().getConfiguration();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             jsonBuilder.startObject();
             AbstractRunConfigurationEntry entry = container.getEntity().getEntry();
             jsonBuilder
@@ -75,7 +78,7 @@ public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntry
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for run configuration: ", e);
         }
     }

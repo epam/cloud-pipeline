@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.issue;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.issue.Attachment;
@@ -22,8 +25,7 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityVO;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -33,12 +35,15 @@ import java.util.List;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
+@AllArgsConstructor
 public class IssueMapper implements EntityMapper<Issue> {
+
+    private final ElasticsearchServiceClient client;
 
     @Override
     public XContentBuilder map(final EntityContainer<Issue> container) {
         Issue issue = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             jsonBuilder.startObject();
             jsonBuilder
                     .field(DOC_TYPE_FIELD, SearchDocumentType.ISSUE.name())
@@ -58,7 +63,7 @@ public class IssueMapper implements EntityMapper<Issue> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for issue: ", e);
         }
     }

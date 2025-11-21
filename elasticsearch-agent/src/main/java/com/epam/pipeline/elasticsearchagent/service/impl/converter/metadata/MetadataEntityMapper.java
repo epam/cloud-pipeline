@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.metadata;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.BaseEntity;
@@ -22,9 +25,8 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -37,12 +39,15 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
+@RequiredArgsConstructor
 public class MetadataEntityMapper implements EntityMapper<MetadataEntity> {
+
+    private final ElasticsearchServiceClient client;
 
     @Override
     public XContentBuilder map(final EntityContainer<MetadataEntity> container) {
         MetadataEntity entity = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             jsonBuilder.startObject();
             jsonBuilder
                     .field(DOC_TYPE_FIELD, SearchDocumentType.METADATA_ENTITY.name())
@@ -58,7 +63,7 @@ public class MetadataEntityMapper implements EntityMapper<MetadataEntity> {
             buildMap(prepareEntityMetadata(entity.getData()), jsonBuilder, "fields");
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for metadata: ", e);
         }
     }

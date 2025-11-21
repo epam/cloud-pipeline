@@ -17,6 +17,9 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
@@ -32,13 +35,10 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -54,12 +54,18 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 
 public class StorageFileMapper {
 
+    private final ElasticStackVersion version;
+
     private static final String DELIMITER = "/";
     private static final String DEFAULT_MOUNT_POINT = "/cloud-data";
     public static final String STANDARD_TIER = "STANDARD";
 
     private final Map<String, Set<String>> hiddenMasks = new HashMap<>();
     private final Map<String, Set<String>> indexContentMasks = new HashMap<>();
+
+    public StorageFileMapper(final ElasticStackVersion version) {
+        this.version = version;
+    }
 
     public XContentBuilder fileToDocument(final DataStorageFile dataStorageFile,
                                           final AbstractDataStorage dataStorage,
@@ -68,7 +74,7 @@ public class StorageFileMapper {
                                           final SearchDocumentType type,
                                           final String tagDelimiter,
                                           final String content) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             final Map<String, String> tags = MapUtils.emptyIfNull(dataStorageFile.getTags());
             final Map<String, String> labels = MapUtils.emptyIfNull(dataStorageFile.getLabels());
             jsonBuilder
@@ -122,7 +128,7 @@ public class StorageFileMapper {
                 }
             }
             return jsonBuilder.endObject();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new AmazonS3Exception("An error occurred while creating document: ", e);
         }
     }

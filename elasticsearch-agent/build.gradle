@@ -28,6 +28,7 @@ dependencies {
 
     // Core library
     implementation project(":cloud-pipeline-common:model")
+    implementation project(":elasticsearch-common")
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
@@ -39,11 +40,6 @@ dependencies {
     implementation group: "org.springframework.boot", name: "spring-boot-starter-jdbc", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-web", version: springBootVersion
 
-    // Elasticsearch
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
-    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    implementation project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
     // DB
     // Pool
     implementation group: "com.mchange", name: "c3p0", version: c3p0Version

@@ -15,11 +15,12 @@
  */
 package com.epam.pipeline.elasticsearchagent.service;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.DeleteRequest;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.entity.user.PipelineUser;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
@@ -45,8 +46,9 @@ public interface EventToRequestConverter {
     List<DocWriteRequest> convertEventsToRequest(List<PipelineEvent> events,
                                                  String indexName);
 
-    default DeleteRequest createDeleteRequest(PipelineEvent event, String indexName) {
-        return new DeleteRequest(indexName, INDEX_TYPE, String.valueOf(event.getObjectId()));
+    default DeleteRequest createDeleteRequest(final PipelineEvent event, final String indexName,
+                                              final ElasticStackVersion version) {
+        return new DeleteRequest(indexName, INDEX_TYPE, String.valueOf(event.getObjectId()), version);
     }
 
     default String parseDataToString(Date date) {

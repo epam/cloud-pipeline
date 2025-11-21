@@ -15,13 +15,12 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticActionRequest;
-import com.epam.pipeline.elasticsearchagent.model.elasticsearch.request.ElasticBulkResponse;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
+import com.epam.pipeline.elasticsearch.model.BulkResponse;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkResponse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +29,7 @@ import java.util.List;
 @Slf4j
 public class IndexRequestContainer implements AutoCloseable {
     private final String indexName;
-    private List<ElasticActionRequest> requests;
+    private List<DocWriteRequest> requests;
     private ElasticsearchServiceClient elasticsearchServiceClient;
     private Integer bulkSize;
 
@@ -42,7 +41,7 @@ public class IndexRequestContainer implements AutoCloseable {
         this.requests = new ArrayList<>();
     }
 
-    public void add(final ElasticActionRequest request) {
+    public void add(final DocWriteRequest request) {
         requests.add(request);
         if (requests.size() == bulkSize) {
             flush();
@@ -58,7 +57,7 @@ public class IndexRequestContainer implements AutoCloseable {
     }
 
     private void flush() {
-        ElasticBulkResponse documents = elasticsearchServiceClient.sendRequests(indexName, requests);
+        BulkResponse documents = elasticsearchServiceClient.sendRequests(indexName, requests);
         long unsuccessfulRequestsCount = 0L;
         if (documents != null && documents.getItems() != null) {
             BulkItemResponse[] documentsItems = documents.getItems();

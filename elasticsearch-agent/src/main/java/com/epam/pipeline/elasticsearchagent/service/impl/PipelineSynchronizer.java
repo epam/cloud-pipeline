@@ -15,6 +15,10 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DeleteRequest;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.exception.EntityNotFoundException;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
@@ -22,7 +26,6 @@ import com.epam.pipeline.elasticsearchagent.model.EventType;
 import com.epam.pipeline.elasticsearchagent.model.PipelineDoc;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline.PipelineIdConverter;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline.PipelineLoader;
@@ -36,9 +39,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -214,7 +214,7 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
                                       final EntityContainer<PipelineDoc> pipelineEntity) {
         requestsBuilder.pipelineRequests(
                 Collections.singletonList(new IndexRequest(pipelineIndex, INDEX_TYPE,
-                        String.valueOf(event.getObjectId()))
+                        String.valueOf(event.getObjectId()), elasticsearchClient.getVersion())
                         .source(mapper.map(pipelineEntity)))
         );
 
@@ -239,7 +239,8 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
             final PipelineDocRequests.PipelineDocRequestsBuilder requestsBuilder) {
         elasticsearchClient.deleteIndex(codeIndex);
         requestsBuilder.pipelineRequests(Collections.singletonList(
-                new DeleteRequest(pipelineIndex, INDEX_TYPE, String.valueOf(pipelineId))));
+                new DeleteRequest(pipelineIndex, INDEX_TYPE, String.valueOf(pipelineId),
+                        elasticsearchClient.getVersion())));
         return requestsBuilder.build();
     }
 

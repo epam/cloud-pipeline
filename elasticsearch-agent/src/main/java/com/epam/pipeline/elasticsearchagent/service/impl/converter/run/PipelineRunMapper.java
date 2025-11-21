@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.run;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
@@ -27,8 +30,6 @@ import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -47,15 +48,18 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
     private final int maxLogLines;
+    private final ElasticsearchServiceClient client;
 
-    public PipelineRunMapper(@Value("${sync.run.log.lines.size:1000}") final int maxLogLines) {
+    public PipelineRunMapper(@Value("${sync.run.log.lines.size:1000}") final int maxLogLines,
+                             final ElasticsearchServiceClient client) {
         this.maxLogLines = maxLogLines;
+        this.client = client;
     }
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunWithLog> container) {
         PipelineRunWithLog run = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             jsonBuilder
                     .startObject()
                     .field("id", run.getPipelineRun().getId())
@@ -89,7 +93,7 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline run: ", e);
         }
     }

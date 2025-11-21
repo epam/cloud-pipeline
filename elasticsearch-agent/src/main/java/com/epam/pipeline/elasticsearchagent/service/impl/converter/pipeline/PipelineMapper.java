@@ -15,28 +15,32 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
+import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineDoc;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
+@AllArgsConstructor
 public class PipelineMapper implements EntityMapper<PipelineDoc> {
+
+    private final ElasticsearchServiceClient client;
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineDoc> container) {
         PipelineDoc pipelineDoc = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
             List<String> revisions = pipelineDoc.getRevisions()
                     .stream()
                     .map(Revision::getName)
@@ -59,7 +63,7 @@ public class PipelineMapper implements EntityMapper<PipelineDoc> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline: ", e);
         }
     }

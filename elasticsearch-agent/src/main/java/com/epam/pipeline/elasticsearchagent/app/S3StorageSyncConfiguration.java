@@ -15,10 +15,10 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
@@ -44,8 +44,8 @@ public class S3StorageSyncConfiguration {
     private String commonIndexPrefix;
 
     @Bean
-    public DataStorageMapper s3StorageMapper() {
-        return new DataStorageMapper(SearchDocumentType.S3_STORAGE);
+    public DataStorageMapper s3StorageMapper(final ElasticsearchServiceClient client) {
+        return new DataStorageMapper(SearchDocumentType.S3_STORAGE, client);
     }
 
     @Bean
@@ -65,10 +65,11 @@ public class S3StorageSyncConfiguration {
             final @Qualifier("s3StorageMapper") DataStorageMapper s3StorageMapper,
             final @Qualifier("s3StorageLoader") DataStorageLoader s3StorageLoader,
             final @Qualifier("s3EventProcessor") DataStorageIndexCleaner indexCleaner,
-            final @Value("${sync.s3-storage.index.name}") String indexName) {
+            final @Value("${sync.s3-storage.index.name}") String indexName,
+            final ElasticsearchServiceClient client) {
         return new EventToRequestConverterImpl<>(
                 commonIndexPrefix, indexName, s3StorageLoader, s3StorageMapper,
-                Collections.singletonList(indexCleaner));
+                Collections.singletonList(indexCleaner), client.getVersion());
     }
 
     @Bean

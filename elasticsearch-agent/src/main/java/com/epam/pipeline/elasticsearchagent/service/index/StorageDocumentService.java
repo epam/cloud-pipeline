@@ -1,7 +1,8 @@
 package com.epam.pipeline.elasticsearchagent.service.index;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.IndexRequestContainer;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SimpleLock;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,10 +30,10 @@ import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING
 @Slf4j
 public class StorageDocumentService {
 
-    private final StorageFileMapper mapper = new StorageFileMapper();
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final LockService lockService;
+    private final StorageFileMapper mapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
 
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
@@ -111,7 +111,7 @@ public class StorageDocumentService {
                                             final PermissionsContainer permissionsContainer,
                                             final String indexName,
                                             final String region) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath())
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath(), elasticsearchServiceClient.getVersion())
                 .source(mapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer, getDocumentType(dataStorage), tagDelimiter, null));
     }

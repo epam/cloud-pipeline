@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.RunConfigurationDoc;
@@ -24,8 +27,6 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -42,13 +43,14 @@ public class RunConfigurationDocumentBuilder {
 
     public static final String ID_DELIMITER = "-";
     private final ConfigurationEntryMapper entryMapper;
+    private final ElasticsearchServiceClient client;
 
     public List<DocWriteRequest> createDocsForConfiguration(final String indexName,
                                                             final EntityContainer<RunConfigurationDoc> configuration) {
         List<EntityContainer<ConfigurationEntryDoc>> entries = splitIntoEntryDocs(configuration);
 
         return entries.stream().map(entry ->
-                new IndexRequest(indexName, INDEX_TYPE, entry.getEntity().getId())
+                new IndexRequest(indexName, INDEX_TYPE, entry.getEntity().getId(), client.getVersion())
                         .source(entryMapper.map(entry)))
                 .collect(Collectors.toList());
     }

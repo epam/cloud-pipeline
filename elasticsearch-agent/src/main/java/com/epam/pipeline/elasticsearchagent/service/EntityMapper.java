@@ -15,11 +15,11 @@
  */
 package com.epam.pipeline.elasticsearchagent.service;
 
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;

@@ -16,9 +16,10 @@
 
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.exception.ElasticClientException;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
@@ -54,7 +55,6 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -106,7 +106,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private Set<Long> storageIds;
     private Set<Long> skipStorageIds;
 
-    private final StorageFileMapper fileMapper = new StorageFileMapper();
+    private final StorageFileMapper fileMapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
@@ -325,7 +325,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                                             final String indexName,
                                             final String region,
                                             final String content) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath())
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath(), elasticsearchServiceClient.getVersion())
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer, getDocumentType(), tagDelimiter, content));
     }

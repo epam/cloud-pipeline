@@ -15,10 +15,10 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import com.epam.pipeline.elasticsearchagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
@@ -80,7 +80,8 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.RUN,
                 runMapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper,
+                        elasticsearchClient.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize,
@@ -101,7 +102,8 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.TOOL,
                 toolMapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper,
+                        elasticsearchClient.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -116,11 +118,12 @@ public class CommonSyncConfiguration {
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
             final @Value("${sync.folder.index.name}") String indexName,
-            final @Value("${sync.folder.index.mapping}") String folderMapping) {
+            final @Value("${sync.folder.index.mapping}") String folderMapping,
+            final ElasticsearchServiceClient client) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.FOLDER,
                 folderMapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, client.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -135,11 +138,12 @@ public class CommonSyncConfiguration {
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
             final @Value("${sync.tool-group.index.name}") String indexName,
-            final @Value("${sync.tool-group.index.mapping}") String mapping) {
+            final @Value("${sync.tool-group.index.mapping}") String mapping,
+            final ElasticsearchServiceClient client) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.TOOL_GROUP,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, client.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -154,11 +158,12 @@ public class CommonSyncConfiguration {
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
             final @Value("${sync.docker-registry.index.name}") String indexName,
-            final @Value("${sync.docker-registry.index.mapping}") String mapping) {
+            final @Value("${sync.docker-registry.index.mapping}") String mapping,
+            final ElasticsearchServiceClient client) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.DOCKER_REGISTRY,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, client.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -173,11 +178,12 @@ public class CommonSyncConfiguration {
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
             final @Value("${sync.issue.index.name}") String indexName,
-            final @Value("${sync.issue.index.mapping}") String mapping) {
+            final @Value("${sync.issue.index.mapping}") String mapping,
+            final ElasticsearchServiceClient client) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.ISSUE,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, client.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -192,11 +198,12 @@ public class CommonSyncConfiguration {
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
             final @Value("${sync.metadata-entity.index.name}") String indexName,
-            final @Value("${sync.metadata-entity.index.mapping}") String mapping) {
+            final @Value("${sync.metadata-entity.index.mapping}") String mapping,
+            final ElasticsearchServiceClient client) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.METADATA_ENTITY,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, client.getVersion()),
                 indexService,
                 requestSender,
                 syncChunkSize);

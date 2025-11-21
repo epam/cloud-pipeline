@@ -15,12 +15,14 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.metadata;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -33,13 +35,17 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.PERMISSIONS_CON
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_KEY;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class MetadataEntityMapperTest {
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+    private final MetadataEntityMapper mapper = new MetadataEntityMapper(client);
 
     @Test
     void shouldMapMetadataEntity() throws IOException {
-        MetadataEntityMapper mapper = new MetadataEntityMapper();
+        when(client.getVersion()).thenReturn(ElasticStackVersion.V6);
 
         MetadataClass metadataClass = new MetadataClass(1L, "Sample");
         MetadataEntity metadataEntity = new MetadataEntity();
