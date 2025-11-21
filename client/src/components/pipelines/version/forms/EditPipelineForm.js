@@ -560,7 +560,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     const disableSubmit = this.props.pending || anyError;
     const isManager = isVersionedStorage
       ? roleModel.isManager.versionedStorage(this)
-      : roleModel.isManager.pipeline(this);
+      : (roleModel.isManager.pipeline(this) || roleModel.isManager.pipelineAdmin(this));
     const deleteAllowed =
       !isNewPipeline &&
       !!this.props.onDelete &&
