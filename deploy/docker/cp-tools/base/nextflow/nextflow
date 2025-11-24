@@ -166,7 +166,7 @@ printenv | grep '^NXF_'
 echo
 # - Print nextflow command
 echo "[INFO] Nextflow command:"
-_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}""
+_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}" $CP_NF_EXTRA_ARGS"
 echo "$_nf_cmd"
 echo
 eval "$_nf_cmd"
