@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent;
 
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -40,7 +41,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.json.JsonXContentParser;
 
 import java.io.IOException;
@@ -366,7 +366,7 @@ public final class MapperVerificationUtils {
     private static Map<String, Object> getPuttedObject(final XContentBuilder contentBuilder) throws IOException {
         JsonFactory factory = new JsonFactory();
         JsonXContentParser parser = new JsonXContentParser(NamedXContentRegistry.EMPTY, null,
-                factory.createParser(Strings.toString(contentBuilder)));
+                factory.createParser(contentBuilder.toString()));
         return parser.map();
     }
 

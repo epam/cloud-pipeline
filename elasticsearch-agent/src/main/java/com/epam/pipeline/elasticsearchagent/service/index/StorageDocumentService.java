@@ -26,14 +26,13 @@ import java.util.Optional;
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class StorageDocumentService {
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final LockService lockService;
-    private final StorageFileMapper mapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
+    private final StorageFileMapper mapper;
 
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
@@ -47,6 +46,15 @@ public class StorageDocumentService {
     private String indexName;
     @Value("${sync.s3-file.index.mapping}")
     private String indexSettingsPath;
+
+    public StorageDocumentService(final CloudPipelineAPIClient cloudPipelineAPIClient,
+                                  final ElasticsearchServiceClient elasticsearchServiceClient,
+                                  final LockService lockService) {
+        this.cloudPipelineAPIClient = cloudPipelineAPIClient;
+        this.elasticsearchServiceClient = elasticsearchServiceClient;
+        this.lockService = lockService;
+        this.mapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
+    }
 
     public void indexFile(final Long storageId,
                           final List<DataStorageFile> files) {

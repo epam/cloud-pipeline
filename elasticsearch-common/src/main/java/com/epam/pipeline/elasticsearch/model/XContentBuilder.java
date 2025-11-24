@@ -45,4 +45,6 @@ public interface XContentBuilder extends AutoCloseable {
     XContentBuilder startArray(String name) throws IOException;
 
     XContentBuilder endArray() throws IOException;
+
+    String toString();
 }

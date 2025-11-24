@@ -15,12 +15,14 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.tool;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.ToolWithDescription;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -39,13 +41,18 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_LABEL;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class ToolMapperTest {
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapTool() throws IOException {
-        ToolMapper mapper = new ToolMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        ToolMapper mapper = new ToolMapper(client);
 
         Tool tool = new Tool();
         tool.setId(1L);

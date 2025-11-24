@@ -18,6 +18,7 @@ package com.epam.pipeline.elasticsearch.model.v7.common.xcontent;
 
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import lombok.Getter;
+import shaded.org.elasticsearch.v7.common.Strings;
 import shaded.org.elasticsearch.v7.common.xcontent.XContentFactory;
 
 import java.io.IOException;
@@ -112,5 +113,10 @@ public class XContentBuilderV7 implements XContentBuilder {
     @Override
     public void close() {
         inner.close();
+    }
+
+    @Override
+    public String toString() {
+        return Strings.toString(inner);
     }
 }

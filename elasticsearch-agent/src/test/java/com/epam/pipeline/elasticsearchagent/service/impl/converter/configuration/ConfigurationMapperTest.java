@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
@@ -23,7 +26,6 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,13 +44,18 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_SNAPSHOT;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class ConfigurationMapperTest {
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapRunConfiguration() throws IOException {
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(client);
 
         Pipeline pipeline = buildPipeline();
         RunConfiguration runConfiguration = buildRunConfiguration();
@@ -74,7 +81,8 @@ class ConfigurationMapperTest {
 
     @Test
     void shouldMapFireCloudConfiguration() throws IOException {
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(client);
 
         RunConfiguration runConfiguration = buildRunConfiguration();
 

@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.exception.EntityNotFoundException;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.EventType;
@@ -29,7 +32,6 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.action.DocWriteRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,6 +83,9 @@ class PipelineCodeHandlerTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private ElasticsearchServiceClient esClient;
+
     private PipelineCodeHandler pipelineCodeHandler;
     private PipelineEvent expectedPipelineEvent;
     private EntityContainer<PipelineDoc> container;
@@ -90,9 +96,10 @@ class PipelineCodeHandlerTest {
 
     @BeforeEach
     void setup() {
+        doReturn(ElasticStackVersion.V6).when(esClient).getVersion();
         pipelineCodeHandler = new PipelineCodeHandler(INDEX_PREFIX, INDEX_NAME, apiClient,
-                new ElasticIndexService(), FILE_INDEX_PATHS, objectMapper, pipelineLoader,
-                new PipelineCodeMapper(), "master", CODE_LIMIT_BYTES);
+                new ElasticIndexService(esClient), FILE_INDEX_PATHS, objectMapper, pipelineLoader,
+                new PipelineCodeMapper(esClient), "master", CODE_LIMIT_BYTES);
 
         expectedPipelineEvent = new PipelineEvent();
         expectedPipelineEvent.setEventType(EventType.INSERT);

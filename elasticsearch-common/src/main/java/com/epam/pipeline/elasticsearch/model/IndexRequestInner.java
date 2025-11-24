@@ -19,4 +19,7 @@ package com.epam.pipeline.elasticsearch.model;
 public interface IndexRequestInner {
     IndexRequestInner source(XContentBuilder content);
     IndexRequestInner id(String id);
+    String id();
+    String index();
+    String type();
 }

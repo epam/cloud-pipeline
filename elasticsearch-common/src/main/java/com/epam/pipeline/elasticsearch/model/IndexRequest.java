@@ -50,4 +50,19 @@ public class IndexRequest implements DocWriteRequest {
         inner.id(id);
         return this;
     }
+
+    @Override
+    public String id() {
+        return inner.id();
+    }
+
+    @Override
+    public String index() {
+        return inner.index();
+    }
+
+    @Override
+    public String type() {
+        return inner.type();
+    }
 }

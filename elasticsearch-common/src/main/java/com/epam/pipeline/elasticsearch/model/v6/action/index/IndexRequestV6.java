@@ -45,4 +45,19 @@ public class IndexRequestV6 implements IndexRequestInner {
         inner.id(id);
         return this;
     }
+
+    @Override
+    public String id() {
+        return inner.id();
+    }
+
+    @Override
+    public String index() {
+        return inner.index();
+    }
+
+    @Override
+    public String type() {
+        return inner.type();
+    }
 }

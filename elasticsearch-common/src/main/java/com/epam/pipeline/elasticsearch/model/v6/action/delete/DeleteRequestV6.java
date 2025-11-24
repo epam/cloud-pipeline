@@ -33,4 +33,19 @@ public class DeleteRequestV6 implements DeleteRequestInner {
     public DeleteRequestV6(final String indexName, final String objectId) {
         inner = new org.elasticsearch.action.delete.DeleteRequest(indexName, DOC_TYPE, objectId);
     }
+
+    @Override
+    public String id() {
+        return inner.id();
+    }
+
+    @Override
+    public String index() {
+        return inner.index();
+    }
+
+    @Override
+    public String type() {
+        return inner.type();
+    }
 }

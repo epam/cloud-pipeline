@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.client.v6.ElasticsearchServiceClientV6;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,11 +23,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(name = "elasticsearch.client.version", value = "6")
+@ConditionalOnProperty(name = "elasticsearch.client.version", havingValue = "6")
 public class ElasticsearchConfigurationV6 {
 
     @Bean
-    public ElasticsearchServiceClientV6 elasticsearchServiceClient(
+    public ElasticsearchServiceClient elasticsearchServiceClient(
             @Value("${elasticsearch.client.url:#{null}}") String elasticsearchUrl,
             @Value("${elasticsearch.client.port:9200}") int elasticsearchPort,
             @Value("${elasticsearch.client.scheme:http}") String elasticsearchScheme) {

@@ -17,4 +17,7 @@
 package com.epam.pipeline.elasticsearch.model;
 
 public interface DeleteRequestInner {
+    String id();
+    String index();
+    String type();
 }

@@ -27,4 +27,19 @@ public class DeleteRequestV7 implements DeleteRequestInner {
     public DeleteRequestV7(final String indexName, final String objectId) {
         inner = new shaded.org.elasticsearch.v7.action.delete.DeleteRequest(indexName, objectId);
     }
+
+    @Override
+    public String id() {
+        return inner.id();
+    }
+
+    @Override
+    public String index() {
+        return inner.index();
+    }
+
+    @Override
+    public String type() {
+        throw new UnsupportedOperationException("Type is not supported for ElasticStack 7 version.");
+    }
 }

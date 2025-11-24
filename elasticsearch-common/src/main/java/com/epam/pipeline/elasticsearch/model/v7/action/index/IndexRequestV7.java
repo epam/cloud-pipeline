@@ -48,4 +48,19 @@ public class IndexRequestV7 implements IndexRequestInner {
         inner.id(id);
         return this;
     }
+
+    @Override
+    public String id() {
+        return inner.id();
+    }
+
+    @Override
+    public String index() {
+        return inner.index();
+    }
+
+    @Override
+    public String type() {
+        throw new UnsupportedOperationException("Type is not supported for ElasticStack 7 version.");
+    }
 }

@@ -15,8 +15,10 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,13 +31,18 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE_BYTE;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class PipelineCodeMapperTest {
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapPipelineCode() throws IOException {
-        PipelineCodeMapper mapper = new PipelineCodeMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        PipelineCodeMapper mapper = new PipelineCodeMapper(client);
 
         Pipeline pipeline = new Pipeline();
         pipeline.setId(1L);

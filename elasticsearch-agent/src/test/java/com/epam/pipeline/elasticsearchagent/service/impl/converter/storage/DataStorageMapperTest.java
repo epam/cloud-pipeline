@@ -80,7 +80,8 @@ class DataStorageMapperTest {
 
     @Test
     void shouldMapNFSDataStorage() throws IOException {
-        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.NFS_STORAGE);
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.NFS_STORAGE, client);
 
         NFSDataStorage dataStorage = new NFSDataStorage();
         fillStorage(dataStorage);

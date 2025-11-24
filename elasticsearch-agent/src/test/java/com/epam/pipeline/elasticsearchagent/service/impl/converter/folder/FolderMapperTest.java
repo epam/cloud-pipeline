@@ -15,9 +15,11 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.folder;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.pipeline.Folder;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -31,13 +33,18 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.METADATA;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.PERMISSIONS_CONTAINER;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class FolderMapperTest {
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapFolder() throws IOException {
-        FolderMapper mapper = new FolderMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        FolderMapper mapper = new FolderMapper(client);
 
         Folder folder = new Folder(1L);
         folder.setName(TEST_NAME);

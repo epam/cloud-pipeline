@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.issue;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.issue.Attachment;
 import com.epam.pipeline.entity.issue.Issue;
@@ -22,7 +25,6 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.issue.IssueStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.vo.EntityVO;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,13 +42,18 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER_NAME;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class IssueMapperTest {
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapIssue() throws IOException {
-        IssueMapper mapper = new IssueMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        IssueMapper mapper = new IssueMapper(client);
 
         Attachment attachment = new Attachment();
         attachment.setPath(TEST_PATH);

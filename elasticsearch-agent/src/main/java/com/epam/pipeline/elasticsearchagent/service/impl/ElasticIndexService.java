@@ -19,6 +19,7 @@ import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.exception.ElasticClientException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +36,10 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ElasticIndexService {
 
-    @Autowired
-    private ElasticsearchServiceClient elasticsearchServiceClient;
+    private final ElasticsearchServiceClient elasticsearchServiceClient;
 
     // TODO: shall we merge logic to ElasticsearchServiceClient?
     public ElasticStackVersion getVersion() {

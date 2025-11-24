@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.run;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -24,7 +27,6 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -43,6 +45,8 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class RunMapperTest {
@@ -51,9 +55,12 @@ class RunMapperTest {
     private static final BigDecimal PRICE = new BigDecimal("1.2");
     private static final int MAX_LOG_LINES = 100;
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapRun() throws IOException {
-        PipelineRunMapper mapper = new PipelineRunMapper(MAX_LOG_LINES);
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        PipelineRunMapper mapper = new PipelineRunMapper(MAX_LOG_LINES, client);
 
         PipelineRunWithLog pipelineRunWithLog = new PipelineRunWithLog();
 

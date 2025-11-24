@@ -15,12 +15,14 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineDoc;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.utils.DateUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,13 +40,18 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_REPO;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_TEMPLATE;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class PipelineMapperTest {
 
+    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
+
     @Test
     void shouldMapPipeline() throws IOException {
-        PipelineMapper mapper = new PipelineMapper();
+        doReturn(ElasticStackVersion.V6).when(client).getVersion();
+        PipelineMapper mapper = new PipelineMapper(client);
 
         Pipeline pipeline = new Pipeline();
         pipeline.setId(1L);

@@ -89,6 +89,9 @@ dependencies {
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
     testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
+    testImplementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
+    testImplementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
+    testImplementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
 
     testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
     testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
