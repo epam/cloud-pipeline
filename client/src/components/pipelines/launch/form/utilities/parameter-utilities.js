@@ -683,7 +683,7 @@ export function generateParameterConfigsFromJsonPayload (json) {
     for (const [key, value] of Object.entries(json)) {
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         result.push(getParameterConfig(key, {type: parameterTypeFromValue(value), value}));
-      } else if (typeof value === 'object') {
+      } else if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
           // object parameter
           result.push(getParameterConfig(key, {type: 'object', value}));
@@ -1831,6 +1831,28 @@ export function parametersModified (parameters, initialParameters) {
   return modified;
 }
 
+/**
+ * @param {Parameter[]} parameters
+ */
+function downloadParametersTemplate (parameters = []) {
+  let yamlContent = '';
+  parameters
+    .filter(p => p.config?.visible && !p.system)
+    .forEach((p) => {
+      const {name = '', value = ''} = p || {};
+      yamlContent += `${name}: ${value}\n`;
+    });
+  const blob = new Blob([yamlContent], {type: 'text/yaml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'parameters-template.yaml';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export {
   getParameterValue,
   getParameterNumberValue,
@@ -1848,5 +1870,6 @@ export {
   addSystemParameter,
   addSystemParameters,
   hasResolvedValues,
-  toggleResolvedValues
+  toggleResolvedValues,
+  downloadParametersTemplate
 };
