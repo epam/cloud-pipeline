@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.elasticsearch.model;
+package com.epam.pipeline.elasticsearch.model.v6.action.support;
 
-public interface SearchRequestInner {
+import com.epam.pipeline.elasticsearch.model.IndicesOptionsInner;
 
-    SearchRequestInner indicesOptions(IndicesOptionsInner indicesOptions);
-    SearchRequestInner source(SearchSourceBuilder sourceBuilder);
-    SearchRequestInner scroll();
+public class IndicesOptionsFactoryV6 {
+
+    public static IndicesOptionsInner lenientExpandOpen() {
+        return new IndicesOptionsV6(org.elasticsearch.action.support.IndicesOptions.lenientExpandOpen());
+    }
+
+    public static IndicesOptionsInner strictExpandOpen() {
+        return new IndicesOptionsV6(org.elasticsearch.action.support.IndicesOptions.strictExpandOpen());
+    }
 }

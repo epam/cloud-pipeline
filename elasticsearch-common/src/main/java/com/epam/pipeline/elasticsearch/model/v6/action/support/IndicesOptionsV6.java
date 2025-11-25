@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.elasticsearch.model;
+package com.epam.pipeline.elasticsearch.model.v6.action.support;
 
-public interface SearchRequestInner {
+import com.epam.pipeline.elasticsearch.model.IndicesOptionsInner;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-    SearchRequestInner indicesOptions(IndicesOptionsInner indicesOptions);
-    SearchRequestInner source(SearchSourceBuilder sourceBuilder);
-    SearchRequestInner scroll();
+@Getter
+@RequiredArgsConstructor
+public class IndicesOptionsV6 implements IndicesOptionsInner {
+
+    private final org.elasticsearch.action.support.IndicesOptions inner;
+
 }

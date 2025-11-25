@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.elasticsearch.model;
+package com.epam.pipeline.elasticsearch.model.v7.action.support;
 
-public interface SearchRequestInner {
+import com.epam.pipeline.elasticsearch.model.IndicesOptionsInner;
 
-    SearchRequestInner indicesOptions(IndicesOptionsInner indicesOptions);
-    SearchRequestInner source(SearchSourceBuilder sourceBuilder);
-    SearchRequestInner scroll();
+public class IndicesOptionsFactoryV7 {
+
+    public static IndicesOptionsInner lenientExpandOpen() {
+        return new IndicesOptionsV7(shaded.org.elasticsearch.v7.action.support.IndicesOptions.lenientExpandOpen());
+    }
+
+    public static IndicesOptionsInner strictExpandOpen() {
+        return new IndicesOptionsV7(shaded.org.elasticsearch.v7.action.support.IndicesOptions.strictExpandOpen());
+    }
 }

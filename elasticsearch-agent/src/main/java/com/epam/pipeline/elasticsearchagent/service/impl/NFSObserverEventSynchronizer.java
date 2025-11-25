@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.DeleteRequest;
 import com.epam.pipeline.elasticsearch.model.IndexRequest;
+import com.epam.pipeline.elasticsearch.model.IndicesOptions;
 import com.epam.pipeline.elasticsearch.model.MultiSearchRequest;
 import com.epam.pipeline.elasticsearch.model.MultiSearchResponse;
 import com.epam.pipeline.elasticsearch.model.MultiSearchResponseInner;
@@ -434,7 +435,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                     .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId(), version)))
             .size(1);
         return new SearchRequest(version, "*")
-            .indicesOptions()
+            .indicesOptions(IndicesOptions.lenientExpandOpen(version))
             .source(source);
     }
 
@@ -449,7 +450,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .size(SCROLLING_PAGE_SIZE);
         return new SearchRequest(version, "*")
             .scroll()
-            .indicesOptions()
+            .indicesOptions(IndicesOptions.lenientExpandOpen(version))
             .source(source);
     }
 

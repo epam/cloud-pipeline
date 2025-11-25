@@ -16,9 +16,5 @@
 
 package com.epam.pipeline.elasticsearch.model;
 
-public interface SearchRequestInner {
-
-    SearchRequestInner indicesOptions(IndicesOptionsInner indicesOptions);
-    SearchRequestInner source(SearchSourceBuilder sourceBuilder);
-    SearchRequestInner scroll();
+public interface IndicesOptionsInner {
 }

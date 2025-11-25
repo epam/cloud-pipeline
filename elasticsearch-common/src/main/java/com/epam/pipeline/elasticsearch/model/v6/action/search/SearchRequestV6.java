@@ -16,11 +16,12 @@
 
 package com.epam.pipeline.elasticsearch.model.v6.action.search;
 
+import com.epam.pipeline.elasticsearch.model.IndicesOptionsInner;
 import com.epam.pipeline.elasticsearch.model.SearchRequestInner;
 import com.epam.pipeline.elasticsearch.model.SearchSourceBuilder;
+import com.epam.pipeline.elasticsearch.model.v6.action.support.IndicesOptionsV6;
 import com.epam.pipeline.elasticsearch.model.v6.search.builder.SearchSourceBuilderV6;
 import lombok.Getter;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.Scroll;
 
@@ -35,8 +36,8 @@ public class SearchRequestV6 implements SearchRequestInner {
     }
 
     @Override
-    public SearchRequestV6 indicesOptions() {
-        inner.indicesOptions(IndicesOptions.lenientExpandOpen());
+    public SearchRequestV6 indicesOptions(final IndicesOptionsInner indicesOptions) {
+        inner.indicesOptions(((IndicesOptionsV6) indicesOptions).getInner());
         return this;
     }
 

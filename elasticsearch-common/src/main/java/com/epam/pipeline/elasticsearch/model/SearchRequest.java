@@ -34,8 +34,8 @@ public class SearchRequest {
         }
     }
 
-    public SearchRequest indicesOptions() {
-        inner.indicesOptions();
+    public SearchRequest indicesOptions(final IndicesOptionsInner indicesOptions) {
+        inner.indicesOptions(indicesOptions);
         return this;
     }
 
