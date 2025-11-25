@@ -35,6 +35,7 @@ import java.util.Map;
 public class PipelineRunNextflowTaskDataExtractor implements  PipelineRunRuntimeDataExtractor {
 
     public static final String HASH_PARAMETER_KEY = "hash";
+    public static final String WORKDIR_PARAMETER_KEY = "workdir";
     public static final String TYPE_PARAMETER_KEY = "type";
 
     @Override
@@ -45,18 +46,20 @@ public class PipelineRunNextflowTaskDataExtractor implements  PipelineRunRuntime
     @Override
     public String getDataFilePath(final Map<String, String> parameters) {
         validateParameters(parameters);
-        return Paths.get(
-                parameters.get(HASH_PARAMETER_KEY),
-                getNextflowTaskFileType(parameters).getFilename()
-        ).toString();
+        return parameters.containsKey(HASH_PARAMETER_KEY) ?
+                Paths.get(parameters.get(HASH_PARAMETER_KEY),
+                        getNextflowTaskFileType(parameters).getFilename()).toString() :
+                String.format("%s/%s", parameters.get(WORKDIR_PARAMETER_KEY),
+                        getNextflowTaskFileType(parameters).getFilename());
     }
 
     private static void validateParameters(final Map<String, String> parameters) {
         Assert.notNull(parameters,
-                "Additional parameters 'hash', 'type' should be provided to get Nextflow task file.");
-        Assert.isTrue(parameters.containsKey(HASH_PARAMETER_KEY),
-                String.format("Additional parameter '%s' should be provided to get Nextflow task file.",
-                        HASH_PARAMETER_KEY));
+                "Additional parameters 'hash/workdir', 'type' should be provided to get Nextflow task file.");
+        Assert.isTrue(parameters.containsKey(HASH_PARAMETER_KEY) ||
+                        parameters.containsKey(WORKDIR_PARAMETER_KEY),
+                String.format("Additional parameter '%s' or '%s' should be provided to get Nextflow task file.",
+                        HASH_PARAMETER_KEY, WORKDIR_PARAMETER_KEY));
         Assert.isTrue(parameters.containsKey(TYPE_PARAMETER_KEY),
                 String.format("Additional parameter '%s' should be provided to get Nextflow task file.",
                         TYPE_PARAMETER_KEY));
@@ -84,5 +87,4 @@ public class PipelineRunNextflowTaskDataExtractor implements  PipelineRunRuntime
     private static NextflowTaskFile.Type getNextflowTaskFileType(final Map<String, String> parameters) {
         return NextflowTaskFile.Type.valueOf(parameters.get(TYPE_PARAMETER_KEY));
     }
-
 }

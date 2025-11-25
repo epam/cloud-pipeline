@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfigEntry;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeEvalType;
+import com.epam.pipeline.manager.pipeline.runtime.PipelineRunNextflowTaskDataExtractor;
 import com.epam.pipeline.manager.pipeline.runtime.PipelineRunRuntimeDataExtractor;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -78,23 +80,40 @@ public class PipelineRunRuntimeDataManager {
                         String.format("There is not runtime dataExtractor defined of type %s", type))
                 );
 
-        final String runFolderStoragePathPrefix = defineRunFolderStoragePathPrefix(dataSyncEntry, type);
-        final AbstractDataStorage dataStorage = dataStorageManager.loadByPathOrId(runFolderStoragePathPrefix);
+        AbstractDataStorage dataStorage;
+        String dataFilePath;
+        final RunSyncRuntimeEvalType evalType = dataSyncEntry.getEvalType();
+        switch (evalType) {
+            case HASH:
+                validateParams(PipelineRunNextflowTaskDataExtractor.HASH_PARAMETER_KEY, parameters, evalType);
+                final String runFolderStoragePathPrefix = defineRunFolderStoragePathPrefix(dataSyncEntry, type);
+                dataStorage = dataStorageManager.loadByPathOrId(runFolderStoragePathPrefix);
 
-        final String runFolderPathPrefix = runFolderStoragePathPrefix
-                .replace(dataStorage.getPath(), StringUtils.EMPTY);
-        final String dataPathPrefix = dataSyncEntry.getDataPathPrefix();
-        final String dataFileName = dataExtractor.getDataFilePath(parameters);
+                final String runFolderPathPrefix = runFolderStoragePathPrefix
+                        .replace(dataStorage.getPath(), StringUtils.EMPTY);
+                final String dataPathPrefix = dataSyncEntry.getDataPathPrefix();
+                final String dataFileName = dataExtractor.getDataFilePath(parameters);
 
-        final String dataFilePath = Stream.of(runFolderPathPrefix,
-                        dataSyncEntry.getIncludeRunIdInPath() ? String.valueOf(runId) : StringUtils.EMPTY,
-                        dataPathPrefix, dataFileName)
-                .filter(StringUtils::isNotBlank)
-                .map(this::cleanupPath)
-                .collect(Collectors.joining(PATH_DELIMITER));
+                dataFilePath = Stream.of(runFolderPathPrefix, String.valueOf(runId), dataPathPrefix, dataFileName)
+                        .filter(StringUtils::isNotBlank)
+                        .map(this::cleanupPath)
+                        .collect(Collectors.joining(PATH_DELIMITER));
+                break;
+            case WORKDIR:
+                validateParams(PipelineRunNextflowTaskDataExtractor.WORKDIR_PARAMETER_KEY, parameters, evalType);
+                final String fullDataFilePath = dataExtractor.getDataFilePath(parameters);
+                final String dataFilePathWithStorage = defineRunFolderStoragePathPrefix(fullDataFilePath, type);
+                dataStorage = dataStorageManager.loadByPathOrId(dataFilePathWithStorage);
+                dataFilePath = cleanupPath(dataFilePathWithStorage.replace(dataStorage.getPath(), StringUtils.EMPTY));
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Incorrect data evaluation type '%s' for '%s' " +
+                        "system preference. Should be HASH or WORKDIR",
+                        evalType, SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA.getKey()));
+        }
 
         log.debug("Constructed file path '{}' in storage {}, to get runtime data for the run {}.",
-                dataFileName, dataStorage.getId(), runId);
+                dataFilePath, dataStorage.getId(), runId);
 
         dataStorageManager.checkDataStorageObjectExists(dataStorage, dataFilePath, null);
         final DataStorageStreamingContent fileContent = dataStorageManager
@@ -103,9 +122,22 @@ public class PipelineRunRuntimeDataManager {
         return dataExtractor.parseData(parameters, fileContent.getContent());
     }
 
+    private static void validateParams(final String parameterKey,
+                                       final Map<String, String> parameters,
+                                       final RunSyncRuntimeEvalType evalType) {
+        Assert.isTrue(parameters.containsKey(parameterKey),
+                String.format("Invalid parameters for '%s' preference: " +
+                                "in case of '%s' evalType '%s' key should be specified",
+                        SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA.getKey(), evalType, parameterKey));
+    }
+
     private static String defineRunFolderStoragePathPrefix(final RunSyncRuntimeDataConfigEntry dataSyncEntry,
                                                            final RunSyncRuntimeDataType type) {
-        String runFolderStoragePathPrefix = dataSyncEntry.getRunFolderPathPrefix();
+        return defineRunFolderStoragePathPrefix(dataSyncEntry.getRunFolderPathPrefix(), type);
+    }
+
+    private static String defineRunFolderStoragePathPrefix(String runFolderStoragePathPrefix,
+                                                           final RunSyncRuntimeDataType type) {
         Assert.notNull(runFolderStoragePathPrefix,
                 String.format("Invalid configuration in %s for datatype %s: runFolderPathPrefix should be specified",
                         SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA.getKey(), type));

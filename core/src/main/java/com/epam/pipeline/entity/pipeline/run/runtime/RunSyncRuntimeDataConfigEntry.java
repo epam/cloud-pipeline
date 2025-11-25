@@ -29,5 +29,5 @@ public class RunSyncRuntimeDataConfigEntry {
     // This path is relative to run folder.
     // If not present, data should be located in the run folder itself.
     private final String dataPathPrefix;
-    private final Boolean includeRunIdInPath = true;
+    private final RunSyncRuntimeEvalType evalType = RunSyncRuntimeEvalType.HASH;
 }
