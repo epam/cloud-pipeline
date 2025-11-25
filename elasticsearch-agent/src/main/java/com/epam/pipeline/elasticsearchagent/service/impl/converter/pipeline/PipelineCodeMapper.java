@@ -25,6 +25,7 @@ import com.epam.pipeline.utils.FileContentUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -61,7 +62,7 @@ public class PipelineCodeMapper {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
         }
     }

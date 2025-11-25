@@ -73,7 +73,7 @@ public class ToolMapper implements EntityMapper<ToolWithDescription> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for tool: ", e);
         }
     }

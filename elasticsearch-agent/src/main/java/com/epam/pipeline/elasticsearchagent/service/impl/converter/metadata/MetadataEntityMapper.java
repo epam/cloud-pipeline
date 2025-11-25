@@ -63,7 +63,7 @@ public class MetadataEntityMapper implements EntityMapper<MetadataEntity> {
             buildMap(prepareEntityMetadata(entity.getData()), jsonBuilder, "fields");
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for metadata: ", e);
         }
     }

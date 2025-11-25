@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
@@ -52,7 +54,7 @@ public class FolderMapper implements EntityMapper<Folder> {
             jsonBuilder.endObject();
 
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline folder: ", e);
         }
     }

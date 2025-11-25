@@ -39,7 +39,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.mchange.util.AssertException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.json.JsonXContentParser;
 

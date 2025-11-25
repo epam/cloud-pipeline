@@ -75,7 +75,8 @@ class PipelineIdConverterTest {
         final ShardId shardId = new ShardId(index, 1);
         final DocWriteResponse docWriteResponse = new IndexResponse(shardId, TestConstants.TEST_NAME, DOCUMENT_ID,
                 1, 1, 1, true);
-        final BulkItemResponse bulkItemResponse = new BulkItemResponse(1, DocWriteRequest.OpType.CREATE, docWriteResponse);
+        final BulkItemResponse bulkItemResponse = new BulkItemResponse(1, DocWriteRequest.OpType.CREATE,
+                docWriteResponse);
         return new BulkItemResponseV6(bulkItemResponse);
     }
 }

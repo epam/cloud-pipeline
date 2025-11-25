@@ -78,7 +78,7 @@ public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntry
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for run configuration: ", e);
         }
     }

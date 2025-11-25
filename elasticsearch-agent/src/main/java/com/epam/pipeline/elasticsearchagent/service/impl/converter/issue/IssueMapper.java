@@ -63,7 +63,7 @@ public class IssueMapper implements EntityMapper<Issue> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for issue: ", e);
         }
     }

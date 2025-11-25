@@ -26,6 +26,8 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.RequiredArgsConstructor;
 
+import java.io.IOException;
+
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @RequiredArgsConstructor
@@ -67,7 +69,7 @@ public class DataStorageMapper implements EntityMapper<DataStorageDoc> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
         }
     }

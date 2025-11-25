@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,7 +64,7 @@ public class PipelineMapper implements EntityMapper<PipelineDoc> {
 
             jsonBuilder.endObject();
             return jsonBuilder;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline: ", e);
         }
     }

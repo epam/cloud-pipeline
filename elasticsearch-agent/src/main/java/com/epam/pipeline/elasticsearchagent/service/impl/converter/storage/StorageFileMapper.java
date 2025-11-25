@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -128,7 +129,7 @@ public class StorageFileMapper {
                 }
             }
             return jsonBuilder.endObject();
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new AmazonS3Exception("An error occurred while creating document: ", e);
         }
     }
