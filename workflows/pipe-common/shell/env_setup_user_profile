@@ -201,7 +201,7 @@ for _CURRENT_USER in ${_OWNER_ATTRIBUTS_USERS_LIST[@]}; do
         while IFS=, read -r group_id group_name; do
             echo "Resolving $group_name group (id: $group_id) attributes..."
             _GROUP_ATTRIBUTES="$(get_metadata_list "$group_id" "ROLE")"
-            echo process_attributes "$_GROUP_ATTRIBUTES"
+            process_attributes "$_GROUP_ATTRIBUTES"
         done <<< "$_OWNER_GROUPS"
     fi
 
