@@ -86,7 +86,9 @@ public class PipelineRunRuntimeDataManager {
         final String dataPathPrefix = dataSyncEntry.getDataPathPrefix();
         final String dataFileName = dataExtractor.getDataFilePath(parameters);
 
-        final String dataFilePath = Stream.of(runFolderPathPrefix, String.valueOf(runId), dataPathPrefix, dataFileName)
+        final String dataFilePath = Stream.of(runFolderPathPrefix,
+                        dataSyncEntry.getIncludeRunIdInPath() ? String.valueOf(runId) : StringUtils.EMPTY,
+                        dataPathPrefix, dataFileName)
                 .filter(StringUtils::isNotBlank)
                 .map(this::cleanupPath)
                 .collect(Collectors.joining(PATH_DELIMITER));
