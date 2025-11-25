@@ -34,6 +34,7 @@ import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.SEARCH_TIMEOUT;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -46,8 +47,6 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
@@ -148,7 +147,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     @BeforeMethod
     public void refreshPage() {
-        getWebDriver().navigate().refresh();
+        refresh();
     }
 
     @Test

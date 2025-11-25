@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -141,6 +142,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             loginAs(user);
             sleep(timeout, SECONDS);
             open(endpointsLink);
+            refresh();
             new ToolPageAO(endpointsLink)
                     .validateEndpointPage(user.login)
                     .assertURLEndsWith(friendlyURL);
@@ -156,6 +158,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             loginAs(user);
             sleep(timeout, SECONDS);
             open(endpointsLink, "", user.login, user.password);
+            refresh();
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
         } finally {

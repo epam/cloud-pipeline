@@ -299,7 +299,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE refresh() {
-        getWebDriver().navigate().refresh();
+        Utils.refresh();
         return (ELEMENT_TYPE) this;
     }
 

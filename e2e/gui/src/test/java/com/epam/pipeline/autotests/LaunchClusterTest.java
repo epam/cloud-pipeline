@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import org.testng.annotations.AfterMethod;
@@ -37,7 +38,6 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -96,7 +96,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
 
     @BeforeMethod
     public void refreshPage() {
-        getWebDriver().navigate().refresh();
+        refresh();
     }
 
     @Test

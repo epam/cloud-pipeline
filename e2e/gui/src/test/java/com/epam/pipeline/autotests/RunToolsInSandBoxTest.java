@@ -109,6 +109,7 @@ public class RunToolsInSandBoxTest
         tools()
                 .perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .assertLatestPipelineHasName(format("%s:%s", nameWithoutGroup(tool), "latest"));
     }
@@ -183,6 +184,7 @@ public class RunToolsInSandBoxTest
     public void validateNodeReusage() {
         tools().perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool));
 
         String otherNodeName = clusterMenu()
@@ -199,6 +201,7 @@ public class RunToolsInSandBoxTest
 
         tools().perform(registry, group, tool, runTool())
                 .setLaunchOptions(disk, type, String.valueOf(timeout))
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForCompletion()

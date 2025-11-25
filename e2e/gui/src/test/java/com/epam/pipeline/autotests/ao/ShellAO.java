@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Selectors.byText;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -63,17 +64,17 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertPageContains(String text) {
-        $(withText(text)).shouldBe(visible);
+        $(byText(text)).shouldBe(visible);
         return this;
     }
 
     public ShellAO assertPageContains(String text1, String text2) {
-        $(withText(text1)).shouldHave(text(text2));
+        $(byText(text1)).shouldHave(text(text2));
         return this;
     }
 
     public ShellAO assertPageDoesNotContain(String text) {
-        $(withText(text)).shouldNotBe(visible);
+        $(byText(text)).shouldNotBe(visible);
         return this;
     }
 
