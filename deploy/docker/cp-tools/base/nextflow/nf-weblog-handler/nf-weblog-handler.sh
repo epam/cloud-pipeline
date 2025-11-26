@@ -121,6 +121,20 @@ function _expand() { eval "echo \"$1\""; }
 function enable_nf_runtime_data_sync() {
     SYNC_RUN_RUNTIME_DATA_TASK="SyncRunRuntimeData"
 
+    pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
+    run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "GET" "$API_TOKEN")
+    if [ $? -ne 0 ]; then
+        pipe_log_error "[ERROR] Cannot retrieve 'launch.run.sync.runtime.data' preference, synchronization of nextflow runtime data will not be configured." "$SYNC_RUN_RUNTIME_DATA_TASK"
+    fi
+
+    run_sync_data=$(echo "$run_sync_data_pref_response" | jq '.payload.value' -r)
+    nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
+    nf_task_run_eval_type=$(echo "$nf_task_sync_config_entry" | jq '.evalType // ""' -r)
+    if [ "$nf_task_run_eval_type" -eq "workdir" ]; then
+        pipe_log_info "[INFO] 'NF_TASK entry evalType for 'launch.run.sync.runtime.data' equals 'workdir'. Nextflow task workdir sync process won't be started." "$SYNC_RUN_RUNTIME_DATA_TASK"
+        return 0
+    fi
+
     _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 + 1 ))
     export CP_SYNC_TO_STORAGE_THREADS=${CP_SYNC_TO_STORAGE_THREADS:-$_DEFAULT_NUMBER_OF_THREADS}
     CP_NF_WORKDIR=$(_expand "${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}")
@@ -131,20 +145,7 @@ function enable_nf_runtime_data_sync() {
         export CP_NF_TASK_LOOKUP_FILE_PATH="$CP_NF_TRACE_FILE"
     fi
 
-    pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
-    run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "GET" "$API_TOKEN")
-    if [ $? -ne 0 ]; then
-        pipe_log_error "[ERROR] Cannot retrieve 'launch.run.sync.runtime.data' preference, synchronization of nextflow runtime data will not be configured." "$SYNC_RUN_RUNTIME_DATA_TASK"
-    fi
-
     # Configure synchronization for nf trace.txt file
-    run_sync_data=$(echo "$run_sync_data_pref_response" | jq '.payload.value' -r)
-    nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
-    nf_task_run_eval_type=$(echo "$nf_task_sync_config_entry" | jq '.evalType // ""' -r)
-    if [ "$nf_task_run_eval_type" -eq "workdir" ]; then
-        pipe_log_info "[INFO] 'NF_TASK entry evalType for 'launch.run.sync.runtime.data' equals 'workdir'. Nextflow task workdir sync process won't be started." "$SYNC_RUN_RUNTIME_DATA_TASK"
-        return 0
-    fi
     export CP_SYNC_TO_STORAGE_TIMEOUT_SEC=$(echo "$run_sync_data" | jq '.syncTimeout // 60' -r)
 
     nf_trace_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TRACE // ""' -r)
