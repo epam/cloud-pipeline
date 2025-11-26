@@ -20,7 +20,7 @@ buildscript {
 
 group = 'com.epam.pipeline'
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
@@ -31,10 +31,10 @@ repositories { mavenCentral() }
 
 dependencies {
     // Elasticsearch
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
-    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    implementation project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
+    api group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
+    api group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
+    api group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
+    api project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
