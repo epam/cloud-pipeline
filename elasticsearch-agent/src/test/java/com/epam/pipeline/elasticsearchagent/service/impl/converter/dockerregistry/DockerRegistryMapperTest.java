@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.dockerregistry;
 
 import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -36,18 +35,13 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER_NAME;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class DockerRegistryMapperTest {
 
-    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
-
     @Test
     void shouldMapDockerRegistry() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        DockerRegistryMapper mapper = new DockerRegistryMapper(client);
+        DockerRegistryMapper mapper = new DockerRegistryMapper(ElasticStackVersion.V6);
 
         DockerRegistry registry = new DockerRegistry();
         registry.setId(1L);

@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.metadata;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -39,15 +39,18 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
-@RequiredArgsConstructor
 public class MetadataEntityMapper implements EntityMapper<MetadataEntity> {
 
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
+
+    public MetadataEntityMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
+        this.version = version;
+    }
 
     @Override
     public XContentBuilder map(final EntityContainer<MetadataEntity> container) {
         MetadataEntity entity = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             jsonBuilder.startObject();
             jsonBuilder
                     .field(DOC_TYPE_FIELD, SearchDocumentType.METADATA_ENTITY.name())

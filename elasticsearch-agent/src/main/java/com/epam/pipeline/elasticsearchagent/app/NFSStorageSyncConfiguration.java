@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
@@ -42,10 +43,12 @@ public class NFSStorageSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
+    @Value("${elasticsearch.client.version:V6}")
+    private ElasticStackVersion version;
 
     @Bean
-    public DataStorageMapper nfsStorageMapper(final ElasticsearchServiceClient client) {
-        return new DataStorageMapper(SearchDocumentType.NFS_STORAGE, client);
+    public DataStorageMapper nfsStorageMapper() {
+        return new DataStorageMapper(SearchDocumentType.NFS_STORAGE, version);
     }
 
     @Bean
@@ -65,11 +68,10 @@ public class NFSStorageSyncConfiguration {
             final @Qualifier("nfsStorageMapper") DataStorageMapper nfsStorageMapper,
             final @Qualifier("nfsStorageLoader") DataStorageLoader nfsStorageLoader,
             final @Qualifier("nfsStorageIndexCleaner") DataStorageIndexCleaner nfsStorageIndexCleaner,
-            final @Value("${sync.nfs-storage.index.name}") String indexName,
-            final ElasticsearchServiceClient client) {
+            final @Value("${sync.nfs-storage.index.name}") String indexName) {
         return new EventToRequestConverterImpl<>(
                 commonIndexPrefix, indexName, nfsStorageLoader, nfsStorageMapper,
-                Collections.singletonList(nfsStorageIndexCleaner), client.getVersion());
+                Collections.singletonList(nfsStorageIndexCleaner), version);
     }
     @Bean
     public EntitySynchronizer dataStorageNfsSynchronizer(

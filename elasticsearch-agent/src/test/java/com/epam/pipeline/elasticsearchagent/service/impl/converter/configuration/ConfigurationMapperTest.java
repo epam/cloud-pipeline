@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
 import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
@@ -44,18 +43,13 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_SNAPSHOT;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class ConfigurationMapperTest {
 
-    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
-
     @Test
     void shouldMapRunConfiguration() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(client);
+        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(ElasticStackVersion.V6);
 
         Pipeline pipeline = buildPipeline();
         RunConfiguration runConfiguration = buildRunConfiguration();
@@ -81,8 +75,7 @@ class ConfigurationMapperTest {
 
     @Test
     void shouldMapFireCloudConfiguration() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(client);
+        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(ElasticStackVersion.V6);
 
         RunConfiguration runConfiguration = buildRunConfiguration();
 

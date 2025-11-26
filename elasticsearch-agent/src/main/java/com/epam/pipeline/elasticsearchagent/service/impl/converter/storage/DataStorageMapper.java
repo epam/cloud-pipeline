@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
@@ -34,11 +34,11 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class DataStorageMapper implements EntityMapper<DataStorageDoc> {
 
     private final SearchDocumentType documentType;
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
 
     @Override
     public XContentBuilder map(final EntityContainer<DataStorageDoc> doc) {
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             AbstractDataStorage storage = doc.getEntity().getStorage();
             jsonBuilder
                     .startObject()

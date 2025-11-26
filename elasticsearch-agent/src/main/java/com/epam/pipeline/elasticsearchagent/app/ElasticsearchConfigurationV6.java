@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(name = "elasticsearch.client.version", havingValue = "6")
+@ConditionalOnProperty(name = "elasticsearch.client.version", havingValue = "V6")
 public class ElasticsearchConfigurationV6 {
 
     @Bean

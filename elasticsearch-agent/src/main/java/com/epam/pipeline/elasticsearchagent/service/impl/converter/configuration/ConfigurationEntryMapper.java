@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
@@ -29,8 +29,8 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -39,10 +39,13 @@ import java.util.Optional;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
-@RequiredArgsConstructor
 public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntryDoc> {
 
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
+
+    public ConfigurationEntryMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
+        this.version = version;
+    }
 
     @Override
     public XContentBuilder map(final EntityContainer<ConfigurationEntryDoc> container) {
@@ -51,7 +54,7 @@ public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntry
 
     private XContentBuilder getContentBuilder(final EntityContainer<ConfigurationEntryDoc> container) {
         RunConfiguration configuration = container.getEntity().getConfiguration();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             jsonBuilder.startObject();
             AbstractRunConfigurationEntry entry = container.getEntity().getEntry();
             jsonBuilder

@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.issue;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityVO;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -35,15 +35,18 @@ import java.util.List;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
-@AllArgsConstructor
 public class IssueMapper implements EntityMapper<Issue> {
 
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
+
+    public IssueMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
+        this.version = version;
+    }
 
     @Override
     public XContentBuilder map(final EntityContainer<Issue> container) {
         Issue issue = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             jsonBuilder.startObject();
             jsonBuilder
                     .field(DOC_TYPE_FIELD, SearchDocumentType.ISSUE.name())

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
@@ -43,10 +44,12 @@ public class AzureBlobStorageSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
+    @Value("${elasticsearch.client.version:V6}")
+    private ElasticStackVersion version;
 
     @Bean
-    public DataStorageMapper azStorageMapper(final ElasticsearchServiceClient client) {
-        return new DataStorageMapper(SearchDocumentType.AZ_BLOB_STORAGE, client);
+    public DataStorageMapper azStorageMapper() {
+        return new DataStorageMapper(SearchDocumentType.AZ_BLOB_STORAGE, version);
     }
 
     @Bean
@@ -66,11 +69,10 @@ public class AzureBlobStorageSyncConfiguration {
             final @Qualifier("azStorageMapper") DataStorageMapper azStorageMapper,
             final @Qualifier("azStorageLoader") DataStorageLoader azStorageLoader,
             final @Qualifier("azEventProcessor") DataStorageIndexCleaner indexCleaner,
-            final @Value("${sync.az-blob-storage.index.name}") String indexName,
-            final ElasticsearchServiceClient client) {
+            final @Value("${sync.az-blob-storage.index.name}") String indexName) {
         return new EventToRequestConverterImpl<>(
                 commonIndexPrefix, indexName, azStorageLoader, azStorageMapper,
-                Collections.singletonList(indexCleaner), client.getVersion());
+                Collections.singletonList(indexCleaner), version);
     }
 
     @Bean

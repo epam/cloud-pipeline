@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
@@ -42,10 +43,12 @@ public class S3StorageSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
+    @Value("${elasticsearch.client.version:V6}")
+    private ElasticStackVersion version;
 
     @Bean
-    public DataStorageMapper s3StorageMapper(final ElasticsearchServiceClient client) {
-        return new DataStorageMapper(SearchDocumentType.S3_STORAGE, client);
+    public DataStorageMapper s3StorageMapper() {
+        return new DataStorageMapper(SearchDocumentType.S3_STORAGE, version);
     }
 
     @Bean
@@ -65,11 +68,10 @@ public class S3StorageSyncConfiguration {
             final @Qualifier("s3StorageMapper") DataStorageMapper s3StorageMapper,
             final @Qualifier("s3StorageLoader") DataStorageLoader s3StorageLoader,
             final @Qualifier("s3EventProcessor") DataStorageIndexCleaner indexCleaner,
-            final @Value("${sync.s3-storage.index.name}") String indexName,
-            final ElasticsearchServiceClient client) {
+            final @Value("${sync.s3-storage.index.name}") String indexName) {
         return new EventToRequestConverterImpl<>(
                 commonIndexPrefix, indexName, s3StorageLoader, s3StorageMapper,
-                Collections.singletonList(indexCleaner), client.getVersion());
+                Collections.singletonList(indexCleaner), version);
     }
 
     @Bean

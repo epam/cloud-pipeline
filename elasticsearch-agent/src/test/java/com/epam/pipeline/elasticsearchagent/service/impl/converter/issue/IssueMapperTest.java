@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.issue;
 
 import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.issue.Attachment;
@@ -42,18 +41,13 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER_NAME;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class IssueMapperTest {
 
-    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
-
     @Test
     void shouldMapIssue() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        IssueMapper mapper = new IssueMapper(client);
+        IssueMapper mapper = new IssueMapper(ElasticStackVersion.V6);
 
         Attachment attachment = new Attachment();
         attachment.setPath(TEST_PATH);

@@ -15,14 +15,14 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.utils.FileContentUtils;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,17 +31,20 @@ import java.nio.charset.Charset;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
-@AllArgsConstructor
 public class PipelineCodeMapper {
 
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
+
+    public PipelineCodeMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
+        this.version = version;
+    }
 
     public XContentBuilder pipelineCodeToDocument(final Pipeline pipeline,
                                                   final String pipelineVersion,
                                                   final String path,
                                                   final byte[] fileContent,
                                                   final PermissionsContainer permissions) {
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             jsonBuilder
                     .startObject()
                     .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_CODE.name())

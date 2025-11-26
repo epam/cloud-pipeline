@@ -15,14 +15,14 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.dockerregistry;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,15 +30,18 @@ import java.io.IOException;
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
-@RequiredArgsConstructor
 public class DockerRegistryMapper implements EntityMapper<DockerRegistry> {
 
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
+
+    public DockerRegistryMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
+        this.version = version;
+    }
 
     @Override
     public XContentBuilder map(final EntityContainer<DockerRegistry> container) {
         DockerRegistry dockerRegistry = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             jsonBuilder
                     .startObject()
                     .field(DOC_TYPE_FIELD, SearchDocumentType.DOCKER_REGISTRY.name())

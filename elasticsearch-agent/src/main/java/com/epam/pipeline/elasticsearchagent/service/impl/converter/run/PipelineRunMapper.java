@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.run;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
@@ -48,18 +48,18 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
     private final int maxLogLines;
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
 
     public PipelineRunMapper(@Value("${sync.run.log.lines.size:1000}") final int maxLogLines,
-                             final ElasticsearchServiceClient client) {
+                             @Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
         this.maxLogLines = maxLogLines;
-        this.client = client;
+        this.version = version;
     }
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunWithLog> container) {
         PipelineRunWithLog run = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(client.getVersion())) {
+        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
             jsonBuilder
                     .startObject()
                     .field("id", run.getPipelineRun().getId())

@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.tool;
 
 import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.ToolWithDescription;
@@ -41,18 +40,13 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_LABEL;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class ToolMapperTest {
 
-    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
-
     @Test
     void shouldMapTool() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        ToolMapper mapper = new ToolMapper(client);
+        ToolMapper mapper = new ToolMapper(ElasticStackVersion.V6);
 
         Tool tool = new Tool();
         tool.setId(1L);

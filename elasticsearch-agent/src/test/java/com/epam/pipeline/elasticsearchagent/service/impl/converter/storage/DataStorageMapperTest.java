@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
 import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
@@ -41,19 +40,15 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_REGION;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class DataStorageMapperTest {
 
     private static final Integer DURATION = 20;
-    private final ElasticsearchServiceClient client = mock(ElasticsearchServiceClient.class);
 
     @Test
     void shouldMapS3DataStorage() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.S3_STORAGE, client);
+        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.S3_STORAGE, ElasticStackVersion.V6);
 
         StoragePolicy policy = new StoragePolicy();
         policy.setBackupDuration(DURATION);
@@ -80,8 +75,7 @@ class DataStorageMapperTest {
 
     @Test
     void shouldMapNFSDataStorage() throws IOException {
-        doReturn(ElasticStackVersion.V6).when(client).getVersion();
-        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.NFS_STORAGE, client);
+        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.NFS_STORAGE, ElasticStackVersion.V6);
 
         NFSDataStorage dataStorage = new NFSDataStorage();
         fillStorage(dataStorage);
