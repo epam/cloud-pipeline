@@ -16,6 +16,15 @@
 
 package com.epam.pipeline.entity.pipeline.run.runtime;
 
+import lombok.Getter;
+
+@Getter
 public enum RunSyncRuntimeEvalType {
-    HASH, WORKDIR
+    HASH("hash"), WORKDIR("workdir");
+
+    final String value;
+
+    RunSyncRuntimeEvalType(String value) {
+        this.value = value;
+    }
 }
