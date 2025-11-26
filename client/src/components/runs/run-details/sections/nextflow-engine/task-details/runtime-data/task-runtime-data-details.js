@@ -54,7 +54,7 @@ class TaskRuntimeDataDetails extends React.Component {
   fetchTaskRuntimeData = (clear = false) => {
     this.abortReload();
     const {task = {}, detailsType, reload = false} = this.props;
-    const {runId, taskKey, attributes} = task;
+    const {runId, taskKey, attributes = {}} = task;
     const {workdir} = attributes;
     const token = this.token = {};
     if (runId && taskKey && detailsType) {
