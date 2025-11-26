@@ -139,13 +139,6 @@ function enable_nf_runtime_data_sync() {
 
     # Configure synchronization for nf trace.txt file
     run_sync_data=$(echo "$run_sync_data_pref_response" | jq '.payload.value' -r)
-    nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
-    nf_task_run_eval_type=$(echo "$nf_task_sync_config_entry" | jq '.evalType // ""' -r)
-    if [ "$nf_task_run_eval_type" -eq "workdir" ]; then
-        pipe_log_info "[INFO] 'NF_TASK entry evalType for 'launch.run.sync.runtime.data' equals 'workdir'. Nextflow task workdir sync process won't be started." "$SYNC_RUN_RUNTIME_DATA_TASK"
-        return 0
-    fi
-
     export CP_SYNC_TO_STORAGE_TIMEOUT_SEC=$(echo "$run_sync_data" | jq '.syncTimeout // 60' -r)
 
     nf_trace_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TRACE // ""' -r)
@@ -166,6 +159,7 @@ function enable_nf_runtime_data_sync() {
 
     # Configure synchronization for nf task workdirs
     pipe_log_info "[INFO] Starting nextflow task workdir sync process." "$SYNC_RUN_RUNTIME_DATA_TASK"
+    nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
     nf_task_run_folder_sync_path=$(echo "$nf_task_sync_config_entry" | jq '.runFolderPathPrefix // ""' -r)
     nf_task_data_sync_path=$(echo "$nf_task_sync_config_entry" | jq '.dataPathPrefix // ""' -r)
 
@@ -383,5 +377,4 @@ if [ "$CP_NF_WEBLOG_HANDLER_CLEANUP" == 1 ]; then
         pipe_log_error "[ERROR] Cannot cleanup nextflow engine tasks for run ${RUN_ID}" "$SYNC_RUN_RUNTIME_DATA_TASK"
     fi
 fi
-
 
