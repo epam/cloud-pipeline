@@ -35,7 +35,8 @@ dependencies {
     }
     compile("org.aspectj:aspectjweaver:1.8.8")
 
-    // Elasticsearch version shall be fixed to prevent downgrades (org.elasticsearch:elasticsearch:6.8.3 -> 5.6.9)
+    // Elasticsearch version shall be fixed to prevent downgrades to 5.6.9 version which is required by
+    // io.spring.dependency-management plugin
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
 
     //SpringBoot
