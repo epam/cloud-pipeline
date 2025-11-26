@@ -130,8 +130,8 @@ function enable_nf_runtime_data_sync() {
     run_sync_data=$(echo "$run_sync_data_pref_response" | jq '.payload.value' -r)
     nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
     nf_task_run_eval_type=$(echo "$nf_task_sync_config_entry" | jq '.evalType // ""' -r)
-    if [ "$nf_task_run_eval_type" -eq "workdir" ]; then
-        pipe_log_info "[INFO] 'NF_TASK entry evalType for 'launch.run.sync.runtime.data' equals 'workdir'. Nextflow task workdir sync process won't be started." "$SYNC_RUN_RUNTIME_DATA_TASK"
+    if [ "$nf_task_run_eval_type" = "WORKDIR" ]; then
+        pipe_log_info "[INFO] 'NF_TASK entry evalType for 'launch.run.sync.runtime.data' equals 'WORKDIR'. Nextflow task workdir sync process won't be started." "$SYNC_RUN_RUNTIME_DATA_TASK"
         return 0
     fi
 

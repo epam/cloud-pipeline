@@ -151,7 +151,7 @@ public class PipelineRunRuntimeDataManagerUnitTest {
                                 )
                         )
                     )
-                );
+            );
         DataStorageManager dataStorageManagerMock = Mockito.mock(DataStorageManager.class);
         S3bucketDataStorage storage = new S3bucketDataStorage();
         storage.setId(STORAGE_ID);
@@ -198,7 +198,7 @@ public class PipelineRunRuntimeDataManagerUnitTest {
                                         )
                                 )
                         )
-                );
+            );
         DataStorageManager dataStorageManagerMock = Mockito.mock(DataStorageManager.class);
         S3bucketDataStorage storage = new S3bucketDataStorage();
         storage.setId(STORAGE_ID);
