@@ -23,12 +23,13 @@ import lombok.Getter;
 import shaded.org.elasticsearch.v7.action.index.IndexRequest;
 
 @Getter
+@SuppressWarnings("PMD.ShortMethodName")
 public class IndexRequestV7 implements IndexRequestInner {
 
-    private final shaded.org.elasticsearch.v7.action.index.IndexRequest inner;
+    private final IndexRequest inner;
 
     public IndexRequestV7(final String indexName) {
-        this.inner = new shaded.org.elasticsearch.v7.action.index.IndexRequest(indexName);
+        this.inner = new IndexRequest(indexName);
     }
 
     public IndexRequestV7(final String indexName, final String objectId) {

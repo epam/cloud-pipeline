@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.elasticsearch.model;
 
+@SuppressWarnings("PMD.ShortMethodName")
 public interface DeleteRequestInner {
     String id();
     String index();

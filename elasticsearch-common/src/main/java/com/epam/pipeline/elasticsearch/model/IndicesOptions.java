@@ -20,7 +20,11 @@ import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.v6.action.support.IndicesOptionsFactoryV6;
 import com.epam.pipeline.elasticsearch.model.v7.action.support.IndicesOptionsFactoryV7;
 
-public class IndicesOptions {
+public final class IndicesOptions {
+
+    private IndicesOptions() {
+        // no-op
+    }
 
     public static IndicesOptionsInner lenientExpandOpen(final ElasticStackVersion version) {
         if (ElasticStackVersion.V6.equals(version)) {

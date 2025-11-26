@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.elasticsearch.model;
 
+@SuppressWarnings("PMD.ShortMethodName")
 public interface IndexRequestInner {
     IndexRequestInner source(XContentBuilder content);
     IndexRequestInner id(String id);

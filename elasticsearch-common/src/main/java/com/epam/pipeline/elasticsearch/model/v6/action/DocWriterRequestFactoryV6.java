@@ -20,7 +20,11 @@ import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearch.model.v6.action.delete.DeleteRequestV6;
 import com.epam.pipeline.elasticsearch.model.v6.action.index.IndexRequestV6;
 
-public class DocWriterRequestFactoryV6 {
+public final class DocWriterRequestFactoryV6 {
+
+    private DocWriterRequestFactoryV6() {
+        // no-op
+    }
 
     public static org.elasticsearch.action.DocWriteRequest toRequest(final DocWriteRequest request) {
         if (request instanceof IndexRequestV6) {

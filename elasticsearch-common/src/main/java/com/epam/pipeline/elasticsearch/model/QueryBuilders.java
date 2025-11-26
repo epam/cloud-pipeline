@@ -24,7 +24,11 @@ import com.epam.pipeline.elasticsearch.model.v7.index.query.BoolQueryBuilderV7;
 import com.epam.pipeline.elasticsearch.model.v7.index.query.PrefixQueryBuilderV7;
 import com.epam.pipeline.elasticsearch.model.v7.index.query.TermQueryBuilderV7;
 
-public class QueryBuilders {
+public final class QueryBuilders {
+
+    private QueryBuilders() {
+        // no-op
+    }
 
     public static BoolQueryBuilder boolQuery(final ElasticStackVersion version) {
         switch (version) {
@@ -56,7 +60,8 @@ public class QueryBuilders {
         }
     }
 
-    public static PrefixQueryBuilder prefixQuery(final String name, final String prefix, final ElasticStackVersion version) {
+    public static PrefixQueryBuilder prefixQuery(final String name, final String prefix,
+                                                 final ElasticStackVersion version) {
         switch (version) {
             case V7:
                 return new PrefixQueryBuilderV7(name, prefix);

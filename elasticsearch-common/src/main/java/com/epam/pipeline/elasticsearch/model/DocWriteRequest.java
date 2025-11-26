@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.elasticsearch.model;
 
+@SuppressWarnings("PMD.ShortMethodName")
 public interface DocWriteRequest {
-
     String id();
     String index();
     String type();

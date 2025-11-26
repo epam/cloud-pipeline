@@ -22,6 +22,7 @@ import com.epam.pipeline.elasticsearch.model.v7.action.delete.DeleteRequestV7;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("PMD.ShortMethodName")
 public class DeleteRequest implements DocWriteRequest {
 
     private final DeleteRequestInner inner;

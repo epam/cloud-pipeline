@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearch.model.DeleteRequestInner;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("PMD.ShortMethodName")
 public class DeleteRequestV7 implements DeleteRequestInner {
 
     private final shaded.org.elasticsearch.v7.action.delete.DeleteRequest inner;

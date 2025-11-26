@@ -18,7 +18,11 @@ package com.epam.pipeline.elasticsearch.model.v7.action.support;
 
 import com.epam.pipeline.elasticsearch.model.IndicesOptionsInner;
 
-public class IndicesOptionsFactoryV7 {
+public final class IndicesOptionsFactoryV7 {
+
+    private IndicesOptionsFactoryV7() {
+        // no-op
+    }
 
     public static IndicesOptionsInner lenientExpandOpen() {
         return new IndicesOptionsV7(shaded.org.elasticsearch.v7.action.support.IndicesOptions.lenientExpandOpen());

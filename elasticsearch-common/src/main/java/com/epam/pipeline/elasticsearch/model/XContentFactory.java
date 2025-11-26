@@ -23,7 +23,11 @@ import com.epam.pipeline.elasticsearch.model.v7.common.xcontent.XContentBuilderV
 import java.io.IOException;
 
 // TODO: move to client?
-public class XContentFactory {
+public final class XContentFactory {
+
+    private XContentFactory() {
+        // no-op
+    }
 
     public static XContentBuilder getBuilder(final ElasticStackVersion version) throws IOException {
         if (ElasticStackVersion.V7.equals(version)) {

@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearch.model.DeleteRequestInner;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("PMD.ShortMethodName")
 public class DeleteRequestV6 implements DeleteRequestInner {
 
     private static final String DOC_TYPE = "_doc";

@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.v6.action.index.IndexRequestV6;
 import com.epam.pipeline.elasticsearch.model.v7.action.index.IndexRequestV7;
 
+@SuppressWarnings("PMD.ShortMethodName")
 public class IndexRequest implements DocWriteRequest {
 
     private final IndexRequestInner inner;

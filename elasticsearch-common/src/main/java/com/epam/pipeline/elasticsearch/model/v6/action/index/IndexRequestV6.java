@@ -20,18 +20,20 @@ import com.epam.pipeline.elasticsearch.model.IndexRequestInner;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.v6.common.xcontent.XContentBuilderV6;
 import lombok.Getter;
+import org.elasticsearch.action.index.IndexRequest;
 
 @Getter
+@SuppressWarnings("PMD.ShortMethodName")
 public class IndexRequestV6 implements IndexRequestInner {
 
-    private final org.elasticsearch.action.index.IndexRequest inner;
+    private final IndexRequest inner;
 
     public IndexRequestV6(final String indexName, final String type) {
-        this.inner = new org.elasticsearch.action.index.IndexRequest(indexName, type);
+        this.inner = new IndexRequest(indexName, type);
     }
 
     public IndexRequestV6(final String indexName, final String type, final String objectId) {
-        this.inner = new org.elasticsearch.action.index.IndexRequest(indexName, type, objectId);
+        this.inner = new IndexRequest(indexName, type, objectId);
     }
 
     @Override

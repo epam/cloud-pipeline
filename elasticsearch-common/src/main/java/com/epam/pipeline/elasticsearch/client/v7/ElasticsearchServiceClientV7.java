@@ -292,7 +292,7 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
             // return dummy doc, since we need it to clear events DB
             if (CollectionUtils.isEmpty(requests)) {
                 return Collections.singletonList(
-                        new DeleteRequest(indexName,getWildcardId(id), ElasticStackVersion.V7));
+                        new DeleteRequest(indexName, getWildcardId(id), ElasticStackVersion.V7));
             }
             return requests;
         } catch (shaded.org.elasticsearch.v7.ElasticsearchException | IOException e) {

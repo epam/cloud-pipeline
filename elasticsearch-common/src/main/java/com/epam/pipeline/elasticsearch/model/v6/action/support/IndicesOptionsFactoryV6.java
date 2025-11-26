@@ -18,7 +18,11 @@ package com.epam.pipeline.elasticsearch.model.v6.action.support;
 
 import com.epam.pipeline.elasticsearch.model.IndicesOptionsInner;
 
-public class IndicesOptionsFactoryV6 {
+public final class IndicesOptionsFactoryV6 {
+
+    private IndicesOptionsFactoryV6() {
+        // no-op
+    }
 
     public static IndicesOptionsInner lenientExpandOpen() {
         return new IndicesOptionsV6(org.elasticsearch.action.support.IndicesOptions.lenientExpandOpen());

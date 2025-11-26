@@ -20,7 +20,11 @@ import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearch.model.v7.action.delete.DeleteRequestV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.index.IndexRequestV7;
 
-public class DocWriterRequestFactoryV7 {
+public final class DocWriterRequestFactoryV7 {
+
+    private DocWriterRequestFactoryV7() {
+        // no-op
+    }
 
     public static shaded.org.elasticsearch.v7.action.DocWriteRequest toRequest(final DocWriteRequest request) {
         if (request instanceof IndexRequestV7) {
