@@ -701,7 +701,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         final MetadataClass metadataClass = createMetadataClass(CLASS_NAME_1);
 
-        final String key1 = "key1";
+        final String key1 = "key 1";
         final String key2 = "key2";
         final String key3 = "key3";
         final String key4 = "key4";
