@@ -4605,6 +4605,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       })();
     };
+    const onDownloadTemplate = () => {
+      const {
+        parameters: currentParameters = []
+      } = this.getCurrentParametersPayload();
+      parameterUtilities.downloadParametersTemplate(currentParameters);
+    };
     if (!preferences.loaded) {
       return null;
     }
@@ -4618,9 +4624,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     return (
       <div
-        style={{display: 'inline-flex', alignItems: 'center', ...(style || {})}}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          ...(style || {})
+        }}
         onClick={preventDefault}>
+        <Button
+          disabled={
+            this.getLoadingState('parameters').pending ||
+            (this.props.readOnly && !this.props.canExecute)
+          }
+          onClick={onDownloadTemplate}
+          size="small"
+          type="primary"
+        >
+          Download
+        </Button>
         <UploadParametersButton
+          style={{height: 22}}
           disabled={
             this.getLoadingState('parameters').pending ||
             (this.props.readOnly && !this.props.canExecute)
