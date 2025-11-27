@@ -153,7 +153,7 @@ class Parameters extends Component {
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
     }
-    const filtered = getVisibleParameters(parameters, system, rawEdit);
+    const filtered = getVisibleParameters(parameters, system, rawEdit, this.userInfo);
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,

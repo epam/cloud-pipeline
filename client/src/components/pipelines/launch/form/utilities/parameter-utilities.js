@@ -1844,8 +1844,14 @@ function parameterIsVisible (parameter = {}) {
  * @param {Parameter[]} parameters
  * @param {boolean} isSystem
  * @param {boolean} rawEdit
+ * @param {object} userInfo
  */
-function getVisibleParameters (parameters = [], isSystem = false, rawEdit = false) {
+function getVisibleParameters (
+  parameters = [],
+  isSystem = false,
+  rawEdit = false,
+  userInfo
+) {
   return parameters
     .filter((parameter) => rawEdit || parameterIsVisible(parameter))
     .filter((parameter) => isSystem
@@ -1857,7 +1863,7 @@ function getVisibleParameters (parameters = [], isSystem = false, rawEdit = fals
       : !parameter.system)
     .map((parameter) => isSystem ? mapSystemParameter(parameter, {
       runDefaultParameters,
-      userInfo: this.userInfo
+      userInfo,
     }) : parameter);
 }
 
