@@ -76,6 +76,7 @@ import styles from './Browser.css';
     folders
   };
 })
+@roleModel.authenticationInfo
 @observer
 export default class Pipeline extends localization.LocalizedReactComponent {
   _versions = null;
