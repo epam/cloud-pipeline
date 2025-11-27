@@ -85,6 +85,7 @@ const LATEST_VERSION_PLACEHOLDER = {
     folders
   };
 })
+@roleModel.authenticationInfo
 @observer
 export default class Pipeline extends localization.LocalizedReactComponent {
   _versions = null;
