@@ -1832,16 +1832,44 @@ export function parametersModified (parameters, initialParameters) {
 }
 
 /**
+ * @param {Parameter} parameter
+ */
+function parameterIsVisible (parameter = {}) {
+  const {config = {}} = parameter;
+  const {visible = true} = config;
+  return visible;
+}
+
+/**
+ * @param {Parameter[]} parameters
+ * @param {boolean} isSystem
+ * @param {boolean} rawEdit
+ */
+function getVisibleParameters (parameters = [], isSystem = false, rawEdit = false) {
+  return parameters
+    .filter((parameter) => rawEdit || parameterIsVisible(parameter))
+    .filter((parameter) => isSystem
+      ? parameter.system &&
+      !isReservedParameter(parameter.name) &&
+      !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
+      !isGPUScalingParameter(parameter.name)
+      : !parameter.system)
+    .map((parameter) => isSystem ? mapSystemParameter(parameter, {
+      runDefaultParameters,
+      userInfo: this.userInfo
+    }) : parameter);
+}
+
+/**
  * @param {Parameter[]} parameters
  */
 function downloadParametersTemplate (parameters = []) {
   let yamlContent = '';
-  parameters
-    .filter(p => p.config?.visible && !p.system)
-    .forEach((p) => {
-      const {name = '', value = ''} = p || {};
-      yamlContent += `${name}: ${value}\n`;
-    });
+  parameters.forEach((p) => {
+    const {name = '', value = ''} = p || {};
+    yamlContent += `${name}: ${value}\n`;
+  });
   const blob = new Blob([yamlContent], {type: 'text/yaml;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -1854,6 +1882,7 @@ function downloadParametersTemplate (parameters = []) {
 }
 
 export {
+  getVisibleParameters,
   getParameterValue,
   getParameterNumberValue,
   booleanParameterValue,
@@ -1862,6 +1891,7 @@ export {
   isVisible,
   validate,
   normalizeParameters,
+  parameterIsVisible,
   parseEnumeration,
   readParametersFromConfiguration,
   mergeParametersWithConfiguration,
