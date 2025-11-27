@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
-import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
@@ -24,9 +24,9 @@ import com.epam.pipeline.elasticsearchagent.model.RunConfigurationDoc;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -38,19 +38,26 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.elasticsearchagent.service.EventToRequestConverter.INDEX_TYPE;
 
 @Component
-@RequiredArgsConstructor
 public class RunConfigurationDocumentBuilder {
 
     public static final String ID_DELIMITER = "-";
+
     private final ConfigurationEntryMapper entryMapper;
-    private final ElasticsearchServiceClient client;
+    private final ElasticStackVersion version;
+
+    public RunConfigurationDocumentBuilder(final ConfigurationEntryMapper entryMapper,
+                                           @Value("${elasticsearch.client.version:V6}")
+                                           final ElasticStackVersion version) {
+        this.entryMapper = entryMapper;
+        this.version = version;
+    }
 
     public List<DocWriteRequest> createDocsForConfiguration(final String indexName,
                                                             final EntityContainer<RunConfigurationDoc> configuration) {
         List<EntityContainer<ConfigurationEntryDoc>> entries = splitIntoEntryDocs(configuration);
 
         return entries.stream().map(entry ->
-                new IndexRequest(indexName, INDEX_TYPE, entry.getEntity().getId(), client.getVersion())
+                new IndexRequest(indexName, INDEX_TYPE, entry.getEntity().getId(), version)
                         .source(entryMapper.map(entry)))
                 .collect(Collectors.toList());
     }
