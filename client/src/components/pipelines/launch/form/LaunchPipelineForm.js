@@ -4561,6 +4561,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderUploadParametersControls = (style = {}) => {
     const {preferences} = this.props;
+    const {isRawEditEnabled} = this.state;
     const preventDefault = (e) => {
       e.stopPropagation();
     };
@@ -4605,12 +4606,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       })();
     };
-    const onDownloadTemplate = () => {
-      const {
-        parameters: currentParameters = []
-      } = this.getCurrentParametersPayload();
-      parameterUtilities.downloadParametersTemplate(currentParameters);
-    };
+    const {parameters} = this.getCurrentParametersPayload();
+    const visibleParameters = parameterUtilities.getVisibleParameters(
+      parameters,
+      false,
+      isRawEditEnabled
+    );
     if (!preferences.loaded) {
       return null;
     }
@@ -4630,27 +4631,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           gap: '5px',
           ...(style || {})
         }}
-        onClick={preventDefault}>
-        <Button
-          disabled={
-            this.getLoadingState('parameters').pending ||
-            (this.props.readOnly && !this.props.canExecute)
-          }
-          onClick={onDownloadTemplate}
-          size="small"
-          type="primary"
-        >
-          Download
-        </Button>
+        onClick={preventDefault}
+      >
         <UploadParametersButton
-          style={{height: 22}}
           disabled={
             this.getLoadingState('parameters').pending ||
             (this.props.readOnly && !this.props.canExecute)
           }
           multiple={!this.props.editConfigurationMode && !this.props.detached}
           onParametersUploaded={onUploaded}
-          asLink={false}>
+          parametersToDownload={visibleParameters}
+          asLink={false}
+        >
           Upload
         </UploadParametersButton>
       </div>
