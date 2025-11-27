@@ -24,7 +24,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SearchHitV7 implements SearchHit {
 
-    private final shaded.org.elasticsearch.v7.search.SearchHit inner;
+    private final shaded.org.elasticsearch7.search.SearchHit inner;
 
     @Override
     public String getIndex() {

@@ -18,15 +18,15 @@ package com.epam.pipeline.elasticsearch.model.v7.common.xcontent;
 
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import lombok.Getter;
-import shaded.org.elasticsearch.v7.common.Strings;
-import shaded.org.elasticsearch.v7.common.xcontent.XContentFactory;
+import shaded.org.elasticsearch7.common.Strings;
+import shaded.org.elasticsearch7.common.xcontent.XContentFactory;
 
 import java.io.IOException;
 
 @Getter
 public class XContentBuilderV7 implements XContentBuilder {
 
-    private final shaded.org.elasticsearch.v7.common.xcontent.XContentBuilder inner;
+    private final shaded.org.elasticsearch7.common.xcontent.XContentBuilder inner;
 
     public XContentBuilderV7() throws IOException {
         inner = XContentFactory.jsonBuilder();

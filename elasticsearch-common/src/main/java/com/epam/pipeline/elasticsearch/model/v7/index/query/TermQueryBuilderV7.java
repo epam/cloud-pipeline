@@ -22,13 +22,13 @@ import lombok.Getter;
 @Getter
 public class TermQueryBuilderV7 implements TermQueryBuilder {
 
-    private final shaded.org.elasticsearch.v7.index.query.TermQueryBuilder inner;
+    private final shaded.org.elasticsearch7.index.query.TermQueryBuilder inner;
 
     public TermQueryBuilderV7(final String name, final String value) {
-        inner = shaded.org.elasticsearch.v7.index.query.QueryBuilders.termQuery(name, value);
+        inner = shaded.org.elasticsearch7.index.query.QueryBuilders.termQuery(name, value);
     }
 
     public TermQueryBuilderV7(final String name, final Long value) {
-        inner = shaded.org.elasticsearch.v7.index.query.QueryBuilders.termQuery(name, value);
+        inner = shaded.org.elasticsearch7.index.query.QueryBuilders.termQuery(name, value);
     }
 }

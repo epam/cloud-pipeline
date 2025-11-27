@@ -17,13 +17,16 @@
 buildscript {
     repositories { mavenCentral() }
 }
-
-group = 'com.epam.pipeline'
+plugins {
+    id "com.github.johnrengelman.shadow" version "4.0.4"
+}
 
 apply plugin: 'java-library'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
+
+group = 'com.epam.pipeline'
 
 sourceCompatibility = 1.8
 
@@ -31,10 +34,10 @@ repositories { mavenCentral() }
 
 dependencies {
     // Elasticsearch
-    api group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
-    api group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
-    api group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    api project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
+    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
+    implementation project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
@@ -51,11 +54,10 @@ dependencies {
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 }
 
-test {
-    useJUnitPlatform()
-}
-
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allJava
-    classifier = 'sources'
+shadowJar {
+    relocate('org', 'shaded/org')
+    relocate('lombok', 'shaded/lombok')
+    relocate('com', 'shaded/com') {
+        exclude("com/epam/**")
+    }
 }

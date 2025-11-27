@@ -20,7 +20,7 @@ import com.epam.pipeline.elasticsearch.model.IndexRequestInner;
 import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearch.model.v6.common.xcontent.XContentBuilderV6;
 import lombok.Getter;
-import shaded.org.elasticsearch.v7.action.index.IndexRequest;
+import shaded.org.elasticsearch7.action.index.IndexRequest;
 
 @Getter
 @SuppressWarnings("PMD.ShortMethodName")

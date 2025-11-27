@@ -28,7 +28,7 @@ public class MultiSearchResponseV7 implements MultiSearchResponseInner {
     @RequiredArgsConstructor
     public static class Item implements MultiSearchResponseInner.Item {
 
-        private final shaded.org.elasticsearch.v7.action.search.MultiSearchResponse.Item inner;
+        private final shaded.org.elasticsearch7.action.search.MultiSearchResponse.Item inner;
 
         @Override
         public SearchResponse getResponse() {
@@ -36,7 +36,7 @@ public class MultiSearchResponseV7 implements MultiSearchResponseInner {
         }
     }
 
-    private final shaded.org.elasticsearch.v7.action.search.MultiSearchResponse inner;
+    private final shaded.org.elasticsearch7.action.search.MultiSearchResponse inner;
 
     @Override
     public MultiSearchResponseInner.Item[] getResponses() {

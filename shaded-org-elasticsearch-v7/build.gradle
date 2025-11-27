@@ -37,5 +37,5 @@ dependencies {
 }
 
 shadowJar {
-    relocate('org.elasticsearch', 'shaded.org.elasticsearch.v7')
+    relocate('org.elasticsearch', 'shaded.org.elasticsearch7')
 }

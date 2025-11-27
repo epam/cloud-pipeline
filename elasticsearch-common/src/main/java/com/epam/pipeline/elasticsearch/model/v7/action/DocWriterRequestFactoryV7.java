@@ -26,7 +26,7 @@ public final class DocWriterRequestFactoryV7 {
         // no-op
     }
 
-    public static shaded.org.elasticsearch.v7.action.DocWriteRequest toRequest(final DocWriteRequest request) {
+    public static shaded.org.elasticsearch7.action.DocWriteRequest toRequest(final DocWriteRequest request) {
         if (request instanceof IndexRequestV7) {
             return ((IndexRequestV7) request).getInner();
         }

@@ -28,16 +28,12 @@ dependencies {
 
     // Core library
     implementation project(":cloud-pipeline-common:model")
-    implementation project(":elasticsearch-common")
+    implementation project(path: ":elasticsearch-common", configuration: "shadow")
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
     }
     compile("org.aspectj:aspectjweaver:1.8.8")
-
-    // Elasticsearch version shall be fixed to prevent downgrades to 5.6.9 version which is required by
-    // io.spring.dependency-management plugin
-    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
 
     //SpringBoot
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion

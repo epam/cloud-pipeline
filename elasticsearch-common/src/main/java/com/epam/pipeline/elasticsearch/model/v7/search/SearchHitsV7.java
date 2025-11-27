@@ -25,7 +25,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SearchHitsV7 implements SearchHits {
 
-    private final shaded.org.elasticsearch.v7.search.SearchHits inner;
+    private final shaded.org.elasticsearch7.search.SearchHits inner;
 
     @Override
     public long getTotalHits() {

@@ -24,6 +24,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class IndicesOptionsV7 implements IndicesOptionsInner {
 
-    private final shaded.org.elasticsearch.v7.action.support.IndicesOptions inner;
+    private final shaded.org.elasticsearch7.action.support.IndicesOptions inner;
 
 }

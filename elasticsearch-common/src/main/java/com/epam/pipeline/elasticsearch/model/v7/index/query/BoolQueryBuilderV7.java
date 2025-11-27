@@ -23,14 +23,14 @@ import lombok.Getter;
 @Getter
 public class BoolQueryBuilderV7 implements BoolQueryBuilder {
 
-    private final shaded.org.elasticsearch.v7.index.query.BoolQueryBuilder inner;
+    private final shaded.org.elasticsearch7.index.query.BoolQueryBuilder inner;
 
     public BoolQueryBuilderV7() {
-        this.inner = shaded.org.elasticsearch.v7.index.query.QueryBuilders.boolQuery();
+        this.inner = shaded.org.elasticsearch7.index.query.QueryBuilders.boolQuery();
     }
 
     public BoolQueryBuilderV7 must(final QueryBuilder queryBuilder) {
-        inner.must((shaded.org.elasticsearch.v7.index.query.QueryBuilder) queryBuilder.getInner());
+        inner.must((shaded.org.elasticsearch7.index.query.QueryBuilder) queryBuilder.getInner());
         return this;
     }
 
