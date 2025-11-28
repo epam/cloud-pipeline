@@ -29,7 +29,8 @@ function generate_params_file() {
             # Escaping special characters for JSON
             _value=${!cp_param_clean}
             _value=${_value//\\/\\\\}
-            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"$(echo ${_value})\""
+            _value=$(eval "echo $_value")
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${_value}\""
         fi
     done
     all_cp_params_json="{ $(echo "$all_cp_params_json" | sed 's/,//') }"
