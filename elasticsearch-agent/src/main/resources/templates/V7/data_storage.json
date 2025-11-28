@@ -27,7 +27,22 @@
       "denied_users": { "type": "keyword" },
       "allowed_groups": { "type": "keyword" },
       "denied_groups": { "type": "keyword" }
-    }
+    },
+    "dynamic_templates": [
+      {
+        "metadata": {
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type":  "keyword"
+              }
+            }
+          }
+        }
+      }
+    ]
   },
   "settings": {
     "index": {
@@ -42,20 +57,5 @@
         "file_path_tokenizer": { "type": "simple_pattern_split", "pattern": "/"}
       }
     }
-  },
-  "dynamic_templates": [
-    {
-      "metadata": {
-        "match_mapping_type": "string",
-        "mapping": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type":  "keyword"
-            }
-          }
-        }
-      }
-    }
-  ]
+  }
 }

@@ -22,23 +22,23 @@
       "denied_users": { "type": "keyword" },
       "allowed_groups": { "type": "keyword" },
       "denied_groups": { "type": "keyword" }
-    }
-  },
-  "dynamic_templates": [
-    {
-      "metadata": {
-        "match_mapping_type": "string",
-        "mapping": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type":  "keyword"
+    },
+    "dynamic_templates": [
+      {
+        "metadata": {
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type":  "keyword"
+              }
             }
           }
         }
       }
-    }
-  ],
+    ]
+  },
   "settings": {
     "index": {
       "number_of_shards" : 1,

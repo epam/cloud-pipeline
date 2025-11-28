@@ -28,23 +28,23 @@
       "is_hidden": { "type":  "boolean" },
       "is_deleted": { "type":  "boolean" },
       "content": { "type": "text" }
-    }
-  },
-  "dynamic_templates": [
-    {
-      "metadata": {
-        "match_mapping_type": "string",
-        "mapping": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type":  "keyword"
+    },
+    "dynamic_templates": [
+      {
+        "metadata": {
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type":  "keyword"
+              }
             }
           }
         }
       }
-    }
-  ],
+    ]
+  },
   "settings": {
     "index": {
       "number_of_shards" : 1,
