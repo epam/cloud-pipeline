@@ -165,3 +165,8 @@ RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/fi
 
 COPY filebeat-config/* /etc/filebeat/
 RUN chmod go-w /etc/filebeat/*
+
+# Install SQUID
+
+RUN yum install -y squid
+COPY squid.conf.tmpl /etc/squid/squid.conf.tmpl
