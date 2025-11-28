@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.elasticsearch.model.v6.action;
 
+import com.epam.pipeline.elasticsearch.model.DeleteRequest;
 import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearch.model.v6.action.delete.DeleteRequestV6;
 import com.epam.pipeline.elasticsearch.model.v6.action.index.IndexRequestV6;
 
@@ -27,11 +29,11 @@ public final class DocWriterRequestFactoryV6 {
     }
 
     public static org.elasticsearch.action.DocWriteRequest toRequest(final DocWriteRequest request) {
-        if (request instanceof IndexRequestV6) {
-            return ((IndexRequestV6) request).getInner();
+        if (request instanceof IndexRequest) {
+            return ((IndexRequestV6) ((IndexRequest) request).getInner()).getInner();
         }
-        if (request instanceof DeleteRequestV6) {
-            return ((DeleteRequestV6) request).getInner();
+        if (request instanceof DeleteRequest) {
+            return ((DeleteRequestV6) ((DeleteRequest) request).getInner()).getInner();
         }
         throw new UnsupportedOperationException();
     }

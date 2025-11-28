@@ -49,7 +49,7 @@ public class AzureBlobStorageSyncConfiguration {
 
     @Bean
     public DataStorageMapper azStorageMapper() {
-        return new DataStorageMapper(SearchDocumentType.AZ_BLOB_STORAGE, version);
+        return new DataStorageMapper(SearchDocumentType.AZ_BLOB_STORAGE);
     }
 
     @Bean

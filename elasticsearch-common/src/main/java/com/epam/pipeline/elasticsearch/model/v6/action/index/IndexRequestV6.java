@@ -17,10 +17,10 @@
 package com.epam.pipeline.elasticsearch.model.v6.action.index;
 
 import com.epam.pipeline.elasticsearch.model.IndexRequestInner;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
-import com.epam.pipeline.elasticsearch.model.v6.common.xcontent.XContentBuilderV6;
 import lombok.Getter;
 import org.elasticsearch.action.index.IndexRequest;
+
+import java.util.Map;
 
 @Getter
 @SuppressWarnings("PMD.ShortMethodName")
@@ -37,8 +37,8 @@ public class IndexRequestV6 implements IndexRequestInner {
     }
 
     @Override
-    public IndexRequestInner source(final XContentBuilder content) {
-        inner.source(((XContentBuilderV6) content).getInner()); // TODO: cast graceful?
+    public IndexRequestInner source(final Map<String, ?> content) {
+        inner.source(content);
         return this;
     }
 

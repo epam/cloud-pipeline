@@ -15,8 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
@@ -27,7 +25,7 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyFirecloudConfigurationEntry;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyMetadata;
@@ -48,8 +46,8 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 class ConfigurationMapperTest {
 
     @Test
-    void shouldMapRunConfiguration() throws IOException {
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(ElasticStackVersion.V6);
+    void shouldMapRunConfiguration() {
+        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper();
 
         Pipeline pipeline = buildPipeline();
         RunConfiguration runConfiguration = buildRunConfiguration();
@@ -64,7 +62,7 @@ class ConfigurationMapperTest {
 
         ConfigurationEntryDoc configuration = buildDoc(pipeline, runConfiguration, entry);
 
-        XContentBuilder contentBuilder = mapper.map(buildContainer(configuration));
+        Map<String, ?> contentBuilder = mapper.map(buildContainer(configuration));
 
         verifyRunConfiguration(runConfiguration, TEST_NAME + " ", contentBuilder);
         verifyRunConfigurationEntry(entry, pipeline, contentBuilder);
@@ -74,8 +72,8 @@ class ConfigurationMapperTest {
     }
 
     @Test
-    void shouldMapFireCloudConfiguration() throws IOException {
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper(ElasticStackVersion.V6);
+    void shouldMapFireCloudConfiguration() {
+        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper();
 
         RunConfiguration runConfiguration = buildRunConfiguration();
 
@@ -88,7 +86,7 @@ class ConfigurationMapperTest {
 
         ConfigurationEntryDoc configuration = buildDoc(null, runConfiguration, entry);
 
-        XContentBuilder contentBuilder = mapper.map(buildContainer(configuration));
+        Map<String, ?> contentBuilder = mapper.map(buildContainer(configuration));
 
         verifyFirecloudConfigurationEntry(entry, contentBuilder);
         verifyRunConfiguration(runConfiguration, TEST_NAME + " ", contentBuilder);

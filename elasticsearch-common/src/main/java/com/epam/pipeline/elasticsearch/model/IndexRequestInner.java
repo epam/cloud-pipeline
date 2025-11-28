@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.elasticsearch.model;
 
+import java.util.Map;
+
 @SuppressWarnings("PMD.ShortMethodName")
 public interface IndexRequestInner {
-    IndexRequestInner source(XContentBuilder content);
+    IndexRequestInner source(Map<String, ?> content);
     IndexRequestInner id(String id);
     String id();
     String index();

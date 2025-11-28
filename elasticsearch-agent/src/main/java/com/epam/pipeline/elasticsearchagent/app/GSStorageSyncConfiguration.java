@@ -33,7 +33,7 @@ public class GSStorageSyncConfiguration {
 
     @Bean
     public DataStorageMapper gsStorageMapper() {
-        return new DataStorageMapper(SearchDocumentType.GS_STORAGE, version);
+        return new DataStorageMapper(SearchDocumentType.GS_STORAGE);
     }
 
     @Bean

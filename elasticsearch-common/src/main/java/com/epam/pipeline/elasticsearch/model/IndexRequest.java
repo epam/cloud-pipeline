@@ -19,8 +19,12 @@ package com.epam.pipeline.elasticsearch.model;
 import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.elasticsearch.model.v6.action.index.IndexRequestV6;
 import com.epam.pipeline.elasticsearch.model.v7.action.index.IndexRequestV7;
+import lombok.Getter;
+
+import java.util.Map;
 
 @SuppressWarnings("PMD.ShortMethodName")
+@Getter
 public class IndexRequest implements DocWriteRequest {
 
     private final IndexRequestInner inner;
@@ -42,7 +46,7 @@ public class IndexRequest implements DocWriteRequest {
         }
     }
 
-    public IndexRequest source(final XContentBuilder content) {
+    public IndexRequest source(final Map<String, ?> content) {
         inner.source(content);
         return this;
     }

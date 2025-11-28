@@ -108,7 +108,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.elasticIndexService = elasticIndexService;
         this.nfsMounter = nfsMounter;
         this.tagDelimiter = tagDelimiter;
-        this.fileMapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
+        this.fileMapper = new StorageFileMapper();
         this.cloudRegions = ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllRegions()).stream()
                 .map(r -> ImmutablePair.of(r.getId(), r))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));

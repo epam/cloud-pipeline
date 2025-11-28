@@ -99,7 +99,7 @@ class PipelineCodeHandlerTest {
         doReturn(ElasticStackVersion.V6).when(esClient).getVersion();
         pipelineCodeHandler = new PipelineCodeHandler(INDEX_PREFIX, INDEX_NAME, apiClient,
                 new ElasticIndexService(esClient), FILE_INDEX_PATHS, objectMapper, pipelineLoader,
-                new PipelineCodeMapper(ElasticStackVersion.V6), "master", CODE_LIMIT_BYTES);
+                new PipelineCodeMapper(), "master", CODE_LIMIT_BYTES);
 
         expectedPipelineEvent = new PipelineEvent();
         expectedPipelineEvent.setEventType(EventType.INSERT);

@@ -15,8 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.run;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -28,9 +26,9 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPermissions;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPipelineRun;
@@ -53,8 +51,8 @@ class RunMapperTest {
     private static final int MAX_LOG_LINES = 100;
 
     @Test
-    void shouldMapRun() throws IOException {
-        PipelineRunMapper mapper = new PipelineRunMapper(MAX_LOG_LINES, ElasticStackVersion.V6);
+    void shouldMapRun() {
+        PipelineRunMapper mapper = new PipelineRunMapper(MAX_LOG_LINES);
 
         PipelineRunWithLog pipelineRunWithLog = new PipelineRunWithLog();
 
@@ -101,7 +99,7 @@ class RunMapperTest {
                 .owner(USER)
                 .permissions(PERMISSIONS_CONTAINER)
                 .build();
-        XContentBuilder contentBuilder = mapper.map(container);
+        Map<String, ?> contentBuilder = mapper.map(container);
 
         verifyPipelineRun(run, TEST_NAME + " " + TEST_VERSION, contentBuilder);
         verifyRunParameters(Collections.singletonList(TEST_NAME + " " + TEST_VALUE), contentBuilder);

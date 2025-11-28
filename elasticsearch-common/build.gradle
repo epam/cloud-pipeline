@@ -34,6 +34,7 @@ repositories { mavenCentral() }
 
 dependencies {
     // Elasticsearch
+    implementation group: "org.apache.lucene", name: "lucene-core", version: "7.7.0"
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
@@ -55,7 +56,7 @@ dependencies {
 }
 
 shadowJar {
-    relocate('org', 'shaded/org')
+    relocate('org/apache/lucene', 'shaded/org/apache/lucene')
     relocate('lombok', 'shaded/lombok')
     relocate('com', 'shaded/com') {
         exclude("com/epam/**")

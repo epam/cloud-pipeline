@@ -15,9 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.metadata;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
-import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.BaseEntity;
@@ -26,12 +23,11 @@ import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -41,44 +37,30 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 @Component
 public class MetadataEntityMapper implements EntityMapper<MetadataEntity> {
 
-    private final ElasticStackVersion version;
-
-    public MetadataEntityMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
-        this.version = version;
-    }
-
     @Override
-    public XContentBuilder map(final EntityContainer<MetadataEntity> container) {
-        MetadataEntity entity = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
-            jsonBuilder.startObject();
-            jsonBuilder
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.METADATA_ENTITY.name())
-                    .field("id", entity.getId())
-                    .field("externalId", entity.getExternalId())
-                    .field("parentId", Optional.ofNullable(entity.getParent())
-                            .map(BaseEntity::getId).orElse(null))
-                    .field("name", StringUtils.defaultString(entity.getName(), entity.getExternalId()));
+    public Map<String, ?> map(final EntityContainer<MetadataEntity> container) {
+        final MetadataEntity entity = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.METADATA_ENTITY.name());
+        jsonMap.put("id", entity.getId());
+        jsonMap.put("externalId", entity.getExternalId());
+        jsonMap.put("parentId", Optional.ofNullable(entity.getParent())
+                .map(BaseEntity::getId).orElse(null));
+        jsonMap.put("name", StringUtils.defaultString(entity.getName(), entity.getExternalId()));
 
-            buildEntityClass(entity.getClassEntity(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
+        buildEntityClass(entity.getClassEntity(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
 
-            buildMap(prepareEntityMetadata(entity.getData()), jsonBuilder, "fields");
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for metadata: ", e);
-        }
+        buildMap(prepareEntityMetadata(entity.getData()), jsonMap, "fields");
+        return jsonMap;
     }
 
-    private void buildEntityClass(final MetadataClass metadataClass,
-                                  final XContentBuilder jsonBuilder) throws IOException {
+    private void buildEntityClass(final MetadataClass metadataClass, final Map<String, Object> jsonMap) {
         if (metadataClass == null) {
             return;
         }
-        jsonBuilder
-                .field("className", metadataClass.getName())
-                .field("classId", metadataClass.getId());
+        jsonMap.put("className", metadataClass.getName());
+        jsonMap.put("classId", metadataClass.getId());
     }
 
     private Map<String, String> prepareEntityMetadata(final Map<String, PipeConfValue> data) {

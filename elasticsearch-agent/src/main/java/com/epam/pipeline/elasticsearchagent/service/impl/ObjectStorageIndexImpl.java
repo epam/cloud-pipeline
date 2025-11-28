@@ -44,6 +44,7 @@ import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -77,6 +78,7 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 
 @Slf4j
 @Setter
+@RequiredArgsConstructor
 public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private static final String STANDARD_TIER = "STANDARD";
@@ -104,40 +106,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private Set<Long> storageIds;
     private Set<Long> skipStorageIds;
 
-    private final StorageFileMapper fileMapper;
-
-    public ObjectStorageIndexImpl(final CloudPipelineAPIClient cloudPipelineAPIClient,
-                                  final ElasticsearchServiceClient elasticsearchServiceClient,
-                                  final ElasticIndexService elasticIndexService,
-                                  final ObjectStorageFileManager fileManager,
-                                  final LockService lockService,
-                                  final String indexPrefix,
-                                  final String indexMappingFile,
-                                  final int bulkInsertSize,
-                                  final int bulkLoadTagsSize,
-                                  final DataStorageType storageType,
-                                  final SearchDocumentType documentType,
-                                  final String tagDelimiter,
-                                  final boolean includeVersions,
-                                  final String storageExcludeKey,
-                                  final String storageExcludeValue) {
-        this.cloudPipelineAPIClient = cloudPipelineAPIClient;
-        this.elasticsearchServiceClient = elasticsearchServiceClient;
-        this.elasticIndexService = elasticIndexService;
-        this.fileManager = fileManager;
-        this.lockService = lockService;
-        this.indexPrefix = indexPrefix;
-        this.indexMappingFile = indexMappingFile;
-        this.bulkInsertSize = bulkInsertSize;
-        this.bulkLoadTagsSize = bulkLoadTagsSize;
-        this.storageType = storageType;
-        this.documentType = documentType;
-        this.tagDelimiter = tagDelimiter;
-        this.includeVersions = includeVersions;
-        this.storageExcludeKey = storageExcludeKey;
-        this.storageExcludeValue = storageExcludeValue;
-        this.fileMapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
-    }
+    private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {

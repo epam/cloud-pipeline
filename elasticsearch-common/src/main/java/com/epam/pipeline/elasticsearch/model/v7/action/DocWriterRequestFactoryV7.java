@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.elasticsearch.model.v7.action;
 
+import com.epam.pipeline.elasticsearch.model.DeleteRequest;
 import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearch.model.v7.action.delete.DeleteRequestV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.index.IndexRequestV7;
 
@@ -27,11 +29,11 @@ public final class DocWriterRequestFactoryV7 {
     }
 
     public static shaded.org.elasticsearch7.action.DocWriteRequest toRequest(final DocWriteRequest request) {
-        if (request instanceof IndexRequestV7) {
-            return ((IndexRequestV7) request).getInner();
+        if (request instanceof IndexRequest) {
+            return ((IndexRequestV7) ((IndexRequest) request).getInner()).getInner();
         }
-        if (request instanceof DeleteRequestV7) {
-            return ((DeleteRequestV7) request).getInner();
+        if (request instanceof DeleteRequest) {
+            return ((DeleteRequestV7) ((DeleteRequest) request).getInner()).getInner();
         }
         throw new UnsupportedOperationException();
     }

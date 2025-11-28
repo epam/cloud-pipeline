@@ -12,6 +12,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SimpleLock;
 import org.apache.commons.collections4.CollectionUtils;
@@ -25,13 +26,14 @@ import java.util.Optional;
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class StorageDocumentService {
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final LockService lockService;
-    private final StorageFileMapper mapper;
+    private final StorageFileMapper mapper = new StorageFileMapper();
 
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
@@ -45,15 +47,6 @@ public class StorageDocumentService {
     private String indexName;
     @Value("${sync.s3-file.index.mapping}")
     private String indexSettingsPath;
-
-    public StorageDocumentService(final CloudPipelineAPIClient cloudPipelineAPIClient,
-                                  final ElasticsearchServiceClient elasticsearchServiceClient,
-                                  final LockService lockService) {
-        this.cloudPipelineAPIClient = cloudPipelineAPIClient;
-        this.elasticsearchServiceClient = elasticsearchServiceClient;
-        this.lockService = lockService;
-        this.mapper = new StorageFileMapper(elasticsearchServiceClient.getVersion());
-    }
 
     public void indexFile(final Long storageId,
                           final List<DataStorageFile> files) {

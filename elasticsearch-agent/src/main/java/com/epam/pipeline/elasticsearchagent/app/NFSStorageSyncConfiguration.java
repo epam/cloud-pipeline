@@ -48,7 +48,7 @@ public class NFSStorageSyncConfiguration {
 
     @Bean
     public DataStorageMapper nfsStorageMapper() {
-        return new DataStorageMapper(SearchDocumentType.NFS_STORAGE, version);
+        return new DataStorageMapper(SearchDocumentType.NFS_STORAGE);
     }
 
     @Bean

@@ -15,9 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.run;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
-import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
@@ -33,11 +30,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -48,54 +47,46 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
     private final int maxLogLines;
-    private final ElasticStackVersion version;
 
-    public PipelineRunMapper(@Value("${sync.run.log.lines.size:1000}") final int maxLogLines,
-                             @Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
+    public PipelineRunMapper(@Value("${sync.run.log.lines.size:1000}") final int maxLogLines) {
         this.maxLogLines = maxLogLines;
-        this.version = version;
     }
 
     @Override
-    public XContentBuilder map(final EntityContainer<PipelineRunWithLog> container) {
-        PipelineRunWithLog run = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
-            jsonBuilder
-                    .startObject()
-                    .field("id", run.getPipelineRun().getId())
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
-                    .field("description", getRunDescription(run.getPipelineRun()))
-                    .field("createdDate", parseDataToString(run.getPipelineRun().getCreatedDate()))
-                    .field("startDate", parseDataToString(run.getPipelineRun().getStartDate()))
-                    .field("endDate", parseDataToString(run.getPipelineRun().getEndDate()))
-                    .field("pipelineName", run.getPipelineRun().getPipelineName())
-                    .field("pipelineVersion", run.getPipelineRun().getVersion())
-                    .field("status", run.getPipelineRun().getStatus())
-                    .field("dockerImage", run.getPipelineRun().getDockerImage())
-                    .field("actualCmd", run.getPipelineRun().getActualCmd())
-                    .field("configurationName", run.getPipelineRun().getConfigName())
-                    .field("configurationId", run.getPipelineRun().getConfigurationId())
-                    .field("environment", Optional.ofNullable(run.getPipelineRun().getExecutionPreferences())
-                            .map(preferences -> preferences.getEnvironment().name())
-                            .orElse(null))
-                    .field("pricePerHour", run.getPipelineRun().getPricePerHour().doubleValue())
-                    .field("parentRunId", run.getPipelineRun().getParentRunId())
-                    .field("nodeCount", run.getPipelineRun().getNodeCount())
-                    .field("name", run.getPipelineRun().getPodId())
-                    .field("podId", run.getPipelineRun().getPodId());
+    public Map<String, ?> map(final EntityContainer<PipelineRunWithLog> container) {
+        final PipelineRunWithLog run = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
 
-            buildRunInstance(run.getPipelineRun().getInstance(), jsonBuilder);
-            buildRunStatus(run.getPipelineRun().getRunStatuses(), jsonBuilder);
-            buildRunParam(run.getPipelineRun().getPipelineRunParameters(), jsonBuilder);
-            buildRunLog(run.getRunLogs(), jsonBuilder);
-            buildUserContent(container.getOwner(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
+        jsonMap.put("id", run.getPipelineRun().getId());
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name());
+        jsonMap.put("description", getRunDescription(run.getPipelineRun()));
+        jsonMap.put("createdDate", parseDataToString(run.getPipelineRun().getCreatedDate()));
+        jsonMap.put("startDate", parseDataToString(run.getPipelineRun().getStartDate()));
+        jsonMap.put("endDate", parseDataToString(run.getPipelineRun().getEndDate()));
+        jsonMap.put("pipelineName", run.getPipelineRun().getPipelineName());
+        jsonMap.put("pipelineVersion", run.getPipelineRun().getVersion());
+        jsonMap.put("status", run.getPipelineRun().getStatus());
+        jsonMap.put("dockerImage", run.getPipelineRun().getDockerImage());
+        jsonMap.put("actualCmd", run.getPipelineRun().getActualCmd());
+        jsonMap.put("configurationName", run.getPipelineRun().getConfigName());
+        jsonMap.put("configurationId", run.getPipelineRun().getConfigurationId());
+        jsonMap.put("environment", Optional.ofNullable(run.getPipelineRun().getExecutionPreferences())
+                .map(preferences -> preferences.getEnvironment().name())
+                .orElse(null));
+        jsonMap.put("pricePerHour", run.getPipelineRun().getPricePerHour().doubleValue());
+        jsonMap.put("parentRunId", run.getPipelineRun().getParentRunId());
+        jsonMap.put("nodeCount", run.getPipelineRun().getNodeCount());
+        jsonMap.put("name", run.getPipelineRun().getPodId());
+        jsonMap.put("podId", run.getPipelineRun().getPodId());
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline run: ", e);
-        }
+        buildRunInstance(run.getPipelineRun().getInstance(), jsonMap);
+        buildRunStatus(run.getPipelineRun().getRunStatuses(), jsonMap);
+        buildRunParam(run.getPipelineRun().getPipelineRunParameters(), jsonMap);
+        buildRunLog(run.getRunLogs(), jsonMap);
+        buildUserContent(container.getOwner(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
+
+        return jsonMap;
     }
 
     private String getRunDescription(final PipelineRun pipelineRun) {
@@ -106,29 +97,28 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
         return pipelineRun.getDockerImage();
     }
 
-    private void buildRunInstance(RunInstance instance, XContentBuilder jsonBuilder) throws IOException {
+    private void buildRunInstance(final RunInstance instance, final Map<String, Object> jsonMap) {
         if (instance == null) {
             return;
         }
-        jsonBuilder
-                .field("instance")
-                .startObject()
-                .field("nodeType", instance.getNodeType())
-                .field("nodeDisk", instance.getNodeDisk())
-                .field("nodeIP", instance.getNodeIP())
-                .field("nodeId", instance.getNodeId())
-                .field("nodeImage", instance.getNodeImage())
-                .field("nodeName", instance.getNodeName())
-                .field("priceType", instance.getSpot())
-                .field("cloudRegionId", instance.getCloudRegionId())
-                .endObject();
+        final Map<String, Object> instanceMap = new HashMap<>();
+        instanceMap.put("nodeType", instance.getNodeType());
+        instanceMap.put("nodeDisk", instance.getNodeDisk());
+        instanceMap.put("nodeIP", instance.getNodeIP());
+        instanceMap.put("nodeId", instance.getNodeId());
+        instanceMap.put("nodeImage", instance.getNodeImage());
+        instanceMap.put("nodeName", instance.getNodeName());
+        instanceMap.put("priceType", instance.getSpot());
+        instanceMap.put("cloudRegionId", instance.getCloudRegionId());
+
+        jsonMap.put("instance", instanceMap);
     }
 
-    private void buildRunParam(List<PipelineRunParameter> runParams, XContentBuilder jsonBuilder) throws IOException {
+    private void buildRunParam(final List<PipelineRunParameter> runParams, final Map<String, Object> jsonMap) {
         if (CollectionUtils.isEmpty(runParams)) {
             return;
         }
-        jsonBuilder.array("parameters", runParams.stream()
+        jsonMap.put("parameters", runParams.stream()
                 .map(param -> {
                     final String paramName = param.getName();
                     final String paramValue = StringUtils.defaultIfBlank(
@@ -141,26 +131,25 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
                 .toArray(String[]::new));
     }
 
-    private void buildRunStatus(List<RunStatus> runStatuses, XContentBuilder jsonBuilder) throws IOException {
+    private void buildRunStatus(final List<RunStatus> runStatuses, final Map<String, Object> jsonMap) {
         if (CollectionUtils.isEmpty(runStatuses)) {
             return;
         }
-        jsonBuilder.startArray("statuses");
+        final List<Map<String, Object>> statuses = new ArrayList<>();
         for (RunStatus runStatus : runStatuses) {
-            jsonBuilder
-                    .startObject()
-                    .field("status", runStatus.getStatus())
-                    .field("timestamp", parseLocalDataToString(runStatus.getTimestamp()))
-                    .endObject();
+            final Map<String, Object> runStatusMap = new HashMap<>();
+            runStatusMap.put("status", runStatus.getStatus());
+            runStatusMap.put("timestamp", parseLocalDataToString(runStatus.getTimestamp()));
+            statuses.add(runStatusMap);
         }
-        jsonBuilder.endArray();
+        jsonMap.put("statuses", statuses);
     }
 
-    private void buildRunLog(List<RunLog> runLogs, XContentBuilder jsonBuilder) throws IOException {
+    private void buildRunLog(final List<RunLog> runLogs, final Map<String, Object> jsonMap) {
         if (CollectionUtils.isEmpty(runLogs)) {
             return;
         }
-        jsonBuilder.array("logs", runLogs.stream()
+        jsonMap.put("logs", runLogs.stream()
                 .sorted(Comparator.comparing(RunLog::getDate).reversed())
                 .limit(maxLogLines)
                 .map(log -> {

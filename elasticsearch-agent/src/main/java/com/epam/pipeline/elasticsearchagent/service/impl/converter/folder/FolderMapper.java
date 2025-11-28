@@ -15,50 +15,35 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.folder;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
-import com.epam.pipeline.elasticsearch.model.XContentFactory;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
 public class FolderMapper implements EntityMapper<Folder> {
 
-    private final ElasticStackVersion version;
-
-    public FolderMapper(@Value("${elasticsearch.client.version:V6}") final ElasticStackVersion version) {
-        this.version = version;
-    }
-
     @Override
-    public XContentBuilder map(final EntityContainer<Folder> container) {
-        Folder folder = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.getBuilder(version)) {
-            jsonBuilder
-                    .startObject()
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.FOLDER.name())
-                    .field("id", folder.getId())
-                    .field("name", folder.getName())
-                    .field("parentId", folder.getParentId())
-                    .field("createdDate", parseDataToString(folder.getCreatedDate()));
+    public Map<String, ?> map(final EntityContainer<Folder> container) {
+        final Folder folder = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
 
-            buildUserContent(container.getOwner(), jsonBuilder);
-            buildMetadata(container.getMetadata(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.FOLDER.name());
+        jsonMap.put("id", folder.getId());
+        jsonMap.put("name", folder.getName());
+        jsonMap.put("parentId", folder.getParentId());
+        jsonMap.put("createdDate", parseDataToString(folder.getCreatedDate()));
 
-            jsonBuilder.endObject();
+        buildUserContent(container.getOwner(), jsonMap);
+        buildMetadata(container.getMetadata(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
 
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline folder: ", e);
-        }
+        return jsonMap;
     }
 }

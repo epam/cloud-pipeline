@@ -15,8 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -26,7 +24,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyMetadata;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyNFSStorage;
@@ -47,8 +45,8 @@ class DataStorageMapperTest {
     private static final Integer DURATION = 20;
 
     @Test
-    void shouldMapS3DataStorage() throws IOException {
-        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.S3_STORAGE, ElasticStackVersion.V6);
+    void shouldMapS3DataStorage() {
+        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.S3_STORAGE);
 
         StoragePolicy policy = new StoragePolicy();
         policy.setBackupDuration(DURATION);
@@ -65,7 +63,7 @@ class DataStorageMapperTest {
                 .storage(dataStorage)
                 .build();
 
-        XContentBuilder contentBuilder = mapper.map(buildContainer(doc));
+        Map<String, ?> contentBuilder = mapper.map(buildContainer(doc));
 
         verifyS3Storage(dataStorage, TEST_REGION, contentBuilder);
         verifyPermissions(PERMISSIONS_CONTAINER, contentBuilder);
@@ -74,8 +72,8 @@ class DataStorageMapperTest {
     }
 
     @Test
-    void shouldMapNFSDataStorage() throws IOException {
-        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.NFS_STORAGE, ElasticStackVersion.V6);
+    void shouldMapNFSDataStorage() {
+        DataStorageMapper mapper = new DataStorageMapper(SearchDocumentType.NFS_STORAGE);
 
         NFSDataStorage dataStorage = new NFSDataStorage();
         fillStorage(dataStorage);
@@ -85,7 +83,7 @@ class DataStorageMapperTest {
                 .storage(dataStorage)
                 .build();
 
-        XContentBuilder contentBuilder = mapper.map(buildContainer(doc));
+        Map<String, ?> contentBuilder = mapper.map(buildContainer(doc));
 
         verifyNFSStorage(dataStorage, contentBuilder);
         verifyPermissions(PERMISSIONS_CONTAINER, contentBuilder);

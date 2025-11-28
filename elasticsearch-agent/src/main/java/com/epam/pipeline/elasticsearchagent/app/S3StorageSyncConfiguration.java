@@ -48,7 +48,7 @@ public class S3StorageSyncConfiguration {
 
     @Bean
     public DataStorageMapper s3StorageMapper() {
-        return new DataStorageMapper(SearchDocumentType.S3_STORAGE, version);
+        return new DataStorageMapper(SearchDocumentType.S3_STORAGE);
     }
 
     @Bean

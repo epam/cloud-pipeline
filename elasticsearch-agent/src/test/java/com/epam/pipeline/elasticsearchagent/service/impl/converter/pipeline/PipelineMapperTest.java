@@ -15,8 +15,6 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
-import com.epam.pipeline.elasticsearch.ElasticStackVersion;
-import com.epam.pipeline.elasticsearch.model.XContentBuilder;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PipelineDoc;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -24,8 +22,8 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyMetadata;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPermissions;
@@ -44,8 +42,8 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 class PipelineMapperTest {
 
     @Test
-    void shouldMapPipeline() throws IOException {
-        PipelineMapper mapper = new PipelineMapper(ElasticStackVersion.V6);
+    void shouldMapPipeline() {
+        PipelineMapper mapper = new PipelineMapper();
 
         Pipeline pipeline = new Pipeline();
         pipeline.setId(1L);
@@ -69,7 +67,7 @@ class PipelineMapperTest {
                 .metadata(METADATA)
                 .permissions(PERMISSIONS_CONTAINER)
                 .build();
-        XContentBuilder contentBuilder = mapper.map(container);
+        Map<String, ?> contentBuilder = mapper.map(container);
 
         verifyPipeline(pipeline, contentBuilder);
         verifyPipelineUser(USER, contentBuilder);
