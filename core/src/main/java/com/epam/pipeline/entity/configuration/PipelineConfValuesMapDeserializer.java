@@ -51,6 +51,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String ANNOTATION_FIELD = "annotation";
     private static final String SCHEME_FIELD = "scheme";
     private static final String MULTIPLE = "multiple";
+    private static final String METADATA_CONFIG = "metadata_config";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
     private final ObjectMapper mapper;
 
@@ -128,6 +129,11 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 final JsonNode multipleNode = child.get(MULTIPLE);
                 if (hasValue(multipleNode)) {
                     parameter.setMultiple(multipleNode.asBoolean());
+                }
+                final JsonNode metadataConfig = child.get(METADATA_CONFIG);
+                if (hasValue(metadataConfig) && metadataConfig.isObject()) {
+                    parameter.setMetadataConfig(mapper.readValue(metadataConfig.traverse(),
+                            new TypeReference<Map<String, Object>>(){}));
                 }
             }
             parameters.put(name, parameter);

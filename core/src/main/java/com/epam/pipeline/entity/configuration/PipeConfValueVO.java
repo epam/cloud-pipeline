@@ -71,6 +71,9 @@ public class PipeConfValueVO {
     private Map<String, Object> annotation;
     private Map<String, Object> scheme;
 
+    @JsonProperty(value = "metadata_config")
+    private Map<String, Object> metadataConfig;
+
     /**
      * String expression to determine visibility of a param
      * User for GUI client only
