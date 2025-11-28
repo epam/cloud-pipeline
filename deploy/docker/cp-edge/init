@@ -205,9 +205,39 @@ nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
 sleep 5
 
+# Configure Squid
+if [ "$CP_EDGE_SQUID_ENABLED" == "true" ] && [ "$CP_EDGE_SQUID_SSL_PORTS" ]; then
+    export CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR="${CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR:-$CP_KUBE_FLANNEL_CIDR}"
+    if [ -z "$CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR" ]; then
+        export CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR="10.244.0.0/16"
+    fi
+
+    _new_line=$'\n'
+    if [ "$CP_EDGE_SQUID_SSL_PORTS" ]; then
+        CP_EDGE_SQUID_SSL_PORTS_ACLS=""
+        for _squid_port in ${CP_EDGE_SQUID_SSL_PORTS//,/ }; do
+            
+            CP_EDGE_SQUID_SSL_PORTS_ACLS="${CP_EDGE_SQUID_SSL_PORTS_ACLS}acl SSL_ports port ${_squid_port}${_new_line}"
+        done
+        export CP_EDGE_SQUID_SSL_PORTS_ACLS
+    fi
+
+    export CP_EDGE_SQUID_PORT="${CP_EDGE_SQUID_PORT:-3128}"
+    export CP_EDGE_SQUID_CACHE_DIR="${CP_EDGE_SQUID_CACHE_DIR:-/var/spool/squid}"
+
+    SQUID_CONF="$(envsubst '${CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR} ${CP_EDGE_SQUID_SSL_PORTS_ACLS} ${CP_EDGE_SQUID_PORT} ${CP_EDGE_SQUID_CACHE_DIR}' < /etc/squid/squid.conf.tmpl)"
+    echo "$SQUID_CONF" > /etc/squid/squid.conf
+
+    mkdir -p "${CP_EDGE_SQUID_CACHE_DIR}"
+    chown -R squid:squid "${CP_EDGE_SQUID_CACHE_DIR}"
+
+    squid -N -f /etc/squid/squid.conf -z
+    squid -f /etc/squid/squid.conf
+fi
+
 # Workaround the container hanging when being terminated
 function sig_handler {
-    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), stopping cron (PID $CRON_PID), stopping maintenance cron (PID $MAINTENANCE_CRON_PID) quitting nginx and exiting"
+    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), stopping cron (PID $CRON_PID), stopping maintenance cron (PID $MAINTENANCE_CRON_PID) quitting nginx/squid and exiting"
     if [ $WETTY_PID -ne 0 ]; then
         kill -SIGTERM "$WETTY_PID"
         wait "$WETTY_PID"
@@ -221,9 +251,13 @@ function sig_handler {
         wait "$MAINTENANCE_CRON_PID"
     fi
     nginx -s quit
+    if squid -k check &> /dev/null; then
+        squid -k shutdown
+    fi
     exit 143
 }
 trap 'kill $! ; sig_handler' SIGTERM
+
 # Print wetty and cron logs to the stdout
 tail -f /var/log/wetty.log -f /var/log/sync-routes.log -f /var/log/maintenance.log &
 wait "$!"
