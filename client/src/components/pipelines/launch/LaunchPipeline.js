@@ -562,7 +562,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
               });
             }
             if (runInfo) {
-              console.log('runInfo', runInfo)
               return getRunLaunchPayload({
                 run: runInfo,
                 configuration,
@@ -570,7 +569,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
               });
             }
             if (configuration) {
-              console.log('configuration', configuration)
               return configuration;
             }
             if (vsPayload) {
@@ -657,29 +655,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     const {
       value: pipeline
     } = this.loadingUtilities.getLoadingState(PIPELINE_STATE_KEY, this.state);
-    // const parametersMock = {
-    //   ...parameters,
-    //   parameters: {
-    //     ...parameters.parameters,
-    //     'GENOME': {
-    //       'type': 'metadata_entity',
-    //       'value': '',
-    //       'multiple': false,
-    //       'metadataConfig': {
-    //         'folderId': '',
-    //         'metadataClass': 'genomes',
-    //         'nameField': 'Name',
-    //         'params': {
-    //           'PARAM_FASTA': 'FASTA',
-    //           'PARAM_GTF': 'GTF',
-    //           'PARAM_GTF2': 'ADDITIONAL_GTF',
-    //           'PARAM_ASDASDADSASD': 'GTF'
-    //         }
-    //       }
-    //     }
-    //   }
-    // };
-    console.log('parameters', parameters)
     const errors = this.getLoadingStateErrors();
     if (payloadPending) {
       return <LoadingView />;
