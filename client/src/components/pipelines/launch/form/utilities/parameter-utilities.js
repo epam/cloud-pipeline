@@ -542,7 +542,6 @@ const metadataCache = {};
  * @param {Object} [pipeline]
  **/
 async function getMetadataForParameters (parameters = [], pipeline) {
-  console.log('123', parameters);
   const metadataEntityParams = parameters
     .filter(p => p.type === 'metadata_entity' &&
       p.config?.metadata_config?.metadataClass
