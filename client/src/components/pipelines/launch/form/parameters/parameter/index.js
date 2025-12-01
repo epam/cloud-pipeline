@@ -24,7 +24,8 @@ function LaunchFormParameter (props) {
     rootEntityId,
     metadataAutoComplete,
     detached = false,
-    pipeline = false
+    pipeline = false,
+    parametersMetadata
   } = props;
   if (!parameter) {
     return null;
@@ -81,6 +82,7 @@ function LaunchFormParameter (props) {
             currentMetadataEntity={currentMetadataEntity}
             rootEntityId={rootEntityId}
             metadataAutoComplete={metadataAutoComplete}
+            parametersMetadata={parametersMetadata}
           />
         </Form.Item>
         {removeAllowed && typeof onRemoveParameter === 'function' ? (

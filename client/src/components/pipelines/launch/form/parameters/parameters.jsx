@@ -148,7 +148,8 @@ class Parameters extends Component {
       detached,
       pipeline,
       parameterRowClassName,
-      description
+      description,
+      parametersMetadata
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
@@ -291,6 +292,7 @@ class Parameters extends Component {
                       currentCloudRegionId={currentCloudRegionId}
                       currentProjectId={currentProjectId}
                       currentProjectMetadata={currentProjectMetadata}
+                      parametersMetadata={parametersMetadata}
                       currentMetadataEntity={currentMetadataEntity}
                       rootEntityId={rootEntityId}
                       metadataAutoComplete={metadataAutoComplete}
