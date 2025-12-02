@@ -6,6 +6,7 @@ import LaunchFormEnumParameterInput from './enum-parameter-input';
 import LaunchFormMetadataParameterInput from './metadata-parameter-input';
 import LaunchFormSchemeParameterInput from './scheme-parameter-input/scheme-parameter-input';
 import {registerRenderer, renderParameter} from './renderers';
+import LaunchFormMetadataEntityParameter from './metadata-entity-parameter';
 
 registerRenderer('string', LaunchFormStringParameterInput, true);
 registerRenderer('enum', LaunchFormEnumParameterInput);
@@ -19,6 +20,7 @@ registerRenderer('path', LaunchFormPathParameterInput);
 registerRenderer('common', LaunchFormPathParameterInput);
 registerRenderer('input', LaunchFormPathParameterInput);
 registerRenderer('output', LaunchFormPathParameterInput);
+registerRenderer('metadata_entity', LaunchFormMetadataEntityParameter);
 
 function LaunchFormParameterInput (props) {
   return renderParameter(props);

@@ -324,6 +324,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     bucketPathParameterKey: null,
     bucketPathParameterSection: null,
     currentMetadataEntity: [],
+    parametersMetadata: {},
     rootEntityId: null,
     filteredEntityFields: [],
     activeAutoCompleteParameterKey: null,
@@ -1653,6 +1654,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.params
     );
     payload.params = appliedReservationParameters;
+    payload.params = parameterUtilities
+      .resolveMetadataEntityParameters(
+        payload.params,
+        this.getParameters(parametersPayloadId),
+        this.state.parametersMetadata
+      );
     payload.podAssignPolicy = podAssignPolicy;
     if (!payload.isSpot &&
       !this.state.launchCluster &&
@@ -2696,6 +2703,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         detached={detached}
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
+        parametersMetadata={this.state.parametersMetadata}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -5480,19 +5488,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } = this.state;
     this.wrapLoading('parameters', async (commitState) => {
       let params = [];
+      let parametersMetadata = {};
       try {
         params = await parameterUtilities.readParametersFromConfiguration(
           payload,
           {
             detached,
-            pipeline: pipeline !== undefined && pipeline !== null
+            pipeline: pipeline !== undefined && pipeline !== null,
+            pipelineObject: pipeline
           }
         );
+        parametersMetadata = await parameterUtilities
+          .getMetadataForParameters(params, this.state.pipeline);
       } catch (error) {
         console.log(`error initializing parameters: ${error.message}`);
       }
+      this.setState({parametersMetadata});
       await this.registerParametersPayloads(
-        [{parameters: params, id: 'default'}],
+        [{
+          parameters: params,
+          id: 'default'
+        }],
         commitState
       );
     });
