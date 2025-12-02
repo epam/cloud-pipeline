@@ -59,6 +59,10 @@ dependencies {
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 }
 
+// We use shadow jar to have our own a copy of the original org.opensearch.action.DocWriteResponse
+// Such change allows to communicate with Opensearch server of version 2.x, 3.x
+// We need to do such hack because of inability to use OpenSearch SDK 3.x with Java 8 (requires Java 17)
+// TODO: Once elasticsearch-agent will be using Java 17, we can get rid of this hack
 shadowJar {
     // Do not allow to have more that 1 version of the same class
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

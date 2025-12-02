@@ -29,6 +29,11 @@ import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedT
 import static org.opensearch.index.seqno.SequenceNumbers.UNASSIGNED_PRIMARY_TERM;
 import static org.opensearch.index.seqno.SequenceNumbers.UNASSIGNED_SEQ_NO;
 
+// This class is a copy of the original org.opensearch.action.DocWriteResponse
+// The only difference is that here we don't check and don't expect type field to be present
+// Such change allows to communicate with Opensearch server of version 2.x, 3.x
+// We need to do such hack because of inability to use OpenSearch SDK 3.x with Java 8 (requires Java 17)
+// TODO: Once elasticsearch-agent will be using Java 17, we can get rid of this hack
 public class DocWriteResponse extends ReplicationResponse implements WriteResponse, StatusToXContentObject {
     private static final String _SHARDS = "_shards";
     private static final String _INDEX = "_index";
