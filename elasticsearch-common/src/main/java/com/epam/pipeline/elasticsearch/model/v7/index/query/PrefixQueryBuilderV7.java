@@ -22,9 +22,9 @@ import lombok.Getter;
 @Getter
 public class PrefixQueryBuilderV7 implements PrefixQueryBuilder {
 
-    private final shaded.org.elasticsearch7.index.query.PrefixQueryBuilder inner;
+    private final org.opensearch.index.query.PrefixQueryBuilder inner;
 
     public PrefixQueryBuilderV7(final String name, final String prefix) {
-        inner = shaded.org.elasticsearch7.index.query.QueryBuilders.prefixQuery(name, prefix);
+        inner = org.opensearch.index.query.QueryBuilders.prefixQuery(name, prefix);
     }
 }

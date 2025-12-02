@@ -23,10 +23,10 @@ import lombok.Getter;
 @SuppressWarnings("PMD.ShortMethodName")
 public class DeleteRequestV7 implements DeleteRequestInner {
 
-    private final shaded.org.elasticsearch7.action.delete.DeleteRequest inner;
+    private final org.opensearch.action.delete.DeleteRequest inner;
 
     public DeleteRequestV7(final String indexName, final String objectId) {
-        inner = new shaded.org.elasticsearch7.action.delete.DeleteRequest(indexName, objectId);
+        inner = new org.opensearch.action.delete.DeleteRequest(indexName, objectId);
     }
 
     @Override

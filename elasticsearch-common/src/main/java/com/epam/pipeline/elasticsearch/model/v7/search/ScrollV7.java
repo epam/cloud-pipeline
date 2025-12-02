@@ -24,5 +24,5 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class ScrollV7 implements Scroll {
 
-    private final shaded.org.elasticsearch7.search.Scroll inner;
+    private final org.opensearch.search.Scroll inner;
 }

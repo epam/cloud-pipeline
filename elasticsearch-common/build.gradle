@@ -33,12 +33,16 @@ sourceCompatibility = 1.8
 repositories { mavenCentral() }
 
 dependencies {
+
+    implementation 'org.opensearch.client:opensearch-java:1.0.0'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:1.0.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+
     // Elasticsearch
     implementation group: "org.apache.lucene", name: "lucene-core", version: "7.7.0"
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    implementation project(path: ':shaded-org-elasticsearch-v7', configuration: 'shadow')
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
@@ -56,9 +60,14 @@ dependencies {
 }
 
 shadowJar {
-    relocate('org/apache/lucene', 'shaded/org/apache/lucene')
-    relocate('lombok', 'shaded/lombok')
-    relocate('com', 'shaded/com') {
-        exclude("com/epam/**")
-    }
+    // Do not allow to have more that 1 version of the same class
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // firstly relocate our custom, modified version of DocWriteResponse to the fat JAR
+    relocate('org.opensearch.action', 'shaded.org.opensearch.action')
+    // Then relocate whole opensearch lib -> this way we make sure that we would use
+    // our custom, modified version of DocWriteResponse
+    // because we have DuplicatesStrategy.EXCLUDE and relocated it first
+    relocate('org.opensearch', 'shaded.org.opensearch')
+    
+    relocate('lombok', 'shaded.lombok')
 }

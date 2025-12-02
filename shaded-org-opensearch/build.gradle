@@ -23,7 +23,9 @@ plugins {
     id "com.github.johnrengelman.shadow" version "4.0.4"
 }
 
-apply plugin: 'java'
+apply plugin: 'java-library'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
 
@@ -31,11 +33,14 @@ repositories { mavenCentral() }
 
 
 dependencies {
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: '7.2.0'
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: '7.2.0'
-    implementation group: "org.elasticsearch", name: "elasticsearch", version: '7.2.0'
+    implementation 'org.opensearch.client:opensearch-java:1.0.0'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:1.0.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 }
 
 shadowJar {
-    relocate('org.elasticsearch', 'shaded.org.elasticsearch7')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    relocate('org.opensearch.action', 'shaded.org.opensearch.action')
+    relocate('org.opensearch', 'shaded.org.opensearch')
+    relocate('org.apache.lucene', 'shaded.org.apache.lucene8')
 }
