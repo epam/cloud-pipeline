@@ -49,7 +49,8 @@ RUN yum install -y  wget \
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script
-ENV NXF_VER="25.04.3"
+ARG NEXTFLOW_VERSION=25.04.3
+ENV NXF_VER="$NEXTFLOW_VERSION"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 
