@@ -44,6 +44,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String SECTION_FIELD = "section";
     private static final String REQUIRED_FIELD = "required";
     private static final String NO_OVERRIDE_FIELD = "no_override";
+    private static final String READ_ONLY_FIELD = "read_only";
     private static final String ENUM_FIELD = "enum";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String VISIBLE_FIELD = "visible";
@@ -101,6 +102,10 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 JsonNode noOverride = child.get(NO_OVERRIDE_FIELD);
                 if (hasValue(noOverride)) {
                     parameter.setNoOverride(noOverride.asBoolean());
+                }
+                JsonNode readOnly = child.get(READ_ONLY_FIELD);
+                if (hasValue(readOnly)) {
+                    parameter.setReadOnly(readOnly.asBoolean());
                 }
                 parseEnumValues(ctxt, child, parameter);
                 final JsonNode description = child.get(DESCRIPTION_FIELD);
