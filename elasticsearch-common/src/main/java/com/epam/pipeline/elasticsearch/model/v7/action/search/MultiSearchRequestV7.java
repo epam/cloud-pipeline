@@ -23,10 +23,10 @@ import lombok.Getter;
 @Getter
 public class MultiSearchRequestV7 implements MultiSearchRequestInner{
 
-    private final org.opensearch.action.search.MultiSearchRequest inner;
+    private final shaded.org.opensearch.action.search.MultiSearchRequest inner;
 
     public MultiSearchRequestV7() {
-        inner = new org.opensearch.action.search.MultiSearchRequest();
+        inner = new shaded.org.opensearch.action.search.MultiSearchRequest();
     }
 
     @Override

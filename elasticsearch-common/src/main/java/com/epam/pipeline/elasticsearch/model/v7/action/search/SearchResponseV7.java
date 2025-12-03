@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SearchResponseV7 implements SearchResponse {
 
-    private final org.opensearch.action.search.SearchResponse inner;
+    private final shaded.org.opensearch.action.search.SearchResponse inner;
 
     @Override
     public String getScrollId() {

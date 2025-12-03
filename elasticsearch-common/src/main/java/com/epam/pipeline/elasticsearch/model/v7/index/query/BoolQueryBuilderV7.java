@@ -23,14 +23,14 @@ import lombok.Getter;
 @Getter
 public class BoolQueryBuilderV7 implements BoolQueryBuilder {
 
-    private final org.opensearch.index.query.BoolQueryBuilder inner;
+    private final shaded.org.opensearch.index.query.BoolQueryBuilder inner;
 
     public BoolQueryBuilderV7() {
-        this.inner = org.opensearch.index.query.QueryBuilders.boolQuery();
+        this.inner = shaded.org.opensearch.index.query.QueryBuilders.boolQuery();
     }
 
     public BoolQueryBuilderV7 must(final QueryBuilder queryBuilder) {
-        inner.must((org.opensearch.index.query.QueryBuilder) queryBuilder.getInner());
+        inner.must((shaded.org.opensearch.index.query.QueryBuilder) queryBuilder.getInner());
         return this;
     }
 

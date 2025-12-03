@@ -18,7 +18,7 @@ package com.epam.pipeline.elasticsearch.model.v7.action.index;
 
 import com.epam.pipeline.elasticsearch.model.IndexRequestInner;
 import lombok.Getter;
-import org.opensearch.action.index.IndexRequest;
+import shaded.org.opensearch.action.index.IndexRequest;
 
 import java.util.Map;
 

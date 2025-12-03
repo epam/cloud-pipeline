@@ -24,13 +24,11 @@ plugins {
 }
 
 apply plugin: 'java-library'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-
-sourceCompatibility = 1.8
 
 repositories { mavenCentral() }
 
+version = '1.0.0'
+archivesBaseName = 'shaded-opensearch'
 
 dependencies {
     implementation 'org.opensearch.client:opensearch-java:1.0.0'
@@ -38,9 +36,19 @@ dependencies {
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 }
 
+// We use shadow jar to have our own a copy of the original org.opensearch.action.DocWriteResponse
+// Such change allows to communicate with Opensearch server of version 2.x, 3.x
+// We need to do such hack because of inability to use OpenSearch SDK 3.x with Java 8 (requires Java 17)
+// TODO: Once elasticsearch-agent will be using Java 17, we can get rid of this hack
 shadowJar {
+    // Do not allow to have more that 1 version of the same class
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // firstly relocate our custom, modified version of DocWriteResponse to the fat JAR
     relocate('org.opensearch.action', 'shaded.org.opensearch.action')
+    // Then relocate whole opensearch lib -> this way we make sure that we would use
+    // our custom, modified version of DocWriteResponse
+    // because we have DuplicatesStrategy.EXCLUDE and relocated it first
     relocate('org.opensearch', 'shaded.org.opensearch')
     relocate('org.apache.lucene', 'shaded.org.apache.lucene8')
 }
+

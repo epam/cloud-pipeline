@@ -25,10 +25,10 @@ public final class IndicesOptionsFactoryV7 {
     }
 
     public static IndicesOptionsInner lenientExpandOpen() {
-        return new IndicesOptionsV7(org.opensearch.action.support.IndicesOptions.lenientExpandOpen());
+        return new IndicesOptionsV7(shaded.org.opensearch.action.support.IndicesOptions.lenientExpandOpen());
     }
 
     public static IndicesOptionsInner strictExpandOpen() {
-        return new IndicesOptionsV7(org.opensearch.action.support.IndicesOptions.strictExpandOpen());
+        return new IndicesOptionsV7(shaded.org.opensearch.action.support.IndicesOptions.strictExpandOpen());
     }
 }

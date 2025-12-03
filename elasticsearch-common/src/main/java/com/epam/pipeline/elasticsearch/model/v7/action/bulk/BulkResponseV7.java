@@ -25,7 +25,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @Builder
 public class BulkResponseV7 implements BulkResponse {
-    final org.opensearch.action.bulk.BulkResponse response;
+    final shaded.org.opensearch.action.bulk.BulkResponse response;
 
     public BulkItemResponseV7[] getItems() {
         return Arrays.stream(response.getItems())

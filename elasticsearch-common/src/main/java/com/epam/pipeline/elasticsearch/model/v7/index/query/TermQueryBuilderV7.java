@@ -22,13 +22,13 @@ import lombok.Getter;
 @Getter
 public class TermQueryBuilderV7 implements TermQueryBuilder {
 
-    private final org.opensearch.index.query.TermQueryBuilder inner;
+    private final shaded.org.opensearch.index.query.TermQueryBuilder inner;
 
     public TermQueryBuilderV7(final String name, final String value) {
-        inner = org.opensearch.index.query.QueryBuilders.termQuery(name, value);
+        inner = shaded.org.opensearch.index.query.QueryBuilders.termQuery(name, value);
     }
 
     public TermQueryBuilderV7(final String name, final Long value) {
-        inner = org.opensearch.index.query.QueryBuilders.termQuery(name, value);
+        inner = shaded.org.opensearch.index.query.QueryBuilders.termQuery(name, value);
     }
 }

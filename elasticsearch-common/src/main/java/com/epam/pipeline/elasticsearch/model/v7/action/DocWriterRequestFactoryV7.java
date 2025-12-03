@@ -28,7 +28,7 @@ public final class DocWriterRequestFactoryV7 {
         // no-op
     }
 
-    public static org.opensearch.action.DocWriteRequest toRequest(final DocWriteRequest request) {
+    public static shaded.org.opensearch.action.DocWriteRequest toRequest(final DocWriteRequest request) {
         if (request instanceof IndexRequest) {
             return ((IndexRequestV7) ((IndexRequest) request).getInner()).getInner();
         }
