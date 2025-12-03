@@ -62,4 +62,9 @@ public class IndexRequestV6 implements IndexRequestInner {
     public String type() {
         return inner.type();
     }
+
+    @Override
+    public Map<String, ?> sourceAsMap() {
+        return inner.sourceAsMap();
+    }
 }

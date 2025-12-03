@@ -26,8 +26,17 @@ import java.util.Map;
 @SuppressWarnings("PMD.ShortMethodName")
 @Getter
 public class IndexRequest implements DocWriteRequest {
+    private static final String DEFAULT_DOC_TYPE = "_doc";
 
     private final IndexRequestInner inner;
+
+    public IndexRequest(final String indexName, final ElasticStackVersion version) {
+        if (ElasticStackVersion.V7.equals(version)) {
+            inner = new IndexRequestV7(indexName);
+        } else {
+            inner = new IndexRequestV6(indexName, DEFAULT_DOC_TYPE);
+        }
+    }
 
     public IndexRequest(final String indexName, final String type, final ElasticStackVersion version) {
         if (ElasticStackVersion.V7.equals(version)) {
@@ -54,6 +63,10 @@ public class IndexRequest implements DocWriteRequest {
     public IndexRequest id(final String id) {
         inner.id(id);
         return this;
+    }
+
+    public Map<String, ?> sourceAsMap() {
+        return inner.sourceAsMap();
     }
 
     @Override

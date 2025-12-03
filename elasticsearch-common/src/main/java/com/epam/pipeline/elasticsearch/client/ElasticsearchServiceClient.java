@@ -35,6 +35,8 @@ public interface ElasticsearchServiceClient {
     ElasticStackVersion getVersion();
     void createIndex(String indexName, String source);
     BulkResponse sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests);
+    BulkResponse sendRequests(List<? extends DocWriteRequest> docWriteRequests);
+    void indexChunk(List<DocWriteRequest> documentRequests);
     void deleteIndex(String indexName);
     boolean isIndexExists(String indexName);
     void createIndexAlias(String indexName, String indexAlias);

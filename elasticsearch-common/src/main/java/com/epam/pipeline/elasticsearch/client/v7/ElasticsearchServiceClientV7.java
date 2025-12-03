@@ -27,6 +27,7 @@ import com.epam.pipeline.elasticsearch.model.Scroll;
 import com.epam.pipeline.elasticsearch.model.SearchRequest;
 import com.epam.pipeline.elasticsearch.model.SearchResponse;
 import com.epam.pipeline.elasticsearch.model.v7.action.DocWriterRequestFactoryV7;
+import com.epam.pipeline.elasticsearch.model.v7.action.bulk.BulkItemResponseV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.bulk.BulkResponseV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.search.MultiSearchRequestV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.search.MultiSearchResponseV7;
@@ -59,6 +60,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -74,6 +77,16 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
         this.client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
         );
+    }
+
+    public ElasticsearchServiceClientV7(final String elasticsearchUrl,
+                                        final int elasticsearchPort,
+                                        final String elasticsearchScheme,
+                                        final Integer socketTimeout) {
+        this.client = new RestHighLevelClient(
+                RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
+                        .setRequestConfigCallback(requestConfigBuilder ->
+                                requestConfigBuilder.setSocketTimeout(socketTimeout)));
     }
 
     @Override
@@ -132,6 +145,55 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                     .build();
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to insert Elasticsearch documents: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public BulkResponseV7 sendRequests(List<? extends DocWriteRequest> docWriteRequests) {
+        if (CollectionUtils.isEmpty(docWriteRequests)) {
+            log.warn("Index requests are empty. ");
+            return null;
+        }
+        BulkRequest bulkRequest = new BulkRequest();
+        docWriteRequests.stream()
+                .map(DocWriterRequestFactoryV7::toRequest)
+                .forEach(bulkRequest::add);
+
+        try {
+            BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+
+            if (!(bulkResponse.status() == RestStatus.OK)) {
+                throw new IllegalStateException("Failed to create Elasticsearch documents: " + bulkResponse);
+            }
+
+            return BulkResponseV7.builder()
+                    .response(bulkResponse)
+                    .build();
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to insert Elasticsearch documents: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void indexChunk(List<DocWriteRequest> documentRequests) {
+        final BulkResponseV7 response = sendRequests(documentRequests);
+        if (Objects.isNull(response)) {
+            log.debug("No documents were created in Elasticsearch for {} request(s).", documentRequests.size());
+            return;
+        }
+        final Map<Boolean, List<BulkItemResponseV7>> indexResults = Arrays.stream(response.getItems())
+                .collect(Collectors.partitioningBy(BulkItemResponseV7::isFailed));
+        final List<BulkItemResponseV7> failed = indexResults.get(true);
+        if (CollectionUtils.isNotEmpty(failed)) {
+            log.error("Failed to insert {} of {} document(s) into Elasticsearch.",
+                    failed.size(), documentRequests.size());
+            failed.forEach(item -> log.error("Error for doc {} index {}: {}.",
+                    item.getId(), item.getIndex(), item.getFailureMessage()));
+        }
+        final List<BulkItemResponseV7> successful = indexResults.get(false);
+        if (CollectionUtils.isNotEmpty(successful)) {
+            log.debug("Successfully inserted {} of {} document(s) into Elasticsearch).",
+                    successful.size(), documentRequests.size());
         }
     }
 

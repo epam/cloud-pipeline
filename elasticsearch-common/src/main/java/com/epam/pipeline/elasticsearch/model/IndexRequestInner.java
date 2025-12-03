@@ -25,4 +25,5 @@ public interface IndexRequestInner {
     String id();
     String index();
     String type();
+    Map<String, ?> sourceAsMap();
 }
