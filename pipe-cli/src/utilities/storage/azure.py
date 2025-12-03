@@ -129,8 +129,9 @@ class AzureListingManager(AzureManager, AbstractListingManager):
             item.type = 'File'
             item.changed = self._to_local_timezone(blob.properties.last_modified)
             item.size = blob.properties.content_length
-            if blob.properties.blob_tier:
-                item.labels = [DataStorageItemLabelModel('StorageClass', blob.properties.blob_tier.upper())]
+            item.labels = [DataStorageItemLabelModel('StorageClass', blob.properties.blob_tier.upper() 
+                                                                        if blob.properties.blob_tier 
+                                                                        else 'NA')]
         else:
             item.type = 'Folder'
         return item

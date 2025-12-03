@@ -203,6 +203,7 @@ class ParameterType(object):
     METADATA_PARAMETER = 'metadata'
     COMMON_PARAMETER = 'common'
     OUTPUT_PARAMETER = 'output'
+    PATH_PARAMETER = 'path'
 
 
 class RunParameter:
@@ -300,6 +301,16 @@ class InputDataTask:
         self.run_id = os.getenv('RUN_ID', None)
 
 
+    def get_sts_rules(self, rules_file_path):
+        if rules_file_path == None:
+            return []
+        
+        sts_rules = []
+        for rule in DataStorageRule.read_from_file(rules_file_path):
+            if rule.move_to_sts:
+                sts_rules.append(rule)
+        return sts_rules
+
     def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
         try:
@@ -331,10 +342,7 @@ class InputDataTask:
                     self.transfer_dts(dts_locations, dts_registry)
                     self.localize_data(remote_locations)
                 else:
-                    sts_rules = []
-                    for rule in DataStorageRule.read_from_file(self.rules):
-                        if rule.move_to_sts:
-                            sts_rules.append(rule)
+                    sts_rules = self.get_sts_rules(self.rules)
                     self.localize_data(remote_locations, rules=sts_rules)
                     self.transfer_dts(dts_locations, dts_registry, rules=sts_rules)
             if self.is_upload and self.report_file:
@@ -492,6 +500,8 @@ class InputDataTask:
         path_suffix = None
         if input_type == ParameterType.OUTPUT_PARAMETER:
             local_path = self.analysis_dir
+        elif input_type == ParameterType.PATH_PARAMETER:
+            local_path = path
         else:
             if path.endswith('*'):
                 Logger.info('Path {} ends with a wildcard. Whole parent directory will be downloaded.'.format(path),
@@ -769,7 +779,7 @@ class InputDataTask:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--operation', required=True)
+    parser.add_argument('--operation', required=True, choices=['upload', 'download', 'publish-results'])
     parser.add_argument('--input-dir', required=True)
     parser.add_argument('--common-dir', required=True)
     parser.add_argument('--analysis-dir', required=True)
@@ -779,18 +789,21 @@ def main():
     parser.add_argument('--task', required=False, default=LOCALIZATION_TASK_NAME)
     parser.add_argument('--env-suffix', required=False, default='_PARAM_TYPE')
     args = parser.parse_args()
-    if args.operation == 'upload':
-        upload = True
-    elif args.operation == 'download':
-        upload = False
-    else:
-        raise RuntimeError('Illegal operation %s' % args.operation)
+
     bucket = args.bucket
     if not bucket and 'CP_TRANSFER_BUCKET' in os.environ:
         bucket = os.environ['CP_TRANSFER_BUCKET']
-    InputDataTask(args.input_dir, args.common_dir, args.analysis_dir,
-                  args.task, bucket, args.report_file, args.storage_rules, upload,
-                  args.env_suffix).run()
+    task = InputDataTask(args.input_dir, args.common_dir, args.analysis_dir,
+                        args.task, bucket, args.report_file, args.storage_rules, args.operation == 'upload',
+                        args.env_suffix)
+    
+    if args.operation == 'publish-results':
+        rules = task.get_sts_rules(args.storage_rules)
+        parameter_types = {ParameterType.OUTPUT_PARAMETER, ParameterType.PATH_PARAMETER}
+        remote_locations = list(task.find_remote_locations({}, parameter_types))
+        task.publish_run_results(rules, remote_locations)
+    else:
+        task.run()
 
 
 if __name__ == '__main__':
