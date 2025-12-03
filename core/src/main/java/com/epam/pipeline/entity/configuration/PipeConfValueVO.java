@@ -58,6 +58,9 @@ public class PipeConfValueVO {
     @JsonProperty(value = "no_override")
     private Boolean noOverride;
 
+    @JsonProperty(value = "read_only")
+    private Boolean readOnly;
+
     @JsonProperty(value = "enum")
     private List<Object> availableValues;
 

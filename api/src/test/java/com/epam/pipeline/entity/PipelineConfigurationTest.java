@@ -51,6 +51,7 @@ public class PipelineConfigurationTest {
                     "}," +
                     "\"main_class\" : {" +
                         "\"value\" : \"\"," +
+                        "\"read_only\" : \"true\"," +
                         "\"required\" : \"false\"," +
                         "\"type\" : \"class\"," +
                         "\"enum\" : [\"v1\", \"v2\"]" +
@@ -112,6 +113,7 @@ public class PipelineConfigurationTest {
         final PipeConfValueVO mainClass = pipelineConfiguration.getParameters().get("main_class");
         assertEquals(CLASS_TYPE, mainClass.getType());
         assertFalse(mainClass.isRequired());
+        assertTrue(mainClass.getReadOnly());
 
         final PipeConfValueVO instanceSize = pipelineConfiguration.getParameters().get("instance_size");
         assertEquals(STRING_TYPE, instanceSize.getType());
