@@ -39,8 +39,6 @@ spec:
               name: search-elk-data
             - mountPath: /usr/share/elasticsearch/backup
               name: search-elk-backup
-            - mountPath: /var/log/curator
-              name: search-elk-curator-log
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
@@ -58,9 +56,6 @@ spec:
         - name: search-elk-backup
           hostPath:
             path: /opt/search-elk/backup
-        - name: search-elk-curator-log
-          hostPath:
-            path: /opt/search-elk/log/curator
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials

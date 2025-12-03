@@ -161,3 +161,16 @@ RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/fi
 
 COPY filebeat-config/* /etc/filebeat/
 RUN chmod go-w /etc/filebeat/*
+
+RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-oss-7.10.0-linux-x86_64.tar.gz /tmp \
+    && tar -xzf /tmp/filebeat-oss-7.10.0-linux-x86_64.tar.gz -C /opt/ \
+    && mv /opt/filebeat-oss-7.10.0-linux-x86_64 /opt/filebeat-oss
+
+COPY filebeat-config/* /opt/filebeat-oss/
+RUN chmod go-w /opt/filebeat-oss/*
+
+
+# Install SQUID
+
+RUN yum install -y squid
+COPY squid.conf.tmpl /etc/squid/squid.conf.tmpl
