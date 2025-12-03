@@ -24,11 +24,10 @@ function envsubst_inplace() {
     envsubst < "$_template" > "$_source"
 }
 
-
 msg "Waiting for ElasticSearch..."
+CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-elasticsearch}"
 CP_SEARCH_ELK_ADDRESS="${CP_SEARCH_ELK_INTERNAL_SCHEME}://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"
 CP_SEARCH_ELK_INIT_ATTEMPTS="${CP_SEARCH_ELK_INIT_ATTEMPTS:-60}"
-CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-elasticsearch}"
 export CP_SEARCH_ELK_ELASTIC_USE_SSL=False
 if [ "$CP_SEARCH_ELK_INTERNAL_SCHEME" == "https" ]; then
   export CP_SEARCH_ELK_ELASTIC_USE_SSL=True
@@ -109,7 +108,7 @@ for _pipeline_path in /etc/search-elk/pipelines/*.json; do
 done
 
 _ELK_SNAPSHOT_REPO_NAME="log_backup_repo"
-if [ "$CP_SEARCH_ELK_DEPLOYMENT_TYPE" == "provided" ]; then
+if [ "$CP_SEARCH_ELK_TYPE" == "opensearch" ]; then
     python3 /opt/aws-s3-backup-repo-registration.py --es_host "$CP_SEARCH_ELK_ADDRESS" \
                                                     --region "$CP_CLOUD_REGION_ID" \
                                                     --backup_bucket "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" \

@@ -1312,7 +1312,7 @@ if is_service_requested cp-search; then
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
-        if [ -z "$CP_SEARCH_ELK_DEPLOYMENT_TYPE" ] || [ "$CP_SEARCH_ELK_DEPLOYMENT_TYPE" == "deployed" ]; then
+        if [ "$CP_SEARCH_ELK_TYPE" == "elasticsearch" ]; then
           create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-dpl.yaml
           create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-svc.yaml
           print_info "-> Waiting for Search ELK service to initialize"
