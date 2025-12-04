@@ -1088,7 +1088,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         return (
           <Row type="flex" justify="end" className={styles.toolVersionActions}>
             {
-              this.isAdmin() &&
+              (this.isAdmin() || roleModel.isManager.toolAdmin(this)) &&
               !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
               (
