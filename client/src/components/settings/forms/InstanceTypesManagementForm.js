@@ -47,10 +47,7 @@ const valueNames = {
   const loadPreference = (field) => {
     if (props.resourceId && props.level) {
       if (
-        (
-          ![valueNames.jwtTokenExpirationRefreshThreshold]
-            .includes(field)
-        ) ||
+        (valueNames.jwtTokenExpirationRefreshThreshold !== field) ||
         (field === valueNames.jwtTokenExpirationRefreshThreshold && props.level === 'USER')
       ) {
         return {
@@ -204,7 +201,7 @@ export default class InstanceTypesManagementForm extends React.Component {
         style={{flex: 1}}
         value={this.getValue(field)}
         onChange={this.onValueChanged(field)}
-        parser={value => `${value}`.replaceAll(/\D/g, '')}
+        parser={value => `${value}`.replace(/\D/g, '')}
       />;
     }
     return <Input
@@ -227,6 +224,9 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   applyValue = async (field) => {
+    if (!this.props[field]) {
+      return;
+    }
     await this.props[field].fetchIfNeededOrWait();
     if (
       this.state[field] !== undefined ||
