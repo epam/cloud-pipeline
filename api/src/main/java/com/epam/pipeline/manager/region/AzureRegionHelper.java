@@ -30,7 +30,9 @@ import com.azure.core.management.Region;
 import com.azure.resourcemanager.AzureResourceManager;
 import com.azure.storage.blob.BlobServiceClient;
 import com.epam.pipeline.exception.AuthenticationException;
-import com.epam.pipeline.manager.datastorage.providers.azure.AzureStorageHelper;
+import com.azure.storage.file.datalake.DataLakeServiceClient;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureFNStorageHelper;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureHNStorageHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -64,7 +66,6 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         validateStorageAccount(region, credentials);
         checkResourceGroupExistence(region);
         validateStoragePolicy(region.getAzurePolicy());
-
     }
 
     @Override
@@ -142,8 +143,15 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
 
     void checkThatCredentialsIsActive(final AzureRegion region, final AzureRegionCredentials credentials) {
         try {
-            final BlobServiceClient blobServiceClient = AzureStorageHelper.getBlobServiceClient(region, credentials);
-            blobServiceClient.getProperties();
+            if (region.isHierarchicalNsStorage()) {
+                final DataLakeServiceClient dataLakeServiceClient =
+                        AzureHNStorageHelper.getDataLakeServiceClient(region, credentials);
+                dataLakeServiceClient.getProperties();
+            } else {
+                final BlobServiceClient blobServiceClient =
+                        AzureFNStorageHelper.getBlobServiceClient(region, credentials);
+                blobServiceClient.getProperties();
+            }
         } catch (Exception e) {
             throw new IllegalArgumentException(messageHelper
                     .getMessage(MessageConstants.ERROR_AZURE_AUTHENTICATION_FAILED), e);

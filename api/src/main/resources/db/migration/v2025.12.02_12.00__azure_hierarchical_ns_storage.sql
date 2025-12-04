@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.cloud_region ADD COLUMN hierarchical_ns_storage BOOLEAN NULL;
