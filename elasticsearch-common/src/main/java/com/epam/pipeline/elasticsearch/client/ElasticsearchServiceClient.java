@@ -25,6 +25,7 @@ import com.epam.pipeline.elasticsearch.model.Scroll;
 import com.epam.pipeline.elasticsearch.model.SearchRequest;
 import com.epam.pipeline.elasticsearch.model.SearchResponse;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public interface ElasticsearchServiceClient {
@@ -34,8 +35,7 @@ public interface ElasticsearchServiceClient {
 
     ElasticStackVersion getVersion();
     void createIndex(String indexName, String source);
-    BulkResponse sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests);
-    BulkResponse sendRequests(List<? extends DocWriteRequest> docWriteRequests);
+    BulkResponse sendRequests(@Nullable String indexName, List<? extends DocWriteRequest> docWriteRequests);
     void indexChunk(List<DocWriteRequest> documentRequests);
     void deleteIndex(String indexName);
     boolean isIndexExists(String indexName);

@@ -34,9 +34,12 @@ import com.epam.pipeline.elasticsearch.model.v6.action.search.MultiSearchRespons
 import com.epam.pipeline.elasticsearch.model.v6.action.search.SearchRequestV6;
 import com.epam.pipeline.elasticsearch.model.v6.action.search.SearchResponseV6;
 import com.epam.pipeline.elasticsearch.model.v6.search.ScrollV6;
+import javax.annotation.Nullable;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -120,7 +123,8 @@ public class ElasticsearchServiceClientV6 implements ElasticsearchServiceClient 
     }
 
     @Override
-    public BulkResponseV6 sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests) {
+    public BulkResponseV6 sendRequests(final @Nullable String indexName,
+                                       final List<? extends DocWriteRequest> docWriteRequests) {
         if (CollectionUtils.isEmpty(docWriteRequests)) {
             log.warn("Index requests are empty. ");
             return null;
@@ -130,7 +134,9 @@ public class ElasticsearchServiceClientV6 implements ElasticsearchServiceClient 
                 .map(DocWriterRequestFactoryV6::toRequest)
                 .forEach(bulkRequest::add);
 
-        log.debug("Start to insert documents for index {}", indexName);
+        if (StringUtils.isNotBlank(indexName)) {
+            log.debug("Start to insert documents for index {}", indexName);
+        }
 
         try {
             BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
@@ -139,34 +145,12 @@ public class ElasticsearchServiceClientV6 implements ElasticsearchServiceClient 
                 throw new IllegalStateException("Failed to create Elasticsearch documents: " + bulkResponse);
             }
 
-            log.debug("Stop to insert documents for index {}", indexName);
-
-            return new BulkResponseV6(bulkResponse);
-        } catch(IOException e) {
-            throw new ElasticsearchException("Failed to insert Elasticsearch documents: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public BulkResponseV6 sendRequests(final List<? extends DocWriteRequest> docWriteRequests) {
-        if (CollectionUtils.isEmpty(docWriteRequests)) {
-            log.warn("Index requests are empty. ");
-            return null;
-        }
-        final BulkRequest bulkRequest = new BulkRequest();
-        docWriteRequests.stream()
-                .map(DocWriterRequestFactoryV6::toRequest)
-                .forEach(bulkRequest::add);
-
-        try {
-            final BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-
-            if (!(bulkResponse.status() == RestStatus.OK)) {
-                throw new IllegalStateException("Failed to create Elasticsearch documents: " + bulkResponse);
+            if (StringUtils.isNotBlank(indexName)) {
+                log.debug("Stop to insert documents for index {}", indexName);
             }
 
             return new BulkResponseV6(bulkResponse);
-        } catch (IOException e) {
+        } catch(IOException e) {
             throw new ElasticsearchException("Failed to insert Elasticsearch documents: " + e.getMessage(), e);
         }
     }
@@ -337,7 +321,7 @@ public class ElasticsearchServiceClientV6 implements ElasticsearchServiceClient 
 
     @Override
     public void indexChunk(final List<DocWriteRequest> documentRequests) {
-        final BulkResponseV6 response = sendRequests(documentRequests);
+        final BulkResponseV6 response = sendRequests(null, documentRequests);
         if (Objects.isNull(response)) {
             log.debug("No documents were created in Elasticsearch for {} request(s).", documentRequests.size());
             return;
