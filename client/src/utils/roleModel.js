@@ -382,7 +382,8 @@ const ROLES = {
   ROLE_TOOL_ADMIN: 'ROLE_TOOL_ADMIN',
   ROLE_USER_ADMIN: 'ROLE_USER_ADMIN',
   ROLE_PIPELINE_ADMIN: 'ROLE_PIPELINE_ADMIN',
-  ROLE_USER_READER: 'ROLE_USER_READER'
+  ROLE_USER_READER: 'ROLE_USER_READER',
+  ROLE_RUN_ADMIN: 'ROLE_RUN_ADMIN'
 };
 
 const userIs = {
@@ -401,7 +402,8 @@ const userIs = {
   billing: wrapUserIs(ROLES.ROLE_BILLING_MANAGER),
   toolAdmin: wrapUserIs(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: wrapUserIs(ROLES.ROLE_USER_ADMIN),
-  pipelineAdmin: wrapUserIs(ROLES.ROLE_PIPELINE_ADMIN)
+  pipelineAdmin: wrapUserIs(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: wrapUserIs(ROLES.ROLE_RUN_ADMIN)
 };
 
 const manager = {
@@ -420,7 +422,8 @@ const manager = {
   billing: management(ROLES.ROLE_BILLING_MANAGER),
   toolAdmin: management(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: management(ROLES.ROLE_USER_ADMIN),
-  pipelineAdmin: management(ROLES.ROLE_PIPELINE_ADMIN)
+  pipelineAdmin: management(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: management(ROLES.ROLE_RUN_ADMIN)
 };
 
 const isManager = {
@@ -439,7 +442,8 @@ const isManager = {
   billing: hasRole(ROLES.ROLE_BILLING_MANAGER),
   toolAdmin: hasRole(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: hasRole(ROLES.ROLE_USER_ADMIN),
-  pipelineAdmin: hasRole(ROLES.ROLE_PIPELINE_ADMIN)
+  pipelineAdmin: hasRole(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: hasRole(ROLES.ROLE_RUN_ADMIN)
 };
 
 export default {
