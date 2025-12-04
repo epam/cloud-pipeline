@@ -963,17 +963,21 @@ export function getParameterConfig (
         metadata_config,
         prettyName = pretty_name,
         scheme: parameterScheme,
+        // eslint-disable-next-line camelcase
+        read_only = false,
+        readonly = read_only,
+        readOnly = readonly,
         ...rest
       } = parameter;
       let parameterValue = value;
-      const readOnly = detached &&
+      const readOnlyComputed = readOnly || (detached &&
         pipeline &&
         noOverride &&
         (
           parameterValue !== undefined &&
           parameterValue !== null &&
           String(parameterValue).length !== 0
-        );
+        ));
       let scheme = parameterScheme ? getParameterSchemeConfig(parameterScheme) : undefined;
       let type = pType;
       if (type === 'object') {
@@ -998,7 +1002,7 @@ export function getParameterConfig (
         console.log('mapped value:', parameterValue);
         console.log('resolvedValue:', resolvedValue);
         console.log('no_override:', noOverride);
-        console.log('readOnly (computed):', readOnly);
+        console.log('readOnly (computed):', readOnlyComputed);
         console.log('required:', required);
         console.log('description:', description);
         console.log('validation:', validation);
@@ -1022,7 +1026,7 @@ export function getParameterConfig (
         type,
         description,
         value: typedValue(parameterValue),
-        readOnly: asBoolean(readOnly),
+        readOnly: asBoolean(readOnlyComputed),
         noOverride: asBoolean(noOverride),
         section,
         required: asBoolean(required),
@@ -1797,7 +1801,8 @@ export function parameterConfigToPayloadConfig (parameterConfig) {
     description: parameterConfig.description,
     scheme: objectParameterSchemeToPayload(parameterConfig.scheme),
     pretty_name: parameterConfig.prettyName,
-    metadata_config: parameterConfig.metadata_config
+    metadata_config: parameterConfig.metadata_config,
+    read_only: parameterConfig.readOnly
   };
 }
 
