@@ -28,6 +28,7 @@ dependencies {
 
     // Core library
     implementation project(":cloud-pipeline-common:model")
+    implementation(project(path: ":elasticsearch-common", configuration: "shadow"))
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
@@ -50,8 +51,6 @@ dependencies {
     implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
     implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
     implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
-
-    implementation project(path: ":elasticsearch-common", configuration: "shadow")
 
     // Apache Commons
     implementation group: "commons-io", name: "commons-io", version: apacheCommonsIOVersion

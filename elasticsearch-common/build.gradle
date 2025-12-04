@@ -59,4 +59,8 @@ dependencies {
 shadowJar {
     relocate('org.apache.lucene', 'shaded.org.apache.lucene7')
     relocate('lombok', 'shaded.lombok')
+    // fix for log4j version mismatch
+    exclude('org/apache/logging/log4j/**')
+    // fix fo warning - SLF4J: Class path contains multiple SLF4J bindings.
+    exclude('org/slf4j/**')
 }
