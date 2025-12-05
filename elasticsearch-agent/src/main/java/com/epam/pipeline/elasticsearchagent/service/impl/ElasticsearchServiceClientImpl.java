@@ -110,7 +110,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
 
     @Override
     public void deleteIndex(String indexName) {
-        log.debug("Start to delete index...");
+        log.debug("Start to delete index - " + indexName);
         try {
             if (!isIndexExists(indexName)) {
                 log.debug("Index with name does not exist. ");
@@ -173,9 +173,6 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
                 throw new ElasticsearchException("No alias is available.");
             }
             String[] indices = getIndexResponse.indices();
-            if (indices.length != 1) {
-                throw new ElasticsearchException("Unexpected indexes count: {}", indices.length);
-            }
             return indices[0];
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to get alias name:" + e.getMessage(), e);

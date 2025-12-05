@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.index.IndexRequest;
@@ -140,7 +139,6 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         String alias = indexPrefix + indexName + String.format("-%d", dataStorage.getId());
         String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
-            String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexSettingsPath);
             Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
             if (mountFolder == null) {
@@ -154,9 +152,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             createDocuments(indexName, mountFolder, dataStorage, regionCode, permissionsContainer);
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
-            if (StringUtils.isNotBlank(currentIndexName)) {
-                elasticsearchServiceClient.deleteIndex(currentIndexName);
-            }
+            elasticsearchServiceClient.findIndices("*-" + alias)
+                    .stream()
+                    .filter(index -> !index.equals(indexName))
+                    .forEach(index -> elasticsearchServiceClient.deleteIndex(index));
+
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             if (elasticsearchServiceClient.isIndexExists(indexName))  {
