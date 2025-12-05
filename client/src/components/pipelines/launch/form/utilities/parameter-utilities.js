@@ -1027,6 +1027,7 @@ export function getParameterConfig (
         description,
         value: typedValue(parameterValue),
         readOnly: asBoolean(readOnlyComputed),
+        readOnlyFromConfiguration: asBoolean(readOnly),
         noOverride: asBoolean(noOverride),
         section,
         required: asBoolean(required),
@@ -1802,7 +1803,7 @@ export function parameterConfigToPayloadConfig (parameterConfig) {
     scheme: objectParameterSchemeToPayload(parameterConfig.scheme),
     pretty_name: parameterConfig.prettyName,
     metadata_config: parameterConfig.metadata_config,
-    read_only: parameterConfig.readOnly
+    read_only: parameterConfig.readOnlyFromConfiguration
   };
 }
 
