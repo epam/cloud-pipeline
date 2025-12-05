@@ -143,7 +143,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
 
     void checkThatCredentialsIsActive(final AzureRegion region, final AzureRegionCredentials credentials) {
         try {
-            if (region.isHierarchicalStorageNs()) {
+            if (region.isHierarchicalStorageNamespace()) {
                 final DataLakeServiceClient dataLakeServiceClient =
                         AzureHNStorageHelper.getDataLakeServiceClient(region, credentials);
                 dataLakeServiceClient.getProperties();
