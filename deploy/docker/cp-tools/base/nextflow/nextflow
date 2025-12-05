@@ -55,6 +55,7 @@ function _expand() { eval "echo \"$1\""; }
 CP_NF_WORKDIR=$(_expand "${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}")
 CP_NF_CACHEDIR=$(_expand "${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}")
 CP_NF_TRACE_FILE=$(_expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt")
+CP_NF_TRACE_FIELDS="${CP_NF_TRACE_FIELDS:-"task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes"}"
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
 CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
 CP_NF_AUTOGENERATE_PARAMETERS_PATH="${CP_NF_AUTOGENERATE_PARAMETERS_PATH:-$SCRIPTS_DIR/cp_params.json}"
@@ -76,6 +77,9 @@ mkdir -p "$NXF_WORK"
 
 _ARGS=()
 _IS_RUN_COMMAND=
+_CUSTOM_CONFIG=
+_CUSTOM_CONFIG_INDEX=
+_expect_config=""
 for param in "$@"; do
    if [ "$param" == "run" ]; then
       _IS_RUN_COMMAND="1"
@@ -85,6 +89,22 @@ for param in "$@"; do
        CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN="1"
        continue
    fi
+
+   if [ "$param" == "-c" ]; then
+       _expect_config="1"
+       _ARGS+=("-c")
+       continue
+   fi
+
+   # Next param after '-c' is config path
+   if [ "$_expect_config" == "1" ]; then
+       _CUSTOM_CONFIG="${param}"
+       _CUSTOM_CONFIG_INDEX="${#_ARGS[@]}"
+       _ARGS+=("$param")
+       _expect_config=""
+       continue
+   fi
+
    _ARGS+=("$param")
 done
 
@@ -125,10 +145,19 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
         echo "weblog.enabled = true" >> $NEXTFLOW_CONFIG
         echo "weblog.url = 'http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event'" >> $NEXTFLOW_CONFIG
         if [ -n "$CP_NF_WORKDIR" ]; then
-            echo "trace.enabled = true" >> $NEXTFLOW_CONFIG
-            echo "trace.raw = true" >> $NEXTFLOW_CONFIG
-            echo "trace.file = \"${CP_NF_TRACE_FILE}\"" >> $NEXTFLOW_CONFIG
-            echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes'" >> $NEXTFLOW_CONFIG
+            export TRACE_CONFIG="$NXF_HOME/trace.config"
+            cat > "$TRACE_CONFIG" <<EOF
+trace.enabled = true
+trace.raw = true
+trace.file = "${CP_NF_TRACE_FILE}"
+trace.fields = '${CP_NF_TRACE_FIELDS}'
+EOF
+            if [ -n "$_CUSTOM_CONFIG" ] && [ -n "$_CUSTOM_CONFIG_INDEX" ]; then
+                _ARGS[$_CUSTOM_CONFIG_INDEX]="${_CUSTOM_CONFIG},${TRACE_CONFIG}"
+            else
+                _ARGS+=("-c" "$TRACE_CONFIG")
+            fi
+            echo "[INFO] The Nextflow execution trace file will be created at ${CP_NF_TRACE_FILE}."
         fi
     fi
 
