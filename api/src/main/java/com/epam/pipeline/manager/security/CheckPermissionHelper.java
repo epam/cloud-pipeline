@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.security;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.*;
@@ -135,7 +136,7 @@ public class CheckPermissionHelper {
 
         if (entity instanceof AbstractDataStorage) {
             return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_ADMIN);
-        } else if (entity instanceof PipelineRun) {
+        } else if (entity instanceof PipelineRun || entity instanceof NodeInstance) {
             return hasAnyRole(sids, DefaultRoles.ROLE_RUN_ADMIN);
         } else if (entity instanceof Pipeline || entity instanceof RunConfiguration) {
             return hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_ADMIN);
