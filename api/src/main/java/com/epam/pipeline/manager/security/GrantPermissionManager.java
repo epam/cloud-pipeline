@@ -1053,6 +1053,10 @@ public class GrantPermissionManager {
         }
         //get parent
         Acl acl = child == null ? aclService.getAcl(entity.getParent()) : child;
+        if (acl == null) {
+            LOGGER.debug("Can't find acl object for: {} {}, returning mask as 0", entity.getAclClass(), entity.getId());
+            return 0;
+        }
         if (sidsByType.get(SidType.PRINCIPAL).stream().anyMatch(sid -> Objects.equals(acl.getOwner(), sid))) {
             return fullMask;
         }
