@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,7 +88,10 @@ public class ObjectStorageIndexTest {
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
                 ";", false,
-                EXCLUDE_KEY, EXCLUDE_VALUE)
+                EXCLUDE_KEY,
+                EXCLUDE_VALUE,
+                false,
+                null)
         );
     }
 
@@ -101,6 +106,46 @@ public class ObjectStorageIndexTest {
     public void shouldAddTwoFilesToRequestContainer() {
         final List<DataStorageFile> files = Arrays.asList(createFile(TEST_BLOB_NAME_1), createFile(TEST_BLOB_NAME_2));
         verifyRequestContainerState(files, 2);
+    }
+
+    @Test
+    public void shouldSquashHiddenFiles() {
+        objectStorageIndex = spy(
+                new ObjectStorageIndexImpl(
+                        cloudPipelineAPIClient,
+                        elasticsearchServiceClient,
+                        elasticIndexService,
+                        fileManager,
+                        lockService,
+                        TEST_NAME,
+                        TEST_NAME,
+                        BULK_SIZE,
+                        BULK_SIZE,
+                        DataStorageType.GS,
+                        SearchDocumentType.GS_FILE,
+                        ";",
+                        false,
+                        EXCLUDE_KEY,
+                        EXCLUDE_VALUE,
+                        true,
+                        ".hidden")
+        );
+
+        DataStorageFile dataStorageFile1 = createFile("some-folder/test.txt");
+        DataStorageFile dataStorageFile2 = createFile("hidden/test.txt");
+        DataStorageFile dataStorageFile3 = createFile("hidden/sub-folder/test1.txt");
+        DataStorageFile dataStorageFile4 = createFile("hidden/sub-folder/test2.txt");
+
+        setUpReturnValues(Arrays.asList(dataStorageFile1, dataStorageFile2, dataStorageFile3, dataStorageFile4));
+
+        StorageFileSearchMask hiddenFilesMask = new StorageFileSearchMask("storage",
+            Collections.singleton("hidden/**"), null);
+        when(cloudPipelineAPIClient.getStorageSearchMasks()).thenReturn(Collections.singletonList(hiddenFilesMask));
+        when(cloudPipelineAPIClient.loadAllDataStorages()).thenReturn(Collections.singletonList(dataStorage));
+
+        objectStorageIndex.synchronize(null, null);
+
+        verify(requestContainer, times(2)).add(any());
     }
 
     private void verifyRequestContainerState(final List<DataStorageFile> files, final int numberOfInvocation) {
