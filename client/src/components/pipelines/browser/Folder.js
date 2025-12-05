@@ -88,6 +88,7 @@ import UploadButton from '../../special/UploadButton';
 import PreviewConfiguration from '../configuration/PreviewConfiguration';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
+import {RepositoryTypes} from '../../special/git-repository-control';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 const SHOW_SECRET_TAGS_IN_LISTING = false;
@@ -1143,7 +1144,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       if (this.checkRequest.error) {
         return message.error(this.checkRequest.error);
       }
-      if (!this.checkRequest.value.repositoryExists) {
+      if (repositoryType === RepositoryTypes.GitLab && !this.checkRequest.value.repositoryExists) {
         return Modal.confirm({
           title: 'Repository does not exist. Create?',
           style: {
