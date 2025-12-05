@@ -328,7 +328,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        return region.isHierarchicalNsStorage()
+        return region.isHierarchicalStorageNs()
                 ? new AzureHNStorageHelper(region, credentials, azEvents, messageHelper)
                 : new AzureFNStorageHelper(region, credentials, azEvents, messageHelper);
     }

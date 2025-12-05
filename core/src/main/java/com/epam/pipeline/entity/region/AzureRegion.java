@@ -52,5 +52,5 @@ public class AzureRegion extends AbstractCloudRegion {
     private String priceOfferId;
     private boolean enterpriseAgreements;
     private String managedIdentity;
-    private boolean hierarchicalNsStorage;
+    private boolean hierarchicalStorageNs;
 }
