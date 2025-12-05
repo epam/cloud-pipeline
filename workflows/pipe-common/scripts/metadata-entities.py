@@ -31,7 +31,7 @@ class Metadata:
                                              self.external_id,
                                              self.class_name)
 
-    def update_dataset(self, fields):
+    def update_dataset(self, fields=None, env_prefix=None):
         updated_entity = {
             'classId': self.class_id,
             'parentId': self.folder_id,
@@ -44,11 +44,21 @@ class Metadata:
             updated_entity['externalId'] = self.external_id
             updated_entity['data'] = entity['data'].copy()
 
-        for field_item in fields:
-            updated_entity['data'][field_item] = {
-                'type': 'string',
-                'value': fields[field_item]
-            }
+        if fields != None:
+            for field_item in fields:
+                updated_entity['data'][field_item] = {
+                    'type': 'string',
+                    'value': fields[field_item]
+                }
+        if env_prefix != None:
+            for name, value in os.environ.items():
+                if not name.startswith(env_prefix):
+                    continue
+                field_item = name.replace(env_prefix, '')
+                updated_entity['data'][field_item] = {
+                    'type': 'string',
+                    'value': value
+                }
 
         print(self.api.save_metadata_entity(updated_entity)['externalId'])
 
@@ -79,18 +89,24 @@ def main():
 
     # 'show' command
     show_parser = subparsers.add_parser('show')
-    show_parser.add_argument('field',
-                            nargs='?')
+    show_parser.add_argument('field', nargs='?')
 
     # 'update' command
     update_parser = subparsers.add_parser('update')
+    update_parser.add_argument('--metadata-from-env-prefix',
+                                help='All environment variables starting with this prefix will be added as fields',
+                                required=False,
+                                type=str)
 
     # Parse commandline
     args, unknown_args = parser.parse_known_args()
     # For the "update" command - it's list of fields to set
     unknown_args_dict = dict(zip(unknown_args[:-1:2],unknown_args[1::2]))
 
-    metadata = Metadata(args.folder_id, args.class_id, args.class_name, args.entity_ext_id)
+    metadata = Metadata(args.folder_id,
+                        args.class_id,
+                        args.class_name,
+                        args.entity_ext_id)
     if args.command == 'show':
         entity = metadata.get_dataset_details()
         if args.field:
@@ -101,7 +117,8 @@ def main():
         if len(unknown_args_dict) == 0:
             print('[ERROR] No fields are specified for update')
             sys.exit(1)
-        metadata.update_dataset(unknown_args_dict)
+        metadata.update_dataset(fields=unknown_args_dict, 
+                                env_prefix=args.metadata_from_env_prefix)
 
 if __name__ == '__main__':
     main()
