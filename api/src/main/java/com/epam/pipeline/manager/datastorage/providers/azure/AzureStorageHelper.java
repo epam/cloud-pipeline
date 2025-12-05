@@ -49,56 +49,50 @@ public interface AzureStorageHelper {
             "Storage account key or Managed Identity Client ID should be provided.";
 
     String createBlobStorage(AzureBlobStorage storage);
+
     String deleteStorage(AzureBlobStorage storage);
+
     Stream<DataStorageFile> listDataStorageFiles(AzureBlobStorage storage, String path);
-    DataStorageListing getItems(AzureBlobStorage storage,
-                                String path,
-                                Integer pageSize,
-                                String continuationToken);
+
+    DataStorageListing getItems(AzureBlobStorage storage, String path, Integer pageSize, String continuationToken);
+
     Optional<DataStorageFile> findFile(AzureBlobStorage storage, String path);
-    DataStorageFile createFile(AzureBlobStorage storage,
-                               String path,
-                               byte[] contents,
-                               String owner);
-    DataStorageFile createFile(AzureBlobStorage storage,
-                               String path,
-                               InputStream dataStream,
-                               String owner);
+
+    DataStorageFile createFile(AzureBlobStorage storage, String path, byte[] contents, String owner);
+
+    DataStorageFile createFile(AzureBlobStorage storage, String path, InputStream dataStream, String owner);
+
     DataStorageFolder createFolder(AzureBlobStorage storage, String path);
+
     DataStorageFile moveFile(AzureBlobStorage storage, String oldPath, String newPath);
-    DataStorageFolder moveFolder(AzureBlobStorage storage,
-                                 String oldRawPath,
-                                 String newRawPath);
+
+    DataStorageFolder moveFolder(AzureBlobStorage storage, String oldRawPath, String newRawPath);
+
     boolean checkStorage(AzureBlobStorage storage);
-    Map<String, String> updateObjectTags(AzureBlobStorage storage,
-                                         String path,
-                                         Map<String, String> tags);
+
+    Map<String, String> updateObjectTags(AzureBlobStorage storage, String path, Map<String, String> tags);
+
     Map<String, String> listObjectTags(AzureBlobStorage storage, String path);
-    Map<String, String> deleteObjectTags(AzureBlobStorage storage,
-                                         String path,
-                                         Set<String> tagsToDelete);
-    DataStorageItemContent getFile(AzureBlobStorage storage,
-                                   String path,
-                                   Long maxDownloadSize);
+
+    Map<String, String> deleteObjectTags(AzureBlobStorage storage, String path, Set<String> tagsToDelete);
+
+    DataStorageItemContent getFile(AzureBlobStorage storage, String path, Long maxDownloadSize);
+
     DataStorageStreamingContent getStream(AzureBlobStorage storage, String path);
-    DataStorageDownloadFileUrl generatePresignedUrl(AzureBlobStorage storage,
-                                                    String path,
-                                                    String permission,
-                                                     boolean exist);
-    DataStorageDownloadFileUrl generatePresignedUrl(AzureBlobStorage storage,
-                                                    String path,
-                                                    String permission);
-    DataStorageDownloadFileUrl generateGenericPresignedUrl(AzureBlobStorage storage,
-                                                           String path,
-                                                           String permission,
-                                                           Duration duration);
+
+    DataStorageDownloadFileUrl generatePresignedUrl(AzureBlobStorage storage, String path,
+                                                    String permission, boolean exist);
+
+    DataStorageDownloadFileUrl generatePresignedUrl(AzureBlobStorage storage, String path, String permission);
+
+    DataStorageDownloadFileUrl generateGenericPresignedUrl(AzureBlobStorage storage, String path,
+                                                           String permission, Duration duration);
+
     void deleteFolder(AzureBlobStorage storage, String path);
 
     void deleteFile(AzureBlobStorage storage, String path);
-    PathDescription getDataSize(AzureBlobStorage storage,
-                                String path,
-                                PathDescription pathDescription);
-    String generateSASToken(AzureBlobStorage storage,
-                            List<DataStorageAction> actions,
-                            OffsetDateTime expiryTime);
+
+    PathDescription getDataSize(AzureBlobStorage storage, String path, PathDescription pathDescription);
+
+    String generateSASToken(AzureBlobStorage storage, List<DataStorageAction> actions, OffsetDateTime expiryTime);
 }
