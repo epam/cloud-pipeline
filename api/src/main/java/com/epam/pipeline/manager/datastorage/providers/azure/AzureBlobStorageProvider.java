@@ -36,7 +36,6 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -218,12 +217,12 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public void deleteFile(final AzureBlobStorage dataStorage, final String path, final String version,
                            final Boolean totally) {
-        getAzureStorageHelper(dataStorage).deleteItem(dataStorage, path);
+        getAzureStorageHelper(dataStorage).deleteFile(dataStorage, path);
     }
 
     @Override
     public void deleteFolder(final AzureBlobStorage dataStorage, final String path, final Boolean totally) {
-        getAzureStorageHelper(dataStorage).deleteItem(dataStorage, ProviderUtils.withTrailingDelimiter(path));
+        getAzureStorageHelper(dataStorage).deleteFolder(dataStorage, path);
     }
 
     @Override
@@ -329,6 +328,8 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        return new AzureStorageHelper(region, credentials, azEvents, messageHelper);
+        return region.isHierarchicalStorageNamespace()
+                ? new AzureHNStorageHelper(region, credentials, azEvents, messageHelper)
+                : new AzureFNStorageHelper(region, credentials, azEvents, messageHelper);
     }
 }
