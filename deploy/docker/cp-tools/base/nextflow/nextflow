@@ -77,10 +77,13 @@ mkdir -p "$NXF_WORK"
 
 _ARGS=()
 _IS_RUN_COMMAND=
-_CUSTOM_CONFIG=
-_CUSTOM_CONFIG_INDEX=
-_expect_config=""
-for param in "$@"; do
+_NEXTFLOW_CONFIGS=
+_NEXTFLOW_CONFIG_OPTION="-c"
+
+while [[ $# -gt 0 ]]; do
+   param="$1"
+   shift
+
    if [ "$param" == "run" ]; then
       _IS_RUN_COMMAND="1"
    fi
@@ -90,18 +93,13 @@ for param in "$@"; do
        continue
    fi
 
-   if [ "$param" == "-c" ]; then
-       _expect_config="1"
-       _ARGS+=("-c")
-       continue
-   fi
-
-   # Next param after '-c' is config path
-   if [ "$_expect_config" == "1" ]; then
-       _CUSTOM_CONFIG="${param}"
-       _CUSTOM_CONFIG_INDEX="${#_ARGS[@]}"
-       _ARGS+=("$param")
-       _expect_config=""
+   if [ "$param" == "-c" ] || [ "$param" == "-C" ]; then
+       value=$1
+       _NEXTFLOW_CONFIGS="${value}"
+       if [ "$param" == "-C" ]; then
+           _NEXTFLOW_CONFIG_OPTION="-C"
+       fi
+       shift
        continue
    fi
 
@@ -152,10 +150,10 @@ trace.raw = true
 trace.file = "${CP_NF_TRACE_FILE}"
 trace.fields = '${CP_NF_TRACE_FIELDS}'
 EOF
-            if [ -n "$_CUSTOM_CONFIG" ] && [ -n "$_CUSTOM_CONFIG_INDEX" ]; then
-                _ARGS[$_CUSTOM_CONFIG_INDEX]="${_CUSTOM_CONFIG},${TRACE_CONFIG}"
+            if [ ! -z "$_NEXTFLOW_CONFIGS" ]; then
+                _NEXTFLOW_CONFIGS="${_NEXTFLOW_CONFIGS},${TRACE_CONFIG}"
             else
-                _ARGS+=("-c" "$TRACE_CONFIG")
+                _NEXTFLOW_CONFIGS="$TRACE_CONFIG"
             fi
             echo "[INFO] The Nextflow execution trace file will be created at ${CP_NF_TRACE_FILE}."
         fi
@@ -172,7 +170,9 @@ if [ -f "$NEXTFLOW_CONFIG" ]; then
     cat "$NEXTFLOW_CONFIG"
     echo
 fi
-#
+
+# Define final configs configuration (user provided + trace.config if was configured)
+_ARGS+=("$_NEXTFLOW_CONFIG_OPTION" "$_NEXTFLOW_CONFIGS")
 
 # Resume parameters
 _ARGS+=('-name')
