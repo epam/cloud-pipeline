@@ -27,6 +27,7 @@ import com.epam.pipeline.elasticsearch.model.Scroll;
 import com.epam.pipeline.elasticsearch.model.SearchRequest;
 import com.epam.pipeline.elasticsearch.model.SearchResponse;
 import com.epam.pipeline.elasticsearch.model.v7.action.DocWriterRequestFactoryV7;
+import com.epam.pipeline.elasticsearch.model.v7.action.bulk.BulkItemResponseV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.bulk.BulkResponseV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.search.MultiSearchRequestV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.search.MultiSearchResponseV7;
@@ -36,6 +37,7 @@ import com.epam.pipeline.elasticsearch.model.v7.search.ScrollV7;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import shaded.org.opensearch.action.admin.indices.alias.IndicesAliasesRequest;
 import shaded.org.opensearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -55,10 +57,13 @@ import shaded.org.opensearch.index.query.QueryBuilders;
 import shaded.org.opensearch.rest.RestStatus;
 import shaded.org.opensearch.search.builder.SearchSourceBuilder;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -74,6 +79,16 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
         this.client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
         );
+    }
+
+    public ElasticsearchServiceClientV7(final String elasticsearchUrl,
+                                        final int elasticsearchPort,
+                                        final String elasticsearchScheme,
+                                        final Integer socketTimeout) {
+        this.client = new RestHighLevelClient(
+                RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
+                        .setRequestConfigCallback(requestConfigBuilder ->
+                                requestConfigBuilder.setSocketTimeout(socketTimeout)));
     }
 
     @Override
@@ -106,7 +121,8 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     }
 
     @Override
-    public BulkResponseV7 sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests) {
+    public BulkResponseV7 sendRequests(final @Nullable String indexName,
+                                       final List<? extends DocWriteRequest> docWriteRequests) {
         if (CollectionUtils.isEmpty(docWriteRequests)) {
             log.warn("Index requests are empty. ");
             return null;
@@ -116,7 +132,9 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                 .map(DocWriterRequestFactoryV7::toRequest)
                 .forEach(bulkRequest::add);
 
-        log.debug("Start to insert documents for index {}", indexName);
+        if (StringUtils.isNotBlank(indexName)) {
+            log.debug("Start to insert documents for index {}", indexName);
+        }
 
         try {
             BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
@@ -125,13 +143,38 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                 throw new IllegalStateException("Failed to create Elasticsearch documents: " + bulkResponse);
             }
 
-            log.debug("Stop to insert documents for index {}", indexName);
+            if (StringUtils.isNotBlank(indexName)) {
+                log.debug("Stop to insert documents for index {}", indexName);
+            }
 
             return BulkResponseV7.builder()
                     .response(bulkResponse)
                     .build();
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to insert Elasticsearch documents: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void indexChunk(final List<DocWriteRequest> documentRequests) {
+        final BulkResponseV7 response = sendRequests(null, documentRequests);
+        if (Objects.isNull(response)) {
+            log.debug("No documents were created in Elasticsearch for {} request(s).", documentRequests.size());
+            return;
+        }
+        final Map<Boolean, List<BulkItemResponseV7>> indexResults = Arrays.stream(response.getItems())
+                .collect(Collectors.partitioningBy(BulkItemResponseV7::isFailed));
+        final List<BulkItemResponseV7> failed = indexResults.get(true);
+        if (CollectionUtils.isNotEmpty(failed)) {
+            log.error("Failed to insert {} of {} document(s) into Elasticsearch.",
+                    failed.size(), documentRequests.size());
+            failed.forEach(item -> log.error("Error for doc {} index {}: {}.",
+                    item.getId(), item.getIndex(), item.getFailureMessage()));
+        }
+        final List<BulkItemResponseV7> successful = indexResults.get(false);
+        if (CollectionUtils.isNotEmpty(successful)) {
+            log.debug("Successfully inserted {} of {} document(s) into Elasticsearch).",
+                    successful.size(), documentRequests.size());
         }
     }
 

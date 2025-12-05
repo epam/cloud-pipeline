@@ -29,6 +29,9 @@ import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.billingreportagent.service.impl.loader.CloudRegionLoader;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -44,8 +47,6 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -161,19 +162,22 @@ public class StorageToRequestConverterTest {
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
             apiClient,
-            false);
+            false,
+            ElasticStackVersion.V6);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
             apiClient,
-            false);
+            false,
+            ElasticStackVersion.V6);
         azureBlobConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE, BILLING_CENTER_KEY),
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
             apiClient,
-            false);
+            false,
+            ElasticStackVersion.V6);
         nfsConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
             StorageType.FILE_STORAGE,
@@ -181,7 +185,8 @@ public class StorageToRequestConverterTest {
             apiClient,
             fileShareMountsService,
             MountType.NFS,
-            false);
+            false,
+            ElasticStackVersion.V6);
         azureNetAppConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
             StorageType.FILE_STORAGE,
@@ -189,7 +194,8 @@ public class StorageToRequestConverterTest {
             apiClient,
             fileShareMountsService,
             MountType.NFS,
-            false);
+            false,
+            ElasticStackVersion.V6);
         azureFilesConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
             StorageType.FILE_STORAGE,
@@ -197,7 +203,8 @@ public class StorageToRequestConverterTest {
             apiClient,
             fileShareMountsService,
             MountType.SMB,
-            false);
+            false,
+            ElasticStackVersion.V6);
     }
 
     @Test
@@ -340,7 +347,7 @@ public class StorageToRequestConverterTest {
                                                                           TestUtils.STORAGE_BILLING_PREFIX,
                                                                           SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        final Map<String, ?> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(azureStorage, requestFieldsMap, regionId, storageType, usage,
@@ -369,7 +376,7 @@ public class StorageToRequestConverterTest {
                 TestUtils.STORAGE_BILLING_PREFIX,
                 SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        final Map<String, ?> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(azureStorage, requestFieldsMap, regionId, storageType, expectedTotalSize,
@@ -384,7 +391,7 @@ public class StorageToRequestConverterTest {
                 .thenReturn(getStorageUsage(standardSize, standardVersion, glacierSize, glacierVersion));
     }
 
-    private void assertFields(final AbstractDataStorage storage, final Map<String, Object> fieldMap,
+    private void assertFields(final AbstractDataStorage storage, final Map<String, ?> fieldMap,
                               final Long region, final StorageType storageType, final long usage, final long cost,
                               final Map<String, StorageBillingInfo.StorageBillingInfoDetails> billingDetails) {
         Assert.assertEquals(storage.getId().intValue(), fieldMap.get("storage_id"));

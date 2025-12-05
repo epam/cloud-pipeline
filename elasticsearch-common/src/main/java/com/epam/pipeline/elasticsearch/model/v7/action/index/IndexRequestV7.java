@@ -64,4 +64,9 @@ public class IndexRequestV7 implements IndexRequestInner {
     public String type() {
         throw new UnsupportedOperationException("Type is not supported for ElasticStack 7 version.");
     }
+
+    @Override
+    public Map<String, ?> sourceAsMap() {
+        return inner.sourceAsMap();
+    }
 }
