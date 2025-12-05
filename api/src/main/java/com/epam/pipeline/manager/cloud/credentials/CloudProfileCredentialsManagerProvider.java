@@ -109,7 +109,7 @@ public class CloudProfileCredentialsManagerProvider {
                 : findAllForUser(userId);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public List<? extends AbstractCloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
                                                                           final Set<Long> profileIds,
                                                                           final Long defaultProfileId) {
