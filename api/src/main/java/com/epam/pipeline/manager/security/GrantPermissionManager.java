@@ -1053,7 +1053,7 @@ public class GrantPermissionManager {
         }
         //get parent
         Acl acl = child == null ? aclService.getAcl(entity.getParent()) : child;
-        if (sidsByType.get(SidType.PRINCIPAL).stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
+        if (sidsByType.get(SidType.PRINCIPAL).stream().anyMatch(sid -> Objects.equals(acl.getOwner(), sid))) {
             return fullMask;
         }
         List<AclPermission> basicPermissions = permissionsService.getBasicPermissions();
