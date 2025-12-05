@@ -646,7 +646,7 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public AbstractSecuredEntity loadRunParent(PipelineRun run) {
         if (run.getPipelineId() != null && run.getPipelineId() != 0) {
-            return pipelineManager.load(run.getPipelineId());
+            return pipelineManager.load(run.getPipelineId(), false, false);
         } else {
             return null;
         }
@@ -1627,7 +1627,7 @@ public class PipelineRunManager {
 
     private void setParent(PipelineRun run) {
         if (run.getPipelineId() != null && run.getPipelineId() != 0L) {
-            run.setParent(pipelineManager.load(run.getPipelineId()));
+            run.setParent(pipelineManager.load(run.getPipelineId(), false, false));
         }
     }
 
