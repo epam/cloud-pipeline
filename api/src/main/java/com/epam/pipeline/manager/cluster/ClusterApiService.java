@@ -52,6 +52,7 @@ public class ClusterApiService {
     private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
+    @AclMaskList
     public List<NodeInstance> getNodes(final MachineType machineType) {
         return nodesManager.getNodes(machineType);
     }
