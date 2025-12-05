@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEvent
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,6 +57,7 @@ public class ClusterApiService {
     }
 
     @PostFilter(NODE_READ_FILTER)
+    @AclMaskList
     public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
         return nodesManager.filterNodes(filterNodesVO, machineType);
     }
