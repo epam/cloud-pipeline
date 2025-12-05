@@ -627,11 +627,7 @@ public class GrantPermissionManager {
         if (node.getPipelineRun() == null) {
             return false;
         }
-        boolean allowed = runPermissionManager.runPermission(node.getPipelineRun(), permissionName);
-        if (allowed) {
-            node.setMask(node.getPipelineRun().getMask());
-        }
-        return allowed;
+        return runPermissionManager.runPermission(node.getPipelineRun(), permissionName);
     }
 
     public boolean nodeUsagePermission(String nodeName, String permissionName) {
