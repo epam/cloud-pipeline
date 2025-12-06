@@ -52,7 +52,7 @@ class Metadata:
                 }
         if env_prefix != None:
             for name, value in os.environ.items():
-                if not name.startswith(env_prefix):
+                if not name.startswith(env_prefix) or name.endswith('_PARAM_TYPE'):
                     continue
                 field_item = name.replace(env_prefix, '')
                 updated_entity['data'][field_item] = {
