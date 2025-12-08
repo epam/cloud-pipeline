@@ -88,6 +88,7 @@ import UploadButton from '../../special/UploadButton';
 import PreviewConfiguration from '../configuration/PreviewConfiguration';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
+import { RepositoryTypes } from '../../special/git-repository-control';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 const SHOW_SECRET_TAGS_IN_LISTING = false;
@@ -1144,18 +1145,21 @@ export default class Folder extends localization.LocalizedReactComponent {
         return message.error(this.checkRequest.error);
       }
       if (!this.checkRequest.value.repositoryExists) {
-        return Modal.confirm({
-          title: 'Repository does not exist. Create?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          content: null,
-          okText: 'OK',
-          cancelText: 'Cancel',
-          onOk: async () => {
-            await callback(pipelineOpts);
-          }
-        });
+        if (repositoryType === RepositoryTypes.GitLab) {
+          return Modal.confirm({
+            title: 'Repository does not exist. Create?',
+            style: {
+              wordWrap: 'break-word'
+            },
+            content: null,
+            okText: 'OK',
+            cancelText: 'Cancel',
+            onOk: async () => {
+              await callback(pipelineOpts);
+            }
+          });
+        }
+        return message.error(`Repository ${repository} does not exist.`);
       }
     }
     return callback(pipelineOpts);
