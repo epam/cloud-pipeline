@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -95,4 +96,6 @@ public interface AzureStorageHelper {
     PathDescription getDataSize(AzureBlobStorage storage, String path, PathDescription pathDescription);
 
     String generateSASToken(AzureBlobStorage storage, List<DataStorageAction> actions, OffsetDateTime expiryTime);
+
+    DataStorageItemType getItemType(AzureBlobStorage storage, String path);
 }

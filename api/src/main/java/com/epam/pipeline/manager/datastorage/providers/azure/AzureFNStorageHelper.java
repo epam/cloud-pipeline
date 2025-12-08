@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -462,6 +463,16 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
         return getContainerSASToken(serviceClient, blobContainerClient, expiryTime, sasSignatureValues);
     }
 
+    @Override
+    public DataStorageItemType getItemType(final AzureBlobStorage storage, final String path) {
+        final BlobContainerClient containerClient = getBlobContainerClient(storage);
+        return findItem(containerClient, path)
+                .map(this::toDataStorageItem)
+                .map(AbstractDataStorageItem::getType)
+                .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
+                MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, storage.getPath())));
+    }
+
     private void addIPRangeToSASValue(final BlobServiceSasSignatureValues values) {
         final AzurePolicy policy = region.getAzurePolicy();
         if (policy != null &&
@@ -536,12 +547,13 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
     }
 
     private Optional<DataStorageFile> findFile(final BlobContainerClient containerClient, final String path) {
+        return findItem(containerClient, path).map(this::createDataStorageFile);
+    }
+
+    private Optional<BlobItem> findItem(final BlobContainerClient containerClient, final String path) {
         final String fullPath = ProviderUtils.withoutLeadingDelimiter(path);
         final PagedIterable<BlobItem> blobItems = getBlobItemsRecursively(containerClient, fullPath);
-        return blobItems.stream()
-                .filter(item -> item.getName().equals(fullPath))
-                .findFirst()
-                .map(this::createDataStorageFile);
+        return blobItems.stream().filter(item -> item.getName().equals(fullPath)).findFirst();
     }
 
     private boolean isNotTokenFile(final BlobItem item) {

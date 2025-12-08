@@ -48,6 +48,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -361,6 +362,13 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
                 .setContentType("container");
         addIPRangeToSASValue(sasSignatureValues);
         return getContainerSASToken(serviceClient, fileSystemClient, expiryTime, sasSignatureValues);
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final AzureBlobStorage storage, final String path) {
+        final DataLakeFileSystemClient fileSystemClient = getFileSystemClient(storage);
+        final PathProperties properties = fileSystemClient.getFileClient(path).getProperties();
+        return properties.isDirectory() ? DataStorageItemType.Folder : DataStorageItemType.File;
     }
 
     public static DataLakeServiceClient getDataLakeServiceClient(final AzureRegion region,
