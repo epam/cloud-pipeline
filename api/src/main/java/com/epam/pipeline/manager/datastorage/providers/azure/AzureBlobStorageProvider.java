@@ -319,10 +319,8 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public DataStorageItemType getItemType(final AzureBlobStorage dataStorage,
-                                           final String path,
-                                           final String version) {
-        throw new UnsupportedOperationException();
+    public DataStorageItemType getItemType(final AzureBlobStorage storage, final String path, final String version) {
+        return getAzureStorageHelper(storage).getItemType(storage, path);
     }
 
     public AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
