@@ -319,9 +319,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public DataStorageItemType getItemType(final AzureBlobStorage storage,
-                                           final String path,
-                                           final String version) {
+    public DataStorageItemType getItemType(final AzureBlobStorage storage, final String path, final String version) {
         return getAzureStorageHelper(storage).getItemType(storage, path);
     }
 
