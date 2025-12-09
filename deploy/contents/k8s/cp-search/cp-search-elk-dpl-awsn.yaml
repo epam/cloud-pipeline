@@ -38,9 +38,6 @@ spec:
             - mountPath: /usr/share/elasticsearch/data
               subPath: search-elk/data
               name: cp-system
-            - mountPath: /var/log/curator
-              subPath: search-elk/log/curator
-              name: cp-system
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true

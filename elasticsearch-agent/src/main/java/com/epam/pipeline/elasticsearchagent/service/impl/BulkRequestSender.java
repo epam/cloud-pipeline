@@ -15,16 +15,16 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.BulkResponse;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
@@ -107,8 +107,7 @@ public class BulkRequestSender {
             return;
         }
         log.debug("Inserting {} documents for {}", docs.size(), objectTypes);
-        final BulkResponse response = elasticsearchClient
-                .sendRequests(indexName, docs);
+        final BulkResponse response = elasticsearchClient.sendRequests(indexName, docs);
 
         if (ObjectUtils.isEmpty(response)) {
             log.error("Elasticsearch documents for {} were not created.", objectTypes);

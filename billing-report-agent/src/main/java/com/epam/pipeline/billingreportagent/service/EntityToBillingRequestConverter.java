@@ -17,7 +17,7 @@
 package com.epam.pipeline.billingreportagent.service;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import org.elasticsearch.action.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 public interface EntityToBillingRequestConverter<T> {
 
-    String INDEX_TYPE = "_doc";
     String DATE_PATTERN = "yyyy-MM-dd";
     DateTimeFormatter SIMPLE_DATE_FORMAT = DateTimeFormatter.ofPattern(DATE_PATTERN);
 

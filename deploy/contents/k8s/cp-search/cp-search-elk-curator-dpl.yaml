@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-search-elk-curator
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-elk: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-elk: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-elk: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-search-elk-curator
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-curator-$CP_VERSION
+          securityContext:
+            privileged: true
+          imagePullPolicy: "Always"
+          command: ["bash"]
+          args: ["-c", "/init.sh"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - mountPath: /var/log/curator
+              name: search-elk-curator-log
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
+      volumes:
+        - name: search-elk-curator-log
+          hostPath:
+            path: /opt/search-elk/log/curator
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
