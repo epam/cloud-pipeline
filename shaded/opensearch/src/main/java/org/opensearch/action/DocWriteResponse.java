@@ -29,6 +29,7 @@ import static org.opensearch.common.xcontent.XContentParserUtils.ensureExpectedT
 import static org.opensearch.index.seqno.SequenceNumbers.UNASSIGNED_PRIMARY_TERM;
 import static org.opensearch.index.seqno.SequenceNumbers.UNASSIGNED_SEQ_NO;
 
+@SuppressWarnings({"checkstyle:ConstantName", "checkstyle:LineLength", "PMD"})
 public class DocWriteResponse extends ReplicationResponse implements WriteResponse, StatusToXContentObject {
     private static final String _SHARDS = "_shards";
     private static final String _INDEX = "_index";
