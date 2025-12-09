@@ -1370,6 +1370,9 @@ function validateParameter (parameter, parameters, rawEdit = false) {
       ) {
         throw new Error('Required');
       }
+      if (actualConfig.type.toLowerCase() === 'output' && value && value.includes(',')) {
+        throw new Error('Only one output path can be specified for output parameter');
+      }
     }
   } catch (e) {
     error = e.message;
