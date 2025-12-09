@@ -116,7 +116,7 @@ public class PipelineExecutor {
                             ContextualPreferenceManager contextualPreferenceManager,
                             final AuthManager authManager,
                             final List<ContainerMemoryResourceService> memoryRequestServices,
-                            @Value("${kube.namespace}") final String kubeNamespace,
+                            @Value("${kube.namespace:default}") final String kubeNamespace,
                             final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
         this.contextualPreferenceManager = contextualPreferenceManager;

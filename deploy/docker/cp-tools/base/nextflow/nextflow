@@ -29,6 +29,7 @@ function generate_params_file() {
             # Escaping special characters for JSON
             _value=${!cp_param_clean}
             _value=${_value//\\/\\\\}
+            _value=$(eval "echo $_value")
             all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${_value}\""
         fi
     done
@@ -73,15 +74,19 @@ fi
 
 mkdir -p "$NXF_WORK"
 
+_ARGS=()
 _IS_RUN_COMMAND=
 for param in "$@"; do
    if [ "$param" == "run" ]; then
       _IS_RUN_COMMAND="1"
-      break
    fi
-done
 
-_ARGS=("$@")
+   if [ "$param" == "--weblog-cleanup" ] || [ "$param" == "-wc" ]; then
+       CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN="1"
+       continue
+   fi
+   _ARGS+=("$param")
+done
 
 # Executor parameters
 NEXTFLOW_CONFIG="$NXF_HOME/config"
@@ -112,6 +117,10 @@ generate_extra_nf_config_option
 # NF Handler parameters
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
     if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
+        if [ "$CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN" == "1" ]; then
+            echo "[INFO] Cleanup for nextflow engine view configured by -wc/--weblog-cleanup or CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN env, proceeding ..."
+            /opt/nf-weblog-handler/nf-weblog-handler.sh --cleanup
+        fi
         echo "Running Nextflow with the weblog feature enabled at http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event"
         echo "weblog.enabled = true" >> $NEXTFLOW_CONFIG
         echo "weblog.url = 'http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event'" >> $NEXTFLOW_CONFIG
@@ -158,7 +167,7 @@ printenv | grep '^NXF_'
 echo
 # - Print nextflow command
 echo "[INFO] Nextflow command:"
-_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}""
+_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}" $CP_NF_EXTRA_ARGS"
 echo "$_nf_cmd"
 echo
 eval "$_nf_cmd"
@@ -169,4 +178,3 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 exit $_result_code
-

@@ -179,7 +179,7 @@ dependencies {
 
     // Apache Commons
     compile group: "commons-io", name: "commons-io", version: "2.4"
-    compile group: "org.apache.commons", name: "commons-lang3", version: "3.0"
+    compile group: "org.apache.commons", name: "commons-lang3", version: "3.2"
     compile group: "org.apache.commons", name: "commons-collections4", version: "4.0"
     compile group: "commons-validator", name: "commons-validator", version: "1.5.0"
     compile group: "org.apache.commons", name: "commons-math3", version: "3.6.1"
@@ -214,12 +214,21 @@ dependencies {
     compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: '1.12.780'
 
 
-    // https://mvnrepository.com/artifact/com.microsoft.azure/azure-mgmt-resources
-    compile group: "com.microsoft.azure", name: "azure-mgmt-resources", version: "1.19.0"
-    // https://mvnrepository.com/artifact/com.microsoft.azure/azure
-    compile group: "com.microsoft.azure", name: "azure", version: "1.19.0"
+    compile group: "com.azure", name: "azure-core", version: "1.54.0"
+    //Azure Identity
+    compile group: "com.azure", name: "azure-identity", version: "1.13.0"
+    // Azure Resource management
+    compile group: "com.azure.resourcemanager", name: "azure-resourcemanager", version: "2.36.0"
     // Azure Storage Blob
-    compile group: "com.microsoft.azure", name: "azure-storage-blob", version: "11.0.0"
+    compile group: "com.azure", name: "azure-storage-blob", version: "12.25.0"
+
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.17.2'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.17.2'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.2'
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.17.2'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.17.2'
+    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.6.6'
+    compile group: 'io.projectreactor.netty', name: 'reactor-netty', version: '1.1.15'
 
     // Retrofit
     compile group: "com.squareup.retrofit2", name: "retrofit", version: "2.3.0"

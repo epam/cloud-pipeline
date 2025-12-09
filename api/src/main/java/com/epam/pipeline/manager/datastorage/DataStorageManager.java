@@ -1107,7 +1107,7 @@ public class DataStorageManager implements SecuredEntityManager {
             storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
         } catch (Exception e) {
             LOGGER.error(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCCESSING, path, e.getMessage()));
+                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCESSING, path, e.getMessage()));
             LOGGER.error(e.getMessage(), e);
         }
     }

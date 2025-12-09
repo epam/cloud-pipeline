@@ -58,6 +58,9 @@ public class PipeConfValueVO {
     @JsonProperty(value = "no_override")
     private Boolean noOverride;
 
+    @JsonProperty(value = "read_only")
+    private Boolean readOnly;
+
     @JsonProperty(value = "enum")
     private List<Object> availableValues;
 
@@ -70,6 +73,9 @@ public class PipeConfValueVO {
     private List<Map<String, String>> validation;
     private Map<String, Object> annotation;
     private Map<String, Object> scheme;
+
+    @JsonProperty(value = "metadata_config")
+    private Map<String, Object> metadataConfig;
 
     /**
      * String expression to determine visibility of a param

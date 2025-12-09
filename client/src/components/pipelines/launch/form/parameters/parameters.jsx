@@ -7,11 +7,9 @@ import Divider from './divider';
 import styles from './parameters.css';
 import LoadingView from '../../../../special/LoadingView';
 import {
+  getVisibleParameters,
   hasResolvedValues,
-  isCapabilityParameter,
-  isGPUScalingParameter, isReservationRequestParameter,
-  isReservedParameter,
-  mapSystemParameter, toggleResolvedValues
+  toggleResolvedValues
 } from '../utilities/parameter-utilities';
 import RootEntityTypeParameter from './parameter/root-entity-type-input';
 import {Checkbox} from 'antd';
@@ -43,12 +41,6 @@ function getSections (parameters) {
 function filterParameterBySection (parameter, section) {
   const parameterSection = getParameterSection(parameter);
   return parameterSection.toLowerCase() === section.toLowerCase();
-}
-
-function parameterIsVisible (parameter) {
-  const {config = {}} = parameter;
-  const {visible = true} = config;
-  return visible;
 }
 
 @inject(
@@ -156,24 +148,13 @@ class Parameters extends Component {
       detached,
       pipeline,
       parameterRowClassName,
-      description
+      description,
+      parametersMetadata
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
     }
-    const filtered = parameters
-      .filter((parameter) => rawEdit || parameterIsVisible(parameter))
-      .filter((parameter) => system
-        ? parameter.system &&
-        !isReservedParameter(parameter.name) &&
-        !isCapabilityParameter(parameter.name) &&
-        !isReservationRequestParameter(parameter.name) &&
-        !isGPUScalingParameter(parameter.name)
-        : !parameter.system)
-      .map((parameter) => system ? mapSystemParameter(parameter, {
-        runDefaultParameters,
-        userInfo: this.userInfo
-      }) : parameter);
+    const filtered = getVisibleParameters(parameters, system, rawEdit, this.userInfo);
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,
@@ -311,6 +292,7 @@ class Parameters extends Component {
                       currentCloudRegionId={currentCloudRegionId}
                       currentProjectId={currentProjectId}
                       currentProjectMetadata={currentProjectMetadata}
+                      parametersMetadata={parametersMetadata}
                       currentMetadataEntity={currentMetadataEntity}
                       rootEntityId={rootEntityId}
                       metadataAutoComplete={metadataAutoComplete}

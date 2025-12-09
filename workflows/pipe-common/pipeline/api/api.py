@@ -224,6 +224,7 @@ class PipelineAPI:
     LOAD_METADATA = "/metadata/load"
     SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
+    UPDATE_METADATA_ENTITY = "metadataEntity/updateKey"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
@@ -782,6 +783,25 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to save metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
+    # {
+    #     "entityId": 1,
+    #     "parentId": 1,
+    #     "data": {
+    #         "key1": {
+    #             "type": "string",
+    #             "value": "value1"
+    #         }
+    #     }
+    # }
+    def update_metadata_entity(self, entity):
+        try:
+            result = self.execute_request(str(self.api_url) + self.UPDATE_METADATA_ENTITY, method='post',
+                                          data=json.dumps(entity))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to update metadata entities. "
                                "Error message: {}".format(str(e.message)))
 
     def find_metadata_entity(self, folder_id, external_id, class_name):

@@ -151,7 +151,8 @@ function prepareRun (item, childrenRunsCollection, isChildRun = false) {
       children = [{
         id: `${id}-children-placeholder`,
         [RUN_LOADING_PLACEHOLDER_PROPERTY]: true,
-        [RUN_LOADING_ERROR_PROPERTY]: undefined
+        [RUN_LOADING_ERROR_PROPERTY]: undefined,
+        isPlaceholder: true
       }];
     } else if (collection.loaded) {
       const childRuns = (collection.childRuns || [])
@@ -162,14 +163,16 @@ function prepareRun (item, childrenRunsCollection, isChildRun = false) {
         children = [{
           id: `${id}-children-placeholder`,
           [RUN_LOADING_PLACEHOLDER_PROPERTY]: false,
-          [RUN_LOADING_ERROR_PROPERTY]: 'Worker jobs not found'
+          [RUN_LOADING_ERROR_PROPERTY]: 'Worker jobs not found',
+          isPlaceholder: true
         }];
       }
     } else {
       children = [{
         id: `${id}-children-placeholder`,
         [RUN_LOADING_PLACEHOLDER_PROPERTY]: collection.pending,
-        [RUN_LOADING_ERROR_PROPERTY]: collection.error
+        [RUN_LOADING_ERROR_PROPERTY]: collection.error,
+        isPlaceholder: true
       }];
     }
   }
@@ -490,7 +493,7 @@ class RunTable extends localization.LocalizedReactComponent {
   };
 
   onRunClick = (run) => {
-    if (!run) {
+    if (!run || run.isPlaceholder) {
       return;
     }
     const {

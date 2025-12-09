@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.filter;
+package com.epam.pipeline.entity.pipeline.run.runtime;
 
-import java.util.List;
+import lombok.Getter;
 
+@Getter
+public enum RunSyncRuntimeEvalType {
+    HASH("hash"), WORKDIR("workdir");
 
-public interface AclSecuredFilter {
-    void setAllowedPipelines(List<Long> pipelineIds);
-    List<Long> getAllowedPipelines();
+    final String value;
 
-    void setOwnershipFilter(String owner);
-    String getOwnershipFilter();
+    RunSyncRuntimeEvalType(String value) {
+        this.value = value;
+    }
 }

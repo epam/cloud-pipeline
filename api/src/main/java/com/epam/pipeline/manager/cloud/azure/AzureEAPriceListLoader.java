@@ -19,10 +19,11 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingResult;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
+import com.azure.core.credential.TokenCredential;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.compute.fluent.models.ResourceSkuInner;
+import com.epam.pipeline.entity.region.AzureRegion;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -50,9 +51,9 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         super(meterRegionName, azureApiUrl, authPath);
     }
 
-    protected List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
-                                                    final AzureTokenCredentials credentials,
-                                                    final Azure client,
+    protected List<InstanceOffer> getInstanceOffers(final AzureRegion region,
+                                                    final TokenCredential credentials,
+                                                    final AzureResourceManager client,
                                                     final Map<String, ResourceSkuInner> vmSkusByName,
                                                     final Map<String, ResourceSkuInner> diskSkusByName)
                                                     throws IOException {
@@ -68,16 +69,13 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         return API_VERSION;
     }
 
-
-
     private Optional<AzureEAPricingResult> getPricing(final String subscription,
-                                                      final AzureTokenCredentials credentials) throws IOException {
+                                                      final TokenCredential credentials) {
         Assert.isTrue(StringUtils.isNotBlank(subscription), "Could not find subscription ID");
         return Optional.of(getPriceSheet(subscription, credentials));
     }
 
-    private AzureEAPricingResult getPriceSheet(final String subscription, final AzureTokenCredentials credentials)
-            throws IOException {
+    private AzureEAPricingResult getPriceSheet(final String subscription, final TokenCredential credentials) {
         return AzureEAPricingResult.builder().properties(
                 AzureEAPricingResult.PricingProperties.builder().pricesheets(
                     getPriceSheet(new ArrayList<>(), subscription, credentials, null)
@@ -89,9 +87,8 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     private List<AzureEAPricingMeter> getPriceSheet(final List<AzureEAPricingMeter> buffer, final String subscription,
-                                                    final AzureTokenCredentials credentials, String skiptoken
-    ) throws IOException {
-        final String token = credentials.getToken(azureApiUrl);
+                                                    final TokenCredential credentials, String skiptoken) {
+        final String token = AzureHelper.getBearerToken(credentials);
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
         final AzureEAPricingResult meterDetails = executeRequest(azurePricingClient.getPricesheet(
                 "Bearer " + token, subscription, getAPIVersion(), "meterDetails", BATCH_SIZE, skiptoken));
@@ -108,5 +105,4 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         }
         return buffer;
     }
-
 }

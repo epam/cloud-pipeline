@@ -45,56 +45,58 @@ public interface AzureDevOpsApi {
     String VERSION_TYPE = "versionDescriptor.versionType";
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}?api-version=7.1")
-    Call<AzureDevOpsRepository> getRepository(@Path(ORGANIZATION) String organization,
-                                              @Path(PROJECT) String project,
-                                              @Path(REPOSITORY) String repository);
+    Call<AzureDevOpsRepository> getRepository(@Path(value = ORGANIZATION, encoded = true) String organization,
+                                              @Path(value = PROJECT, encoded = true) String project,
+                                              @Path(value = REPOSITORY, encoded = true) String repository);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/refs?api-version=7.1")
-    Call<AzureDevOpsObjectList<AzureDevOpsRef>> getRefs(@Path(ORGANIZATION) String organization,
-                                                        @Path(PROJECT) String project,
-                                                        @Path(REPOSITORY) String repository,
+    Call<AzureDevOpsObjectList<AzureDevOpsRef>> getRefs(@Path(value = ORGANIZATION, encoded = true) String organization,
+                                                        @Path(value = PROJECT, encoded = true) String project,
+                                                        @Path(value = REPOSITORY, encoded = true) String repository,
                                                         @Query(FILTER) String filter);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/annotatedtags/{objectId}?api-version=7.1")
-    Call<AzureDevOpsTag> getTag(@Path(ORGANIZATION) String organization,
-                                @Path(PROJECT) String project,
-                                @Path(REPOSITORY) String repository,
+    Call<AzureDevOpsTag> getTag(@Path(value = ORGANIZATION, encoded = true) String organization,
+                                @Path(value = PROJECT, encoded = true) String project,
+                                @Path(value = REPOSITORY, encoded = true) String repository,
                                 @Path(OBJECT_ID) String objectId);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/commits?api-version=7.1&$top=1")
-    Call<AzureDevOpsObjectList<AzureDevOpsCommit>> getLastCommit(@Path(ORGANIZATION) String organization,
-                                                                 @Path(PROJECT) String project,
-                                                                 @Path(REPOSITORY) String repository,
-                                                                 @Query(COMMIT_VERSION) String version,
-                                                                 @Query(COMMIT_VERSION_TYPE) String versionType);
+    Call<AzureDevOpsObjectList<AzureDevOpsCommit>> getLastCommit(
+            @Path(value = ORGANIZATION, encoded = true) String organization,
+            @Path(value = PROJECT, encoded = true) String project,
+            @Path(value = REPOSITORY, encoded = true) String repository,
+            @Query(COMMIT_VERSION) String version,
+            @Query(COMMIT_VERSION_TYPE) String versionType);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/commits/{commit}?api-version=7.1")
-    Call<AzureDevOpsCommit> getCommit(@Path(ORGANIZATION) String organization,
-                                      @Path(PROJECT) String project,
-                                      @Path(REPOSITORY) String repository,
+    Call<AzureDevOpsCommit> getCommit(@Path(value = ORGANIZATION, encoded = true) String organization,
+                                      @Path(value = PROJECT, encoded = true) String project,
+                                      @Path(value = REPOSITORY, encoded = true) String repository,
                                       @Path(COMMIT) String commit);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/items?api-version=7.1")
-    Call<AzureDevOpsObjectList<AzureDevOpsItem>> getItems(@Path(ORGANIZATION) String organization,
-                                                          @Path(PROJECT) String project,
-                                                          @Path(REPOSITORY) String repository,
-                                                          @Query(SCOPE_PATH) String path,
-                                                          @Query(RECURSION_LEVEL) String recursionLevel,
-                                                          @Query(VERSION) String version,
-                                                          @Query(VERSION_TYPE) String versionType);
+    Call<AzureDevOpsObjectList<AzureDevOpsItem>> getItems(
+            @Path(value = ORGANIZATION, encoded = true) String organization,
+            @Path(value = PROJECT, encoded = true) String project,
+            @Path(value = REPOSITORY, encoded = true) String repository,
+            @Query(SCOPE_PATH) String path,
+            @Query(RECURSION_LEVEL) String recursionLevel,
+            @Query(VERSION) String version,
+            @Query(VERSION_TYPE) String versionType);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/items?api-version=7.1")
-    Call<ResponseBody> getItem(@Path(ORGANIZATION) String organization,
-                               @Path(PROJECT) String project,
-                               @Path(REPOSITORY) String repository,
+    Call<ResponseBody> getItem(@Path(value = ORGANIZATION, encoded = true) String organization,
+                               @Path(value = PROJECT, encoded = true) String project,
+                               @Path(value = REPOSITORY, encoded = true) String repository,
                                @Query(PATH) String path,
                                @Query(VERSION) String version,
                                @Query(VERSION_TYPE) String versionType);
 
     @GET("{organization}/{project}/_apis/git/repositories/{repository}/items?api-version=7.1&$format=json")
-    Call<AzureDevOpsItem> getItemInfo(@Path(ORGANIZATION) String organization,
-                                      @Path(PROJECT) String project,
-                                      @Path(REPOSITORY) String repository,
+    Call<AzureDevOpsItem> getItemInfo(@Path(value = ORGANIZATION, encoded = true) String organization,
+                                      @Path(value = PROJECT, encoded = true) String project,
+                                      @Path(value = REPOSITORY, encoded = true) String repository,
                                       @Query(PATH) String path,
                                       @Query(VERSION) String version,
                                       @Query(VERSION_TYPE) String versionType);

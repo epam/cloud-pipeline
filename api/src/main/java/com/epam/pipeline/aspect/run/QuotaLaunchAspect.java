@@ -19,6 +19,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.QuotaActionType;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.quota.BillingQuotaExceededException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -50,7 +51,7 @@ public class QuotaLaunchAspect {
             return;
         }
         final PipelineUser currentUser = authManager.getCurrentUser();
-        if (currentUser.isAdmin()) {
+        if (currentUser.isAdmin() || currentUser.hasRole(DefaultRoles.ROLE_RUN_ADMIN.getRole())) {
             return;
         }
         log.info("Checking billing quota limits for launching runs.");

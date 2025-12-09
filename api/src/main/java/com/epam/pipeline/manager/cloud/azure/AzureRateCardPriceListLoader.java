@@ -18,17 +18,17 @@ package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzureRateCardPricingResult;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
+import com.azure.core.credential.TokenCredential;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.compute.fluent.models.ResourceSkuInner;
+import com.epam.pipeline.entity.region.AzureRegion;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.Assert;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,13 +48,12 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     @Override
-    protected List<InstanceOffer> getInstanceOffers(final AbstractCloudRegion region,
-                                                    final AzureTokenCredentials credentials,
-                                                    final Azure client,
+    protected List<InstanceOffer> getInstanceOffers(final AzureRegion region,
+                                                    final TokenCredential credential,
+                                                    final AzureResourceManager client,
                                                     final Map<String, ResourceSkuInner> vmSkusByName,
-                                                    final Map<String, ResourceSkuInner> diskSkusByName)
-                                                    throws IOException {
-        final Optional<AzureRateCardPricingResult> prices = getPricing(client.subscriptionId(), credentials);
+                                                    final Map<String, ResourceSkuInner> diskSkusByName) {
+        final Optional<AzureRateCardPricingResult> prices = getPricing(client.subscriptionId(), credential);
         return prices.filter(p -> CollectionUtils.isNotEmpty(p.getMeters()))
                 .map(p -> mergeSkusWithPrices(p.getMeters(), vmSkusByName, diskSkusByName,
                         meterRegionName, region.getId()))
@@ -67,13 +66,12 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     private Optional<AzureRateCardPricingResult> getPricing(final String subscription,
-                                                            final AzureTokenCredentials credentials)
-                                                            throws IOException {
+                                                            final TokenCredential credential) {
         if (StringUtils.isBlank(offerId)) {
             return Optional.empty();
         }
         Assert.isTrue(StringUtils.isNotBlank(subscription), "Could not find subscription ID");
-        final String token = credentials.getToken(azureApiUrl);
+        final String token = AzureHelper.getBearerToken(credential);
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
         final String filter = String.format(AZURE_PRICING_FILTERS, offerId,
                 CloudInstancePriceService.CURRENCY, LOCALE, REGION_INFO);
@@ -81,7 +79,4 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
                 executeRequest(azurePricingClient.getPricing("Bearer " + token, subscription,
                         filter, getAPIVersion())));
     }
-
-
-
 }

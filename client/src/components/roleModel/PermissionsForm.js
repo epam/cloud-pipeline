@@ -153,6 +153,7 @@ export default class PermissionsForm extends React.Component {
     })),
     subObjectsPermissionsErrorTitle: PropTypes.node,
     showOwner: PropTypes.bool,
+    editOwnerAvailable: PropTypes.bool,
     refreshPermissionsAfterUpdate: PropTypes.bool,
     permissionsColumns: PropTypes.arrayOf(PropTypes.string),
     availablePermissions: PropTypes.arrayOf(PropTypes.string)
@@ -163,6 +164,7 @@ export default class PermissionsForm extends React.Component {
     readOnlyRoles: [],
     subObjectsPermissionsMaskToCheck: 0,
     showOwner: true,
+    editOwnerAvailable: false,
     permissionsColumns: [PERMISSION_COLUMNS.allow, PERMISSION_COLUMNS.deny],
     availablePermissions: [PERMISSIONS.read, PERMISSIONS.write, PERMISSIONS.execute]
   }
@@ -809,7 +811,8 @@ export default class PermissionsForm extends React.Component {
       fetchedUsers = []
     } = this.state;
     if (!pending && !error && originalOwner && this.props.showOwner) {
-      const isAdminOrOwner = this.isAdmin() ||
+      const isAdminOrOwner = this.props.editOwnerAvailable ||
+        this.isAdmin() ||
         originalOwner === this.props.authenticatedUserInfo.value.userName;
       if (isAdminOrOwner) {
         const onBlur = () => {

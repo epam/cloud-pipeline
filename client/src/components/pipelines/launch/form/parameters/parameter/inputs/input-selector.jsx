@@ -7,6 +7,7 @@ import {isObservableArray} from 'mobx';
 import LaunchFormEnumParameterInput from './enum-parameter-input';
 import LaunchFormMetadataParameterInput from './metadata-parameter-input';
 import LaunchFormSchemeParameterInput from './scheme-parameter-input/scheme-parameter-input';
+import LaunchFormMetadataEntityParameter from './metadata-entity-parameter';
 
 function DefaultInputSelector (props) {
   const {
@@ -131,6 +132,22 @@ function DefaultInputSelector (props) {
     case 'metadata':
       return (
         <LaunchFormMetadataParameterInput
+          className={className}
+          style={style}
+          value={value}
+          onChange={onParameterValueChange}
+          disabled={readOnly || disabled}
+          required={required}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
+        />
+      );
+    case 'metadata_entity':
+      return (
+        <LaunchFormMetadataEntityParameter
           className={className}
           style={style}
           value={value}

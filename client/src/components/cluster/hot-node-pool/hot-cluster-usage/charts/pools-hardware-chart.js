@@ -29,6 +29,7 @@ function PoolsHardwareChart ({
   pools,
   units,
   style,
+  className,
   rawData = [],
   colors,
   textColor,
@@ -108,14 +109,13 @@ function PoolsHardwareChart ({
       style={
         Object.assign(
           {
-            width: '50%',
-            height: '450px',
             position: 'relative',
             display: 'block'
           },
           style
         )
       }
+      className={className}
     >
       <Chart
         data={data}

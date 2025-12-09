@@ -133,9 +133,13 @@ class EditRoleDialog extends React.Component {
     return false;
   }
 
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
+  };
+
   @computed
   get restrictedMetadataKeys () {
-    if (this.isAdmin) {
+    if (this.isAdmin || this.isUsersAdmin) {
       return [];
     }
     const {preferences} = this.props;
@@ -924,7 +928,7 @@ class EditRoleDialog extends React.Component {
             <InstanceTypesManagementForm
               className={styles.instanceTypesManagementForm}
               key="instance types management form"
-              disabled={!this.isAdmin}
+              disabled={!this.isAdmin && !this.isUsersAdmin}
               resourceId={this.props.roleId}
               level="ROLE"
               onInitialized={this.onInstanceTypesFormInitialized}
@@ -945,7 +949,7 @@ class EditRoleDialog extends React.Component {
                   this.state.operationInProgress ||
                   readOnly ||
                   pending ||
-                  !this.isAdmin
+                  !(this.isAdmin || this.isUsersAdmin)
                 }
                 value={this.state.profiles.map(o => `${o}`)}
                 style={{width: '100%'}}
@@ -987,7 +991,7 @@ class EditRoleDialog extends React.Component {
                   readOnly ||
                   this.state.profiles.length === 0 ||
                   pending ||
-                  !this.isAdmin
+                  !(this.isAdmin || this.isUsersAdmin)
                 }
                 value={this.defaultProfileId}
                 style={{width: '100%'}}
@@ -1052,7 +1056,7 @@ class EditRoleDialog extends React.Component {
           </Row>
         )
       },
-      !predefined && this.isAdmin ? ({
+      !predefined && (this.isAdmin || this.isUsersAdmin) ? ({
         tab: 'PERMISSIONS',
         key: 'permissions'
       }) : undefined
@@ -1085,7 +1089,7 @@ class EditRoleDialog extends React.Component {
       : false;
     return (
       <Row type="flex">
-        {this.isAdmin ? (
+        {this.isAdmin || this.isUsersAdmin ? (
           <Button
             disabled={readOnly}
             id="edit-user-form-block-unblock"

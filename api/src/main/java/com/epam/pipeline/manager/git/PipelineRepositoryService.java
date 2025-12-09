@@ -88,17 +88,20 @@ public class PipelineRepositoryService {
     private final PreferenceManager preferenceManager;
     private final String defaultTemplate;
     private final String templatesDirectoryPath;
+    private final boolean showHidden;
 
     public PipelineRepositoryService(final PipelineRepositoryProviderService providerService,
                                      final MessageHelper messageHelper,
                                      final PreferenceManager preferenceManager,
                                      @Value("${templates.default.template}") final String defaultTemplate,
-                                     @Value("${templates.directory}") final String templatesDirectoryPath) {
+                                     @Value("${templates.directory}") final String templatesDirectoryPath,
+                                     @Value("${pipeline.sources.show.hidden:false}") final boolean showHidden) {
         this.providerService = providerService;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.defaultTemplate = defaultTemplate;
         this.templatesDirectoryPath = templatesDirectoryPath;
+        this.showHidden = showHidden;
     }
 
     public GitProject createGitRepositoryWithRepoUrl(final PipelineVO pipelineVO) throws GitClientException {
@@ -211,7 +214,7 @@ public class PipelineRepositoryService {
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version, final boolean recursive) {
-        return getRepositoryContents(pipeline, path, version, recursive, false);
+        return getRepositoryContents(pipeline, path, version, recursive, showHidden);
     }
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,

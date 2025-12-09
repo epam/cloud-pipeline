@@ -102,6 +102,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -645,7 +646,7 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public AbstractSecuredEntity loadRunParent(PipelineRun run) {
         if (run.getPipelineId() != null && run.getPipelineId() != 0) {
-            return pipelineManager.load(run.getPipelineId());
+            return pipelineManager.load(run.getPipelineId(), false, false);
         } else {
             return null;
         }
@@ -1470,6 +1471,11 @@ public class PipelineRunManager {
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
+        final Boolean launchDockerPreflightChecks = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_DOCKER_PREFLIGHT_CHECKS);
+        if (BooleanUtils.isFalse(launchDockerPreflightChecks)) {
+            return;
+        }
         long imageSizeBytes = toolManager.getCurrentImageSize(configuration.getDockerImage());
         long requiredDiskForImageBytes = imageSizeBytes
                 * preferenceManager.getPreference(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI)
@@ -1621,7 +1627,7 @@ public class PipelineRunManager {
 
     private void setParent(PipelineRun run) {
         if (run.getPipelineId() != null && run.getPipelineId() != 0L) {
-            run.setParent(pipelineManager.load(run.getPipelineId()));
+            run.setParent(pipelineManager.load(run.getPipelineId(), false, false));
         }
     }
 

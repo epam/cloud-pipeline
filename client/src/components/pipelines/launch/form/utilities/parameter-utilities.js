@@ -24,6 +24,7 @@ import {
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
 import {base64toString, stringToBase64} from '../../../../../utils/base64';
+import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
 
 function normalizeParameters (parameters) {
   const {keys = [], params = {}} = parameters || {};
@@ -353,6 +354,7 @@ window.launchFormVerbose = function (vb = true) {
  * @property [resolvedValue]
  * @property {boolean} [system]
  * @property {boolean} [userParameter]
+ * @property {object} [metadata_config]
  * @property {object} [restConfig]
  * @property {boolean} [fallbackConfig]
  * @property {ObjectParameterScheme} [scheme]
@@ -467,6 +469,146 @@ export function buildSchemeParameterValue (value, scheme) {
     result.push(e);
   }
   return stringToBase64(JSON.stringify(result));
+}
+
+/**
+ * Resolves metadata_entity parameter and update payload parameters from metadata_entity parameters
+ * @param {Object} [payload={}]
+ * @param {Parameter[]} [parameters=[]]
+ * @param {Object} [metadata={}]
+ **/
+function resolveMetadataEntityParameters (payload = {}, parameters = [], metadata = {}) {
+  const result = {...payload};
+  const metadataEntityParams = parameters.filter(
+    p => p.type === 'metadata_entity' && p.config?.metadata_config?.params
+  );
+  if (metadataEntityParams.length === 0) {
+    return result;
+  }
+  for (const param of metadataEntityParams) {
+    const {value, config} = param;
+    const {metadata_config: metadataConfig} = config;
+    const {params: paramsMapping} = metadataConfig;
+    if (!value || !paramsMapping) {
+      continue;
+    }
+    const metadataEntries = metadata[param.name];
+    if (!metadataEntries || !metadataEntries.elements) {
+      continue;
+    }
+    const externalIds = config.multiple
+      ? (typeof value === 'string' ? value.split(',').map(v => v.trim()) : [value])
+      : [value];
+    const matchingElements = metadataEntries.elements.filter(
+      element => externalIds.includes(element.externalId)
+    );
+    if (matchingElements.length === 0) {
+      continue;
+    }
+    for (const [paramName, metadataField] of Object.entries(paramsMapping)) {
+      const values = matchingElements
+        .map(element => {
+          const fieldData = element.data?.[metadataField];
+          return fieldData?.value;
+        })
+        .filter(v => v !== undefined && v !== null);
+      if (values.length === 0) {
+        continue;
+      }
+      const resolvedValue = config.multiple
+        ? values.join(',')
+        : values[0];
+      if (result[paramName]) {
+        result[paramName] = {
+          ...result[paramName],
+          value: resolvedValue
+        };
+      } else {
+        result[paramName] = {
+          type: 'string',
+          value: resolvedValue
+        };
+      }
+    }
+  }
+  return result;
+}
+
+const metadataCache = {};
+
+/**
+ * Fetch metadata for all metadata_entity type parameters.
+ * @param {Parameter[]} [parameters=[]]
+ * @param {Object} [pipeline]
+ **/
+async function getMetadataForParameters (parameters = [], pipeline) {
+  const metadataEntityParams = parameters
+    .filter(p => p.type === 'metadata_entity' &&
+      p.config?.metadata_config?.metadataClass
+    );
+  if (metadataEntityParams.length === 0) {
+    return {};
+  }
+  const folderIdFallback = pipeline?.parentFolderId;
+  const getKey = ({config}) => {
+    const {folderId, metadataClass = ''} = config?.metadata_config || {};
+    return `${folderId || folderIdFallback}_${metadataClass}`;
+  };
+  const requestsTemp = {};
+  for (const param of metadataEntityParams) {
+    const {folderId, metadataClass} = param.config.metadata_config;
+    const key = getKey(param);
+    if (metadataCache[key]) {
+      continue;
+    }
+    if (!requestsTemp[key]) {
+      requestsTemp[key] = {
+        folderId: folderId || folderIdFallback,
+        metadataClass,
+        name: param.name
+      };
+    }
+  }
+  const requests = Object.entries(requestsTemp).map(
+    ([key, {name, folderId, metadataClass}]) => {
+      return new Promise((resolve) => {
+        const filter = new MetadataEntityFilter();
+        const payload = {
+          folderId,
+          metadataClass,
+          page: 1,
+          pageSize: 999
+        };
+        filter
+          .send(payload)
+          .then(() => {
+            if (filter.error || !filter.loaded) {
+              console.error(
+                `Error fetching metadata for ${name} parameter:`,
+                filter.error
+              );
+              metadataCache[key] = {error: filter.error};
+            } else {
+              metadataCache[key] = filter.value || {};
+            }
+            resolve();
+          })
+          .catch((error) => {
+            console.error(`Error fetching metadata for ${name} parameter: ${error.message}`);
+            metadataCache[key] = {error: error.message};
+            resolve();
+          });
+      });
+    }
+  );
+  await Promise.all(requests);
+  const result = {};
+  for (const param of metadataEntityParams) {
+    const {name} = param;
+    const key = getKey(param);
+    result[name] = metadataCache[key];
+  }
+  return result;
 }
 
 /**
@@ -683,7 +825,7 @@ export function generateParameterConfigsFromJsonPayload (json) {
     for (const [key, value] of Object.entries(json)) {
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         result.push(getParameterConfig(key, {type: parameterTypeFromValue(value), value}));
-      } else if (typeof value === 'object') {
+      } else if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
           // object parameter
           result.push(getParameterConfig(key, {type: 'object', value}));
@@ -809,6 +951,7 @@ export function getParameterConfig (
         icon,
         'enum': enumerationRaw,
         enumeration = enumerationRaw,
+        multiple,
         resolvedValue,
         visible,
         validation,
@@ -816,6 +959,8 @@ export function getParameterConfig (
         fallbackConfig = false,
         // eslint-disable-next-line camelcase
         pretty_name,
+        // eslint-disable-next-line camelcase
+        metadata_config,
         prettyName = pretty_name,
         scheme: parameterScheme,
         ...rest
@@ -885,11 +1030,13 @@ export function getParameterConfig (
         enumeration: enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))
           ? [...enumeration]
           : undefined,
+        multiple,
         resolvedValue: typedValue(resolvedValue),
         visible,
         validation,
         condition,
         system,
+        metadata_config,
         restConfig: rest,
         fallbackConfig,
         scheme
@@ -1201,8 +1348,10 @@ function validateParameter (parameter, parameters, rawEdit = false) {
   try {
     if (actualConfig.visible) {
       if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
-        value = actualConfig.enumeration.find((o) => o === value);
-        if (!value) {
+        if (!actualConfig.multiple) {
+          value = actualConfig.enumeration.find((o) => o === value);
+        }
+        if (!actualConfig.multiple && !value) {
           value = actualConfig.value;
         }
       } else if (configChanged) {
@@ -1640,13 +1789,15 @@ export function parameterConfigToPayloadConfig (parameterConfig) {
     no_override: parameterConfig.noOverride,
     visible: parameterConfig.visible,
     icon: parameterConfig.icon,
+    multiple: parameterConfig.multiple,
     section: parameterConfig.section,
     'enum': parameterConfig.enumeration,
     resolvedValue: parameterConfig.resolvedValue,
     validation: parameterConfig.validation,
     description: parameterConfig.description,
     scheme: objectParameterSchemeToPayload(parameterConfig.scheme),
-    pretty_name: parameterConfig.prettyName
+    pretty_name: parameterConfig.prettyName,
+    metadata_config: parameterConfig.metadata_config
   };
 }
 
@@ -1755,6 +1906,9 @@ function getTypedValue (value, config) {
   if (type === 'object' || typeof value === 'object') {
     return buildSchemeParameterValue(value, scheme);
   }
+  if (typeof value === 'string' && type === 'enum' && config.multiple) {
+    return value.split(',').sort().join(',');
+  }
   return value;
 }
 
@@ -1823,7 +1977,64 @@ export function parametersModified (parameters, initialParameters) {
   return modified;
 }
 
+/**
+ * @param {Parameter} parameter
+ */
+function parameterIsVisible (parameter = {}) {
+  const {config = {}} = parameter;
+  const {visible = true} = config;
+  return visible;
+}
+
+/**
+ * @param {Parameter[]} parameters
+ * @param {boolean} isSystem
+ * @param {boolean} rawEdit
+ * @param {object} userInfo
+ */
+function getVisibleParameters (
+  parameters = [],
+  isSystem = false,
+  rawEdit = false,
+  userInfo
+) {
+  return parameters
+    .filter((parameter) => rawEdit || parameterIsVisible(parameter))
+    .filter((parameter) => isSystem
+      ? parameter.system &&
+      !isReservedParameter(parameter.name) &&
+      !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
+      !isGPUScalingParameter(parameter.name)
+      : !parameter.system)
+    .map((parameter) => isSystem ? mapSystemParameter(parameter, {
+      runDefaultParameters,
+      userInfo,
+    }) : parameter);
+}
+
+/**
+ * @param {Parameter[]} parameters
+ */
+function downloadParametersTemplate (parameters = []) {
+  let yamlContent = '';
+  parameters.forEach((p) => {
+    const {name = '', value = ''} = p || {};
+    yamlContent += `${name}: ${value}\n`;
+  });
+  const blob = new Blob([yamlContent], {type: 'text/yaml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'parameters-template.yaml';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export {
+  getVisibleParameters,
   getParameterValue,
   getParameterNumberValue,
   booleanParameterValue,
@@ -1832,6 +2043,7 @@ export {
   isVisible,
   validate,
   normalizeParameters,
+  parameterIsVisible,
   parseEnumeration,
   readParametersFromConfiguration,
   mergeParametersWithConfiguration,
@@ -1840,5 +2052,8 @@ export {
   addSystemParameter,
   addSystemParameters,
   hasResolvedValues,
-  toggleResolvedValues
+  toggleResolvedValues,
+  downloadParametersTemplate,
+  getMetadataForParameters,
+  resolveMetadataEntityParameters
 };

@@ -1553,7 +1553,13 @@ export default class Folder extends localization.LocalizedReactComponent {
       !this.props.listingMode
     ) {
       let pipelineTemplatesMenu;
-      if (!this.props.templates.pending && roleModel.isManager.pipeline(this)) {
+      if (
+        !this.props.templates.pending &&
+        (
+          roleModel.isManager.pipeline(this) ||
+          roleModel.isManager.pipelineAdmin(this)
+        )
+      ) {
         if (!this.props.templates.error && (this.props.templates.value || []).length > 0) {
           const templates = (this.props.templates.value || [])
             .filter(template => !template.defaultTemplate);
@@ -1588,7 +1594,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           ];
         }
       }
-      if (roleModel.isManager.pipeline(this)) {
+      if (roleModel.isManager.pipeline(this) || roleModel.isManager.pipelineAdmin(this)) {
         if (pipelineTemplatesMenu) {
           createActions.push(
             <SubMenu

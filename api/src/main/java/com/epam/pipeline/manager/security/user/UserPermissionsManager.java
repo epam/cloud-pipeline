@@ -1,5 +1,6 @@
 package com.epam.pipeline.manager.security.user;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
@@ -15,7 +16,7 @@ public class UserPermissionsManager {
     private final CheckPermissionHelper permissionHelper;
 
     public boolean impersonatePermission(final UserContext details) {
-        if (permissionHelper.isAdmin()) {
+        if (permissionHelper.isAdmin() || permissionHelper.hasAnyRole(DefaultRoles.ROLE_USER_ADMIN)) {
             return true;
         }
         final PipelineUser user = userManager.loadByNameOrId(details.getUsername());

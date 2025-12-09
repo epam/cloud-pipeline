@@ -1093,6 +1093,12 @@ class PreferencesLoad extends Remote {
     return 0;
   }
 
+  @computed
+  get launchDockerPreflightChecks () {
+    const value = this.getPreferenceValue('launch.docker.preflight.checks') || 'true';
+    return `${value}`.toLowerCase() !== 'false';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
