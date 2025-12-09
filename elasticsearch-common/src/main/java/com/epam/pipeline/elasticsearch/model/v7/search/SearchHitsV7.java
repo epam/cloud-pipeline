@@ -25,7 +25,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SearchHitsV7 implements SearchHits {
 
-    private final shaded.org.opensearch.search.SearchHits inner;
+    private final org.opensearch.search.SearchHits inner;
 
     @Override
     public long getTotalHits() {

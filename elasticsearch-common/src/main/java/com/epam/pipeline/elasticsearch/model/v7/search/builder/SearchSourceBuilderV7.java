@@ -23,15 +23,15 @@ import lombok.Getter;
 @Getter
 public class SearchSourceBuilderV7 implements SearchSourceBuilderInner {
 
-    private final shaded.org.opensearch.search.builder.SearchSourceBuilder inner;
+    private final org.opensearch.search.builder.SearchSourceBuilder inner;
 
     public SearchSourceBuilderV7() {
-        inner = new shaded.org.opensearch.search.builder.SearchSourceBuilder();
+        inner = new org.opensearch.search.builder.SearchSourceBuilder();
     }
 
     @Override
     public SearchSourceBuilderV7 query(final QueryBuilder queryBuilder) {
-        inner.query((shaded.org.opensearch.index.query.QueryBuilder) queryBuilder.getInner());
+        inner.query((org.opensearch.index.query.QueryBuilder) queryBuilder.getInner());
         return this;
     }
 

@@ -22,18 +22,18 @@ import com.epam.pipeline.elasticsearch.model.SearchSourceBuilder;
 import com.epam.pipeline.elasticsearch.model.v7.action.support.IndicesOptionsV7;
 import com.epam.pipeline.elasticsearch.model.v7.search.builder.SearchSourceBuilderV7;
 import lombok.Getter;
-import shaded.org.opensearch.common.unit.TimeValue;
-import shaded.org.opensearch.search.Scroll;
+import org.opensearch.common.unit.TimeValue;
+import org.opensearch.search.Scroll;
 
 @Getter
 public class SearchRequestV7 implements SearchRequestInner {
 
     private static final Scroll TIME_SCROLL = new Scroll(new TimeValue(60000));
 
-    private final shaded.org.opensearch.action.search.SearchRequest inner;
+    private final org.opensearch.action.search.SearchRequest inner;
 
     public SearchRequestV7(final String... indices) {
-        inner = new shaded.org.opensearch.action.search.SearchRequest(indices);
+        inner = new org.opensearch.action.search.SearchRequest(indices);
     }
 
     @Override

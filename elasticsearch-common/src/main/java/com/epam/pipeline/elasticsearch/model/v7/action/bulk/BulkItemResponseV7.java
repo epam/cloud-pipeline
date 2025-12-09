@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BulkItemResponseV7 implements BulkItemResponse {
 
-    private final shaded.org.opensearch.action.bulk.BulkItemResponse response;
+    private final org.opensearch.action.bulk.BulkItemResponse response;
 
     @Override
     public boolean isFailed() {

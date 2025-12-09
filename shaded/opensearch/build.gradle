@@ -43,12 +43,7 @@ dependencies {
 shadowJar {
     // Do not allow to have more that 1 version of the same class
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    // firstly relocate our custom, modified version of DocWriteResponse to the fat JAR
-    relocate('org.opensearch.action', 'shaded.org.opensearch.action')
-    // Then relocate whole opensearch lib -> this way we make sure that we would use
-    // our custom, modified version of DocWriteResponse
-    // because we have DuplicatesStrategy.EXCLUDE and relocated it first
-    relocate('org.opensearch', 'shaded.org.opensearch')
+
     relocate('org.apache.lucene', 'shaded.org.apache.lucene8')
 }
 

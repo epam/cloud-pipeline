@@ -39,23 +39,23 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
-import shaded.org.opensearch.action.admin.indices.alias.IndicesAliasesRequest;
-import shaded.org.opensearch.action.admin.indices.delete.DeleteIndexRequest;
-import shaded.org.opensearch.action.bulk.BulkRequest;
-import shaded.org.opensearch.action.bulk.BulkResponse;
-import shaded.org.opensearch.action.search.SearchScrollRequest;
-import shaded.org.opensearch.client.RequestOptions;
-import shaded.org.opensearch.client.RestClient;
-import shaded.org.opensearch.client.RestHighLevelClient;
-import shaded.org.opensearch.client.indices.CreateIndexRequest;
-import shaded.org.opensearch.client.indices.CreateIndexResponse;
-import shaded.org.opensearch.client.indices.GetIndexRequest;
-import shaded.org.opensearch.client.indices.GetIndexResponse;
-import shaded.org.opensearch.common.unit.TimeValue;
-import shaded.org.opensearch.common.xcontent.XContentType;
-import shaded.org.opensearch.index.query.QueryBuilders;
-import shaded.org.opensearch.rest.RestStatus;
-import shaded.org.opensearch.search.builder.SearchSourceBuilder;
+import org.opensearch.action.admin.indices.alias.IndicesAliasesRequest;
+import org.opensearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.search.SearchScrollRequest;
+import org.opensearch.client.RequestOptions;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.client.indices.CreateIndexRequest;
+import org.opensearch.client.indices.CreateIndexResponse;
+import org.opensearch.client.indices.GetIndexRequest;
+import org.opensearch.client.indices.GetIndexResponse;
+import org.opensearch.common.unit.TimeValue;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.rest.RestStatus;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -68,8 +68,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient {
-    private static final shaded.org.opensearch.search.Scroll TIME_SCROLL =
-            new shaded.org.opensearch.search.Scroll(new TimeValue(60000));
+    private static final org.opensearch.search.Scroll TIME_SCROLL =
+            new org.opensearch.search.Scroll(new TimeValue(60000));
 
     private final RestHighLevelClient client;
 
@@ -190,7 +190,7 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
             DeleteIndexRequest request = new DeleteIndexRequest(indexName);
             client.indices().delete(request, RequestOptions.DEFAULT);
 
-        } catch (shaded.org.opensearch.OpenSearchException exception) {
+        } catch (org.opensearch.OpenSearchException exception) {
             if (exception.status() == RestStatus.NOT_FOUND) {
                 throw new ElasticsearchException("Response status " + RestStatus.NOT_FOUND + ": " +
                         exception.getMessage(), exception);
@@ -311,12 +311,12 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                                                          final String indexName) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(QueryBuilders.termQuery(field, value));
-        final shaded.org.opensearch.action.search.SearchRequest request =
-                new shaded.org.opensearch.action.search.SearchRequest(indexName).source(searchSource);
+        final org.opensearch.action.search.SearchRequest request =
+                new org.opensearch.action.search.SearchRequest(indexName).source(searchSource);
         log.debug("Search request: {}", request);
         try {
             return buildDeleteRequests(indexName, request);
-        } catch (shaded.org.opensearch.OpenSearchException | IOException e) {
+        } catch (org.opensearch.OpenSearchException | IOException e) {
             return Collections.emptyList();
         }
     }
@@ -324,7 +324,7 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     @Override
     public List<DocWriteRequest> getDeleteRequests(final String id,
                                                    final String indexName) {
-        shaded.org.opensearch.action.search.SearchRequest request =
+        org.opensearch.action.search.SearchRequest request =
                 buildSearchRequestForConfigEntries(id, indexName);
         log.debug("Search request: {}", request);
         try {
@@ -335,15 +335,15 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                         new DeleteRequest(indexName, getWildcardId(id), ElasticStackVersion.V7));
             }
             return requests;
-        } catch (shaded.org.opensearch.OpenSearchException | IOException e) {
+        } catch (org.opensearch.OpenSearchException | IOException e) {
             return Collections.emptyList();
         }
     }
 
     private List<DocWriteRequest> buildDeleteRequests(
             final String indexName,
-            final shaded.org.opensearch.action.search.SearchRequest request) throws IOException {
-        shaded.org.opensearch.action.search.SearchResponse search =
+            final org.opensearch.action.search.SearchRequest request) throws IOException {
+        org.opensearch.action.search.SearchResponse search =
                 client.search(request, RequestOptions.DEFAULT);
         if (search.getHits().getTotalHits().value == 0) {
             log.debug("No documents found for {} {}", indexName, request);
@@ -357,11 +357,11 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                 .collect(Collectors.toList());
     }
 
-    private shaded.org.opensearch.action.search.SearchRequest buildSearchRequestForConfigEntries(
+    private org.opensearch.action.search.SearchRequest buildSearchRequestForConfigEntries(
             final String id, final String indexName) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(QueryBuilders.wildcardQuery("id", getWildcardId(id)));
-        return new shaded.org.opensearch.action.search.SearchRequest(indexName).source(searchSource);
+        return new org.opensearch.action.search.SearchRequest(indexName).source(searchSource);
     }
 
     private String getWildcardId(final String id) {
