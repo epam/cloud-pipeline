@@ -30,18 +30,11 @@ RUN wget https://packages.elastic.co/curator/5/centos/7/Packages/elasticsearch-c
     rm elasticsearch-curator-5.8.1-1.x86_64.rpm && mkdir /root/.curator
 RUN yum install cronie gettext -q -y
 
-COPY curator.yml /root/.curator/
-COPY curator-actions-template.yml /root/.curator/
-
 COPY get-aws-profile.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/get-aws-profile.sh
 
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
-
-COPY pipelines /etc/search-elk/pipelines
-COPY templates /etc/search-elk/templates
-COPY policies /etc/search-elk/policies
 
 COPY init.sh /
 RUN chmod +x /init.sh
