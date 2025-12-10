@@ -805,6 +805,7 @@ class AWSRegionForm extends React.Component {
       'resourceGroup',
       'storageAccount',
       'storageAccountKey',
+      'hierarchicalStorageNamespace',
       'azurePolicy',
       'corsRules',
       'subscription',
@@ -1074,6 +1075,7 @@ class AWSRegionForm extends React.Component {
       check('storageLifecycleServiceProperties', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
+      check('hierarchicalStorageNamespace', checkBOOLValue) ||
       check('user', checkStringValue) ||
       check('password', checkStringValue) ||
       check('resourceGroup', checkStringValue) ||
@@ -1991,6 +1993,21 @@ class AWSRegionForm extends React.Component {
                 <Input
                   size="small"
                   disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              className={this.getFieldClassName(
+                'hierarchicalStorageNamespace',
+                'edit-region-hierarchicalStorageNamespace-container'
+              )}
+              {...this.defaultCheckBoxFormItemLayout}>
+              {getFieldDecorator('hierarchicalStorageNamespace', {
+                valuePropName: 'checked',
+                initialValue: this.props.region.hierarchicalStorageNamespace
+              })(
+                <Checkbox>
+                  Hierarchical storage namespace
+                </Checkbox>
               )}
             </Form.Item>
             <Form.Item
