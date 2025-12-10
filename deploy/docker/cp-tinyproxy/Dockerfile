@@ -67,7 +67,8 @@ RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/fi
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 ADD filebeat-template.yml /etc/filebeat/
 
-RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-oss-7.10.0-linux-x86_64.tar.gz /tmp \
+RUN cd /tmp \
+    wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-oss-7.10.0-linux-x86_64.tar.gz \
     && tar -xzf /tmp/filebeat-oss-7.10.0-linux-x86_64.tar.gz -C /opt/ \
     && mv /opt/filebeat-oss-7.10.0-linux-x86_64 /opt/filebeat-oss
 COPY filebeat-template.yml /opt/filebeat-oss/
