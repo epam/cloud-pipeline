@@ -190,7 +190,7 @@ if [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
         -path.data /var/lib/filebeat/security-log \
         -path.logs /var/log/filebeat/security-log \
         -c /opt/filebeat-oss/filebeat-security-log.yml &
-  nohup /opt/filebeat-oss/ \
+  nohup /opt/filebeat-oss/filebeat \
         -path.data /var/lib/filebeat/audit-dav \
         -path.logs /var/log/filebeat/audit-dav \
         -c /opt/filebeat-oss/filebeat-audit-dav.yml &
