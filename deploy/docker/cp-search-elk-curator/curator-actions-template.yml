@@ -14,7 +14,7 @@ actions:
       wait_for_completion: True
       skip_repo_fs_check: False
       disable_action: False
-      continue_if_exception: False
+      continue_if_exception: ${CP_SEARCH_ELK_CURATOR_CONTINUE_ON_FAILED_ACTION}
     filters:
       - filtertype: pattern
         kind: prefix
