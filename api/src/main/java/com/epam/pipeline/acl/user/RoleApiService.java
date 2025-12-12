@@ -30,7 +30,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.*;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.AND;
+import static com.epam.pipeline.security.acl.AclExpressions.OR;
+import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
+import static com.epam.pipeline.security.acl.AclExpressions.USER_ADMIN_ONLY;
 
 @Service
 public class RoleApiService {
@@ -40,6 +44,9 @@ public class RoleApiService {
 
     public static final String ROLE_READ_ACCESS = ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER + OR +
             "hasPermission(returnObject.id, 'com.epam.pipeline.entity.user.Role', 'READ')";
+    public static final String HAS_WRITE_PERMISSION_ON_NON_ADMIN_ROLE = "(" + USER_ADMIN_ONLY
+            + OR + "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE') )"
+            + AND + "@rolePermissionManager.isAdminRole(#roleId) != true";
 
     @Autowired
     private RoleManager roleManager;
@@ -73,8 +80,7 @@ public class RoleApiService {
         return roleManager.create(name, false, userDefault, storageId);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR +
-            "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')")
+    @PreAuthorize(ADMIN_ONLY + OR + HAS_WRITE_PERMISSION_ON_NON_ADMIN_ROLE)
     @AclMask
     public Role updateRole(final Long roleId, final RoleVO roleVO) {
         return roleManager.update(roleId, roleVO);
@@ -85,15 +91,13 @@ public class RoleApiService {
         return roleManager.delete(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + "(" + USER_ADMIN_ONLY + AND + "@roleManager.isAdminRole(#roleId) != true" + ")"
-            + OR + "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')")
+    @PreAuthorize(ADMIN_ONLY + OR + HAS_WRITE_PERMISSION_ON_NON_ADMIN_ROLE)
     @AclMask
     public ExtendedRole assignRole(Long roleId, List<Long> userIds) {
         return roleManager.assignRole(roleId, userIds);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR +
-            "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')")
+    @PreAuthorize(ADMIN_ONLY + OR + HAS_WRITE_PERMISSION_ON_NON_ADMIN_ROLE)
     public ExtendedRole removeRole(Long roleId, List<Long> userIds) {
         return roleManager.removeRole(roleId, userIds);
     }
