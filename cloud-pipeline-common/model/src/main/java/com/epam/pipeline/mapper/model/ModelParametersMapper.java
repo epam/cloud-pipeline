@@ -19,9 +19,9 @@ package com.epam.pipeline.mapper.model;
 import com.epam.pipeline.dto.model.ModelParametersDTO;
 import com.epam.pipeline.entity.model.ModelParameters;
 import org.mapstruct.Mapper;
-import org.mapstruct.ReportingPolicy;
+//import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+//@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ModelParametersMapper {
     ModelParametersDTO modelToDTO(ModelParameters modelParameters);
 }

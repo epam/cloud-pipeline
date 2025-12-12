@@ -19,9 +19,7 @@ package com.epam.pipeline.security.jwt;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -45,7 +43,7 @@ public class SkipRequestMatcher implements RequestMatcher {
         private List<RequestMatcher> skipMatchers = new ArrayList<>();
 
         public RequestMatcherBuilder skipUrls(List<String> skipUrls) {
-            skipUrls.forEach(url -> skipMatchers.add(new AntPathRequestMatcher(url)));
+            //skipUrls.forEach(url -> skipMatchers.add(new AntPathRequestMatcher(url)));
 
             return this;
         }

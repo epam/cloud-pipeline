@@ -39,13 +39,14 @@ import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import javax.annotation.PostConstruct;
+
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -61,7 +62,7 @@ import static java.util.stream.Collectors.groupingBy;
  */
 @Service
 @Slf4j
-public class FirecloudManager {
+public class FirecloudManager implements InitializingBean {
 
     private static final MediaType CONTENT_TYPE = MediaType.parse("application/json");
     private final PreferenceManager preferenceManager;
@@ -79,8 +80,8 @@ public class FirecloudManager {
         this.objectMapper = new ObjectMapper();
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         OkHttpClient client = new OkHttpClient.Builder()
                 .build();
         ObjectMapper mapper = new ObjectMapper();

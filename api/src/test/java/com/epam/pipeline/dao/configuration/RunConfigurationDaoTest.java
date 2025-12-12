@@ -25,8 +25,7 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RunConfigurationDaoTest extends AbstractJdbcTest {
     
@@ -85,12 +86,12 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
 
         //loadAll
         List<RunConfiguration> configurations = runConfigurationDao.loadAll();
-        Assert.assertEquals(1, configurations.size());
+        assertEquals(1, configurations.size());
         verifyRunConfiguration(configuration, configurations.get(0));
 
         //loadRoot
         configurations = runConfigurationDao.loadRootEntities();
-        Assert.assertEquals(1, configurations.size());
+        assertEquals(1, configurations.size());
         verifyRunConfiguration(configuration, configurations.get(0));
 
         //load with folders
@@ -105,7 +106,7 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
 
         //delete
         runConfigurationDao.delete(created.getId());
-        Assert.assertTrue(runConfigurationDao.loadAll().isEmpty());
+        assertTrue(runConfigurationDao.loadAll().isEmpty());
     }
 
     @Test
@@ -168,47 +169,47 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
     }
 
     private void verifyFirecloudConfiguration(RunConfiguration expected, RunConfiguration actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getEntries().size(), actual.getEntries().size());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getEntries().size(), actual.getEntries().size());
         verifyFirecloudEntry((FirecloudRunConfigurationEntry) expected.getEntries().get(0),
                 (FirecloudRunConfigurationEntry) actual.getEntries().get(0));
     }
 
     private void verifyFirecloudEntry(FirecloudRunConfigurationEntry expected, FirecloudRunConfigurationEntry actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getMethodConfigurationName(), actual.getMethodConfigurationName());
-        Assert.assertEquals(expected.getMethodConfigurationSnapshot(), actual.getMethodConfigurationSnapshot());
-        Assert.assertEquals(expected.getMethodName(), actual.getMethodName());
-        Assert.assertEquals(expected.getMethodSnapshot(), actual.getMethodSnapshot());
-        Assert.assertEquals(expected.getMethodInputs(), actual.getMethodInputs());
-        Assert.assertEquals(expected.getMethodOutputs(), actual.getMethodOutputs());
-        Assert.assertEquals(expected.getParameters(), actual.getParameters());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getMethodConfigurationName(), actual.getMethodConfigurationName());
+        assertEquals(expected.getMethodConfigurationSnapshot(), actual.getMethodConfigurationSnapshot());
+        assertEquals(expected.getMethodName(), actual.getMethodName());
+        assertEquals(expected.getMethodSnapshot(), actual.getMethodSnapshot());
+        assertEquals(expected.getMethodInputs(), actual.getMethodInputs());
+        assertEquals(expected.getMethodOutputs(), actual.getMethodOutputs());
+        assertEquals(expected.getParameters(), actual.getParameters());
     }
 
     private void verifyRunConfiguration(RunConfiguration expected, RunConfiguration actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getDescription(), actual.getDescription());
-        Assert.assertEquals(expected.getEntries().size(), actual.getEntries().size());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDescription(), actual.getDescription());
+        assertEquals(expected.getEntries().size(), actual.getEntries().size());
         verifyRunConfigurationEntry((RunConfigurationEntry) expected.getEntries().get(0),
                 (RunConfigurationEntry) actual.getEntries().get(0));
     }
 
     private void verifyRunConfigurationEntry(RunConfigurationEntry expected, RunConfigurationEntry actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getDefaultConfiguration(), actual.getDefaultConfiguration());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDefaultConfiguration(), actual.getDefaultConfiguration());
         verifyPipeConfiguration(expected.getConfiguration(), actual.getConfiguration());
     }
 
     private void verifyPipeConfiguration(PipelineConfiguration expected, PipelineConfiguration actual) {
-        Assert.assertEquals(expected.getCmdTemplate(), actual.getCmdTemplate());
-        Assert.assertEquals(expected.getDockerImage(), actual.getDockerImage());
-        Assert.assertEquals(expected.getInstanceType(), actual.getInstanceType());
-        Assert.assertEquals(expected.getInstanceDisk(), actual.getInstanceDisk());
+        assertEquals(expected.getCmdTemplate(), actual.getCmdTemplate());
+        assertEquals(expected.getDockerImage(), actual.getDockerImage());
+        assertEquals(expected.getInstanceType(), actual.getInstanceType());
+        assertEquals(expected.getInstanceDisk(), actual.getInstanceDisk());
     }
 
     private void verifyFolderTree(final Folder expected, final Folder actual) {
-        Assert.assertEquals(expected.getId(), actual.getId());
-        Assert.assertEquals(expected.getParentId(), actual.getParentId());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getParentId(), actual.getParentId());
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }

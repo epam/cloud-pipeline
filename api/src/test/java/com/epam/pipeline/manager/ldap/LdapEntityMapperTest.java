@@ -5,8 +5,8 @@ import com.epam.pipeline.entity.ldap.LdapEntityType;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.BasicAttributes;
@@ -20,7 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -36,8 +36,7 @@ public class LdapEntityMapperTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final LdapEntityMapper mapper = new LdapEntityMapper(preferenceManager);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         mockPreference(SystemPreferences.LDAP_NAME_ATTRIBUTE, NAME_ATTRIBUTE);
     }
 

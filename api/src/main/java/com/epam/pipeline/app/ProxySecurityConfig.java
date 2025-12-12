@@ -20,30 +20,22 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-
-import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
 import com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider;
 import com.epam.pipeline.security.saml.SAMLProxyFilter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @Order(1)
-public class ProxySecurityConfig extends WebSecurityConfigurerAdapter {
+public class ProxySecurityConfig implements WebMvcConfigurer {
 
     private static final String RESTAPI_PROXY = "/restapi/proxy/**";
 
-    @Override
+    /*@Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(proxyAuthenticationProvider());
-    }
+    }*/
 
-    @Override
+    /*@Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
             .exceptionHandling().authenticationEntryPoint(new RestAuthenticationEntryPoint())
@@ -57,7 +49,7 @@ public class ProxySecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             .and()
                 .addFilterBefore(getSAMLProxyFilter(), UsernamePasswordAuthenticationFilter.class);
-    }
+    }*/
 
     @Bean
     public FilterRegistrationBean registration(SAMLProxyFilter filter) {

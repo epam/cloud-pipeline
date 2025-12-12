@@ -22,19 +22,18 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.manager.template.TemplateManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Api(value = "Templates")
+@Tag(name = "Templates")
 public class TemplatesController extends AbstractRestController {
 
     @Autowired
@@ -42,12 +41,11 @@ public class TemplatesController extends AbstractRestController {
 
     @RequestMapping(value = "/templates/list", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "List available templates.",
-            notes = "List available templates.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "List available templates.",
+            description = "List available templates.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Collection<Template>> listTemplates() {
         return Result.success(templateManager.getPipelineTemplates());
@@ -55,12 +53,11 @@ public class TemplatesController extends AbstractRestController {
 
     @RequestMapping(value = "/templates/folder/list", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists available folder templates.",
-            notes = "Lists available folder templates.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists available folder templates.",
+            description = "Lists available folder templates.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Collection<Template>> listFolderTemplates() {
         return Result.success(templateManager.getFolderTemplates());

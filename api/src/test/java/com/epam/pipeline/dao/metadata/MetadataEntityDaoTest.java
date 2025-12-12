@@ -30,8 +30,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +51,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
@@ -99,20 +100,20 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         List<MetadataEntity> folder1List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder1.getId(), CLASS_NAME_1);
-        Assert.assertEquals(2, folder1List.size());
+        assertEquals(2, folder1List.size());
 
         List<MetadataEntity> folder2List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder2.getId(), CLASS_NAME_1);
-        Assert.assertEquals(1, folder2List.size());
+        assertEquals(1, folder2List.size());
 
         metadataEntityDao.deleteMetadataFromFolder(folder1.getId());
 
         folder1List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder1.getId(), CLASS_NAME_1);
-        Assert.assertEquals(0, folder1List.size());
+        assertEquals(0, folder1List.size());
         folder2List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder2.getId(), CLASS_NAME_1);
-        Assert.assertEquals(1, folder2List.size());
+        assertEquals(1, folder2List.size());
     }
 
     @Test
@@ -137,8 +138,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         metadataEntity.setData(data);
         metadataEntityDao.updateMetadataEntity(metadataEntity);
         MetadataEntity updateResult = metadataEntityDao.loadMetadataEntityById(result.getId());
-        Assert.assertEquals(metadataEntity.getName(), updateResult.getName());
-        Assert.assertEquals(metadataEntity.getData(), updateResult.getData());
+        assertEquals(metadataEntity.getName(), updateResult.getName());
+        assertEquals(metadataEntity.getData(), updateResult.getData());
 
         // update metadata entity data key
         data.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
@@ -147,7 +148,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataEntity updateKeyResult = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(metadataEntity.getParent().getId(),
                         metadataEntity.getClassEntity().getName()).get(0);
-        Assert.assertEquals(metadataEntity.getData(), updateKeyResult.getData());
+        assertEquals(metadataEntity.getData(), updateKeyResult.getData());
 
         // load metadata entity from root
         MetadataEntity metadataEntityInRoot = new MetadataEntity();
@@ -159,26 +160,26 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         metadataEntityDao.createMetadataEntity(metadataEntityInRoot);
 
         MetadataEntity rootResult = metadataEntityDao.loadRootMetadataEntities().get(0);
-        Assert.assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
-        Assert.assertEquals(metadataEntityInRoot.getClassEntity().getName(), rootResult.getClassEntity().getName());
-        Assert.assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
+        assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
+        assertEquals(metadataEntityInRoot.getClassEntity().getName(), rootResult.getClassEntity().getName());
+        assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
 
         // load by external ids
         MetadataEntity entity2 = createMetadataEntity(folder, metadataClass, EXTERNAL_ID_2, data);
         Set<MetadataEntity> existing = metadataEntityDao
                 .loadExisting(folder.getId(), metadataClass.getName(),
                         new HashSet<>(Arrays.asList(EXTERNAL_ID_1, EXTERNAL_ID_2)));
-        Assert.assertEquals(new HashSet<>(Arrays.asList(metadataEntity, entity2)), existing);
+        assertEquals(new HashSet<>(Arrays.asList(metadataEntity, entity2)), existing);
 
         //load by inner ids
         Set<MetadataEntity> entitiesByIds =
                 metadataEntityDao.loadByIds(Collections.singleton(entity2.getId()));
-        Assert.assertEquals(Collections.singleton(entity2), entitiesByIds);
+        assertEquals(Collections.singleton(entity2), entitiesByIds);
 
         //load with folders
         rootResult = metadataEntityDao.loadMetadataEntityWithParents(metadataEntityInRoot.getId());
-        Assert.assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
-        Assert.assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
+        assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
+        assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
 
         // delete key from metadata entity
         data.clear();
@@ -186,12 +187,12 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         metadataEntity.setData(data);
         metadataEntityDao.deleteMetadataItemKey(metadataEntity.getId(), DATA_KEY_2);
         MetadataEntity deletedKeyResult = metadataEntityDao.loadMetadataEntityById(metadataEntity.getId());
-        Assert.assertEquals(metadataEntity.getData(), deletedKeyResult.getData());
+        assertEquals(metadataEntity.getData(), deletedKeyResult.getData());
 
         // delete metadata entity
         metadataEntityDao.deleteMetadataEntity(metadataEntity.getId());
         MetadataEntity deletedEntity = metadataEntityDao.loadMetadataEntityById(metadataEntity.getId());
-        Assert.assertNull(deletedEntity);
+        assertNull(deletedEntity);
     }
 
 
@@ -227,7 +228,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         List<MetadataEntity> links = metadataEntityDao
                 .loadAllReferences(Collections.singletonList(sample.getId()), folder.getId());
-        Assert.assertEquals(new HashSet<>(Arrays.asList(batch1, participant1, participant2, sample)),
+        assertEquals(new HashSet<>(Arrays.asList(batch1, participant1, participant2, sample)),
                 new HashSet<>(links));
     }
 
@@ -253,7 +254,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         List<MetadataEntity> links = metadataEntityDao.loadAllReferences(
                 Arrays.asList(participant1.getId(), participant2.getId()), folder.getId());
-        Assert.assertEquals(new HashSet<>(Arrays.asList(participant1, participant2)), new HashSet<>(links));
+        assertEquals(new HashSet<>(Arrays.asList(participant1, participant2)), new HashSet<>(links));
     }
 
     @Test
@@ -271,7 +272,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 EXTERNAL_ID_2, data, DateUtils.now());
         Collection<MetadataEntity> result =
                 metadataEntityDao.batchInsert(Arrays.asList(entity1, entity2));
-        Assert.assertTrue(result.stream().allMatch(e -> e.getId() != null));
+        assertTrue(result.stream().allMatch(e -> e.getId() != null));
 
         data.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_2, DATA_VALUE_2));
         entity1.setData(data);
@@ -280,11 +281,11 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         List<MetadataEntity> loaded = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder.getId(), metadataClass.getName());
-        Assert.assertTrue(loaded.stream().allMatch(e -> e.getData().equals(data)));
+        assertTrue(loaded.stream().allMatch(e -> e.getData().equals(data)));
 
         Set<Long> entitiesToDelete = Stream.of(entity1.getId(), entity2.getId()).collect(Collectors.toSet());
         metadataEntityDao.deleteMetadataEntities(entitiesToDelete);
-        Assert.assertEquals(0, metadataEntityDao.loadAllMetadataEntities().stream()
+        assertEquals(0, metadataEntityDao.loadAllMetadataEntities().stream()
                 .filter(entity -> entitiesToDelete.contains(entity.getId())).count());
     }
 
@@ -489,12 +490,12 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         Collection<MetadataClassDescription> metadataFields =
                 metadataEntityDao.getMetadataFields(parent.getId());
-        Assert.assertEquals(2, metadataFields.size());
+        assertEquals(2, metadataFields.size());
         Map<Long, MetadataClassDescription> results = metadataFields.stream()
                 .collect(Collectors.toMap(e -> e.getMetadataClass().getId(), Function.identity()));
-        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_1, DATA_TYPE_1)),
+        assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_1, DATA_TYPE_1)),
                 results.get(metadataClass1.getId()).getFields());
-        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2, true, false)),
+        assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2, true, false)),
                 results.get(metadataClass2.getId()).getFields());
     }
 
@@ -522,7 +523,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         List<MetadataEntity> entitiesStoredInDestinationFolder = metadataEntityDao.loadAllMetadataEntities().stream()
                 .filter(entity -> Objects.equals(entity.getParent().getId(), destinationFolder.getId()))
                 .collect(Collectors.toList());
-        Assert.assertEquals(expected.size(), entitiesStoredInDestinationFolder.size());
+        assertEquals(expected.size(), entitiesStoredInDestinationFolder.size());
         Map<String, MetadataEntity> expectedMap =
                 expected.stream().collect(Collectors.toMap(MetadataEntity::getExternalId, Function.identity()));
         entitiesStoredInDestinationFolder.forEach(e -> compareMetadata(expectedMap.get(e.getExternalId()), e, false));
@@ -544,11 +545,11 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
         MetadataEntity metadataEntity = createMetadataEntity(parent, metadataClass, EXTERNAL_ID_1, data);
 
         MetadataEntity result = metadataEntityDao.loadMetadataEntityWithParents(metadataEntity.getId());
-        Assert.assertEquals(metadataEntity.getId(), result.getId());
-        Assert.assertEquals(metadataEntity.getName(), result.getName());
-        Assert.assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
-        Assert.assertEquals(metadataEntity.getExternalId(), result.getExternalId());
-        Assert.assertEquals(metadataEntity.getData(), result.getData());
+        assertEquals(metadataEntity.getId(), result.getId());
+        assertEquals(metadataEntity.getName(), result.getName());
+        assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
+        assertEquals(metadataEntity.getExternalId(), result.getExternalId());
+        assertEquals(metadataEntity.getData(), result.getData());
         verifyFolderTree(parent, result.getParent());
     }
 
@@ -699,18 +700,18 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 metadataEntityDao.getMetadataKeys(folder.getId(), metadataClass.getId());
         Set<MetadataField> expected = new HashSet<>(defaultKeys);
         expected.addAll(Arrays.asList(expectedKeys));
-        Assert.assertEquals(expected, new HashSet<>(keys));
+        assertEquals(expected, new HashSet<>(keys));
     }
 
     private void checkFilterRequest(MetadataFilter filter, List<MetadataEntity> expected) {
         List<MetadataEntity> result = metadataEntityDao.filterEntities(filter);
         checkSearchResult(expected, result);
         int count = metadataEntityDao.countEntities(filter);
-        Assert.assertEquals(expected.size(), count);
+        assertEquals(expected.size(), count);
     }
 
     private void checkSearchResult(List<MetadataEntity> expected, List<MetadataEntity> actual) {
-        Assert.assertEquals(expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size());
         Map<Long, MetadataEntity> expectedMap =
                 expected.stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
         actual.forEach(e -> compareMetadata(expectedMap.get(e.getId()), e, true));
@@ -718,14 +719,14 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
     private void compareMetadata(MetadataEntity metadataEntity, MetadataEntity result, boolean compareExactly) {
         if (compareExactly) {
-            Assert.assertEquals(metadataEntity.getId(), result.getId());
-            Assert.assertEquals(metadataEntity.getCreatedDate(), result.getCreatedDate());
+            assertEquals(metadataEntity.getId(), result.getId());
+            assertEquals(metadataEntity.getCreatedDate(), result.getCreatedDate());
         }
-        Assert.assertEquals(metadataEntity.getName(), result.getName());
-        Assert.assertEquals(metadataEntity.getClassEntity().getName(), result.getClassEntity().getName());
-        Assert.assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
-        Assert.assertEquals(metadataEntity.getExternalId(), result.getExternalId());
-        Assert.assertEquals(metadataEntity.getData(), result.getData());
+        assertEquals(metadataEntity.getName(), result.getName());
+        assertEquals(metadataEntity.getClassEntity().getName(), result.getClassEntity().getName());
+        assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
+        assertEquals(metadataEntity.getExternalId(), result.getExternalId());
+        assertEquals(metadataEntity.getData(), result.getData());
     }
 
     private MetadataFilter createFilter(Long folderId, String className,
@@ -783,8 +784,8 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
     }
 
     private void verifyFolderTree(final Folder expected, final Folder actual) {
-        Assert.assertEquals(expected.getId(), actual.getId());
-        Assert.assertEquals(expected.getParentId(), actual.getParentId());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getParentId(), actual.getParentId());
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }

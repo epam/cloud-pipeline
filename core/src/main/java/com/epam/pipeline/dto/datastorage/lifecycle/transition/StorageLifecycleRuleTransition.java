@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.dto.datastorage.lifecycle.transition;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 import java.time.LocalDate;
@@ -26,6 +28,8 @@ import java.time.LocalDate;
  */
 @Value
 @Builder(toBuilder = true)
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class StorageLifecycleRuleTransition {
 
     /**

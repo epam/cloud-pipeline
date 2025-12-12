@@ -23,29 +23,25 @@ import java.util.concurrent.TimeUnit;
 import com.epam.pipeline.config.JsonMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
+public class AppMVCConfiguration implements WebMvcConfigurer {
 
     private static final String[] CACHED_RESOURCES_PATH =
         {"/iconfont/**", "/static/css/*.css", "/static/js/*.js"};
@@ -62,7 +58,6 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
                 new MappingJackson2HttpMessageConverter();
         converter.setObjectMapper(objectMapper());
         converters.add(converter);
-        super.configureMessageConverters(converters);
     }
 
     @Override
@@ -81,13 +76,9 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         registry.addMapping("/**").allowedMethods("GET", "PUT", "DELETE", "POST");
     }
 
-    @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-        super.configurePathMatch(configurer);
-        configurer.setUseSuffixPatternMatch(false);
-    }
-
-
+    /* TODO: no one knows why the prefix has done like that, and why it hasn't been done via application.properties.
+         Also now it doesn't configure the controllers.
+         Now it works via application.properties: server.servlet.context-path=/pipeline/restapi
     @Bean
     public ServletRegistrationBean dispatcherRegistration(){
         DispatcherServlet dispatcherServlet = new DispatcherServlet();
@@ -100,7 +91,7 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         applicationContext.register(RestConfiguration.class);
         dispatcherServlet.setApplicationContext(applicationContext);
         return bean;
-    }
+    }*/
 
     @Bean
     public JsonMapper objectMapper() {

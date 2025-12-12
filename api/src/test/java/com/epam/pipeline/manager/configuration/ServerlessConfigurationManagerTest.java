@@ -32,7 +32,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 
@@ -42,10 +42,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -171,17 +172,17 @@ public class ServerlessConfigurationManagerTest {
         verify(stopServerlessRunManager, times(2)).updateServerlessRun(any());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfConfigNameNotFound() {
         final RunConfigurationEntry entry = runConfigurationEntry(TEST_NAME, true);
         final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
 
         when(runConfigurationManager.load(any())).thenReturn(configuration);
-
-        serverlessConfigurationManager.run(CONFIGURATION_ID, ANOTHER_TEST_NAME, null);
+        assertThrows(IllegalArgumentException.class,
+            () -> serverlessConfigurationManager.run(CONFIGURATION_ID, ANOTHER_TEST_NAME, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfInitializationTimeExceeded() {
         final RunConfigurationEntry entry = runConfigurationEntry(TEST_NAME, true);
         final RunConfiguration configuration = runConfiguration(TEST_NAME, entry);
@@ -195,8 +196,8 @@ public class ServerlessConfigurationManagerTest {
         when(runManager.loadPipelineRun(any(), eq(false))).thenReturn(pipelineRun);
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
         when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
-
-        serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest());
+        assertThrows(IllegalArgumentException.class,
+            () -> serverlessConfigurationManager.run(CONFIGURATION_ID, TEST_NAME, mockRequest()));
     }
 
     @Test

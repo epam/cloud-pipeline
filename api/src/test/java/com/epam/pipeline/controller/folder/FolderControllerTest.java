@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;

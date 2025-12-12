@@ -35,8 +35,8 @@ import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +88,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     @MockBean
     protected InstanceOfferManager instanceOfferManager;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         MockitoAnnotations.initMocks(this);
 
         final PipelineRun pipelineRun = createPipelineRun(RUN_ID, RUN_ID);

@@ -24,13 +24,16 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+//import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload2.core.FileUploadException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,13 +44,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Set;
 
 @Controller
-@Api(value = "Metadata")
+@Tag(name = "Metadata")
 public class MetadataController extends AbstractRestController {
 
     @Autowired
@@ -55,65 +56,50 @@ public class MetadataController extends AbstractRestController {
 
     @RequestMapping(value = "/metadata/updateKey", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Update metadata item key.",
-            notes = "Update metadata item key.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Update metadata item key.",
+            description = "Update metadata item key.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> updateMetadataItemKey(@RequestBody MetadataVO metadataVO) {
         return Result.success(metadataApiService.updateMetadataItemKey(metadataVO));
     }
 
     @RequestMapping(value = "/metadata/updateKeys", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Update metadata item keys.",
-            notes = "Update metadata item keys.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Update metadata item keys.",
+            description = "Update metadata item keys.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> updateMetadataItemKeys(@RequestBody MetadataVO metadataVO) {
         return Result.success(metadataApiService.updateMetadataItemKeys(metadataVO));
     }
 
     @RequestMapping(value = "/metadata/update", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Update metadata item.",
-            notes = "Update metadata item.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Update metadata item.",
+            description = "Update metadata item.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> updateMetadataItem(@RequestBody MetadataVO metadataVO) {
         return Result.success(metadataApiService.updateMetadataItem(metadataVO));
     }
 
     @RequestMapping(value = "/metadata/load", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a list of metadata, specified by id and class.",
-            notes = "Returns a list of metadata, specified by id and class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Returns a list of metadata, specified by id and class.",
+            description = "Returns a list of metadata, specified by id and class.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<MetadataEntry>> loadMetadataItems(@RequestBody List<EntityVO> entities) {
         return Result.success(metadataApiService.listMetadataItems(entities));
     }
 
     @RequestMapping(value = "/metadata/{key}/load", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a list of metadata with only specific key, for entities specified by id and class.",
-            notes = "Returns a list of metadata with only specific key, for entities  specified by id and class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Returns a list of metadata with only specific key, for entities specified by id and class.",
+            description = "Returns a list of metadata with only specific key, for entities  specified by id and class.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<MetadataEntry>> loadMetadataItems(@PathVariable(value = "key") final String key,
                                                          @RequestBody final List<EntityVO> entities) {
         return Result.success(metadataApiService.listMetadataItemsByKey(key, entities));
@@ -121,26 +107,20 @@ public class MetadataController extends AbstractRestController {
 
     @RequestMapping(value = "/metadata/keys", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Get list of metadata keys for a class.",
-            notes = "Get list of metadata keys for a class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Get list of metadata keys for a class.",
+            description = "Get list of metadata keys for a class.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Set<String>> getMetadataKeys(@RequestParam final AclClass entityClass) {
         return Result.success(metadataApiService.getMetadataKeys(entityClass));
     }
 
     @RequestMapping(value = "/metadata/find", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns an entity, specified by name.",
-            notes = "Returns an entity, specified by name.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Returns an entity, specified by name.",
+            description = "Returns an entity, specified by name.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> findMetadataEntityIdByName(@RequestParam(value = "entityName")
                                                                 final String entityName,
                                                             @RequestParam(value = "entityClass")
@@ -150,26 +130,20 @@ public class MetadataController extends AbstractRestController {
 
     @RequestMapping(value = "/metadata/delete", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a metadata, specified by id and class.",
-            notes = "Deletes a metadata, specified by id and class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Deletes a metadata, specified by id and class.",
+            description = "Deletes a metadata, specified by id and class.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> deleteMetadataItem(@RequestBody EntityVO entityVO) {
         return Result.success(metadataApiService.deleteMetadataItem(entityVO));
     }
 
     @RequestMapping(value = "/metadata/deleteKey", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a metadata key, specified by id and class.",
-            notes = "Deletes a metadata key, specified by id and class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Deletes a metadata key, specified by id and class.",
+            description = "Deletes a metadata key, specified by id and class.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> deleteMetadataItemKey(@RequestBody EntityVO entityVO,
                                                        @RequestParam(value = "key") final String key) {
         return Result.success(metadataApiService.deleteMetadataItemKey(entityVO, key));
@@ -177,46 +151,40 @@ public class MetadataController extends AbstractRestController {
 
     @RequestMapping(value = "/metadata/deleteKeys", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a metadata keys, specified by id and class.",
-            notes = "Deletes a metadata keys, specified by id and class.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Deletes a metadata keys, specified by id and class.",
+            description = "Deletes a metadata keys, specified by id and class.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> deleteMetadataItemKeys(@RequestBody MetadataVO metadataVO) {
         return Result.success(metadataApiService.deleteMetadataItemKeys(metadataVO));
     }
 
     @PostMapping(value = "/metadata/upload")
     @ResponseBody
-    @ApiOperation(
-            value = "Uploads metadata from tsv/tdf or csv.",
-            notes = "Uploads metadata from tsv/tdf or csv.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Uploads metadata from tsv/tdf or csv.",
+            description = "Uploads metadata from tsv/tdf or csv.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<MetadataEntry> uploadMetadataFromFile(
             @RequestParam(value = "id") final Long entityId,
             @RequestParam(value = "class") final AclClass entityClass,
             @RequestParam(value = "merge", defaultValue = "false") final boolean mergeWithExistingMetadata,
-            final HttpServletRequest request
+            /*final HttpServletRequest request,*/
+            @RequestParam(value = "file") final MultipartFile file
     ) throws FileUploadException {
-        final MultipartFile file = consumeMultipartFile(request);
+        if (file.isEmpty()) {
+            throw new FileUploadException("File is empty");
+        }
         return Result.success(metadataApiService.uploadMetadataFromFile(new EntityVO(entityId, entityClass),
                 file, mergeWithExistingMetadata));
     }
 
     @GetMapping(value = "/metadata/folder")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads metadata for all entities in folder.",
-            notes = "Loads metadata for all entities in folder.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Loads metadata for all entities in folder.",
+            description = "Loads metadata for all entities in folder.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<MetadataEntryWithIssuesCount>> loadEntitiesMetadataFromFolder(
             @RequestParam(required = false) final Long parentFolderId) {
         return Result.success(metadataApiService.loadEntitiesMetadataFromFolder(parentFolderId));
@@ -224,13 +192,10 @@ public class MetadataController extends AbstractRestController {
 
     @GetMapping(value = "/metadata/search")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads metadata by entity class and key-value pair. Value is not required.",
-            notes = "Loads metadata by entity class and key-value pair. Value is not required.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Loads metadata by entity class and key-value pair. Value is not required.",
+            description = "Loads metadata by entity class and key-value pair. Value is not required.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<EntityVO>> searchMetadataByClassAndKeyValue(@RequestParam final AclClass entityClass,
                                                                    @RequestParam final String key,
                                                                    @RequestParam(required = false) final String value) {
@@ -239,13 +204,10 @@ public class MetadataController extends AbstractRestController {
 
     @GetMapping(value = "/metadata/search/entry")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
-            notes = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Loads entity and its metadata by entity class and key-value pair. Value is not required.",
+            description = "Loads entity and its metadata by entity class and key-value pair. Value is not required.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<MetadataEntry>> searchMetadataEntriesByClassAndKeyValue(
             @RequestParam final AclClass entityClass, @RequestParam final String key,
             @RequestParam(required = false) final String value) {
@@ -253,13 +215,10 @@ public class MetadataController extends AbstractRestController {
     }
 
     @PostMapping("/metadata/sync/categoricalAttributes")
-    @ApiOperation(
-        value = "Fill in categorical attributes table based on a current metadata.",
-        notes = "Fill in categorical attributes table based on a current metadata.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
+    @Operation(
+        summary = "Fill in categorical attributes table based on a current metadata.",
+        description = "Fill in categorical attributes table based on a current metadata.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public void syncCategoricalAttributesWithMetadata() {
         metadataApiService.syncWithCategoricalAttributes();
     }

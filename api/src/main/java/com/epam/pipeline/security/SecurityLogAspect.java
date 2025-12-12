@@ -27,7 +27,7 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.saml.SAMLCredential;
+//import org.springframework.security.saml.SAMLCredential;
 import org.springframework.stereotype.Component;
 
 @Aspect
@@ -123,13 +123,13 @@ public class SecurityLogAspect {
         }
     }
 
-    @Before(value = "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..))" +
+    /*@Before(value = "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..))" +
             "&& args(credential,..)")
     public void addUserInfoFromSAML(final JoinPoint joinPoint, final SAMLCredential credential) {
         if (credential != null) {
             ThreadContext.put(KEY_USER, credential.getNameID().getValue().toUpperCase());
         }
-    }
+    }*/
 
     @Before(value = "execution(* com.epam.pipeline.security.jwt.JwtTokenVerifier.readClaims(..)) && args(token,..)")
     public void addUserInfoWhileAuthByJWT(final JoinPoint joinPoint, String token) {

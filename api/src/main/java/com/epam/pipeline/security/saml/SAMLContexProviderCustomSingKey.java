@@ -18,27 +18,27 @@ package com.epam.pipeline.security.saml;
 
 import javax.xml.namespace.QName;
 
-import org.opensaml.common.xml.SAMLConstants;
-import org.opensaml.saml2.metadata.EntityDescriptor;
-import org.opensaml.saml2.metadata.RoleDescriptor;
+import org.opensaml.common.binding.SAMLMessageContext;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
+/*
 import org.springframework.security.saml.context.SAMLContextProviderImpl;
 import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.metadata.ExtendedMetadata;
 import org.springframework.security.saml.storage.EmptyStorageFactory;
 import org.springframework.security.saml.storage.HttpSessionStorageFactory;
+*/
 
-public class SAMLContexProviderCustomSingKey extends SAMLContextProviderImpl {
+public class SAMLContexProviderCustomSingKey /*extends SAMLContextProviderImpl*/ {
 
     private String signingKey;
 
     public SAMLContexProviderCustomSingKey(final String signingKey,
                                            final boolean validateMessage) {
         this.signingKey = signingKey;
-        setStorageFactory(validateMessage ? new HttpSessionStorageFactory() : new EmptyStorageFactory());
+        //setStorageFactory(validateMessage ? new HttpSessionStorageFactory() : new EmptyStorageFactory());
     }
 
-    @Override
+    //@Override
     protected void populateLocalEntity(SAMLMessageContext samlContext)
             throws MetadataProviderException {
         String localEntityId = samlContext.getLocalEntityId();
@@ -48,7 +48,7 @@ public class SAMLContexProviderCustomSingKey extends SAMLContextProviderImpl {
             throw new MetadataProviderException("No hosted service provider is configured and no alias was selected");
         }
 
-        EntityDescriptor entityDescriptor = metadata.getEntityDescriptor(localEntityId);
+        /*EntityDescriptor entityDescriptor = metadata.getEntityDescriptor(localEntityId);
         RoleDescriptor
                 roleDescriptor = metadata.getRole(localEntityId, localEntityRole, SAMLConstants.SAML20P_NS);
         ExtendedMetadata extendedMetadata = metadata.getExtendedMetadata(localEntityId);
@@ -66,6 +66,6 @@ public class SAMLContexProviderCustomSingKey extends SAMLContextProviderImpl {
             samlContext.setLocalSigningCredential(keyManager.getCredential(extendedMetadata.getSigningKey()));
         } else {
             samlContext.setLocalSigningCredential(keyManager.getCredential(signingKey));
-        }
+        }*/
     }
 }

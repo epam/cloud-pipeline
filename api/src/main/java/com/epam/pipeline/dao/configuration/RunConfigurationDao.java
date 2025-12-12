@@ -31,7 +31,6 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -186,47 +185,38 @@ public class RunConfigurationDao extends NamedParameterJdbcDaoSupport {
 
     }
 
-    @Required
     public void setConfigSequence(String configSequence) {
         this.configSequence = configSequence;
     }
 
-    @Required
     public void setCreateConfigQuery(String createConfigQuery) {
         this.createConfigQuery = createConfigQuery;
     }
 
-    @Required
     public void setUpdateConfigQuery(String updateConfigQuery) {
         this.updateConfigQuery = updateConfigQuery;
     }
 
-    @Required
     public void setDeleteConfigQuery(String deleteConfigQuery) {
         this.deleteConfigQuery = deleteConfigQuery;
     }
 
-    @Required
     public void setLoadConfigQuery(String loadConfigQuery) {
         this.loadConfigQuery = loadConfigQuery;
     }
 
-    @Required
     public void setLoadAllConfigsQuery(String loadAllConfigsQuery) {
         this.loadAllConfigsQuery = loadAllConfigsQuery;
     }
 
-    @Required
     public void setLoadAllRootConfigsQuery(String loadAllRootConfigsQuery) {
         this.loadAllRootConfigsQuery = loadAllRootConfigsQuery;
     }
 
-    @Required
     public void setUpdateConfigLocksQuery(String updateConfigLocksQuery) {
         this.updateConfigLocksQuery = updateConfigLocksQuery;
     }
 
-    @Required
     public void setLoadConfigurationWithParentsQuery(String loadConfigurationWithParentsQuery) {
         this.loadConfigurationWithParentsQuery = loadConfigurationWithParentsQuery;
     }

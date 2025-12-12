@@ -20,12 +20,17 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
+//import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
+//import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
+//import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
+//import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
+//import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -64,14 +69,11 @@ public class TestApplicationWithAclSecurity {
     }
 
     @Bean
-    public EmbeddedServletContainerCustomizer containerCustomizer() {
-
-        return container -> {
-            if(container instanceof TomcatEmbeddedServletContainerFactory) {
-                TomcatEmbeddedServletContainerFactory containerFactory =
-                    (TomcatEmbeddedServletContainerFactory) container;
-                containerFactory.addConnectorCustomizers((connector -> connector.setSecure(false)));
-            }
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> webServerFactoryCustomizer() {
+        return (factory) -> {
+            factory.addConnectorCustomizers(connector -> {
+                connector.setSecure(false);
+            });
         };
     }
 

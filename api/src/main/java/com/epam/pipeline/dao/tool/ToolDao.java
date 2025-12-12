@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -362,92 +361,74 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         return tool;
     }
 
-    @Required
     public void setToolSequence(String toolSequence) {
         this.toolSequence = toolSequence;
     }
 
-    @Required
     public void setToolIconSequence(String toolIconSequence) {
         this.toolIconSequence = toolIconSequence;
     }
 
-    @Required
     public void setCreateToolQuery(String createToolQuery) {
         this.createToolQuery = createToolQuery;
     }
 
-    @Required
     public void setLoadAllToolsQuery(String loadAllToolsQuery) {
         this.loadAllToolsQuery = loadAllToolsQuery;
     }
 
-    @Required
     public void setDeleteToolQuery(String deleteToolQuery) {
         this.deleteToolQuery = deleteToolQuery;
     }
 
-    @Required
     public void setLoadToolByRegistryAndImageQuery(String loadToolByRegistryAndImageQuery) {
         this.loadToolByRegistryAndImageQuery = loadToolByRegistryAndImageQuery;
     }
 
-    @Required
     public void setUpdateToolQuery(String updateToolQuery) {
         this.updateToolQuery = updateToolQuery;
     }
 
-    @Required
     public void setUpdateOwnerQuery(String updateOwnerQuery) {
         this.updateOwnerQuery = updateOwnerQuery;
     }
 
-    @Required
     public void setLoadToolQuery(String loadToolQuery) {
         this.loadToolQuery = loadToolQuery;
     }
 
-    @Required
     public void setLoadToolsByGroupQuery(String loadToolsByGroupQuery) {
         this.loadToolsByGroupQuery = loadToolsByGroupQuery;
     }
 
-    @Required
     public void setLoadToolByGroupAndImageQuery(String loadToolByGroupAndImageQuery) {
         this.loadToolByGroupAndImageQuery = loadToolByGroupAndImageQuery;
     }
 
-    @Required
     public void setLoadToolsFromOtherRegistriesByImageQuery(String loadToolsFromOtherRegistriesByImageQuery) {
         this.loadToolsFromOtherRegistriesByImageQuery = loadToolsFromOtherRegistriesByImageQuery;
     }
 
-    @Required
     public void setLoadToolsWithIssueCountByGroupQuery(String loadToolsWithIssueCountByGroupQuery) {
         this.loadToolsWithIssueCountByGroupQuery = loadToolsWithIssueCountByGroupQuery;
     }
 
-    @Required
     public void setLoadAllByRegistryAndImageInQuery(final String loadAllByRegistryAndImageInQuery) {
         this.loadAllByRegistryAndImageInQuery = loadAllByRegistryAndImageInQuery;
     }
 
-    @Required
     public void setUpdateToolIconQuery(String updateToolIconQuery) {
         this.updateToolIconQuery = updateToolIconQuery;
     }
 
-    @Required
     public void setUpdateToolIconIdQuery(String updateToolIconIdQuery) {
         this.updateToolIconIdQuery = updateToolIconIdQuery;
     }
 
-    @Required
     public void setLoadToolIconQuery(String loadToolIconQuery) {
         this.loadToolIconQuery = loadToolIconQuery;
     }
 
-    @Required
     public void setDeleteToolIconQuery(String deleteToolIconQuery) {
         this.deleteToolIconQuery = deleteToolIconQuery;
     }

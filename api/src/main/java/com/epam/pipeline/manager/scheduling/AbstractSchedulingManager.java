@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.scheduling;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -57,15 +58,14 @@ public abstract class AbstractSchedulingManager {
     protected void scheduleFixedDelay(Runnable task, IntPreference delayPreference, String taskName) {
         Integer statusUpdateRate = preferenceManager.getPreference(delayPreference);
         log.info("Scheduled {} with a rate of {} ms", taskName, statusUpdateRate);
-
-        ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(task, statusUpdateRate);
+        ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(task, Duration.ofMillis(statusUpdateRate));
         scheduledFuture.set(future);
 
         preferenceManager.getObservablePreference(delayPreference)
             .subscribe(rate -> scheduledFuture.updateAndGet(f -> {
                 log.debug("Rescheduling {} with a new rate of {} ms", taskName, rate);
                 f.cancel(false);
-                return scheduler.scheduleWithFixedDelay(task, rate.longValue());
+                return scheduler.scheduleWithFixedDelay(task, Duration.ofMillis(rate.longValue()));
             }));
     }
 

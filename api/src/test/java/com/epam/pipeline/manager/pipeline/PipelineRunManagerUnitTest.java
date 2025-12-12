@@ -50,8 +50,8 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.google.common.collect.Maps;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -88,12 +88,12 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -166,8 +166,7 @@ public class PipelineRunManagerUnitTest {
     private final List<PipelineRunParameter> parameters = singletonList(
             new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
 
@@ -354,7 +353,7 @@ public class PipelineRunManagerUnitTest {
         doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
                 .loadEntitiesByIds(Collections.singleton(ID));
 
-        new JsonMapper().init();
+        new JsonMapper().afterPropertiesSet();
 
         pipelineRunManager.updatePipelineStatus(pipelineRun);
         final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
@@ -385,7 +384,7 @@ public class PipelineRunManagerUnitTest {
         doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
                 .loadEntitiesByIds(Collections.singleton(ID));
 
-        new JsonMapper().init();
+        new JsonMapper().afterPropertiesSet();
 
         pipelineRunManager.updatePipelineStatus(pipelineRun);
 

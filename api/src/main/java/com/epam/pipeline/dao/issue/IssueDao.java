@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.issue.IssueStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -104,47 +103,38 @@ public class IssueDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteIssuesForEntityQuery, entity.getEntityId(), entity.getEntityClass().name());
     }
 
-    @Required
     public void setIssueSequence(String issueSequence) {
         this.issueSequence = issueSequence;
     }
 
-    @Required
     public void setCreateIssueQuery(String createIssueQuery) {
         this.createIssueQuery = createIssueQuery;
     }
 
-    @Required
     public void setLoadIssueByIdQuery(String loadIssueByIdQuery) {
         this.loadIssueByIdQuery = loadIssueByIdQuery;
     }
 
-    @Required
     public void setLoadAllIssuesForEntityQuery(String loadAllIssuesForEntityQuery) {
         this.loadAllIssuesForEntityQuery = loadAllIssuesForEntityQuery;
     }
 
-    @Required
     public void setUpdateIssueQuery(String updateIssueQuery) {
         this.updateIssueQuery = updateIssueQuery;
     }
 
-    @Required
     public void setDeleteIssueQuery(String deleteIssueQuery) {
         this.deleteIssueQuery = deleteIssueQuery;
     }
 
-    @Required
     public void setDeleteIssuesForEntityQuery(String deleteIssuesForEntityQuery) {
         this.deleteIssuesForEntityQuery = deleteIssuesForEntityQuery;
     }
 
-    @Required
     public void setLoadIssuesByAuthorQuery(String loadIssuesByAuthorQuery) {
         this.loadIssuesByAuthorQuery = loadIssuesByAuthorQuery;
     }
 
-    @Required
     public void setCountIssuesByAuthorQuery(String countIssuesByAuthorQuery) {
         this.countIssuesByAuthorQuery = countIssuesByAuthorQuery;
     }

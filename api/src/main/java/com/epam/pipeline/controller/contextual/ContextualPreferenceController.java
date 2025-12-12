@@ -24,13 +24,18 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+
+
 import java.util.List;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,7 +46,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Api(value = "Contextual preference")
+@Tag(name = "Contextual preference")
 @RequestMapping(value = "/contextual/preference")
 @RequiredArgsConstructor
 public class ContextualPreferenceController extends AbstractRestController {
@@ -49,24 +54,22 @@ public class ContextualPreferenceController extends AbstractRestController {
     private final ContextualPreferenceApiService contextualPreferenceApiService;
 
     @GetMapping("/load/all")
-    @ApiOperation(
-            value = "Lists all contextual preferences.",
-            notes = "Lists all contextual preferences.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists all contextual preferences.",
+            description = "Lists all contextual preferences.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<ContextualPreference>> loadAll() {
         return Result.success(contextualPreferenceApiService.loadAll());
     }
 
     @GetMapping("/load")
-    @ApiOperation(
-            value = "Loads contextual preference by its name, level and resourceId.",
-            notes = "Loads contextual preference by its name, level and resourceId.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads contextual preference by its name, level and resourceId.",
+            description = "Loads contextual preference by its name, level and resourceId.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ContextualPreference> load(@RequestParam final String name,
                                              @RequestParam final ContextualPreferenceLevel level,
@@ -76,12 +79,11 @@ public class ContextualPreferenceController extends AbstractRestController {
     }
 
     @PostMapping
-    @ApiOperation(
-            value = "Searches for a contextual preference by the given search request.",
-            notes = "Searches for a contextual preference by the given search request.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Searches for a contextual preference by the given search request.",
+            description = "Searches for a contextual preference by the given search request.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ContextualPreference> search(@RequestBody final ContextualPreferenceSearchRequest searchRequest) {
         return Result.success(contextualPreferenceApiService.search(searchRequest.getPreferences(),
@@ -89,24 +91,22 @@ public class ContextualPreferenceController extends AbstractRestController {
     }
 
     @PutMapping
-    @ApiOperation(
-            value = "Updates or creates contextual preference",
-            notes = "Updates or creates contextual preference",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates or creates contextual preference",
+            description = "Updates or creates contextual preference")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ContextualPreference> update(@RequestBody final ContextualPreferenceVO preference) {
         return Result.success(contextualPreferenceApiService.upsert(preference));
     }
 
     @DeleteMapping
-    @ApiOperation(
-            value = "Deletes contextual preference",
-            notes = "Deletes contextual preference",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes contextual preference",
+            description = "Deletes contextual preference")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ContextualPreference> delete(@RequestParam final String name,
                                                @RequestParam final ContextualPreferenceLevel level,

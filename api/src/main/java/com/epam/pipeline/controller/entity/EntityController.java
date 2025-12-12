@@ -22,12 +22,14 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.acl.entity.EntityApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@Api(value = "Entities")
+@Tag(name = "Entities")
 public class EntityController extends AbstractRestController {
 
     @Autowired
@@ -47,12 +49,11 @@ public class EntityController extends AbstractRestController {
 
     @GetMapping(value = "entities")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads entity by identifier.",
-            notes = "Loads entity by identifier.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads entity by identifier.",
+            description = "Loads entity by identifier.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractSecuredEntity> loadEntity(@RequestParam String identifier, @RequestParam AclClass aclClass) {
         return Result.success(entityApiService.loadByNameOrId(aclClass, identifier));
@@ -60,12 +61,11 @@ public class EntityController extends AbstractRestController {
 
     @PostMapping(value = "entities")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all entities with their permissions.",
-            notes = "Loads all entities with their permissions.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all entities with their permissions.",
+            description = "Loads all entities with their permissions.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<AclClass, List<AbstractSecuredEntity>>> loadEntities(
             @RequestParam(required = false) final AclClass aclClass,

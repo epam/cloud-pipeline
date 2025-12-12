@@ -20,8 +20,7 @@ import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 public class NatGatewayDaoTest extends AbstractJdbcTest {
@@ -58,9 +58,9 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
         assertRequestEqualsRule(newRoutingRule, routingRuleCreated, NatRouteStatus.CREATION_SCHEDULED);
 
         final Optional<NatRoute> routingRuleFound = natGatewayDao.findRoute(newRoutingRule);
-        Assert.assertTrue(routingRuleFound.isPresent());
+        assertTrue(routingRuleFound.isPresent());
         assertRequestEqualsRule(newRoutingRule, routingRuleFound.get(), NatRouteStatus.CREATION_SCHEDULED);
-        Assert.assertEquals(routingRulesCreated, natGatewayDao.loadQueuedRouteUpdates());
+        assertEquals(routingRulesCreated, natGatewayDao.loadQueuedRouteUpdates());
 
         final NatRoute routeUpdate = routingRuleCreated.toBuilder()
             .status(NatRouteStatus.PORT_FORWARDING_CONFIGURED)
@@ -71,33 +71,33 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
         natGatewayDao.updateRoute(routeUpdate);
         assertRouteUpdateWithLoaded(routeUpdate, natGatewayDao.loadQueuedRouteUpdates());
 
-        Assert.assertTrue(natGatewayDao.deleteRouteById(routingRuleCreated.getRouteId()));
+        assertTrue(natGatewayDao.deleteRouteById(routingRuleCreated.getRouteId()));
 
         assertThat(natGatewayDao.loadQueuedRouteUpdates()).isEmpty();
-        Assert.assertFalse(natGatewayDao.findRoute(newRoutingRule).isPresent());
+        assertFalse(natGatewayDao.findRoute(newRoutingRule).isPresent());
     }
 
     private void assertRequestEqualsRule(final NatRoutingRuleDescription request,
                                          final NatRoute routingRuleCreated,
                                          final NatRouteStatus status) {
-        Assert.assertNotNull(routingRuleCreated);
-        Assert.assertNotNull(routingRuleCreated.getRouteId());
-        Assert.assertEquals(request.getExternalName(), routingRuleCreated.getExternalName());
-        Assert.assertEquals(request.getExternalIp(), routingRuleCreated.getExternalIp());
-        Assert.assertEquals(request.getPort(), routingRuleCreated.getExternalPort());
-        Assert.assertEquals(request.getDescription(), routingRuleCreated.getDescription());
-        Assert.assertEquals(request.getProtocol(), routingRuleCreated.getProtocol());
-        Assert.assertEquals(status, routingRuleCreated.getStatus());
+        assertNotNull(routingRuleCreated);
+        assertNotNull(routingRuleCreated.getRouteId());
+        assertEquals(request.getExternalName(), routingRuleCreated.getExternalName());
+        assertEquals(request.getExternalIp(), routingRuleCreated.getExternalIp());
+        assertEquals(request.getPort(), routingRuleCreated.getExternalPort());
+        assertEquals(request.getDescription(), routingRuleCreated.getDescription());
+        assertEquals(request.getProtocol(), routingRuleCreated.getProtocol());
+        assertEquals(status, routingRuleCreated.getStatus());
     }
 
     private void assertRouteUpdateWithLoaded(final NatRoute routeUpdate, final List<NatRoute> loadedRoutes) {
         assertThat(loadedRoutes).hasSize(1);
         final NatRoute loadedRouteAfterUpdate = loadedRoutes.get(0);
-        Assert.assertTrue(routeUpdate.getLastUpdateTime().isBefore(loadedRouteAfterUpdate.getLastUpdateTime()));
-        Assert.assertNotEquals(routeUpdate, loadedRouteAfterUpdate);
+        assertTrue(routeUpdate.getLastUpdateTime().isBefore(loadedRouteAfterUpdate.getLastUpdateTime()));
+        assertNotEquals(routeUpdate, loadedRouteAfterUpdate);
         final NatRoute routeUpdateWithCorrectUpdateTime = routeUpdate.toBuilder()
             .lastUpdateTime(loadedRouteAfterUpdate.getLastUpdateTime())
             .build();
-        Assert.assertEquals(routeUpdateWithCorrectUpdateTime, loadedRouteAfterUpdate);
+        assertEquals(routeUpdateWithCorrectUpdateTime, loadedRouteAfterUpdate);
     }
 }

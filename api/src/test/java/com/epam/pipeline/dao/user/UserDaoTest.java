@@ -26,7 +26,7 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,12 +40,17 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.ROLE_OWNER;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class UserDaoTest extends AbstractJdbcTest {
@@ -71,7 +76,7 @@ public class UserDaoTest extends AbstractJdbcTest {
     @Autowired
     private DataStorageDao dataStorageDao;
 
-    @Value("${flyway.placeholders.default.admin}")
+    @Value("${spring.flyway.placeholders.default.admin}")
     private String defaultAdmin;
 
     @Test
@@ -220,7 +225,7 @@ public class UserDaoTest extends AbstractJdbcTest {
         PipelineUser admin = userDao.loadUserByName(defaultAdmin);
         assertNotNull(admin);
         assertEquals(defaultAdmin, admin.getUserName());
-        assertTrue(admin.getId().equals(1L));
+        assertEquals(1L, admin.getId());
         assertEquals(1, admin.getRoles().size());
         assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), admin.getRoles()));
 

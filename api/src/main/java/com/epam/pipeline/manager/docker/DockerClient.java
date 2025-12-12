@@ -57,7 +57,6 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
-import javax.xml.ws.http.HTTPException;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -67,6 +66,7 @@ import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -75,6 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -127,7 +128,7 @@ public class DockerClient {
         String uri = String.format(HEALTH_ENTRY_POINT, hostName);
         try {
             getRestTemplate().exchange(uri, HttpMethod.GET, entity, String.class);
-        } catch (HTTPException | ResourceAccessException e) {
+        } catch (ResourceAccessException e) {
             if (e.getCause() instanceof SSLHandshakeException) {
                 throw new DockerCertificateException(hostName, e.getCause());
             } else {
@@ -152,7 +153,7 @@ public class DockerClient {
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody().getRepositories();
             } else {
-                throw new UnexpectedResponseStatusException(response.getStatusCode());
+                throw new UnexpectedResponseStatusException((HttpStatus) response.getStatusCode());
             }
         } catch (URISyntaxException | UnexpectedResponseStatusException e) {
             LOGGER.error(e.getMessage(), e);
@@ -171,7 +172,7 @@ public class DockerClient {
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody().getTags();
             } else {
-                throw new UnexpectedResponseStatusException(response.getStatusCode());
+                throw new UnexpectedResponseStatusException((HttpStatus) response.getStatusCode());
             }
         } catch (URISyntaxException | HttpClientErrorException | UnexpectedResponseStatusException e) {
             LOGGER.error(e.getMessage(), e);
@@ -249,7 +250,7 @@ public class DockerClient {
     private void executeDeletion(String url, String image) {
         try {
             URI uri = new URI(url);
-            HttpStatus status = getRestTemplate().execute(uri, HttpMethod.DELETE,
+            HttpStatus status = (HttpStatus) getRestTemplate().execute(uri, HttpMethod.DELETE,
                 request -> request.getHeaders().putAll(getAuthHeaders().getHeaders()),
                 ClientHttpResponse::getStatusCode);
 
@@ -305,7 +306,7 @@ public class DockerClient {
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody();
             } else {
-                throw new UnexpectedResponseStatusException(response.getStatusCode());
+                throw new UnexpectedResponseStatusException((HttpStatus) response.getStatusCode());
             }
         } catch (URISyntaxException | UnexpectedResponseStatusException e) {
             LOGGER.error(e.getMessage(), e);
@@ -333,7 +334,7 @@ public class DockerClient {
                 manifest.setDigest(digest.get(0));
                 return Optional.of(manifest);
             } else {
-                throw new UnexpectedResponseStatusException(response.getStatusCode());
+                throw new UnexpectedResponseStatusException((HttpStatus) response.getStatusCode());
             }
         } catch (URISyntaxException | UnexpectedResponseStatusException e) {
             LOGGER.error(e.getMessage(), e);
@@ -399,7 +400,7 @@ public class DockerClient {
                     .setSSLSocketFactory(csf)
                     .build();
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-            requestFactory.setHttpClient(httpClient);
+            //requestFactory.setHttpClient(httpClient);
             return requestFactory;
         } catch (GeneralSecurityException e) {
             throw new DockerCertificateException(hostName);
@@ -428,14 +429,15 @@ public class DockerClient {
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
         if (StringUtils.isNotBlank(caCert)) {
-            builder = builder.requestFactory(getHttpRequestFactory(caCert));
+            builder = builder.requestFactory((Supplier<ClientHttpRequestFactory>) getHttpRequestFactory(caCert));
         }
         if (mapper != null) {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));
         }
 
         this.restTemplate = builder
-                .setConnectTimeout(REQUEST_TIMEOUT)
+                //.connectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
+                .setConnectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .build();
     }
 

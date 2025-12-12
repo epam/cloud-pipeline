@@ -21,11 +21,10 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRulesRequest;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,12 +44,11 @@ public class NatGatewayController extends AbstractRestController {
 
     @PostMapping(value = "/resolve")
     @ResponseBody
-    @ApiOperation(
-        value = "Resolve IP for the given hostname.",
-        notes = "Resolve IP for the given hostname (custom DNS service IP could be specified).",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Resolve IP for the given hostname.",
+        description = "Resolve IP for the given hostname (custom DNS service IP could be specified).")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<Set<String>> resolveAddress(@RequestParam final String hostname,
                                               @RequestParam(required = false) final String dnsServer) {
@@ -59,12 +57,11 @@ public class NatGatewayController extends AbstractRestController {
 
     @PostMapping("/rules")
     @ResponseBody
-    @ApiOperation(
-        value = "Schedule new routing rules registration.",
-        notes = "Schedule new routing rules registration.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Schedule new routing rules registration.",
+        description = "Schedule new routing rules registration.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<List<NatRoute>> registerRoutingRulesCreation(@RequestBody final NatRoutingRulesRequest request) {
         return Result.success(natGatewayApiService.registerRoutingRulesCreation(request));
@@ -72,12 +69,11 @@ public class NatGatewayController extends AbstractRestController {
 
     @GetMapping("/rules")
     @ResponseBody
-    @ApiOperation(
-        value = "Loads all routing rules.",
-        notes = "Loads both queued and active routing rules.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Loads all routing rules.",
+        description = "Loads both queued and active routing rules.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<List<NatRoute>> loadAllRoutes() {
         return Result.success(natGatewayApiService.loadAllRoutes());
@@ -85,12 +81,11 @@ public class NatGatewayController extends AbstractRestController {
 
     @DeleteMapping("/rules")
     @ResponseBody
-    @ApiOperation(
-        value = "Mark a routing rule as the one to be removed.",
-        notes = "Mark a routing rule as the one to be removed.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Mark a routing rule as the one to be removed.",
+        description = "Mark a routing rule as the one to be removed.")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<List<NatRoute>> registerRoutingRulesRemoval(@RequestBody final NatRoutingRulesRequest request) {
         return Result.success(natGatewayApiService.registerRoutingRulesRemoval(request));

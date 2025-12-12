@@ -25,24 +25,26 @@ import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.plugin.UIPluginMapper;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.common.MessageConstants.ERROR_ENTITY_NOT_FOUND;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PluginServiceTest {
 
     private static final Long PLUGIN_ID = 1L;
@@ -70,7 +72,7 @@ public class PluginServiceTest {
     private UIPlugin dto;
     private UIPluginEntity entity;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         // Initialize test data
         dto = new UIPlugin();
@@ -84,12 +86,11 @@ public class PluginServiceTest {
         entity.setName(PLUGIN_NAME);
         entity.setType(PluginType.LaunchForm);
         entity.setPath(PLUGIN_PATH);
+    }
 
-        // Mock mapper behavior
-        when(uiPluginMapper.toDto(entity)).thenReturn(dto);
-        when(uiPluginMapper.toEntity(dto)).thenReturn(entity);
+    private void mockToDtoListMethod() {
         when(uiPluginMapper.toDtoList(anyList())).thenAnswer(invocation -> {
-            List<UIPluginEntity> entities = invocation.getArgumentAt(0, List.class);
+            List<UIPluginEntity> entities = invocation.getArgument(0, List.class);
             return entities.stream().map(e -> {
                 UIPlugin d = new UIPlugin();
                 d.setId(e.getId());
@@ -103,6 +104,7 @@ public class PluginServiceTest {
 
     @Test
     public void testGetPluginsByTypeSuccess() {
+        mockToDtoListMethod();
         List<UIPluginEntity> entities = Collections.singletonList(entity);
         when(pluginRepository.findByType(PluginType.LaunchForm)).thenReturn(entities);
 
@@ -117,6 +119,7 @@ public class PluginServiceTest {
 
     @Test
     public void testGetAllPluginsSuccess() {
+        mockToDtoListMethod();
         List<UIPluginEntity> entities = Arrays.asList(entity, new UIPluginEntity());
         when(pluginRepository.findAll()).thenReturn(entities);
 
@@ -131,31 +134,32 @@ public class PluginServiceTest {
 
     @Test
     public void testGetPluginSuccess() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(entity);
-        when(messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, PLUGIN_ID, UIPluginEntity.class.getSimpleName()))
-                .thenReturn(ERROR_MESSAGE);
+        when(uiPluginMapper.toDto(entity)).thenReturn(dto);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(entity));
 
         UIPlugin result = pluginService.getPlugin(PLUGIN_ID);
 
         // Assert
         assertEquals(dto, result);
-        verify(pluginRepository).findOne(PLUGIN_ID);
+        verify(pluginRepository).findById(PLUGIN_ID);
         verify(uiPluginMapper).toDto(entity);
     }
 
-    @Test(expected = ObjectNotFoundException.class)
+    @Test
     public void testGetPluginNotFound() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(null);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.empty());
         when(messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, PLUGIN_ID, UIPluginEntity.class.getSimpleName()))
                 .thenReturn(ERROR_MESSAGE);
 
-        pluginService.getPlugin(PLUGIN_ID);
+        assertThrows(ERROR_MESSAGE, ObjectNotFoundException.class, () -> pluginService.getPlugin(PLUGIN_ID));
     }
 
     @Test
     public void testSavePluginSuccess() {
         when(pluginRepository.save(entity)).thenReturn(entity);
         when(pluginRepository.findByPath(entity.getPath())).thenReturn(Collections.emptyList());
+        when(uiPluginMapper.toDto(entity)).thenReturn(dto);
+        when(uiPluginMapper.toEntity(dto)).thenReturn(entity);
 
         dto.setId(null);
         UIPlugin result = pluginService.savePlugin(dto);
@@ -168,7 +172,7 @@ public class PluginServiceTest {
         verify(pluginRepository).findByPath(entity.getPath());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSavePluginDuplicatePath() {
         UIPluginEntity newEntity = new UIPluginEntity();
         newEntity.setId(2L);
@@ -177,23 +181,25 @@ public class PluginServiceTest {
         when(pluginRepository.findByPath(PLUGIN_PATH)).thenReturn(Collections.singletonList(newEntity));
 
         dto.setId(null);
-        pluginService.savePlugin(dto);
+        assertThrows(IllegalArgumentException.class, () -> pluginService.savePlugin(dto));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSavePluginInvalidData() {
         UIPlugin invalidDto = new UIPlugin();
         invalidDto.setName("");
         invalidDto.setType(null);
         invalidDto.setPath("");
 
-        pluginService.savePlugin(invalidDto);
+        assertThrows(IllegalArgumentException.class, () -> pluginService.savePlugin(invalidDto));
     }
 
     @Test
     public void testUpdatePluginSuccess() {
-        when(pluginRepository.save(entity)).thenReturn(entity);
         when(pluginRepository.findByPath(entity.getPath())).thenReturn(Collections.singletonList(entity));
+        when(uiPluginMapper.toEntity(dto)).thenReturn(entity);
+        when(pluginRepository.save(entity)).thenReturn(entity);
+        when(uiPluginMapper.toDto(entity)).thenReturn(dto);
 
         UIPlugin result = pluginService.savePlugin(dto);
 
@@ -205,61 +211,64 @@ public class PluginServiceTest {
         verify(pluginRepository).findByPath(entity.getPath());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testUpdatePluginDuplicatePath() {
         UIPluginEntity newEntity = new UIPluginEntity();
         newEntity.setId(2L);
         newEntity.setPath(PLUGIN_PATH);
         when(pluginRepository.findByPath(entity.getPath())).thenReturn(Collections.singletonList(newEntity));
 
-        pluginService.savePlugin(dto);
+        assertThrows(IllegalArgumentException.class, () -> pluginService.savePlugin(dto));
     }
 
     @Test
     public void testDeletePluginSuccess() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(entity);
-        when(messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, PLUGIN_ID, UIPluginEntity.class.getSimpleName()))
-                .thenReturn(ERROR_MESSAGE);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(entity));
+        when(uiPluginMapper.toDto(entity)).thenReturn(dto);
 
         pluginService.deletePlugin(PLUGIN_ID);
 
         // Assert
-        verify(pluginRepository).findOne(PLUGIN_ID);
-        verify(pluginRepository).delete(PLUGIN_ID);
+        verify(pluginRepository).findById(PLUGIN_ID);
+        verify(pluginRepository).deleteById(PLUGIN_ID);
     }
 
-    @Test(expected = ObjectNotFoundException.class)
+    @Test
     public void testDeletePluginNotFound() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(null);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.empty());
         when(messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, PLUGIN_ID, UIPluginEntity.class.getSimpleName()))
                 .thenReturn(ERROR_MESSAGE);
 
-        pluginService.deletePlugin(PLUGIN_ID);
+        assertThrows("", ObjectNotFoundException.class,
+            () -> pluginService.deletePlugin(PLUGIN_ID));
     }
 
-    @Test(expected = ObjectNotFoundException.class)
+    @Test
     public void testGetPluginFileContentInvalidPluginId() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(null);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.empty());
 
-        pluginService.getPluginFileContent(PLUGIN_ID, FILE_PATH);
+        assertThrows("", ObjectNotFoundException.class,
+            () -> pluginService.getPluginFileContent(PLUGIN_ID, FILE_PATH));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetPluginFileContentPathTraversal() {
         String maliciousPath = "../../etc/passwd";
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(entity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(entity));
         when(preferenceManager.getPreference(SystemPreferences.UI_PLUGIN_ROOT_FOLDER_PATH)).thenReturn(PLUGINS_FOLDER);
 
-        pluginService.getPluginFileContent(PLUGIN_ID, maliciousPath);
+        assertThrows("", IllegalArgumentException.class,
+            () -> pluginService.getPluginFileContent(PLUGIN_ID, maliciousPath));
     }
 
-    @Test(expected = ObjectNotFoundException.class)
+    @Test
     public void testGetPluginFileContentNotFound() {
         String filePath = "/not/existent/path/main.js";
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(entity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(entity));
         when(preferenceManager.getPreference(SystemPreferences.UI_PLUGIN_ROOT_FOLDER_PATH)).thenReturn(PLUGINS_FOLDER);
 
-        pluginService.getPluginFileContent(PLUGIN_ID, filePath);
+        assertThrows("", ObjectNotFoundException.class,
+            () -> pluginService.getPluginFileContent(PLUGIN_ID, filePath));
     }
 
 }

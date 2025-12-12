@@ -31,8 +31,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 import java.util.Arrays;
@@ -69,8 +69,7 @@ public class RunRegionShiftHandlerTest {
     private static final Long PARENT_AVAILABLE_REGION_ID = 6L;
     private static final Long NOT_AVAILABLE_REGION_ID = 5L;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         doReturn(true).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
     }
 

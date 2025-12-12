@@ -33,7 +33,7 @@ import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -68,7 +68,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private static final String AND = " AND ";
     private static final String OR = " OR ";
     private static final int BATCH_SIZE = 1000;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     @Autowired
     private DaoHelper daoHelper;
@@ -573,137 +573,110 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setMetadataEntitySequence(String metadataEntitySequence) {
         this.metadataEntitySequence = metadataEntitySequence;
     }
 
-    @Required
     public void setCreateMetadataEntityQuery(String createMetadataEntityQuery) {
         this.createMetadataEntityQuery = createMetadataEntityQuery;
     }
 
-    @Required
     public void setUpdateMetadataEntityQuery(String updateMetadataEntityQuery) {
         this.updateMetadataEntityQuery = updateMetadataEntityQuery;
     }
 
-    @Required
     public void setUpdateMetadataEntityDataKeyQuery(String updateMetadataEntityDataKeyQuery) {
         this.updateMetadataEntityDataKeyQuery = updateMetadataEntityDataKeyQuery;
     }
 
-    @Required
     public void setLoadAllMetadataEntitiesQuery(String loadAllMetadataEntitiesQuery) {
         this.loadAllMetadataEntitiesQuery = loadAllMetadataEntitiesQuery;
     }
 
-    @Required
     public void setLoadMetadataEntityByIdQuery(String loadMetadataEntityByIdQuery) {
         this.loadMetadataEntityByIdQuery = loadMetadataEntityByIdQuery;
     }
 
-    @Required
     public void setLoadRootMetadataEntityQuery(String loadRootMetadataEntityQuery) {
         this.loadRootMetadataEntityQuery = loadRootMetadataEntityQuery;
     }
 
-    @Required
     public void setLoadMetadataEntityByClassNameAndFolderIdQuery(String loadMetadataEntityByClassNameAndFolderIdQuery) {
         this.loadMetadataEntityByClassNameAndFolderIdQuery = loadMetadataEntityByClassNameAndFolderIdQuery;
     }
 
-    @Required
     public void setDeleteMetadataEntityDataKeyQuery(String deleteMetadataEntityDataKeyQuery) {
         this.deleteMetadataEntityDataKeyQuery = deleteMetadataEntityDataKeyQuery;
     }
 
-    @Required
     public void setDeleteMetadataEntityItemQuery(String deleteMetadataEntityItemQuery) {
         this.deleteMetadataEntityItemQuery = deleteMetadataEntityItemQuery;
     }
 
-    @Required
     public void setRecursiveFilterQuery(String recursiveFilterQuery) {
         this.recursiveFilterQuery = recursiveFilterQuery;
     }
 
-    @Required
     public void setBaseFilterQuery(String baseFilterQuery) {
         this.baseFilterQuery = baseFilterQuery;
     }
 
-    @Required
     public void setSearchClauseQuery(String searchClauseQuery) {
         this.searchClauseQuery = searchClauseQuery;
     }
 
-    @Required
     public void setRecursiveFilterCountQuery(String recursiveFilterCountQuery) {
         this.recursiveFilterCountQuery = recursiveFilterCountQuery;
     }
 
-    @Required
     public void setBaseFilterCountQuery(String baseFilterCountQuery) {
         this.baseFilterCountQuery = baseFilterCountQuery;
     }
 
-    @Required
     public void setLoadMetadataKeysQuery(String loadMetadataKeysQuery) {
         this.loadMetadataKeysQuery = loadMetadataKeysQuery;
     }
 
-    @Required
     public void setLoadByExternalIdsQuery(String loadByExternalIdsQuery) {
         this.loadByExternalIdsQuery = loadByExternalIdsQuery;
     }
 
-    @Required
     public void setLoadBylIdsQuery(String loadBylIdsQuery) {
         this.loadBylIdsQuery = loadBylIdsQuery;
     }
 
-    @Required
     public void setLoadAllReferencesQuery(String loadAllReferencesQuery) {
         this.loadAllReferencesQuery = loadAllReferencesQuery;
     }
 
-    @Required
     public void setLoadMetadataKeysRecursiveQuery(String loadMetadataKeysRecursiveQuery) {
         this.loadMetadataKeysRecursiveQuery = loadMetadataKeysRecursiveQuery;
     }
 
-    @Required
     public void setLoadEntitiesInProjectQuery(String loadEntitiesInProjectQuery) {
         this.loadEntitiesInProjectQuery = loadEntitiesInProjectQuery;
     }
 
-    @Required
     public void setDeleteMetadataInFolderQuery(String deleteMetadataInFolderQuery) {
         this.deleteMetadataInFolderQuery = deleteMetadataInFolderQuery;
     }
 
-    @Required
     public void setExternalIdClauseQuery(String externalIdClauseQuery) {
         this.externalIdClauseQuery = externalIdClauseQuery;
     }
 
-    @Required
     public void setInsertCopiesOfExistentMetadataEntitiesQuery(String insertCopiesOfExistentMetadataEntitiesQuery) {
         this.insertCopiesOfExistentMetadataEntitiesQuery = insertCopiesOfExistentMetadataEntitiesQuery;
     }
 
-    @Required
     public void setDeleteMetadataEntitiesQuery(String deleteMetadataEntitiesQuery) {
         this.deleteMetadataEntitiesQuery = deleteMetadataEntitiesQuery;
     }
 
-    @Required
     public void setDeleteMetadataClassInProjectQuery(String deleteMetadataClassInProjectQuery) {
         this.deleteMetadataClassInProjectQuery = deleteMetadataClassInProjectQuery;
     }
 
-    @Required
     public void setLoadMetadataEntityWithParentsQuery(String loadMetadataEntityWithParentsQuery) {
         this.loadMetadataEntityWithParentsQuery = loadMetadataEntityWithParentsQuery;
     }

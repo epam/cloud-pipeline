@@ -24,40 +24,37 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @WebTestConfiguration
 public abstract class AbstractControllerTest {
 
     protected static final String SERVLET_PATH = "/restapi";
     protected static final String CERTIFICATE_NAME = "ca.crt";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
-    protected static final String EXPECTED_CONTENT_TYPE = "application/json;charset=UTF-8";
+    protected static final String EXPECTED_CONTENT_TYPE = "application/json";
     protected static final String MULTIPART_CONTENT_FILE_NAME = "file.txt";
     protected static final String MULTIPART_CONTENT_FILE_CONTENT = "content of file.txt";
     protected static final String MULTIPART_CONTENT_TYPE =
@@ -71,23 +68,21 @@ public abstract class AbstractControllerTest {
             "\r\n" +
             "----------------------------boundary";
 
+    @Autowired
     private MockMvc mockMvc;
     private ObjectMapper deserializationMapper;
 
     @Autowired
     private JsonMapper objectMapper;
 
-    @Autowired
-    protected WebApplicationContext wac;
+    /*@Autowired
+    protected WebApplicationContext wac;*/
 
-    @Before
+    @BeforeEach
     public void setup() {
         // checks that all required dependencies are provided.
-        assertNotNull("WebApplicationContext isn't provided.", wac);
-        assertNotNull("ObjectMapper isn't provided.", objectMapper);
-
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac)
-                .apply(springSecurity()).build();
+        //Assertions.assertNotNull(wac, "WebApplicationContext isn't provided.");
+        Assertions.assertNotNull(objectMapper, "ObjectMapper isn't provided.");
         deserializationMapper = JsonMapper.newInstance().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
@@ -117,7 +112,7 @@ public abstract class AbstractControllerTest {
         assertThat(actual).isEqualToIgnoringWhitespace(objectMapper.writeValueAsString(expectedResult));
 
         final Result<T> actualResult = JsonMapper.parseData(actual, typeReference, deserializationMapper);
-        assertNotNull(actualResult);
+        Assertions.assertNotNull(actualResult);
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 

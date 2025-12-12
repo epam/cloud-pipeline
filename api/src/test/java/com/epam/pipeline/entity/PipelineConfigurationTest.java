@@ -22,12 +22,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.epam.pipeline.config.JsonMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PipelineConfigurationTest {
 
@@ -67,7 +69,7 @@ public class PipelineConfigurationTest {
 
     private JsonMapper mapper = new JsonMapper();
 
-    @Before
+    @BeforeEach
     public void setup() {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, true)

@@ -19,18 +19,19 @@ package com.epam.pipeline.manager.user;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 
 @Service
 @RequiredArgsConstructor
-public class InactiveUsersMonitoringService extends AbstractSchedulingManager {
+public class InactiveUsersMonitoringService extends AbstractSchedulingManager implements InitializingBean {
 
     private final InactiveUsersMonitoringServiceCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_INACTIVE_USER_MONITOR_DELAY,
                 "InactiveUsersMonitor");
     }

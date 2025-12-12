@@ -20,15 +20,15 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.acl.configuration.ServerlessConfigurationApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -87,6 +87,6 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
         Mockito.verify(mockServerlessConfigurationApiService, Mockito.times(4))
                 .run(eq(ID), eq(TEST_CONFIG), Mockito.any());
         final String actualResult = mvcResult.getResponse().getContentAsString();
-        Assert.assertEquals(expectedResult, actualResult);
+        assertEquals(expectedResult, actualResult);
     }
 }

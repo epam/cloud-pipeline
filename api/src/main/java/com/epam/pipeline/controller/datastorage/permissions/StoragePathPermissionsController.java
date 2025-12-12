@@ -24,12 +24,14 @@ import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissionsVO;
 import com.epam.pipeline.dto.datastorage.permissions.StoragePathPermissions;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.user.SidImpl;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Api(value = "Data storage paths permissions management methods")
+@Tag(name = "Data storage paths permissions management methods")
 @RequiredArgsConstructor
 public class StoragePathPermissionsController extends AbstractRestController {
 
@@ -54,12 +56,11 @@ public class StoragePathPermissionsController extends AbstractRestController {
 
     @PostMapping(URL)
     @ResponseBody
-    @ApiOperation(
-            value = "Rewrites all storage path permissions for storage and user/group.",
-            notes = "Rewrites all storage path permissions for storage and user/group.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Rewrites all storage path permissions for storage and user/group.",
+            description = "Rewrites all storage path permissions for storage and user/group.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result updatePathPermissions(
             @PathVariable(value = ID) final Long id,
@@ -71,12 +72,11 @@ public class StoragePathPermissionsController extends AbstractRestController {
 
     @GetMapping(URL)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads storage path permissions for specified storage and current user.",
-            notes = "Loads storage path permissions for specified storage and current user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads storage path permissions for specified storage and current user.",
+            description = "Loads storage path permissions for specified storage and current user.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<StoragePathPermissions>> loadStoragePathPermissions(@PathVariable(value = ID) final Long id) {
         return Result.success(storagePathPermissionsApiService.loadStoragePathPermissions(id));
@@ -84,13 +84,12 @@ public class StoragePathPermissionsController extends AbstractRestController {
 
     @DeleteMapping(URL)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes storage path permissions for specified storage for specified users and groups.",
-            notes = "Deletes storage path permissions for specified storage for specified users and groups. " +
-                    "If no users/groups provided all storage path permissions for specified storage will be deleted.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes storage path permissions for specified storage for specified users and groups.",
+            description = "Deletes storage path permissions for specified storage for specified users and groups. " +
+                    "If no users/groups provided all storage path permissions for specified storage will be deleted.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result deleteStoragePathPermissions(@PathVariable(value = ID) final Long id,
                                                @RequestBody final List<SidImpl> sids) {
@@ -100,12 +99,11 @@ public class StoragePathPermissionsController extends AbstractRestController {
 
     @GetMapping(URL + "/sids")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads users and groups that have storage path permissions for specified storage.",
-            notes = "Loads users and groups that have storage path permissions for specified storage.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads users and groups that have storage path permissions for specified storage.",
+            description = "Loads users and groups that have storage path permissions for specified storage.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<PermissionVO>> loadStoragePathPermissionsSids(
             @PathVariable(value = ID) final Long id,
@@ -116,12 +114,11 @@ public class StoragePathPermissionsController extends AbstractRestController {
 
     @PutMapping(URL)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates storage path permissions for specified storage objects.",
-            notes = "Updates storage path permissions for specified storage objects.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates storage path permissions for specified storage objects.",
+            description = "Updates storage path permissions for specified storage objects.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result updateStoragePathPermissionsForItems(
             @PathVariable(value = ID) final Long id, @RequestBody final List<StoragePathPermissionsVO> permissions) {

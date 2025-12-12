@@ -24,8 +24,8 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,8 +65,7 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
     @Autowired
     private StoragePathPermissionsDao storagePathPermissionsDao;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         final AwsRegion awsRegion = RegionCreatorUtils.getDefaultAwsRegion();
         cloudRegionDao.create(awsRegion);
 

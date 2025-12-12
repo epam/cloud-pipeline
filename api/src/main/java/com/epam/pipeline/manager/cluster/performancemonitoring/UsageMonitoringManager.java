@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramB
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;

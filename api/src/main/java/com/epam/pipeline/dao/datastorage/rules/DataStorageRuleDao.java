@@ -21,7 +21,6 @@ import java.util.List;
 
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import org.apache.commons.lang.BooleanUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -106,32 +105,26 @@ public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreateDataStorageRuleQuery(String createDataStorageRuleQuery) {
         this.createDataStorageRuleQuery = createDataStorageRuleQuery;
     }
 
-    @Required
     public void setDeleteDataStorageRuleQuery(String deleteDataStorageRuleQuery) {
         this.deleteDataStorageRuleQuery = deleteDataStorageRuleQuery;
     }
 
-    @Required
     public void setLoadAllDataStorageRulesQuery(String loadAllDataStorageRulesQuery) {
         this.loadAllDataStorageRulesQuery = loadAllDataStorageRulesQuery;
     }
 
-    @Required
     public void setLoadDataStorageRulesForPipelineQuery(String loadDataStorageRuleQuery) {
         this.loadDataStorageRulesForPipelineQuery = loadDataStorageRuleQuery;
     }
 
-    @Required
     public void setLoadDataStorageRuleQuery(String loadDataStorageRuleQuery) {
         this.loadDataStorageRuleQuery = loadDataStorageRuleQuery;
     }
 
-    @Required
     public void setDeleteRulesByPipelineQuery(String deleteRulesByPipelineQuery) {
         this.deleteRulesByPipelineQuery = deleteRulesByPipelineQuery;
     }

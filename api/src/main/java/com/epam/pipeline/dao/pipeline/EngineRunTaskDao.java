@@ -27,7 +27,7 @@ import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
@@ -229,27 +229,22 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setUpsertEngineRunTaskQuery(final String upsertEngineRunTaskQuery) {
         this.upsertEngineRunTaskQuery = upsertEngineRunTaskQuery;
     }
 
-    @Required
     public void setDeleteEngineRunTaskByRunIdsQuery(final String deleteEngineRunTaskByRunIdsQuery) {
         this.deleteEngineRunTaskByRunIdsQuery = deleteEngineRunTaskByRunIdsQuery;
     }
 
-    @Required
     public void setLoadEngineRunTasksStatsByRunIdAndTypeQuery(final String loadEngineRunTasksStatsByRunIdAndTypeQuery) {
         this.loadEngineRunTasksStatsByRunIdAndTypeQuery = loadEngineRunTasksStatsByRunIdAndTypeQuery;
     }
 
-    @Required
     public void setFindEngineRunTaskByRunIdAndTypeQuery(final String findEngineRunTaskByRunIdAndTypeQuery) {
         this.findEngineRunTaskByRunIdAndTypeQuery = findEngineRunTaskByRunIdAndTypeQuery;
     }
 
-    @Required
     public void setCountEngineRunTaskByRunIdAndTypeQuery(final String countEngineRunTaskByRunIdAndTypeQuery) {
         this.countEngineRunTaskByRunIdAndTypeQuery = countEngineRunTaskByRunIdAndTypeQuery;
     }

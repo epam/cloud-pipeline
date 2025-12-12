@@ -22,7 +22,6 @@ import com.epam.pipeline.manager.filter.FilterExpression;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.manager.filter.converters.DateConverter;
 import org.apache.commons.collections4.map.HashedMap;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 
@@ -82,12 +81,10 @@ public class FilterDao extends NamedParameterJdbcDaoSupport {
         return getNamedParameterJdbcTemplate().queryForObject(query, params, Integer.class);
     }
 
-    @Required
     public void setFilterPipelineRunsBaseQuery(String filterPipelineRunsBaseQuery) {
         this.filterPipelineRunsBaseQuery = filterPipelineRunsBaseQuery;
     }
 
-    @Required
     public void setCountFilteredPipelineRunsBaseQuery(String countFilteredPipelineRunsBaseQuery) {
         this.countFilteredPipelineRunsBaseQuery = countFilteredPipelineRunsBaseQuery;
     }

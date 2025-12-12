@@ -22,12 +22,12 @@ import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.acl.dts.DtsOperationsApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Api(value = "Listing Data Transfer Service items management")
+@Tag(name = "Listing Data Transfer Service items management")
 @RequestMapping(value = "/dts")
 @RequiredArgsConstructor
 public class DtsOperationsController extends AbstractRestController {
@@ -43,12 +43,11 @@ public class DtsOperationsController extends AbstractRestController {
     private final DtsOperationsApiService dtsOperationsApiService;
 
     @GetMapping(value = "/list/{dtsId}")
-    @ApiOperation(
-            value = "Returns storage content specified by path and DTS registry ID.",
-            notes = "Returns storage content specified by path and DTS registry ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns storage content specified by path and DTS registry ID.",
+            description = "Returns storage content specified by path and DTS registry ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DtsDataStorageListing> list(@PathVariable Long dtsId,
                                               @RequestParam String path,
@@ -59,12 +58,11 @@ public class DtsOperationsController extends AbstractRestController {
 
 
     @GetMapping(value = "/{dtsId}/submission")
-    @ApiOperation(
-            value = "Returns DTS submission by run id and DTS registry ID.",
-            notes = "Returns DTS submission by run id and DTS registry ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns DTS submission by run id and DTS registry ID.",
+            description = "Returns DTS submission by run id and DTS registry ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DtsSubmission> findSubmission(@PathVariable Long dtsId,
                                                 @RequestParam Long runId) {
@@ -72,12 +70,11 @@ public class DtsOperationsController extends AbstractRestController {
     }
 
     @GetMapping(value = "/{dtsId}/cluster")
-    @ApiOperation(
-            value = "Returns DTS cluster configuration.",
-            notes = "Returns DTS cluster configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns DTS cluster configuration.",
+            description = "Returns DTS cluster configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DtsClusterConfiguration> getClusterConfiguration(@PathVariable Long dtsId) {
         return Result.success(dtsOperationsApiService.getClusterConfiguration(dtsId));

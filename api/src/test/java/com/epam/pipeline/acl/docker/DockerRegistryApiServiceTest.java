@@ -29,8 +29,8 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -309,7 +309,7 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     @WithMockUser(username = SIMPLE_USER)
     public void shouldGetCertificateContentWhenPermissionIsGranted() {
         doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getCertificateContent(ID);
@@ -320,7 +320,7 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    @Ignore
+    @Disabled
     public void shouldDenyGetCertificateContentWhenPermissionIsNotGranted() {
         initAclEntity(dockerRegistry);
 

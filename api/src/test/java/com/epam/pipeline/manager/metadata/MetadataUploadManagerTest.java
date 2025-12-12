@@ -16,8 +16,9 @@
 
 package com.epam.pipeline.manager.metadata;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -35,7 +36,7 @@ import com.epam.pipeline.manager.metadata.parser.*;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.mock.web.MockMultipartFile;
@@ -165,7 +166,7 @@ public class MetadataUploadManagerTest extends AbstractSpringTest {
         }
     }
 
-    @Test(expected = MetadataReadingException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void uploadingMetadataWithWrongFieldTypeThrowsException() throws IOException {
         Folder folder = prepareRequiredEntities();
@@ -173,7 +174,14 @@ public class MetadataUploadManagerTest extends AbstractSpringTest {
         uploadMetadata(folder, Arrays.asList(HEADER1, LINE1));
         uploadMetadata(folder, Arrays.asList(HEADER2, LINE2));
         String headerWithWrongFieldType = "Sample:ID${d}SampleName${d}participant${d}fast_dir:Path\n";
-        uploadMetadata(folder, Arrays.asList(headerWithWrongFieldType, LINE3));
+        assertThrows(MetadataReadingException.class,
+            () -> {
+                try {
+                    uploadMetadata(folder, Arrays.asList(headerWithWrongFieldType, LINE3));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     private Folder prepareRequiredEntities() {

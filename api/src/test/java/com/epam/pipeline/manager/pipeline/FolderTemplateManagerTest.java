@@ -32,7 +32,7 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.PrincipalSid;
 
@@ -46,10 +46,10 @@ import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVOFrom;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionVO;
 import static com.epam.pipeline.util.CustomMatchers.matches;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 public class FolderTemplateManagerTest extends AbstractAclTest {
     private static final String DATA_KEY_1 = "tag";

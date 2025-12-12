@@ -21,8 +21,8 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -33,9 +33,9 @@ import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
@@ -52,15 +52,20 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
 
     @Autowired
     private ContextualPreferenceDao contextualPreferenceDao;
+    private boolean skipTearDown = false;
 
-    @After
+    @AfterEach
     public void tearDown() {
-        contextualPreferenceDao.loadAll().forEach(pref ->
-                contextualPreferenceDao.delete(pref.getName(), pref.getResource()));
+        if (!skipTearDown) {
+            contextualPreferenceDao.loadAll().forEach(pref ->
+                    contextualPreferenceDao.delete(pref.getName(), pref.getResource()));
+        }
+        skipTearDown = false;
     }
 
     @Test
     public void upsertShouldFailIfPreferenceHasEmptyFields() {
+        skipTearDown = true;
         assertThrows(() -> {
             final ContextualPreference preferenceWithoutName = new ContextualPreference(null, VALUE,
                     new ContextualPreferenceExternalResource(LEVEL, RESOURCE_ID));

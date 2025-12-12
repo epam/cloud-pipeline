@@ -30,10 +30,15 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.security.acls.domain.AclImpl;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -104,14 +109,39 @@ public class CacheConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisCacheManager redisCacheManagerPref(final RedisTemplate<String, Preference> templatePreference) {
-        return new RedisCacheManager(templatePreference, Collections.singleton(PREFERENCE_CACHE));
+    public RedisCacheManager redisCacheManagerPref(final RedisConnectionFactory connectionFactory) {
+        //TODO this code could be not working properly, updated it for compilation purpose
+        RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration
+            .defaultCacheConfig()
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                    new GenericJackson2JsonRedisSerializer()));
+
+        RedisCacheWriter cacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory);
+
+        return RedisCacheManager.builder(cacheWriter)
+                .cacheDefaults(cacheConfiguration)
+                .initialCacheNames(Collections.singleton(PREFERENCE_CACHE))
+                .build();
+        //return new RedisCacheManager(templatePreference, Collections.singleton(PREFERENCE_CACHE));
     }
 
     @Bean
     @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
-    public RedisCacheManager redisCacheManagerAcl(final RedisTemplate<Object, AclImpl> templateACl) {
-        return new RedisCacheManager(templateACl, Collections.singleton(ACL_CACHE));
+    public RedisCacheManager redisCacheManagerAcl(final RedisConnectionFactory connectionFactory) {
+        //TODO this code could be not working properly, updated it for compilation purpose
+        RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration
+            .defaultCacheConfig()
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                    new GenericJackson2JsonRedisSerializer())); // or new Jackson2JsonRedisSerializer(Preference.class)
+
+        RedisCacheWriter cacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory);
+
+        return RedisCacheManager.builder(cacheWriter)
+                .cacheDefaults(cacheConfiguration)
+                .initialCacheNames(Collections.singleton(ACL_CACHE))
+                .build();
     }
 
     @Bean("redisConnectionFactory")

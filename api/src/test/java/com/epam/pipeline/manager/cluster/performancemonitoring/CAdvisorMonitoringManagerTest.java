@@ -23,27 +23,26 @@ import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.fabric8.kubernetes.api.model.NodeAddress;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
@@ -79,10 +78,12 @@ public class CAdvisorMonitoringManagerTest {
     @Mock
     private KubernetesManager kubernetesManager;
 
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+    @RegisterExtension
+    static WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
 
-    @Before
+    @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         JsonMapper objectMapper = new JsonMapper();
@@ -131,11 +132,11 @@ public class CAdvisorMonitoringManagerTest {
     private void configureMocksForGetStatsForNodeWithIp() {
         NodeInstance nodeWithIP = getNodeInstance(INTERNALIP_ADDRESS, INTERNALIP_TYPE, NODE_WITH_INTERNALIP_ADRESS);
         when(nodesManager.getNode(NODE_WITH_INTERNALIP_ADRESS)).thenReturn(nodeWithIP);
-        when(messageHelper.getMessage(anyString(), anyObject())).thenReturn(TEST_MESSAGE);
+        when(messageHelper.getMessage(anyString(), anyList())).thenReturn(TEST_MESSAGE);
 
-        Whitebox.setInternalState(cAdvisorMonitoringManager, "cAdvisorPort", (wireMockRule.port()));
+        ReflectionTestUtils.setField(cAdvisorMonitoringManager, "cAdvisorPort", (wireMock.getPort()));
 
-        stubFor(get("/api/v1.3/containers/").willReturn(aResponse().withBodyFile("cadvisor.json")
+        wireMock.stubFor(get("/api/v1.3/containers/").willReturn(aResponse().withBodyFile("cadvisor.json")
                 .withStatus(OK_STATUS)));
     }
 

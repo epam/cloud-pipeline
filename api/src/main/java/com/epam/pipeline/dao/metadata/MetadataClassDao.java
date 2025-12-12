@@ -20,7 +20,7 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -107,37 +107,30 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setLoadMetadataClassQuery(String loadMetadataClassQuery) {
         this.loadMetadataClassQuery = loadMetadataClassQuery;
     }
 
-    @Required
     public void setMetadataClassSequence(String metadataClassSequence) {
         this.metadataClassSequence = metadataClassSequence;
     }
 
-    @Required
     public void setCreateMetadataClassQuery(String createMetadataClassQuery) {
         this.createMetadataClassQuery = createMetadataClassQuery;
     }
 
-    @Required
     public void setUpdateMetadataClassExternalNameQuery(String updateMetadataClassExternalNameQuery) {
         this.updateMetadataClassExternalNameQuery = updateMetadataClassExternalNameQuery;
     }
 
-    @Required
     public void setLoadAllMetadataClassesQuery(String loadAllMetadataClassesQuery) {
         this.loadAllMetadataClassesQuery = loadAllMetadataClassesQuery;
     }
 
-    @Required
     public void setDeleteMetadataClassQuery(String deleteMetadataClassQuery) {
         this.deleteMetadataClassQuery = deleteMetadataClassQuery;
     }
 
-    @Required
     public void setLoadMetadataClassByNameQuery(String loadMetadataClassByNameQuery) {
         this.loadMetadataClassByNameQuery = loadMetadataClassByNameQuery;
     }

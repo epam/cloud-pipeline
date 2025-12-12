@@ -40,6 +40,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -48,11 +49,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
+
 
 @Service
 @Slf4j
-public class RunLogManager {
+public class RunLogManager implements InitializingBean {
 
     @Autowired
     private RunLogDao runLogDao;
@@ -80,8 +81,8 @@ public class RunLogManager {
     @Value("${runs.console.log.task:Console}")
     private String consoleLogTask;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         self = applicationContext.getBean(RunLogManager.class);
     }
 

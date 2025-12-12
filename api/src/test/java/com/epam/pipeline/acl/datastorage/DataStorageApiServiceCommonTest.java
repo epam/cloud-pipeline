@@ -46,7 +46,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -61,8 +61,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest {
@@ -127,12 +127,13 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotAbleToRequestDavMountWhenOnlyReadIsGranted() {
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR));
     }
 
     @Test
@@ -143,28 +144,31 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotBeAbleToCallOffRequestDavMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket, AclPermission.NO_READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotBeAbleToCallOffRequestDavMountWhenOnlyReadIsGranted() {
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotAbleToRequestDavMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket, AclPermission.NO_READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR));
     }
 
     @Test

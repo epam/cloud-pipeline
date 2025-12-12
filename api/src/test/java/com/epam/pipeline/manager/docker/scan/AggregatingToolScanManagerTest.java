@@ -53,15 +53,15 @@ import com.epam.pipeline.util.TestUtils;
 import okhttp3.Request;
 import okhttp3.internal.http.RealResponseBody;
 import okio.Buffer;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.stubbing.Answer;
 import org.springframework.test.util.ReflectionTestUtils;
 import retrofit2.Call;
@@ -74,11 +74,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.quality.Strictness.LENIENT;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 public class AggregatingToolScanManagerTest {
 
     private static final int ONE = 1;
@@ -159,12 +164,12 @@ public class AggregatingToolScanManagerTest {
     private final ToolDependency nvidiaDependency = new ToolDependency(
             ONE, "latest", "NvidiaVersion", null, ToolDependency.Ecosystem.NVIDIA, null);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
-        MockitoAnnotations.initMocks(this);
+        //MockitoAnnotations.initMocks(this);
 
-        Whitebox.setInternalState(aggregatingToolScanManager, "preferenceManager", preferenceManager);
+        ReflectionTestUtils.setField(aggregatingToolScanManager, "preferenceManager", preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_DENY_NOT_SCANNED))
                 .thenReturn(DENY_NOT_SCANNED);
         when(preferenceManager
@@ -179,7 +184,7 @@ public class AggregatingToolScanManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_CUDNN_VERSION_LABEL))
                 .thenReturn(TEST_LABEL_MARK);
 
-        Assert.assertNotNull(pipelineConfigurationManager); // Dummy line, to shut up PMD
+        assertNotNull(pipelineConfigurationManager); // Dummy line, to shut up PMD
 
         testUser.setAdmin(false);
 
@@ -234,10 +239,11 @@ public class AggregatingToolScanManagerTest {
         when(versionManager.getValidDockerImage(TEST_IMAGE)).thenReturn(TEST_IMAGE);
         when(authManager.getCurrentUser()).thenReturn(testUser);
         when(dockerRegistryManager.load(testTool.getRegistryId())).thenReturn(testRegistry);
-        when(dockerClientFactory.getDockerClient(eq(testRegistry), anyString())).thenReturn(mockDockerClient);
+        when(dockerClientFactory.getDockerClient(eq(testRegistry), nullable(String.class)))
+                .thenReturn(mockDockerClient);
 
-        when(mockDockerClient.getManifest(any(), Mockito.anyString(), Mockito.anyString()))
-            .thenReturn(Optional.of(testManifest));
+        when(mockDockerClient.getManifest(any(), nullable(String.class), nullable(String.class)))
+                .thenReturn(Optional.of(testManifest));
 
         when(mockDockerClient.getVersionAttributes(any(), eq(TEST_IMAGE), eq(LATEST_VERSION)))
                 .thenReturn(attributes);
@@ -250,7 +256,7 @@ public class AggregatingToolScanManagerTest {
             .then((Answer<MockCall<ClairScanRequest>>) invocation ->
                 new MockCall<>((ClairScanRequest) invocation.getArguments()[0]));
         when(clairV2Api.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(testScanResult));
-        Whitebox.setInternalState(aggregatingToolScanManager, "clairService", new ClairV2Client(clairV2Api));
+        ReflectionTestUtils.setField(aggregatingToolScanManager, "clairService", new ClairV2Client(clairV2Api));
 
         when(compScanService.scanLayer(any(DockerComponentScanRequest.class)))
                 .then((Answer<MockCall<DockerComponentScanRequest>>) invocation ->
@@ -278,8 +284,9 @@ public class AggregatingToolScanManagerTest {
         old.setDigest(DIGEST_2);
         when(toolVersionManager.loadToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(old);
 
-        when(toolManager.getTagFromImageName(Mockito.anyString())).thenReturn(LATEST_VERSION);
-        when(toolVersionManager.findToolVersion(Mockito.anyLong(), Mockito.anyString())).thenReturn(Optional.empty());
+        when(toolManager.getTagFromImageName(nullable(String.class))).thenReturn(LATEST_VERSION);
+        when(toolVersionManager.findToolVersion(Mockito.anyLong(), nullable(String.class)))
+                .thenReturn(Optional.empty());
 
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION))
                 .thenReturn(CLAIR_DEFAULT_VERSION);
@@ -300,7 +307,7 @@ public class AggregatingToolScanManagerTest {
 
         List<ToolDependency> dependencies = result.getDependencies();
         //check that dependencies are filtered and only one pass the filter
-        Assert.assertEquals(ONE, dependencies.size());
+        assertEquals(ONE, dependencies.size());
     }
 
     @Test
@@ -308,56 +315,56 @@ public class AggregatingToolScanManagerTest {
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
             .thenReturn(new ToolVersionAttributes());
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
-        Assert.assertEquals(ToolScanStatus.COMPLETED, result.getStatus());
+        assertEquals(ToolScanStatus.COMPLETED, result.getStatus());
 
-        Assert.assertTrue(result.isCudaAvailable());
+        assertTrue(result.isCudaAvailable());
 
-        Assert.assertFalse(result.getVulnerabilities().isEmpty());
+        assertFalse(result.getVulnerabilities().isEmpty());
 
         Vulnerability loadedVulnerability = result.getVulnerabilities().get(0);
-        Assert.assertEquals(clairVulnerability.getName(), loadedVulnerability.getName());
-        Assert.assertEquals(clairVulnerability.getDescription(), loadedVulnerability.getDescription());
-        Assert.assertEquals(clairVulnerability.getSeverity(), loadedVulnerability.getSeverity());
-        Assert.assertEquals(feature.getName(), loadedVulnerability.getFeature());
-        Assert.assertEquals(feature.getVersion(), loadedVulnerability.getFeatureVersion());
+        assertEquals(clairVulnerability.getName(), loadedVulnerability.getName());
+        assertEquals(clairVulnerability.getDescription(), loadedVulnerability.getDescription());
+        assertEquals(clairVulnerability.getSeverity(), loadedVulnerability.getSeverity());
+        assertEquals(feature.getName(), loadedVulnerability.getFeature());
+        assertEquals(feature.getVersion(), loadedVulnerability.getFeatureVersion());
 
         List<ToolDependency> dependencies = result.getDependencies();
-        Assert.assertEquals(3, dependencies.size());
+        assertEquals(3, dependencies.size());
 
         ToolDependency loadedDependency = dependencies.get(0);
-        Assert.assertEquals(testDependency.getName(), loadedDependency.getName());
-        Assert.assertEquals(testDependency.getEcosystem(), loadedDependency.getEcosystem());
-        Assert.assertEquals(testDependency.getVersion(), loadedDependency.getVersion());
-        Assert.assertEquals(testDependency.getDescription(), loadedDependency.getDescription());
+        assertEquals(testDependency.getName(), loadedDependency.getName());
+        assertEquals(testDependency.getEcosystem(), loadedDependency.getEcosystem());
+        assertEquals(testDependency.getVersion(), loadedDependency.getVersion());
+        assertEquals(testDependency.getDescription(), loadedDependency.getDescription());
 
         loadedDependency = dependencies.get(ONE);
-        Assert.assertEquals(nvidiaDependency.getName(), "NvidiaVersion");
-        Assert.assertEquals(nvidiaDependency.getEcosystem(), loadedDependency.getEcosystem());
+        assertEquals(nvidiaDependency.getName(), "NvidiaVersion");
+        assertEquals(nvidiaDependency.getEcosystem(), loadedDependency.getEcosystem());
 
         loadedDependency = dependencies.get(2);
-        Assert.assertEquals(feature.getName(), loadedDependency.getName());
-        Assert.assertEquals(ToolDependency.Ecosystem.SYSTEM, loadedDependency.getEcosystem());
-        Assert.assertEquals(feature.getVersion(), loadedDependency.getVersion());
+        assertEquals(feature.getName(), loadedDependency.getName());
+        assertEquals(ToolDependency.Ecosystem.SYSTEM, loadedDependency.getEcosystem());
+        assertEquals(feature.getVersion(), loadedDependency.getVersion());
 
         //check that rescan works
         ToolVersionScanResult rescan = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, true);
 
-        Assert.assertNotEquals(rescan.getScanDate(), result.getScanDate());
+        assertNotEquals(rescan.getScanDate(), result.getScanDate());
     }
 
     @Test
     public void testGetSecurityPolicy() {
         ToolScanPolicy policy = aggregatingToolScanManager.getPolicy();
-        Assert.assertEquals(MAX_CRITICAL_VULNERABILITIES, policy.getMaxCriticalVulnerabilities());
-        Assert.assertEquals(MAX_HIGH_VULNERABILITIES, policy.getMaxHighVulnerabilities());
-        Assert.assertEquals(MAX_MEDIUM_VULNERABILITIES, policy.getMaxMediumVulnerabilities());
-        Assert.assertEquals(DENY_NOT_SCANNED, policy.isDenyNotScanned());
+        assertEquals(MAX_CRITICAL_VULNERABILITIES, policy.getMaxCriticalVulnerabilities());
+        assertEquals(MAX_HIGH_VULNERABILITIES, policy.getMaxHighVulnerabilities());
+        assertEquals(MAX_MEDIUM_VULNERABILITIES, policy.getMaxMediumVulnerabilities());
+        assertEquals(DENY_NOT_SCANNED, policy.isDenyNotScanned());
     }
 
 
     @Test
     public void testDenyNotScanned() {
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -367,7 +374,7 @@ public class AggregatingToolScanManagerTest {
         ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_VERSION);
         scanResult.setScanDate(DateUtils.now());
         when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(scanResult));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -379,7 +386,7 @@ public class AggregatingToolScanManagerTest {
         scanResult.setVulnerabilities(Collections.emptyList());
         when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
                 .thenReturn(Optional.of(scanResult));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -390,9 +397,9 @@ public class AggregatingToolScanManagerTest {
 
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
-        Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
+        assertEquals(ToolScanStatus.FAILED, result.getStatus());
         List<ToolDependency> dependencies = result.getDependencies();
-        Assert.assertEquals(2, dependencies.size());
+        assertEquals(2, dependencies.size());
     }
 
     @Test
@@ -404,9 +411,9 @@ public class AggregatingToolScanManagerTest {
 
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
-        Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
+        assertEquals(ToolScanStatus.FAILED, result.getStatus());
         List<ToolDependency> dependencies = result.getDependencies();
-        Assert.assertEquals(2, dependencies.size());
+        assertEquals(2, dependencies.size());
     }
 
     @Test
@@ -418,16 +425,16 @@ public class AggregatingToolScanManagerTest {
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
         // Check that even that status is FAILED we still get vulnerabilities from clair
-        Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
-        Assert.assertEquals(ONE, result.getVulnerabilities().size());
-        Assert.assertEquals(ONE, result.getVulnerabilities().stream().map(Vulnerability::getFeature).count());
+        assertEquals(ToolScanStatus.FAILED, result.getStatus());
+        assertEquals(ONE, result.getVulnerabilities().size());
+        assertEquals(ONE, result.getVulnerabilities().stream().map(Vulnerability::getFeature).count());
     }
 
     @Test
     public void testDenyOnCritical() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + ONE, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult);
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -436,7 +443,7 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("centos:6");
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -445,7 +452,7 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("centos:6");
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult, new ToolOSVersion(CENTOS_OS, "7"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -454,11 +461,11 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(CENTOS_OS);
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult, new ToolOSVersion(CENTOS_OS, "7"));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
         final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build());
-        Assert.assertTrue(executionPermit.isAllowed());
-        Assert.assertFalse(executionPermit.isAllowedWarning());
+        assertTrue(executionPermit.isAllowed());
+        assertFalse(executionPermit.isAllowedWarning());
     }
 
     @Test
@@ -469,11 +476,11 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("ubuntu:14");
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
         final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
                 ToolOSVersion.builder().distribution(UBUNTU_OS).version("14").build());
-        Assert.assertTrue(executionPermit.isAllowed());
-        Assert.assertTrue(executionPermit.isAllowedWarning());
+        assertTrue(executionPermit.isAllowed());
+        assertTrue(executionPermit.isAllowedWarning());
     }
 
     @Test
@@ -482,11 +489,11 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn("ubuntu:14");
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
         final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
                 ToolOSVersion.builder().distribution(UBUNTU_OS).version("14").build());
-        Assert.assertTrue(executionPermit.isAllowed());
-        Assert.assertTrue(executionPermit.isAllowedWarning());
+        assertTrue(executionPermit.isAllowed());
+        assertTrue(executionPermit.isAllowedWarning());
     }
 
     @Test
@@ -495,7 +502,7 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(CENTOS_OS);
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -506,18 +513,18 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(UBUNTU_OS);
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
         final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
                 ToolOSVersion.builder().distribution(UBUNTU_OS).version("14").build());
-        Assert.assertTrue(executionPermit.isAllowed());
-        Assert.assertTrue(executionPermit.isAllowedWarning());
+        assertTrue(executionPermit.isAllowed());
+        assertTrue(executionPermit.isAllowedWarning());
     }
 
     @Test
     public void testDenyOnHigh() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES + ONE,
                 ONE, toolScanResult);
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
@@ -526,21 +533,21 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(0);
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult);
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testAllow() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult);
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testNotSendLayersIfScanned() throws ToolScanExternalServiceException {
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, ACTUAL_SCANNED_VERSION, false);
         //check that code just get result and don't call scan process
-        Assert.assertEquals(actual.getScanDate(), result.getScanDate());
+        assertEquals(actual.getScanDate(), result.getScanDate());
     }
 
     @Test
@@ -549,19 +556,19 @@ public class AggregatingToolScanManagerTest {
         PreferenceManager preferenceManager = new PreferenceManager();
         PreferenceDao preferenceDao = Mockito.mock(PreferenceDao.class);
         SystemPreferences systemPreferences = Mockito.mock(SystemPreferences.class);
-        Whitebox.setInternalState(preferenceManager, "preferenceDao", preferenceDao);
-        Whitebox.setInternalState(preferenceManager, "messageHelper", messageHelper);
-        Whitebox.setInternalState(preferenceManager, "systemPreferences", systemPreferences);
-        Whitebox.setInternalState(toolScanManager, "preferenceManager", preferenceManager);
+        ReflectionTestUtils.setField(preferenceManager, "preferenceDao", preferenceDao);
+        ReflectionTestUtils.setField(preferenceManager, "messageHelper", messageHelper);
+        ReflectionTestUtils.setField(preferenceManager, "systemPreferences", systemPreferences);
+        ReflectionTestUtils.setField(toolScanManager, "preferenceManager", preferenceManager);
 
-        toolScanManager.init();
+        toolScanManager.afterPropertiesSet();
 
         Preference clairVersion = SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION.toPreference();
         clairVersion.setValue("v2");
         when(preferenceDao.loadPreferenceByName(clairVersion.getName())).thenReturn(clairVersion);
 
-        ClairV2Client service = (ClairV2Client) Whitebox.getInternalState(toolScanManager, "clairService");
-        Assert.assertNull(service);
+        ClairV2Client service = (ClairV2Client) ReflectionTestUtils.getField(toolScanManager, "clairService");
+        assertNull(service);
 
         Preference toolScanEnabled = SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED.toPreference();
         toolScanEnabled.setValue("true");
@@ -572,8 +579,8 @@ public class AggregatingToolScanManagerTest {
         when(preferenceDao.loadPreferenceByName(clairRootUrl.getName())).thenReturn(clairRootUrl);
 
         preferenceManager.update(Arrays.asList(toolScanEnabled, clairRootUrl));
-        service = (ClairV2Client) Whitebox.getInternalState(toolScanManager, "clairService");
-        Assert.assertNotNull(service);
+        service = (ClairV2Client) ReflectionTestUtils.getField(toolScanManager, "clairService");
+        assertNotNull(service);
     }
 
     @Test
@@ -582,8 +589,8 @@ public class AggregatingToolScanManagerTest {
                                                                          .platform("windows")
                                                                          .build());
         when(toolVersionManager.findToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsToolVersion);
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
-        Mockito.verifyZeroInteractions(preferenceManager);
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        Mockito.verifyNoInteractions(preferenceManager);
     }
 
     private final class MockCall<T> implements Call<T> {

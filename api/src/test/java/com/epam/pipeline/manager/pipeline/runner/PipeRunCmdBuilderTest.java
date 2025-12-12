@@ -20,14 +20,14 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.run.OsType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PipeRunCmdBuilderTest {
@@ -106,7 +106,7 @@ public class PipeRunCmdBuilderTest {
                 TEST_PARAM_NAME_6, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_COMMON_TYPE,
                         TEST_PARAM_VALUE_MULTIPLE_PATHS),
                 TEST_PARAM_NAME_7, String.format(PARAM_WTH_TYPE_TEMPLATE, PARAM_BOOLEAN_TYPE, true));
-        Assert.assertEquals(expectedResult, actualResult);
+        assertEquals(expectedResult, actualResult);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class PipeRunCmdBuilderTest {
                 "-n 1@%s", "-p", "-y", "-id 10", "-it type", "-di image", "-cmd \"%s\"",
                 "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "-- parent-id 1"),
                 TEST_VERSION, CMD_TEMPLATE);
-        Assert.assertEquals(expectedResult, actualResult);
+        assertEquals(expectedResult, actualResult);
     }
 
     @Test
@@ -134,7 +134,7 @@ public class PipeRunCmdBuilderTest {
         final String expectedResult = String.format(buildExpectedForWindows("pipe run", "-n 1@%s",
                 "-p", "-y", "-id 10", "-it type", "-di image", "-cmd \"do \\\"command\\\"\"",
                 "-t 10", "-q", "-ic 5", "-s", "-pt spot", "-r 1", "-pn 1", "-- parent-id 1"), TEST_VERSION);
-        Assert.assertEquals(expectedResult, actualResult);
+        assertEquals(expectedResult, actualResult);
     }
 
     @Test
@@ -149,7 +149,7 @@ public class PipeRunCmdBuilderTest {
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
         final String expected = buildExpectedForLinux("pipe run", "-n 1", "-pt spot");
-        Assert.assertEquals(expected, actualResult);
+        assertEquals(expected, actualResult);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class PipeRunCmdBuilderTest {
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
         final String expected = buildExpectedForLinux("pipe run", "-n 1", "-pt on-demand", "-np");
-        Assert.assertEquals(expected, actualResult);
+        assertEquals(expected, actualResult);
     }
 
     @Test
@@ -181,7 +181,7 @@ public class PipeRunCmdBuilderTest {
         final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
         final String actualResult = buildCmd(pipeRunCmdBuilder);
         final String expected = buildExpectedForLinux("pipe run", "-n 1", "-pt spot");
-        Assert.assertEquals(expected, actualResult);
+        assertEquals(expected, actualResult);
     }
 
 

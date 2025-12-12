@@ -22,7 +22,7 @@ import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import org.apache.commons.collections4.ListUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;

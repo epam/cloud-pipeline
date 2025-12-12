@@ -18,37 +18,30 @@ package com.epam.pipeline.security.saml;
 
 import java.io.IOException;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.opensaml.common.SAMLException;
-import org.opensaml.saml2.metadata.provider.MetadataProviderException;
-import org.opensaml.ws.message.encoder.MessageEncodingException;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.saml.SAMLConstants;
+/*import org.springframework.security.saml.SAMLConstants;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.context.SAMLContextProvider;
 import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.log.SAMLLogger;
 import org.springframework.security.saml.util.SAMLUtil;
-import org.springframework.security.saml.websso.SingleLogoutProfile;
+import org.springframework.security.saml.websso.SingleLogoutProfile;*/
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.util.Assert;
 
 public class OptionalSAMLLogoutFilter extends LogoutFilter {
 
-    protected SingleLogoutProfile profile;
+    /*protected SingleLogoutProfile profile;
     protected SAMLLogger samlLogger;
-    protected SAMLContextProvider contextProvider;
+    protected SAMLContextProvider contextProvider;*/
     private String filterProcessesUrl;
 
     /**
@@ -99,7 +92,7 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         FilterInvocation fi = new FilterInvocation(request, response, chain);
-        processLogout(fi.getRequest(), fi.getResponse(), chain);
+        //processLogout(fi.getRequest(), fi.getResponse(), chain);
     }
 
     /**
@@ -113,7 +106,7 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
      * @throws IOException      error
      * @throws ServletException error
      */
-    public void processLogout(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    /*public void processLogout(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
         if (requiresLogout(request, response)) {
@@ -165,7 +158,7 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
             chain.doFilter(request, response);
         }
 
-    }
+    }*/
 
     /**
      * The filter will be used in case the URL of the request contains the DEFAULT_FILTER_URL.
@@ -175,7 +168,8 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
      */
     @Override
     protected boolean requiresLogout(HttpServletRequest request, HttpServletResponse response) {
-        return SAMLUtil.processFilter(getFilterProcessesUrl(), request);
+        //return SAMLUtil.processFilter(getFilterProcessesUrl(), request);
+        return true;
     }
 
     /**
@@ -187,8 +181,8 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
      */
     protected boolean isGlobalLogout(HttpServletRequest request, Authentication auth) {
         String localLogout = request.getParameter(LOGOUT_PARAMETER);
-        return (localLogout == null || !"true".equals(localLogout.toLowerCase().trim())) &&
-                (auth.getCredentials() instanceof SAMLCredential);
+        return (localLogout == null || !"true".equals(localLogout.toLowerCase().trim())) /*&&
+                (auth.getCredentials() instanceof SAMLCredential)*/;
     }
 
     /**
@@ -196,44 +190,44 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
      *
      * @param samlLogger logger
      */
-    @Autowired
+    /*@Autowired
     public void setSamlLogger(SAMLLogger samlLogger) {
         Assert.notNull(samlLogger, "SAML Logger can't be null");
         this.samlLogger = samlLogger;
-    }
+    }*/
 
     /**
      * Profile for consumption of processed messages, cannot be null, must be set.
      *
      * @param profile profile
      */
-    @Autowired
+    /*@Autowired
     public void setProfile(SingleLogoutProfile profile) {
         Assert.notNull(profile, "SingleLogoutProfile can't be null");
         this.profile = profile;
-    }
+    }*/
 
     /**
      * Sets entity responsible for populating local entity context data. Cannot be null, must be set.
      *
      * @param contextProvider provider implementation
      */
-    @Autowired
+    /*@Autowired
     public void setContextProvider(SAMLContextProvider contextProvider) {
         Assert.notNull(contextProvider, "Context provider can't be null");
         this.contextProvider = contextProvider;
-    }
+    }*/
 
     /**
      * Verifies that required entities were autowired or set.
      */
-    @Override
+    /*@Override
     public void afterPropertiesSet() throws ServletException {
         super.afterPropertiesSet();
         Assert.notNull(profile, "Single logout profile must be set");
         Assert.notNull(contextProvider, "Context provider must be set");
         Assert.notNull(samlLogger, "SAML Logger must be set");
-    }
+    }*/
 
     /**
      * Sets the URL used to determine if this Filter is invoked

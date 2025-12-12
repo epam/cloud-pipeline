@@ -19,7 +19,7 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
 import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -33,9 +33,9 @@ import java.util.Map;
 
 public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
 
-    @Setter(onMethod_={@Required})
+    @Setter
     private String addPipelineRunResultQuery;
-    @Setter(onMethod_={@Required})
+    @Setter
     private String loadPipelineRunResultQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)

@@ -22,12 +22,14 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.acl.pipeline.PipelineConfigApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,7 +41,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Api(value = "Pipeline Configurations")
+@Tag(name = "Pipeline Configurations")
 public class PipelineConfigController extends AbstractRestController {
 
     private static final String ID = "id";
@@ -50,12 +52,11 @@ public class PipelineConfigController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/configurations", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets list of pipeline version configurations.",
-            notes = "Gets list of pipeline version configurations along with default values.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets list of pipeline version configurations.",
+            description = "Gets list of pipeline version configurations along with default values.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<ConfigurationEntry>> getPipelineConfigurations(
             @PathVariable(value = ID) Long id,
@@ -65,12 +66,11 @@ public class PipelineConfigController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/configurations", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Creates a new pipeline configuration.",
-            notes = "Creates a new pipeline configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates a new pipeline configuration.",
+            description = "Creates a new pipeline configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<ConfigurationEntry>> createPipelineConfiguration(
             @PathVariable(value = ID) Long id, @RequestBody ConfigurationEntry configuration)
@@ -80,12 +80,11 @@ public class PipelineConfigController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/configurations/rename", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Renames a pipeline configuration.",
-            notes = "Renames a pipeline configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Renames a pipeline configuration.",
+            description = "Renames a pipeline configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<ConfigurationEntry>> createPipelineConfiguration(
             @PathVariable(value = ID) Long id, @RequestParam String oldName, @RequestParam String newName)
@@ -95,12 +94,11 @@ public class PipelineConfigController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/configurations", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a pipeline configuration.",
-            notes = "Deletes a pipeline configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a pipeline configuration.",
+            description = "Deletes a pipeline configuration.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<ConfigurationEntry>> deletePipelineConfiguration(
             @PathVariable(value = ID) Long id, @RequestParam String configName)
@@ -110,12 +108,11 @@ public class PipelineConfigController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/parameters", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Gets list of pipeline version parameters.",
-            notes = "Gets list of pipeline version parameters along with default values.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Gets list of pipeline version parameters.",
+            description = "Gets list of pipeline version parameters along with default values.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PipelineConfiguration> getPipelineParameters(
             @PathVariable(value = ID) Long id,
@@ -126,12 +123,11 @@ public class PipelineConfigController extends AbstractRestController {
 
     @RequestMapping(value = "/pipeline/{id}/language", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Return language for given pipeline id",
-            notes = "Return language for given pipeline id",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Return language for given pipeline id",
+            description = "Return language for given pipeline id")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<String> getPipelineLanguage(
             @PathVariable(value = ID) Long id,

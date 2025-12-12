@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -178,32 +178,26 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setRoutingRuleSequence(final String routingRuleSequence) {
         this.routingRuleSequence = routingRuleSequence;
     }
 
-    @Required
     public void setCreateRouteQuery(final String createRouteQuery) {
         this.createRouteQuery = createRouteQuery;
     }
 
-    @Required
     public void setLoadAllQueuedRoutesUpdateQuery(final String loadAllQueuedRoutesUpdateQuery) {
         this.loadAllQueuedRoutesUpdateQuery = loadAllQueuedRoutesUpdateQuery;
     }
 
-    @Required
     public void setUpdateRouteQuery(final String updateRouteQuery) {
         this.updateRouteQuery = updateRouteQuery;
     }
 
-    @Required
     public void setDeleteRouteQuery(final String deleteRouteQuery) {
         this.deleteRouteQuery = deleteRouteQuery;
     }
 
-    @Required
     public void setLoadSimilarRouteQuery(final String loadSimilarRouteQuery) {
         this.loadSimilarRouteQuery = loadSimilarRouteQuery;
     }

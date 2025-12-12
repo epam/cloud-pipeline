@@ -39,9 +39,11 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -51,18 +53,22 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 @SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField"})
 public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final float PRICE_PER_HOUR = 12F;
@@ -123,10 +129,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Autowired
     private PreferenceManager preferenceManager;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-
         Tool notScannedTool = new Tool();
         notScannedTool.setId(1L);
         notScannedTool.setImage(TEST_IMAGE);
@@ -162,8 +166,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(instanceOfferManager
                 .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
-        when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
-                .thenReturn(price);
+        when(instanceOfferManager.getInstanceEstimatedPrice(nullable(String.class), nullable(Integer.class),
+                anyBoolean(), anyLong())).thenReturn(price);
         when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString())).thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
@@ -182,13 +186,13 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     /**
      * Tests that Aspect will deny PipelineRunManager::runCmd method execution
      */
-    @Test(expected = ToolExecutionDeniedException.class)
+    @Test
     public void testRunCmdFailed() {
         PipelineStart startVO = new PipelineStart();
         preferenceManager.update(Collections.singletonList(new Preference(
                 SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_DENY_NOT_SCANNED.getKey(), Boolean.toString(true))));
         startVO.setDockerImage(TEST_IMAGE);
-        pipelineRunManager.runCmd(startVO);
+        assertThrows(ToolExecutionDeniedException.class, () -> pipelineRunManager.runCmd(startVO));
     }
 
     /**

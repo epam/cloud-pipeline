@@ -36,7 +36,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -375,57 +375,46 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setFolderSequence(String folderSequence) {
         this.folderSequence = folderSequence;
     }
 
-    @Required
     public void setCreateFolderQuery(String createFolderQuery) {
         this.createFolderQuery = createFolderQuery;
     }
 
-    @Required
     public void setUpdateFolderQuery(String updateFolderQuery) {
         this.updateFolderQuery = updateFolderQuery;
     }
 
-    @Required
     public void setLoadAllFoldersQuery(String loadAllFoldersQuery) {
         this.loadAllFoldersQuery = loadAllFoldersQuery;
     }
 
-    @Required
     public void setDeleteFolderQuery(String deleteFolderQuery) {
         this.deleteFolderQuery = deleteFolderQuery;
     }
 
-    @Required
     public void setLoadFolderByIdQuery(String loadFolderByIdQuery) {
         this.loadFolderByIdQuery = loadFolderByIdQuery;
     }
 
-    @Required
     public void setLoadFolderByNameQuery(String loadFolderByNameQuery) {
         this.loadFolderByNameQuery = loadFolderByNameQuery;
     }
 
-    @Required
     public void setLoadFolderByNameAndParentIdQuery(String loadFolderByNameAndParentIdQuery) {
         this.loadFolderByNameAndParentIdQuery = loadFolderByNameAndParentIdQuery;
     }
 
-    @Required
     public void setLoadParentFoldersQuery(String loadParentFoldersQuery) {
         this.loadParentFoldersQuery = loadParentFoldersQuery;
     }
 
-    @Required
     public void setUpdateFolderLocksQuery(String updateFolderLocksQuery) {
         this.updateFolderLocksQuery = updateFolderLocksQuery;
     }
 
-    @Required
     public void setLoadAllProjectsQuery(String loadAllProjectsQuery) {
         this.loadAllProjectsQuery = loadAllProjectsQuery;
     }

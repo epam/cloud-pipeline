@@ -30,7 +30,7 @@ import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -210,52 +210,42 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         return Stream.of(userIds.split(",")).map(Long::parseLong).collect(Collectors.toList());
     }
 
-    @Required
     public void setNotificationQueueSequence(String notificationQueueSequence) {
         this.notificationQueueSequence = notificationQueueSequence;
     }
 
-    @Required
     public void setCreateMonitoringNotificationQuery(String createMonitoringNotificationQuery) {
         this.createMonitoringNotificationQuery = createMonitoringNotificationQuery;
     }
 
-    @Required
     public void setLoadMonitoringNotificationQuery(String loadMonitoringNotificationQuery) {
         this.loadMonitoringNotificationQuery = loadMonitoringNotificationQuery;
     }
 
-    @Required
     public void setDeleteNotificationsByTemplateIdQuery(String deleteNotificationsByTemplateIdQuery) {
         this.deleteNotificationsByTemplateIdQuery = deleteNotificationsByTemplateIdQuery;
     }
 
-    @Required
     public void setLoadAllMonitoringNotificationsQuery(String loadAllMonitoringNotificationsQuery) {
         this.loadAllMonitoringNotificationsQuery = loadAllMonitoringNotificationsQuery;
     }
 
-    @Required
     public void setUpdateNotificationTimestampQuery(String updateNotificationTimestampQuery) {
         this.updateNotificationTimestampQuery = updateNotificationTimestampQuery;
     }
 
-    @Required
     public void setLoadNotificationTimestampQuery(String loadNotificationTimestampQuery) {
         this.loadNotificationTimestampQuery = loadNotificationTimestampQuery;
     }
 
-    @Required
     public void setDeleteNotificationTimestampsByRunIdQuery(String deleteNotificationTimestampsByRunIdQuery) {
         this.deleteNotificationTimestampsByRunIdQuery = deleteNotificationTimestampsByRunIdQuery;
     }
 
-    @Required
     public void setDeleteNotificationsByUserIdQuery(final String deleteNotificationsByUserIdQuery) {
         this.deleteNotificationsByUserIdQuery = deleteNotificationsByUserIdQuery;
     }
 
-    @Required
     public void setDeleteNotificationTimestampsByIdAndTypeQuery(
             final String deleteNotificationTimestampsByIdAndTypeQuery) {
         this.deleteNotificationTimestampsByIdAndTypeQuery = deleteNotificationTimestampsByIdAndTypeQuery;

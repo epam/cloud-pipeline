@@ -15,43 +15,38 @@
 
 package com.epam.pipeline.manager.keypair;
 
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collection;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
-@RequiredArgsConstructor
 public class SshKeyPairManagerTest {
 
-    private final SshKeyPairManager manager;
-
-    @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {new JSchSshKeyPairManager()},
         });
     }
 
-    @Test
-    public void testKeysAreNotBlank() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testKeysAreNotBlank(final SshKeyPairManager manager) {
         final SshKeyPair pair = manager.generate();
 
         assertTrue(StringUtils.isNotBlank(pair.getPrivateKey()));
         assertTrue(StringUtils.isNotBlank(pair.getPublicKey()));
     }
 
-    @Test
-    public void testKeysAreUnique() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testKeysAreUnique(final SshKeyPairManager manager) {
         assertThat(manager.generate(), is(not(manager.generate())));
     }
 }

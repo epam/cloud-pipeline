@@ -35,13 +35,13 @@ import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
@@ -85,8 +85,8 @@ public class NotificationAspectTest extends AbstractAspectTest {
         verify(mockMonitoringNotificationDao).createMonitoringNotification(captor.capture());
 
         final NotificationMessage capturedMessage = captor.getValue();
-        Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
-        Assert.assertEquals(TaskStatus.SUCCESS.name(),
+        assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
+        assertEquals(TaskStatus.SUCCESS.name(),
             capturedMessage.getTemplateParameters().get("status"));
     }
 
@@ -120,7 +120,7 @@ public class NotificationAspectTest extends AbstractAspectTest {
         verify(mockMonitoringNotificationDao).createMonitoringNotification(captor.capture());
 
         final NotificationMessage capturedMessage = captor.getValue();
-        Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
+        assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
     }
 
     @Test

@@ -9,9 +9,9 @@ import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatConnectorCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
+import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,13 +36,21 @@ public class GracefulShutdownConfiguration {
         return NumberUtils.toInt(StringUtils.removeEnd(timeoutString, "s"));
     }
 
+    /*
+        @Bean
+        public EmbeddedServletContainerCustomizer embeddedServletContainerCustomizer(
+                final GracefulShutdownListener gracefulShutdownListener) {
+            return container -> Optional.of(container)
+                    .filter(TomcatEmbeddedServletContainerFactory.class::isInstance)
+                    .map(TomcatEmbeddedServletContainerFactory.class::cast)
+                    .ifPresent(factory -> factory.addConnectorCustomizers(gracefulShutdownListener));
+        }
+    */
+
     @Bean
-    public EmbeddedServletContainerCustomizer embeddedServletContainerCustomizer(
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> embeddedServletContainerCustomizer(
             final GracefulShutdownListener gracefulShutdownListener) {
-        return container -> Optional.of(container)
-                .filter(TomcatEmbeddedServletContainerFactory.class::isInstance)
-                .map(TomcatEmbeddedServletContainerFactory.class::cast)
-                .ifPresent(factory -> factory.addConnectorCustomizers(gracefulShutdownListener));
+        return factory -> factory.addConnectorCustomizers(gracefulShutdownListener);
     }
 
     @Slf4j

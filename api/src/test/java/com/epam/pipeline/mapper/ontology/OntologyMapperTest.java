@@ -19,7 +19,7 @@ package com.epam.pipeline.mapper.ontology;
 import com.epam.pipeline.assertions.ontology.OntologyAssertions;
 import com.epam.pipeline.dto.ontology.Ontology;
 import com.epam.pipeline.entity.ontology.OntologyEntity;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
 import static com.epam.pipeline.test.creator.ontology.OntologyCreatorsUtils.ontology;

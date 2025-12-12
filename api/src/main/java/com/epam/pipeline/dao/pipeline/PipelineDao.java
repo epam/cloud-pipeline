@@ -39,7 +39,7 @@ import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -286,72 +286,58 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setPipelineSequence(String pipelineSequence) {
         this.pipelineSequence = pipelineSequence;
     }
 
-    @Required
     public void setCreatePipelineQuery(String createPipelineQuery) {
         this.createPipelineQuery = createPipelineQuery;
     }
 
-    @Required
     public void setUpdatePipelineQuery(String updatePipelineQuery) {
         this.updatePipelineQuery = updatePipelineQuery;
     }
 
-    @Required
     public void setLoadAllPipelinesQuery(String loadAllPipelinesQuery) {
         this.loadAllPipelinesQuery = loadAllPipelinesQuery;
     }
 
-    @Required
     public void setDeletePipelineQuery(String deletePipelineQuery) {
         this.deletePipelineQuery = deletePipelineQuery;
     }
 
-    @Required
     public void setLoadPipelineByIdQuery(String loadPipelineByIdQuery) {
         this.loadPipelineByIdQuery = loadPipelineByIdQuery;
     }
 
-    @Required
     public void setLoadPipelineByNameQuery(String loadPipelineByNameQuery) {
         this.loadPipelineByNameQuery = loadPipelineByNameQuery;
     }
 
-    @Required
     public void setLoadPipelineByRepoUrlQuery(String loadPipelineByRepoUrlQuery) {
         this.loadPipelineByRepoUrlQuery = loadPipelineByRepoUrlQuery;
     }
 
-    @Required
     public void setLoadRootPipelinesQuery(String loadRootPipelinesQuery) {
         this.loadRootPipelinesQuery = loadRootPipelinesQuery;
     }
 
-    @Required
     public void setUpdatePipelineLocksQuery(String updatePipelineLocksQuery) {
         this.updatePipelineLocksQuery = updatePipelineLocksQuery;
     }
 
-    @Required
     public void setLoadAllPipelinesWithParentsQuery(String loadAllPipelinesWithParentsQuery) {
         this.loadAllPipelinesWithParentsQuery = loadAllPipelinesWithParentsQuery;
     }
 
-    @Required
     public void setLoadPipelinesCountQuery(String loadPipelinesCountQuery) {
         this.loadPipelinesCountQuery = loadPipelinesCountQuery;
     }
 
-    @Required
     public void setLoadPipelineWithParentsQuery(String loadPipelineWithParentsQuery) {
         this.loadPipelineWithParentsQuery = loadPipelineWithParentsQuery;
     }
 
-    @Required
     public void setLoadPipelinesFiltersQuery(final String loadPipelinesFiltersQuery) {
         this.loadPipelinesFiltersQuery = loadPipelinesFiltersQuery;
     }

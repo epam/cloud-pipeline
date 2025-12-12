@@ -26,8 +26,8 @@ import com.epam.pipeline.manager.google.GoogleCredentialsManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.google.auth.oauth2.AccessToken;
 import okhttp3.Request;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -41,7 +41,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 public class FirecloudManagerTest {
@@ -65,8 +65,7 @@ public class FirecloudManagerTest {
     private FirecloudManager firecloudManager =
             new FirecloudManager(preferenceManager, credentialsManager, messageHelper);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         MockitoAnnotations.initMocks(this);
 
         when(firecloudClient.getMethods(Mockito.eq(ACCESS_TOKEN)))

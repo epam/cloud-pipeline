@@ -20,18 +20,17 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.app.ApplicationInfo;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Api(value = "Application info methods")
+@Tag(name = "Application info methods")
 @RequestMapping(value = "/app")
 @RequiredArgsConstructor
 public class ApplicationInfoController extends AbstractRestController {
@@ -39,14 +38,11 @@ public class ApplicationInfoController extends AbstractRestController {
     private final ApplicationInfoManager applicationInfoManager;
 
     @GetMapping(value = "/info")
-    @ApiOperation(
-            value = "Returns an application version info",
-            notes = "Returns an application version info",
-            produces = MediaType.APPLICATION_JSON_VALUE
+    @Operation(
+            summary = "Returns an application version info",
+            description = "Returns an application version info"
         )
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
-        )
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<ApplicationInfo> getInfo() {
         return Result.success(applicationInfoManager.getInfo());
     }

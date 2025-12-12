@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodeScheduleCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 

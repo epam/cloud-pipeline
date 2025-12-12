@@ -19,14 +19,15 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataClassDaoTest extends AbstractJdbcTest {
 
@@ -45,15 +46,15 @@ public class MetadataClassDaoTest extends AbstractJdbcTest {
         metadataClassDao.createMetadataClass(metadataClass);
 
         List<MetadataClass> expectedResult = Collections.singletonList(metadataClass);
-        Assert.assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
+        assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
 
         metadataClass.setFireCloudClassName(FireCloudClass.SAMPLE);
         metadataClassDao.updateMetadataClass(metadataClass);
 
         expectedResult = Collections.singletonList(metadataClass);
-        Assert.assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
+        assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
 
         metadataClassDao.deleteMetadataClass(metadataClass.getId());
-        Assert.assertEquals(Collections.emptyList(), metadataClassDao.loadAllMetadataClasses());
+        assertEquals(Collections.emptyList(), metadataClassDao.loadAllMetadataClasses());
     }
 }

@@ -16,9 +16,9 @@
 
 package com.epam.pipeline.notifier.service.task;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.assertEquals;
+import static org.junit.assertNull;
+import static org.junit.assertTrue;
 
 import java.util.Collections;
 import jakarta.mail.Message;

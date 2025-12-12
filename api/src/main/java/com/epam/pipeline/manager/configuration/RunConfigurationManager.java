@@ -28,7 +28,8 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.FolderCrudManager;
+//import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
@@ -56,7 +57,8 @@ public class RunConfigurationManager implements SecuredEntityManager {
     private RunConfigurationDao runConfigurationDao;
 
     @Autowired
-    private FolderManager folderManager;
+    //private FolderManager folderManager;
+    private FolderCrudManager folderCrudManager;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -182,7 +184,7 @@ public class RunConfigurationManager implements SecuredEntityManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_CONFIG_DUPLICATES));
         configuration.getEntries().forEach(this::validateEntry);
         if (configuration.getParent() != null) {
-            folderManager.load(configuration.getParent().getId());
+            folderCrudManager.load(configuration.getParent().getId());
         }
     }
 

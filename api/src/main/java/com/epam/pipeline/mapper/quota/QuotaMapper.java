@@ -25,8 +25,9 @@ import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaSidEntity;
 import com.epam.pipeline.entity.user.SidImpl;
-import org.mapstruct.AfterMapping;
+//import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 

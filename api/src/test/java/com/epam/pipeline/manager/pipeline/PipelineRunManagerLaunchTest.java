@@ -48,10 +48,13 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -90,19 +93,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.quality.Strictness.LENIENT;
 
 @SuppressWarnings("PMD.UnusedPrivateField")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)  // Ignores unused stubs; remove after per-test refactoring
 public class PipelineRunManagerLaunchTest {
     private static final float PRICE_PER_HOUR = 12F;
     private static final float COMPUTE_PRICE_PER_HOUR = 11F;
@@ -213,9 +217,9 @@ public class PipelineRunManagerLaunchTest {
     public static final List<PipelineStartNotificationRequest> NOTIFICATION_REQUESTS =
             singletonList(NOTIFICATION_REQUEST);
 
-    @Before
-    public void setUp() throws Exception {
-        initMocks(this);
+    @BeforeEach
+    public void setUp() {
+        //initMocks(this);
 
         mock(CLUSTER_DOCKER_EXTRA_MULTI);
         mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
@@ -441,7 +445,7 @@ public class PipelineRunManagerLaunchTest {
     public void shouldLoadRunsActivityStats() {
         doReturn(asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
                 .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18), eq(false));
-        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
+        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyList(), anyBoolean());
 
         Map<Long, PipelineRun> runMap = pipelineRunManager
                 .loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18, false).stream()
@@ -452,7 +456,7 @@ public class PipelineRunManagerLaunchTest {
 
         verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(
                 any(LocalDateTime.class), any(LocalDateTime.class), anyBoolean());
-        verify(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
+        verify(runStatusManager).loadRunStatus(anyList(), anyBoolean());
     }
 
     @Test
@@ -479,8 +483,8 @@ public class PipelineRunManagerLaunchTest {
     }
 
     private void mock(final InstancePrice price) {
-        doReturn(price).when(instanceOfferManager)
-                .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
+        doReturn(price).when(instanceOfferManager).getInstanceEstimatedPrice(nullable(String.class),
+            nullable(Integer.class), nullable(Boolean.class), nullable(Long.class));
     }
 
     private <T> void mock(final AbstractSystemPreference<T> preference) {

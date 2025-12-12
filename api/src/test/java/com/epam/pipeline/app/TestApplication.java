@@ -46,15 +46,16 @@ import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
+import org.mockito.Mockito;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -67,11 +68,10 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator;
 import org.springframework.security.acls.domain.SidRetrievalStrategyImpl;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
-import org.springframework.security.saml.key.KeyManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
-import java.io.FileNotFoundException;
+import javax.net.ssl.KeyManager;
 import java.util.concurrent.Executor;
 
 @SpringBootConfiguration
@@ -102,9 +102,6 @@ public class TestApplication {
         SpringApplication.run(TestApplication.class, args);
     }
 
-    @MockBean // TODO: remove and fix what's wrong
-    public MonitoringESDao monitoringESDao;
-
     @MockBean
     public ESMonitoringManager esMonitoringManager;
 
@@ -117,8 +114,6 @@ public class TestApplication {
     @MockBean
     public JwtTokenGenerator jwtTokenGenerator;
 
-    @MockBean
-    public JwtTokenVerifier jwtTokenVerifier;
 
     @MockBean
     public Executor dataStoragePathExecutor;
@@ -183,8 +178,8 @@ public class TestApplication {
     @MockBean
     protected UserNotificationRepository userNotificationRepository;
 
-    @MockBean
-    public StorageEventCollector events;
+    /*@Mock
+    public StorageEventCollector events;*/
 
     @MockBean
     public InstanceOfferScheduler instanceOfferScheduler;
@@ -195,14 +190,11 @@ public class TestApplication {
     protected UIPluginAssignmentRepository assignmentRepository;
 
     @Bean
-    public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
-
-        return container -> {
-            if(container instanceof TomcatEmbeddedServletContainerFactory) {
-                TomcatEmbeddedServletContainerFactory containerFactory =
-                        (TomcatEmbeddedServletContainerFactory) container;
-                containerFactory.addConnectorCustomizers((connector -> connector.setSecure(false)));
-            }
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> webServerFactoryCustomizer() {
+        return (factory) -> {
+            factory.addConnectorCustomizers(connector -> {
+                connector.setSecure(false);
+            });
         };
     }
 
@@ -245,6 +237,29 @@ public class TestApplication {
         schedulerFactory.setJobFactory(jobFactory);
         return schedulerFactory;
     }
+
+    @Bean
+    public StorageEventCollector storageEventCollector() {
+        // We explicitly create and return a Mockito mock instance
+        return Mockito.mock(StorageEventCollector.class);
+    }
+
+    @Bean
+    public JwtTokenVerifier jwtTokenVerifier() {
+        return Mockito.mock(JwtTokenVerifier.class);
+    }
+
+    @Bean
+    public MonitoringESDao monitoringESDao() {
+        return Mockito.mock(MonitoringESDao.class);
+
+    }
+
+/*    @Bean
+    private KubernetesClient mockClient() {
+        return Mockito.mock(DefaultKubernetesClient.class);
+        //return new DefaultKubernetesClient();
+    }*/
 
 }
 

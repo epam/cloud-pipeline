@@ -17,8 +17,6 @@
 package com.epam.pipeline.dao.security.acl;
 
 import java.util.List;
-
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
@@ -39,7 +37,6 @@ public class AclDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setFindSidByNameQuery(String findSidByNameQuery) {
         this.findSidByNameQuery = findSidByNameQuery;
     }

@@ -87,14 +87,11 @@ import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.saml.SAMLAuthenticationProvider;
-import org.springframework.security.saml.SAMLEntryPoint;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
 @Import(InternalResourceViewResolver.class)
-@EnableWebSecurity
+//@EnableWebSecurity //TODO: if it is uncommented tests are not working
 public class ControllerTestBeans {
 
     @MockBean
@@ -184,8 +181,8 @@ public class ControllerTestBeans {
     @MockBean
     protected UserApiService userApiService;
 
-    @MockBean
-    protected SAMLAuthenticationProvider samlAuthenticationProvider;
+    /*@MockBean
+    protected SAMLAuthenticationProvider samlAuthenticationProvider;*/
 
     @MockBean
     protected PreferenceManager preferenceManager;
@@ -226,8 +223,8 @@ public class ControllerTestBeans {
     @MockBean
     protected UserAccessService userAccessService;
 
-    @MockBean
-    protected SAMLEntryPoint samlEntryPoint;
+    /*@MockBean
+    protected SAMLEntryPoint samlEntryPoint;*/
 
     @MockBean
     protected JwtTokenVerifier jwtTokenVerifier;

@@ -21,7 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Objects;
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 
 import com.epam.pipeline.utils.AuthorizationUtils;
 import lombok.AllArgsConstructor;

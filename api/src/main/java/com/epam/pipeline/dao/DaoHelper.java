@@ -19,7 +19,6 @@ package com.epam.pipeline.dao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -208,12 +207,10 @@ public class DaoHelper extends NamedParameterJdbcDaoSupport {
         return !rs.wasNull() ? integer : null;
     }
 
-    @Required
     public void setCreateIdQuery(String createIdQuery) {
         this.createIdQuery = createIdQuery;
     }
 
-    @Required
     public void setCreateIdsQuery(String createIdsQuery) {
         this.createIdsQuery = createIdsQuery;
     }

@@ -19,16 +19,18 @@ import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.datastorage.LustreFS;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
+
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@Api(value = "Lustre FS management methods")
+@Tag(name = "Lustre FS management methods")
 @RequestMapping(value = "/lustre")
 @RequiredArgsConstructor
 public class LustreFSController extends AbstractRestController {
@@ -39,12 +41,11 @@ public class LustreFSController extends AbstractRestController {
     private final LustreFSApiService lustreFSApiService;
 
     @PostMapping(value = RUN_ID_PATH)
-    @ApiOperation(
-            value = "Creates a new lustre FS for a run or returns an existing one.",
-            notes = "Creates a new lustre FS for a run or returns an existing one.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates a new lustre FS for a run or returns an existing one.",
+            description = "Creates a new lustre FS for a run or returns an existing one.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> getOrCreateLustreFS(@PathVariable(value = RUN_ID) final Long runId,
                                                 @RequestParam(required = false) final Integer size,
@@ -55,11 +56,10 @@ public class LustreFSController extends AbstractRestController {
     }
 
     @PutMapping(value = RUN_ID_PATH)
-    @ApiOperation(
-            value = "Changes size of lustre FS.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Changes size of lustre FS.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> updateLustreFsSize(@PathVariable(value = RUN_ID) final Long runId,
                                                @RequestParam(required = false) final Integer size) {
@@ -67,24 +67,22 @@ public class LustreFSController extends AbstractRestController {
     }
 
     @GetMapping(value = RUN_ID_PATH)
-    @ApiOperation(
-            value = "Returns an existing lustre FS for a run.",
-            notes = "Returns an existing lustre FS for a run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns an existing lustre FS for a run.",
+            description = "Returns an existing lustre FS for a run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> getLustreFS(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(lustreFSApiService.getLustreFS(runId));
     }
 
     @GetMapping
-    @ApiOperation(
-            value = "Returns lustreFs by id.",
-            notes = "Returns lustreFs by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns lustreFs by id.",
+            description = "Returns lustreFs by id.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> getLustreFS(@RequestParam final String mountName,
                                         @RequestParam final Long regionId) {
@@ -92,12 +90,11 @@ public class LustreFSController extends AbstractRestController {
     }
 
     @DeleteMapping(value = RUN_ID_PATH)
-    @ApiOperation(
-            value = "Deletes lustre FS for a run.",
-            notes = "Deletes lustre FS for a run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes lustre FS for a run.",
+            description = "Deletes lustre FS for a run.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> deleteLustreFS(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(lustreFSApiService.deleteLustreFS(runId));

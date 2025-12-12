@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -197,67 +196,54 @@ public class AttachmentDao extends NamedParameterJdbcDaoSupport {
         };
     }
 
-    @Required
     public void setCreateAttachmentQuery(String createAttachmentQuery) {
         this.createAttachmentQuery = createAttachmentQuery;
     }
 
-    @Required
     public void setDeleteAttachmentQuery(String deleteAttachmentQuery) {
         this.deleteAttachmentQuery = deleteAttachmentQuery;
     }
 
-    @Required
     public void setLoadAttachmentsByIssueIdQuery(String loadAttachmentsByIssueIdQuery) {
         this.loadAttachmentsByIssueIdQuery = loadAttachmentsByIssueIdQuery;
     }
 
-    @Required
     public void setLoadAttachmentIdsByIssueIdsQuery(String loadAttachmentIdsByIssueIdsQuery) {
         this.loadAttachmentIdsByIssueIdsQuery = loadAttachmentIdsByIssueIdsQuery;
     }
 
-    @Required
     public void setLoadAttachmentsByCommentIdsQuery(String loadAttachmentsByCommentIdsQuery) {
         this.loadAttachmentsByCommentIdsQuery = loadAttachmentsByCommentIdsQuery;
     }
 
-    @Required
     public void setDeleteAttachmentsByCommentIdsQuery(String deleteAttachmentsByCommentIdsQuery) {
         this.deleteAttachmentsByCommentIdsQuery = deleteAttachmentsByCommentIdsQuery;
     }
 
-    @Required
     public void setDeleteAttachmentsByIssueIdQuery(String deleteAttachmentsByIssueIdQuery) {
         this.deleteAttachmentsByIssueIdQuery = deleteAttachmentsByIssueIdQuery;
     }
 
-    @Required
     public void setAttachmentSequenceName(String attachmentSequenceName) {
         this.attachmentSequenceName = attachmentSequenceName;
     }
 
-    @Required
     public void setUpdateAttachmentIssueIdQuery(String updateAttachmentIssueIdQuery) {
         this.updateAttachmentIssueIdQuery = updateAttachmentIssueIdQuery;
     }
 
-    @Required
     public void setUpdateAttachmentCommentIdQuery(String updateAttachmentCommentIdQuery) {
         this.updateAttachmentCommentIdQuery = updateAttachmentCommentIdQuery;
     }
 
-    @Required
     public void setLoadAttachmentQuery(String loadAttachmentQuery) {
         this.loadAttachmentQuery = loadAttachmentQuery;
     }
 
-    @Required
     public void setDeleteAttachmentsQuery(String deleteAttachmentsQuery) {
         this.deleteAttachmentsQuery = deleteAttachmentsQuery;
     }
 
-    @Required
     public void setLoadAttachmentByNameQuery(String loadAttachmentByNameQuery) {
         this.loadAttachmentByNameQuery = loadAttachmentByNameQuery;
     }

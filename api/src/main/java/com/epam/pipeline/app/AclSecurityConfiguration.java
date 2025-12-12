@@ -47,14 +47,15 @@ import org.springframework.security.acls.jdbc.JdbcMutableAclService;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
-import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import javax.sql.DataSource;
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.acl"})
-public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration {
+@EnableMethodSecurity
+public class AclSecurityConfiguration {
 
     private static final String TRUE = "true";
 
@@ -71,8 +72,8 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     @Qualifier("aclCacheManager")
     private CacheManager cacheManager;
 
-    @Override
-    protected MethodSecurityExpressionHandler createExpressionHandler() {
+    @Bean
+    public MethodSecurityExpressionHandler createExpressionHandler() {
         DefaultMethodSecurityExpressionHandler expressionHandler =
                 new DefaultMethodSecurityExpressionHandler();
         expressionHandler.setPermissionEvaluator(permissionEvaluator());

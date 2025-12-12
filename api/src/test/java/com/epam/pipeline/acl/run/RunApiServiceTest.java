@@ -40,8 +40,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -62,7 +61,8 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
@@ -606,7 +606,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
-        Assert.assertEquals(runResult, actualResults);
+        assertEquals(runResult, actualResults);
     }
 
     @Test
@@ -652,7 +652,7 @@ public class RunApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
-        Assert.assertEquals(runResult, actualResults);
+        assertEquals(runResult, actualResults);
     }
 
     private void mockRunToolOnBehalfOfAnotherUser(final PipelineStart pipelineStart) {

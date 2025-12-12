@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -75,27 +75,22 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteNotificationSettingsQuery, id);
     }
 
-    @Required
     public void setCreateNotificationSettingsQuery(String createNotificationSettingsQuery) {
         this.createNotificationSettingsQuery = createNotificationSettingsQuery;
     }
 
-    @Required
     public void setLoadNotificationSettingsQuery(String loadNotificationSettingsQuery) {
         this.loadNotificationSettingsQuery = loadNotificationSettingsQuery;
     }
 
-    @Required
     public void setLoadAllNotificationSettingsQuery(String loadAllNotificationSettingsQuery) {
         this.loadAllNotificationSettingsQuery = loadAllNotificationSettingsQuery;
     }
 
-    @Required
     public void setDeleteNotificationSettingsQuery(String deleteNotificationSettingsQuery) {
         this.deleteNotificationSettingsQuery = deleteNotificationSettingsQuery;
     }
 
-    @Required
     public void setUpdateNotificationSettingsQuery(String updateNotificationSettingsQuery) {
         this.updateNotificationSettingsQuery = updateNotificationSettingsQuery;
     }
@@ -175,8 +170,5 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
                 return settings;
             };
         }
-
-
-
     }
 }

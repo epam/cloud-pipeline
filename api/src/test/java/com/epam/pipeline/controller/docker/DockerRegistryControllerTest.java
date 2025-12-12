@@ -30,8 +30,7 @@ import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -48,14 +47,15 @@ import java.util.Map;
 import static com.epam.pipeline.controller.docker.DockerRegistryController.DOCKER_LOGIN_SCRIPT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.refEq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(controllers = DockerRegistryController.class)
 public class DockerRegistryControllerTest extends AbstractControllerTest {
@@ -166,7 +166,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
                 .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
         final JwtRawToken actualResult = JsonMapper.parseData(mvcResult.getResponse().getContentAsString(),
                 SecurityCreatorUtils.JWT_RAW_TOKEN_INSTANCE_TYPE);
-        Assert.assertEquals(jwtRawToken, actualResult);
+        assertEquals(jwtRawToken, actualResult);
     }
 
     @Test

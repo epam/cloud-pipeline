@@ -26,15 +26,18 @@ import com.epam.pipeline.dto.plugin.UIPluginAssignment;
 import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import io.swagger.annotations.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
@@ -46,7 +49,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/plugins")
 @RequiredArgsConstructor
-@Api(value = "UI Plugins API", description = "Endpoints for managing UI plugins and assignments")
+@Tag(name = "UI Plugins API", description = "Endpoints for managing UI plugins and assignments")
 public class PluginController extends AbstractRestController {
 
     private final PluginService pluginService;
@@ -61,49 +64,48 @@ public class PluginController extends AbstractRestController {
     }
 
     @GetMapping
-    @ApiOperation(
-            value = "List UI plugins",
-            notes = "Returns a list of UI plugins, optionally filtered by type.",
+    @Operation(
+            summary = "List UI plugins",
+            description = "Returns a list of UI plugins, optionally filtered by type."/*,
             response = UIPlugin.class,
-            responseContainer = "List")
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Successfully retrieved plugins")})
+            responseContainer = "List"*/)
+    @ApiResponses({@ApiResponse(description = "Successfully retrieved plugins")})
     public Result<List<UIPlugin>> getPlugins(
-            @ApiParam(value = "Optional plugin type filter (LaunchForm or RunLog)")
+            @Parameter(description = "Optional plugin type filter (LaunchForm or RunLog)")
             @RequestParam(required = false) PluginType type) {
         return Result.success(pluginService.getPlugins(type));
     }
 
     @PostMapping
-    @ApiOperation(
-            value = "Create or update a UI plugin",
-            notes = "Creates a new plugin if ID is absent, updates existing plugin if ID is provided.",
-            response = UIPlugin.class)
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Plugin created or updated successfully")})
+    @Operation(
+            summary = "Create or update a UI plugin",
+            description = "Creates a new plugin if ID is absent, updates existing plugin if ID is provided.")
+    @ApiResponses({@ApiResponse(description = "Plugin created or updated successfully")})
     public Result<UIPlugin> savePlugin(
-            @ApiParam(value = "Plugin details", required = true)
+            @Parameter(description = "Plugin details", required = true)
             @RequestBody UIPlugin plugin) {
         return Result.success(pluginService.savePlugin(plugin));
     }
 
     @GetMapping("/{id}")
-    @ApiOperation(
-            value = "Get a UI plugin by ID",
-            notes = "Returns the plugin with the specified ID.",
-            response = UIPlugin.class)
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Plugin retrieved successfully")})
+    @Operation(
+            summary = "Get a UI plugin by ID",
+            description = "Returns the plugin with the specified ID."/*,
+            response = UIPlugin.class*/)
+    @ApiResponses({@ApiResponse(description = "Plugin retrieved successfully")})
     public Result<UIPlugin> getPlugin(
-            @ApiParam(value = "Plugin ID", required = true)
+            @Parameter(description = "Plugin ID", required = true)
             @PathVariable Long id) {
         return Result.success(pluginService.getPlugin(id));
     }
 
     @DeleteMapping("/{id}")
-    @ApiOperation(
-            value = "Delete a UI plugin",
-            notes = "Deletes the plugin with the specified ID.")
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Plugin deleted successfully")})
+    @Operation(
+            summary = "Delete a UI plugin",
+            description = "Deletes the plugin with the specified ID.")
+    @ApiResponses({@ApiResponse(description = "Plugin deleted successfully")})
     public void deletePlugin(
-            @ApiParam(value = "Plugin ID", required = true)
+            @Parameter(description = "Plugin ID", required = true)
             @PathVariable Long id) {
         pluginService.deletePlugin(id);
     }
@@ -111,13 +113,13 @@ public class PluginController extends AbstractRestController {
     @GetMapping(
             value = "/{id}/content/**",
             produces = {"text/javascript", "application/javascript", "text/css"})
-    @ApiOperation(
-            value = "Get plugin file content",
-            notes = "Returns the content of a plugin file specified by ID and relative path.",
-            response = String.class)
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "File content retrieved successfully")})
+    @Operation(
+            summary = "Get plugin file content",
+            description = "Returns the content of a plugin file specified by ID and relative path."/*,
+            response = String.class*/)
+    @ApiResponses({@ApiResponse(description = "File content retrieved successfully")})
     public void getPluginFileContent(
-            @ApiParam(value = "Plugin ID", required = true)
+            @Parameter(description = "Plugin ID", required = true)
             @PathVariable Long id,
             final HttpServletRequest request,
             final HttpServletResponse response) throws IOException {
@@ -134,53 +136,55 @@ public class PluginController extends AbstractRestController {
     }
 
     @GetMapping("/assign")
-    @ApiOperation(
-            value = "List plugin assignments",
-            notes = "Returns a list of plugin assignments, optionally filtered by tool ID, pipeline ID, or version.",
+    @Operation(
+            summary = "List plugin assignments",
+            description = "Returns a list of plugin assignments, " +
+                    "optionally filtered by tool ID, pipeline ID, or version."
+            /*
             response = UIPluginAssignment.class,
-            responseContainer = "List")
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Successfully retrieved assignments")})
+            responseContainer = "List"*/)
+    @ApiResponses({@ApiResponse(description = "Successfully retrieved assignments")})
     public Result<List<UIPluginAssignment>> getAssignments(
-            @ApiParam(value = "Optional tool ID filter")
+            @Parameter(description = "Optional tool ID filter")
             @RequestParam(required = false) Long toolId,
-            @ApiParam(value = "Optional pipeline ID filter")
+            @Parameter(description = "Optional pipeline ID filter")
             @RequestParam(required = false) Long pipelineId,
-            @ApiParam(value = "Optional version filter")
+            @Parameter(description = "Optional version filter")
             @RequestParam(required = false) String version) {
         return Result.success(assignmentService.getAssignments(toolId, pipelineId, version));
     }
 
     @PostMapping("/assign")
-    @ApiOperation(
-            value = "Create or update a plugin assignment",
-            notes = "Creates a new assignment if ID is absent, updates existing assignment if ID is provided.",
-            response = UIPluginAssignment.class)
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Assignment created or updated successfully")})
+    @Operation(
+            summary = "Create or update a plugin assignment",
+            description = "Creates a new assignment if ID is absent, updates existing assignment if ID is provided."/*,
+            response = UIPluginAssignment.class*/)
+    @ApiResponses({@ApiResponse(description = "Assignment created or updated successfully")})
     public Result<UIPluginAssignment> saveAssignment(
-            @ApiParam(value = "Assignment details", required = true)
+            @Parameter(description = "Assignment details", required = true)
             @RequestBody UIPluginAssignment assignment) {
         return Result.success(assignmentService.saveAssignment(assignment));
     }
 
     @GetMapping("/assign/{id}")
-    @ApiOperation(
-            value = "Get a plugin assignment by ID",
-            notes = "Returns the assignment with the specified ID.",
-            response = UIPluginAssignment.class)
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Assignment retrieved successfully")})
+    @Operation(
+            summary = "Get a plugin assignment by ID",
+            description = "Returns the assignment with the specified ID."/*,
+            response = UIPluginAssignment.class*/)
+    @ApiResponses({@ApiResponse(description = "Assignment retrieved successfully")})
     public Result<UIPluginAssignment> getAssignment(
-            @ApiParam(value = "Assignment ID", required = true)
+            @Parameter(description = "Assignment ID", required = true)
             @PathVariable Long id) {
         return Result.success(assignmentService.getAssignment(id));
     }
 
     @DeleteMapping("/assign/{id}")
-    @ApiOperation(
-            value = "Delete a plugin assignment",
-            notes = "Deletes the assignment with the specified ID.")
-    @ApiResponses({@ApiResponse(code = HTTP_STATUS_OK, message = "Assignment deleted successfully")})
+    @Operation(
+            summary = "Delete a plugin assignment",
+            description = "Deletes the assignment with the specified ID.")
+    @ApiResponses({@ApiResponse(description = "Assignment deleted successfully")})
     public void deleteAssignment(
-            @ApiParam(value = "Assignment ID", required = true)
+            @Parameter(description = "Assignment ID", required = true)
             @PathVariable Long id) {
         assignmentService.deleteAssignment(id);
     }

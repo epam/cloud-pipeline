@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
 import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

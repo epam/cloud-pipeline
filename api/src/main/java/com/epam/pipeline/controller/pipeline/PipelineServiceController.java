@@ -22,12 +22,11 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.acl.run.RunApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +36,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Api(value = "Pipeline services")
+@Tag(name = "Pipeline services")
 public class PipelineServiceController extends AbstractRestController {
 
     @Autowired
@@ -45,12 +44,11 @@ public class PipelineServiceController extends AbstractRestController {
 
     @RequestMapping(value = "/services", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all active shared pipeline runs.",
-            notes = "Loads all active shared pipeline runs for user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary= "Loads all active shared pipeline runs.",
+            description = "Loads all active shared pipeline runs for user.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<PagedResult<List<PipelineRun>>> activeSharedRuns(@RequestBody PagingRunFilterVO filterVO) {
         return Result.success(runApiService.loadActiveSharedRuns(filterVO));

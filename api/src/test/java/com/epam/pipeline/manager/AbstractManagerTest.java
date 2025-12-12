@@ -18,7 +18,7 @@ package com.epam.pipeline.manager;
 
 import com.epam.pipeline.AbstractSpringTest;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -39,7 +39,7 @@ public abstract class AbstractManagerTest extends AbstractSpringTest {
     @Autowired
     private ApplicationContext context;
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         File file = new File(workingDirPath);
         FileUtils.deleteDirectory(file);

@@ -17,7 +17,7 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -96,32 +96,26 @@ public class DocumentGenerationPropertyDao extends NamedParameterJdbcDaoSupport 
         }
     }
 
-    @Required
     public void setCreateDocumentGenerationPropertyQuery(String query) {
         this.createDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setUpdateDocumentGenerationPropertyQuery(String query) {
         this.updateDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setDeleteDocumentGenerationPropertyQuery(String query) {
         this.deleteDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setLoadDocumentGenerationPropertyQuery(String query) {
         this.loadDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setLoadAllDocumentGenerationPropertiesQuery(String query) {
         this.loadAllDocumentGenerationPropertiesQuery = query;
     }
 
-    @Required
     public void setLoadDocumentGenerationPropertiesByPipelineIdQuery(String query) {
         this.loadDocumentGenerationPropertiesByPipelineIdQuery = query;
     }
