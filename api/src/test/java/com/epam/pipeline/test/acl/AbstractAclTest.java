@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -240,5 +241,9 @@ public abstract class AbstractAclTest {
 
     protected void mockUserContext(final UserContext userContext) {
         doReturn(userContext).when(mockUserManager).loadUserContext(any());
+    }
+
+    protected void mockUser(final PipelineUser user) {
+        doReturn(user).when(mockUserManager).loadByNameOrId(eq(user.getUserName()));
     }
 }
