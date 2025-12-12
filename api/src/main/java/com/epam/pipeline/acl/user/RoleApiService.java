@@ -85,8 +85,8 @@ public class RoleApiService {
         return roleManager.delete(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR +
-            "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')")
+    @PreAuthorize(ADMIN_ONLY + OR + "(" + USER_ADMIN_ONLY + AND + "@roleManager.isAdminRole(#roleId) != true" + ")"
+            + OR + "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')")
     @AclMask
     public ExtendedRole assignRole(Long roleId, List<Long> userIds) {
         return roleManager.assignRole(roleId, userIds);

@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
@@ -42,6 +43,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -56,6 +58,7 @@ import java.util.stream.Collectors;
 @AclSync
 public class RoleManager implements SecuredEntityManager {
 
+    public static final String ADMIN_SUFFIX = "ADMIN";
     @Autowired
     private GrantPermissionHandler permissionHandler;
 
@@ -233,5 +236,13 @@ public class RoleManager implements SecuredEntityManager {
     @Override
     public Role loadWithParents(Long id) {
         return load(id);
+    }
+
+    public boolean isAdminRole(final Long roleId) {
+        final Role loaded = load(roleId);
+        return Arrays.stream(DefaultRoles.values())
+                .map(DefaultRoles::getName)
+                .filter(name -> name.contains(ADMIN_SUFFIX))
+                .anyMatch(roleName -> roleName.equals(loaded.getName()));
     }
 }
