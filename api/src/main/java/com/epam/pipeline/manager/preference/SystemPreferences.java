@@ -48,6 +48,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
+import com.epam.pipeline.entity.search.ElasticStackVersion;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
@@ -1373,6 +1374,8 @@ public class SystemPreferences {
             null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final EnumPreference<ElasticStackVersion> SEARCH_ELASTIC_VERSION = new EnumPreference<>(
+            "search.elastic.version", ElasticStackVersion.V6, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_BILLING_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.billing.socket.timeout", 30000, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_BILLING_RETRY_TIMEOUT = new IntPreference(
