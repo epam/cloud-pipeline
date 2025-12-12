@@ -317,23 +317,27 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
         }
     }
 
-    public DataStorageDownloadFileUrl generatePresignedUrl(final AzureBlobStorage storage, final String path,
-                                                           final String permission, final boolean exist) {
-        final DataLakeFileSystemClient fileSystemClient = getFileSystemClient(storage);
-        validateFile(fileSystemClient, storage, path, true);
-        return generatePresignedUrl(storage, path, permission);
+    public DataStorageDownloadFileUrl generateDownloadUrl(final AzureBlobStorage storage, final String path) {
+        final PathSasPermission permission = new PathSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(false)
+                .setWritePermission(false);
+        validateFile(getFileSystemClient(storage), storage, path, true);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
     }
 
-    public DataStorageDownloadFileUrl generatePresignedUrl(final AzureBlobStorage storage,
-                                                           final String path, final String permission) {
-        return generateGenericPresignedUrl(storage, path, permission, Duration.ZERO);
+    public DataStorageDownloadFileUrl generateUploadUrl(final AzureBlobStorage storage, final String path) {
+        final PathSasPermission permission = new PathSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(true)
+                .setWritePermission(true);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
     }
 
     public DataStorageDownloadFileUrl generateGenericPresignedUrl(final AzureBlobStorage storage, final String path,
                                                                   final String permission, final Duration duration) {
-        final DataLakeFileSystemClient fileSystemClient = getFileSystemClient(storage);
-        validateFile(fileSystemClient, storage, path, true);
-        final String sasToken = generateSASToken(getServiceClient(), storage, path, permission, expirationOf(duration));
+        final DataLakeServiceClient serviceClient = getServiceClient();
+        final String sasToken = generateSASToken(serviceClient, storage, path, permission, expirationOf(duration));
         return generateResponseObject(storage, path, sasToken);
     }
 
@@ -508,7 +512,7 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
     }
 
     private String blobUrl(final String resourcePath, final String sasToken) {
-        return String.format(DATALAKE_URL_FORMAT + "/%s?%s", region.getStorageAccount(), resourcePath, sasToken);
+        return String.format(BLOB_URL_FORMAT + "/%s?%s", region.getStorageAccount(), resourcePath, sasToken);
     }
 
     private DataStorageDownloadFileUrl responseWith(final String blobUrl) {

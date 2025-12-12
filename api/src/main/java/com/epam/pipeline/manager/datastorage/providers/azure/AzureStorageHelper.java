@@ -81,10 +81,9 @@ public interface AzureStorageHelper {
 
     DataStorageStreamingContent getStream(AzureBlobStorage storage, String path);
 
-    DataStorageDownloadFileUrl generatePresignedUrl(AzureBlobStorage storage, String path,
-                                                    String permission, boolean exist);
+    DataStorageDownloadFileUrl generateDownloadUrl(AzureBlobStorage storage, String path);
 
-    DataStorageDownloadFileUrl generatePresignedUrl(AzureBlobStorage storage, String path, String permission);
+    DataStorageDownloadFileUrl generateUploadUrl(AzureBlobStorage storage, String path);
 
     DataStorageDownloadFileUrl generateGenericPresignedUrl(AzureBlobStorage storage, String path,
                                                            String permission, Duration duration);

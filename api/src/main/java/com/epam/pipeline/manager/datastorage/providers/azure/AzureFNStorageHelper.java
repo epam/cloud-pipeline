@@ -367,19 +367,21 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
         }
     }
 
-    public DataStorageDownloadFileUrl generatePresignedUrl(final AzureBlobStorage storage,
-                                                           final String path,
-                                                           final String permission,
-                                                           final boolean exist) {
-        final BlobContainerClient containerClient = getBlobContainerClient(storage);
-        validateBlob(containerClient, storage, path, exist);
-        return generatePresignedUrl(storage, path, permission);
+    public DataStorageDownloadFileUrl generateDownloadUrl(final AzureBlobStorage storage, final String path) {
+        final BlobSasPermission permission = new BlobSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(false)
+                .setWritePermission(false);
+        validateBlob(getBlobContainerClient(storage), storage, path, true);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
     }
 
-    public DataStorageDownloadFileUrl generatePresignedUrl(final AzureBlobStorage storage,
-                                                           final String path,
-                                                           final String permission) {
-        return generateGenericPresignedUrl(storage, path, permission, Duration.ZERO);
+    public DataStorageDownloadFileUrl generateUploadUrl(final AzureBlobStorage storage, final String path) {
+        final BlobSasPermission permission = new BlobSasPermission()
+                .setReadPermission(true)
+                .setAddPermission(true)
+                .setWritePermission(true);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
     }
 
     public DataStorageDownloadFileUrl generateGenericPresignedUrl(final AzureBlobStorage storage,

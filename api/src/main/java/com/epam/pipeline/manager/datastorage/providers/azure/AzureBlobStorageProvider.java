@@ -134,21 +134,13 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
                                                           final String path,
                                                           final String version,
                                                           ContentDisposition contentDisposition) {
-        final BlobSasPermission permission = new BlobSasPermission()
-                .setReadPermission(true)
-                .setAddPermission(false)
-                .setWritePermission(false);
-        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString(), true);
+        return getAzureStorageHelper(dataStorage).generateDownloadUrl(dataStorage, path);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final AzureBlobStorage dataStorage,
                                                                        final String path) {
-        final BlobSasPermission permission = new BlobSasPermission()
-                .setReadPermission(true)
-                .setAddPermission(true)
-                .setWritePermission(true);
-        return getAzureStorageHelper(dataStorage).generatePresignedUrl(dataStorage, path, permission.toString());
+        return getAzureStorageHelper(dataStorage).generateUploadUrl(dataStorage, path);
     }
 
     @Override
