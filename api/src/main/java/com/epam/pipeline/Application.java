@@ -27,14 +27,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(
         exclude = {
                 RedisAutoConfiguration.class,
-//                SecurityAutoConfiguration.class,
                 RedisRepositoriesAutoConfiguration.class
         })
 @Import({AppMVCConfiguration.class,
