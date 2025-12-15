@@ -16,19 +16,23 @@
 
 package com.epam.pipeline.manager.docker;
 
+import com.epam.pipeline.security.acl.AclPermission;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.collections.map.MultiKeyMap;
+import org.apache.commons.lang.ArrayUtils;
 import org.springframework.security.acls.model.Permission;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-
-import com.epam.pipeline.security.acl.AclPermission;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -60,12 +64,31 @@ public class DockerRegistryClaim {
         return new DockerRegistryClaim(String.format(IMAGE_CLAIM_TEMPLATE, image));
     }
 
+    public DockerRegistryClaim(final String type, final String image, final Set<String> actions) {
+        this.type = type;
+        this.imageName = image;
+        this.actions = actions.toArray(new String[0]);
+    }
+
+    public static DockerRegistryClaim merge(DockerRegistryClaim first, DockerRegistryClaim second) {
+        if (!Objects.equals(first.type, second.type) || !Objects.equals(first.imageName, second.imageName)) {
+            throw new IllegalArgumentException(String.format(
+                    "You are trying to merge scopes for different docker images: '%s:%s', '%s:%s'",
+                    first.type, first.imageName, second.type, second.imageName)
+            );
+        }
+        return new DockerRegistryClaim(
+                first.type, first.imageName,
+               Arrays.stream((String[]) ArrayUtils.addAll(first.actions, second.actions)).collect(Collectors.toSet())
+        );
+    }
+
     public static List<DockerRegistryClaim> parseClaims(String scope) {
         if (!scope.contains(REPOSITORY_PREFIX)) {
             return Collections.singletonList(new DockerRegistryClaim(scope));
         }
         int prefixIndex = scope.indexOf(REPOSITORY_PREFIX);
-        List<DockerRegistryClaim> result = new ArrayList<>();
+        final MultiKeyMap result = new MultiKeyMap();
         while (prefixIndex != -1) {
             int nextIndex = scope.indexOf(REPOSITORY_PREFIX, prefixIndex + 1);
             if (nextIndex == -1) {
@@ -75,10 +98,17 @@ public class DockerRegistryClaim {
             if (chunk.endsWith(ACTION_DELIMITER)) {
                 chunk = scope.substring(prefixIndex, nextIndex - 1);
             }
-            result.add(new DockerRegistryClaim(chunk));
+
+            DockerRegistryClaim claim = new DockerRegistryClaim(chunk);
+            DockerRegistryClaim prev = (DockerRegistryClaim) result.get(claim.type, claim.imageName);
+            if (prev != null) {
+                claim = DockerRegistryClaim.merge(prev, claim);
+            }
+
+            result.put(claim.type, claim.imageName, claim);
             prefixIndex  = scope.indexOf(REPOSITORY_PREFIX, prefixIndex + 1);
         }
-        return result;
+        return new ArrayList<DockerRegistryClaim>(result.values());
     }
 
     @JsonIgnore
