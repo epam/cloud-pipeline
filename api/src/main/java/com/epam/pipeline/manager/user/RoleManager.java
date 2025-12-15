@@ -234,4 +234,5 @@ public class RoleManager implements SecuredEntityManager {
     public Role loadWithParents(Long id) {
         return load(id);
     }
+
 }
