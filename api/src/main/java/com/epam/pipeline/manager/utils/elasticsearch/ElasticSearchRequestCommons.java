@@ -49,34 +49,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Locale;
 
-public class ElasticSearchRequestCommons {
+public final class ElasticSearchRequestCommons {
 
-    static XContentType enforceSameContentType(IndexRequest indexRequest, @Nullable XContentType xContentType) {
-        XContentType requestContentType = indexRequest.getContentType();
-        if (requestContentType != XContentType.JSON && requestContentType != XContentType.SMILE) {
-            throw new IllegalArgumentException("Unsupported content-type found for request with content-type [" + requestContentType
-                    + "], only JSON and SMILE are supported");
-        }
-        if (xContentType == null) {
-            return requestContentType;
-        }
-        if (requestContentType != xContentType) {
-            throw new IllegalArgumentException("Mismatching content-type found for request with content-type [" + requestContentType
-                    + "], previous requests have content-type [" + xContentType + "]");
-        }
-        return xContentType;
-    }
+    private static final String EXPAND_WILDCARDS = "expand_wildcards";
 
-    public static ContentType createContentType(final XContentType xContentType) {
-        return ContentType.create(xContentType.mediaTypeWithoutParameters(), (Charset) null);
-    }
-
-    public static Request putParam(Request request, String name, String value) {
-        if (Strings.hasLength(value)) {
-            request.addParameter(name, value);
-        }
-        return request;
-    }
+    private ElasticSearchRequestCommons() {}
 
     // The elasticsearch library version 6.8.3 is not fully compatible with elasticsearch V7,
     // so an implementation that ensures proper functionality is required.
@@ -99,7 +76,8 @@ public class ElasticSearchRequestCommons {
         return request;
     }
 
-    public static byte[] writeMultiLineFormat(MultiSearchRequest multiSearchRequest, XContent xContent) throws IOException {
+    private static byte[] writeMultiLineFormat(MultiSearchRequest multiSearchRequest, XContent xContent)
+            throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         for (SearchRequest request : multiSearchRequest.requests()) {
             try (XContentBuilder xContentBuilder = XContentBuilder.builder(xContent)) {
@@ -121,20 +99,21 @@ public class ElasticSearchRequestCommons {
         return output.toByteArray();
     }
 
-    public static void writeSearchRequestParams(SearchRequest request, XContentBuilder xContentBuilder) throws IOException {
+    private static void writeSearchRequestParams(SearchRequest request, XContentBuilder xContentBuilder)
+            throws IOException {
         xContentBuilder.startObject();
         if (request.indices() != null) {
             xContentBuilder.field("index", request.indices());
         }
         if (request.indicesOptions() != null && request.indicesOptions() != SearchRequest.DEFAULT_INDICES_OPTIONS) {
             if (request.indicesOptions().expandWildcardsOpen() && request.indicesOptions().expandWildcardsClosed()) {
-                xContentBuilder.field("expand_wildcards", "all");
+                xContentBuilder.field(EXPAND_WILDCARDS, "all");
             } else if (request.indicesOptions().expandWildcardsOpen()) {
-                xContentBuilder.field("expand_wildcards", "open");
+                xContentBuilder.field(EXPAND_WILDCARDS, "open");
             } else if (request.indicesOptions().expandWildcardsClosed()) {
-                xContentBuilder.field("expand_wildcards", "closed");
+                xContentBuilder.field(EXPAND_WILDCARDS, "closed");
             } else {
-                xContentBuilder.field("expand_wildcards", "none");
+                xContentBuilder.field(EXPAND_WILDCARDS, "none");
             }
             xContentBuilder.field("ignore_unavailable", request.indicesOptions().ignoreUnavailable());
             xContentBuilder.field("allow_no_indices", request.indicesOptions().allowNoIndices());
@@ -208,56 +187,54 @@ public class ElasticSearchRequestCommons {
 
             try (XContentBuilder metadata = XContentBuilder.builder(bulkContentType.xContent())) {
                 metadata.startObject();
-                {
-                    metadata.startObject(opType.getLowercase());
-                    if (Strings.hasLength(action.index())) {
-                        metadata.field("_index", action.index());
-                    }
-                    if (Strings.hasLength(action.id())) {
-                        metadata.field("_id", action.id());
-                    }
-                    if (Strings.hasLength(action.routing())) {
-                        metadata.field("routing", action.routing());
-                    }
-                    if (Strings.hasLength(action.parent())) {
-                        metadata.field("parent", action.parent());
-                    }
-                    if (action.version() != Versions.MATCH_ANY) {
-                        metadata.field("version", action.version());
-                    }
-
-                    VersionType versionType = action.versionType();
-                    if (versionType != VersionType.INTERNAL) {
-                        if (versionType == VersionType.EXTERNAL) {
-                            metadata.field("version_type", "external");
-                        } else if (versionType == VersionType.EXTERNAL_GTE) {
-                            metadata.field("version_type", "external_gte");
-                        } else if (versionType == VersionType.FORCE) {
-                            metadata.field("version_type", "force");
-                        }
-                    }
-
-                    if (action.ifSeqNo() != SequenceNumbers.UNASSIGNED_SEQ_NO) {
-                        metadata.field("if_seq_no", action.ifSeqNo());
-                        metadata.field("if_primary_term", action.ifPrimaryTerm());
-                    }
-
-                    if (opType == DocWriteRequest.OpType.INDEX || opType == DocWriteRequest.OpType.CREATE) {
-                        IndexRequest indexRequest = (IndexRequest) action;
-                        if (Strings.hasLength(indexRequest.getPipeline())) {
-                            metadata.field("pipeline", indexRequest.getPipeline());
-                        }
-                    } else if (opType == DocWriteRequest.OpType.UPDATE) {
-                        UpdateRequest updateRequest = (UpdateRequest) action;
-                        if (updateRequest.retryOnConflict() > 0) {
-                            metadata.field("retry_on_conflict", updateRequest.retryOnConflict());
-                        }
-                        if (updateRequest.fetchSource() != null) {
-                            metadata.field("_source", updateRequest.fetchSource());
-                        }
-                    }
-                    metadata.endObject();
+                metadata.startObject(opType.getLowercase());
+                if (Strings.hasLength(action.index())) {
+                    metadata.field("_index", action.index());
                 }
+                if (Strings.hasLength(action.id())) {
+                    metadata.field("_id", action.id());
+                }
+                if (Strings.hasLength(action.routing())) {
+                    metadata.field("routing", action.routing());
+                }
+                if (Strings.hasLength(action.parent())) {
+                    metadata.field("parent", action.parent());
+                }
+                if (action.version() != Versions.MATCH_ANY) {
+                    metadata.field("version", action.version());
+                }
+
+                VersionType versionType = action.versionType();
+                if (versionType != VersionType.INTERNAL) {
+                    if (versionType == VersionType.EXTERNAL) {
+                        metadata.field("version_type", "external");
+                    } else if (versionType == VersionType.EXTERNAL_GTE) {
+                        metadata.field("version_type", "external_gte");
+                    } else if (versionType == VersionType.FORCE) {
+                        metadata.field("version_type", "force");
+                    }
+                }
+
+                if (action.ifSeqNo() != SequenceNumbers.UNASSIGNED_SEQ_NO) {
+                    metadata.field("if_seq_no", action.ifSeqNo());
+                    metadata.field("if_primary_term", action.ifPrimaryTerm());
+                }
+
+                if (opType == DocWriteRequest.OpType.INDEX || opType == DocWriteRequest.OpType.CREATE) {
+                    IndexRequest indexRequest = (IndexRequest) action;
+                    if (Strings.hasLength(indexRequest.getPipeline())) {
+                        metadata.field("pipeline", indexRequest.getPipeline());
+                    }
+                } else if (opType == DocWriteRequest.OpType.UPDATE) {
+                    UpdateRequest updateRequest = (UpdateRequest) action;
+                    if (updateRequest.retryOnConflict() > 0) {
+                        metadata.field("retry_on_conflict", updateRequest.retryOnConflict());
+                    }
+                    if (updateRequest.fetchSource() != null) {
+                        metadata.field("_source", updateRequest.fetchSource());
+                    }
+                }
+                metadata.endObject();
                 metadata.endObject();
 
                 BytesRef metadataSource = BytesReference.bytes(metadata).toBytesRef();
@@ -296,4 +273,32 @@ public class ElasticSearchRequestCommons {
         request.setEntity(new NByteArrayEntity(content.toByteArray(), 0, content.size(), requestContentType));
         return request;
     }
+
+    private static XContentType enforceSameContentType(IndexRequest indexRequest, @Nullable XContentType xContentType) {
+        XContentType requestContentType = indexRequest.getContentType();
+        if (requestContentType != XContentType.JSON && requestContentType != XContentType.SMILE) {
+            throw new IllegalArgumentException("Unsupported content-type found for request with content-type ["
+                    + requestContentType + "], only JSON and SMILE are supported");
+        }
+        if (xContentType == null) {
+            return requestContentType;
+        }
+        if (requestContentType != xContentType) {
+            throw new IllegalArgumentException("Mismatching content-type found for request with content-type ["
+                    + requestContentType + "], previous requests have content-type [" + xContentType + "]");
+        }
+        return xContentType;
+    }
+
+    private static ContentType createContentType(final XContentType xContentType) {
+        return ContentType.create(xContentType.mediaTypeWithoutParameters(), (Charset) null);
+    }
+
+    private static Request putParam(Request request, String name, String value) {
+        if (Strings.hasLength(value)) {
+            request.addParameter(name, value);
+        }
+        return request;
+    }
+
 }

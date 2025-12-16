@@ -38,20 +38,20 @@ public class ELKVersionedRestHighLevelClient extends RestHighLevelClient {
     public MultiSearchResponse msearch(final MultiSearchRequest searchRequest, final RequestOptions options,
             final ElasticStackVersion elasticStackVersion) throws IOException {
         return callBasedOnVersion(elasticStackVersion,
-                () -> msearch(searchRequest, RequestOptions.DEFAULT),
-                () -> performRequestAndParseEntity(searchRequest,
-                        ElasticSearchRequestCommons::multiSearchRequestConverter, options,
-                        MultiSearchResponse::fromXContext, emptySet())
-                );
+            () -> msearch(searchRequest, options),
+            () -> performRequestAndParseEntity(searchRequest,
+                    ElasticSearchRequestCommons::multiSearchRequestConverter, options,
+                    MultiSearchResponse::fromXContext, emptySet())
+        );
     }
 
     public BulkResponse bulk(final BulkRequest bulkRequest, final RequestOptions options,
                              final ElasticStackVersion elasticStackVersion) throws IOException {
         return callBasedOnVersion(elasticStackVersion,
-                () -> bulk(bulkRequest, RequestOptions.DEFAULT),
-                () -> performRequestAndParseEntity(bulkRequest,
-                        ElasticSearchRequestCommons::bulkRequestConverter, options,
-                        BulkResponse::fromXContent, emptySet())
+            () -> bulk(bulkRequest, options),
+            () -> performRequestAndParseEntity(bulkRequest,
+                    ElasticSearchRequestCommons::bulkRequestConverter, options,
+                    BulkResponse::fromXContent, emptySet())
         );
     }
 
