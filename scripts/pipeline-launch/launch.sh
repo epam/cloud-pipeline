@@ -348,7 +348,7 @@ function check_package_installed {
       fi
 
       if check_installed "dpkg"; then
-            dpkg -q "$_PACKAGE_TO_CHECK" &> /dev/null
+            dpkg -S "$_PACKAGE_TO_CHECK" &> /dev/null
             return $?
       elif check_installed "rpm"; then
             rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
