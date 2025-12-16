@@ -24,10 +24,12 @@ import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogPaginationRequest;
 import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.log.PageMarker;
+import com.epam.pipeline.entity.search.ElasticStackVersion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.utils.elasticsearch.ELKVersionedRestHighLevelClient;
 import com.epam.pipeline.manager.search.SearchRequestBuilder;
 import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -250,8 +252,11 @@ public class LogManager {
                 .map(e -> getIndexRequest(e, index))
                 .collect(Collectors.toList());
         indexRequests.forEach(bulkRequest::add);
-        try (RestHighLevelClient client = elasticHelper.buildClient()){
-            client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        final ElasticStackVersion elasticStackVersion = preferenceManager.getPreference(
+                SystemPreferences.SEARCH_ELASTIC_VERSION
+        );
+        try (ELKVersionedRestHighLevelClient client = elasticHelper.buildClient()) {
+            client.bulk(bulkRequest, RequestOptions.DEFAULT, elasticStackVersion);
         } catch (IOException e) {
             throw new PipelineException(e);
         }

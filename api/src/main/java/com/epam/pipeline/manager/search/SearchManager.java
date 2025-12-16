@@ -20,12 +20,14 @@ import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.search.ElasticStackVersion;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.manager.utils.elasticsearch.ELKVersionedRestHighLevelClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -36,20 +38,12 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.ContextParser;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
-import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
-import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -92,11 +86,14 @@ public class SearchManager {
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
                                         final boolean allowNoIndex, final Set<String> storageSizeMasks,
                                         final Set<String> storageClasses, final boolean allowVersions) {
-        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
+        try (ELKVersionedRestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final MultiSearchRequest searchRequest = requestBuilder.buildStorageSumRequest(
                     dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks,
                     storageClasses, allowVersions);
-            final MultiSearchResponse searchResponse = msearch(searchRequest, allowNoIndex, client);
+            final ElasticStackVersion elasticStackVersion = preferenceManager.getPreference(
+                    SystemPreferences.SEARCH_ELASTIC_VERSION);
+            final MultiSearchResponse searchResponse = client.msearch(
+                    searchRequest, RequestOptions.DEFAULT, elasticStackVersion);
             return resultConverter.buildStorageUsageResponse(searchRequest, searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -168,27 +165,4 @@ public class SearchManager {
         return preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_FIELD);
     }
 
-    private Map<String, ContextParser<Object, ? extends Aggregation>> getSearchUsageAggregationParsers() {
-        final Map<String, ContextParser<Object, ? extends Aggregation>> map = new HashMap<>();
-        map.put(StringTerms.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
-        map.put(SumAggregationBuilder.NAME, (p, c) -> ParsedSum.fromXContent(p, (String) c));
-        return map;
-    }
-
-    private MultiSearchResponse msearch(final MultiSearchRequest searchRequest,
-                                        final boolean allowNoIndex,
-                                        final RestHighLevelClient client) throws IOException {
-        switch (preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_VERSION)) {
-            case V6:
-                return client.msearch(searchRequest, RequestOptions.DEFAULT);
-            case V7:
-                // The elasticsearch library version 6.8.3 is not fully compatible with elasticsearch V7,
-                // so an implementation that ensures proper functionality is required.
-                return new MultiSearchLowLevelHelper()
-                        .msearch(searchRequest, allowNoIndex, client.getLowLevelClient(),
-                                getSearchUsageAggregationParsers());
-            default:
-                throw new UnsupportedOperationException("Provided version of ELK stack currently not supported.");
-        }
-    }
 }
