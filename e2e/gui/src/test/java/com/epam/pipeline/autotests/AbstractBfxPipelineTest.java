@@ -53,7 +53,13 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
         Configuration.browser = WebDriverRunner.CHROME;
         Configuration.startMaximized = true;
-        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
+        System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
+
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--disable-extensions");
+
+        WebDriver webDriver = new ChromeDriver(options);
+        WebDriverRunner.setWebDriver(webDriver);
 
         login(C.ROOT_ADDRESS);
 
@@ -76,7 +82,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     public void restartBrowser(final String address) {
         Selenide.close();
-        login(address);
+        setUp();
     }
 
     public void addExtension(final String extensionPath) {

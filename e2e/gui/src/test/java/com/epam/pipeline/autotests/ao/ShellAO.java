@@ -64,17 +64,17 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertPageContains(String text) {
-        $(byText(text)).shouldBe(visible);
+        context().$(withText(text)).shouldBe(visible);
         return this;
     }
 
     public ShellAO assertPageContains(String text1, String text2) {
-        $(byText(text1)).shouldHave(text(text2));
+        context().$(withText(text1)).shouldHave(text(text2));
         return this;
     }
 
     public ShellAO assertPageDoesNotContain(String text) {
-        $(byText(text)).shouldNotBe(visible);
+        context().$(withText(text)).shouldNotBe(visible);
         return this;
     }
 
