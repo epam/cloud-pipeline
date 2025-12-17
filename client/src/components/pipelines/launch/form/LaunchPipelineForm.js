@@ -1530,6 +1530,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           visible: parameter.visible,
           validation: parameter.validation,
           no_override: parameter.noOverride,
+          read_only: parameter.readOnly,
           section: parameter.section
         };
       }
