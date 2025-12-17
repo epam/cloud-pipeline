@@ -517,8 +517,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()), format("pipeline-%s",
-                                nestedRunID))
+                                getPipelineName().toLowerCase(), getRunId()), format("%s-%s",
+                                getPipelineName().toLowerCase(), nestedRunID))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " r ")
