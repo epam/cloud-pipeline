@@ -55,12 +55,6 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         Configuration.startMaximized = true;
         System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
 
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--disable-extensions");
-
-        WebDriver webDriver = new ChromeDriver(options);
-        WebDriverRunner.setWebDriver(webDriver);
-
         login(C.ROOT_ADDRESS);
 
         //reset mouse
