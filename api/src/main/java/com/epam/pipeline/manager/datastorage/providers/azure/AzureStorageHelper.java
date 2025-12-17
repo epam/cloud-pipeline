@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -81,12 +82,13 @@ public interface AzureStorageHelper {
 
     DataStorageStreamingContent getStream(AzureBlobStorage storage, String path);
 
-    DataStorageDownloadFileUrl generateDownloadUrl(AzureBlobStorage storage, String path);
+    DataStorageDownloadFileUrl generateDownloadUrl(AzureBlobStorage storage, String path,
+                                                   ContentDisposition contentDisposition);
 
     DataStorageDownloadFileUrl generateUploadUrl(AzureBlobStorage storage, String path);
 
-    DataStorageDownloadFileUrl generateGenericPresignedUrl(AzureBlobStorage storage, String path,
-                                                           String permission, Duration duration);
+    DataStorageDownloadFileUrl generateGenericPresignedUrl(AzureBlobStorage storage, String path, String permission,
+                                                           Duration duration, ContentDisposition contentDisposition);
 
     void deleteFolder(AzureBlobStorage storage, String path);
 

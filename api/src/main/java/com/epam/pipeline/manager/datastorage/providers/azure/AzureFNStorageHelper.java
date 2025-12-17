@@ -32,6 +32,7 @@ import com.azure.storage.common.sas.SasProtocol;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -367,13 +368,14 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
         }
     }
 
-    public DataStorageDownloadFileUrl generateDownloadUrl(final AzureBlobStorage storage, final String path) {
+    public DataStorageDownloadFileUrl generateDownloadUrl(final AzureBlobStorage storage, final String path,
+                                                          final ContentDisposition contentDisposition) {
         final BlobSasPermission permission = new BlobSasPermission()
                 .setReadPermission(true)
                 .setAddPermission(false)
                 .setWritePermission(false);
         validateBlob(getBlobContainerClient(storage), storage, path, true);
-        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO, contentDisposition);
     }
 
     public DataStorageDownloadFileUrl generateUploadUrl(final AzureBlobStorage storage, final String path) {
@@ -381,15 +383,17 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
                 .setReadPermission(true)
                 .setAddPermission(true)
                 .setWritePermission(true);
-        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO, null);
     }
 
     public DataStorageDownloadFileUrl generateGenericPresignedUrl(final AzureBlobStorage storage,
                                                                   final String path,
                                                                   final String permission,
-                                                                  final Duration duration) {
+                                                                  final Duration duration,
+                                                                  final ContentDisposition contentDisposition) {
         final BlobServiceClient serviceClient = getBlobServiceClient(region, credentials);
-        final String sasToken = generateSASToken(serviceClient, storage, path, permission, expirationOf(duration));
+        final String sasToken = generateSASToken(serviceClient, storage, path,
+                permission, expirationOf(duration), contentDisposition);
         return generateResponseObject(storage, path, sasToken);
     }
 
@@ -492,17 +496,19 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
                                     final AzureBlobStorage storage,
                                     final String path,
                                     final String permission,
-                                    final OffsetDateTime expiryTime) {
+                                    final OffsetDateTime expiryTime,
+                                    final ContentDisposition contentDisposition) {
         final BlobContainerClient blobContainerClient = serviceClient.getBlobContainerClient(storage.getPath());
         return StringUtils.isBlank(path) || path.endsWith(ProviderUtils.DELIMITER)
-                ? generateSASToken(serviceClient, blobContainerClient, permission, expiryTime)
-                : generateSASToken(serviceClient, blobContainerClient, path, permission, expiryTime);
+                ? generateContainerSASToken(serviceClient, blobContainerClient, permission, expiryTime)
+                : generateSASToken(serviceClient, blobContainerClient, path,
+                permission, expiryTime, contentDisposition);
     }
 
-    private String generateSASToken(final BlobServiceClient serviceClient,
-                                    final BlobContainerClient blobContainerClient,
-                                    final String permission,
-                                    final OffsetDateTime expiryTime) {
+    private String generateContainerSASToken(final BlobServiceClient serviceClient,
+                                             final BlobContainerClient blobContainerClient,
+                                             final String permission,
+                                             final OffsetDateTime expiryTime) {
         final BlobContainerSasPermission blobContainerSasPermission = BlobContainerSasPermission.parse(permission);
         final BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime,
                 blobContainerSasPermission)
@@ -526,18 +532,22 @@ public class AzureFNStorageHelper implements AzureStorageHelper {
 
     private String generateSASToken(final BlobServiceClient serviceClient,
                                     final BlobContainerClient blobContainerClient,
-                                    final String blobName,
+                                    final String path,
                                     final String permission,
-                                    final OffsetDateTime expiryTime) {
+                                    final OffsetDateTime expiryTime,
+                                    final ContentDisposition contentDisposition) {
         final BlobSasPermission blobSasPermission = BlobSasPermission.parse(permission);
         final BlobServiceSasSignatureValues sasSignatureValues = new BlobServiceSasSignatureValues(expiryTime,
                 blobSasPermission).setStartTime(OffsetDateTime.now());
+        if (contentDisposition != null) {
+            sasSignatureValues.setContentDisposition(contentDisposition.getHeader(FilenameUtils.getName(path)));
+        }
         if (StringUtils.isNotBlank(region.getManagedIdentity())) {
             final UserDelegationKey userDelegationKey = getUserDelegationKey(serviceClient, expiryTime);
-            return blobContainerClient.getBlobClient(blobName)
+            return blobContainerClient.getBlobClient(path)
                     .generateUserDelegationSas(sasSignatureValues, userDelegationKey);
         } else if (StringUtils.isNotBlank(credentials.getStorageAccountKey())) {
-            return blobContainerClient.getBlobClient(blobName).generateSas(sasSignatureValues);
+            return blobContainerClient.getBlobClient(path).generateSas(sasSignatureValues);
         } else {
             throw new AuthenticationException(FAILED_TO_GET_STORAGE_CREDENTIALS);
         }
