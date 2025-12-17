@@ -133,8 +133,8 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public DataStorageDownloadFileUrl generateDownloadURL(final AzureBlobStorage dataStorage,
                                                           final String path,
                                                           final String version,
-                                                          ContentDisposition contentDisposition) {
-        return getAzureStorageHelper(dataStorage).generateDownloadUrl(dataStorage, path);
+                                                          final ContentDisposition contentDisposition) {
+        return getAzureStorageHelper(dataStorage).generateDownloadUrl(dataStorage, path, contentDisposition);
     }
 
     @Override
@@ -149,7 +149,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
                                                   final List<String> permissions,
                                                   final Duration duration) {
         return getAzureStorageHelper(dataStorage)
-                .generateGenericPresignedUrl(dataStorage, path, permissions(path, permissions), duration);
+                .generateGenericPresignedUrl(dataStorage, path, permissions(path, permissions), duration, null);
     }
 
     private String permissions(final String path, final List<String> permissions) {

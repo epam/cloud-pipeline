@@ -42,6 +42,7 @@ import com.azure.storage.file.datalake.sas.PathSasPermission;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -317,13 +318,14 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
         }
     }
 
-    public DataStorageDownloadFileUrl generateDownloadUrl(final AzureBlobStorage storage, final String path) {
+    public DataStorageDownloadFileUrl generateDownloadUrl(final AzureBlobStorage storage, final String path,
+                                                          final ContentDisposition contentDisposition) {
         final PathSasPermission permission = new PathSasPermission()
                 .setReadPermission(true)
                 .setAddPermission(false)
                 .setWritePermission(false);
         validateFile(getFileSystemClient(storage), storage, path, true);
-        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO, contentDisposition);
     }
 
     public DataStorageDownloadFileUrl generateUploadUrl(final AzureBlobStorage storage, final String path) {
@@ -331,13 +333,15 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
                 .setReadPermission(true)
                 .setAddPermission(true)
                 .setWritePermission(true);
-        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO);
+        return generateGenericPresignedUrl(storage, path, permission.toString(), Duration.ZERO, null);
     }
 
     public DataStorageDownloadFileUrl generateGenericPresignedUrl(final AzureBlobStorage storage, final String path,
-                                                                  final String permission, final Duration duration) {
+                                                                  final String permission, final Duration duration,
+                                                                  final ContentDisposition contentDisposition) {
         final DataLakeServiceClient serviceClient = getServiceClient();
-        final String sasToken = generateSASToken(serviceClient, storage, path, permission, expirationOf(duration));
+        final String sasToken = generateSASToken(serviceClient, storage, path, permission,
+                expirationOf(duration), contentDisposition);
         return generateResponseObject(storage, path, sasToken);
     }
 
@@ -427,11 +431,12 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
                                     final AzureBlobStorage storage,
                                     final String path,
                                     final String permission,
-                                    final OffsetDateTime expiryTime) {
+                                    final OffsetDateTime expiryTime,
+                                    final ContentDisposition contentDisposition) {
         final DataLakeFileSystemClient fileSystemClient = getFileSystemClient(storage);
         return StringUtils.isBlank(path)
                 ? generateContainerSASToken(serviceClient, fileSystemClient, permission, expiryTime)
-                : generateSASToken(serviceClient, fileSystemClient, path, permission, expiryTime);
+                : generateSASToken(serviceClient, fileSystemClient, path, permission, expiryTime, contentDisposition);
     }
 
     private String generateContainerSASToken(final DataLakeServiceClient serviceClient,
@@ -462,11 +467,15 @@ public class AzureHNStorageHelper implements AzureStorageHelper {
                                     final DataLakeFileSystemClient fileSystemClient,
                                     final String path,
                                     final String permission,
-                                    final OffsetDateTime expiryTime) {
+                                    final OffsetDateTime expiryTime,
+                                    final ContentDisposition contentDisposition) {
         final DataLakeFileClient fileClient = fileSystemClient.getFileClient(path);
         final PathSasPermission sasPermission = PathSasPermission.parse(permission);
         final DataLakeServiceSasSignatureValues sasSignatureValues = new DataLakeServiceSasSignatureValues(expiryTime,
                 sasPermission).setStartTime(OffsetDateTime.now());
+        if (contentDisposition != null) {
+            sasSignatureValues.setContentDisposition(contentDisposition.getHeader(FilenameUtils.getName(path)));
+        }
         if (StringUtils.isNotBlank(region.getManagedIdentity())) {
             final UserDelegationKey userDelegationKey = getUserDelegationKey(serviceClient, expiryTime);
             return fileClient.generateUserDelegationSas(sasSignatureValues, userDelegationKey);
