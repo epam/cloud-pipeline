@@ -30,7 +30,9 @@ public class ElasticsearchConfigurationV7 {
     public ElasticsearchServiceClient elasticsearchServiceClient(
             @Value("${elasticsearch.client.url:#{null}}") String elasticsearchUrl,
             @Value("${elasticsearch.client.port:9200}") int elasticsearchPort,
-            @Value("${elasticsearch.client.scheme:http}") String elasticsearchScheme) {
-        return new ElasticsearchServiceClientV7(elasticsearchUrl, elasticsearchPort, elasticsearchScheme);
+            @Value("${elasticsearch.client.scheme:http}") String elasticsearchScheme,
+            @Value("${elasticsearch.client.auth:#{null}}") String elasticsearchAuth) {
+        return new ElasticsearchServiceClientV7(elasticsearchUrl, elasticsearchPort,
+                elasticsearchScheme, elasticsearchAuth);
     }
 }

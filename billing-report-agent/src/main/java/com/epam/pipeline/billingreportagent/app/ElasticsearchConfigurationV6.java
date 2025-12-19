@@ -32,8 +32,9 @@ public class ElasticsearchConfigurationV6 {
             @Value("${elasticsearch.client.url:#{null}}") String elasticsearchUrl,
             @Value("${elasticsearch.client.port:9200}") int elasticsearchPort,
             @Value("${elasticsearch.client.scheme:http}") String elasticsearchScheme,
-            @Value("${elasticsearch.client.timeout:60000}") Integer socketTimeout) {
+            @Value("${elasticsearch.client.timeout:60000}") Integer socketTimeout,
+            @Value("${elasticsearch.client.auth:#{null}}") String elasticsearchAuth) {
         return new ElasticsearchServiceClientV6(
-                elasticsearchUrl, elasticsearchPort, elasticsearchScheme, socketTimeout);
+                elasticsearchUrl, elasticsearchPort, elasticsearchScheme, socketTimeout, elasticsearchAuth);
     }
 }

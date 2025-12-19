@@ -61,7 +61,7 @@ public class SearchManager {
     private final SearchRequestBuilder requestBuilder;
 
     public SearchResult search(final ElasticSearchRequest searchRequest) {
-        validateAndNormalizeRequest(searchRequest);
+        validateRequest(searchRequest);
         try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields =
@@ -106,8 +106,6 @@ public class SearchManager {
         if (Objects.isNull(searchRequest.getScrollingParameters()) && Objects.isNull(searchRequest.getOffset())) {
             searchRequest.setOffset(0);
         }
-        // escape '/' symbol as it going to fail elasticsearch on search request
-        searchRequest.setQuery(getEscapedQuery(searchRequest.getQuery()));
         try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields =
@@ -124,8 +122,6 @@ public class SearchManager {
     }
 
     public FacetedSearchResult getFacetedSearchResult(final FacetedSearchRequest facetedSearchRequest) {
-        // escape '/' symbol as it going to fail elasticsearch on search request
-        facetedSearchRequest.setQuery(getEscapedQuery(facetedSearchRequest.getQuery()));
         Assert.notNull(facetedSearchRequest, "Faceted search request is required");
         if (Objects.isNull(facetedSearchRequest.getPageSize())) {
             final Integer searchExportPageSize = Optional.ofNullable(
@@ -157,20 +153,12 @@ public class SearchManager {
         return aclFields;
     }
 
-    private void validateAndNormalizeRequest(final ElasticSearchRequest request) {
+    private void validateRequest(final ElasticSearchRequest request) {
         Assert.isTrue(StringUtils.isNotBlank(request.getQuery()), "Search Query is required");
         Assert.notNull(request.getPageSize(), "Page Size is required");
         if (Objects.isNull(request.getScrollingParameters()) && Objects.isNull(request.getOffset())) {
             request.setOffset(0);
         }
-        // escape '/' symbol as it going to fail elasticsearch on search request
-        request.setQuery(getEscapedQuery(request.getQuery()));
-    }
-
-    private static String getEscapedQuery(final String query) {
-        final String regex = "(?<!\\\\)/";
-        final String replacement = "\\\\/";
-        return query.replaceAll(regex, replacement);
     }
 
     private String getTypeFieldName() {
