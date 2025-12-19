@@ -29,8 +29,8 @@ import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.hasValue;
 import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -82,7 +82,7 @@ public class WDLScatterEditorTest
                 .ensure(TYPE, visible, disabled)
                 .ensure(VALUE, visible, disabled)
                 .ensureAll(not(empty), NAME, TYPE)
-                .ensure(TYPE, hasValue("ScatterItem"))
+                .ensure(TYPE, value("ScatterItem"))
                 .close()
                 .cancel();
     }

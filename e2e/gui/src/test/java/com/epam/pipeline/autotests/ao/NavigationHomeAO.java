@@ -21,7 +21,6 @@ import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -44,6 +43,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SERVICES;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.className;
 import static org.testng.Assert.fail;
 
 public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
@@ -54,7 +54,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".home-page__global-container")
                         .findAll(".home-page__panel").stream()
-                        .filter(element -> text(panelName).apply(element))
+                        .filter(element -> element.has(text(panelName)))
                         .collect(toList());
             }
         };

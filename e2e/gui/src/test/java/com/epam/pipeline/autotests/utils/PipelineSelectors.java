@@ -16,12 +16,15 @@
 package com.epam.pipeline.autotests.utils;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Selenide;
+import static com.codeborne.selenide.Selenide.$;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -457,7 +460,7 @@ public interface PipelineSelectors {
                 @Override
                 public List<WebElement> findElements(final SearchContext context) {
                     return context.findElements(qualifier).stream()
-                                  .filter(criteria)
+                                  .filter(el -> $(el).has(criteria))
                                   .collect(toList());
                 }
 

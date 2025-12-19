@@ -16,16 +16,13 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
-import static com.epam.pipeline.autotests.utils.C.SSH_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
-import static java.lang.System.currentTimeMillis;
 import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.*;
@@ -42,9 +39,13 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.SSH_CLOUD_REGION;
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.className;
 import static org.testng.Assert.assertTrue;
 
 public class LogAO implements AccessObject<LogAO> {
@@ -552,7 +553,7 @@ public class LogAO implements AccessObject<LogAO> {
             private final By message = logMessage(text);
 
             @Override
-            public boolean apply(final WebElement log) {
+            public boolean apply(Driver driver, final WebElement log) {
                 boolean seen = $(log).find(message).is(visible);
                 if (!seen) {
                     final Set<String> lines = new LinkedHashSet<>();
@@ -579,15 +580,14 @@ public class LogAO implements AccessObject<LogAO> {
             private final List<String> missingMessages = new ArrayList<>();
 
             @Override
-            public boolean apply(final WebElement logElement) {
+            public boolean apply(Driver driver, final WebElement logElement) {
                 Arrays.stream(texts)
                         .map(String::trim)
-                        .filter(expectedText -> !containsMessage(expectedText).apply(logElement))
+                        .filter(expectedText -> !containsMessage(expectedText).apply(driver, logElement))
                         .forEach(missingMessages::add);
                 return missingMessages.isEmpty();
             }
 
-            @Override
             public String actualValue(final WebElement logElement) {
                 final String allMissingMessages = String.join("\n", missingMessages);
                 return format("Following messages wasn't found in log:%n%s", allMissingMessages);
@@ -645,15 +645,14 @@ public class LogAO implements AccessObject<LogAO> {
         Status(String iconClass) {
             this.reached = new Condition("status " + this.name()) {
                 @Override
-                public boolean apply(final WebElement element) {
+                public boolean apply(Driver driver, final WebElement element) {
                     return $(element).find(byXpath(".//i[contains(@class, 'anticon')]"))
                             .has(cssClass(iconClass));
                 }
 
-                @Override
-                public String actualValue(final WebElement element) {
+                public String actualValue(Driver driver, final WebElement element) {
                     return Arrays.stream(Status.values())
-                                 .filter(status -> status.reached.apply(element))
+                                 .filter(status -> status.reached.apply(driver, element))
                                  .findFirst()
                                  .map(Enum::toString)
                                  .orElse("UNKNOWN");

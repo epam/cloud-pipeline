@@ -16,16 +16,12 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
-import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
-import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
@@ -37,13 +33,18 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
+import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.openqa.selenium.By.className;
 
 public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
@@ -74,15 +75,15 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     public static Condition master() {
         return new Condition("master node") {
             @Override
-            public boolean apply(final WebElement element) {
-                return contains(nodeLabel("MASTER"))
-                        .or(contains(nodeLabel("EDGE")))
-                        .or(contains(nodeLabel("CP-SEARCH-ELK")))
-                        .or(contains(nodeLabel("HEAPSTER")))
-                        .or(contains(nodeLabel("DNS")))
-                        .or(contains(nodeLabel("TMP")))
-                        .or(contains(nodeLabel("CP-API-SRV")))
-                        .test(element);
+            public boolean apply(Driver driver, final WebElement element) {
+                return $(element).has(or("master node", contains(nodeLabel("MASTER")),
+                        contains(nodeLabel("EDGE")),
+                        contains(nodeLabel("CP-SEARCH-ELK")),
+                        contains(nodeLabel("HEAPSTER")),
+                        contains(nodeLabel("DNS")),
+                        contains(nodeLabel("TMP")),
+                        contains(nodeLabel("CP-API-SRV"))));
+//                        .test(element);
             }
         };
     }
@@ -90,9 +91,9 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     public static Condition windows() {
         return new Condition("windows node") {
             @Override
-            public boolean apply(final WebElement element) {
-                return contains(nodeLabel("WINDOWS"))
-                        .test(element);
+            public boolean apply(Driver driver, final WebElement element) {
+                return $(element).has(contains(nodeLabel("WINDOWS")));
+//                        .test(element);
             }
         };
     }

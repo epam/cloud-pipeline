@@ -17,11 +17,11 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.CollectionCondition;
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
-import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -41,8 +41,8 @@ import static com.codeborne.selenide.CollectionCondition.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
-import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -62,7 +62,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
-        public boolean apply(final WebElement ignored) {
+        public boolean apply(Driver driver, final WebElement ignored) {
             return $(byClassName("ant-table-placeholder")).is(visible);
         }
     };
@@ -73,7 +73,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $("tbody")
                         .findAll("tr").stream()
-                        .filter(element -> text(pipelineName).apply(element))
+                        .filter(element -> element.has(text(pipelineName)))
                         .collect(toList());
             }
         };
@@ -163,7 +163,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             System.out.println("[WARN] retrying click run logs");
             if (trys++ > 5) {
                 Selenide.screenshot(GET_LOGS_ERROR);
-                throw new ElementNotFound(format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR), exist);
+                throw new ElementNotFound(driver(),
+                        format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR), exist);
             }
 
             show(runId);

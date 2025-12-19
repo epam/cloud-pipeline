@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -24,7 +25,6 @@ import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.have;
-import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
@@ -43,7 +43,7 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
 
     public static final Condition backgroundColorGrey = new Condition("backgroundColorGrey") {
         @Override
-        public boolean apply(WebElement element) {
+        public boolean apply(Driver driver, WebElement element) {
             return element.getCssValue("background-color").equals("rgba(249, 249, 249, 1)");
         }
     };
@@ -101,7 +101,7 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
     public static Condition numberOfSamples(int number) {
         return new Condition("number of samples") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 return element.findElements(By.tagName("div")).size() == number;
             }
         };

@@ -33,6 +33,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.screenshot;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 
@@ -151,7 +152,8 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         if (!matcher.find()) {
             final String screenName = format("DnsHostsManagementTest_%s", Utils.randomSuffix());
             screenshot(screenName);
-            throw new ElementNotFound(format("Could not get run IP from message: %s. Screenshot: %s.png", logMessage,
+            throw new ElementNotFound(driver(),
+                    format("Could not get run IP from message: %s. Screenshot: %s.png", logMessage,
                     screenName), exist);
         }
         return matcher.group();

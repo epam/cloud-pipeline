@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
@@ -245,7 +246,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         public static Condition hyperlink(String text) {
             return new Condition("hyperlink") {
                 @Override
-                public boolean apply(final WebElement element) {
+                public boolean apply(Driver driver, final WebElement element) {
                     return element.findElement(tagName("a")).isDisplayed()
                             && element.findElement(withText(text)).isDisplayed();
                 }

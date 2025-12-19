@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.epam.pipeline.autotests.ao.Configuration;
 import com.epam.pipeline.autotests.ao.Profile;
 import com.epam.pipeline.autotests.ao.Template;
@@ -789,7 +790,7 @@ public class DetachedConfigurationsTest
     private Condition isSelected() {
         return new Condition("pipeline version is selected") {
             @Override
-            public boolean apply(final WebElement element) {
+            public boolean apply(Driver driver, final WebElement element) {
                 return !element.findElements(byClassName("anticon-check-circle")).isEmpty();
             }
 

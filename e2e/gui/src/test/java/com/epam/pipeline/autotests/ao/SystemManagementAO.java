@@ -16,10 +16,8 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
-import static com.codeborne.selenide.Selectors.withText;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
@@ -42,13 +40,16 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.Primitive.NAT_GATEWAY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
 import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertTrue;
@@ -181,7 +182,7 @@ public class SystemManagementAO extends SettingsPageAO {
             if (!matcher.find()) {
                 final String screenName = format("SystemLogsGetUserId_%s", Utils.randomSuffix());
                 screenshot(screenName);
-                throw new ElementNotFound(format("Could not get user id from message: %s. Screenshot: %s.png", message,
+                throw new ElementNotFound(driver(), format("Could not get user id from message: %s. Screenshot: %s.png", message,
                         screenName), exist);
             }
             return matcher.group();

@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
@@ -96,7 +97,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      */
     public static final Condition collapsedItem = new Condition("is collapsed item") {
         @Override
-        public boolean apply(final WebElement treeItem) {
+        public boolean apply(Driver driver, final WebElement treeItem) {
             return $(treeItem).find(switcher).has(cssClass("ant-tree-switcher_close"));
         }
     };
@@ -106,7 +107,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      */
     public static final Condition expandedItem = new Condition("is expanded item") {
         @Override
-        public boolean apply(final WebElement treeItem) {
+        public boolean apply(Driver driver, final WebElement treeItem) {
             return $(treeItem).find(switcher).has(cssClass("ant-tree-switcher_open"));
         }
     };
@@ -117,7 +118,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public static final Condition selectedItem = new Condition("be selected") {
         private final By wrapper = byClassName("ant-tree-node-content-wrapper");
         @Override
-        public boolean apply(final WebElement treeItem) {
+        public boolean apply(Driver driver, final WebElement treeItem) {
             return $(treeItem).find(wrapper).has(cssClass("ant-tree-node-selected"));
         }
     };

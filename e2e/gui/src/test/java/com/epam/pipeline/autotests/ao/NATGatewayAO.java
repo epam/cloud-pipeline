@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import static com.codeborne.selenide.Condition.not;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -28,6 +27,7 @@ import org.openqa.selenium.WebElement;
 import java.util.List;
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.enabled;
@@ -39,6 +39,7 @@ import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROUTE;
@@ -88,8 +89,10 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row"))
                         .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .stream()
-                        .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
-                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(element -> text(ipAddress).apply(driver(),
+                                element.findAll(".external-column").get(2))
+                                && text(port).apply(driver(),
+                                element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
                                 el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
@@ -105,8 +108,10 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row"))
                         .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .stream()
-                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
-                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(element -> text(serverName).apply(driver(),
+                                element.findAll(".external-column").get(1))
+                                && text(port).apply(driver(),
+                                element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
                                 el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
@@ -120,9 +125,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
-                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
-                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
-                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(element -> element.has(not(cssClass("at-gateway-configuration__divider-row"))))
+                        .filter(element -> element.findAll(".external-column").get(1).has(text(serverName))
+                                && element.findAll(".external-column").get(3).has(text(port)))
                         .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists() &&
                                 !el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());

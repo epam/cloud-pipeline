@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests.utils;
 
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.WebDriverRunner;
 import com.codeborne.selenide.impl.WebElementsCollection;
 import java.util.List;
 import java.util.Optional;
@@ -88,7 +90,6 @@ class LazyWebElementsCollection implements WebElementsCollection {
         );
     }
 
-    @Override
     public List<WebElement> getActualElements() {
         return getElements();
     }
@@ -96,5 +97,10 @@ class LazyWebElementsCollection implements WebElementsCollection {
     @Override
     public String description() {
         return "lazy loaded elements";
+    }
+
+    @Override
+    public Driver driver() {
+        return (Driver) WebDriverRunner.getWebDriver();
     }
 }

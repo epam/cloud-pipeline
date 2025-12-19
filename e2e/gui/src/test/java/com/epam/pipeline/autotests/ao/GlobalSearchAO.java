@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -72,8 +73,8 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
      */
     public static Condition disable = new Condition("be disable type") {
         @Override
-        public boolean apply(final WebElement element) {
-            return cssClass("disabled").apply(element);
+        public boolean apply(Driver driver, final WebElement element) {
+            return cssClass("disabled").apply(driver, element);
         }
     };
 
@@ -83,8 +84,8 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
      */
     public static Condition selected = new Condition("selected") {
         @Override
-        public boolean apply(WebElement element) {
-            return cssClass("earch__active").apply(element);
+        public boolean apply(Driver driver, WebElement element) {
+            return cssClass("earch__active").apply(driver, element);
         }
     };
 
@@ -236,7 +237,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         private Condition completedFieldCorrespondStatus() {
             return new Condition("completed field correspond Status") {
                 @Override
-                public boolean apply(final WebElement element) {
+                public boolean apply(Driver driver, final WebElement element) {
                     final String dateRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
                     return $(element).find(By.xpath("./td[1]")).has(completed)
                             ? $(element).find(By.xpath("./td[4]")).text().matches(dateRegex)

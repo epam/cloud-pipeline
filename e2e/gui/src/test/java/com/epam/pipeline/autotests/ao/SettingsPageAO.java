@@ -575,7 +575,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public List<WebElement> findElements(final SearchContext context) {
                     return $$(byClassName("preference-group__preference-row"))
                             .stream()
-                            .filter(element -> exactText(variable).apply(element))
+                            .filter(element -> element.has(exactText(variable)))
                             .map(e -> e.find(".ant-input-sm"))
                             .collect(toList());
                 }
@@ -588,7 +588,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public List<WebElement> findElements(final SearchContext context) {
                     return $$(byClassName("preference-group__preference-row"))
                             .stream()
-                            .filter(element -> exactText(preference).apply(element))
+                            .filter(element -> element.has(exactText(preference)))
                             .map(e -> e.find(byCssSelector("i")))
                             .collect(toList());
                 }
@@ -601,7 +601,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public List<WebElement> findElements(final SearchContext context) {
                     return $$(byClassName("preference-group__preference-row"))
                             .stream()
-                            .filter(element -> text(variable).apply(element))
+                            .filter(element -> element.has(text(variable)))
                             .map(e -> e.find(".ant-checkbox-wrapper"))
                             .collect(toList());
                 }
