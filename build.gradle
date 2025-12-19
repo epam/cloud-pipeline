@@ -74,7 +74,7 @@ task buildDoc(type: Tar) {
 
 task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
-                          ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
+                          ":api:bootJar", ":notifier:smtp:bootJar", ":docker-comp-scan:bootJar",
                           ":elasticsearch-agent:bootJar", ":vm-monitor:bootJar",
                           ":data-transfer-service:bootJar", ":data-transfer-service:bundleWindows",
                           ":data-transfer-service:bundleLinux",
