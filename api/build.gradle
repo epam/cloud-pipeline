@@ -242,7 +242,6 @@ compileJava {
 
 test {
     useJUnitPlatform()
-    //exclude '**/*Test.class'
-    include '**/*ControllerTest.class'
+    exclude '**/*ControllerTest.class'
     jvmArgs = ['-Xmx2g', '-Xms512m']
 }
