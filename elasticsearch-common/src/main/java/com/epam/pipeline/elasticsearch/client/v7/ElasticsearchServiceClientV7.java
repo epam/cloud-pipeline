@@ -38,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.opensearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.opensearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -88,7 +87,8 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                                         final Integer socketTimeout,
                                         final String elasticsearchAuth) {
 
-        final RestClientBuilder builder = RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme));
+        final RestClientBuilder builder = RestClient.builder(
+                new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme));
         if (StringUtils.isNotBlank(elasticsearchAuth)) {
             builder.setDefaultHeaders(ElasticsearchServiceClient.getAuthHeaders(elasticsearchAuth));
         }
