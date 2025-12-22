@@ -402,7 +402,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO validatePopupClosed() {
-        $(byClassName("ant-modal-content")).shouldNot(be(visible));
+        $(byClassName("ant-modal-content")).shouldNotBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 

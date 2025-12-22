@@ -50,10 +50,8 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     @BeforeClass
     public void setUp() {
-        Configuration.timeout = C.DEFAULT_TIMEOUT;
         Configuration.browser = "chrome";
         Configuration.browserSize = "1920x1080";
-        System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
 
         login(C.ROOT_ADDRESS);
 
@@ -144,6 +142,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
                 Selenide.open(address);
                 Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
                 WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+
             }
         }
         Selenide.open(address);
