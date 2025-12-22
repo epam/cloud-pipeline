@@ -46,6 +46,7 @@ import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.search.SearchScrollRequest;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.client.indices.CreateIndexRequest;
 import org.opensearch.client.indices.CreateIndexResponse;
@@ -75,20 +76,27 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
 
     public ElasticsearchServiceClientV7(final String elasticsearchUrl,
                                         final int elasticsearchPort,
-                                        final String elasticsearchScheme) {
-        this.client = new RestHighLevelClient(
-                RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
-        );
+                                        final String elasticsearchScheme,
+                                        final String elasticsearchAuth) {
+        this(elasticsearchUrl, elasticsearchPort, elasticsearchScheme, null, elasticsearchAuth);
     }
 
     public ElasticsearchServiceClientV7(final String elasticsearchUrl,
                                         final int elasticsearchPort,
                                         final String elasticsearchScheme,
-                                        final Integer socketTimeout) {
-        this.client = new RestHighLevelClient(
-                RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
-                        .setRequestConfigCallback(requestConfigBuilder ->
-                                requestConfigBuilder.setSocketTimeout(socketTimeout)));
+                                        final Integer socketTimeout,
+                                        final String elasticsearchAuth) {
+
+        final RestClientBuilder builder = RestClient.builder(
+                new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme));
+        if (StringUtils.isNotBlank(elasticsearchAuth)) {
+            builder.setDefaultHeaders(ElasticsearchServiceClient.getAuthHeaders(elasticsearchAuth));
+        }
+        if (socketTimeout != null && socketTimeout != 0) {
+            builder.setRequestConfigCallback(requestConfigBuilder ->
+                    requestConfigBuilder.setSocketTimeout(socketTimeout));
+        }
+        this.client = new RestHighLevelClient(builder);
     }
 
     @Override

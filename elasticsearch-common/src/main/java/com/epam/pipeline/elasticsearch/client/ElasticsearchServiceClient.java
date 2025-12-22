@@ -24,8 +24,13 @@ import com.epam.pipeline.elasticsearch.model.MultiSearchResponse;
 import com.epam.pipeline.elasticsearch.model.Scroll;
 import com.epam.pipeline.elasticsearch.model.SearchRequest;
 import com.epam.pipeline.elasticsearch.model.SearchResponse;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.message.BasicHeader;
 
 import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 public interface ElasticsearchServiceClient {
@@ -48,4 +53,13 @@ public interface ElasticsearchServiceClient {
     MultiSearchResponse search(MultiSearchRequest request);
     List<DocWriteRequest> getDeleteRequestsByTerm(String field, String value, String indexName);
     List<DocWriteRequest> getDeleteRequests(String id, String indexName);
+
+    static Header[] getAuthHeaders(String elasticsearchAuth) {
+        if (StringUtils.isNotBlank(elasticsearchAuth)) {
+            final String encodedAuth = Base64.getEncoder()
+                    .encodeToString(elasticsearchAuth.getBytes(StandardCharsets.UTF_8));
+            return new Header[] {new BasicHeader("Authorization", String.format("Basic %s", encodedAuth))};
+        }
+        return new Header[0];
+    }
 }

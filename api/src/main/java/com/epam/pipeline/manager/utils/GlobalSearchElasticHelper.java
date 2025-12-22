@@ -21,12 +21,18 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.elasticsearch.ELKVersionedRestHighLevelClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
+import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Objects;
 
 @Service
@@ -35,6 +41,9 @@ import java.util.Objects;
 public class GlobalSearchElasticHelper {
 
     private final PreferenceManager preferenceManager;
+
+    @Value("${elasticsearch.client.auth:#{null}}")
+    private final String elasticsearchAuth;
 
     public ELKVersionedRestHighLevelClient buildClient() {
         return new ELKVersionedRestHighLevelClient(buildLowLevelClientBuilder());
@@ -70,7 +79,17 @@ public class GlobalSearchElasticHelper {
         if (Objects.nonNull(maxRetryTimeout)) {
             builder.setMaxRetryTimeoutMillis(maxRetryTimeout);
         }
+        builder.setDefaultHeaders(getAuthHeaders());
         return builder;
+    }
+
+    private Header[] getAuthHeaders() {
+        if (!StringUtils.isEmpty(elasticsearchAuth)) {
+            final String encodedAuth = Base64.getEncoder()
+                    .encodeToString(elasticsearchAuth.getBytes(StandardCharsets.UTF_8));
+            return new Header[] {new BasicHeader("Authorization", String.format("Basic %s", encodedAuth))};
+        }
+        return new Header[0];
     }
 
 }
