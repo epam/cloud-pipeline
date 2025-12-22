@@ -51,8 +51,8 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     @BeforeClass
     public void setUp() {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = WebDriverRunner.CHROME;
-        Configuration.startMaximized = true;
+        Configuration.browser = "chrome";
+        Configuration.browserSize = "1920x1080";
         System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
 
         login(C.ROOT_ADDRESS);
@@ -75,8 +75,9 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     }
 
     public void restartBrowser(final String address) {
-        Selenide.close();
-        setUp();
+        Selenide.closeWindow();
+        login(address);
+//        setUp();
     }
 
     public void addExtension(final String extensionPath) {

@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
 import java.util.Arrays;
@@ -52,6 +53,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -101,7 +103,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO switchToCluster() {
-        context().find(byXpath("//a[.='All nodes']")).parent().click();
+        context().find(byXpath(".//a[.='All nodes']")).parent().click();
         return new ClusterMenuAO();
     }
 
@@ -209,14 +211,14 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .findFirst()
                     .orElseThrow(NoSuchElementException::new)
                     .click();
-            context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+            context().find(byXpath(".//div[@title='latest']")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
             sleep(5, SECONDS);
             return this;
         }
 
         public CreateHotNodePoolAO addFilter(String filter) {
             context().find(byText("Add filter")).parent().click();
-            context().find(byXpath("//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]"))
+            context().find(byXpath(".//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]"))
                     .click();
             $(byClassName("ilters-control__column")).$(byClassName("ant-select-dropdown-menu"))
                     .shouldBe(enabled)
@@ -234,7 +236,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
             context().find(By.xpath(".//div[.='Select owner']")).shouldBe(visible, enabled).click();
             context().$(byClassName("ilters-control__column")).find(byClassName("ant-select-search__field"))
                     .sendKeys(Keys.chord(Keys.CONTROL, "a"), value);
-            $(By.xpath(String.format("//li[.='%s']", value))).click();
+            $(By.xpath(String.format(".//li[.='%s']", value))).click();
             return this;
         }
 

@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.ao.popups.ConfigureInternalDNSPopupAO;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -29,6 +30,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 
@@ -72,7 +75,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PARAMETERS_PANEL, context().find(byId("launch-pipeline-parameters-panel"))),
             entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row")
                     .find(byClassName("ant-select"))),
-            entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row")
+            entry(INSTANCE_TYPE, context().find(byXpath(".//*[contains(text(), 'Node type')]")).closest(".ant-row")
                     .find(by("role", "combobox"))),
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex")
                     .find(cssSelector(".ant-checkbox-wrapper"))),
@@ -80,7 +83,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
+            entry(RUN_CAPABILITIES, context().find(byXpath(".//*[contains(text(), 'Run capabilities')]"))
                     .closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.friendly_url"))),
@@ -266,7 +269,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO waitUntilLaunchButtonAppear() {
-        $(button("Launch")).waitUntil(enabled, C.DEFAULT_TIMEOUT * 2);
+        $(button("Launch")).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT * 2));
         return this;
     }
 
@@ -564,7 +567,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public static class SystemParameterPopupAO<PARENT_AO>  extends PopupAO<SystemParameterPopupAO<PARENT_AO>, PARENT_AO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(PARAMETER_NAME, context().$(byXpath("//*[@placeholder='Parameter']"))),
+                entry(PARAMETER_NAME, context().$(byXpath(".//*[@placeholder='Parameter']"))),
                 entry(ADD, context().find(byId("system-parameters-browser-ok-button"))),
                 entry(CANCEL, context().find(byId("system-parameters-browser-cancel-button")))
         );
@@ -618,7 +621,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                         .find(byClassName("ant-select-selection--single"))),
                 entry(WORKING_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[1]"))),
                 entry(DEFAULT_CHILD_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]"))),
-                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]"))),
+                entry(RESET, context().$(byXpath(".//*[contains(text(), 'Reset')]"))),
                 entry(FILE_SYSTEM_TYPE, context().$(byText("Type:"))
                         .parent().$(byClassName("ant-select-selection--single"))),
                 entry(DEPLOYMENT_TYPE, context().$(byText("Deployment type:"))

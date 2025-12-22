@@ -92,7 +92,7 @@ public class Profile implements AccessObject<Profile> {
                 entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
                 entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
                 entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
-                entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud Region')]"))
+                entry(CLOUD_REGION, context().find(byXpath(".//*[contains(text(), 'Cloud Region')]"))
                         .closest(".ant-row").find(by("role", "combobox"))),
                 entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
         );

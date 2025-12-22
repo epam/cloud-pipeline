@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static java.time.Duration.ofMillis;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 
@@ -82,7 +83,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public PermissionTabAO permissions() {
-        get(TOOL_SETTINGS).waitUntil(visible, DEFAULT_TIMEOUT);
+        get(TOOL_SETTINGS).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         hover(TOOL_SETTINGS).click(PERMISSIONS);
         return new PermissionTabAO(() -> $(byClassName("ant-modal-close-x")).shouldBe(visible).click());
     }
@@ -99,7 +100,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     private void showMetadata(final By attribute) {
-        $(byId("run-latest-menu-button")).waitUntil(visible, DEFAULT_TIMEOUT);
+        $(byId("run-latest-menu-button")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         click(SHOW_METADATA);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
@@ -115,9 +116,9 @@ public class ToolDescription extends ToolTab<ToolDescription> {
 
     public class InstanceManagementSectionAO extends PopupAO<InstanceManagementSectionAO, AccessObject> {
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(APPLY, $(byXpath("//button[.='APPLY']"))),
+                entry(APPLY, $(byXpath(".//button[.='APPLY']"))),
                 entry(PRICE_TYPE, context().find(byXpath(
-                        format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                        format(".//div/b[text()='%s']/following::div/input", "Allowed price types"))))
         );
 
         public InstanceManagementSectionAO(AccessObject parentAO) {
@@ -146,7 +147,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         }
 
         public InstanceManagementSectionAO addAllowedToolInstanceTypesMask(String mask) {
-            By optionField = byXpath("//div/b[text()='Allowed tool instance types mask']/following::div/input");
+            By optionField = byXpath(".//div/b[text()='Allowed tool instance types mask']/following::div/input");
             if (StringUtils.isBlank(mask)) {
                 clearByKey(optionField);
             }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -87,7 +88,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .parent().find(By.xpath("following-sibling::div//span"))),
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-dropdown-button"))),
-                entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
+                entry(RUN_CAPABILITIES, context().find(byXpath(".//*[contains(text(), 'Run capabilities')]"))
                         .closest(".ant-row").find(className("ant-form-item-control")))
         );
     }
@@ -95,8 +96,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     @Override
     public ToolSettings open() {
         click(SETTINGS);
-        get(SETTINGS).waitUntil(have(cssClass("ant-menu-item-selected")), DEFAULT_TIMEOUT);
-        get(EXEC_ENVIRONMENT).waitUntil(exist, DEFAULT_TIMEOUT);
+        get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")), ofMillis(DEFAULT_TIMEOUT));
+        get(EXEC_ENVIRONMENT).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
         return click(EXEC_ENVIRONMENT);
     }
 

@@ -50,8 +50,8 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
             entry(CANCEL, context().find(byText("Cancel")).parent()),
             entry(OK, context().find(byClassName("ant-btn-primary"))),
             entry(CLEAR_SELECTION, context().find(byClassName("ant-btn-danger"))),
-            entry(SELECT_ALL, context().find(byXpath("//button/span[.='Select all']")).closest("button")),
-            entry(SELECT_ALL_NON_SENSITIVE, context().find(byXpath("//button/span[.='Select all non-sensitive']")).closest("button")),
+            entry(SELECT_ALL, context().find(byXpath(".//button/span[.='Select all']")).closest("button")),
+            entry(SELECT_ALL_NON_SENSITIVE, context().find(byXpath(".//button/span[.='Select all non-sensitive']")).closest("button")),
             entry(SEARCH_INPUT, context().find(byClassName("ant-input"))),
             entry(TABLE, context().find(byClassName("ant-table-content"))),
             entry(SENSITIVE_STORAGE, context().find(byClassName("ant-alert-message")))

@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -153,7 +154,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO assertNumberOfKeysIs(int expectedNumberOfKeys) {
         $$(byClassName(keyFieldId)).filter(have(cssClass("key")))
-                .filter(not(have(cssClass("read-only")))).shouldHaveSize(expectedNumberOfKeys);
+                .filter(not(have(cssClass("read-only")))).shouldHave(size(expectedNumberOfKeys));
         return this;
     }
 
@@ -375,7 +376,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         public ConfigureNotificationAO checkRecipients(final List<String> recipients) {
             recipients.forEach(recipient -> $$(byClassName("ant-select-selection__choice"))
                     .filter(Condition.attribute("title", recipient))
-                    .shouldHaveSize(1));
+                    .shouldHave(size(1)));
             return this;
         }
 
@@ -384,7 +385,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                     .findBy(text(action))
                     .findAll(byClassName("s-notifications__input"))
                     .filter(Condition.value(volumeThresholdInGb))
-                    .shouldHaveSize(1);
+                    .shouldHave(size(1));
             return this;
         }
 

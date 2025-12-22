@@ -67,7 +67,7 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
     public ToolPageAO assertIndexContains(String text, boolean isContain) {
         int attempt = 0;
         int maxAttempts = 10;
-        while (!$$(byXpath("//li")).texts().contains(format("%s/", text)) == isContain
+        while (!$$(byXpath(".//li")).texts().contains(format("%s/", text)) == isContain
                 && attempt < maxAttempts) {
             sleep(5, SECONDS);
             refresh();
@@ -87,7 +87,7 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
     }
 
     public ToolPageAO validationPageHeader(String header) {
-        $(byXpath("//h3")).shouldHave(text(header));
+        $(byXpath(".//h3")).shouldHave(text(header));
         return this;
     }
 

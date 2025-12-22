@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 
@@ -31,6 +32,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, MetadataSectionAO>{
@@ -72,7 +74,7 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
     }
 
     public StorageContentAO editFileWithText(String text) {
-        get(EDIT).waitUntil(enabled, C.DEFAULT_TIMEOUT * 2L);
+        get(EDIT).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT * 2L));
         click(EDIT);
         sleep(3, SECONDS);
         Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), text);

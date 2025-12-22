@@ -15,15 +15,18 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -151,7 +154,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public void assertNodesTableIsEmpty() {
-        $("tbody").findAll("tr").shouldHaveSize(0);
+        $("tbody").findAll("tr").shouldHave(size(0));
     }
 
     public ClusterMenuAO filerBy(HeaderColumn header, String ip) {
@@ -240,7 +243,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByIncrease(HeaderColumn column) {
         SelenideElement createdHeaderButtonUp = $$("th").findBy(cssClass(column.cssClass))
-                .find(".ant-table-column-sorter-up").waitUntil(exist, DEFAULT_TIMEOUT);
+                .find(".ant-table-column-sorter-up").shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
         if (createdHeaderButtonUp.has(cssClass("off"))) {
             createdHeaderButtonUp.click();
         }
@@ -250,7 +253,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByDecrease(HeaderColumn column) {
         SelenideElement createdHeaderButtonDown = $$("th").findBy(cssClass(column.cssClass))
-                .find(".ant-table-column-sorter-down").waitUntil(exist, DEFAULT_TIMEOUT);
+                .find(".ant-table-column-sorter-down").shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
         if (createdHeaderButtonDown.has(cssClass("off"))) {
             createdHeaderButtonDown.click();
         }
@@ -292,7 +295,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void validateSortedBy(HeaderColumn column, Comparator<String> comparator) {
-        $(className("ant-table-placeholder")).waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $(className("ant-table-placeholder")).shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
         ElementsCollection dates = column == HeaderColumn.LABEL
                 ? $$("span").filterBy(id("label-RUNID"))
                 : $$("td").filterBy(cssClass(column.cssClass));
@@ -310,7 +313,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public HotNodePoolsAO switchToHotNodePool() {
         context().find(byText("Hot Node Pools")).parent()
-                .waitUntil(exist, C.DEFAULT_TIMEOUT)
+                .shouldBe(exist, ofMillis(DEFAULT_TIMEOUT))
                 .shouldBe(enabled).click();
         return new HotNodePoolsAO();
     }

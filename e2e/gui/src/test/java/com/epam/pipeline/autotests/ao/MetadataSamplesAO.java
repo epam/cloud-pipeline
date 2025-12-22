@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
@@ -48,7 +49,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ADD_INSTANCE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static org.openqa.selenium.By.className;
-import static org.openqa.selenium.By.tagName;
+
 import static org.testng.Assert.assertTrue;
 
 public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
@@ -80,7 +81,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     }
 
     public MetadataSamplesAO ensureNumberOfRowsIs(int expectedNumberOfRows) {
-        SelenideElements.of(rows).shouldHaveSize(expectedNumberOfRows);
+        SelenideElements.of(rows).shouldHave(size(expectedNumberOfRows));
         return this;
     }
 
@@ -247,7 +248,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
             return new Condition("hyperlink") {
                 @Override
                 public boolean apply(Driver driver, final WebElement element) {
-                    return element.findElement(tagName("a")).isDisplayed()
+                    return element.findElement(By.tagName("a")).isDisplayed()
                             && element.findElement(withText(text)).isDisplayed();
                 }
             };

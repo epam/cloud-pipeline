@@ -44,6 +44,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.UPDATE_CONFIGURATION;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 
@@ -106,7 +107,7 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     protected void changeTabTo(Primitive tab) {
-        sleep(2, SECONDS).get(tab).waitUntil(enabled, DEFAULT_TIMEOUT);
+        sleep(2, SECONDS).get(tab).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT));
         click(tab).tabShouldBeActive(tab);
     }
 
@@ -118,7 +119,7 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public PipelineRunFormAO runPipeline() {
         sleep(2, SECONDS);
-        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
+        get(RUN).shouldBe(not(disabled), ofMillis(DEFAULT_TIMEOUT));
         sleep(2, SECONDS);
         click(RUN);
         sleep(1, SECONDS);
@@ -127,7 +128,7 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public void runPipelineWithException(String message) {
         sleep(2, SECONDS);
-        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
+        get(RUN).shouldBe(not(disabled), ofMillis(DEFAULT_TIMEOUT));
         sleep(2, SECONDS);
         click(RUN);
         sleep(1, SECONDS);

@@ -76,7 +76,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
 
     public static ParameterFieldAO parameter(final String name, final String value) {
         final String controlClass = "aunch-form-parameter__launch-form-parameter";
-        final String nameAsAChild = format("//*[contains(@class, 'arameter-name-input__parameter-name') and contains(., '%s')]",
+        final String nameAsAChild = format(".//*[contains(@class, 'arameter-name-input__parameter-name') and contains(., '%s')]",
                 name);
         final String valueAsAChild = format(".//input[@value = '%s']", value);
         final By parameterField = byXpath(format(

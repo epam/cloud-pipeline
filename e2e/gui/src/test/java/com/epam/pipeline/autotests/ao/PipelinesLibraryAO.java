@@ -15,12 +15,15 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -236,7 +239,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
-        $(byId("edit-storage-delete-dialog-delete-button")).waitUntil(enabled, C.DEFAULT_TIMEOUT);
+        $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT));
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
@@ -352,7 +355,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO assertNoPipelinesAreDisplayed() {
-        $$("[class^=pipelines-library-tree-node-pipeline]").shouldHaveSize(0);
+        $$("[class^=pipelines-library-tree-node-pipeline]").shouldHave(size(0));
         return this;
     }
 

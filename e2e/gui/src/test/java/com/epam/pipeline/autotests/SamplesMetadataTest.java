@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -749,7 +750,7 @@ public class SamplesMetadataTest
     }
 
     private Runnable ensureSamplesCountIs(final int count) {
-        return () -> SelenideElements.of(rows).shouldHaveSize(count);
+        return () -> SelenideElements.of(rows).shouldHave(size(count));
     }
 
     private Consumer<StorageContentAO> loadFiles(final String... files) {

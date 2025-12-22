@@ -21,10 +21,12 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -145,7 +147,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun(getPipelineName(), getRunId());
         $(byClassName("run-" + getRunId()))
                 .find(byClassName("ant-table-row-expand-icon"))
-                .waitUntil(appears, C.COMPLETION_TIMEOUT);
+                .shouldBe(appears, ofMillis(COMPLETION_TIMEOUT));
         navigationMenu()
                 .runs()
                 .activeRuns()

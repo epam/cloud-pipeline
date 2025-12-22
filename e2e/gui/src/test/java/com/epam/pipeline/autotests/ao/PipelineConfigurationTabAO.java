@@ -107,7 +107,7 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
     }
 
     public class PipelineConfigurationProfilePopup extends PopupAO<PipelineConfigurationProfilePopup, PipelineConfigurationTabAO> {
-        private final SelenideElement context = $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-modal-title') and text() = 'Create configuration']]"));
+        private final SelenideElement context = $(byXpath(".//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-modal-title') and text() = 'Create configuration']]"));
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(CLOSE, context().find(byClassName("ant-modal-close"))),
                 entry(CANCEL, context().find(button("CANCEL"))),

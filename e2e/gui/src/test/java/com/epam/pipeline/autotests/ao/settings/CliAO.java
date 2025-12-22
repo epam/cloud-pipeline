@@ -23,7 +23,7 @@ import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.codeborne.selenide.Condition.matchesText;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -59,7 +59,7 @@ public class CliAO extends SettingsPageAO {
     }
 
     public CliAO ensureCodeHasText(final String text) {
-        ensure(GIT_COMMAND, matchesText(text));
+        ensure(GIT_COMMAND, matchText(text));
         return this;
     }
 

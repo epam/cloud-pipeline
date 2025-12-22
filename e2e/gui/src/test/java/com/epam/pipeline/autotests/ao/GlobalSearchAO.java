@@ -15,12 +15,16 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.CheckResult;
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
@@ -73,8 +77,8 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
      */
     public static Condition disable = new Condition("be disable type") {
         @Override
-        public boolean apply(Driver driver, final WebElement element) {
-            return cssClass("disabled").apply(driver, element);
+        public CheckResult check(Driver driver, final WebElement element) {
+            return cssClass("disabled").check(driver, element);
         }
     };
 
@@ -118,7 +122,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
     public GlobalSearchAO waitUntilSearchCompleted() {
         sleep(2, SECONDS);
-        get(SEARCH_RESULT).$(byClassName("anticon-loading")).waitUntil(not(exist), C.DEFAULT_TIMEOUT);
+        get(SEARCH_RESULT).$(byClassName("anticon-loading")).shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 
@@ -153,7 +157,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         }
         get(SEARCH_RESULT)
                 .findAll(".earch__search-result-item")
-                .shouldHaveSize(count)
+                .shouldHave(size(count))
                 .forEach(i -> i.shouldHave(text(itemName)));
         return this;
     }

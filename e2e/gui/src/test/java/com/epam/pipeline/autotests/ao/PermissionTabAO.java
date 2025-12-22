@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.*;
 
@@ -191,7 +192,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         public UserPermissionsTableAO validateAllCheckboxesAreListed() {
             Privilege.privilegesRows()
-                    .forEach(row -> row.findAll(byClassName("ant-checkbox-input")).shouldHaveSize(2));
+                    .forEach(row -> row.findAll(byClassName("ant-checkbox-input")).shouldHave(size(2)));
             return this;
         }
 

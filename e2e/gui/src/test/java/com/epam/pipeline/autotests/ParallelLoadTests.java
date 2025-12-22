@@ -106,8 +106,8 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     @BeforeMethod(alwaysRun = true)
     public void setUp() {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = WebDriverRunner.CHROME;
-        Configuration.startMaximized = true;
+        Configuration.browser = "chrome";
+        Configuration.browserSize = "1920x1080";
         setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
         open(C.ROOT_ADDRESS);

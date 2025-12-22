@@ -35,7 +35,7 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             super.elements(),
             // Upload must be like that because of its input structure
-            entry(UPLOAD, $(byXpath("//*[contains(@class, 'ant-upload') and @role = 'button']"))),
+            entry(UPLOAD, $(byXpath(".//*[contains(@class, 'ant-upload') and @role = 'button']"))),
             entry(RENAME, $(button("Rename"))),
             entry(DELETE, $(button("Delete"))),
             entry(DOWNLOAD, $(button("Download"))),
@@ -99,7 +99,7 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
 
     public static By fileWithName(final String filename) {
         return By.xpath(String.format(
-                "//tr[.//*[contains(@class, 'pipeline-documents__document-name') and text() = '%s']]",
+                ".//tr[.//*[contains(@class, 'pipeline-documents__document-name') and text() = '%s']]",
                 filename
         ));
     }
@@ -116,7 +116,7 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
 
     public DocumentTabAO addStringToReadMeFile(String text) {
         click(EDIT);
-        $(byXpath("//textarea")).append(text);
+        $(byXpath(".//textarea")).append(text);
         return this;
     }
 

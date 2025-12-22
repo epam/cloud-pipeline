@@ -32,7 +32,7 @@ public class NotificationAO implements AccessObject<NotificationAO> {
     private final Map<Primitive, SelenideElement> elements;
 
     public NotificationAO(String title) {
-        this.context = $(byXpath(String.format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title))).shouldBe(visible);
+        this.context = $(byXpath(String.format(".//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title))).shouldBe(visible);
         this.elements = initialiseElements(
                 entry(SEVERITY_ICON, context().find(byClassName("anticon"))),
                 entry(TITLE, context().find(byClassName("system-notification__title"))),

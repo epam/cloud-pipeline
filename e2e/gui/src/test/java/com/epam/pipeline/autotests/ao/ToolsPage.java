@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Map;
@@ -182,7 +183,7 @@ public class ToolsPage implements Page<ToolsPage> {
         $(".ant-select-selection__rendered").doubleClick();
         $(byClassName("ant-select-dropdown-menu"))
                 .findAll(".ant-select-dropdown-menu-item")
-                .shouldHaveSize(1);
+                .shouldHave(size(1));
         return this.ensureRegistryIsPresent(registryPath);
     }
 

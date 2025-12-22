@@ -22,6 +22,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.time.Duration.ofMillis;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -315,7 +316,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public ToolVersions validateScanningProcess(final String version) {
         $(toolVersion(version)).find(byClassName("anticon-loading")).should(exist);
         $(toolVersion(version)).find(byText("SCANNING")).should(visible);
-        $(toolVersion(version)).find(scan).waitUntil(visible, COMMITTING_TIMEOUT);
+        $(toolVersion(version)).find(scan).shouldBe(visible, ofMillis(COMMITTING_TIMEOUT));
         return this;
     }
 

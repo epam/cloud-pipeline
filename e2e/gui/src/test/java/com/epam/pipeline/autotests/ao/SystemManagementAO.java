@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
@@ -182,8 +183,9 @@ public class SystemManagementAO extends SettingsPageAO {
             if (!matcher.find()) {
                 final String screenName = format("SystemLogsGetUserId_%s", Utils.randomSuffix());
                 screenshot(screenName);
-                throw new ElementNotFound(driver(), format("Could not get user id from message: %s. Screenshot: %s.png", message,
-                        screenName), exist);
+                throw new ElementNotFound(driver(), new Alias(element.getAlias()),
+                        format("Could not get user id from message: %s. Screenshot: %s.png", message, screenName),
+                        exist);
             }
             return matcher.group();
         }

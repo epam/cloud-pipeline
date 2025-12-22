@@ -7,8 +7,8 @@ sourceCompatibility = 1.8
 
 ext {
     testngVersion = '6.11'
-    seleniumVersion = '3.141.0'
-    selenideVersion = '5.2.8'
+    seleniumVersion = '4.10.0'
+    selenideVersion = '6.16.0'
     logVersion = '1.2'
     jacksonVersion = '2.9.3'
 }

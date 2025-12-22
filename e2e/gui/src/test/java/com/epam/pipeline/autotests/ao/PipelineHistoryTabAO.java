@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
@@ -74,7 +75,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     }
 
     public PipelineHistoryTabAO recordsCountShouldBe(int size) {
-        rows().shouldHaveSize(size);
+        rows().shouldHave(size(size));
         return this;
     }
 

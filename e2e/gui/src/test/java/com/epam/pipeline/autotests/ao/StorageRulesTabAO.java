@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -134,7 +135,7 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
     }
 
     public StorageRulesTabAO rulesCountShouldBe(int size) {
-        $(byClassName("ant-table-tbody")).findAll("tr").shouldHaveSize(size);
+        $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(size(size));
         return this;
     }
 

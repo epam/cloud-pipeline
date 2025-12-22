@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.utils;
 
+import com.codeborne.selenide.CheckResult;
 import com.codeborne.selenide.Condition;
 import java.util.Arrays;
 
@@ -39,9 +40,9 @@ public interface Conditions {
      */
     Condition expandedTab = new Condition("be expanded tab") {
         @Override
-        public boolean apply(Driver driver, final WebElement element) {
+        public CheckResult check(Driver driver, final WebElement element) {
             final WebElement tab = element.findElement(byAttribute("role", "tab"));
-            return attribute("aria-expanded", "true").apply(driver, tab);
+            return attribute("aria-expanded", "true").check(driver, tab);
         }
     };
 
@@ -52,9 +53,9 @@ public interface Conditions {
      */
     Condition collapsedTab = new Condition("be collapsed tab") {
         @Override
-        public boolean apply(Driver driver, final WebElement element) {
+        public CheckResult check(Driver driver, final WebElement element) {
             final WebElement tab = element.findElement(byAttribute("role", "tab"));
-            return attribute("aria-expanded", "false").apply(driver, tab);
+            return attribute("aria-expanded", "false").check(driver, tab);
         }
     };
 
@@ -63,8 +64,8 @@ public interface Conditions {
      */
     Condition selectedTab = new Condition("be selected tab") {
         @Override
-        public boolean apply(Driver driver, final WebElement element) {
-            return attribute("aria-selected", "true").apply(driver, element);
+        public CheckResult check(Driver driver, final WebElement element) {
+            return attribute("aria-selected", "true").check(driver, element);
         }
     };
 
@@ -78,9 +79,9 @@ public interface Conditions {
     static Condition selectedValue(final String supposedValue) {
         return new Condition("value " + supposedValue) {
             @Override
-            public boolean apply(Driver driver, final WebElement element) {
+            public CheckResult check(Driver driver, final WebElement element) {
                 final WebElement selected = element.findElement(By.className("ant-select-selection-selected-value"));
-                return matchText(supposedValue).apply(driver, selected);
+                return matchText(supposedValue).check(driver, selected);
             }
 
             public String actualValue(final WebElement element) {
@@ -99,9 +100,9 @@ public interface Conditions {
     static Condition contains(final By... qualifiers) {
         return new Condition("contains") {
             @Override
-            public boolean apply(Driver driver, final WebElement element) {
-                return Arrays.stream(qualifiers)
-                             .allMatch(qualifier -> $(element).find(qualifier).is(visible));
+            public CheckResult check(Driver driver, final WebElement element) {
+                return new CheckResult(Arrays.stream(qualifiers)
+                             .allMatch(qualifier -> $(element).find(qualifier).is(visible)), "contains");
             }
         };
     }
@@ -128,8 +129,9 @@ public interface Conditions {
         requireNonNull(pattern, "Pattern should be an object");
         return new Condition(String.format("text matches {%s}", pattern)) {
             @Override
-            public boolean apply(Driver driver, final WebElement element) {
-                return element.getText().matches(pattern);
+            public CheckResult check(Driver driver, final WebElement element) {
+                return new CheckResult(element.getText().matches(pattern),
+                        String.format("text matches {%s}", pattern));
             }
         };
     }
@@ -164,8 +166,9 @@ public interface Conditions {
         requireNonNull(value, "Value should be an object");
         return new Condition("contains in value") {
             @Override
-            public boolean apply(Driver driver, final WebElement element) {
-                return element.getAttribute("value").contains(value);
+            public CheckResult check(Driver driver, final WebElement element) {
+                return new CheckResult(element.getAttribute("value").contains(value),
+                        "contains in value");
             }
 
             @Override
@@ -183,8 +186,9 @@ public interface Conditions {
     static Condition readOnlyEditor() {
         return new Condition("read only code editor") {
             @Override
-            public boolean apply(Driver driver, final WebElement element) {
-                return !element.findElements(byClassName("code-editor__read-only-editor")).isEmpty();
+            public CheckResult check(Driver driver, final WebElement element) {
+                return new CheckResult(!element.findElements(byClassName("code-editor__read-only-editor")).isEmpty(),
+                        "read only code editor");
             }
         };
     }
@@ -198,9 +202,9 @@ public interface Conditions {
     static Condition backgroundColor(final Color color) {
         return new Condition("background color " + color) {
             @Override
-            public boolean apply(Driver driver, final WebElement element) {
+            public CheckResult check(Driver driver, final WebElement element) {
                 final Color actualColor = actualColor(element);
-                return color.equals(actualColor);
+                return new CheckResult(color.equals(actualColor), "background color " + color);
             }
 
             public String actualValue(final WebElement element) {
@@ -215,19 +219,19 @@ public interface Conditions {
 
     Condition selectedMenuItem = new Condition("selected navigation menu item") {
         @Override
-        public boolean apply(Driver driver, final WebElement element) {
+        public CheckResult check(Driver driver, final WebElement element) {
             return Condition.or("selected navigation menu item",
                     cssClass("navigation__navigation-menu-item-selected"),
                     cssClass("navigation__highlighted-navigation-menu-item-selected"),
                     cssClass("selected"))
-                    .apply(driver, element);
+                    .check(driver, element);
         }
     };
 
     Condition disabled = new Condition("be disable type") {
         @Override
-        public boolean apply(Driver driver, final WebElement element) {
-            return cssClass("cp-disabled").apply(driver, element);
+        public CheckResult check(Driver driver, final WebElement element) {
+            return cssClass("cp-disabled").check(driver, element);
         }
     };
 }

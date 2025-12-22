@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.ClickOptions.usingJavaScript;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
@@ -115,7 +116,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         SelenideElement task = $$(byClassName("joint-element")).findBy(text(name))
                 .$(className("visual-element-body")).shouldBe(visible);
         int width = Math.round(task.getSize().width/2);
-        task.shouldBe(visible).click(width, 0);
+        task.shouldBe(visible).click(usingJavaScript().offset(width, 0));
         return this;
     }
 

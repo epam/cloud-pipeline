@@ -406,7 +406,7 @@ public interface PipelineSelectors {
      * Returns qualifier in global scope.
      */
     static By ignoreScope(final By target) {
-        return Combiners.confine(target, byXpath("//ancestor-or-self::body"), "in global scope " + target);
+        return Combiners.confine(target, byXpath(".//ancestor-or-self::body"), "in global scope " + target);
     }
 
     /**

@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolsPage;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.visible;
@@ -78,7 +79,7 @@ public interface Navigation {
     default NavigationHomeAO stopImpersonation() {
         final By stopImpersonateSelector = byId("navigation-button-stop-impersonation");
         $(stopImpersonateSelector).shouldBe(visible).click();
-        $(stopImpersonateSelector).waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $(stopImpersonateSelector).shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
         return new NavigationHomeAO();
     }
 

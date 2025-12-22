@@ -22,9 +22,12 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.ENDPOINT_INITIALIZATION_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.SearchContext;
@@ -108,10 +111,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRun(String runId) {
         final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
-        runStopButton.waitUntil(enabled, 50000).click();
+        runStopButton.shouldBe(enabled, ofMillis(50000)).click();
         sleep(3, SECONDS);
         if (!$(button("STOP")).isEnabled()) {
-            runStopButton.waitUntil(enabled, 50000).click();
+            runStopButton.shouldBe(enabled, ofMillis(50000)).click();
         }
         $(button("STOP")).click();
         return this;
@@ -126,7 +129,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         sleep(1, SECONDS);
         show(runId);
         if ($(byClassName("log__run-title")).$(withText("Run"))
-                .waitUntil(appears, DEFAULT_TIMEOUT).exists()) {
+                .shouldBe(appears, ofMillis(DEFAULT_TIMEOUT)).exists()) {
             return new LogAO();
         }
         show(runId);
@@ -163,7 +166,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             System.out.println("[WARN] retrying click run logs");
             if (trys++ > 5) {
                 Selenide.screenshot(GET_LOGS_ERROR);
-                throw new ElementNotFound(driver(),
+                throw new ElementNotFound(driver(), new Alias($(byClassName("log__run-title")).getAlias()),
                         format("Could not get run logs (screenshot: %s.png)", GET_LOGS_ERROR), exist);
             }
 
@@ -175,7 +178,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public SelenideElement waitEndpoint() {
-        return endpoint().waitUntil(appears, C.ENDPOINT_INITIALIZATION_TIMEOUT);
+        return endpoint().shouldBe(appears, ofMillis(ENDPOINT_INITIALIZATION_TIMEOUT));
     }
 
     public ToolPageAO clickEndpoint() {
@@ -338,7 +341,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO viewAvailableActiveRuns() {
-        $(withText("Currently viewing")).waitUntil(visible, DEFAULT_TIMEOUT);
+        $(withText("Currently viewing")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         if ($(elementWithText(tagName("b"), "other available ")).isDisplayed()) {
             $(withText("Currently viewing")).click();
             $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
@@ -348,7 +351,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitUntilPauseButtonAppear(final String runId) {
-        $("#run-" + runId + "-pause-button").waitUntil(appear, APPEARING_TIMEOUT);
+        $("#run-" + runId + "-pause-button").shouldBe(appear, ofMillis(APPEARING_TIMEOUT));
         return this;
     }
 
@@ -364,11 +367,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO terminateRun(final String runId, final String pipelineName) {
         $("#run-" + runId + "-terminate-button").shouldBe(visible).click();
-        context().$(byText("Terminate")).waitUntil(visible, DEFAULT_TIMEOUT);
+        context().$(byText("Terminate")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         ensure(byText("Terminate"), text(format("Terminate %s?", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button("TERMINATE"));
-        $(byText("Terminate")).waitWhile(visible, DEFAULT_TIMEOUT);
+        $(byText("Terminate")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 
@@ -386,7 +389,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitUntilResumeButtonAppear(final String runId) {
-        $("#run-" + runId + "-resume-button").waitUntil(appear, COMPLETION_TIMEOUT);
+        $("#run-" + runId + "-resume-button").shouldBe(appear, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
@@ -400,21 +403,21 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitUntilStopButtonAppear(final String runId) {
-        $("#run-" + runId + "-stop-button").waitUntil(appear, APPEARING_TIMEOUT);
+        $("#run-" + runId + "-stop-button").shouldBe(appear, ofMillis(APPEARING_TIMEOUT));
         return this;
     }
 
     public RunsMenuAO waitForCompletion(final String runId) {
-        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(hidden, COMPLETION_TIMEOUT);
+        $(byClassName("run-" + runId)).find(byCssSelector("i")).shouldBe(hidden, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
     public RunsMenuAO waitForInitializeNode(final String runId) {
-        final String initializeNodeTaskPath = "//*[contains(@class, 'ant-menu-item') and " +
+        final String initializeNodeTaskPath = ".//*[contains(@class, 'ant-menu-item') and " +
                 ".//*[contains(., 'InitializeNode')]]//*[contains(@class, 'anticon')]";
         int attempts = 15;
 
-        $(taskWithName("InitializeNode")).waitUntil(visible, C.ENDPOINT_INITIALIZATION_TIMEOUT).click();
+        $(taskWithName("InitializeNode")).shouldBe(visible, ofMillis(ENDPOINT_INITIALIZATION_TIMEOUT)).click();
         while (!$(byXpath(initializeNodeTaskPath)).has(cssClass("cp-runs-table-icon-green"))) {
             if (new LogAO().logMessages().filter(l -> l.contains("Started initialization of new calculation node"))
                     .count() > 2 || attempts == 0) {

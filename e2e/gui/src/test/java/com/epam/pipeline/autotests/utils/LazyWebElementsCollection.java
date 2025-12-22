@@ -18,10 +18,14 @@ package com.epam.pipeline.autotests.utils;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.WebDriverRunner;
-import com.codeborne.selenide.impl.WebElementsCollection;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.IntPredicate;
+
+import static com.codeborne.selenide.impl.Alias.NONE;
+import com.codeborne.selenide.impl.Alias;
+import com.codeborne.selenide.impl.CollectionSource;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import static com.codeborne.selenide.Selenide.$$;
@@ -29,19 +33,23 @@ import static com.codeborne.selenide.Selenide.screenshot;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-class LazyWebElementsCollection implements WebElementsCollection {
+import javax.annotation.Nonnull;
+
+class LazyWebElementsCollection implements CollectionSource {
 
     private final IntPredicate collectionSizeValidator;
     private final By elementsQualifier;
     private final int maxAttempts;
     private final String expectedSize;
     private ElementsCollection elements = null;
+    private Alias alias = NONE;
 
     public LazyWebElementsCollection(final By elementsQualifier,
                                      final IntPredicate sizePredicate,
                                      final int maxAttempts,
                                      final String expectedSize
     ) {
+        super();
         this.elementsQualifier = elementsQualifier;
         this.collectionSizeValidator = sizePredicate;
         this.maxAttempts = maxAttempts;
@@ -57,6 +65,18 @@ class LazyWebElementsCollection implements WebElementsCollection {
                             this.elements = retrieveElements();
                             return this.elements;
                         });
+    }
+
+    @Nonnull
+    @Override
+    public WebElement getElement(int index) {
+        return getElements().get(index);
+    }
+
+    @Nonnull
+    @Override
+    public String getSearchCriteria() {
+        return "$$(" + getElements().size() + " elements)";
     }
 
     private ElementsCollection retrieveElements() {
@@ -102,5 +122,16 @@ class LazyWebElementsCollection implements WebElementsCollection {
     @Override
     public Driver driver() {
         return (Driver) WebDriverRunner.getWebDriver();
+    }
+
+    @Nonnull
+    @Override
+    public Alias getAlias() {
+        return alias;
+    }
+
+    @Override
+    public void setAlias(String alias) {
+        this.alias = new Alias(alias);
     }
 }

@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
@@ -136,7 +138,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     private SelenideElement waitUntilBodyAppears() {
-        return $(byClassName("ant-card-body")).waitUntil(visible, MILLISECONDS.convert(10, SECONDS));
+        return $(byClassName("ant-card-body")).shouldBe(visible, ofMillis(10000));
     }
 
     @Override

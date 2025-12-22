@@ -48,7 +48,7 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
             entry(CREATE, $(byId("edit-storage-dialog-create-button"))),
             entry(SENSITIVE_STORAGE, context().find(byText("Sensitive storage"))
                     .parent().find(byClassName("ant-checkbox"))),
-            entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud region')]"))
+            entry(CLOUD_REGION, context().find(byXpath(".//*[contains(text(), 'Cloud region')]"))
                     .closest(".ant-row").find(by("role", "combobox"))),
             entry(ENABLE_VERSIONING, context().find(byText("Enable versioning"))
                     .parent().find(byClassName("ant-checkbox"))),

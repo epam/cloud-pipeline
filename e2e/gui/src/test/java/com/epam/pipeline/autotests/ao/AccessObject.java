@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.CollectionCondition;
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
@@ -39,6 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 
@@ -430,7 +432,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE messageShouldAppear(String message, long timeout) {
-        $(withText(message)).waitUntil(appears, timeout);
+        $(withText(message)).shouldBe(appears, ofMillis(timeout));
         return (ELEMENT_TYPE) this;
     }
 
@@ -542,7 +544,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
         get(combobox).shouldBe(visible).click();
-        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHave(size(count));
         return (ELEMENT_TYPE) this;
     }
 

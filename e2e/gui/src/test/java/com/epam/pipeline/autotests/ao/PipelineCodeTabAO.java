@@ -15,9 +15,11 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.SelenideElement;
 import static com.epam.pipeline.autotests.ao.Primitive.EDITOR;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 
@@ -93,8 +95,8 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
         //Click Edit
 
-        get(EDIT).waitUntil(exist, DEFAULT_TIMEOUT).click();
-        get(SAVE).waitUntil(exist, DEFAULT_TIMEOUT);
+        get(EDIT).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT)).click();
+        get(SAVE).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
 
         sleep(500, MILLISECONDS);
         get(EDITOR).shouldBe();
@@ -104,7 +106,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         get(SAVE).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $("ant-modal-content").shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
         sleep(1000, MILLISECONDS);
 
         return this;
@@ -152,10 +154,10 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(byText("config.json")).waitUntil(visible, DEFAULT_TIMEOUT);
+        $(byText("config.json")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         $(".ant-table-tbody")
                 .findAll("tr")
-                .shouldHaveSize(3)
+                .shouldHave(size(3))
                 .get(0).shouldHave(text(folderName));
         return this;
     }
@@ -266,11 +268,10 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             final SelenideElement editor = $(byClassName("CodeMirror-code"));
             final int codeLength = editor.innerText().length();
             final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
-            final Actions action = actions().moveToElement(mirrorLine).click();
+            mirrorLine.click();
             for (int i = 0; i < codeLength; i++) {
-                action.sendKeys("\b").sendKeys(Keys.DELETE);
+                actions().sendKeys(Keys.BACK_SPACE, Keys.DELETE).perform();
             }
-            action.perform();
             return this;
         }
 
@@ -301,7 +302,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
         public FileEditingPopupAO shouldContainInCode(final String expectedCode) {
             final Function<String, SelenideElement> lineWithText =
-                    text -> $x(format("//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
+                    text -> $x(format(".//pre[contains(@class, 'CodeMirror-line') and contains(., '%s')]", text));
             Arrays.stream(expectedCode.split("\n"))
                     .map(String::trim)
                     .map(lineWithText)

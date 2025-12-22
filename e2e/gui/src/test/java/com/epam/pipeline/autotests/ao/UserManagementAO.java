@@ -65,6 +65,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -179,9 +180,14 @@ public class UserManagementAO extends SettingsPageAO {
         public UsersTabAO searchUser(String name) {
             sleep(1, SECONDS);
             clear(SEARCH);
-            return clickSearch()
-                    .setSearchName(name)
-                    .pressEnter();
+//            return clickSearch()
+//                    .setSearchName(name)
+//                    .pressEnter();
+            clickSearch();
+            get(Primitive.SEARCH)
+                    .getWrappedElement()
+                    .sendKeys(name, Keys.ENTER);
+            return this;
         }
 
         public UsersTabAO exportUsers() {
@@ -350,7 +356,7 @@ public class UserManagementAO extends SettingsPageAO {
                         entry(UNBLOCK, context().$(button("UNBLOCK"))),
                         entry(DELETE, context().$(byId("delete-user-button"))),
                         entry(PRICE_TYPE, context().find(byXpath(
-                                format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                                format(".//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                         entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
                         entry(IMPERSONATE, context().$(button("IMPERSONATE"))),
                         entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
@@ -375,7 +381,7 @@ public class UserManagementAO extends SettingsPageAO {
                         click(CANCEL);
                     }
                     $(className("edit-user-roles-dialog__modal-container"))
-                            .waitUntil(not(visible), DEFAULT_TIMEOUT);
+                            .shouldBe(not(visible), ofMillis(DEFAULT_TIMEOUT));
                     return parentAO;
                 }
 
@@ -404,7 +410,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
-                    $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(By.className("role-ROLE_USER")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
                     String className = value.startsWith("ROLE_") ? format("role-%s", value)
                             : format("role-ROLE_%s", value);
                     if ($(By.className(className)).exists()) {
@@ -423,7 +429,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup deleteRoleOrGroupIfExist(final String value) {
-                    $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
                     if(!$$(byClassName("role-name-column")).findBy(text(value)).exists()) {
                         return this;
                     }
@@ -431,12 +437,12 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public boolean isUserHasRoleOrGroup(final String value) {
-                    $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(By.className("role-ROLE_USER")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
                     return  $(By.className(format("role-%s", value))).exists();
                 }
 
                 public EditUserPopup isListOfRolesBlocked() {
-                    $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
                     $(byClassName("edit-user-roles-dialog__table"))
                             .$$(xpath(".//tr"))
                             .stream()
@@ -475,7 +481,7 @@ public class UserManagementAO extends SettingsPageAO {
 
                 public EditUserPopup isAllowedLaunchOptionsDisable(final String option) {
                     $(byText("Allowed price types")).shouldBe(visible, enabled);
-                    final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+                    final By optionField = byXpath(format(".//div/b[text()='%s']/following::div/input", option));
                     ensure(optionField, disabled);
                     return this;
                 }
@@ -717,7 +723,7 @@ public class UserManagementAO extends SettingsPageAO {
                     entry(OK, context().find(By.id("close-edit-user-form"))),
                     entry(CANCEL, context().$(button("CANCEL"))),
                     entry(PRICE_TYPE, context().find(byXpath(
-                            format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                            format(".//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                     entry(PERMISSIONS, $(byText("PERMISSIONS"))),
                     entry(PROFILE, context().$x(".//div[@role='tab']", 0))
             );
@@ -783,7 +789,7 @@ public class UserManagementAO extends SettingsPageAO {
             }
 
             public EditGroupPopup isListOfUsersBlocked() {
-                $(byClassName("user-management__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                $(byClassName("user-management__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
                 $(byClassName("user-management__table"))
                         .$$(xpath(".//tr"))
                         .stream()
@@ -792,13 +798,13 @@ public class UserManagementAO extends SettingsPageAO {
             }
 
             public EditGroupPopup checkUserExistsInGroup(final String userName) {
-                $(byClassName("user-management__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                $(byClassName("user-management__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
                 return ensure($(className("user-management__table")).$(byText(userName)), exist);
             }
 
             public EditGroupPopup isAllowedLaunchOptionsDisable(final String option) {
                 $(byText("Allowed price types")).shouldBe(visible, enabled);
-                final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+                final By optionField = byXpath(format(".//div/b[text()='%s']/following::div/input", option));
                 ensure(optionField, disabled);
                 return this;
             }
@@ -880,7 +886,7 @@ public class UserManagementAO extends SettingsPageAO {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     entry(OK, context().find(By.id("close-edit-user-form"))),
                     entry(PRICE_TYPE, context().find(byXpath(
-                            format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                            format(".//div/b[text()='%s']/following::div/input", "Allowed price types"))))
             );
 
             public EditRolePopup(final RolesTabAO parentAO) {
@@ -903,7 +909,7 @@ public class UserManagementAO extends SettingsPageAO {
 
     public void addAllowedLaunchOptions(final String option, final String mask) {
         $(byText("Allowed price types")).shouldBe(visible, enabled);
-        final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+        final By optionField = byXpath(format(".//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
             clearByKey(optionField);
             return;

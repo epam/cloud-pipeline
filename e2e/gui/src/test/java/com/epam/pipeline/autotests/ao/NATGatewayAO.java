@@ -15,10 +15,13 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import static java.time.Duration.ofMillis;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -190,7 +193,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 : $(route(ipAddress, port));
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
-                .shouldHaveSize(3);
+                .shouldHave(size(3));
         internalConfigElements.get(0).shouldHave(text(
                 format("%s-%s", C.NAT_PROXY_SERVICE_PREFIX, serverName.replaceAll("\\.", "-"))));
         internalConfigElements.get(1).shouldHave(matchText(IPV4_PATTERN));
@@ -209,7 +212,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 .shouldHave(cssClass("anticon-exclamation-circle-o"), cssClass("cp-error"));
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
-                .shouldHaveSize(3);
+                .shouldHave(size(3));
         internalConfigElements.get(1).shouldHave(text(StringUtils.EMPTY));
         return this;
     }
@@ -286,7 +289,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO waitForRouteData() {
-        $(byClassName("ub-settings__content")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        $(byClassName("ub-settings__content")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         get(ADD_ROUTE).shouldBe(enabled);
         return this;
     }

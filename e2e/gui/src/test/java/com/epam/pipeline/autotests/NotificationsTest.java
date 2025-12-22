@@ -285,7 +285,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     }
 
     private void ensureNotificationIsAbsent(String title) {
-        $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
+        $(byXpath(format(".//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
                 .shouldNotBe(visible);
     }
 

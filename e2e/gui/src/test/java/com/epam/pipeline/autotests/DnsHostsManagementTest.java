@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -30,10 +29,8 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.screenshot;
-import static com.codeborne.selenide.WebDriverRunner.driver;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 
@@ -136,11 +133,12 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Complete!",
                                     format("pipeline-%s", parentRunId))
                             .execute(format(command[2], childRunID))
-                            .waitUntilTextAppearsSeveralTimes(parentRunId, 3)
+                            .waitUntilTextAppearsSeveralTimes(parentRunId, 2)
                             .assertPageAfterCommandContainsStrings(format(command[2], childRunID), SERVER_IP);
                     String childRunIP = getRunIP(shell.lastCommandResult("Name:"));
                     shell
                             .execute(format(command[3], childRunIP))
+                            .waitUntilTextAppearsSeveralTimes(parentRunId, 3)
                             .assertPageAfterCommandContainsStrings(format(command[3], childRunIP), "0")
                             .close();
                 });
@@ -152,9 +150,9 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         if (!matcher.find()) {
             final String screenName = format("DnsHostsManagementTest_%s", Utils.randomSuffix());
             screenshot(screenName);
-            throw new ElementNotFound(driver(),
-                    format("Could not get run IP from message: %s. Screenshot: %s.png", logMessage,
-                    screenName), exist);
+//            throw new ElementNotFound(driver(), new Alias($(byClassName("log__run-title")).getAlias()),
+//                    format("Could not get run IP from message: %s. Screenshot: %s.png", logMessage,
+//                    screenName), exist);
         }
         return matcher.group();
     }
