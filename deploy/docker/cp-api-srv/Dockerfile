@@ -29,7 +29,7 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 RUN yum install -y \
                 wget \
                 curl \
-                java-1.8.0-openjdk \
+                java-21-openjdk \
                 python \
                 zip \
                 unzip \
@@ -103,7 +103,7 @@ RUN pip install -I google-api-core==1.32.0 \
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
-ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
+ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator"
 
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
