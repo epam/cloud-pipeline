@@ -105,18 +105,6 @@ ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
 ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator"
 
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    rm -rf bin/pipe-templates/__SYSTEM && \
-    mkdir -p $CP_API_HOME && \
-    ls -dp bin/* \
-        | grep '\.jar$' \
-        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
-        | xargs rm -f && \
-    mv bin/* $CP_API_HOME/ && \
-    rm -f cloud-pipeline.tgz && \
-    rm -rf bin
 ADD config $CP_API_HOME/config
 
 # Install pipe-common package
