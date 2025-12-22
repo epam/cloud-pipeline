@@ -242,61 +242,27 @@ function applyDiscountsToObjects (objects, discountFn) {
 
 function joinSummaryDiscounts (summaries, discounts) {
   let result;
-  const addTierCostDetails = (targetTier, addTier, onlyAccumulative = true) => {
-    if (!isNotSet(targetTier.accumulativeCost)) {
-      targetTier.accumulativeCost = safelySumm(
-        targetTier.accumulativeCost,
-        addTier.accumulativeCost
-      );
-    }
-    if (!isNotSet(targetTier.accumulativeOldVersionCost)) {
-      targetTier.accumulativeOldVersionCost = safelySumm(
-        targetTier.accumulativeOldVersionCost,
-        addTier.accumulativeOldVersionCost
-      );
-    }
-    if (!isNotSet(targetTier.cost) && !onlyAccumulative) {
-      targetTier.cost = safelySumm(
-        targetTier.cost,
-        addTier.cost
-      );
-    }
-    if (!isNotSet(targetTier.oldVersionCost) && !onlyAccumulative) {
-      targetTier.oldVersionCost = safelySumm(
-        targetTier.oldVersionCost,
-        addTier.oldVersionCost
-      );
-    }
-  };
-  const addCostDetails = (target, add, onlyAccumulative = true) => {
+
+  const printEntry = (entry) => {
     const {
-      tiers: targetTiers = {}
-    } = target || {};
-    const {
-      tiers: addTiers = {}
-    } = add || {};
-    Object.entries(targetTiers).forEach(([tier, costDetails]) => {
-      const addTier = addTiers[tier] || {};
-      addTierCostDetails(costDetails, addTier, onlyAccumulative);
-    });
+      cost,
+      value,
+      previous,
+      previousCost,
+      date
+    } = entry || {};
+    return {
+      date,
+      cost,
+      accumulative: value,
+      previousCost,
+      previousAccumulative: previous
+    };
   };
-  const add = (target, add, onlyAccumulative = true) => {
-    if (!isNotSet(target.value)) {
-      target.value = safelySumm(target.value, add.value);
-    }
-    if (!isNotSet(target.cost) && !onlyAccumulative) {
-      target.cost = safelySumm(target.cost, add.cost);
-    }
-    if (!isNotSet(target.previous)) {
-      target.previous = safelySumm(target.previous, add.previous);
-    }
-    if (!isNotSet(target.previousCost) && !onlyAccumulative) {
-      target.previousCost = safelySumm(target.previousCost, add.previousCost);
-    }
-    addCostDetails(target.costDetails, add.costDetails, onlyAccumulative);
-    addCostDetails(target.previousCostDetails, add.previousCostDetails, onlyAccumulative);
-  };
+
+  console.groupCollapsed('joining billing data');
   for (let i = 0; i < (summaries || []).length; i++) {
+    console.groupCollapsed(`Joining #${i + 1} out of ${(summaries || []).length} billing data`);
     const summary = summaries[i];
     if (summary) {
       let discount;
@@ -313,59 +279,259 @@ function joinSummaryDiscounts (summaries, discounts) {
           const sorter = (a, b) => a.dateValue - b.dateValue;
           const {values = []} = subResult;
           const {values: current = []} = result;
+          const extractDate = (o) => ({
+            date: o.date,
+            dateValue: o.dateValue,
+            initialDate: o.initialDate,
+            previousInitialDate: o.previousInitialDate
+          });
+          const dates = current.map(extractDate);
+          for (const val of values) {
+            if (!dates.some((v) => v.date === val.date)) {
+              dates.push(extractDate(val));
+            }
+          }
+          dates.sort(sorter);
+          console.log(dates, {current: current.map(printEntry), values: values.map(printEntry)});
+          // `dates` holds all unique dates from both arrays
+          // `current` (merge target) and `values` (what is being merged) sorted in ACC order.
+          // Each object contains:
+          // - date: string (e.g., "22 Dec 2025")
+          // - dateValue: moment (corresponding moment date object)
           values.sort(sorter);
-          // join values with date before first date of current
-          const [first] = current;
-          const last = current.slice().pop();
-          if (first) {
-            const before = values.filter(v => v.dateValue < first.dateValue);
-            current.push(...before);
-            current.sort(sorter);
-          }
-          // update current values after last value
-          const lastValue = values.slice().pop();
-          if (lastValue) {
-            const afterLast = current.filter(c => c.dateValue > lastValue.dateValue);
-            if (afterLast.length > 0) {
-              for (let j = 0; j < afterLast.length; j++) {
-                const value = afterLast[j];
-                add(value, lastValue);
+          const allTiers = [];
+          for (const entry of [...current, ...values]) {
+            const tiersKeys = [
+              ...Object.keys((entry.costDetails ?? {}).tiers ?? {}),
+              ...Object.keys((entry.previousCostDetails ?? {}).tiers ?? {})
+            ];
+            for (const tier of tiersKeys) {
+              if (!allTiers.includes(tier)) {
+                allTiers.push(tier);
               }
             }
           }
-          // join values with date after last date of current array
-          if (last) {
-            const after = values.filter(value => value.dateValue > last.dateValue);
-            for (let j = 0; j < after.length; j++) {
-              const value = after[j];
-              add(value, last);
-              current.push(value);
+          const makeAccumulativeArray = (field) => current
+            .filter((o) => !isNotSet(o[field]))
+            .map((o) => ({
+              date: o.date,
+              dateValue: o.dateValue,
+              [field]: o[field]
+            }))
+            .reverse();
+          const getEntryTierValue = (entry, tiersDetails, tier, field) => {
+            const {[tiersDetails]: _tiersDetails = {}} = entry || {};
+            const {tiers = {}} = _tiersDetails;
+            const tierObj = tiers[tier] || {};
+            return tierObj[field];
+          };
+          const setEntryTierValue = (entry, tiersDetails, tier, field, value) => {
+            if (!entry) {
+              return;
             }
+            if (!entry[tiersDetails]) {
+              entry[tiersDetails] = {};
+            }
+            if (!entry[tiersDetails].tiers) {
+              entry[tiersDetails].tiers = {};
+            }
+            entry[tiersDetails].tiers[tier] = value;
+          };
+          const makeTierAccumulativeArray = (tiersDetails, tier, field) => current
+            .map((o) => ({
+              date: o.date,
+              dateValue: o.dateValue,
+              [field]: getEntryTierValue(o, tiersDetails, tier, field)
+            }))
+            .filter((o) => !isNotSet(o[field]))
+            .reverse();
+          // `accumulativeArray` holds non-empty accumulative values ('value')
+          const accumulativeArray = makeAccumulativeArray('value');
+          // `previousAccumulativeArray` holds non-empty previous accumulative values ('value')
+          const previousAccumulativeArray = makeAccumulativeArray('previous');
+          // eslint-disable-next-line max-len
+          // `tiersAccumulative` holds map of <tier, non-empty accumulative values ('accumulativeCost')>
+          const tiersAccumulative = {};
+          // eslint-disable-next-line max-len
+          // `tiersAccumulativeOldVersions` holds map of <tier, non-empty accumulative old versions values ('accumulativeOldVersionCost')>
+          const tiersAccumulativeOldVersions = {};
+          // eslint-disable-next-line max-len
+          // `tiersPreviousAccumulative` holds map of <tier, non-empty previous accumulative values ('accumulativeCost')>
+          const tiersPreviousAccumulative = {};
+          // eslint-disable-next-line max-len
+          // `tiersPreviousAccumulativeOldVersions` holds map of <tier, non-empty previous accumulative old versions values ('accumulativeOldVersionCost')>
+          const tiersPreviousAccumulativeOldVersions = {};
+          for (const tier of allTiers) {
+            tiersAccumulative[tier] = makeTierAccumulativeArray(
+              'costDetails',
+              tier,
+              'accumulativeCost'
+            );
+            tiersAccumulativeOldVersions[tier] = makeTierAccumulativeArray(
+              'costDetails',
+              tier,
+              'accumulativeOldVersionCost'
+            );
+            tiersPreviousAccumulative[tier] = makeTierAccumulativeArray(
+              'previousCostDetails',
+              tier,
+              'accumulativeCost'
+            );
+            tiersPreviousAccumulativeOldVersions[tier] = makeTierAccumulativeArray(
+              'previousCostDetails',
+              tier,
+              'accumulativeOldVersionCost'
+            );
           }
-          // join overlapping values
-          const filterStart = value => first ? value.dateValue >= first.dateValue : true;
-          const filterEnd = value => last ? value.dateValue <= last.dateValue : true;
-          const overlappingValues = values.filter(v => filterStart(v) && filterEnd(v));
-          for (let j = 0; j < (overlappingValues || []).length; j++) {
-            const value = overlappingValues[j];
-            const [existing] = current.filter(e => e.date === value.date);
-            if (!existing) {
-              // This is a gap.
-              // We need to find last value and summ only accumulative values
-              // (e.g. 'value', 'previous')
-              const lastGap = current.filter(c => c.dateValue < value.dateValue).slice().pop();
-              if (lastGap) {
-                add(value, lastGap);
-              }
-              current.push(value);
+          const findLastSetValue = (array, dateValue, field) => array
+            .find(
+              (o) => o.dateValue <= dateValue && !isNotSet(o[field])
+            );
+
+          const merge = (options) => {
+            const {
+              dateObj,
+              valueEntry,
+              currentEntry,
+              previous = false
+            } = options;
+            const field = previous ? 'previousCost' : 'cost';
+            const accumulativeField = previous ? 'previous' : 'value';
+            const array = previous ? previousAccumulativeArray : accumulativeArray;
+            // merging cost
+            if (isNotSet(valueEntry[field])) {
+              console.log(`"${field}" to merge is undefined, skipping`);
             } else {
-              add(existing, value, false);
+              const result = (currentEntry[field] ?? 0) + valueEntry[field];
+              console.log(
+                `merging "${field}":`,
+                currentEntry[field],
+                '(target) +',
+                valueEntry[field],
+                '=', result
+              );
+              currentEntry[field] = result;
             }
+            // merging accumulative value
+            if (isNotSet(valueEntry[accumulativeField])) {
+              console.log(`"${accumulativeField}" value to merge is undefined, skipping`);
+            } else {
+              const last = findLastSetValue(array, dateObj.dateValue, accumulativeField);
+              const result = (last?.[accumulativeField] ?? 0) + valueEntry[accumulativeField];
+              console.log(
+                `merging "${accumulativeField}":`,
+                last?.[accumulativeField],
+                `(target from ${last?.date || currentEntry.date}) +`,
+                valueEntry[accumulativeField],
+                '=',
+                result
+              );
+              currentEntry[accumulativeField] = result;
+            }
+          };
+          const mergeTier = (options) => {
+            const {
+              tier,
+              dateObj,
+              valueEntry,
+              currentEntry,
+              previous = false,
+              oldVersions = false
+            } = options;
+            const costDetailsField = previous ? 'previousCostDetails' : 'costDetails';
+            const field = oldVersions
+              ? 'oldVersionCost'
+              : 'cost';
+            const accumulativeField = oldVersions
+              ? 'accumulativeOldVersionCost'
+              : 'accumulativeCost';
+            const array = (() => {
+              if (previous) {
+                if (oldVersions) {
+                  return tiersPreviousAccumulativeOldVersions[tier] ?? [];
+                }
+                return tiersPreviousAccumulative[tier] ?? [];
+              }
+              if (oldVersions) {
+                return tiersAccumulativeOldVersions[tier] ?? [];
+              }
+              return tiersAccumulative[tier] ?? [];
+            })();
+            // merging cost
+            const valueEntryCost = getEntryTierValue(valueEntry, costDetailsField, tier, field);
+            const currentEntryCost = getEntryTierValue(currentEntry, costDetailsField, tier, field);
+            if (isNotSet(valueEntryCost)) {
+              console.log(`"${costDetailsField}.${field}" to merge is undefined, skipping`);
+            } else {
+              const result = (currentEntryCost ?? 0) + valueEntryCost;
+              console.log(
+                `merging "${costDetailsField}.${field}":`,
+                currentEntryCost,
+                '(target) +',
+                valueEntryCost,
+                '=', result
+              );
+              setEntryTierValue(currentEntry, costDetailsField, tier, field, result);
+            }
+            // merging accumulative value
+            const valueEntryAccumulativeCost = getEntryTierValue(
+              valueEntry,
+              costDetailsField,
+              tier,
+              accumulativeField
+            );
+            if (isNotSet(valueEntryAccumulativeCost)) {
+              // eslint-disable-next-line max-len
+              console.log(`"${costDetailsField}.${accumulativeField}" value to merge is undefined, skipping`);
+            } else {
+              const last = findLastSetValue(array, dateObj.dateValue, accumulativeField);
+              const result = (last?.[accumulativeField] ?? 0) + valueEntryAccumulativeCost;
+              console.log(
+                `merging "${costDetailsField}.${accumulativeField}":`,
+                last?.[accumulativeField],
+                `(target from ${last?.date || currentEntry.date}) +`,
+                valueEntryAccumulativeCost,
+                '=',
+                result
+              );
+              setEntryTierValue(currentEntry, costDetailsField, tier, accumulativeField, result);
+            }
+          };
+
+          for (const dateObj of dates) {
+            console.groupCollapsed(dateObj.date);
+            const valueEntry = values.find((entry) => entry.date === dateObj.date);
+            if (!valueEntry) {
+              console.log('nothing to merge');
+              console.groupEnd();
+              continue;
+            }
+            console.log('entry to merge:', printEntry(valueEntry));
+            let currentEntry = current.find((entry) => entry.date === dateObj.date);
+            if (currentEntry) {
+              console.log('target entry:', printEntry(currentEntry));
+            } else {
+              console.log('creating target entry');
+              currentEntry = {...dateObj};
+              current.push(currentEntry);
+              current.sort(sorter);
+            }
+            merge({dateObj, valueEntry, currentEntry, previous: false});
+            merge({dateObj, valueEntry, currentEntry, previous: true});
+            for (const tier of allTiers) {
+              mergeTier({dateObj, valueEntry, tier, previous: false, oldVersions: false});
+              mergeTier({dateObj, valueEntry, tier, previous: false, oldVersions: true});
+              mergeTier({dateObj, valueEntry, tier, previous: true, oldVersions: false});
+              mergeTier({dateObj, valueEntry, tier, previous: true, oldVersions: true});
+            }
+            console.groupEnd();
           }
         }
       }
     }
+    console.groupEnd();
   }
+  console.groupEnd();
   return result;
 }
 
