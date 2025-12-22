@@ -107,6 +107,9 @@ ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator"
 
 ADD config $CP_API_HOME/config
 
+ADD pipeline.jar $CP_API_HOME
+ADD jwt-generator.jar $CP_API_HOME
+
 # Install pipe-common package
 RUN mkdir -p /tmp/pipe-temp && \
     cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
