@@ -53,6 +53,15 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         Configuration.browser = "chrome";
         Configuration.browserSize = "1920x1080";
         System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
+        ChromeOptions options = new ChromeOptions();
+        options.setBinary("/usr/local/bin/chrome");
+        options.addArguments("--headless=new"); // or "--headless"
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+
+        WebDriver driver = new ChromeDriver(options);
+        WebDriverRunner.setWebDriver(driver);
 
         login(C.ROOT_ADDRESS);
 
