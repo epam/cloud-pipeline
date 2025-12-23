@@ -107,11 +107,11 @@ ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator"
 
 ADD config $CP_API_HOME/config
 
-ADD pipeline.jar $CP_API_HOME
-ADD jwt-generator.jar $CP_API_HOME
-ADD pipe-common.tar.gz $CP_API_HOME
+ADD pipeline.jar $CP_API_HOME/pipeline.jar
+ADD jwt-generator.jar $CP_API_HOME/jwt-generator.jar
+ADD pipe-common.tar.gz $CP_API_HOME/pipe-common.tar.gz
 RUN mkdir -p /tmp/pipe-temp/BOOT-INF/classes/static && \
-    cp $CP_API_HOME/pipe-common.tar.gz /tmp/pipe-temp/BOOT-INF/classes/static/
+    cp /opt/api/pipe-common.tar.gz /tmp/pipe-temp/BOOT-INF/classes/static/
 
 
 # Install pipe-common package
