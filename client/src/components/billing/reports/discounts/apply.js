@@ -347,7 +347,7 @@ function joinSummaryDiscounts (summaries, discounts) {
             .reverse();
           // `accumulativeArray` holds non-empty accumulative values ('value')
           const accumulativeArray = makeAccumulativeArray('value');
-          // `previousAccumulativeArray` holds non-empty previous accumulative values ('value')
+          // `previousAccumulativeArray` holds non-empty previous accumulative values ('previous')
           const previousAccumulativeArray = makeAccumulativeArray('previous');
           // eslint-disable-next-line max-len
           // `tiersAccumulative` holds map of <tier, non-empty accumulative values ('accumulativeCost')>
