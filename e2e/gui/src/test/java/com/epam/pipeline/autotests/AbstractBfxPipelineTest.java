@@ -52,6 +52,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     public void setUp() {
         Configuration.browser = "chrome";
         Configuration.browserSize = "1920x1080";
+        System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
 
         login(C.ROOT_ADDRESS);
 
