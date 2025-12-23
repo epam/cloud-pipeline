@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 # Disable automatic packages upgrade, if cloud-init is configured
 if [ -d "/etc/cloud/cloud.cfg.d" ]; then
 
@@ -36,13 +38,13 @@ yum install -y iproute-tc
 # - https://btrfs.readthedocs.io/en/latest/INSTALL.html#all-in-one-binary-busybox-style
 # - https://github.com/kdave/btrfs-progs
 cd /usr/bin && \
-wget "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
 chmod +x btrfs && \
 ln -s btrfs mkfs.btrfs
 
 # python2
 cd /opt && \
-wget "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz" && \
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz" && \
 tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
 rm -f Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
 ln -s /opt/conda/bin/python2 /usr/bin/python2 && \
