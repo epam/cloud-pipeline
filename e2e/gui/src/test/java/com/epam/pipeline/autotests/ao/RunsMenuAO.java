@@ -121,7 +121,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO show(String runId) {
-        $("#run-" + runId + "-logs-button").should(appear).click();
+        $("#run-" + runId + "-logs-button").should(exist, ofMillis(DEFAULT_TIMEOUT)).click();
         return this;
     }
 
@@ -129,7 +129,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         sleep(1, SECONDS);
         show(runId);
         if ($(byClassName("log__run-title")).$(withText("Run"))
-                .shouldBe(appears, ofMillis(DEFAULT_TIMEOUT)).exists()) {
+                .shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).exists()) {
             return new LogAO();
         }
         show(runId);
@@ -344,7 +344,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         $(withText("Currently viewing")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         if ($(elementWithText(tagName("b"), "other available ")).isDisplayed()) {
             $(withText("Currently viewing")).click();
-            $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
+            $(elementWithText(tagName("b"), "other available ")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
             sleep(2, SECONDS);
         }
         return this;
@@ -356,8 +356,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO pause(final String runId, final String pipelineName) {
-        $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        $(byClassName("ause-confirmation__body")).shouldBe(visible);
+        $("#run-" + runId + "-pause-button").shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
+        $(byClassName("ause-confirmation__body")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         ensure(byClassName("ause-confirmation__title"),
                matchText(format("Do you want to pause%s", pipelineName)))
             .sleep(1, SECONDS)
