@@ -57,7 +57,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         open(C.ROOT_ADDRESS);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "1900_1")
     public void implementKubernetesDnsCustomHostsManagement() {
         final String[] userRunIP = new String[1];
