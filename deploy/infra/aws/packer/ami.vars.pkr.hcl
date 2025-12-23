@@ -22,3 +22,7 @@ variable "subnet_id" {
   type =  string
   default = ""
 }
+variable "deps_file" {
+  type =  string
+  default = ""
+}
