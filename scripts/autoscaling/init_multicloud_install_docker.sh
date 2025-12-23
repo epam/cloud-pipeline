@@ -1,8 +1,10 @@
 #!/bin/bash
 
+
 CP_DOCKER_VERSION="${CP_DOCKER_VERSION:-20.10.24}"
 CP_DOCKER_HOME="${CP_DOCKER_HOME:-/opt/local/docker}"
 CP_KUBE_VERSION="${CP_KUBE_VERSION:-1.15.4}"
+CP_DOCKER_GPU_ENABLE="${CP_DOCKER_GPU_ENABLE:-false}"
 
 _docker_url="${GLOBAL_DISTRIBUTION_URL}tools/docker/distr/linux/static/stable/x86_64/docker-${CP_DOCKER_VERSION}.tgz"
 _kube_url="${GLOBAL_DISTRIBUTION_URL}tools/kube/${CP_KUBE_VERSION}/rpm/kube-${CP_KUBE_VERSION}.el7.tgz"
@@ -79,3 +81,12 @@ echo "PATH=$PATH:$CP_DOCKER_HOME" >> /root/.bashrc
 export PATH="$PATH:$CP_DOCKER_HOME"
 
 systemctl daemon-reload
+
+# if [ "$CP_DOCKER_GPU_ENABLE" == "true" ]; then
+#     CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-1.14.3-1}"
+    
+#     curl -s -L "${GLOBAL_DISTRIBUTION_URL}tools/nvidia/libnvidia-container/rpm/stable/nvidia-container-toolkit.repo" > /etc/yum.repos.d/nvidia-container-toolkit.repo
+#     yum install -y nvidia-container-toolkit-$CP_CAP_DIND_GPU_VERSION
+#     _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
+#     find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
+# fi
