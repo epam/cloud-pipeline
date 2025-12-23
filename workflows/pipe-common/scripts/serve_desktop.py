@@ -61,16 +61,16 @@ def get_desktop_file():
                                          Config.executor, Config.python_exec, Config.logger)
 
     if template_type == DCV:
-        template_data = template_data.format(CP_PROXY=proxy_host,
-                                             CP_PROXY_PORT=proxy_port,
+        template_data = template_data.format(CP_PROXY=os.getenv('CP_DCV_PROXY_HOST', proxy_host),
+                                             CP_PROXY_PORT=os.getenv('CP_DCV_PROXY_PORT', proxy_port),
                                              CP_HOST=Config.local_ip,
                                              CP_HOST_PORT=Config.local_port,
                                              CP_USERNAME=user_name,
                                              CP_SESSION_ID=user_name.replace('.', ''),
                                              CP_PASSWORD=Config.user_pass)
     elif template_type == NXS:
-        template_data = template_data.format(CP_PROXY=proxy_host,
-                                             CP_PROXY_PORT=proxy_port,
+        template_data = template_data.format(CP_PROXY=os.getenv('CP_NM_PROXY_HOST', proxy_host),
+                                             CP_PROXY_PORT=os.getenv('CP_NM_PROXY_PORT', proxy_port),
                                              CP_HOST=Config.local_ip,
                                              CP_HOST_PORT=Config.local_port,
                                              CP_USERNAME=user_name,
