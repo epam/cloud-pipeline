@@ -109,7 +109,8 @@ ADD config $CP_API_HOME/config
 
 ADD pipeline.jar $CP_API_HOME
 ADD jwt-generator.jar $CP_API_HOME
-ADD pipe-common.tar.gz /tmp/pipe-common.tar.gz
+RUN mkdir -p /tmp/pipe-temp/BOOT-INF/classes/static/
+ADD pipe-common.tar.gz /tmp/pipe-temp/BOOT-INF/classes/static/
 
 # Install pipe-common package
 RUN mkdir -p /tmp/pipe-temp && \
