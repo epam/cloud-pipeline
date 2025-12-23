@@ -15,10 +15,10 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import static com.codeborne.selenide.Selectors.byText;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.ArrayList;
@@ -31,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.Comparators;
+import static java.time.Duration.ofMillis;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
 
@@ -159,14 +160,14 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertNextStringIsVisibleAtFileUpload(String str1, String str2) {
-        $(withText(str1)).shouldBe(visible).parent()
+        $(withText(str1)).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).parent()
                 .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
         return this;
     }
 
     public ShellAO assertNextStringIsVisible(String str1, String str2) {
-        $(withText(str1)).shouldBe(visible)
-                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+        $(withText(str1)).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT))
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 
