@@ -29,7 +29,6 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 RUN yum install -y \
                 wget \
                 curl \
-                java-21-openjdk \
                 python \
                 zip \
                 unzip \
@@ -41,6 +40,9 @@ RUN yum install -y \
                 samba-client \
                 cifs-utils \
                 gettext
+
+RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
+    yum install -y java-21-amazon-corretto-devel
 
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
