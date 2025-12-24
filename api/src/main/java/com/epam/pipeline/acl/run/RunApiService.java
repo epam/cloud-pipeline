@@ -56,6 +56,7 @@ import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -459,5 +460,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public List<PipelineRunResult> loadPipelineRunResultsForRun(final Long runId) {
         return runResultManager.loadPipelineRunResultsForRun(runId);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final Long runId) {
+        return runManager.loadPipelineRunPerformanceMetrics(runId);
     }
 }

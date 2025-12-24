@@ -27,6 +27,7 @@ import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunMetricsDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -67,6 +68,7 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -255,6 +257,9 @@ public class PipelineRunManager {
 
     @Autowired
     private CommonAuditClient auditClient;
+
+    @Autowired
+    private PipelineRunMetricsDao runMetricsDao;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1464,6 +1469,28 @@ public class PipelineRunManager {
 
     public boolean runExists(final Long runId) {
         return pipelineRunDao.runExists(runId);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final long runId) {
+        final PipelineRun run = loadPipelineRun(runId);
+        if (!run.getStatus().isFinal()) {
+            throw new IllegalArgumentException("Requested run is not in the final status!" +
+                    " Only runs in final status have performance metrics saved.");
+        }
+        return runMetricsDao.loadRunMetrics(runId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void savePipelineRunPerformanceMetrics(
+            final PipelineRunPerformanceMetrics metrics) {
+        Assert.notNull(metrics.getRunId(), "RunId isn't provided!");
+        final PipelineRun run = loadPipelineRun(metrics.getRunId());
+        if (!run.getStatus().isFinal()) {
+            throw new IllegalArgumentException("Requested run is not in the final status!" +
+                    " Only runs in final status could have performance metrics.");
+        }
+        runMetricsDao.createRunMetrics(metrics);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
