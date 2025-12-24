@@ -20,7 +20,9 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.TestCase;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -52,7 +54,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     public void setUp() {
         Configuration.browser = "chrome";
         Configuration.browserSize = "1920x1080";
-        System.setProperty("webdriver.chrome.driver","/usr/local/bin/chromedriver");
+        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
         ChromeOptions options = new ChromeOptions();
         options.setBinary("/usr/local/bin/chrome");
         options.addArguments("--no-sandbox");
@@ -65,7 +67,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         login(C.ROOT_ADDRESS);
 
         //reset mouse
-        $(byId("navigation-button-logo")).shouldBe(visible).click();
+        $(byId("navigation-button-logo")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
         sleep(3, SECONDS);
     }
 
