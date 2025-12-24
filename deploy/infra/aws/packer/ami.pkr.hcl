@@ -11,8 +11,8 @@ locals {
   timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
 }
 
-source "amazon-ebs" "cloud-pipeline-cpu" {
-  ami_name             = "CloudPipeline-CPU-${local.timestamp}"
+source "amazon-ebs" "cloud-pipeline-ami" {
+  ami_name             = "CloudPipeline-${var.ami_type}-${local.timestamp}"
   instance_type        = "${var.instance_type}"
   region               = "${var.region}"
   source_ami           = "${var.source_ami}"
@@ -24,6 +24,7 @@ source "amazon-ebs" "cloud-pipeline-cpu" {
   tags = {
       OS_Version = "amzn2023"
       Base_AMI_Name = "{{ .SourceAMIName }}"
+      Type = "${var.ami_type}"
   }
 }
 

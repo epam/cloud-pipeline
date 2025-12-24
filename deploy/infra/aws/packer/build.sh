@@ -31,24 +31,26 @@ done
 set -- "${POSITIONAL[@]}"
 
 if [ -z "$_REGION" ] || \
-    [ -z "$_REGION" ] || \
-    [ -z "$_REGION" ] || \
-    [ -z "$_REGION" ]; then
+    [ -z "$_INSTANCE_PROFILE" ] || \
+    [ -z "$_SUBNET_ID" ] || \
+    [ -z "$_TYPE" ]; then
     echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu"
     exit 1
 fi
 
-_config=$_config
-\cp "$TYPE/ami.vars.pkr.hcl" $_config
+_config="$(mktemp --suffix .pkrvars.hcl)"
+\cp "$_TYPE/ami.pkrvars.hcl" $_config
 sed -i '/region/d' $_config
 sed -i '/subnet_id/d' $_config
 sed -i '/iam_instance_profile/d' $_config
 
-echo "region = \"$REGION\"" >> $_config
-echo "iam_instance_profile = \"$INSTANCE_PROFILE\"" >> $_config
-echo "subnet_id = \"$SUBNET_ID\"" >> $_config
+echo >> $_config
+echo "region = \"$_REGION\"" >> $_config
+echo "iam_instance_profile = \"$_INSTANCE_PROFILE\"" >> $_config
+echo "subnet_id = \"$_SUBNET_ID\"" >> $_config
 
-cd /tmp
+_packer_bin="$(mktemp -d)"
+cd $_packer_bin
 wget -q https://releases.hashicorp.com/packer/1.14.3/packer_1.14.3_linux_amd64.zip
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot download packer"
@@ -61,10 +63,7 @@ if [ $? -ne 0 ]; then
 fi
 cd - &> /dev/null
 
-/tmp/packer init . && /tmp/packer build --var-file=$_config .
+$_packer_bin/packer init . && $_packer_bin/packer build --var-file=$_config .
 
-
-
-
-
-
+rm -rf $_packer_bin
+rm -f $_config
