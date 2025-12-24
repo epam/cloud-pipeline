@@ -1189,6 +1189,11 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
             "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass, true);
     /**
+     * Specifies paths/command list that will be available for default user under sudo.
+     */
+    public static final StringPreference SYSTEM_SSH_DEFAULT_ROOT_USER_AVAILABLE_COMMANDS = new StringPreference(
+            "system.ssh.default.root.user.available.commands", "", SYSTEM_GROUP, pass);
+    /**
      * Controls which instance types will be excluded from notification list.
      */
     public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
