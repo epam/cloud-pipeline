@@ -128,7 +128,7 @@ function applySummaryDiscounts (request, discountFn) {
     return undefined;
   }
   const {quota, previousQuota, values: initialValues} = request.value || {};
-  const values = initialValues.map((value) => applyDiscounts(value, discountFn));
+  const values = (initialValues || []).map((value) => applyDiscounts(value, discountFn));
   return {
     quota,
     previousQuota,
@@ -335,7 +335,10 @@ function joinSummaryDiscounts (summaries, discounts) {
             if (!entry[tiersDetails].tiers) {
               entry[tiersDetails].tiers = {};
             }
-            entry[tiersDetails].tiers[tier] = value;
+            if (!entry[tiersDetails].tiers[tier]) {
+              entry[tiersDetails].tiers[tier] = {};
+            }
+            entry[tiersDetails].tiers[tier][field] = value;
           };
           const makeTierAccumulativeArray = (tiersDetails, tier, field) => current
             .map((o) => ({
@@ -519,10 +522,38 @@ function joinSummaryDiscounts (summaries, discounts) {
             merge({dateObj, valueEntry, currentEntry, previous: false});
             merge({dateObj, valueEntry, currentEntry, previous: true});
             for (const tier of allTiers) {
-              mergeTier({dateObj, valueEntry, tier, previous: false, oldVersions: false});
-              mergeTier({dateObj, valueEntry, tier, previous: false, oldVersions: true});
-              mergeTier({dateObj, valueEntry, tier, previous: true, oldVersions: false});
-              mergeTier({dateObj, valueEntry, tier, previous: true, oldVersions: true});
+              mergeTier({
+                dateObj,
+                currentEntry,
+                valueEntry,
+                tier,
+                previous: false,
+                oldVersions: false
+              });
+              mergeTier({
+                dateObj,
+                currentEntry,
+                valueEntry,
+                tier,
+                previous: false,
+                oldVersions: true
+              });
+              mergeTier({
+                dateObj,
+                currentEntry,
+                valueEntry,
+                tier,
+                previous: true,
+                oldVersions: false
+              });
+              mergeTier({
+                dateObj,
+                currentEntry,
+                valueEntry,
+                tier,
+                previous: true,
+                oldVersions: true
+              });
             }
             console.groupEnd();
           }
