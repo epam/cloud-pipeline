@@ -105,7 +105,7 @@ fi
 export GLOBAL_DISTRIBUTION_URL
 
 echo "> [$(date)] Download nvme"
-_WO="--timeout=10 --waitretry=1 --tries=10"
+_WO="--timeout=10 --waitretry=1 --tries=10 -q"
 wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
 gzip -d /bin/nvme.gz && \
 chmod +x /bin/nvme
@@ -114,7 +114,10 @@ echo "> [$(date)] custom_script_pre"
 @custom_script_pre@
 
 echo "> [$(date)] Start docker install"
-wget "${GLOBAL_DISTRIBUTION_URL}/scripts/init_multicloud_install_docker.sh" -O /tmp/init_multicloud_install_docker.sh
+wget $_WO "${GLOBAL_DISTRIBUTION_URL}/scripts/init_multicloud_install_docker.sh" -O /tmp/init_multicloud_install_docker.sh
+if check_gpu_available; then
+  export CP_DOCKER_GPU_ENABLE="true"
+fi
 source /tmp/init_multicloud_install_docker.sh
 echo "> [$(date)] End docker install"
 
@@ -189,6 +192,16 @@ if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" 
   _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
 fi
 mkdir -p $_DOCKER_SYS_IMGS
+
+# nft
+# wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1-nft.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1-nft.tar && \
+# wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
+# wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
+# wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4-nft.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4-nft.tar && \
+# wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0-nft.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0-nft.tar && \
+# wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
+
+# legacy
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \

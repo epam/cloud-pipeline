@@ -6,13 +6,15 @@ CP_DOCKER_HOME="${CP_DOCKER_HOME:-/opt/local/docker}"
 CP_KUBE_VERSION="${CP_KUBE_VERSION:-1.15.4}"
 CP_DOCKER_GPU_ENABLE="${CP_DOCKER_GPU_ENABLE:-false}"
 
+_WO="--timeout=10 --waitretry=1 --tries=10 -q --no-check-certificate"
+
 _docker_url="${GLOBAL_DISTRIBUTION_URL}tools/docker/distr/linux/static/stable/x86_64/docker-${CP_DOCKER_VERSION}.tgz"
 _kube_url="${GLOBAL_DISTRIBUTION_URL}tools/kube/${CP_KUBE_VERSION}/rpm/kube-${CP_KUBE_VERSION}.el7.tgz"
 
 echo "> [$(date)] Installing docker from $_docker_url"
 
 mkdir -p "$CP_DOCKER_HOME"
-wget -O docker.tgz "$_docker_url"
+wget $_WO -O docker.tgz "$_docker_url"
 tar --extract --file docker.tgz --strip-components 1 --directory "$CP_DOCKER_HOME"
 rm -f docker.tgz
 
@@ -69,7 +71,7 @@ EOF
 
 echo "> [$(date)] Installing kubelet from $_kube_url"
 
-wget --no-check-certificate "$_kube_url" -O kube.tgz && \
+wget $_WO "$_kube_url" -O kube.tgz && \
 tar -xf kube.tgz && \
 cd kube && \
 yum localinstall *kube*.rpm *cri-tools*.rpm -y && \
@@ -82,11 +84,16 @@ export PATH="$PATH:$CP_DOCKER_HOME"
 
 systemctl daemon-reload
 
-# if [ "$CP_DOCKER_GPU_ENABLE" == "true" ]; then
-#     CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-1.14.3-1}"
-    
-#     curl -s -L "${GLOBAL_DISTRIBUTION_URL}tools/nvidia/libnvidia-container/rpm/stable/nvidia-container-toolkit.repo" > /etc/yum.repos.d/nvidia-container-toolkit.repo
-#     yum install -y nvidia-container-toolkit-$CP_CAP_DIND_GPU_VERSION
-#     _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
-#     find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
-# fi
+if [ "$CP_DOCKER_GPU_ENABLE" == "true" ]; then
+    _nvidia_container_toolkin_url="${GLOBAL_DISTRIBUTION_URL}tools/repos/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo"
+    echo "> [$(date)] Installing nvidia-container-toolkit from $_nvidia_container_toolkin_url"
+
+    CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-1.14.3-1}"
+    wget $_WO \
+        -O /etc/yum.repos.d/nvidia-container-toolkit.repo \
+        "$_nvidia_container_toolkin_url"
+    yum install -y nvidia-container-toolkit-$CP_CAP_DIND_GPU_VERSION
+    find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
+else
+    echo "> [$(date)] nvidia-container-toolkit installation is not requested"
+fi
