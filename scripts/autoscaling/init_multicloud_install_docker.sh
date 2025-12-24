@@ -84,6 +84,7 @@ export PATH="$PATH:$CP_DOCKER_HOME"
 
 systemctl daemon-reload
 
+# Mirror from https://github.com/NVIDIA/libnvidia-container/tree/gh-pages/stable
 if [ "$CP_DOCKER_GPU_ENABLE" == "true" ]; then
     _nvidia_container_toolkin_url="${GLOBAL_DISTRIBUTION_URL}tools/repos/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo"
     echo "> [$(date)] Installing nvidia-container-toolkit from $_nvidia_container_toolkin_url"
