@@ -29,9 +29,9 @@ source "amazon-ebs" "cloud-pipeline-ami" {
 }
 
 build {
-  name = "cloud-pipeline-cpu"
+  name = "cloud-pipeline-ami"
   sources = [
-    "source.amazon-ebs.cloud-pipeline-cpu"
+    "source.amazon-ebs.cloud-pipeline-ami"
   ]
 
   provisioner "file" {

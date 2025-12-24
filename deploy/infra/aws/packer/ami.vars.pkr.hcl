@@ -26,3 +26,7 @@ variable "deps_file" {
   type =  string
   default = ""
 }
+variable "ami_type" {
+  type =  string
+  default = ""
+}
