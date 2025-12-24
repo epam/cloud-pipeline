@@ -293,6 +293,7 @@ public class LogAO implements AccessObject<LogAO> {
         while(!get(NESTED_RUNS).exists() &&
                 (currentTimeMillis()-startTime) < SSH_LINK_APPEARING_TIMEOUT) {
             ensure(STATUS, not(completed));
+            sleep(10, SECONDS);
         }
         return this;
     }
