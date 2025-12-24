@@ -57,7 +57,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         open(C.ROOT_ADDRESS);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = "1900_1")
     public void implementKubernetesDnsCustomHostsManagement() {
         final String[] userRunIP = new String[1];
@@ -119,12 +119,12 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                 .launchTool(this, nameWithoutGroup(tool));
         final String parentRunId = getLastRunId();
         LogAO logAO = runsMenu()
-                .showLog(parentRunId);
+                .showLog(parentRunId)
+                .waitForSshLink();
         String childRunID = logAO
                 .waitForNestedRunsLink()
                 .getNestedRunID(1);
         logAO
-                .waitForSshLink()
                 .waitForNestedRunWorking(childRunID)
                 .ssh(shell -> {
                     shell
