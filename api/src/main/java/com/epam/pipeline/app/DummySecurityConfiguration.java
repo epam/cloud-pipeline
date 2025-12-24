@@ -45,6 +45,7 @@ public class DummySecurityConfiguration {
                 .id(1L)
                 .admin(true)
                 .roles(Collections.singletonList(new Role("ROLE_ADMIN")))
+                .groups(Collections.emptyList())
                 .build();
         var userContext = new UserContext(user);
         return new UsernamePasswordAuthenticationToken(
