@@ -953,6 +953,11 @@ def verify_run_id(ec2, run_id):
         pipe_log('No existing instance found for RunID {}\n-'.format(run_id))
     return ins_id, ins_ip
 
+def is_node_ready(node_conditions):
+    for condition in node_conditions:
+        if condition.get("type") == u"Ready":
+            return condition.get("status") == u"True"
+    return False
 
 def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
     nodenames = get_possible_kube_node_names(ec2, ins_id)
@@ -976,8 +981,8 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
         rep = 0
         while rep <= num_rep:
             node = pykube.Node.objects(api).filter(field_selector={'metadata.name': ret_namenode})
-            status = node.response['items'][0]['status']['conditions'][3]['status']
-            if status == u'True':
+            node_conditions = node.response['items'][0]['status']['conditions']
+            if is_node_ready(node_conditions):
                 pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                 break
             rep = increment_or_fail(num_rep, rep,
