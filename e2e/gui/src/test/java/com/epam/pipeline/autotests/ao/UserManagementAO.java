@@ -532,6 +532,7 @@ public class UserManagementAO extends SettingsPageAO {
 
                 public NavigationHomeAO impersonate() {
                     click(IMPERSONATE);
+                    context().$(byId("navigation-container")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
                     return new NavigationHomeAO();
                 }
 
