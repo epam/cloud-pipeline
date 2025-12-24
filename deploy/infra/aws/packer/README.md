@@ -7,7 +7,7 @@
 build.sh --region us-east-1 \
          --instance-profile SSM_Role \
          --subnet-id subnet-xxxxxxx \
-         --type cpu|gpu
+         --type cpu|gpu|all
 ```
 
 ## Install packer

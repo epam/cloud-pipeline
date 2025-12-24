@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 # Disable automatic packages upgrade, if cloud-init is configured
 if [ -d "/etc/cloud/cloud.cfg.d" ]; then
 
@@ -28,21 +30,23 @@ EOF
 fi
 
 # Install common
-yum install -y  nc
+yum install -y nc
 yum install -y iproute-tc
+yum install -y iptables-legacy
+update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # btrfs-progs package is not avaialble in 2023+
 # Replaced with:
 # - https://btrfs.readthedocs.io/en/latest/INSTALL.html#all-in-one-binary-busybox-style
 # - https://github.com/kdave/btrfs-progs
 cd /usr/bin && \
-wget "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
 chmod +x btrfs && \
 ln -s btrfs mkfs.btrfs
 
 # python2
 cd /opt && \
-wget "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz" && \
+wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz" && \
 tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
 rm -f Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
 ln -s /opt/conda/bin/python2 /usr/bin/python2 && \
@@ -71,17 +75,10 @@ sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 echo 'GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=0"' >> /etc/default/grub
 grub2-mkconfig -o /boot/grub2/grub.cfg
 
-
 # Nvidia drivers
 yum install -y vulkan-devel \
-                libglvnd-devel \
-                elfutils-libelf-devel \
-                automake \
-                make \
                 gcc \
                 gcc-c++ \
-                xorg-x11-server-Xorg \
-                xorg-x11-fonts-Type1 \
                 kernel-devel \
                 kernel-modules-extra
 

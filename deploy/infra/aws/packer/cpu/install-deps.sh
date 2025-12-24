@@ -30,8 +30,10 @@ EOF
 fi
 
 # Install common
-yum install -y  nc
+yum install -y nc
 yum install -y iproute-tc
+yum install -y iptables-legacy
+update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # btrfs-progs package is not avaialble in 2023+
 # Replaced with:
