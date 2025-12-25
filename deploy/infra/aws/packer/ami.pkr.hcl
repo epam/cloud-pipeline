@@ -4,11 +4,18 @@ packer {
       version = ">= 1.2.8"
       source  = "github.com/hashicorp/amazon"
     }
+    git = {
+      version = ">= 0.6.2"
+      source  = "github.com/ethanmdavidson/git"
+    }
   }
 }
 
+data "git-commit" "cwd-head" { }
+
 locals {
   timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
+  truncated_sha = substr(data.git-commit.cwd-head.hash, 0, 8)
 }
 
 source "amazon-ebs" "cloud-pipeline-ami" {
@@ -25,6 +32,7 @@ source "amazon-ebs" "cloud-pipeline-ami" {
       OS_Version = "amzn2023"
       Base_AMI_Name = "{{ .SourceAMIName }}"
       Type = "${var.ami_type}"
+      SHA = "${local.truncated_sha}"
   }
 }
 
