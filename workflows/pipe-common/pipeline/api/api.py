@@ -309,7 +309,7 @@ class PipelineAPI:
         sys.stderr.write("API responded with not expected message: {}\n".format(str(response)))
         return False
 
-    def normalize_url(url):
+    def normalize_url(self, url):
         return url.replace('//', '/').replace(':/', '://')
 
     def execute_request(self, url, method='get', data=None, not_found_msg=None):
