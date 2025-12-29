@@ -309,20 +309,24 @@ class PipelineAPI:
         sys.stderr.write("API responded with not expected message: {}\n".format(str(response)))
         return False
 
+    def normalize_url(url):
+        return url.replace('//', '/').replace(':/', '://')
+
     def execute_request(self, url, method='get', data=None, not_found_msg=None):
+        norm_url = self.normalize_url(url)
         count = 0
         while count < self.attempts:
             count += 1
             try:
                 if method == 'get':
-                    response = requests.get(url, headers=self.header, verify=False, timeout=self.connection_timeout)
+                    response = requests.get(norm_url, headers=self.header, verify=False, timeout=self.connection_timeout)
                 elif method == 'post':
-                    response = requests.post(url, data=data, headers=self.header, verify=False,
+                    response = requests.post(norm_url, data=data, headers=self.header, verify=False,
                                              timeout=self.connection_timeout)
                 elif method == 'delete':
-                    response = requests.delete(url, headers=self.header, verify=False, timeout=self.connection_timeout)
+                    response = requests.delete(norm_url, headers=self.header, verify=False, timeout=self.connection_timeout)
                 elif method == 'put':
-                    response = requests.put(url, data=data, headers=self.header, verify=False,
+                    response = requests.put(norm_url, data=data, headers=self.header, verify=False,
                                             timeout=self.connection_timeout)
                 else:
                     raise RuntimeError('Unsupported request method: {}'.format(method))
@@ -357,7 +361,7 @@ class PipelineAPI:
         return self._request('GET', 'whoami')
 
     def _request(self, http_method, endpoint, data=None):
-        url = '{}/{}'.format(self.api_url, endpoint)
+        url = self.normalize_url('{}/{}'.format(self.api_url, endpoint))
         count = 0
         exceptions = []
         while count < self.attempts:
@@ -387,7 +391,7 @@ class PipelineAPI:
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        url = '{}/{}'.format(self.api_url, endpoint)
+        url = self.normalize_url('{}/{}'.format(self.api_url, endpoint))
         count = 0
         exceptions = []
         while count < self.attempts:
@@ -406,8 +410,8 @@ class PipelineAPI:
         raise exceptions[-1]
 
     def load_tool(self, image, registry):
-        result = requests.get(str(self.api_url) + self.TOOL_URL.format(image=image, registry=registry),
-                              headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.TOOL_URL.format(image=image, registry=registry))
+        result = requests.get(url, headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError('Failed to load tool {}. API response: {}'.format(image, result.json()['message']))
         payload = result.json()['payload']
@@ -432,28 +436,28 @@ class PipelineAPI:
         return tool
 
     def load_tool_versions(self, tool_id):
-        result = requests.get(str(self.api_url) + self.TOOL_VERSIONS_URL.format(tool_id=tool_id),
-                              headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.TOOL_VERSIONS_URL.format(tool_id=tool_id))
+        result = requests.get(url, headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError('Failed to load tool versions {}. API response: {}'.format(tool_id, result.json()['message']))
         return result.json()['payload']
 
     def enable_tool(self, tool):
-        result = requests.post(str(self.api_url) + self.ENABLE_TOOL_URL, data=tool.to_json(),
-                               headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.ENABLE_TOOL_URL, data=tool.to_json())
+        result = requests.post(url, headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError('Failed to enable tool {}/{}. API response: {}'.format(tool.registry, tool.image, result.json()['message']))
 
     def update_tool(self, tool):
-        result = requests.post(str(self.api_url) + self.UPDATE_TOOL_URL, data=tool.to_json(),
-                               headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.UPDATE_TOOL_URL, data=tool.to_json())
+        result = requests.post(url, headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError('Failed to update tool {}/{}. API response: {}'.format(tool.registry, tool.image, result.json()['message']))
 
     def load_datastorage_rules(self, pipeline_id):
+        url = self.normalize_url(str(self.api_url) + self.DATA_STORAGE_RULES_URL)
         params = {"pipelineId": pipeline_id}
-        result = requests.get(str(self.api_url) + self.DATA_STORAGE_RULES_URL,
-                              headers=self.header, params=params, verify=False)
+        result = requests.get(url, headers=self.header, params=params, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             return None
         result_json = result.json()
@@ -467,7 +471,8 @@ class PipelineAPI:
         return None
 
     def load_certificates(self):
-        result = requests.get(str(self.api_url) + self.REGISTRY_CERTIFICATES_URL, headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.REGISTRY_CERTIFICATES_URL)
+        result = requests.get(url, headers=self.header, verify=False)
         result_json = result.json()
         if hasattr(result_json, 'error') or result_json['status'] != self.RESPONSE_STATUS_OK:
             return None
@@ -509,24 +514,24 @@ class PipelineAPI:
         if disk:
             request['hddSize'] = disk
 
-        result = requests.post(str(self.api_url) + self.RUN_URL,
-                               data=json.dumps(request), headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.RUN_URL)
+        result = requests.post(url, data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError(result.json()['message'])
         return result.json()['payload']
 
     def launch_pod(self, parent_run, cmd, docker_image):
         request = {'cmdTemplate': cmd, 'dockerImage': docker_image, 'useRunId': parent_run}
-        result = requests.post(str(self.api_url) + self.RUN_URL,
-                               data=json.dumps(request), headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.RUN_URL)
+        result = requests.post(url, data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError(result.json()['message'])
         return result.json()['payload']['podId']
 
     def load_child_pipelines(self, parent_id):
         request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent_id={}'.format(parent_id)}
-        result = requests.post(str(self.api_url) + self.FILTER_RUNS,
-                               data=json.dumps(request), headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.FILTER_RUNS)
+        result = requests.post(url, data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError(result.json()['message'])
         return result.json()['payload']['elements']
@@ -557,8 +562,9 @@ class PipelineAPI:
                 current_expression = {"filterExpressionType": "AND",
                                        "expressions": [current_expression, self.parameter_json(parameter[0], parameter[1])]}
             request["filterExpression"] = current_expression
-        result = requests.post(str(self.api_url) + self.SEARCH_RUNS_URL,
-                               data=json.dumps(request), headers=self.header, verify=False)
+        
+        url = self.normalize_url(str(self.api_url) + self.SEARCH_RUNS_URL)
+        result = requests.post(url, data=json.dumps(request), headers=self.header, verify=False)
 
         result_json = result.json()
         if hasattr(result_json, 'error'):
@@ -585,7 +591,7 @@ class PipelineAPI:
 
             try:
                 if self.api_url:
-                    requests.post(str(self.api_url) + self.LOG_URL.format(log_entry.runId),
+                    requests.post(self.normalize_url(str(self.api_url) + self.LOG_URL.format(log_entry.runId)),
                                   data=log_entry.to_json(), headers=self.header, verify=False)
             except Exception as api_e:
                 if not omit_console:
@@ -611,7 +617,8 @@ class PipelineAPI:
 
     def docker_registry_load_all(self):
         try:
-            result = requests.get(str(self.api_url) + self.REGISTRY_LOAD_ALL_URL, headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.REGISTRY_LOAD_ALL_URL)
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed to load docker registries. API response: {}'.format(result.json()['message']))
             return result.json()['payload']['registries']
@@ -620,7 +627,8 @@ class PipelineAPI:
 
     def tool_group_in_registry_load_all(self, registry):
         try:
-            result = requests.get(str(self.api_url) + self.TOOL_GROUP_IN_REGISTRY_LOAD_ALL_URL.format(registry), headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.TOOL_GROUP_IN_REGISTRY_LOAD_ALL_URL.format(registry))
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed to load tool groups. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -629,7 +637,8 @@ class PipelineAPI:
 
     def tool_group_load(self, id):
         try:
-            result = requests.get(str(self.api_url) + self.TOOL_GROUP_LOAD_URL.format(id), headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.TOOL_GROUP_LOAD_URL.format(id))
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed to load tool group. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -640,7 +649,8 @@ class PipelineAPI:
         status_entry.endDate = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
         status_entry.endDate = status_entry.endDate[0:len(status_entry.endDate) - 3]
         try:
-            requests.post(str(self.api_url) + self.STATUS_URL.format(run_id), data=status_entry.to_json(),
+            url = self.normalize_url(str(self.api_url) + self.STATUS_URL.format(run_id))
+            requests.post(url, data=status_entry.to_json(),
                           headers=self.header, verify=False)
         except:
             print("Failed to update task status.")
@@ -648,8 +658,8 @@ class PipelineAPI:
     def update_commit_status(self, run_id, status):
         try:
             commit_status_json = json.dumps({"commitStatus": status})
-            result = requests.post(str(self.api_url) + self.COMMIT_STATUS_URL.format(run_id),
-                                   data=commit_status_json, headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.COMMIT_STATUS_URL.format(run_id))
+            result = requests.post(url, data=commit_status_json, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed update commit run status. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -658,8 +668,8 @@ class PipelineAPI:
 
     def load_pipeline(self, pipeline_id):
         try:
-            result = requests.get(str(self.api_url) + self.LOAD_PIPELINE_URL.format(pipeline_id),
-                                  headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.LOAD_PIPELINE_URL.format(pipeline_id))
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed fetch pipeline info. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -668,7 +678,8 @@ class PipelineAPI:
 
     def load_all_pipelines(self):
         try:
-            result = requests.get(str(self.api_url) + self.LOAD_ALL_PIPELINES_URL, headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.LOAD_ALL_PIPELINES_URL)
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed to fetch all pipelines info. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -677,8 +688,8 @@ class PipelineAPI:
 
     def find_pipeline(self, pipeline_name):
         try:
-            result = requests.get(str(self.api_url) + self.FIND_PIPELINE_URL.format(pipeline_name),
-                                  headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.FIND_PIPELINE_URL.format(pipeline_name))
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed fetch pipeline info. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -687,8 +698,8 @@ class PipelineAPI:
 
     def get_pipeline_clone_url(self, pipeline_id):
         try:
-            result = requests.get(str(self.api_url) + self.CLONE_PIPELINE_URL.format(pipeline_id),
-                                  headers=self.header, verify=False)
+            url = self.normalize_url(str(self.api_url) + self.CLONE_PIPELINE_URL.format(pipeline_id))
+            result = requests.get(url, headers=self.header, verify=False)
             if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
                 raise RuntimeError('Failed fetch pipeline info. API response: {}'.format(result.json()['message']))
             return result.json()['payload']
@@ -1543,7 +1554,7 @@ class PipelineAPI:
 
     def billing_export(self, start, end, filters, types):
         try:
-            url = '{}/{}'.format(self.api_url, self.BILLING_EXPORT)
+            url = self.normalize_url('{}/{}'.format(self.api_url, self.BILLING_EXPORT))
             data = {"types": types, "from": start, "to": end, "filters": filters, "discount": {"computes": 0, "storages": 0}}
             response = requests.request(method="post", url=url, data=json.dumps(data),
                                         headers=self.header, verify=False,
