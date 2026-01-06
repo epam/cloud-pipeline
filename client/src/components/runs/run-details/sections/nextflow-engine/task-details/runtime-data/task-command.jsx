@@ -27,7 +27,7 @@ function Renderer (props) {
   console.log(env, envs);
 
   const renderWorkdir = () => {
-    const isWorkdirUrl = (path) => path && /^(s3|as|gs|nfs|https?):\/\//i.test(path);
+    const isWorkdirUrl = (path) => path && /^(s3|az|gs|nfs|https?):\/\//i.test(path);
     if (!workdir) {
       return '-';
     };
