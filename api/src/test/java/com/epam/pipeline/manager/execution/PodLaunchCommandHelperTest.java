@@ -57,7 +57,7 @@ public class PodLaunchCommandHelperTest {
         final String ubuntuLaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                         COMMAND_TEMPLATES,
                         ToolOSVersion.builder().distribution(UBUNTU_OS).version("18.04").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
         assertEquals(COMMAND_FOR_ALL_IMAGES, ubuntuLaunchCommand);
     }
 
@@ -66,7 +66,7 @@ public class PodLaunchCommandHelperTest {
         final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
         assertEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
     }
 
@@ -75,7 +75,7 @@ public class PodLaunchCommandHelperTest {
         final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
-                ROCKY_SHORT_IMAGE_WITHOUT_TAG).getCommand();
+                ROCKY_SHORT_IMAGE_WITHOUT_TAG).command();
         assertEquals(COMMAND_FOR_DOCKER, centos7LaunchCommand);
     }
 
@@ -84,7 +84,7 @@ public class PodLaunchCommandHelperTest {
         final String centos8LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("8").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
         assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos8LaunchCommand);
     }
 
@@ -93,7 +93,7 @@ public class PodLaunchCommandHelperTest {
         final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES_WRONG_ORDER,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
         assertNotEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
         assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos7LaunchCommand);
     }

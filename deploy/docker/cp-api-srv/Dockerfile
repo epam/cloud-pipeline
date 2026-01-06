@@ -115,13 +115,13 @@ COPY pipe-common.tar.gz $CP_API_HOME/pipe-common.tar.gz
 RUN mkdir -p /tmp/pipe-temp/BOOT-INF/classes/static && \
     cp /opt/api/pipe-common.tar.gz /tmp/pipe-temp/BOOT-INF/classes/static
 
-COPY bin/* $CP_API_HOME
+COPY bin/. $CP_API_HOME/
 
 # Install pipe-common package
 RUN mkdir -p /tmp/pipe-temp && \
     cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
     cd /tmp/pipe-temp/ && \
-    unzip -qq pipeline.jar && \
+    unzip -qq -n pipeline.jar && \
     pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp

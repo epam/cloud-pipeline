@@ -198,7 +198,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         }
     }
 
-    protected static String path(final String ...parts) {
+    protected static String path(final String...parts) {
         return String.join(".", parts);
     }
 

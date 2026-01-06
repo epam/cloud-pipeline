@@ -108,7 +108,7 @@ public final class SecurityCreatorUtils {
     }
 
     @RequiredArgsConstructor
-    private static class SimpleSecuredEntity extends AbstractSecuredEntity {
+    private static final class SimpleSecuredEntity extends AbstractSecuredEntity {
         private final Long id;
         private final AclClass aclClass;
 

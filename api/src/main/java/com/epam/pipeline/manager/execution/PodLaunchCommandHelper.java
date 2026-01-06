@@ -38,8 +38,8 @@ public final class PodLaunchCommandHelper {
                 commandsByImageWithDefault =
                 filtered(
                     ListUtils.emptyIfNull(commandsByImage),
-                    (e) -> StringUtils.isEmpty(e.getOs()) || !e.getOs().equals(STAR_SIGN) &&
-                            !e.getOs().equals(ALL_KEY_WORK));
+                    (e) -> StringUtils.isEmpty(e.os()) || !e.os().equals(STAR_SIGN) &&
+                            !e.os().equals(ALL_KEY_WORK));
 
         final OSSpecificLaunchCommandTemplate dockerMatch =
                 matchByDocker(commandsByImageWithDefault.getValue(), dockerImage);
@@ -53,10 +53,10 @@ public final class PodLaunchCommandHelper {
             final Optional<OSSpecificLaunchCommandTemplate> matchedCommandOp =
                     commandsByImageWithDefault.getValue().stream()
                             .filter(imageAndCommand ->
-                                    osVersion.isMatched(imageAndCommand.getOs())).findFirst();
+                                    osVersion.isMatched(imageAndCommand.os())).findFirst();
             if (matchedCommandOp.isPresent()) {
                 log.debug("Matched launch command by image: {} will be used.",
-                        matchedCommandOp.get().getOs());
+                        matchedCommandOp.get().os());
                 return matchedCommandOp.get();
             }
         }
@@ -70,7 +70,7 @@ public final class PodLaunchCommandHelper {
             final List<OSSpecificLaunchCommandTemplate> templates,
             final String dockerImage) {
         return templates.stream()
-                .filter(template -> matchImage(template.getDocker(), dockerImage))
+                .filter(template -> matchImage(template.docker(), dockerImage))
                 .findFirst().orElse(null);
     }
 

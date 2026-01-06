@@ -58,10 +58,10 @@ public class ServerlessConfigurationController extends AbstractRestController {
     }
 
     @RequestMapping(value = "/serverless/{id}/{config}/**", method = {
-            RequestMethod.POST,
-            RequestMethod.GET,
-            RequestMethod.PUT,
-            RequestMethod.DELETE})
+        RequestMethod.POST,
+        RequestMethod.GET,
+        RequestMethod.PUT,
+        RequestMethod.DELETE})
     @ResponseBody
     @Operation(
             summary = "Launches serverless configuration request",

@@ -235,7 +235,7 @@ public class FirecloudRunner implements ExecutionRunner<FirecloudRunConfiguratio
 
     @Data
     @Builder
-    private static class FirecloudConfiguration {
+    private static final class FirecloudConfiguration {
 
         private String firecloudLauncherCmd;
         private String firecloudLauncherImage;

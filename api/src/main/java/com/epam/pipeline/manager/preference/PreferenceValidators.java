@@ -151,12 +151,13 @@ public final class PreferenceValidators {
     };
 
 
-    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfPaths = (pref, dependencies) ->
-            pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("[^\0 \n]+[^\\/]")
-                    || "/".equals(s) || "\\".equals(s));
+    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfPaths =
+        (pref, dependencies) -> pref.isEmpty() || Arrays.stream(pref.split(","))
+            .allMatch(s -> s.matches("[^\0 \n]+[^\\/]") || "/".equals(s) || "\\".equals(s));
 
-    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfOSes = (pref, dependencies) ->
-            pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("\\w+:?[\\w.\\-_]*"));
+    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfOSes =
+        (pref, dependencies) -> pref.isEmpty() || Arrays.stream(pref.split(","))
+            .allMatch(s -> s.matches("\\w+:?[\\w.\\-_]*"));
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(long x) {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
@@ -164,14 +165,14 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isNullOrGreaterThan(int x) {
         return (pref, dependencies) -> StringUtils.isBlank(pref)
-                || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
+            || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
     }
 
     public static BiPredicate<String, Map<String, Preference>> isNotLessThanValueOrNull(String key) {
         return (pref, dependencies) -> {
-            Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
-            return StringUtils.isBlank(pref) ||
-                    (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
+            Long valueToCompare = dependencies.containsKey(key) ?
+                dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
+            return StringUtils.isBlank(pref) || (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
         };
     }
 
@@ -271,7 +272,8 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isClusterInstanceTypeAllowed =
         (pref, dependencies) -> {
-            Preference allowedInstanceTypes = dependencies.get(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey());
+            Preference allowedInstanceTypes = dependencies
+                .get(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey());
             return Arrays.stream(allowedInstanceTypes.getValue().split(","))
                 .anyMatch(type -> {
                     AntPathMatcher matcher = new AntPathMatcher();
@@ -308,7 +310,7 @@ public final class PreferenceValidators {
                 .and((pref, dependencies) -> {
                     final List<OSSpecificLaunchCommandTemplate> commandsByImage =
                         JsonMapper.parseData(pref, new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {});
-                    if (commandsByImage.stream().noneMatch(c -> c.getOs().equals("*") || c.getOs().equals("all"))) {
+                    if (commandsByImage.stream().noneMatch(c -> c.os().equals("*") || c.os().equals("all"))) {
                         throw new IllegalArgumentException(
                                 "List of commands doesn't contain default entry with key: '*' or 'all'"
                         );

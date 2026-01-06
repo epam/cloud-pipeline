@@ -76,22 +76,22 @@ import java.util.concurrent.Executor;
 
 @SpringBootConfiguration
 @Import({AppMVCConfiguration.class,
-        DBConfiguration.class,
-        CacheConfiguration.class,
-        MappersConfiguration.class,
-        ContextualPreferenceConfiguration.class,
-        BillingConfiguration.class})
+    DBConfiguration.class,
+    CacheConfiguration.class,
+    MappersConfiguration.class,
+    ContextualPreferenceConfiguration.class,
+    BillingConfiguration.class})
 @EnableAutoConfiguration(exclude = {
-        SecurityAutoConfiguration.class,
-        ManagementWebSecurityAutoConfiguration.class,
-        SecurityFilterAutoConfiguration.class})
+    SecurityAutoConfiguration.class,
+    ManagementWebSecurityAutoConfiguration.class,
+    SecurityFilterAutoConfiguration.class})
 @ComponentScan(
-        basePackages = {
-                "com.epam.pipeline.dao",
-                "com.epam.pipeline.manager",
-                "com.epam.pipeline.security",
-                "com.epam.pipeline.acl"},
-        excludeFilters = {
+    basePackages = {
+        "com.epam.pipeline.dao",
+        "com.epam.pipeline.manager",
+        "com.epam.pipeline.security",
+        "com.epam.pipeline.acl"},
+    excludeFilters = {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern="com.epam.pipeline.manager.security.acl.*"),
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = InstanceOfferScheduler.class)})
 @TestPropertySource(value={"classpath:test-application.properties"})

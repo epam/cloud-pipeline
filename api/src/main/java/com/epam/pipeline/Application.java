@@ -31,23 +31,23 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(
-        exclude = {
-                RedisAutoConfiguration.class,
-                RedisRepositoriesAutoConfiguration.class
-        })
+    exclude = {
+        RedisAutoConfiguration.class,
+        RedisRepositoriesAutoConfiguration.class
+    })
 @Import({AppMVCConfiguration.class,
-        AppConfiguration.class,
-        DBConfiguration.class,
-        ElasticsearchConfig.class,
-        SecurityConfig.class,
-        MappersConfiguration.class,
-        CacheConfiguration.class})
+    AppConfiguration.class,
+    DBConfiguration.class,
+    ElasticsearchConfig.class,
+    SecurityConfig.class,
+    MappersConfiguration.class,
+    CacheConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.app"}/*,
         excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = RestConfiguration.class)}
         TODO: this makes RestConfiguration not to be picked up by Spring and controllers are not registered
         */)
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class Application {
+public final class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);

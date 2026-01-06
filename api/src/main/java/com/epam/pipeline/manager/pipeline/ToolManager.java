@@ -532,7 +532,7 @@ public class ToolManager implements SecuredEntityManager {
 
         final List<String> commandsPatternsToFilter = StreamUtils.appended(
                 preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX)
-                        .stream().map(OSSpecificLaunchCommandTemplate::getCommand),
+                        .stream().map(OSSpecificLaunchCommandTemplate::command),
                 preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS)
         ).map(DockerParsingUtils::getLaunchPodPattern).collect(Collectors.toList());
 

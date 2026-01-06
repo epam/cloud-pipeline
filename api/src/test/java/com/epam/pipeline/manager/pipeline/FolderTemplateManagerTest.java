@@ -200,7 +200,7 @@ public class FolderTemplateManagerTest extends AbstractAclTest {
         return metadata;
     }
 
-    private static class Predicates {
+    private static final class Predicates {
         static Predicate<Folder> forFolderTemplate(String name) {
             return f -> !FOLDER_ID.equals(f.getParentId())
                     && f.getName().equals(name);

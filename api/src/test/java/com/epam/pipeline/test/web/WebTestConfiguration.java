@@ -39,11 +39,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {
-        CommonTestContext.class,
-        ControllerTestBeans.class,
-        RestConfiguration.class,
-        AppMVCConfiguration.class,
-        /*JWTSecurityConfiguration.class*/})
+    CommonTestContext.class,
+    ControllerTestBeans.class,
+    RestConfiguration.class,
+    AppMVCConfiguration.class,
+    /*JWTSecurityConfiguration.class*/})
 @WebAppConfiguration
 @AutoConfigureMockMvc
 @TestPropertySource(value={"classpath:test-application.properties"})

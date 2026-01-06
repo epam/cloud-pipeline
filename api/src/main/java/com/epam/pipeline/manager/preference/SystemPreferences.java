@@ -193,7 +193,7 @@ public class SystemPreferences {
         new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
         ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
                 "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
-        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+            new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
         isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final BooleanPreference DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
         "storage.mgmt.restricted.access", false, DATA_STORAGE_GROUP, pass);

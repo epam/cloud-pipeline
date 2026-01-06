@@ -163,7 +163,7 @@ public class CategoricalAttributeApiServiceTest extends AbstractAclTest {
         return categoricalAttribute;
     }
 
-    private List<CategoricalAttribute> listOf(final CategoricalAttribute ... attributes) {
+    private List<CategoricalAttribute> listOf(final CategoricalAttribute... attributes) {
         return Stream.of(attributes).collect(Collectors.toList());
     }
 }

@@ -44,19 +44,18 @@ import org.springframework.test.context.TestPropertySource;
 
 @SpringBootConfiguration
 @Import({
-        AppMVCConfiguration.class,
-        DBConfiguration.class,
-        TestAclSecurityConfig.class,
-        CacheConfiguration.class
-    })
+    AppMVCConfiguration.class,
+    DBConfiguration.class,
+    TestAclSecurityConfig.class,
+    CacheConfiguration.class})
 @EnableAutoConfiguration(exclude = {
     SecurityAutoConfiguration.class,
     ManagementWebSecurityAutoConfiguration.class,
     SecurityFilterAutoConfiguration.class})
 @ComponentScan(
     basePackages = {
-            "com.epam.pipeline.dao", "com.epam.pipeline.manager",
-            "com.epam.pipeline.acl", "com.epam.pipeline.security"},
+        "com.epam.pipeline.dao", "com.epam.pipeline.manager",
+        "com.epam.pipeline.acl", "com.epam.pipeline.security"},
     excludeFilters = {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern="com.epam.pipeline.manager.security.Test*"),
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = InstanceOfferScheduler.class)

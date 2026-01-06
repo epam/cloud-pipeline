@@ -122,16 +122,10 @@ public final class KubernetesConstants {
     public static final List<DockerMount> DEFAULT_DOCKER_IN_DOCKER_MOUNTS = new ArrayList<>();
 
     static {
-        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(DockerMount.builder()
-                .name("docker-sock")
-                .hostPath("/var/run/docker.sock")
-                .mountPath("/var/run/docker.sock")
-                .build());
-        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(DockerMount.builder()
-                .name("docker-bin")
-                .hostPath("/bin/docker")
-                .mountPath("/usr/bin/docker")
-                .build());
+        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(new DockerMount(
+                "docker-sock", "/var/run/docker.sock", "/var/run/docker.sock", false));
+        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(new DockerMount(
+                "docker-bin", "/bin/docker", "/usr/bin/docker", false));
     }
 
     public static final DateTimeFormatter KUBE_DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;

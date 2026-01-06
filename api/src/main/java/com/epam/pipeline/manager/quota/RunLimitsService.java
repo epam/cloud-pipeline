@@ -34,7 +34,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -103,7 +102,7 @@ public class RunLimitsService {
         }
 
         final Map<String, Integer> groupsLimits = findUserGroupsLimits(getGroups(user))
-            .collect(Collectors.toMap(GroupLimit::getGroupName, GroupLimit::getRunsLimit));
+            .collect(Collectors.toMap(GroupLimit::groupName, GroupLimit::runsLimit));
         if (MapUtils.isNotEmpty(groupsLimits) && !loadAll) {
             return findMostStrictGroupLimit(groupsLimits);
         }
@@ -217,11 +216,6 @@ public class RunLimitsService {
         return fullName.substring(Role.ROLE_PREFIX.length());
     }
 
-    @Value
-    private static class GroupLimit {
-
-        private final String groupName;
-        private final Integer runsLimit;
-        private final List<String> groupUsers;
+    private record GroupLimit(String groupName, Integer runsLimit, List<String> groupUsers) {
     }
 }

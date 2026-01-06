@@ -47,14 +47,14 @@ import org.springframework.security.acls.jdbc.JdbcMutableAclService;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+//import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import javax.sql.DataSource;
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.acl"})
-@EnableMethodSecurity
+//@EnableMethodSecurity
 public class AclSecurityConfiguration {
 
     private static final String TRUE = "true";

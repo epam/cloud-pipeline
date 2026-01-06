@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.cluster.writer;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -120,7 +119,7 @@ public class CsvMonitoringStatsWriterTest {
 
     private Map<String, MonitoringStats.DisksUsage.DiskStats> getStatsByDisk(final DiskInfo... infos) {
         return Arrays.stream(infos)
-            .collect(Collectors.toMap(DiskInfo::getName, i -> getDiskStats(i.getTotalSpace(), i.getUsedSpace())));
+            .collect(Collectors.toMap(DiskInfo::name, i -> getDiskStats(i.totalSpace(), i.usedSpace())));
     }
 
     private MonitoringStats createMonitoringStats(final String endTime, final double cpuLoad, final long maxMem,
@@ -183,11 +182,5 @@ public class CsvMonitoringStatsWriterTest {
         return memoryUsage;
     }
 
-    @Value
-    private static class DiskInfo {
-
-        private String name;
-        private long totalSpace;
-        private long usedSpace;
-    }
+    private record DiskInfo(String name, long totalSpace, long usedSpace) {}
 }

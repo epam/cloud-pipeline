@@ -55,7 +55,7 @@ public class GracefulShutdownConfiguration {
 
     @Slf4j
     @RequiredArgsConstructor
-    private static class GracefulShutdownListener implements TomcatConnectorCustomizer,
+    private static final class GracefulShutdownListener implements TomcatConnectorCustomizer,
             ApplicationListener<ContextClosedEvent> {
 
         private final long timeoutSeconds;

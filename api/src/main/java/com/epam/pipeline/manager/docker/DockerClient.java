@@ -32,10 +32,10 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -75,7 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -147,9 +146,8 @@ public class DockerClient {
         try {
             URI uri = new URI(String.format(LIST_REGISTRY_URL, hostName));
             HttpEntity entity = getAuthHeaders();
-            ResponseEntity<RegistryListing>
-                    response = getRestTemplate().exchange(uri, HttpMethod.GET, entity,
-                    new ParameterizedTypeReference<RegistryListing>() {});
+            ResponseEntity<RegistryListing> response = getRestTemplate().exchange(uri, HttpMethod.GET, entity,
+                new ParameterizedTypeReference<>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody().getRepositories();
             } else {
@@ -168,7 +166,7 @@ public class DockerClient {
             HttpEntity entity = getAuthHeaders();
             ResponseEntity<TagsListing>
                     response = getRestTemplate().exchange(uri, HttpMethod.GET, entity,
-                    new ParameterizedTypeReference<TagsListing>() {});
+                        new ParameterizedTypeReference<>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody().getTags();
             } else {
@@ -395,12 +393,12 @@ public class DockerClient {
                     .loadTrustMaterial(null, acceptingTrustStrategy)
                     .build();
             SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-
-            CloseableHttpClient httpClient = HttpClients.custom()
+            /*CloseableHttpClient httpClient = org.apache.http.impl.client.HttpClients.custom()
                     .setSSLSocketFactory(csf)
-                    .build();
+                    .build();*/
+            HttpClient httpClient = HttpClients.createDefault();
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-            //requestFactory.setHttpClient(httpClient);
+            requestFactory.setHttpClient(httpClient);
             return requestFactory;
         } catch (GeneralSecurityException e) {
             throw new DockerCertificateException(hostName);
@@ -429,7 +427,7 @@ public class DockerClient {
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
         if (StringUtils.isNotBlank(caCert)) {
-            builder = builder.requestFactory((Supplier<ClientHttpRequestFactory>) getHttpRequestFactory(caCert));
+            builder = builder.requestFactory(() -> getHttpRequestFactory(caCert));
         }
         if (mapper != null) {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));

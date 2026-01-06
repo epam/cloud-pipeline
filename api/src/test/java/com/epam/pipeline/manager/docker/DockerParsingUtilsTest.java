@@ -147,7 +147,7 @@ public class DockerParsingUtilsTest {
         commands.add(COMMAND_WITH_OUT_RUN);
 
         final List<String> commandsPatternsToSkip = StreamUtils.appended(
-                podLaunchTemplatesLinux.stream().map(OSSpecificLaunchCommandTemplate::getCommand),
+                podLaunchTemplatesLinux.stream().map(OSSpecificLaunchCommandTemplate::command),
                 podLaunchTemplatesWin
         ).map(DockerParsingUtils::getLaunchPodPattern).collect(Collectors.toList());
 
