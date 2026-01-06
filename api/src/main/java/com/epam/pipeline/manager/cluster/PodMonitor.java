@@ -116,6 +116,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private static final int POD_RELEASE_TIMEOUT = 3000;
 
         private final BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
+        private final BlockingQueue<PipelineRun> queueToSavePerformanceMetrics = new LinkedBlockingQueue<>();
         private final Map<String, LocalDateTime> hangingPods = new ConcurrentHashMap<>();
 
         private final String kubeNamespace;
@@ -218,7 +219,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                                 run.setTerminating(true);
                                 hangingPods.putIfAbsent(run.getPodId(), LocalDateTime.now());
                             }
-                            storeRunPerformanceMetrics(run);
+                            saveMetricsAsync(run);
                         } else if (status.getPhase().equals(KubernetesConstants.POD_FAILED_PHASE) ||
                                 (status.getReason() != null &&
                                         status.getReason().equals(KubernetesConstants.NODE_LOST))) {
@@ -264,6 +265,19 @@ public class PodMonitor extends AbstractSchedulingManager {
             }
         }
 
+        @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
+        public void savePerformanceMetricsForFinishedRuns() {
+            while (!queueToSavePerformanceMetrics.isEmpty()) {
+                try {
+                    storeRunPerformanceMetrics(queueToSavePerformanceMetrics.take());
+                } catch (Exception e) {
+                    LOGGER.error(messageHelper
+                            .getMessage(MessageConstants.ERROR_SAVE_RUN_METRICS, e));
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
+        }
+
         /**
          * Put tasks from specified {@link PipelineRun} to a queue for killing
          *
@@ -271,6 +285,15 @@ public class PodMonitor extends AbstractSchedulingManager {
          */
         private void killAsync(PipelineRun run) {
             queueToKill.add(run);
+        }
+
+        /**
+         * Put tasks from specified {@link PipelineRun} to a queue for updating performance metrics
+         *
+         * @param run a {@link PipelineRun} which metrics to update
+         */
+        private void saveMetricsAsync(PipelineRun run) {
+            queueToSavePerformanceMetrics.add(run);
         }
 
         private void notifyIfExceedsThreshold(PipelineRun run, Pod pod, NotificationType type) {
@@ -497,7 +520,7 @@ public class PodMonitor extends AbstractSchedulingManager {
             run.setTerminating(true);
             run.setEndDate(DateUtils.now());
             notificationManager.removeNotificationTimestamps(run.getId());
-            storeRunPerformanceMetrics(run);
+            saveMetricsAsync(run);
             killAsync(run);
         }
 
