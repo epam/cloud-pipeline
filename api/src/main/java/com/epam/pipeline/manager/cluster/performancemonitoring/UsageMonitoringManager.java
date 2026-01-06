@@ -22,6 +22,9 @@ import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 
 import javax.annotation.Nullable;
@@ -29,6 +32,8 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Node usage monitoring manager.
@@ -43,6 +48,22 @@ public interface UsageMonitoringManager {
      */
     default List<MonitoringStats> getStatsForNode(String nodeName) {
         return getStatsForNode(nodeName, null, null, null);
+    }
+
+    /**
+     * Retrieves monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @return List of monitoring stats.
+     */
+    default PipelineRunPerformanceMetrics getStatsForRun(Long runId, String nodeName) {
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, null, null, null);
+        return new PipelineRunPerformanceMetrics(
+                runId,
+                statsForNode.stream()
+                        .map(this::mapToRunPerformanceMetric)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()));
     }
 
     /**
@@ -111,4 +132,22 @@ public interface UsageMonitoringManager {
     List<HistogramBin> getPlatformNetworkStats(HistogramType histogramType,
                                                LocalDateTime from, LocalDateTime to,
                                                Integer intervals, NetworkEventFilter filter);
+
+    default PipelineRunPerformanceMetric mapToRunPerformanceMetric(MonitoringStats stat) {
+        if (stat.getCpuUsage() != null) {
+            return PipelineRunPerformanceMetric.builder()
+                    .type(PipelineRunPerformanceMetricsType.CPU)
+                    .capacity(stat.getContainerSpec().getNumberOfCores())
+                    .max(stat.getCpuUsage().getMax())
+                    .avg(stat.getCpuUsage().getLoad()).build();
+        } else  if (stat.getMemoryUsage() != null) {
+            return PipelineRunPerformanceMetric.builder()
+                    .type(PipelineRunPerformanceMetricsType.MEMORY)
+                    .capacity(stat.getContainerSpec().getMaxMemory())
+                    .max(stat.getMemoryUsage().getMax())
+                    .avg(stat.getMemoryUsage().getUsage())
+                    .build();
+        }
+        return null;
+    };
 }

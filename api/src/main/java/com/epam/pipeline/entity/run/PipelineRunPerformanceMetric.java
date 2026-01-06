@@ -23,7 +23,7 @@ import lombok.Getter;
 @Builder
 public class PipelineRunPerformanceMetric {
     private final PipelineRunPerformanceMetricsType type;
-    private final int max;
-    private final int avg;
-    private final long capacity;
+    private final double max;
+    private final double avg;
+    private final double capacity;
 }

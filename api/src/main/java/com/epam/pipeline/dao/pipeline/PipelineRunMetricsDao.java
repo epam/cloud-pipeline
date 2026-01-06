@@ -16,26 +16,21 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.dao.DaoHelper;
-import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class PipelineRunMetricsDao extends DryRunJdbcDaoSupport {
-
-    @Autowired
-    private DaoHelper daoHelper;
+public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
 
     private String loadRunMetricsByIdQuery;
     private String putRunMetricsByIdQuery;
@@ -54,7 +49,7 @@ public class PipelineRunMetricsDao extends DryRunJdbcDaoSupport {
 
     public enum PipelineRunPerformanceMetricsParameters {
         RUN_ID,
-        TYPE,
+        METRIC_TYPE,
         MAX_VALUE,
         AVG_VALUE,
         CAPACITY;
@@ -65,7 +60,7 @@ public class PipelineRunMetricsDao extends DryRunJdbcDaoSupport {
                     .map(metric -> {
                         MapSqlParameterSource params = new MapSqlParameterSource();
                         params.addValue(RUN_ID.name(), metrics.getRunId());
-                        params.addValue(TYPE.name(), metric.getType());
+                        params.addValue(METRIC_TYPE.name(), metric.getType());
                         params.addValue(MAX_VALUE.name(), metric.getMax());
                         params.addValue(AVG_VALUE.name(), metric.getAvg());
                         params.addValue(CAPACITY.name(), metric.getCapacity());
@@ -83,7 +78,7 @@ public class PipelineRunMetricsDao extends DryRunJdbcDaoSupport {
                     }
                     metrics.add(
                         PipelineRunPerformanceMetric.builder().type(
-                                PipelineRunPerformanceMetricsType.valueOf(rs.getString(TYPE.name()))
+                                PipelineRunPerformanceMetricsType.valueOf(rs.getString(METRIC_TYPE.name()))
                         ).max(rs.getInt(MAX_VALUE.name()))
                         .avg(rs.getInt(AVG_VALUE.name()))
                         .capacity(rs.getLong(CAPACITY.name())).build()
