@@ -9,3 +9,5 @@ api/src/main/resources/static/
 .gnupg/
 docs/site
 dist
+portals-ui
+.DS_Store

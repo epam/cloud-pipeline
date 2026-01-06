@@ -27,6 +27,8 @@ function Renderer (props) {
       style={style}
       logs={data}
       showDate={false}
+      alwaysShowDownloadCurrentLog
+      downloadCurrentLog
     />
   );
 }
