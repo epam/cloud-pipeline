@@ -32,7 +32,7 @@ class CloudPipelineAPI:
         }
 
     def call_api(self, method_url, data=None):
-        full_url = os.path.join(self.api_url, method_url)
+        full_url = self.api_url.rstrip('/') + '/' + method_url.lstrip('/')
         result = None
         for n in range(NUMBER_OF_RETRIES):
             try:
