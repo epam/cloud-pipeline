@@ -28,7 +28,6 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -535,9 +534,13 @@ public class PodMonitor extends AbstractSchedulingManager {
 
             if (usageMonitoringManager != null) {
                 try {
-                    final PipelineRunPerformanceMetrics statsForRun =
-                            usageMonitoringManager.getStatsForRun(runId, nodeName);
-                    pipelineRunManager.savePipelineRunPerformanceMetrics(statsForRun);
+                    final LocalDateTime from = DateUtils.convertDateToLocalDateTime(run.getStartDate());
+                    final LocalDateTime to = Optional.ofNullable(run.getEndDate())
+                            .map(DateUtils::convertDateToLocalDateTime).orElse(DateUtils.nowUTC());
+
+                    Optional.ofNullable(
+                            usageMonitoringManager.getPerformanceMetricsForRun(nodeName, from, to, null)
+                    ).ifPresent(pipelineRunManager::savePipelineRunPerformanceMetrics);
                 } catch (PipelineException e) {
                     LOGGER.warn("Can't request pipeline run performance metrics, it won't be saved for run: {}", runId);
                 }
