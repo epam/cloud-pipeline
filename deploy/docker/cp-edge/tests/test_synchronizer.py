@@ -29,7 +29,7 @@ class TestRouteSynchronizer(unittest.TestCase):
     def test_find_preference_default(self):
         self.mock_api.call_api.return_value = {}
         val = self.sync.find_preference("pref")
-        self.assertEqual(val, "None")
+        self.assertIsNone(val)
 
     def test_find_preference_value(self):
         self.mock_api.call_api.return_value = {'payload': {'value': 'foo'}}
@@ -85,9 +85,9 @@ class TestRouteSynchronizer(unittest.TestCase):
         self.mock_kube.get_pods.assert_called()
 
         self.mock_nginx.write_route_config.assert_called()
-        self.mock_nginx.verify_and_fix_route.assert_called()
+        self.mock_nginx.check_route.assert_called()
 
-        self.mock_nginx.reload_nginx.assert_called()
+        self.mock_nginx.reload_nginx_config.assert_called()
 
         update_calls = [c for c in self.mock_api.call_api.call_args_list if 'serviceUrl' in str(c)]
         self.assertTrue(len(update_calls) > 0)

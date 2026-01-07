@@ -57,11 +57,15 @@ class KubeClient:
         edge_service_external_ip = None
         edge_service_port = None
 
+        # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
+        # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't
+        # applied yet - so we will wait
         for n in range(NUMBER_OF_RETRIES):
             selector = {EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region_name}
             edge_kube_service = Service.objects(self.api, namespace=CP_KUBE_NAMESPACE).filter(selector=selector)
             
             if not edge_kube_service.response['items'] and edge_region_name == 'default':
+                # Fallback for 'default' region: search by role only
                 edge_kube_service = Service.objects(self.api, namespace=CP_KUBE_NAMESPACE).filter(
                     selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE}
                 )
@@ -72,15 +76,15 @@ class KubeClient:
                 return None, None
             else:
                 edge_kube_service_object = edge_kube_service.response['items'][0]
-                metadata = edge_kube_service_object['metadata']
+                edge_kube_service_object_metadata = edge_kube_service_object['metadata']
 
-                if 'labels' in metadata and EDGE_SVC_HOST_LABEL in metadata['labels']:
+                if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_HOST_LABEL in edge_kube_service_object_metadata['labels']:
                     do_log('Getting EDGE service host from service label')
-                    edge_service_external_ip = metadata['labels'][EDGE_SVC_HOST_LABEL]
+                    edge_service_external_ip = edge_kube_service_object_metadata['labels'][EDGE_SVC_HOST_LABEL]
 
-                if 'labels' in metadata and EDGE_SVC_PORT_LABEL in metadata['labels']:
+                if 'labels' in edge_kube_service_object_metadata and EDGE_SVC_PORT_LABEL in edge_kube_service_object_metadata['labels']:
                     do_log('Getting EDGE service host port from service label')
-                    edge_service_port = metadata['labels'][EDGE_SVC_PORT_LABEL]
+                    edge_service_port = edge_kube_service_object_metadata['labels'][EDGE_SVC_PORT_LABEL]
 
                 if edge_service_external_ip and edge_service_port:
                     break

@@ -34,7 +34,7 @@ def main():
             print('API url or API token are not set. Exiting')
             exit(1)
             
-    api_client = CloudPipelineAPI(api_url, api_token)
+    api = CloudPipelineAPI(api_url, api_token)
     
     try:
         from pykube.config import KubeConfig
@@ -49,11 +49,12 @@ def main():
         do_log('[WARN] Cannot get API domain name from the environment')
 
     kube_api = HTTPClient(KubeConfig.from_service_account())
+    do_log('Using kubeconfig at aws-dev-kube.config')
     kube_api.session.verify = False
-    kube_client = KubeClient(api=kube_api)
-    nginx_manager = NginxManager(api_domain_name)
+    kube = KubeClient(api=kube_api)
+    nginx = NginxManager(api_domain_name)
     
-    synchronizer = RouteSynchronizer(kube_client, api_client, nginx_manager)
+    synchronizer = RouteSynchronizer(kube, api, nginx)
     
     try:
         synchronizer.sync()

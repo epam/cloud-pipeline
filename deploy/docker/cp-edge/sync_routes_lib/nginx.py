@@ -177,19 +177,18 @@ class NginxManager:
             do_log('Adding new route ... NOT OK (%s)' % e.returncode)
             return False
 
-    def reload_nginx(self):
+    def reload_nginx_config(self):
         do_log('Reloading nginx...')
         subprocess.check_output('nginx -s reload', shell=True)
 
     def write_route_config(self, service_spec, service_hostname, has_custom_domain):
         service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
         # Replace the duplicated forward slashes with a single instance to workaround possible issue when the location is set to "/path//"
-        # proxy_pass cannot have trailing slash for regexp locations
         service_location = re.sub('/+', '/', service_location)
 
         schema = 'https' if service_spec.get('is_ssl_backend') else 'http'
         
-        content = self.loc_template \
+        nginx_route_definition = self.loc_template \
                 .replace('{edge_route_location}', service_location) \
                 .replace('{edge_route_target}', service_spec["edge_target"]) \
                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
@@ -203,14 +202,15 @@ class NginxManager:
                 .replace('{bearer_cookie_extra}', EDGE_BEARER_COOKIE_EXTRA) \
                 .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location)
 
-        sensitive_definitions = []
+        nginx_sensitive_route_definitions = []
         if service_spec.get("sensitive"):
              for sensitive_route in self.sensitive_routes:
+                # proxy_pass cannot have trailing slash for regexp locations
                  edge_target = service_spec["edge_target"]
                  if edge_target.endswith("/"):
                      edge_target = edge_target[:-1]
                  
-                 sensitive_def = self.sensitive_loc_template \
+                 nginx_sensitive_route_definition = self.sensitive_loc_template \
                                 .replace('{edge_route_location}', service_location + sensitive_route['route']) \
                                 .replace('{edge_route_sensitive_methods}', '|'.join(sensitive_route['methods'])) \
                                 .replace('{edge_route_target}', edge_target) \
@@ -220,13 +220,13 @@ class NginxManager:
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                                 .replace('{additional}', service_spec["additional"]) \
                                 .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location + sensitive_route['route'])
-                 sensitive_definitions.append(sensitive_def)
+                 nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
 
         path_to_route = os.path.join(NGINX_SITES_PATH, service_spec.get('edge_location_path') + '.conf')
-        with open(path_to_route, "w") as f:
-            f.write(content)
-            for s_def in sensitive_definitions:
-                f.write(s_def)
+        with open(path_to_route, "w") as added_route_file:
+            added_route_file.write(nginx_route_definition)
+            for nginx_sensitive_route_definition in nginx_sensitive_route_definitions:
+                added_route_file.write(nginx_sensitive_route_definition)
         
         do_log('Adding new {}route {}'.format('sensitive ' if service_spec.get("sensitive") else '', path_to_route))
 
@@ -236,24 +236,24 @@ class NginxManager:
 
         return path_to_route, service_location
 
-    def write_stub_location(self, path_to_route, service_location, service_spec, has_custom_domain):
-        content = self.stub_template \
+    def write_stub_location_configuration(self, path_to_route, service_location, service_spec, has_custom_domain):
+        nginx_route_definition = self.stub_template \
                 .replace('{edge_route_location}', service_location) \
                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"])
         
         # Determine the correct extensions based on custom domain usage
-        ext_to_replace = ".conf" if has_custom_domain else ".loc.conf"
-        new_ext = STUB_CUSTOM_DOMAIN_EXTENSION if has_custom_domain else STUB_LOCATION_CONFIG_EXTENSION
-        path_to_stub = path_to_route.replace(ext_to_replace, new_ext)
+        path_to_route_extension = ".conf" if has_custom_domain else ".loc.conf"
+        stub_extension = STUB_CUSTOM_DOMAIN_EXTENSION if has_custom_domain else STUB_LOCATION_CONFIG_EXTENSION
+        path_to_stub = path_to_route.replace(path_to_route_extension, stub_extension)
 
         with open(path_to_stub, "w") as f:
-            f.write(content)
+            f.write(nginx_route_definition)
         do_log('Adding new stub route ' + path_to_stub)
         return path_to_stub
 
-    def verify_and_fix_route(self, path_to_route, service_location, service_spec, has_custom_domain, service_hostname):
+    def check_route(self, path_to_route, service_location, service_spec, has_custom_domain, service_hostname):
         if self.check_nginx_config():
             return
 
@@ -263,7 +263,7 @@ class NginxManager:
              do_log('Deleting invalid custom domain route...')
              self.remove_custom_domain_all(path_to_route)
 
-        path_to_stub = self.write_stub_location(path_to_route, service_location, service_spec, has_custom_domain)
+        path_to_stub = self.write_stub_location_configuration(path_to_route, service_location, service_spec, has_custom_domain)
 
         if self.check_nginx_config():
             if has_custom_domain:

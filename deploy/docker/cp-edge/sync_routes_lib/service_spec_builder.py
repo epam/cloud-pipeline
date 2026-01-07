@@ -70,12 +70,15 @@ class ServiceSpecBuilder:
     def run_sids_to_str(self, run_sids, is_principal):
         if not run_sids:
             return ""
-        return ",".join([shared_sid["name"] for shared_sid in run_sids if shared_sid["isPrincipal"] == is_principal])
+        return ",".join([
+            shared_sid["name"] for shared_sid in run_sids if shared_sid["isPrincipal"] == is_principal
+            ])
 
     def parse_pretty_url(self, pretty):
         try:
             pretty_obj = json.loads(pretty)
-            if not pretty_obj: return None
+            if not pretty_obj: 
+                return None
         except Exception:
             pretty_obj = { 'path': pretty }
 
@@ -89,31 +92,33 @@ class ServiceSpecBuilder:
         return { 'domain': pretty_domain, 'path': pretty_path }
 
     def match_sys_endpoint_value(self, param_value, endpoint_value):
-        if not param_value or not endpoint_value: return False
-        if param_value.lower() == endpoint_value.lower(): return True
+        if not param_value or not endpoint_value: 
+            return False
+        if param_value.lower() == endpoint_value.lower(): 
+            return True
+        # This way we can set envpoint value to boolean expressions, e.g. ">0"
         if not endpoint_value.isalnum():
-            # This way we can set envpoint value to boolean expressions, e.g. ">0"
             try:
                 return eval(param_value + endpoint_value)
             except:
                 return False
         return False
 
-    def construct_additional_endpoints(self, run_details):
-        def extract_num(name):
+    def construct_additional_endpoints_from_run_parameters(self, run_details):
+        def extract_endpoint_num_from_run_parameter(name):
              match = re.search(r'{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), name)
              return match.group(1) if match else None
 
-        params = [rp for rp in run_details["pipelineRunParameters"] if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
-        if not params: return []
+        run_parameters = [rp for rp in run_details["pipelineRunParameters"] if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
+        if not run_parameters: return []
         
-        nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_num(rp["name"]) for rp in params])
-        groups = {id: {rp["name"]: rp["value"] for rp in params if rp["name"].startswith(id)} for id in nums}
+        custom_endpoint_nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_endpoint_num_from_run_parameter(rp["name"]) for rp in run_parameters])
+        custom_endpoints_groups = {id: {rp["name"]: rp["value"] for rp in run_parameters if rp["name"].startswith(id)} for id in custom_endpoint_nums}
         
-        do_log('Detected {} custom endpoints groups'.format(len(groups)))
+        do_log('Detected {} custom endpoints groups'.format(len(custom_endpoints_groups)))
 
         endpoints = []
-        for e_id, e in groups.items():
+        for e_id, e in custom_endpoints_groups.items():
              endpoints.append({
                  "name": e_id,
                  "endpoint": e.get(e_id + "_PORT"),
@@ -129,6 +134,7 @@ class ServiceSpecBuilder:
         overridden_count = 0
         if run_details and "pipelineRunParameters" in run_details:
              sys_keys = self.system_endpoints_config.keys()
+             # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
              additional = [self.system_endpoints_config[x["name"]] for x in run_details["pipelineRunParameters"]
                            if x["name"] in sys_keys 
                            and self.match_sys_endpoint_value(x["value"], self.system_endpoints_config[x["name"]]["value"])
@@ -136,17 +142,22 @@ class ServiceSpecBuilder:
              
              configured_ports = set(e["endpoint"] for e in additional)
 
-             for custom in self.construct_additional_endpoints(run_details):
+             # Filter out any endpoint if it matches with system ones
+             for custom in self.construct_additional_endpoints_from_run_parameters(run_details):
                  if custom["endpoint"] in configured_ports:
                      continue
+                 # Append additional custom endpoint that are configured with run parameters
                  additional.append(custom)
                  configured_ports.add(custom["endpoint"])
 
+             # If only a single endpoint is defined for the tool - we shall make sure it is set to default. Otherwise "system endpoint" may become a default one
+             # If more then one endpoint is defined - we shall not make the changes, as it is up to the owner of the tool
              if additional and len(tool_endpoints) == 1:
                  t = json.loads(tool_endpoints[0])
                  t["isDefault"] = "true"
                  tool_endpoints[0] = json.dumps(t)
 
+             # Append additional endpoints to the existing list
              for add_ep in additional:
                  port = add_ep["endpoint"]
                  new_ep = {"nginx": {"port": port, "additional": add_ep["endpoint_additional"]}}
@@ -181,9 +192,9 @@ class ServiceSpecBuilder:
                  
         return tool_endpoints, overridden_count
 
-    def get_service_list(self, active_runs, pod_id, pod_run_id, pod_ip):
-        services = {}
-        run = next((r for r in active_runs if str(r['pipelineRun']['id']) == str(pod_run_id)), None)
+    def get_service_list(self, runs_with_endpoints, pod_id, pod_run_id, pod_ip):
+        services_list = {}
+        run = next((r for r in runs_with_endpoints if str(r['pipelineRun']['id']) == str(pod_run_id)), None)
         if not run or run['pipelineRun'].get('status') != 'RUNNING':
             return {}
         
@@ -206,9 +217,9 @@ class ServiceSpecBuilder:
             spec_pair = self._build_route_spec(ep, i, count, pod_id, pod_ip, base_info)
             if spec_pair:
                 edge_id, details = spec_pair
-                services[edge_id] = details
+                services_list[edge_id] = details
         
-        return services
+        return services_list
 
     def _check_endpoint_tag_permission(self, info):
         if 'pipelineRunParameters' in info:
@@ -327,13 +338,18 @@ class ServiceSpecBuilder:
             'cleaned_additional': additional
         }
         
+        # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
+        # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
         if EDGE_ROUTE_NO_PATH_CROP in flags['cleaned_additional']:
             flags['cleaned_additional'] = flags['cleaned_additional'].replace(EDGE_ROUTE_NO_PATH_CROP, "")
 
         if EDGE_COOKIE_NO_REPLACE in flags['cleaned_additional']:
             flags['cleaned_additional'] = flags['cleaned_additional'].replace(EDGE_COOKIE_NO_REPLACE, "")
             flags['cookie_location'] = "/"
-            
+
+        #######################################################
+        # These parameters will be passed to the respective lua auth script
+        # Only applied for the non-sensitive jobs    
         if EDGE_JWT_NO_AUTH in flags['cleaned_additional']:
             flags['cleaned_additional'] = flags['cleaned_additional'].replace(EDGE_JWT_NO_AUTH, "")
             flags['jwt_auth'] = False
@@ -341,6 +357,8 @@ class ServiceSpecBuilder:
         if EDGE_PASS_BEARER in flags['cleaned_additional']:
             flags['cleaned_additional'] = flags['cleaned_additional'].replace(EDGE_PASS_BEARER, "")
             flags['pass_bearer'] = True
+
+        #######################################################    
             
         if EDGE_EXTERNAL_APP in flags['cleaned_additional']:
             flags['cleaned_additional'] = flags['cleaned_additional'].replace(EDGE_EXTERNAL_APP, "")
